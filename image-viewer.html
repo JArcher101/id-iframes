@@ -1,0 +1,2452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID Images Display</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f8f9fa;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .image-display-container {
+            width: 250px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .awaiting-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            width: 250px;
+            margin: 0 auto;
+        }
+
+        .awaiting-content {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .awaiting-content h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .awaiting-content p {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .mock-btn {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .mock-btn:hover {
+            background: #357ABD;
+            transform: translateY(-1px);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .add-more-container {
+            text-align: center;
+            margin-top: 10px;
+            width: 250px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .add-more-btn {
+            background: rgb(0, 60, 113);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .add-more-btn:hover {
+            background: rgb(0, 40, 80);
+            transform: translateY(-1px);
+        }
+
+        /* ID Image Uploader Section */
+        .id-uploader-section {
+            width: 250px;
+            margin: 0 auto;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+
+        .uploader-card {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .uploader-card h4 {
+            font-size: 0.95rem;
+            margin: 0 0 10px 0;
+            color: rgb(0, 60, 113);
+        }
+
+        .uploader-options {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+
+        .uploader-option {
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .uploader-option:hover {
+            border-color: rgb(0, 60, 113);
+            background: #f0f7ff;
+        }
+
+        .uploader-option.selected {
+            border-color: rgb(0, 60, 113);
+            background: #e6f2ff;
+        }
+
+        .uploader-option h5 {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #333;
+        }
+
+        .dynamic-hint {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 8px;
+            margin: 10px 0;
+            font-size: 0.8rem;
+            color: #856404;
+            display: none;
+        }
+
+        .document-type-section {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .document-type-section h5 {
+            font-size: 1rem;
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .document-dropdown {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            background: white;
+        }
+
+        .upload-hint {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 0.85rem;
+            color: #856404;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dual-uploader {
+            display: none;
+        }
+
+        .dual-uploader.show {
+            display: block;
+        }
+
+        .side-uploader {
+            margin-bottom: 8px;
+        }
+
+        .side-uploader:last-child {
+            margin-bottom: 0;
+        }
+
+        .side-uploader h6 {
+            font-size: 0.8rem;
+            margin: 0 0 6px 0;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .side-tag {
+            display: inline-block;
+            background: #d4a574;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .file-upload-area:hover {
+            border-color: rgb(0, 60, 113);
+            background: #f8f9fa;
+        }
+
+        .file-upload-area.dragover {
+            border-color: rgb(0, 60, 113);
+            background: #e6f2ff;
+        }
+
+        .file-upload-area p {
+            margin: 0 0 10px 0;
+            color: #666;
+        }
+
+        .file-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .file-list {
+            margin-top: 15px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-icon {
+            width: 20px;
+            height: 20px;
+            background: rgb(0, 60, 113);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .remove-file-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .remove-file-btn:hover {
+            background: #c82333;
+        }
+
+        .remove-card-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .remove-card-btn:hover {
+            background: #c82333;
+        }
+
+        .upload-actions {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .upload-btn {
+            background: rgb(0, 60, 113);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .upload-btn:hover {
+            background: rgb(0, 40, 80);
+            transform: translateY(-1px);
+        }
+
+        .upload-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+
+        /* Error popup styles */
+        .error-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .error-popup-content {
+            background: #dc3545;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            width: 250px;
+            position: relative;
+        }
+
+        .error-popup-header {
+            font-size: 1rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .error-popup-message {
+            font-size: 0.85rem;
+            color: white;
+            margin-bottom: 0;
+            line-height: 1.3;
+        }
+
+
+        .error-popup-close {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .error-popup-close:hover {
+            opacity: 0.8;
+        }
+
+        /* Uploading state styles */
+        .uploading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .uploading-message {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            width: 250px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid rgb(0, 60, 113);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .uploading-message h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .uploading-message p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4A90E2, #10a37f);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* File list matching Untitled-1 */
+        .file-list {
+            margin: 15px 0;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            padding: 8px;
+            margin: 3px 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #4A90E2;
+            text-align: left;
+            font-size: 0.75rem;
+        }
+
+        .file-item strong {
+            font-size: 0.7rem;
+            display: block;
+            margin-bottom: 3px;
+            word-wrap: break-word;
+        }
+
+        .file-item div {
+            font-size: 0.65rem;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .file-item .file-details {
+            display: flex;
+            flex-direction: column;
+            margin-top: 3px;
+        }
+
+        .file-item .file-size {
+            font-size: 0.65rem;
+            margin-bottom: 2px;
+        }
+
+        .file-item .file-status {
+            font-size: 0.65rem;
+        }
+
+        .file-item.uploading {
+            border-left-color: #ffa500;
+        }
+
+        .file-item.success {
+            border-left-color: #10a37f;
+        }
+
+        .file-item.error {
+            border-left-color: #e02424;
+        }
+
+        .upload-status {
+            text-align: center;
+            font-weight: 600;
+            margin: 15px 0;
+            font-size: 0.8rem;
+        }
+
+        #progressText {
+            font-size: 0.8rem;
+            margin: 10px 0;
+        }
+
+        .success-message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .success-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .success-content h3 {
+            color: #28a745;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .success-content p {
+            color: #666;
+            margin-bottom: 0;
+        }
+
+        .uploader-header-container {
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .uploader-header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .uploader-header-top h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: rgb(0, 60, 113);
+        }
+
+        .uploader-header-subheading {
+            width: 100%;
+        }
+
+        .uploader-header-subheading h3 {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .cancel-header-btn {
+            background: none;
+            color: rgb(0, 60, 113);
+            border: 1px solid rgb(0, 60, 113);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .cancel-header-btn:hover {
+            background: rgb(0, 60, 113);
+            color: white;
+        }
+
+        .remove-card-text-btn {
+            background: none;
+            color: rgb(0, 60, 113);
+            border: 1px solid rgb(0, 60, 113);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .remove-card-text-btn:hover {
+            background: rgb(0, 60, 113);
+            color: white;
+        }
+
+        /* Photo ID Card Styling (matching main uploader) */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .card-header label {
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+
+        .photo-upload-wrapper {
+            margin-top: 8px;
+        }
+
+        .photo-upload-side-by-side {
+            display: flex;
+            gap: 8px;
+        }
+
+        .photo-upload-half {
+            flex: 1;
+            width: 50%;
+        }
+
+        .photo-upload {
+            margin-bottom: 6px;
+        }
+
+        .photo-upload:last-child {
+            margin-bottom: 0;
+        }
+
+        .upload-area {
+            border: 2px dashed #4A90E2;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(74, 144, 226, 0.1);
+            height: auto;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 700;
+            color: #444;
+            font-size: 0.9rem;
+            max-width: 250px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            box-sizing: border-box;
+        }
+
+        .upload-area-slimline {
+            border: 2px dashed #4A90E2;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(74, 144, 226, 0.1);
+            height: auto;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 700;
+            color: #444;
+            font-size: 0.9rem;
+            max-width: 250px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            box-sizing: border-box;
+        }
+
+        .upload-area:hover {
+            background: rgba(74, 144, 226, 0.2);
+        }
+
+        .upload-area-slimline:hover {
+            background: rgba(74, 144, 226, 0.2);
+        }
+
+        .upload-area.dragover {
+            border-color: #4A90E2;
+            background: rgba(74, 144, 226, 0.3);
+        }
+
+        .upload-area-slimline.dragover {
+            border-color: #4A90E2;
+            background: rgba(74, 144, 226, 0.3);
+        }
+
+        .upload-area svg, .upload-area-slimline svg {
+            width: 22px;
+            height: 22px;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .upload-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .upload-icon {
+            margin: 0;
+        }
+
+        .upload-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: rgb(0, 60, 113);
+        }
+
+        .upload-text {
+            font-weight: 600;
+            color: rgb(0, 60, 113);
+            margin: 0;
+            font-size: 0.8rem;
+        }
+
+
+        .photo-hint {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 0.85rem;
+            color: #856404;
+        }
+
+        .side-tags {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .side-tag-front,
+        .side-tag-back {
+            background: #d4a574;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .image-display-section {
+            width: 250px;
+            margin: 0 auto;
+        }
+
+        .client-heading {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: rgb(0, 60, 113);
+            margin: 0 0 7px 0;
+            text-align: left;
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .reel-container {
+            position: relative;
+            width: 250px;
+            height: 400px;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background: white;
+        }
+
+        .image-slider {
+            display: flex;
+            transition: transform 0.3s ease-in-out;
+            height: 100%;
+        }
+
+        .image-card {
+            min-width: 250px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .image-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .image-details {
+            padding: 12px;
+            background: #f5f5f5;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .document-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .document-type {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .side-tag {
+            display: inline-block;
+            background: #d4a574;
+            color: white;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .uploader-info {
+            font-size: 0.8rem;
+            color: #666;
+            line-height: 1.3;
+        }
+
+        .uploader-info strong {
+            color: #333;
+        }
+
+        .download-btn-header {
+            background: none;
+            color: rgb(0, 60, 113);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            padding: 4px;
+        }
+
+        .download-btn-header svg {
+            width: 18px;
+            height: 20px;
+        }
+
+        .download-btn-header:hover {
+            color: rgb(0, 40, 80);
+            transform: scale(1.1);
+        }
+
+        .navigation-arrows {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .navigation-arrows:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .nav-left {
+            left: 10px;
+        }
+
+        .nav-right {
+            right: 10px;
+        }
+
+        .nav-left:disabled,
+        .nav-right:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .nav-left:disabled:hover,
+        .nav-right:disabled:hover {
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .download-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .download-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+
+        .image-counter {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            z-index: 10;
+        }
+
+        .no-images {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e0e0e0;
+            border-top: 2px solid #4A90E2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+            transition: background 0.2s ease;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        ::-webkit-scrollbar-corner {
+            background: #f1f1f1;
+        }
+        /* Firefox scrollbar styling */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="image-display-container">
+        <!-- Awaiting data state -->
+        <div class="awaiting-state" id="awaitingState">
+            <div class="awaiting-content">
+                <h3>Awaiting Image Data</h3>
+                <p>Waiting for image data to be loaded...</p>
+                <button class="mock-btn" id="mockBtn">Load Mock Data</button>
+            </div>
+        </div>
+
+        <!-- Image display state -->
+        <div class="image-display-section hidden" id="imageDisplaySection">
+            <h2 class="client-heading" id="clientHeading">ID Photos</h2>
+            <div class="reel-container" id="reelContainer">
+                <div class="image-slider" id="imageSlider">
+                    <div class="loading" id="loadingState">Loading images...</div>
+                </div>
+                
+                <button class="navigation-arrows nav-left" id="prevBtn" disabled>‹</button>
+                <button class="navigation-arrows nav-right" id="nextBtn" disabled>›</button>
+            </div>
+        </div>
+
+        <!-- Add more images button -->
+        <div class="add-more-container hidden" id="addMoreContainer">
+            <button class="add-more-btn" id="addMoreBtn">Add more ID images</button>
+        </div>
+    </div>
+
+    <!-- ID Image Uploader Section -->
+    <div class="id-uploader-section hidden" id="idUploaderSection">
+        <div class="uploader-header-container">
+            <div class="uploader-header-top">
+                <h2>ID Image Uploader</h2>
+                <button class="cancel-header-btn" id="cancelHeaderBtn">Cancel</button>
+            </div>
+            <div class="uploader-header-subheading">
+                <h3 id="uploaderSubheading">Add more ID images for...</h3>
+            </div>
+        </div>
+        
+        <div class="dynamic-hint" id="dynamicHint"></div>
+        
+        <div class="uploader-cards-container" id="uploaderCardsContainer">
+            <!-- Initial card will be added here -->
+        </div>
+        
+        <div class="upload-actions">
+            <button class="upload-btn" id="uploadAllBtn" disabled>Upload All Images</button>
+        </div>
+    </div>
+
+    <!-- Error Popup -->
+    <div class="error-popup" id="errorPopup">
+        <div class="error-popup-content">
+            <button class="error-popup-close" id="errorPopupClose">×</button>
+            <div class="error-popup-header">Upload Error</div>
+            <div class="error-popup-message" id="errorMessage">An error occurred during upload.</div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentImageIndex = 0;
+        let images = [];
+        let allowUploads = false;
+        let clientData = {};
+        let userEmail = '';
+        let uploaderCards = [];
+        let s3Keys = null;
+        let uploadedImages = null;
+        let imageSlider, prevBtn, nextBtn, loadingState, awaitingState, imageDisplaySection, reelContainer, mockBtn, addMoreContainer, addMoreBtn, clientHeading;
+        let idUploaderSection, uploaderSubheading, uploaderCardsContainer, uploadAllBtn, cancelHeaderBtn, errorPopup, errorMessage, errorPopupClose, dynamicHint;
+
+        // DOM elements
+        imageSlider = document.getElementById('imageSlider');
+        prevBtn = document.getElementById('prevBtn');
+        nextBtn = document.getElementById('nextBtn');
+        loadingState = document.getElementById('loadingState');
+        awaitingState = document.getElementById('awaitingState');
+        imageDisplaySection = document.getElementById('imageDisplaySection');
+        reelContainer = document.getElementById('reelContainer');
+        mockBtn = document.getElementById('mockBtn');
+        addMoreContainer = document.getElementById('addMoreContainer');
+        addMoreBtn = document.getElementById('addMoreBtn');
+        clientHeading = document.getElementById('clientHeading');
+        idUploaderSection = document.getElementById('idUploaderSection');
+        uploaderSubheading = document.getElementById('uploaderSubheading');
+        uploaderCardsContainer = document.getElementById('uploaderCardsContainer');
+        uploadAllBtn = document.getElementById('uploadAllBtn');
+        cancelHeaderBtn = document.getElementById('cancelHeaderBtn');
+        errorPopup = document.getElementById('errorPopup');
+        errorMessage = document.getElementById('errorMessage');
+        errorPopupClose = document.getElementById('errorPopupClose');
+        dynamicHint = document.getElementById('dynamicHint');
+
+        // Navigation functions
+        function showImage(index) {
+            if (images.length === 0) return;
+            
+            const translateX = -index * 250;
+            imageSlider.style.transform = `translateX(${translateX}px)`;
+            
+            // Update button states
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = index === images.length - 1;
+        }
+
+        function nextImage() {
+            if (currentImageIndex < images.length - 1) {
+                currentImageIndex++;
+                showImage(currentImageIndex);
+            }
+        }
+
+        function prevImage() {
+            if (currentImageIndex > 0) {
+                currentImageIndex--;
+                showImage(currentImageIndex);
+            }
+        }
+
+        // Download function
+        function downloadImage(imageData) {
+            try {
+                const link = document.createElement('a');
+                link.href = imageData.liveUrl;
+                link.download = imageData.name || `image-${Date.now()}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error('Error downloading image:', error);
+                alert('Error downloading image. Please try again.');
+            }
+        }
+
+        // Create image card HTML
+        function createImageCard(imageData, index) {
+            const card = document.createElement('div');
+            card.className = 'image-card';
+            
+            const sideTag = imageData.side && imageData.side !== 'Single' 
+                ? `<div class="side-tag">${imageData.side}</div>` 
+                : '';
+            
+            const uploaderInfo = imageData.uploader && imageData.date
+                ? `Uploaded by <strong>${imageData.uploader}</strong> on ${imageData.date}`
+                : 'Upload information not available';
+            
+            card.innerHTML = `
+                <div class="image-container">
+                    <img src="${imageData.liveUrl}" alt="${imageData.document || 'ID Document'}" loading="lazy">
+                </div>
+                <div class="image-details">
+                    <div class="document-header">
+                        <div class="document-type">${imageData.document || 'Unknown Document'}</div>
+                        <button class="download-btn-header" onclick="downloadImage(images[${index}])" title="Download image">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <polyline points="7,14 12,19 17,14"/>
+                              <line x1="12" y1="19" x2="12" y2="7"/>
+                            </svg>
+                        </button>
+                    </div>
+                    ${sideTag}
+                    <div class="uploader-info">${uploaderInfo}</div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Display images
+        function displayImages(imageData, allowUploadsData, clientDataParam, userEmailParam) {
+            images = imageData || [];
+            allowUploads = allowUploadsData || false;
+            clientData = clientDataParam || {};
+            userEmail = userEmailParam || '';
+            
+            // Hide awaiting state and show image display section
+            awaitingState.classList.add('hidden');
+            imageDisplaySection.classList.remove('hidden');
+            
+            // Update client heading
+            updateClientHeading();
+            
+            // Show/hide add more button based on allowUploads
+            if (allowUploads) {
+                addMoreContainer.classList.remove('hidden');
+            } else {
+                addMoreContainer.classList.add('hidden');
+            }
+            
+            if (images.length === 0) {
+                imageSlider.innerHTML = '<div class="no-images">No images available</div>';
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                return;
+            }
+            
+            // Clear loading state
+            imageSlider.innerHTML = '';
+            
+            // Create image cards
+            images.forEach((imageData, index) => {
+                const card = createImageCard(imageData, index);
+                imageSlider.appendChild(card);
+            });
+            
+            // Reset to first image
+            currentImageIndex = 0;
+            showImage(0);
+            
+            // Add image counter
+            const counter = document.createElement('div');
+            counter.className = 'image-counter';
+            counter.textContent = `${currentImageIndex + 1} / ${images.length}`;
+            counter.id = 'imageCounter';
+            document.querySelector('.reel-container').appendChild(counter);
+        }
+
+        // Update client heading with client data
+        function updateClientHeading() {
+            if (clientData.fe && clientData.clientNumber && clientData.matterNumber && clientData.name) {
+                clientHeading.textContent = `ID Photos for ${clientData.fe}/${clientData.clientNumber}/${clientData.matterNumber} - ${clientData.name}`;
+            } else {
+                clientHeading.textContent = 'ID Photos';
+            }
+        }
+
+        // Mock data for testing
+        function loadMockData() {
+            const mockClientData = {
+                fe: 'BA',
+                clientNumber: '50',
+                matterNumber: '52',
+                name: 'Mr J R Archer-Moran'
+            };
+            
+            const mockImages = [
+                {
+                    document: 'Driving Licence',
+                    side: 'Front',
+                    name: '50-52 - Mr J R Archer-Moran - Driving Licence Front',
+                    liveUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop',
+                    uploader: 'reception@thurstanhoskin.co.uk',
+                    date: '12/20/2023, 10:30:45 AM'
+                },
+                {
+                    document: 'Driving Licence',
+                    side: 'Back',
+                    name: '50-52 - Mr J R Archer-Moran - Driving Licence Back',
+                    liveUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6f?w=400&h=300&fit=crop',
+                    uploader: 'reception@thurstanhoskin.co.uk',
+                    date: '12/20/2023, 10:30:45 AM'
+                },
+                {
+                    document: 'Passport',
+                    side: 'Single',
+                    name: '50-52 - Mr J R Archer-Moran - Passport',
+                    liveUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop',
+                    uploader: 'reception@thurstanhoskin.co.uk',
+                    date: '12/20/2023, 10:35:12 AM'
+                },
+                {
+                    document: 'Bank Statement',
+                    side: 'Single',
+                    name: '50-52 - Mr J R Archer-Moran - Bank Statement',
+                    liveUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6f?w=400&h=300&fit=crop',
+                    uploader: 'reception@thurstanhoskin.co.uk',
+                    date: '12/20/2023, 10:40:30 AM'
+                },
+                {
+                    document: 'Utility Bill',
+                    side: 'Single',
+                    name: '50-52 - Mr J R Archer-Moran - Utility Bill',
+                    liveUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop',
+                    uploader: 'reception@thurstanhoskin.co.uk',
+                    date: '12/20/2023, 10:45:15 AM'
+                }
+            ];
+            
+            // Simulate receiving the message
+            const mockUserEmail = 'reception@thurstanhoskin.co.uk';
+            displayImages(mockImages, true, mockClientData, mockUserEmail);
+        }
+
+        // Update counter
+        function updateCounter() {
+            const counter = document.getElementById('imageCounter');
+            if (counter) {
+                counter.textContent = `${currentImageIndex + 1} / ${images.length}`;
+            }
+        }
+
+        // Uploader functions
+        function showUploader() {
+            imageDisplaySection.classList.add('hidden');
+            addMoreContainer.classList.add('hidden');
+            idUploaderSection.classList.remove('hidden');
+            updateUploaderSubheading();
+            createInitialCard();
+            updateUploadButton(); // Ensure button is in correct state
+        }
+
+        function hideUploader() {
+            idUploaderSection.classList.add('hidden');
+            imageDisplaySection.classList.remove('hidden');
+            if (allowUploads) {
+                addMoreContainer.classList.remove('hidden');
+            }
+            resetUploader();
+        }
+
+        function updateUploaderSubheading() {
+            if (clientData && clientData.fe && clientData.clientNumber && clientData.matterNumber && clientData.name) {
+                uploaderSubheading.textContent = `Add more ID images for ${clientData.fe}/${clientData.clientNumber}/${clientData.matterNumber} - ${clientData.name}`;
+            } else {
+                uploaderSubheading.textContent = 'Add more ID images';
+            }
+        }
+
+        function createInitialCard() {
+            // Create the initial selection buttons without card wrapper
+            const optionsContainer = document.createElement('div');
+            optionsContainer.className = 'uploader-options';
+            optionsContainer.innerHTML = `
+                <div class="uploader-option" onclick="addAdditionalCard('photo')">
+                    <h5>Add another Photo ID</h5>
+                </div>
+                <div class="uploader-option" onclick="addAdditionalCard('address')">
+                    <h5>Add another Address ID</h5>
+                </div>
+            `;
+            uploaderCardsContainer.appendChild(optionsContainer);
+        }
+
+        function addAdditionalCard(type) {
+            if (uploaderCards.length >= 10) { // Maximum of 10 uploaders
+                showError('Maximum of 10 additional ID documents allowed.');
+                return;
+            }
+            
+            const cardNumber = uploaderCards.length + 1; // Start from 1, not 0
+            const card = createAdditionalCard(cardNumber, type);
+            uploaderCardsContainer.appendChild(card);
+            uploaderCards.push(card);
+            updateUploadButton();
+        }
+
+        function createAdditionalCard(cardNumber, type) {
+            const card = document.createElement('div');
+            card.className = 'uploader-card';
+            
+            if (type === 'photo') {
+                // Side-by-side photo ID card structure
+                card.innerHTML = `
+                    <div class="card-header">
+                        <label class="required">Photo ID ${cardNumber}</label>
+                        <button class="remove-card-text-btn" onclick="removeCard(this)">Remove</button>
+                    </div>
+                    <select class="document-dropdown" onchange="updateDocumentType(this)">
+                        <option value="">Select type...</option>
+                        <option value="Passport">Passport</option>
+                        <option value="Driving Licence">Driving Licence</option>
+                        <option value="Passport Card">Passport Card</option>
+                        <option value="Entry Visa">Entry Visa</option>
+                        <option value="PASS card">PASS card</option>
+                        <option value="Blue badge">Blue badge</option>
+                        <option value="Firearms Certificate">Firearms Certificate</option>
+                        <option value="Other Photo ID Card">Other Photo ID Card</option>
+                    </select>
+                    <div class="photo-upload-wrapper hidden" id="photoUploads${cardNumber}">
+                        <!-- Single uploader for Passport/Firearms Certificate -->
+                        <div class="photo-upload" style="display: none;">
+                            <div class="upload-area-slimline" onclick="triggerFileInput(this)" ondrop="handleDrop(event, this)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                                    <div class="upload-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17,8 12,3 7,8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                        </svg>
+                                    </div>
+                                    <div class="upload-text">Select image</div>
+                                <input type="file" accept="image/*" onchange="handleFileSelect(this)" style="display: none;">
+                            </div>
+                        </div>
+                        
+                        <!-- Side-by-side uploaders for other photo IDs -->
+                        <div class="photo-upload-side-by-side" style="display: none;">
+                            <div class="photo-upload-half">
+                                <div class="side-tag-front" style="display: none; margin-bottom: 6px; font-size: 0.7rem; background: #d4a574; color: white; padding: 2px 6px; border-radius: 3px; font-weight: 600;">FRONT</div>
+                            <div class="upload-area" onclick="triggerFileInput(this)" ondrop="handleDrop(event, this)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                                    <div class="upload-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                            <polyline points="17,8 12,3 7,8"/>
+                                            <line x1="12" y1="3" x2="12" y2="15"/>
+                                        </svg>
+                                    </div>
+                                    <div class="upload-text">Select image</div>
+                                    <input type="file" accept="image/*" onchange="handleFileSelect(this)" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="photo-upload-half">
+                                <div class="side-tag-back" style="display: none; margin-bottom: 6px; font-size: 0.7rem; background: #d4a574; color: white; padding: 2px 6px; border-radius: 3px; font-weight: 600;">BACK</div>
+                                <div class="upload-area" onclick="triggerFileInput(this)" ondrop="handleDrop(event, this)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                                    <div class="upload-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                            <polyline points="17,8 12,3 7,8"/>
+                                            <line x1="12" y1="3" x2="12" y2="15"/>
+                                        </svg>
+                                    </div>
+                                    <div class="upload-text">Select image</div>
+                                <input type="file" accept="image/*" onchange="handleFileSelect(this)" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                `;
+            } else {
+                // Address ID structure (always single uploader with slimline layout)
+                card.innerHTML = `
+                    <div class="card-header">
+                        <label class="required">Address ID ${cardNumber}</label>
+                        <button class="remove-card-text-btn" onclick="removeCard(this)">Remove</button>
+                    </div>
+                    <select class="document-dropdown" onchange="updateDocumentType(this)">
+                        <option value="">Select type...</option>
+                        <option value="Bank Statement">Bank Statement</option>
+                        <option value="Utility Bill">Utility Bill</option>
+                        <option value="GOV Letter">GOV Letter</option>
+                        <option value="Official Letter">Official Letter</option>
+                        <option value="NHS Letter">NHS Letter</option>
+                        <option value="Home Insurance">Home Insurance</option>
+                        <option value="Council Tax Bill">Council Tax Bill</option>
+                        <option value="Driving Licence">Driving Licence</option>
+                        <option value="Voter Registration">Voter Registration</option>
+                        <option value="Tenancy Agreement">Tenancy Agreement</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <div class="photo-upload-wrapper hidden" id="addressUploads${cardNumber}">
+                        <div class="photo-upload">
+                            <div class="upload-area-slimline" onclick="triggerFileInput(this)" ondrop="handleDrop(event, this)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                                    <div class="upload-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17,8 12,3 7,8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                        </svg>
+                                    </div>
+                                    <div class="upload-text">Select image</div>
+                                <input type="file" accept="image/*" onchange="handleFileSelect(this)" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return card;
+        }
+
+        function updateDocumentType(dropdown) {
+            const card = dropdown.closest('.uploader-card');
+            const photoUploadWrapper = card.querySelector('.photo-upload-wrapper');
+            const photoUploadSideBySide = card.querySelector('.photo-upload-side-by-side');
+            const photoUploadHalfs = card.querySelectorAll('.photo-upload-half');
+            const sideTagFront = card.querySelector('.side-tag-front');
+            const sideTagBack = card.querySelector('.side-tag-back');
+            const singleUploader = card.querySelector('.photo-upload:not(.photo-upload-half)');
+            
+            if (dropdown.value) {
+                // Show the upload wrapper
+                photoUploadWrapper.classList.remove('hidden');
+                
+                // Determine if this is a photo ID or address ID card
+                const addressIDTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Driving Licence', 'Voter Registration', 'Tenancy Agreement', 'Other'];
+                const isAddressID = addressIDTypes.includes(dropdown.value);
+                
+                if (isAddressID) {
+                    // Address ID - always single uploader with slimline layout
+                    if (singleUploader) {
+                        singleUploader.style.display = 'block';
+                        // Ensure it uses slimline layout
+                        const uploadArea = singleUploader.querySelector('.upload-area');
+                        if (uploadArea) {
+                            uploadArea.className = 'upload-area-slimline';
+                        }
+                    }
+                    if (photoUploadSideBySide) photoUploadSideBySide.style.display = 'none';
+                } else {
+                    // Photo ID - check if single or dual upload needed
+                const needsSingleUpload = ['Passport', 'Firearms Certificate'].includes(dropdown.value);
+                
+                if (needsSingleUpload) {
+                        // Single uploader - use slimline layout
+                        if (singleUploader) {
+                            singleUploader.style.display = 'block';
+                            // Ensure it uses slimline layout
+                            const uploadArea = singleUploader.querySelector('.upload-area');
+                            if (uploadArea) {
+                                uploadArea.className = 'upload-area-slimline';
+                            }
+                        }
+                        if (photoUploadSideBySide) photoUploadSideBySide.style.display = 'none';
+                    if (sideTagFront) sideTagFront.style.display = 'none';
+                    if (sideTagBack) sideTagBack.style.display = 'none';
+                } else {
+                        // Dual uploaders - use side-by-side layout
+                        if (singleUploader) singleUploader.style.display = 'none';
+                        if (photoUploadSideBySide) photoUploadSideBySide.style.display = 'flex';
+                        if (photoUploadHalfs[1]) photoUploadHalfs[1].style.display = 'block';
+                    if (sideTagFront) sideTagFront.style.display = 'block';
+                    if (sideTagBack) sideTagBack.style.display = 'block';
+                    }
+                }
+                
+                // Update dynamic hint based on document type (only for photo IDs)
+                if (!isAddressID) {
+                    updateDynamicHint(dropdown.value);
+                }
+                
+                // Update upload button state
+                updateUploadButton();
+            } else {
+                // Hide everything when no selection
+                photoUploadWrapper.classList.add('hidden');
+                if (singleUploader) singleUploader.style.display = 'none';
+                if (photoUploadSideBySide) photoUploadSideBySide.style.display = 'none';
+                if (photoUploadHalfs[1]) photoUploadHalfs[1].style.display = 'none';
+                if (sideTagFront) sideTagFront.style.display = 'none';
+                if (sideTagBack) sideTagBack.style.display = 'none';
+                
+                // Hide dynamic hint
+                hideDynamicHint();
+                
+                // Update upload button state
+                updateUploadButton();
+            }
+        }
+
+        function updateDynamicHint(documentType) {
+            // Check if there are any photo ID uploaders
+            const photoCards = document.querySelectorAll('.uploader-card');
+            const hasPhotoID = Array.from(photoCards).some(card => {
+                const dropdown = card.querySelector('.document-dropdown');
+                return dropdown && dropdown.value && ['Passport', 'Driving Licence', 'Passport Card', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'].includes(dropdown.value);
+            });
+            
+            if (hasPhotoID) {
+                let hintText = '';
+                if (documentType === 'Passport' || documentType === 'Passport Card') {
+                    hintText = 'Remember to check image quality for blur and glare. Ensure the full MRZ (Machine Readable Zone) is visible.';
+                } else {
+                    hintText = 'Remember to check image quality for blur and glare.';
+                }
+                
+                dynamicHint.textContent = hintText;
+                dynamicHint.style.display = 'block';
+            } else {
+                hideDynamicHint();
+            }
+        }
+
+        function hideDynamicHint() {
+            dynamicHint.style.display = 'none';
+        }
+
+        // Generate filename with invalid characters replaced
+        function generateFileName(fileData) {
+            // Replace forward slashes with hyphens in path components
+            const fe = (clientData.fe || '').replace(/\//g, '-');
+            const clientNumber = (clientData.clientNumber || '').replace(/\//g, '-');
+            const matterNumber = (clientData.matterNumber || '').replace(/\//g, '-');
+            const clientName = (clientData.name || '').replace(/\//g, '-');
+            
+            return `${fe}/${clientNumber}/${matterNumber} - ${clientName} - ${fileData.documentType}${fileData.side !== 'Single' ? ' ' + fileData.side : ''}`;
+        }
+
+        // Show uploading state
+        function showUploadingState() {
+            // Disable upload button and show uploading text
+            uploadAllBtn.disabled = true;
+            uploadAllBtn.textContent = 'Uploading...';
+            
+            // Hide uploader section and show loading message
+            idUploaderSection.classList.add('hidden');
+            
+            // Collect files for display
+            const files = collectAllFiles();
+            
+            // Create file list HTML with S3 filenames
+            let fileListHTML = '';
+            files.forEach((fileData, index) => {
+                // Generate S3 filename with invalid characters replaced
+                const fileName = generateFileName(fileData);
+                
+                fileListHTML += `
+                    <div class="file-item" id="file-${index}">
+                        <div><strong>${fileName}</strong></div>
+                        <div class="file-details">
+                            <div class="file-size">${(fileData.file.size / 1024 / 1024).toFixed(2)} MB</div>
+                            <div class="file-status"><span class="status-text">Pending</span></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Show uploading message with file list (no loading spinner)
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'uploading-container';
+            loadingDiv.innerHTML = `
+                <div class="uploading-message">
+                    <h3>Uploading Files</h3>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div id="progressText">0% Complete</div>
+                    <div class="file-list">
+                        ${fileListHTML}
+                    </div>
+                    <div id="uploadStatus" class="upload-status"></div>
+                </div>
+            `;
+            loadingDiv.id = 'uploadingContainer';
+            
+            // Insert after image display container
+            document.querySelector('.image-display-container').appendChild(loadingDiv);
+        }
+
+        // Handle PUT response from parent (links or error)
+        function handlePutResponse(event) {
+            if (event.data.type === 'put-links') {
+                const links = event.data.links;
+                s3Keys = event.data.s3Keys; // Store S3 keys globally
+                uploadedImages = event.data.images; // Store images data with s3Keys
+                uploadFiles(links);
+            } else if (event.data.type === 'put-error') {
+                // Show specific error message and go back to uploader
+                const errorMessage = event.data.message || 'Failed to generate upload links';
+                showError(`There is an issue with the files: ${errorMessage}. Please go back to edit your selected files and try uploading again.`);
+                
+                // Hide uploading state and return to uploader
+                hideUploadingState();
+                
+                setTimeout(() => {
+                    showUploader();
+                }, 2000);
+            }
+        }
+
+        // Upload files to S3 with progress tracking
+        function uploadFiles(links) {
+            const files = collectAllFiles();
+            let completed = 0;
+            let hasErrors = false;
+            const total = files.length;
+            
+            files.forEach((fileData, index) => {
+                const fileItem = document.getElementById(`file-${index}`);
+                const statusText = fileItem ? fileItem.querySelector('.status-text') : null;
+                
+                if (fileItem && statusText) {
+                    fileItem.classList.add('uploading');
+                    statusText.textContent = 'Uploading...';
+                }
+                
+                // Upload to S3 using PUT links
+                uploadToS3(fileData.file, links[index])
+                    .then(() => {
+                        if (fileItem && statusText) {
+                            fileItem.classList.remove('uploading');
+                            fileItem.classList.add('success');
+                            statusText.textContent = 'Success';
+                        }
+                        completed++;
+                        updateUploadProgress(completed, total, hasErrors);
+                        
+                        if (completed === total) {
+                            // All uploads completed successfully
+                            setTimeout(() => {
+                                handleUploadSuccess();
+                            }, 1000);
+                        }
+                    })
+                    .catch((error) => {
+                        if (fileItem && statusText) {
+                            fileItem.classList.remove('uploading');
+                            fileItem.classList.add('error');
+                            statusText.textContent = `Error: ${error.message}`;
+                        }
+                        hasErrors = true;
+                        completed++;
+                        updateUploadProgress(completed, total, hasErrors);
+                        
+                        if (completed === total) {
+                            // All uploads completed with errors
+                            setTimeout(() => {
+                                handleUploadError();
+                            }, 1000);
+                        }
+                    });
+            });
+        }
+
+        // Upload single file to S3 using PUT URL
+        function uploadToS3(file, putUrl) {
+            return new Promise((resolve, reject) => {
+                fetch(putUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        resolve();
+                    } else {
+                        reject(new Error('Upload failed'));
+                    }
+                })
+                .catch(error => reject(error));
+            });
+        }
+
+        // Update upload progress (matching Untitled-1)
+        function updateUploadProgress(completed, total, hasErrors = false) {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const uploadStatus = document.getElementById('uploadStatus');
+            
+            if (progressFill && progressText) {
+                const percentage = Math.round((completed / total) * 100);
+                progressFill.style.width = `${percentage}%`;
+                progressText.textContent = `${percentage}% Complete`;
+            }
+            
+            if (uploadStatus && completed === total) {
+                if (hasErrors) {
+                    uploadStatus.textContent = 'Upload completed with errors!';
+                } else {
+                    uploadStatus.textContent = 'Upload completed successfully!';
+                }
+            }
+        }
+
+        // Handle successful upload
+        function handleUploadSuccess() {
+            hideUploadingState();
+            
+            // Send success message to parent with images data from put-links response
+            window.parent.postMessage({
+                type: 'upload-success',
+                message: 'Images uploaded successfully',
+                images: uploadedImages,
+                s3Keys: s3Keys
+            }, '*');
+            
+            // Return to awaiting data section
+            returnToAwaitingData();
+        }
+
+        // Return to awaiting data section
+        function returnToAwaitingData() {
+            // Hide all sections
+            imageDisplaySection.classList.add('hidden');
+            idUploaderSection.classList.add('hidden');
+            
+            // Show awaiting data section
+            awaitingState.classList.remove('hidden');
+            
+            // Reset all state
+            images = [];
+            allowUploads = false;
+            clientData = {};
+            userEmail = '';
+            uploaderCards = [];
+            s3Keys = null;
+            uploadedImages = null;
+            currentImageIndex = 0;
+            
+            // Clear uploader cards
+            if (uploaderCardsContainer) {
+                uploaderCardsContainer.innerHTML = '';
+            }
+            
+            // Reset upload button
+            if (uploadAllBtn) {
+                uploadAllBtn.disabled = true;
+                uploadAllBtn.textContent = 'Upload All Images';
+            }
+            
+            // Hide dynamic hint
+            hideDynamicHint();
+            
+            console.log('Returned to awaiting data section');
+        }
+
+        // Handle upload error
+        function handleUploadError() {
+            hideUploadingState();
+            
+            // Show error message and return to uploader
+            showError('Upload failed. Please try again.');
+            
+            setTimeout(() => {
+                showUploader();
+            }, 2000);
+        }
+
+        // Hide uploading state
+        function hideUploadingState() {
+            const uploadingContainer = document.getElementById('uploadingContainer');
+            if (uploadingContainer) {
+                uploadingContainer.remove();
+            }
+            
+            // Re-enable upload button
+            uploadAllBtn.disabled = false;
+            uploadAllBtn.textContent = 'Upload All Images';
+        }
+
+        // Show success message
+        function showSuccessMessage() {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.innerHTML = `
+                <div class="success-content">
+                    <h3>Upload Complete!</h3>
+                    <p>Your images have been uploaded successfully.</p>
+                </div>
+            `;
+            successDiv.id = 'successContainer';
+            
+            document.querySelector('.image-display-container').appendChild(successDiv);
+            
+            // Hide success message and return to image display after 2 seconds
+            setTimeout(() => {
+                successDiv.remove();
+                // Trigger a refresh of the image display
+                window.parent.postMessage({
+                    type: 'refresh-images'
+                }, '*');
+            }, 2000);
+        }
+
+        function triggerFileInput(card) {
+            const fileInput = card.querySelector('input[type="file"]');
+            fileInput.click();
+        }
+
+        function handleFileSelect(input) {
+            const files = Array.from(input.files);
+            const card = input.closest('.uploader-card');
+            
+            // Determine side based on uploader position
+            let side = null;
+            const photoUploadHalf = input.closest('.photo-upload-half');
+            if (photoUploadHalf) {
+                const sideBySideContainer = photoUploadHalf.closest('.photo-upload-side-by-side');
+                if (sideBySideContainer) {
+                    const firstHalf = sideBySideContainer.querySelector('.photo-upload-half:first-child');
+                    const lastHalf = sideBySideContainer.querySelector('.photo-upload-half:last-child');
+                    
+                    if (photoUploadHalf === firstHalf) {
+                    side = 'Front';
+                    } else if (photoUploadHalf === lastHalf) {
+                    side = 'Back';
+                    }
+                }
+            }
+            
+            // Check if this is a photo upload (front/back)
+            const photoUpload = input.closest('.photo-upload');
+            
+            addFilesToCard(card, files, side);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e, card) {
+            e.preventDefault();
+            card.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files);
+            
+            // Determine side based on uploader position
+            let side = null;
+            const photoUploadHalf = card.closest('.photo-upload-half');
+            if (photoUploadHalf) {
+                const sideBySideContainer = photoUploadHalf.closest('.photo-upload-side-by-side');
+                if (sideBySideContainer) {
+                    const firstHalf = sideBySideContainer.querySelector('.photo-upload-half:first-child');
+                    const lastHalf = sideBySideContainer.querySelector('.photo-upload-half:last-child');
+                    
+                    if (photoUploadHalf === firstHalf) {
+                        side = 'Front';
+                    } else if (photoUploadHalf === lastHalf) {
+                        side = 'Back';
+                    }
+                }
+            }
+            
+            addFilesToCard(card, files, side);
+        }
+
+        function addFilesToCard(card, files, side = null) {
+            const documentType = card.querySelector('.document-dropdown').value;
+            
+            if (!documentType) {
+                showError('Please select a document type first.');
+                return;
+            }
+            
+            // Determine uploader type from card header
+            const cardHeader = card.querySelector('.card-header label').textContent;
+            const uploaderType = cardHeader.includes('Photo ID') ? 'Photo ID' : 'Address ID';
+            
+            files.forEach(file => {
+                if (!file.type.startsWith('image/')) {
+                    showError('Only image files are allowed.');
+                    return;
+                }
+                
+                if (file.size > 15 * 1024 * 1024) {
+                    showError('File size must be less than 15MB.');
+                    return;
+                }
+                
+                // Find the correct photo upload area
+                let photoUpload;
+                if (side === 'Front') {
+                    photoUpload = card.querySelector('.photo-upload-half:first-child');
+                } else if (side === 'Back') {
+                    photoUpload = card.querySelector('.photo-upload-half:last-child');
+                } else {
+                    // For single uploaders (address ID or single photo ID)
+                    photoUpload = card.querySelector('.photo-upload:not(.photo-upload-half)');
+                }
+                
+                if (photoUpload) {
+                    displayFilePreview(photoUpload, file, documentType, uploaderType, side);
+                } else {
+                    console.error('Photo upload element not found for document type:', documentType, 'side:', side);
+                }
+            });
+            
+            updateUploadButton();
+        }
+
+        function displayFilePreview(photoUpload, file, documentType, uploaderType, side) {
+            // Look for both slimline and regular upload areas
+            const uploadArea = photoUpload.querySelector('.upload-area') || photoUpload.querySelector('.upload-area-slimline');
+            
+            // Check if elements exist before accessing properties
+            if (!uploadArea) {
+                console.error('Upload area element not found');
+                console.error('Looking for elements in:', photoUpload);
+                console.error('Found upload area:', uploadArea);
+                return;
+            }
+            
+            // Update upload area to show file selected (following Untitled-1 pattern)
+            // Truncate filename if too long to fit in 250px container
+            const maxLength = 30; // Adjust based on font size and container width
+            const displayName = file.name.length > maxLength ? 
+                file.name.substring(0, maxLength) + '...' : 
+                file.name;
+            
+            uploadArea.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> <span style="font-size: 0.8rem; line-height: 1.2;">${displayName}</span>`;
+            
+            // Add click handler to remove file
+            uploadArea.onclick = () => removeFilePreview(uploadArea);
+            
+            // Store file data for later use
+            uploadArea.fileData = {
+                    file: file,
+                    documentType: documentType,
+                    uploaderType: uploaderType,
+                    side: side || 'Single'
+                };
+        }
+
+        function removeFilePreview(uploadArea) {
+            // Reset upload area to original state (following Untitled-1 pattern)
+            const isSlimline = uploadArea.classList.contains('upload-area-slimline');
+            
+            if (isSlimline) {
+                // Slimline uploader (single file)
+                uploadArea.innerHTML = `
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17,8 12,3 7,8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="upload-text">Select image</div>
+                    <input type="file" accept="image/*" onchange="handleFileSelect(this)" style="display: none;">
+                `;
+                // Restore original click handlers
+                uploadArea.onclick = () => triggerFileInput(uploadArea);
+                uploadArea.ondrop = (e) => handleDrop(e, uploadArea);
+                uploadArea.ondragover = (e) => handleDragOver(e);
+                uploadArea.ondragleave = (e) => handleDragLeave(e);
+            } else {
+                // Regular uploader (dual file)
+                uploadArea.innerHTML = `
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17,8 12,3 7,8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="upload-text">Select image</div>
+                    <input type="file" accept="image/*" onchange="handleFileSelect(this)" style="display: none;">
+                `;
+                // Restore original click handlers
+                uploadArea.onclick = () => triggerFileInput(uploadArea);
+                uploadArea.ondrop = (e) => handleDrop(e, uploadArea);
+                uploadArea.ondragover = (e) => handleDragOver(e);
+                uploadArea.ondragleave = (e) => handleDragLeave(e);
+            }
+            
+            // Clear file data
+            uploadArea.fileData = null;
+            
+            updateUploadButton();
+        }
+
+        function createFileItem(file, documentType, uploaderType, side = null) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            
+            // Determine side display
+            let sideDisplay = '';
+            if (side) {
+                sideDisplay = `<span class="side-tag">${side.toUpperCase()}</span>`;
+            }
+            
+            fileItem.innerHTML = `
+                <div class="file-info">
+                    <div class="file-icon">IMG</div>
+                    <div class="file-details">
+                        <div class="file-name">${file.name} ${sideDisplay}</div>
+                        <div class="file-size">${formatFileSize(file.size)}</div>
+                    </div>
+                </div>
+                <button class="remove-file-btn" onclick="removeFile(this)">Remove</button>
+            `;
+            
+            // Store file data
+            fileItem.fileData = {
+                file: file,
+                documentType: documentType,
+                uploaderType: uploaderType,
+                side: side || 'Single'
+            };
+            
+            return fileItem;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function removeFile(button) {
+            const fileItem = button.closest('.file-item');
+            fileItem.remove();
+            updateUploadButton();
+        }
+
+        function removeCard(button) {
+            const card = button.closest('.uploader-card');
+            const cardIndex = uploaderCards.indexOf(card);
+            if (cardIndex > -1) {
+                uploaderCards.splice(cardIndex, 1);
+            }
+            card.remove();
+            
+            // Update dynamic hint after removing card
+            updateDynamicHintAfterRemoval();
+            
+            // Update upload button state
+            updateUploadButton();
+        }
+
+        function updateDynamicHintAfterRemoval() {
+            // Check if there are any photo ID uploaders left
+            const photoCards = document.querySelectorAll('.uploader-card');
+            const hasPhotoID = Array.from(photoCards).some(card => {
+                const dropdown = card.querySelector('.document-dropdown');
+                return dropdown && dropdown.value && ['Passport', 'Driving Licence', 'Passport Card', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'].includes(dropdown.value);
+            });
+            
+            if (!hasPhotoID) {
+                hideDynamicHint();
+            }
+        }
+
+        function updateUploadButton() {
+            // Check if there are any visible uploader cards
+            const visibleCards = Array.from(document.querySelectorAll('.uploader-card')).filter(card => {
+                const wrapper = card.querySelector('.photo-upload-wrapper');
+                return wrapper && !wrapper.classList.contains('hidden');
+            });
+            
+            uploadAllBtn.disabled = visibleCards.length === 0;
+        }
+
+        function resetUploader() {
+            uploaderCardsContainer.innerHTML = '';
+            uploaderCards = [];
+            uploadAllBtn.disabled = true;
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorPopup.style.display = 'flex';
+        }
+
+        function hideError() {
+            errorPopup.style.display = 'none';
+        }
+
+        function collectAllFiles() {
+            const allFiles = [];
+            const uploadAreas = document.querySelectorAll('.upload-area, .upload-area-slimline');
+            
+            uploadAreas.forEach(area => {
+                if (area.fileData) {
+                    allFiles.push(area.fileData);
+                }
+            });
+            
+            return allFiles;
+        }
+
+        function uploadAllFiles() {
+            // First validate all visible upload cards have files
+            const validationResult = validateAllUploadCards();
+            if (!validationResult.valid) {
+                showError(validationResult.message);
+                return;
+            }
+            
+            const files = collectAllFiles();
+            if (files.length === 0) {
+                showError('No files to upload.');
+                return;
+            }
+            
+            // Show uploading state
+            showUploadingState();
+            
+            // Compile image data following Untitled-1 pattern
+            const imagesData = files.map(fileData => {
+                const file = fileData.file;
+                const fileName = generateFileName(fileData);
+                
+                return {
+                type: fileData.uploaderType === 'Photo ID' ? 'PhotoID' : 'AddressID',
+                    document: fileData.documentType,
+                side: fileData.side,
+                    uploader: userEmail, // Use userEmail as the uploader
+                data: {
+                        type: file.type,
+                        size: file.size,
+                        name: fileName,
+                        lastModified: file.lastModified
+                    },
+                    file: file // Keep reference to actual file
+                };
+            });
+            
+            // Send image data to parent for PUT link generation
+            window.parent.postMessage({
+                type: 'image-data',
+                images: imagesData
+            }, '*');
+            
+            // Listen for PUT links or PUT error response (remove existing listener first)
+            window.removeEventListener('message', handlePutResponse);
+            window.addEventListener('message', handlePutResponse);
+        }
+
+        function validateAllUploadCards() {
+            // Get all visible upload cards
+            const visibleCards = Array.from(document.querySelectorAll('.uploader-card')).filter(card => {
+                const wrapper = card.querySelector('.photo-upload-wrapper');
+                return wrapper && !wrapper.classList.contains('hidden');
+            });
+            
+            if (visibleCards.length === 0) {
+                return { valid: false, message: 'No upload cards are visible.' };
+            }
+            
+            // Check each visible card has files
+            for (const card of visibleCards) {
+                const dropdown = card.querySelector('.document-dropdown');
+                const documentType = dropdown.value;
+                const addressIDTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Driving Licence', 'Voter Registration', 'Tenancy Agreement', 'Other'];
+                const isAddressID = addressIDTypes.includes(documentType);
+                const needsSingleUpload = ['Passport', 'Firearms Certificate'].includes(documentType);
+                
+                if (isAddressID || needsSingleUpload) {
+                    // Check single uploader
+                    const singleUploader = card.querySelector('.photo-upload:not(.photo-upload-half)');
+                    const uploadArea = singleUploader ? (singleUploader.querySelector('.upload-area') || singleUploader.querySelector('.upload-area-slimline')) : null;
+                    
+                    if (!uploadArea || !uploadArea.fileData) {
+                        return { valid: false, message: `Please select an image for ${documentType}.` };
+                    }
+                    
+                    // Validate file type
+                    if (!uploadArea.fileData.file.type.startsWith('image/')) {
+                        return { valid: false, message: `File for ${documentType} must be an image.` };
+                    }
+                } else {
+                    // Check dual uploaders (front and back)
+                    const frontUploader = card.querySelector('.photo-upload-half:first-child');
+                    const backUploader = card.querySelector('.photo-upload-half:last-child');
+                    
+                    const frontUploadArea = frontUploader ? frontUploader.querySelector('.upload-area') : null;
+                    const backUploadArea = backUploader ? backUploader.querySelector('.upload-area') : null;
+                    
+                    if (!frontUploadArea || !frontUploadArea.fileData) {
+                        return { valid: false, message: `Please select a front image for ${documentType}.` };
+                    }
+                    
+                    if (!backUploadArea || !backUploadArea.fileData) {
+                        return { valid: false, message: `Please select a back image for ${documentType}.` };
+                    }
+                    
+                    // Validate file types
+                    if (!frontUploadArea.fileData.file.type.startsWith('image/')) {
+                        return { valid: false, message: `Front image for ${documentType} must be an image file.` };
+                    }
+                    
+                    if (!backUploadArea.fileData.file.type.startsWith('image/')) {
+                        return { valid: false, message: `Back image for ${documentType} must be an image file.` };
+                    }
+                }
+            }
+            
+            return { valid: true, message: '' };
+        }
+
+        // Event listeners
+        prevBtn.addEventListener('click', () => {
+            prevImage();
+            updateCounter();
+        });
+
+        nextBtn.addEventListener('click', () => {
+            nextImage();
+            updateCounter();
+        });
+
+        mockBtn.addEventListener('click', () => {
+            loadMockData();
+        });
+
+        addMoreBtn.addEventListener('click', () => {
+            showUploader();
+        });
+
+        uploadAllBtn.addEventListener('click', () => {
+            uploadAllFiles();
+        });
+
+        cancelHeaderBtn.addEventListener('click', () => {
+            hideUploader();
+        });
+
+        errorPopupClose.addEventListener('click', () => {
+            hideError();
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                prevImage();
+                updateCounter();
+            } else if (e.key === 'ArrowRight') {
+                nextImage();
+                updateCounter();
+            }
+        });
+
+        // Reset uploaders when new image data is received
+        function resetUploaders() {
+            // Clear all uploader cards
+            uploaderCardsContainer.innerHTML = '';
+            uploaderCards = [];
+            
+            // Hide uploader section
+            idUploaderSection.classList.add('hidden');
+            
+            // Reset upload button
+            uploadAllBtn.disabled = true;
+            uploadAllBtn.textContent = 'Upload All Images';
+            
+            // Hide any uploading state
+            hideUploadingState();
+            
+            // Clear dynamic hint
+            hideDynamicHint();
+            
+            // Remove any PUT response listeners
+            window.removeEventListener('message', handlePutResponse);
+            
+            // Reset upload-related data
+            s3Keys = null;
+            uploadedImages = null;
+            
+            console.log('Uploaders reset due to new image data');
+        }
+
+        // Listen for messages from parent
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'image-display') {
+                console.log('Received image display data:', event.data);
+                
+                // If we're currently in uploader mode, reset everything first
+                if (!idUploaderSection.classList.contains('hidden')) {
+                    resetUploaders();
+                }
+                
+                // Display the new images
+                displayImages(event.data.data, event.data.allowUploads, event.data.clientData, event.data.userEmail);
+            }
+        });
+
+        // Initialize
+        console.log('Image display iframe loaded and ready');
+    </script>
+</body>
+</html>

@@ -1,0 +1,2486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Client Details Form</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
+  <!-- CSS: Client onboarding form with 5 sections, file uploads, validation -->
+  <style>
+    :root { --gap: 20px; --primary:#003B5C; --error:#e02424; }
+    body { font-family: 'Quicksand', sans-serif; background:#fff; color:#111; padding:0; margin:0; line-height:1.5; }
+    .card { width: 940px; margin: 20px; background:#fff; border:1px solid #e5e5e5; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.05); padding:20px; text-align:left; box-sizing:border-box; }
+    .card > * { padding: 10px; }
+    .card > .button-row { padding: 0; }
+    .card > * > * { margin-bottom: 10px; }
+    .card > * > *:last-child { margin-bottom: 0; }
+
+    h2 { font-size:1.4rem; font-weight:700; margin:0 0 3px 0; }
+    h3 { font-size:0.95rem; font-weight:600; margin:0 0 4px 0; color:#444; }
+
+    label { display:block; margin-bottom:4px; font-weight:600; font-size:0.9rem; }
+    label.required::after { content:" *"; color:var(--error); margin-left:4px; }
+
+    input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.9rem; transition:border .2s, box-shadow .2s; box-sizing:border-box; }
+    input:focus, select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 2px rgba(0,59,92,.2); }
+
+    .row { margin-bottom:8px; }
+    .row-grid-20-80 { display:grid; grid-template-columns:20% 1fr; gap:var(--gap); }
+    .row-grid-50-50 { display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); }
+    .row-grid-40-60 { display:grid; grid-template-columns:40% 1fr; gap:var(--gap); }
+
+    /* DOB: 8 individual digit inputs for DD-MM-YYYY format */
+    .birthdate-inputs { display:flex; gap:6px; margin-top:6px; align-items:center; }
+    .birthdate-inputs input { width:calc(2.5ch + 8px); text-align:center; padding:8px; font-size:0.9rem; }
+    .birthdate-inputs input:nth-of-type(2), .birthdate-inputs input:nth-of-type(4) { margin-right:var(--gap); }
+
+    /* Toggle: Custom switch for Yes/No questions */
+    .toggle { position:relative; display:inline-block; width:50px; height:24px; margin-top:6px; }
+    .toggle input { display:none; }
+    .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#e02424; transition:.4s; border-radius:24px; }
+    .slider:before { position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background:#fff; transition:.4s; border-radius:50%; }
+    input:checked + .slider { background:#10a37f; }
+    input:checked + .slider:before { transform:translateX(26px); }
+
+    /* Buttons */
+    .button-row { display:flex; justify-content:space-between; margin-top:var(--gap); gap:var(--gap); }
+    .btn-primary { background:var(--primary); color:#fff; border:none; font-weight:700; border-radius:8px; padding:10px 20px; font-size:0.9rem; cursor:pointer; }
+    .btn-primary:hover { background:#002b43; }
+    .btn-primary:disabled { 
+      background:#ccc; 
+      color:#666; 
+      border:none; 
+      cursor:not-allowed; 
+    }
+    .btn-secondary { background:none; color:var(--primary); border:2px solid var(--primary); font-weight:700; border-radius:8px; padding:10px 20px; font-size:0.9rem; cursor:pointer; }
+    .btn-secondary:disabled { 
+      background:none; 
+      color:#666; 
+      border:2px solid #ccc; 
+      cursor:not-allowed; 
+    }
+
+    /* Error popup: Modal for validation errors */
+    .error-popup { 
+      position:fixed; 
+      top:50%; 
+      left:50%; 
+      transform:translate(-50%, -50%);
+      background:var(--error); 
+      color:#fff; 
+      padding:20px; 
+      border-radius:12px; 
+      display:flex; 
+      flex-direction:column;
+      gap:12px; 
+      font-weight:600; 
+      max-width:420px; 
+      min-width:300px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.3);
+    }
+    .error-popup-header {
+      font-size:1rem;
+      font-weight:700;
+      margin:0;
+    }
+    .error-popup-content {
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .error-popup button { 
+      background:none; 
+      border:none; 
+      color:#fff; 
+      font-size:1.2rem; 
+      cursor:pointer; 
+      margin-left:auto;
+    }
+    .hidden { display:none; }
+
+    /* Section 2: Photo ID upload styles */
+    .photo-id-question { 
+      margin: 0 auto var(--gap) auto; 
+      font-weight:600; 
+      text-align:center; 
+      background:rgba(139, 69, 19, 0.1); 
+      padding:10px; 
+      border-radius:10px; 
+      max-width:400px;
+    }
+    .photo-id-options { 
+      display:flex; 
+      gap:12px; 
+      justify-content:center; 
+      margin-bottom:var(--gap);
+    }
+    .photo-id-card { 
+      border:1px solid #aaa; 
+      border-radius:10px; 
+      padding:10px; 
+      margin-bottom:var(--gap); 
+      position:relative;
+    }
+    .card-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:var(--gap);
+    }
+    .remove-btn {
+      padding:6px 10px;
+      font-size:0.8rem;
+      margin:0;
+    }
+    .add-btn {
+      padding:6px 10px;
+      font-size:0.8rem;
+      margin:0;
+      align-self:flex-start;
+    }
+    .photo-id-card select { 
+      margin-bottom:var(--gap); 
+      padding-right:30px;
+    }
+    .photo-upload-wrapper { display:flex; flex-direction:column; gap:12px; }
+    .upload-block { display:flex; flex-direction:column; gap:6px; }
+    .upload-block.side-by-side { 
+      display:flex; 
+      flex-direction:row; 
+      gap:12px; 
+      width:100%;
+    }
+    .upload-block.side-by-side .upload-block {
+      flex:1;
+      width:100%;
+    }
+    .upload-tag { 
+      font-size:.8rem; 
+      font-weight:700; 
+      color:#666; 
+      background:rgba(139, 69, 19, 0.1); 
+      padding:4px 8px; 
+      border-radius:4px; 
+      text-align:center;
+    }
+    .photo-upload { 
+      border:2px dashed #4A90E2; 
+      padding:20px; 
+      border-radius:8px; 
+      text-align:center; 
+      cursor:pointer; 
+      font-weight:700; 
+      color:#444; 
+      background:rgba(74, 144, 226, 0.1); 
+      flex:1;
+      font-size:0.9rem;
+    }
+    .photo-upload:hover { background:rgba(74, 144, 226, 0.2); }
+    .photo-upload svg { width:22px; height:22px; vertical-align:middle; margin-right:6px; }
+    .photo-hint { 
+      font-size:.85rem; 
+      color:#666; 
+      margin:var(--gap) 0; 
+      background:#f5f5f5; 
+      padding:8px; 
+      border-radius:8px; 
+      text-align:center;
+    }
+    .btn-secondary.selected { 
+      background:var(--primary); 
+      color:#fff; 
+    }
+    .likeness-toggle { 
+      margin:var(--gap) 0; 
+      text-align:left; 
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .likeness-toggle .toggle .slider { background:#10a37f; }
+    .likeness-toggle .toggle input:checked + .slider { background:#e02424; }
+    
+    /* Address ID grid layout */
+    .address-id-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap);
+      margin-bottom: var(--gap);
+    }
+    .address-id-card {
+      width: 100%;
+    }
+    .address-id-select {
+      width: 100%;
+      margin-bottom: var(--gap);
+    }
+    .address-id-row .photo-upload-wrapper {
+      width: 100%;
+    }
+    
+    /* Responsive design for mobile */
+    @media (max-width: 768px) {
+      .address-id-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Section 5: Upload progress indicators */
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #f0f0f0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4A90E2, #10a37f);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .file-list {
+      margin: 20px 0;
+    }
+    .file-item {
+      padding: 10px;
+      margin: 5px 0;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border-left: 4px solid #4A90E2;
+    }
+    .file-item.uploading {
+      border-left-color: #ffa500;
+    }
+    .file-item.success {
+      border-left-color: #10a37f;
+    }
+    .file-item.error {
+      border-left-color: #e02424;
+    }
+    .upload-status {
+      text-align: center;
+      font-weight: 600;
+      margin: 20px 0;
+    }
+    
+    
+    /* Tooltip styling */
+    .toggle[title] {
+      position: relative;
+      cursor: help;
+    }
+    .toggle[title]:hover::after {
+      content: attr(title);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      margin-bottom: 5px;
+    }
+    .toggle[title]:hover::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: #333;
+      z-index: 1000;
+    }
+    
+    /* Worktype and Relation dropdown styling */
+    .worktype-input, .relation-input {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      border-bottom: none;
+    }
+    .worktype-dropdown, .relation-dropdown {
+      width: 100%;
+      padding: 8px 25px 8px 8px;
+      border: 1px solid #ddd;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      font-size: 0.8rem;
+      background: #f9f9f9;
+      color: #555;
+      margin-top: 0;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      background-size: 14px;
+    }
+    .worktype-dropdown:focus, .relation-dropdown:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(0,59,92,.2);
+      background: #fff;
+    }
+    .worktype-input:focus, .relation-input:focus {
+      border-bottom-color: var(--primary);
+    }
+    .worktype-input:focus + .worktype-dropdown, .relation-input:focus + .relation-dropdown {
+      border-top-color: var(--primary);
+    }
+    
+    /* Header styling */
+    #headerInfo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 6px 0;
+    }
+    #headerInfo.hidden {
+      display: none !important;
+    }
+    .header-badge {
+      background: var(--primary);
+      color: #fff;
+      padding: 0;
+      border-radius: 16px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      text-align: left;
+      margin: 0;
+    }
+    .header-badge span {
+      padding: 6px 12px;
+      display: block;
+    }
+    #clientMatterNumber {
+      padding: 6px 12px;
+    }
+    .header-badge.client-number {
+      background: #f0f0f0;
+      color: var(--primary);
+      padding: 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-radius: 20px;
+    }
+    .header-name {
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+    }
+    
+    /* Custom scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      transition: background 0.2s ease;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    ::-webkit-scrollbar-corner {
+      background: #f1f1f1;
+    }
+    
+    /* Firefox scrollbar styling */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #c1c1c1 #f1f1f1;
+    }
+    
+    /* Existing Images Container Styling */
+    .images-repeater {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 10px 0 20px 0;
+    }
+    
+    .image-card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: box-shadow 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .image-card:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .image-title-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .image-card h4 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 0;
+    }
+    
+    .image-side-tag {
+      display: inline-block;
+      background: #d4a574;
+      color: white;
+      padding: 3px 6px;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    
+    .image-meta {
+      text-align: right;
+      font-size: 0.8rem;
+      color: #666;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    
+    .image-meta strong {
+      color: #333;
+    }
+    
+    #existingPhotoIdContainer h3,
+    #existingAddressIdContainer h3 {
+      font-size: 1rem;
+      margin: 15px 0 8px 0;
+      color: var(--primary);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="cardContainer">
+    <h2 id="cardTitle" class="awaiting" style="color:#888;">Awaiting data</h2>
+    <button id="mockBtn" class="btn-primary">Load Mock Data</button>
+    
+    <!-- Header: Client info display (title, client number, name) -->
+    <div id="headerInfo" class="hidden">
+      <div class="header-badge client-number" id="clientNumberBadge">
+        <div class="header-badge" id="titleBadge"><span></span></div>
+        <span id="clientMatterNumber"></span>
+      </div>
+      <div class="header-name" id="clientName"></div>
+    </div>
+
+    <!-- Section 1: Client Details - Basic info, work type, DOB, name changes -->
+    <form id="clientForm" class="hidden">
+      <div class="row row-grid-50-50">
+        <div>
+          <label for="worktype" class="required">Work Type</label>
+          <input type="text" id="worktype" name="worktype" required class="worktype-input" />
+          <select id="worktypeDropdown" class="worktype-dropdown">
+            <option value="">or choose from list...</option>
+            <option value="Sale of">Sale of</option>
+            <option value="Purchase of">Purchase of</option>
+            <option value="Transfer of">Transfer of</option>
+            <option value="1st Registration">1st Registration</option>
+            <option value="Equity Release">Equity Release</option>
+            <option value="Auction">Auction</option>
+            <option value="Wills">Wills</option>
+            <option value="Lasting Power of Attorney">Lasting Power of Attorney</option>
+            <option value="Change of Name Deed">Change of Name Deed</option>
+            <option value="Estates">Estates</option>
+            <option value="Deeds & Declarations">Deeds & Declarations</option>
+            <option value="Assent">Assent</option>
+            <option value="Adverse Possesion">Adverse Possesion</option>
+          </select>
+        </div>
+        <div>
+          <label for="relation" class="required">Relation</label>
+          <input type="text" id="relation" name="relation" required class="relation-input" />
+          <select id="relationDropdown" class="relation-dropdown">
+            <option value="">or choose from list...</option>
+            <option value="Our Client">Our Client</option>
+            <option value="Gifter">Gifter</option>
+            <option value="Executor">Executor</option>
+            <option value="Beneficiary">Beneficiary</option>
+            <option value="Occupier">Occupier</option>
+            <option value="Leaseholder">Leaseholder</option>
+            <option value="Freeholder">Freeholder</option>
+            <option value="Tenant">Tenant</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <label for="matterDescription">Matter Description</label>
+        <input type="text" id="matterDescription" name="matterDescription" />
+      </div>
+
+      <div class="row row-grid-20-80">
+        <div>
+          <label for="titlePrefix" class="required">Title</label>
+          <select id="titlePrefix" name="titlePrefix" required>
+            <option value="">Select...</option>
+            <option value="Mr">Mr</option>
+            <option value="Mrs">Mrs</option>
+            <option value="Ms">Ms</option>
+            <option value="Miss">Miss</option>
+            <option value="Master">Master</option>
+            <option value="Dr">Dr</option>
+            <option value="Lord">Lord</option>
+            <option value="Rev">Rev</option>
+            <option value="Mx">Mx</option>
+            <option value="Lad">Lad</option>
+            <option value="Dame">Dame</option>
+          </select>
+        </div>
+        <div>
+          <label for="firstName" class="required">First Name</label>
+          <input type="text" id="firstName" name="firstName" required />
+        </div>
+      </div>
+
+      <div class="row row-grid-50-50">
+        <div>
+          <label for="middleName">Middle Name</label>
+          <input type="text" id="middleName" name="middleName" />
+        </div>
+        <div>
+          <label for="lastName" class="required">Surname</label>
+          <input type="text" id="lastName" name="lastName" required />
+        </div>
+      </div>
+
+      <div class="row">
+        <label>Recent Name Change</label>
+        <label class="toggle" title="If the client has changed their name in the last three years please select the toggle">
+          <input type="checkbox" id="recentNameChange" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div id="nameChangeFields" class="hidden row">
+        <label for="previousName" class="required" id="prevNameLabel" style="display:none;">Previous Name</label>
+        <input type="text" id="previousName" name="previousName" />
+        <label for="reasonForNameChange" class="required" id="reasonLabel" style="display:none;">Reason for Name Change</label>
+        <input type="text" id="reasonForNameChange" name="reasonForNameChange" />
+      </div>
+
+      <div class="row row-grid-50-50">
+        <div>
+          <label class="required">Date of Birth</label>
+          <div class="birthdate-inputs">
+            <input type="text" maxlength="1" id="dob1" required />
+            <input type="text" maxlength="1" id="dob2" required />
+            <input type="text" maxlength="1" id="dob3" required />
+            <input type="text" maxlength="1" id="dob4" required />
+            <input type="text" maxlength="1" id="dob5" required />
+            <input type="text" maxlength="1" id="dob6" required />
+            <input type="text" maxlength="1" id="dob7" required />
+            <input type="text" maxlength="1" id="dob8" required />
+          </div>
+        </div>
+        <div></div>
+      </div>
+
+      <div class="button-row">
+        <div></div>
+        <button type="submit" class="btn-primary" id="nextBtn">Next</button>
+      </div>
+    </form>
+
+    <!-- Section 2: Photo ID - Upload passport/driving license with front/back -->
+    <div id="section2" class="hidden">
+      <div id="photoIdPrompt" class="photo-id-question"></div>
+      
+      <!-- Existing Photo ID Images Container -->
+      <div id="existingPhotoIdContainer" class="hidden">
+        <div id="photoIdImagesList" class="images-repeater">
+        </div>
+      </div>
+      
+      <div class="photo-id-options" id="photoIdOptions">
+        <button type="button" class="btn-secondary" id="photoYesBtn">Yes</button>
+        <button type="button" class="btn-secondary" id="photoNoBtn">No</button>
+      </div>
+
+      <div id="photoIdCards" class="hidden">
+        <div class="likeness-toggle">
+          <label>Likeness Not Confirmed</label>
+          <label class="toggle" title="Green - Likeness Confirmed | Red - Likeness NOT Confirmed">
+            <input type="checkbox" id="likenessNotConfirmed" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="photo-id-card" id="photoIdCard1">
+          <div class="card-header">
+            <label class="required">Photo ID 1</label>
+            <button type="button" class="btn-secondary remove-btn" id="removeFirstIdBtn" disabled>Remove</button>
+          </div>
+          <select id="photoIdType1">
+            <option value="">Select type...</option>
+            <option value="Passport">Passport</option>
+            <option value="Driving Licence">Driving Licence</option>
+            <option value="Passport Card">Passport Card</option>
+            <option value="Entry Visa">Entry Visa</option>
+            <option value="PASS card">PASS card</option>
+            <option value="Blue badge">Blue badge</option>
+            <option value="Firearms Certificate">Firearms Certificate</option>
+            <option value="Other Photo ID Card">Other Photo ID Card</option>
+          </select>
+          <div class="photo-upload-wrapper" id="photoUploads1"></div>
+        </div>
+
+        <div class="photo-id-card hidden" id="photoIdCard2">
+          <div class="card-header">
+            <label class="required">Photo ID 2</label>
+            <button type="button" class="btn-secondary remove-btn" id="removeSecondIdBtn" disabled>Remove</button>
+          </div>
+          <select id="photoIdType2">
+            <option value="">Select type...</option>
+            <option value="Passport">Passport</option>
+            <option value="Driving Licence">Driving Licence</option>
+            <option value="Passport Card">Passport Card</option>
+            <option value="Entry Visa">Entry Visa</option>
+            <option value="PASS card">PASS card</option>
+            <option value="Blue badge">Blue badge</option>
+            <option value="Firearms Certificate">Firearms Certificate</option>
+            <option value="Other Photo ID Card">Other Photo ID Card</option>
+          </select>
+          <div class="photo-upload-wrapper" id="photoUploads2"></div>
+        </div>
+
+        <p class="photo-hint" id="photoHint"></p>
+
+        <button type="button" class="btn-secondary add-btn" id="addSecondIdBtn">Add Second Photo ID</button>
+      </div>
+
+      <div class="button-row">
+        <button type="button" class="btn-secondary" id="backToSection1">Back</button>
+        <button type="button" class="btn-primary" id="nextFromSection2">Next</button>
+      </div>
+    </div>
+
+    <!-- Section 3: Address History - Current and previous addresses -->
+    <div id="section3" class="hidden">
+      <div class="row">
+        <label for="currentAddress" class="required">Current Address</label>
+        <input type="text" id="currentAddress" name="currentAddress" required />
+      </div>
+
+      <div class="row">
+        <label>Recent Move</label>
+        <label class="toggle" title="If the client has moved home in the past 1 year please enter their previous address">
+          <input type="checkbox" id="recentMove" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div id="previousAddressFields" class="hidden">
+        <div class="row">
+          <label for="previousAddress" class="required">Previous Address</label>
+          <input type="text" id="previousAddress" name="previousAddress" />
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button type="button" class="btn-secondary" id="backToSection2">Back</button>
+        <button type="button" class="btn-primary" id="nextToSection4">Next</button>
+      </div>
+    </div>
+
+    <!-- Section 4: Address ID - Upload utility bills, bank statements (up to 10) -->
+    <div id="section4" class="hidden">
+      <div id="addressIdPrompt" class="photo-id-question"></div>
+      
+      <!-- Existing Address ID Images Container -->
+      <div id="existingAddressIdContainer" class="hidden">
+        <div id="addressIdImagesList" class="images-repeater">
+        </div>
+      </div>
+      
+      <div class="photo-id-options" id="addressIdOptions">
+        <button type="button" class="btn-secondary" id="addressIdYesBtn">Yes</button>
+        <button type="button" class="btn-secondary" id="addressIdNoBtn">No</button>
+      </div>
+
+      <div id="addressIdCards" class="hidden">
+        <div class="address-id-grid" id="addressIdGrid">
+          <div class="photo-id-card" id="addressIdCard1">
+            <div class="card-header">
+              <label class="required">Address ID 1</label>
+              <button type="button" class="btn-secondary remove-btn" id="removeFirstAddressIdBtn" disabled>Remove</button>
+            </div>
+            <select id="addressIdType1" class="address-id-select">
+              <option value="">Select type...</option>
+              <option value="Bank Statement">Bank Statement</option>
+              <option value="Utility Bill">Utility Bill</option>
+              <option value="GOV Letter">GOV Letter</option>
+              <option value="Official Letter">Official Letter</option>
+              <option value="NHS Letter">NHS Letter</option>
+              <option value="Home Insurance">Home Insurance</option>
+              <option value="Council Tax Bill">Council Tax Bill</option>
+              <option value="Driving Licence">Driving Licence</option>
+              <option value="Voter Registration">Voter Registration</option>
+              <option value="Tenancy Agreement">Tenancy Agreement</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="photo-upload-wrapper" id="addressIdUploads1"></div>
+          </div>
+
+          <div class="photo-id-card hidden" id="addressIdCard2">
+            <div class="card-header">
+              <label class="required">Address ID 2</label>
+              <button type="button" class="btn-secondary remove-btn" id="removeSecondAddressIdBtn" disabled>Remove</button>
+            </div>
+            <select id="addressIdType2" class="address-id-select">
+              <option value="">Select type...</option>
+              <option value="Bank Statement">Bank Statement</option>
+              <option value="Utility Bill">Utility Bill</option>
+              <option value="GOV Letter">GOV Letter</option>
+              <option value="Official Letter">Official Letter</option>
+              <option value="NHS Letter">NHS Letter</option>
+              <option value="Home Insurance">Home Insurance</option>
+              <option value="Council Tax Bill">Council Tax Bill</option>
+              <option value="Driving Licence">Driving Licence</option>
+              <option value="Voter Registration">Voter Registration</option>
+              <option value="Tenancy Agreement">Tenancy Agreement</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="photo-upload-wrapper" id="addressIdUploads2"></div>
+          </div>
+
+          <div class="photo-id-card hidden" id="addressIdCard3">
+            <div class="card-header">
+              <label class="required">Address ID 3</label>
+              <button type="button" class="btn-secondary remove-btn" id="removeThirdAddressIdBtn" disabled>Remove</button>
+            </div>
+            <select id="addressIdType3" class="address-id-select">
+              <option value="">Select type...</option>
+              <option value="Bank Statement">Bank Statement</option>
+              <option value="Utility Bill">Utility Bill</option>
+              <option value="GOV Letter">GOV Letter</option>
+              <option value="Official Letter">Official Letter</option>
+              <option value="NHS Letter">NHS Letter</option>
+              <option value="Home Insurance">Home Insurance</option>
+              <option value="Council Tax Bill">Council Tax Bill</option>
+              <option value="Driving Licence">Driving Licence</option>
+              <option value="Voter Registration">Voter Registration</option>
+              <option value="Tenancy Agreement">Tenancy Agreement</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="photo-upload-wrapper" id="addressIdUploads3"></div>
+          </div>
+
+          <div class="photo-id-card hidden" id="addressIdCard4">
+            <div class="card-header">
+              <label class="required">Address ID 4</label>
+              <button type="button" class="btn-secondary remove-btn" id="removeFourthAddressIdBtn" disabled>Remove</button>
+            </div>
+            <select id="addressIdType4" class="address-id-select">
+              <option value="">Select type...</option>
+              <option value="Bank Statement">Bank Statement</option>
+              <option value="Utility Bill">Utility Bill</option>
+              <option value="GOV Letter">GOV Letter</option>
+              <option value="Official Letter">Official Letter</option>
+              <option value="NHS Letter">NHS Letter</option>
+              <option value="Home Insurance">Home Insurance</option>
+              <option value="Council Tax Bill">Council Tax Bill</option>
+              <option value="Driving Licence">Driving Licence</option>
+              <option value="Voter Registration">Voter Registration</option>
+              <option value="Tenancy Agreement">Tenancy Agreement</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="photo-upload-wrapper" id="addressIdUploads4"></div>
+          </div>
+
+          <div class="photo-id-card hidden" id="addressIdCard5">
+            <div class="card-header">
+              <label class="required">Address ID 5</label>
+              <button type="button" class="btn-secondary remove-btn" id="removeFifthAddressIdBtn" disabled>Remove</button>
+            </div>
+            <select id="addressIdType5" class="address-id-select">
+              <option value="">Select type...</option>
+              <option value="Bank Statement">Bank Statement</option>
+              <option value="Utility Bill">Utility Bill</option>
+              <option value="GOV Letter">GOV Letter</option>
+              <option value="Official Letter">Official Letter</option>
+              <option value="NHS Letter">NHS Letter</option>
+              <option value="Home Insurance">Home Insurance</option>
+              <option value="Council Tax Bill">Council Tax Bill</option>
+              <option value="Driving Licence">Driving Licence</option>
+              <option value="Voter Registration">Voter Registration</option>
+              <option value="Tenancy Agreement">Tenancy Agreement</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="photo-upload-wrapper" id="addressIdUploads5"></div>
+          </div>
+
+          <div class="photo-id-card hidden" id="addressIdCard6">
+            <div class="card-header">
+              <label class="required">Address ID 6</label>
+              <button type="button" class="btn-secondary remove-btn" id="removeSixthAddressIdBtn" disabled>Remove</button>
+            </div>
+            <select id="addressIdType6" class="address-id-select">
+              <option value="">Select type...</option>
+              <option value="Bank Statement">Bank Statement</option>
+              <option value="Utility Bill">Utility Bill</option>
+              <option value="GOV Letter">GOV Letter</option>
+              <option value="Official Letter">Official Letter</option>
+              <option value="NHS Letter">NHS Letter</option>
+              <option value="Home Insurance">Home Insurance</option>
+              <option value="Council Tax Bill">Council Tax Bill</option>
+              <option value="Driving Licence">Driving Licence</option>
+              <option value="Voter Registration">Voter Registration</option>
+              <option value="Tenancy Agreement">Tenancy Agreement</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="photo-upload-wrapper" id="addressIdUploads6"></div>
+          </div>
+
+          <div class="photo-id-card hidden" id="addressIdCard7">
+            <div class="card-header">
+              <label class="required">Address ID 7</label>
+              <button type="button" class="btn-secondary remove-btn" id="removeSeventhAddressIdBtn" disabled>Remove</button>
+            </div>
+            <select id="addressIdType7" class="address-id-select">
+              <option value="">Select type...</option>
+              <option value="Bank Statement">Bank Statement</option>
+              <option value="Utility Bill">Utility Bill</option>
+              <option value="GOV Letter">GOV Letter</option>
+              <option value="Official Letter">Official Letter</option>
+              <option value="NHS Letter">NHS Letter</option>
+              <option value="Home Insurance">Home Insurance</option>
+              <option value="Council Tax Bill">Council Tax Bill</option>
+              <option value="Driving Licence">Driving Licence</option>
+              <option value="Voter Registration">Voter Registration</option>
+              <option value="Tenancy Agreement">Tenancy Agreement</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="photo-upload-wrapper" id="addressIdUploads7"></div>
+          </div>
+
+          <div class="photo-id-card hidden" id="addressIdCard8">
+            <div class="card-header">
+              <label class="required">Address ID 8</label>
+              <button type="button" class="btn-secondary remove-btn" id="removeEighthAddressIdBtn" disabled>Remove</button>
+            </div>
+            <select id="addressIdType8" class="address-id-select">
+              <option value="">Select type...</option>
+              <option value="Bank Statement">Bank Statement</option>
+              <option value="Utility Bill">Utility Bill</option>
+              <option value="GOV Letter">GOV Letter</option>
+              <option value="Official Letter">Official Letter</option>
+              <option value="NHS Letter">NHS Letter</option>
+              <option value="Home Insurance">Home Insurance</option>
+              <option value="Council Tax Bill">Council Tax Bill</option>
+              <option value="Driving Licence">Driving Licence</option>
+              <option value="Voter Registration">Voter Registration</option>
+              <option value="Tenancy Agreement">Tenancy Agreement</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="photo-upload-wrapper" id="addressIdUploads8"></div>
+          </div>
+
+          <div class="photo-id-card hidden" id="addressIdCard9">
+            <div class="card-header">
+              <label class="required">Address ID 9</label>
+              <button type="button" class="btn-secondary remove-btn" id="removeNinthAddressIdBtn" disabled>Remove</button>
+            </div>
+            <select id="addressIdType9" class="address-id-select">
+              <option value="">Select type...</option>
+              <option value="Bank Statement">Bank Statement</option>
+              <option value="Utility Bill">Utility Bill</option>
+              <option value="GOV Letter">GOV Letter</option>
+              <option value="Official Letter">Official Letter</option>
+              <option value="NHS Letter">NHS Letter</option>
+              <option value="Home Insurance">Home Insurance</option>
+              <option value="Council Tax Bill">Council Tax Bill</option>
+              <option value="Driving Licence">Driving Licence</option>
+              <option value="Voter Registration">Voter Registration</option>
+              <option value="Tenancy Agreement">Tenancy Agreement</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="photo-upload-wrapper" id="addressIdUploads9"></div>
+          </div>
+
+          <div class="photo-id-card hidden" id="addressIdCard10">
+            <div class="card-header">
+              <label class="required">Address ID 10</label>
+              <button type="button" class="btn-secondary remove-btn" id="removeTenthAddressIdBtn" disabled>Remove</button>
+            </div>
+            <select id="addressIdType10" class="address-id-select">
+              <option value="">Select type...</option>
+              <option value="Bank Statement">Bank Statement</option>
+              <option value="Utility Bill">Utility Bill</option>
+              <option value="GOV Letter">GOV Letter</option>
+              <option value="Official Letter">Official Letter</option>
+              <option value="NHS Letter">NHS Letter</option>
+              <option value="Home Insurance">Home Insurance</option>
+              <option value="Council Tax Bill">Council Tax Bill</option>
+              <option value="Driving Licence">Driving Licence</option>
+              <option value="Voter Registration">Voter Registration</option>
+              <option value="Tenancy Agreement">Tenancy Agreement</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="photo-upload-wrapper" id="addressIdUploads10"></div>
+          </div>
+        </div>
+
+        <button type="button" class="btn-secondary add-btn" id="addSecondAddressIdBtn">Add Another</button>
+      </div>
+
+      <div class="button-row">
+        <button type="button" class="btn-secondary" id="backToSection3">Back</button>
+        <button type="button" class="btn-primary" id="finishBtn">Upload</button>
+      </div>
+    </div>
+
+    <!-- Section 5: Upload Progress - S3 upload with progress tracking -->
+    <div id="section5" class="hidden">
+      <h2>Uploading Files</h2>
+      <div id="uploadProgress">
+        <div class="progress-bar">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+        <div id="progressText">0% Complete</div>
+      </div>
+      <div id="fileList" class="file-list"></div>
+      <div id="uploadStatus" class="upload-status"></div>
+    </div>
+  </div>
+
+  <!-- Error popup -->
+  <div id="errorPopup" class="error-popup hidden">
+    <h4 class="error-popup-header">Validation Error</h4>
+    <div class="error-popup-content">
+      <span id="errorMessage" style="white-space:pre-wrap;"></span>
+      <button type="button" id="closeError">×</button>
+    </div>
+  </div>
+
+  <script>
+    // ===== DOM ELEMENTS =====
+    // Section 1: Client details form elements
+    const cardTitle = document.getElementById('cardTitle');
+    const headerInfo = document.getElementById('headerInfo');
+    const titleBadge = document.getElementById('titleBadge');
+    const clientNumberBadge = document.getElementById('clientNumberBadge');
+    const clientMatterNumber = document.getElementById('clientMatterNumber');
+    const clientName = document.getElementById('clientName');
+    const form = document.getElementById('clientForm');
+    const recentNameChange = document.getElementById('recentNameChange');
+    const nameChangeFields = document.getElementById('nameChangeFields');
+    const prevNameLabel = document.getElementById('prevNameLabel');
+    const reasonLabel = document.getElementById('reasonLabel');
+    const worktype = document.getElementById('worktype');
+    const worktypeDropdown = document.getElementById('worktypeDropdown');
+    const relation = document.getElementById('relation');
+    const relationDropdown = document.getElementById('relationDropdown');
+    const matterDescription = document.getElementById('matterDescription');
+
+    // Error handling elements
+    const errorPopup = document.getElementById('errorPopup');
+    const errorMessage = document.getElementById('errorMessage');
+    const closeError = document.getElementById('closeError');
+
+    // DOB inputs (8 individual digit fields)
+    const dobInputs = Array.from(document.querySelectorAll('.birthdate-inputs input'));
+    const mockBtn = document.getElementById('mockBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    // Section 2: Photo ID upload elements
+    const section2 = document.getElementById('section2');
+    const photoIdPrompt = document.getElementById('photoIdPrompt');
+    const photoYesBtn = document.getElementById('photoYesBtn');
+    const photoNoBtn = document.getElementById('photoNoBtn');
+    const photoIdCards = document.getElementById('photoIdCards');
+    const addSecondIdBtn = document.getElementById('addSecondIdBtn');
+    const photoIdCard1 = document.getElementById('photoIdCard1');
+    const photoIdCard2 = document.getElementById('photoIdCard2');
+    const photoIdType1 = document.getElementById('photoIdType1');
+    const photoIdType2 = document.getElementById('photoIdType2');
+    const photoUploads1 = document.getElementById('photoUploads1');
+    const photoUploads2 = document.getElementById('photoUploads2');
+    const removeFirstIdBtn = document.getElementById('removeFirstIdBtn');
+    const removeSecondIdBtn = document.getElementById('removeSecondIdBtn');
+    const photoHint = document.getElementById('photoHint');
+    const likenessNotConfirmed = document.getElementById('likenessNotConfirmed');
+    const backToSection1 = document.getElementById('backToSection1');
+    const nextFromSection2 = document.getElementById('nextFromSection2');
+
+    // Section 3: Address history elements
+    const section3 = document.getElementById('section3');
+    const backToSection2 = document.getElementById('backToSection2');
+    const nextToSection4 = document.getElementById('nextToSection4');
+    const currentAddress = document.getElementById('currentAddress');
+    const recentMove = document.getElementById('recentMove');
+    const previousAddressFields = document.getElementById('previousAddressFields');
+    const previousAddress = document.getElementById('previousAddress');
+
+    // Section 4: Address ID upload elements (up to 10 cards)
+    const section4 = document.getElementById('section4');
+    const backToSection3 = document.getElementById('backToSection3');
+    const finishBtn = document.getElementById('finishBtn');
+    const addressIdPrompt = document.getElementById('addressIdPrompt');
+    const addressIdYesBtn = document.getElementById('addressIdYesBtn');
+    const addressIdNoBtn = document.getElementById('addressIdNoBtn');
+    const addressIdCards = document.getElementById('addressIdCards');
+    const addSecondAddressIdBtn = document.getElementById('addSecondAddressIdBtn');
+    const addressIdCard1 = document.getElementById('addressIdCard1');
+    const addressIdCard2 = document.getElementById('addressIdCard2');
+    const addressIdCard3 = document.getElementById('addressIdCard3');
+    const addressIdCard4 = document.getElementById('addressIdCard4');
+    const addressIdCard5 = document.getElementById('addressIdCard5');
+    const addressIdCard6 = document.getElementById('addressIdCard6');
+    const addressIdCard7 = document.getElementById('addressIdCard7');
+    const addressIdCard8 = document.getElementById('addressIdCard8');
+    const addressIdCard9 = document.getElementById('addressIdCard9');
+    const addressIdCard10 = document.getElementById('addressIdCard10');
+    const addressIdType1 = document.getElementById('addressIdType1');
+    const addressIdType2 = document.getElementById('addressIdType2');
+    const addressIdType3 = document.getElementById('addressIdType3');
+    const addressIdType4 = document.getElementById('addressIdType4');
+    const addressIdType5 = document.getElementById('addressIdType5');
+    const addressIdType6 = document.getElementById('addressIdType6');
+    const addressIdType7 = document.getElementById('addressIdType7');
+    const addressIdType8 = document.getElementById('addressIdType8');
+    const addressIdType9 = document.getElementById('addressIdType9');
+    const addressIdType10 = document.getElementById('addressIdType10');
+    const addressIdUploads1 = document.getElementById('addressIdUploads1');
+    const addressIdUploads2 = document.getElementById('addressIdUploads2');
+    const addressIdUploads3 = document.getElementById('addressIdUploads3');
+    const addressIdUploads4 = document.getElementById('addressIdUploads4');
+    const addressIdUploads5 = document.getElementById('addressIdUploads5');
+    const addressIdUploads6 = document.getElementById('addressIdUploads6');
+    const addressIdUploads7 = document.getElementById('addressIdUploads7');
+    const addressIdUploads8 = document.getElementById('addressIdUploads8');
+    const addressIdUploads9 = document.getElementById('addressIdUploads9');
+    const addressIdUploads10 = document.getElementById('addressIdUploads10');
+    const removeFirstAddressIdBtn = document.getElementById('removeFirstAddressIdBtn');
+    const removeSecondAddressIdBtn = document.getElementById('removeSecondAddressIdBtn');
+    const removeThirdAddressIdBtn = document.getElementById('removeThirdAddressIdBtn');
+    const removeFourthAddressIdBtn = document.getElementById('removeFourthAddressIdBtn');
+    const removeFifthAddressIdBtn = document.getElementById('removeFifthAddressIdBtn');
+    const removeSixthAddressIdBtn = document.getElementById('removeSixthAddressIdBtn');
+    const removeSeventhAddressIdBtn = document.getElementById('removeSeventhAddressIdBtn');
+    const removeEighthAddressIdBtn = document.getElementById('removeEighthAddressIdBtn');
+    const removeNinthAddressIdBtn = document.getElementById('removeNinthAddressIdBtn');
+    const removeTenthAddressIdBtn = document.getElementById('removeTenthAddressIdBtn');
+
+    // Section 5: Upload progress elements
+    const section5 = document.getElementById('section5');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const fileList = document.getElementById('fileList');
+    const uploadStatus = document.getElementById('uploadStatus');
+
+    // ===== STATE VARIABLES =====
+    let errorTimeout; let currentTitleText = ''; let currentTitle = ''; let currentClientNumber = ''; let currentMatterNumber = ''; let currentClientName = ''; let initialData = {}; let wantsPhotoId = null; let wantsAddressId = null; let s3Keys = null;
+    
+    // Initialize finish button as disabled
+    finishBtn.disabled = true;
+
+    // ===== UTILITY FUNCTIONS =====
+    // Error handling: Show modal with auto-hide after 5s
+    function showError(msg){
+      errorMessage.textContent = msg; errorPopup.classList.remove('hidden');
+      if(errorTimeout) clearTimeout(errorTimeout);
+      errorTimeout = setTimeout(()=>{ errorPopup.classList.add('hidden'); }, 5000);
+    }
+    function hideError(){ errorPopup.classList.add('hidden'); if(errorTimeout) clearTimeout(errorTimeout); }
+    closeError.addEventListener('click', hideError);
+
+    // Update header display with client info
+    function updateHeader() {
+      if (currentTitle && currentClientNumber && currentMatterNumber && currentClientName) {
+        titleBadge.querySelector('span').textContent = currentTitle;
+        clientMatterNumber.textContent = `${currentClientNumber}-${currentMatterNumber}`;
+        clientName.textContent = currentClientName;
+        headerInfo.classList.remove('hidden');
+      } else {
+        headerInfo.classList.add('hidden');
+      }
+    }
+
+    // ===== SECTION 1: CLIENT DETAILS =====
+    // Toggle name change fields visibility and validation
+    recentNameChange.addEventListener('change', () => {
+      if (recentNameChange.checked) {
+        nameChangeFields.classList.remove('hidden');
+        document.getElementById('previousName').setAttribute('required','true');
+        document.getElementById('reasonForNameChange').setAttribute('required','true');
+        prevNameLabel.style.display = 'block';
+        reasonLabel.style.display = 'block';
+      } else {
+        nameChangeFields.classList.add('hidden');
+        document.getElementById('previousName').removeAttribute('required');
+        document.getElementById('reasonForNameChange').removeAttribute('required');
+        prevNameLabel.style.display = 'none';
+        reasonLabel.style.display = 'none';
+      }
+    });
+
+    // Dropdown helpers: Auto-fill text inputs from dropdown selections
+    worktypeDropdown.addEventListener('change', () => {
+      if (worktypeDropdown.value) {
+        worktype.value = worktypeDropdown.value;
+        worktypeDropdown.value = ''; // Reset dropdown
+      }
+    });
+
+    relationDropdown.addEventListener('change', () => {
+      if (relationDropdown.value) {
+        relation.value = relationDropdown.value;
+        relationDropdown.value = ''; // Reset dropdown
+      }
+    });
+
+    // DOB: Auto-tab between 8 digit inputs with smart navigation
+    dobInputs.forEach((input, idx) => {
+      // Clear value when focusing on an input
+      input.addEventListener('focus', () => {
+        input.value = '';
+      });
+      
+      // Handle input - move to next field when digit entered
+      input.addEventListener('input', (e) => {
+        const value = e.target.value;
+        // Only allow single digits
+        if (value.length > 1) {
+          input.value = value.slice(-1);
+        }
+        // Move to next field if digit entered and not last field
+        if (input.value.length === 1 && idx < dobInputs.length-1) {
+          dobInputs[idx+1].focus();
+        }
+      });
+      
+      // Handle backspace - move to previous field if current is empty
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && input.value === '' && idx > 0) {
+          e.preventDefault();
+          dobInputs[idx-1].focus();
+          dobInputs[idx-1].value = '';
+        }
+      });
+    });
+
+    // Validation: Check DOB format and validity
+    function validateDOB(){
+      const dobString = dobInputs.map(inp => inp.value).join('');
+      if(dobString.length !== 8) return false;
+      const formatted = `${dobString.substring(0,2)}-${dobString.substring(2,4)}-${dobString.substring(4)}`;
+      const [dd,mm,yyyy] = formatted.split('-').map(Number);
+      const d = new Date(yyyy, mm-1, dd);
+      return d && d.getMonth()===(mm-1) && d.getDate()===dd && d.getFullYear()===yyyy;
+    }
+
+    // Section 1 validation: All required fields + conditional name change fields
+    function validateSection1(){
+      const errors = [];
+      const titlePrefix = document.getElementById('titlePrefix').value.trim();
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const worktypeValue = worktype.value.trim();
+      const relationValue = relation.value.trim();
+      const matterDescriptionValue = matterDescription.value.trim();
+      const nameChangeOn = recentNameChange.checked;
+      const previousName = document.getElementById('previousName').value.trim();
+      const reasonForNameChange = document.getElementById('reasonForNameChange').value.trim();
+
+      if(!titlePrefix) errors.push('Please select the client\'s title.');
+      if(!firstName) errors.push('Please enter the client\'s first name.');
+      if(!lastName) errors.push('Please enter the client\'s surname.');
+      if(!worktypeValue) errors.push('Please enter the work type.');
+      if(!relationValue) errors.push('Please enter the relation.');
+      if(!validateDOB()) errors.push('The date of birth you have entered is not valid. Please use the format DD-MM-YYYY.');
+
+      if(nameChangeOn){
+        if(!previousName) errors.push('As you have indicated a recent name change, please enter the client\'s previous name.');
+        if(!reasonForNameChange) errors.push('As you have indicated a recent name change, please enter the reason for the change.');
+      }
+      return errors;
+    }
+
+    // ===== SECTION 2: PHOTO ID =====
+    // Set prompt text based on existing data
+    function setPhotoPrompt(){
+      const hasExisting = Boolean(initialData.photographicIdTaken === true || initialData.photographicIdTaken === 'true');
+      photoIdPrompt.textContent = hasExisting
+        ? 'Photo ID already uploaded, would you like to add more now?'
+        : 'Upload Photo ID now?';
+      
+      // Show/hide existing images table
+      populateExistingImagesTable('photoId');
+    }
+
+    // Reset photo ID cards to initial state
+    function resetPhotoCards(){
+      // Clear selects & uploads
+      [photoIdType1, photoIdType2].forEach(sel=>{ if(sel){ sel.value=''; }});
+      [photoUploads1, photoUploads2].forEach(w=>{ if(w){ w.innerHTML=''; }});
+      photoIdCard2.classList.add('hidden');
+      addSecondIdBtn.disabled = false;
+      updatePhotoHint();
+    }
+
+    // Photo ID choice handlers
+    function choosePhotoYes(){ 
+      wantsPhotoId = true; 
+      photoIdCards.classList.remove('hidden'); 
+      photoYesBtn.classList.add('selected');
+      photoNoBtn.classList.remove('selected');
+      nextFromSection2.disabled = false;
+    }
+    function choosePhotoNo(){ 
+      // Don't change wantsPhotoId if we already have photo ID uploaded
+      if (initialData.photographicIdTaken) {
+        wantsPhotoId = true; // Keep as true if we already have photos
+      } else {
+        wantsPhotoId = false; // Only set to false if no existing photos
+      }
+      photoIdCards.classList.add('hidden'); 
+      resetPhotoCards(); 
+      photoNoBtn.classList.add('selected');
+      photoYesBtn.classList.remove('selected');
+      nextFromSection2.disabled = false;
+      // Automatically proceed to Section 3
+      setTimeout(() => {
+        showSection3();
+      }, 100);
+    }
+
+    // Check if ID type requires front/back images
+    function needsFrontBack(type){
+      return !(type === 'Passport' || type === 'Firearms Certificate');
+    }
+
+    // Create file upload component with drag/drop support
+    function makeUploader(id, onChangeCb){
+      const wrap = document.createElement('div');
+      wrap.className = 'photo-upload';
+      wrap.tabIndex = 0;
+      wrap.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Select image or drag & drop`;
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.style.display = 'none';
+      
+      const handleFile = (files) => {
+        if (files && files[0]) {
+          input.files = files;
+          wrap.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> ${files[0].name}`;
+          if(onChangeCb) onChangeCb();
+        }
+      };
+      
+      input.addEventListener('change', () => {
+        handleFile(input.files);
+      });
+      
+      // Click functionality
+      wrap.addEventListener('click', ()=> input.click());
+      
+      // Keyboard accessibility
+      wrap.addEventListener('keypress', (e)=>{ 
+        if(e.key==='Enter' || e.key===' '){ 
+          e.preventDefault(); 
+          input.click(); 
+        } 
+      });
+      
+      // Drag and drop functionality
+      wrap.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        wrap.style.backgroundColor = 'rgba(74, 144, 226, 0.2)';
+        wrap.style.borderColor = '#4A90E2';
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        wrap.style.backgroundColor = 'rgba(74, 144, 226, 0.1)';
+        wrap.style.borderColor = '#4A90E2';
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        e.preventDefault();
+        wrap.style.backgroundColor = 'rgba(74, 144, 226, 0.1)';
+        wrap.style.borderColor = '#4A90E2';
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          handleFile(files);
+        }
+      });
+      
+      return {wrap, input};
+    }
+
+    // Render upload areas based on ID type (front/back or single)
+    function renderUploads(container, type){
+      container.innerHTML='';
+      if(!type) return;
+      const twoSides = needsFrontBack(type);
+      if(twoSides){
+        const mainBlock = document.createElement('div'); 
+        mainBlock.className='upload-block side-by-side';
+        const frontBlock = document.createElement('div'); 
+        frontBlock.className='upload-block';
+        const backBlock = document.createElement('div'); 
+        backBlock.className='upload-block';
+        const frontTag = document.createElement('div'); 
+        frontTag.className='upload-tag'; 
+        frontTag.textContent='FRONT';
+        const backTag = document.createElement('div'); 
+        backTag.className='upload-tag'; 
+        backTag.textContent='BACK';
+        const upF = makeUploader('front'); 
+        const upB = makeUploader('back');
+        frontBlock.append(frontTag, upF.wrap, upF.input);
+        backBlock.append(backTag, upB.wrap, upB.input);
+        mainBlock.append(frontBlock, backBlock);
+        container.append(mainBlock);
+      } else {
+        const only = makeUploader('single');
+        const block = document.createElement('div'); 
+        block.className='upload-block';
+        block.append(only.wrap, only.input);
+        container.append(block);
+      }
+      updatePhotoHint();
+    }
+
+    // Update photo hint based on selected ID types
+    function updatePhotoHint(){
+      const t1 = photoIdType1.value; const t2 = !photoIdCard2.classList.contains('hidden') ? photoIdType2.value : '';
+      const base = 'Remember to check the image quality for glare and blur.';
+      const needsMRZ = ['Passport','Passport Card','Entry Visa'];
+      const mrz = (needsMRZ.includes(t1) || needsMRZ.includes(t2)) ? ' Ensure the full MRZ (Machine Readable Zone) is visible.' : '';
+      photoHint.textContent = base + mrz;
+    }
+
+    // Section 2 validation: Photo ID types and file uploads
+    function validateSection2(){
+      // If user doesn't want photo ID AND doesn't have existing photo ID, skip validation
+      if(wantsPhotoId === false && !initialData.photographicIdTaken) return [];
+      
+      // If user has existing photo ID but selected "No" to adding more, skip validation
+      if(wantsPhotoId === true && initialData.photographicIdTaken && photoIdCard1.classList.contains('hidden') && photoIdCard2.classList.contains('hidden')) return [];
+      
+      const errors = [];
+      const t1 = photoIdType1.value;
+      const t2Visible = !photoIdCard2.classList.contains('hidden');
+      const t2 = t2Visible ? photoIdType2.value : '';
+
+      if(!t1) errors.push('Please select a type for Photo ID 1.');
+      if(t2Visible){
+        if(!t2) errors.push('Please select a type for Photo ID 2.');
+        if(t1 && t2 && t1 === t2) errors.push('Photo ID 2 must be different from Photo ID 1.');
+      }
+      // Check files
+      const checkUploads = (container, type, label) => {
+        if(!type) return;
+        const twoSides = needsFrontBack(type);
+        const inputs = Array.from(container.querySelectorAll('input[type="file"]'));
+        if(twoSides){
+          if(inputs.length < 2 || !inputs[0].files.length || !inputs[1].files.length){
+            errors.push(`${label}: please upload BOTH FRONT and BACK images.`);
+          }
+        } else {
+          if(inputs.length < 1 || !inputs[0].files.length){ errors.push(`${label}: please upload an image.`); }
+        }
+      };
+      checkUploads(photoUploads1, t1, 'Photo ID 1');
+      if(t2Visible) checkUploads(photoUploads2, t2, 'Photo ID 2');
+
+      // Only require photo ID if user wants it and doesn't have existing photo ID
+      if(!t1 && !t2Visible && wantsPhotoId && !initialData.photographicIdTaken){
+        errors.push('Please add at least one form of Photo ID or choose No to continue without.');
+      }
+      return errors;
+    }
+
+    // ===== SECTION NAVIGATION =====
+    // Show/hide sections and update UI state
+    function showSection1(){
+      cardTitle.textContent = 'Section 1 - Client Details';
+      form.classList.remove('hidden'); section2.classList.add('hidden'); section3.classList.add('hidden');
+      mockBtn.classList.add('hidden');
+      updateHeader();
+    }
+    function showSection2(){
+      cardTitle.textContent = 'Section 2 - Photo ID';
+      form.classList.add('hidden'); section2.classList.remove('hidden'); section3.classList.add('hidden');
+      mockBtn.classList.add('hidden');
+      
+      // Check if a choice was already made
+      if (wantsPhotoId !== null) {
+        nextFromSection2.disabled = false;
+        if (wantsPhotoId === true) {
+          photoYesBtn.classList.add('selected');
+          photoNoBtn.classList.remove('selected');
+          photoIdCards.classList.remove('hidden');
+        } else {
+          photoNoBtn.classList.add('selected');
+          photoYesBtn.classList.remove('selected');
+          photoIdCards.classList.add('hidden');
+        }
+      } else {
+        nextFromSection2.disabled = true;
+      }
+      
+      setPhotoPrompt();
+      updateHeader();
+    }
+    function showSection3(){
+      cardTitle.textContent = 'Section 3 - Address History';
+      form.classList.add('hidden'); section2.classList.add('hidden'); section3.classList.remove('hidden'); section4.classList.add('hidden');
+      mockBtn.classList.add('hidden');
+      updateHeader();
+    }
+
+    function showSection4(){
+      cardTitle.textContent = 'Section 4 - Address ID';
+      form.classList.add('hidden'); section2.classList.add('hidden'); section3.classList.add('hidden'); section4.classList.remove('hidden');
+      mockBtn.classList.add('hidden');
+      
+      // Always reset button states - no pre-selection
+      addressIdYesBtn.classList.remove('selected');
+      addressIdNoBtn.classList.remove('selected');
+      addressIdCards.classList.add('hidden');
+      finishBtn.disabled = true;
+      
+      // Only restore state if user previously made a choice AND it's not null
+      if (wantsAddressId !== null && wantsAddressId !== undefined) {
+        finishBtn.disabled = false;
+        if (wantsAddressId === true) {
+          addressIdYesBtn.classList.add('selected');
+          addressIdCards.classList.remove('hidden');
+        } else if (wantsAddressId === false) {
+          addressIdNoBtn.classList.add('selected');
+        }
+      }
+      
+      setAddressIdPrompt();
+      updateHeader();
+    }
+
+    // ===== SECTION 3: ADDRESS HISTORY =====
+    // Toggle previous address fields based on recent move
+    function togglePreviousAddressFields() {
+      if (recentMove.checked) {
+        previousAddressFields.classList.remove('hidden');
+        previousAddress.setAttribute('required', 'true');
+      } else {
+        previousAddressFields.classList.add('hidden');
+        previousAddress.removeAttribute('required');
+      }
+    }
+
+    // Section 3 validation: Address fields
+    function validateSection3() {
+      const errors = [];
+      
+      if (!currentAddress.value.trim()) {
+        errors.push('Please enter the current address.');
+      }
+      
+      if (recentMove.checked && !previousAddress.value.trim()) {
+        errors.push('Please enter the previous address.');
+      }
+      
+      return errors;
+    }
+
+    // ===== SECTION 4: ADDRESS ID =====
+    // Set prompt text based on existing data
+    function setAddressIdPrompt(){
+      const hasExisting = Boolean(initialData.addressIdTaken === true || initialData.addressIdTaken === 'true');
+      addressIdPrompt.textContent = hasExisting
+        ? 'Address ID already uploaded, would you like to add more now?'
+        : 'Upload Address ID now?';
+      
+      // Show/hide existing images table
+      populateExistingImagesTable('addressId');
+    }
+
+    // Populate existing images container based on type
+    function populateExistingImagesTable(type) {
+      const containerId = type === 'photoId' ? 'existingPhotoIdContainer' : 'existingAddressIdContainer';
+      const listId = type === 'photoId' ? 'photoIdImagesList' : 'addressIdImagesList';
+      const container = document.getElementById(containerId);
+      const list = document.getElementById(listId);
+      
+      // Clear existing cards
+      list.innerHTML = '';
+      
+      // Check if we have existing images
+      if (initialData.idImages && Array.isArray(initialData.idImages) && initialData.idImages.length > 0) {
+        // Filter images by type
+        const filteredImages = initialData.idImages.filter(img => {
+          if (type === 'photoId') {
+            return img.type === 'PhotoID';
+          } else {
+            return img.type === 'Address ID';
+          }
+        });
+        
+        if (filteredImages.length > 0) {
+          // Show container and populate cards
+          container.classList.remove('hidden');
+          
+          filteredImages.forEach(img => {
+            const card = document.createElement('div');
+            card.className = 'image-card';
+            
+            // Create left section with document type and side tag
+            const titleSection = document.createElement('div');
+            titleSection.className = 'image-title-section';
+            
+            // Create document type heading
+            const heading = document.createElement('h4');
+            heading.textContent = img.document || 'Unknown Document';
+            titleSection.appendChild(heading);
+            
+            // Create side tag (only for Photo ID)
+            if (type === 'photoId' && img.side && img.side !== 'Single') {
+              const sideTag = document.createElement('div');
+              sideTag.className = 'image-side-tag';
+              sideTag.textContent = img.side;
+              titleSection.appendChild(sideTag);
+            }
+            
+            // Create right section with metadata
+            const meta = document.createElement('div');
+            meta.className = 'image-meta';
+            meta.innerHTML = `
+              Uploaded by <strong>${img.uploader || 'Unknown'}</strong> on ${img.date || 'Unknown date'}
+            `;
+            
+            // Assemble card
+            card.appendChild(titleSection);
+            card.appendChild(meta);
+            
+            list.appendChild(card);
+          });
+        } else {
+          // No images of this type, hide container
+          container.classList.add('hidden');
+        }
+      } else {
+        // No images at all, hide container
+        container.classList.add('hidden');
+      }
+    }
+
+    // Reset address ID cards to initial state
+    function resetAddressIdCards(){
+      // Clear selects & uploads
+      [addressIdType1, addressIdType2, addressIdType3, addressIdType4, addressIdType5, addressIdType6, addressIdType7, addressIdType8, addressIdType9, addressIdType10].forEach(sel=>{ if(sel){ sel.value=''; }});
+      [addressIdUploads1, addressIdUploads2, addressIdUploads3, addressIdUploads4, addressIdUploads5, addressIdUploads6, addressIdUploads7, addressIdUploads8, addressIdUploads9, addressIdUploads10].forEach(w=>{ if(w){ w.innerHTML=''; }});
+      [addressIdCard1, addressIdCard2, addressIdCard3, addressIdCard4, addressIdCard5, addressIdCard6, addressIdCard7, addressIdCard8, addressIdCard9, addressIdCard10].forEach(card=>{ if(card){ card.classList.add('hidden'); }});
+      addSecondAddressIdBtn.disabled = false;
+    }
+
+    // Address ID choice handlers
+    function chooseAddressIdYes(){ 
+      wantsAddressId = true; 
+      addressIdCards.classList.remove('hidden'); 
+      addressIdYesBtn.classList.add('selected');
+      addressIdNoBtn.classList.remove('selected');
+      finishBtn.disabled = false;
+    }
+    function chooseAddressIdNo(){ 
+      // Don't change wantsAddressId if we already have address ID uploaded
+      if (initialData.addressIdTaken) {
+        wantsAddressId = true; // Keep as true if we already have address ID
+      } else {
+        wantsAddressId = false; // Only set to false if no existing address ID
+      }
+      addressIdCards.classList.add('hidden'); 
+      resetAddressIdCards(); 
+      addressIdNoBtn.classList.add('selected');
+      addressIdYesBtn.classList.remove('selected');
+      finishBtn.disabled = false;
+    }
+
+    // Section 4 validation: Address ID types and file uploads
+    function validateSection4() {
+      console.log('validateSection4 - wantsAddressId:', wantsAddressId, 'addressIdTaken:', initialData.addressIdTaken);
+      
+      // If user doesn't want address ID AND doesn't have existing address ID, skip validation
+      if(wantsAddressId === false && !initialData.addressIdTaken) {
+        console.log('Skipping validation - no address ID wanted and none existing');
+        return [];
+      }
+      
+      // If user has existing address ID but selected "No" to adding more, skip validation
+      const allAddressIdCards = [addressIdCard1, addressIdCard2, addressIdCard3, addressIdCard4, addressIdCard5, addressIdCard6, addressIdCard7, addressIdCard8, addressIdCard9, addressIdCard10];
+      const allCardsHidden = allAddressIdCards.every(card => card.classList.contains('hidden'));
+      console.log('All cards hidden:', allCardsHidden);
+      
+      if(wantsAddressId === true && initialData.addressIdTaken && allCardsHidden) {
+        console.log('Skipping validation - existing address ID but selected No to adding more');
+        return [];
+      }
+      
+      const errors = [];
+      const addressIdTypes = [addressIdType1, addressIdType2, addressIdType3, addressIdType4, addressIdType5, addressIdType6, addressIdType7, addressIdType8, addressIdType9, addressIdType10];
+      const addressIdUploads = [addressIdUploads1, addressIdUploads2, addressIdUploads3, addressIdUploads4, addressIdUploads5, addressIdUploads6, addressIdUploads7, addressIdUploads8, addressIdUploads9, addressIdUploads10];
+      
+      let hasAnyAddressId = false;
+      let hasValidAddressId = false;
+      
+      allAddressIdCards.forEach((card, index) => {
+        if (!card.classList.contains('hidden')) {
+          hasAnyAddressId = true;
+          const type = addressIdTypes[index].value;
+          const uploads = addressIdUploads[index];
+          
+          if (!type) {
+            errors.push(`Please select a type for Address ID ${index + 1}.`);
+          } else {
+            const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
+            if (inputs.length === 0 || !inputs[0].files.length) {
+              errors.push(`Please upload an image for Address ID ${index + 1}.`);
+            } else {
+              hasValidAddressId = true;
+            }
+          }
+        }
+      });
+
+      // Only require address ID if user wants it and doesn't have existing address ID
+      if (!hasAnyAddressId && wantsAddressId && !initialData.addressIdTaken) {
+        errors.push('Please add at least one form of Address ID or choose No to continue without.');
+      }
+      
+      console.log('Address ID validation errors:', errors);
+      return errors;
+    }
+
+    // ===== DATA COMPILATION & UPLOAD =====
+    // Compile all form data into structured object
+    function compileFormData() {
+      const formData = {
+        fe: currentTitleText,
+        clientNumber: currentClientNumber,
+        matterNumber: currentMatterNumber,
+        name: currentClientName,
+        _id: initialData._id || undefined, // Include the original _id
+        uploader: initialData.uploader || undefined, // Include the uploader email
+        titlePrefix: document.getElementById('titlePrefix').value,
+        firstName: document.getElementById('firstName').value,
+        middleNames: document.getElementById('middleName').value,
+        surname: document.getElementById('lastName').value,
+        worktype: worktype.value,
+        relation: relation.value,
+        matterDesc: matterDescription.value,
+        birthdate: dobInputs.map(inp => inp.value).join(''),
+        clientRecentNameChange: document.getElementById('recentNameChange').checked,
+        previousName: document.getElementById('previousName').value,
+        reasonForNameChange: document.getElementById('reasonForNameChange').value,
+        photographicIdTaken: wantsPhotoId,
+        likenessNOTConfirmed: document.getElementById('likenessNotConfirmed').checked,
+        address: document.getElementById('currentAddress').value,
+        clientRecentHomeMove: document.getElementById('recentMove').checked,
+        previousAddress: document.getElementById('previousAddress').value,
+        addressIdTaken: wantsAddressId
+      };
+
+      // Format birthdate as nn-nn-nnnn
+      if (formData.birthdate.length === 8) {
+        formData.birthdate = `${formData.birthdate.substring(0,2)}-${formData.birthdate.substring(2,4)}-${formData.birthdate.substring(4)}`;
+      }
+
+      return formData;
+    }
+
+    // Collect all uploaded files with metadata
+    function collectFiles() {
+      const files = [];
+      
+      // Photo ID files
+      if (wantsPhotoId) {
+        const photoTypes = [photoIdType1.value, photoIdType2.value];
+        const photoUploads = [photoUploads1, photoUploads2];
+        const photoCards = [photoIdCard1, photoIdCard2];
+        
+        photoCards.forEach((card, index) => {
+          if (!card.classList.contains('hidden') && photoTypes[index]) {
+            const uploads = photoUploads[index];
+            const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
+            
+            inputs.forEach((input, fileIndex) => {
+              if (input.files && input.files[0]) {
+                const file = input.files[0];
+                let fileName = `${currentClientNumber}-${currentMatterNumber} - ${currentClientName} - ${photoTypes[index]}`;
+                
+                // Add front/back tag if applicable
+                const requiresFrontBack = needsFrontBack(photoTypes[index]);
+                if (requiresFrontBack) {
+                  const isBack = fileIndex === 1;
+                  fileName += ` ${isBack ? 'Back' : 'Front'}`;
+                }
+                
+                files.push({
+                  fileName: fileName,
+                  file: file,
+                  type: 'photoId'
+                });
+              }
+            });
+          }
+        });
+      }
+      
+      // Address ID files
+      if (wantsAddressId) {
+        const addressIdTypes = [addressIdType1, addressIdType2, addressIdType3, addressIdType4, addressIdType5, addressIdType6, addressIdType7, addressIdType8, addressIdType9, addressIdType10];
+        const addressIdUploads = [addressIdUploads1, addressIdUploads2, addressIdUploads3, addressIdUploads4, addressIdUploads5, addressIdUploads6, addressIdUploads7, addressIdUploads8, addressIdUploads9, addressIdUploads10];
+        const addressIdCards = [addressIdCard1, addressIdCard2, addressIdCard3, addressIdCard4, addressIdCard5, addressIdCard6, addressIdCard7, addressIdCard8, addressIdCard9, addressIdCard10];
+        
+        addressIdCards.forEach((card, index) => {
+          if (!card.classList.contains('hidden') && addressIdTypes[index].value) {
+            const uploads = addressIdUploads[index];
+            const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
+            
+            inputs.forEach((input) => {
+              if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const fileName = `${currentClientNumber}-${currentMatterNumber} - ${currentClientName} - Address ID ${index + 1} - ${addressIdTypes[index].value}`;
+                
+                files.push({
+                  fileName: fileName,
+                  file: file,
+                  type: 'addressId'
+                });
+              }
+            });
+          }
+        });
+      }
+      
+      return files;
+    }
+
+    // ===== SECTION 5: UPLOAD PROGRESS =====
+    // Show upload section with progress tracking
+    function showUploadSection() {
+      cardTitle.textContent = 'Uploading Files';
+      form.classList.add('hidden'); 
+      section2.classList.add('hidden'); 
+      section3.classList.add('hidden'); 
+      section4.classList.add('hidden'); 
+      section5.classList.remove('hidden');
+      mockBtn.classList.add('hidden');
+      
+      // Reset progress
+      progressFill.style.width = '0%';
+      progressText.textContent = '0% Complete';
+      fileList.innerHTML = '';
+      uploadStatus.textContent = '';
+      
+      // Collect and display files
+      const files = collectFiles();
+      displayFileList(files);
+      
+      // Start upload process
+      startUpload(files);
+    }
+
+    // Display file list with metadata
+    function displayFileList(files) {
+      fileList.innerHTML = '';
+      files.forEach((fileObj, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.id = `file-${index}`;
+        fileItem.innerHTML = `
+          <div><strong>${fileObj.fileName}</strong></div>
+          <div>Size: ${(fileObj.file.size / 1024 / 1024).toFixed(2)} MB</div>
+          <div>Status: <span class="status-text">Pending</span></div>
+        `;
+        fileList.appendChild(fileItem);
+      });
+    }
+
+    // Start upload process: Send only image uploader objects to parent
+    function startUpload(files) {
+      // Validate file types and sizes before processing
+      const invalidFiles = [];
+      const validFiles = [];
+      
+      files.forEach((fileObj, index) => {
+        const file = fileObj.file;
+        const fileName = fileObj.fileName;
+        
+        // Check if file exists
+        if (!file) {
+          invalidFiles.push(`Upload ${index + 1}: No file selected`);
+          return;
+        }
+        
+        // Check if file is an image
+        if (!file.type.startsWith('image/')) {
+          invalidFiles.push(`Upload ${index + 1} (${fileName}): File must be an image`);
+          return;
+        }
+        
+        // Check file size (15MB limit)
+        const MAX_SIZE = 15 * 1024 * 1024; // 15 MB
+        if (file.size > MAX_SIZE) {
+          invalidFiles.push(`Upload ${index + 1} (${fileName}): File too large (max 15MB)`);
+          return;
+        }
+        
+        validFiles.push(fileObj);
+      });
+      
+      // Show validation errors if any
+      if (invalidFiles.length > 0) {
+        showError(`Please fix the following issues:\n\n${invalidFiles.join('\n')}`);
+        return;
+      }
+      
+      // Create images data array with only valid uploader objects
+      const imagesData = validFiles.map(fileObj => {
+        const file = fileObj.file;
+        const fileName = fileObj.fileName;
+        
+        // Determine type, document, and side from fileName
+        let type, document, side;
+        
+        if (fileObj.type === 'photoId') {
+          type = 'PhotoID';
+          // Extract document type from fileName (e.g., "50/52 - Mr J R Archer-Moran - Driving Licence Front")
+          const parts = fileName.split(' - ');
+          document = parts[2] ? parts[2].replace(/ (Front|Back)$/, '') : 'Unknown';
+          // Determine side
+          if (fileName.includes(' Front')) {
+            side = 'Front';
+          } else if (fileName.includes(' Back')) {
+            side = 'Back';
+          } else {
+            side = 'Single';
+          }
+        } else if (fileObj.type === 'addressId') {
+          type = 'Address ID';
+          // Extract document type from fileName (e.g., "50/52 - Mr J R Archer-Moran - Address ID 1 - Bank Statement")
+          const parts = fileName.split(' - ');
+          document = parts[3] || 'Unknown';
+          side = 'Single';
+        }
+        
+        return {
+          type: type,
+          document: document,
+          side: side,
+          name: fileName,
+          data: {
+            type: file.type, // MIME type for validation
+            size: file.size, // File size for validation
+            name: file.name, // Original filename
+            lastModified: file.lastModified // File timestamp
+          },
+          file: file, // File object for generating PUT (will be lost in postMessage)
+          date: new Date().toLocaleString(),
+          uploader: initialData.uploader || undefined // Include the uploader email
+        };
+      });
+      
+      // Send only image uploader objects to parent
+      window.parent.postMessage({
+        type: 'image-data',
+        images: imagesData
+      }, '*');
+      
+      // Listen for PUT links or PUT error response
+      window.addEventListener('message', handlePutResponse);
+    }
+
+    // Handle PUT response from parent (links or error)
+    function handlePutResponse(event) {
+      if (event.data.type === 'put-links') {
+        const links = event.data.links;
+        s3Keys = event.data.s3Keys; // Store S3 keys
+        uploadFiles(links);
+      } else if (event.data.type === 'put-error') {
+        // Show specific error message and go back to address ID section
+        const errorMessage = event.data.message || 'Failed to generate upload links';
+        showError(`There is an issue with the files: ${errorMessage}. Please go back to the Address ID section to edit your selected files and try uploading again.`);
+        setTimeout(() => {
+          showSection4();
+        }, 2000);
+      }
+    }
+
+    // Upload files to S3 with progress tracking
+    function uploadFiles(links) {
+      const files = collectFiles();
+      let completed = 0;
+      let hasErrors = false;
+      const total = files.length;
+      
+      files.forEach((fileObj, index) => {
+        const fileItem = document.getElementById(`file-${index}`);
+        const statusText = fileItem.querySelector('.status-text');
+        
+        fileItem.classList.add('uploading');
+        statusText.textContent = 'Uploading...';
+        
+        // Upload to S3 using PUT links
+        uploadToS3(fileObj.file, links[index])
+          .then(() => {
+            fileItem.classList.remove('uploading');
+            fileItem.classList.add('success');
+            statusText.textContent = 'Success';
+            completed++;
+            updateProgress(completed, total, hasErrors);
+          })
+          .catch((error) => {
+            fileItem.classList.remove('uploading');
+            fileItem.classList.add('error');
+            statusText.textContent = `Error: ${error.message}`;
+            hasErrors = true;
+            completed++;
+            updateProgress(completed, total, hasErrors);
+          });
+      });
+    }
+
+    // Update progress bar and handle completion
+    function updateProgress(completed, total, hasErrors = false) {
+      const percentage = Math.round((completed / total) * 100);
+      progressFill.style.width = `${percentage}%`;
+      progressText.textContent = `${percentage}% Complete`;
+      
+      if (completed === total) {
+        if (hasErrors) {
+          uploadStatus.textContent = 'Upload completed with errors!';
+          // Show error popup and go back to address ID section
+          showError('Upload failed. Please try again.');
+          setTimeout(() => {
+            showSection4();
+          }, 2000);
+        } else {
+          uploadStatus.textContent = 'Upload Complete!';
+          // Send success message to parent with form data and S3 keys
+          const formData = compileFormData();
+          window.parent.postMessage({
+            type: 'upload-success',
+            data: formData,
+            idImages: s3Keys
+          }, '*');
+          
+          // Reset form after successful upload
+          setTimeout(() => {
+            resetForm();
+          }, 2000);
+        }
+      }
+    }
+
+    // Upload single file to S3 using PUT URL
+    function uploadToS3(file, putUrl) {
+      return new Promise((resolve, reject) => {
+        fetch(putUrl, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type
+          }
+        })
+        .then(response => {
+          if (response.ok) {
+            resolve();
+          } else {
+            reject(new Error('Upload failed'));
+          }
+        })
+        .catch(error => reject(error));
+      });
+    }
+
+    // ===== FORM RESET =====
+    // Reset form to initial state
+    function resetForm() {
+      // Reset all form data
+      form.reset();
+      wantsPhotoId = null;
+      wantsAddressId = null;
+      s3Keys = null; // Reset S3 keys
+      
+      // Reset all current data variables
+      currentTitleText = '';
+      currentTitle = '';
+      currentClientNumber = '';
+      currentMatterNumber = '';
+      currentClientName = '';
+      initialData = {};
+      
+      // Reset all sections - hide everything to show awaiting data state
+      form.classList.add('hidden');
+      section2.classList.add('hidden');
+      section3.classList.add('hidden');
+      section4.classList.add('hidden');
+      section5.classList.add('hidden');
+      
+      // Reset button states
+      nextFromSection2.disabled = true;
+      finishBtn.disabled = true;
+      
+      // Show awaiting data
+      cardTitle.textContent = 'Awaiting data';
+      headerInfo.classList.add('hidden');
+      mockBtn.classList.remove('hidden');
+    }
+
+    // ===== SECTION NAVIGATION FUNCTIONS =====
+    // Show Section 1: Client Details
+    function showSection1() {
+      cardTitle.textContent = 'Client Details';
+      form.classList.remove('hidden');
+      section2.classList.add('hidden');
+      section3.classList.add('hidden');
+      section4.classList.add('hidden');
+      section5.classList.add('hidden');
+      mockBtn.classList.add('hidden');
+      updateHeader();
+    }
+
+    // Show Section 2: Photo ID
+    function showSection2() {
+      cardTitle.textContent = 'Photo ID';
+      form.classList.add('hidden');
+      section2.classList.remove('hidden');
+      section3.classList.add('hidden');
+      section4.classList.add('hidden');
+      section5.classList.add('hidden');
+      mockBtn.classList.add('hidden');
+      setPhotoPrompt();
+    }
+
+    // Show Section 3: Address
+    function showSection3() {
+      cardTitle.textContent = 'Address';
+      form.classList.add('hidden');
+      section2.classList.add('hidden');
+      section3.classList.remove('hidden');
+      section4.classList.add('hidden');
+      section5.classList.add('hidden');
+      mockBtn.classList.add('hidden');
+    }
+
+    // Show Section 4: Address ID
+    function showSection4() {
+      cardTitle.textContent = 'Address ID';
+      form.classList.add('hidden');
+      section2.classList.add('hidden');
+      section3.classList.add('hidden');
+      section4.classList.remove('hidden');
+      section5.classList.add('hidden');
+      mockBtn.classList.add('hidden');
+      setAddressIdPrompt();
+    }
+
+    // ===== EVENT LISTENERS =====
+    // Navigation buttons
+    nextBtn.addEventListener('click', (e)=>{
+      e.preventDefault(); hideError();
+      const errors = validateSection1();
+      if(errors.length){ showError('• ' + errors.join('\n• ')); return; }
+      showSection2();
+    });
+
+    backToSection1.addEventListener('click', ()=>{ hideError(); showSection1(); });
+    backToSection2.addEventListener('click', ()=>{ hideError(); showSection2(); });
+    backToSection3.addEventListener('click', ()=>{ hideError(); showSection3(); });
+
+    // Address event listeners
+    recentMove.addEventListener('change', togglePreviousAddressFields);
+
+    // Address ID event listeners
+    addressIdYesBtn.addEventListener('click', chooseAddressIdYes);
+    addressIdNoBtn.addEventListener('click', chooseAddressIdNo);
+
+    // Address ID card management
+    addSecondAddressIdBtn.addEventListener('click', ()=>{
+      const cards = [addressIdCard2, addressIdCard3, addressIdCard4, addressIdCard5, addressIdCard6, addressIdCard7, addressIdCard8, addressIdCard9, addressIdCard10];
+      const removeBtns = [removeSecondAddressIdBtn, removeThirdAddressIdBtn, removeFourthAddressIdBtn, removeFifthAddressIdBtn, removeSixthAddressIdBtn, removeSeventhAddressIdBtn, removeEighthAddressIdBtn, removeNinthAddressIdBtn, removeTenthAddressIdBtn];
+      
+      for(let i = 0; i < cards.length; i++){
+        if(cards[i].classList.contains('hidden')){
+          cards[i].classList.remove('hidden');
+          removeBtns[i].disabled = false;
+          removeFirstAddressIdBtn.disabled = false;
+          
+          // Disable add button when we reach the 10th card
+          if(i === cards.length - 1){
+            addSecondAddressIdBtn.disabled = true;
+          }
+          break;
+        }
+      }
+    });
+
+    // Address ID remove buttons
+    removeFirstAddressIdBtn.addEventListener('click', ()=>{
+      if(!addressIdCard2.classList.contains('hidden')){
+        // Move card 2 to card 1 position
+        addressIdType1.value = addressIdType2.value;
+        addressIdUploads1.innerHTML = addressIdUploads2.innerHTML;
+        addressIdType2.value = '';
+        addressIdUploads2.innerHTML = '';
+        addressIdCard2.classList.add('hidden');
+        removeSecondAddressIdBtn.disabled = true;
+        addSecondAddressIdBtn.disabled = false;
+      } else {
+        // Just remove card 1
+        addressIdType1.value = '';
+        addressIdUploads1.innerHTML = '';
+        removeFirstAddressIdBtn.disabled = true;
+        addSecondAddressIdBtn.disabled = false;
+      }
+    });
+
+    removeSecondAddressIdBtn.addEventListener('click', ()=>{
+      addressIdType2.value = '';
+      addressIdUploads2.innerHTML = '';
+      addressIdCard2.classList.add('hidden');
+      removeSecondAddressIdBtn.disabled = true;
+      addSecondAddressIdBtn.disabled = false;
+    });
+
+    removeThirdAddressIdBtn.addEventListener('click', ()=>{
+      addressIdType3.value = '';
+      addressIdUploads3.innerHTML = '';
+      addressIdCard3.classList.add('hidden');
+      removeThirdAddressIdBtn.disabled = true;
+      addSecondAddressIdBtn.disabled = false;
+    });
+
+    removeFourthAddressIdBtn.addEventListener('click', ()=>{
+      addressIdType4.value = '';
+      addressIdUploads4.innerHTML = '';
+      addressIdCard4.classList.add('hidden');
+      removeFourthAddressIdBtn.disabled = true;
+      addSecondAddressIdBtn.disabled = false;
+    });
+
+    removeFifthAddressIdBtn.addEventListener('click', ()=>{
+      addressIdType5.value = '';
+      addressIdUploads5.innerHTML = '';
+      addressIdCard5.classList.add('hidden');
+      removeFifthAddressIdBtn.disabled = true;
+      addSecondAddressIdBtn.disabled = false;
+    });
+
+    removeSixthAddressIdBtn.addEventListener('click', ()=>{
+      addressIdType6.value = '';
+      addressIdUploads6.innerHTML = '';
+      addressIdCard6.classList.add('hidden');
+      removeSixthAddressIdBtn.disabled = true;
+      addSecondAddressIdBtn.disabled = false;
+    });
+
+    removeSeventhAddressIdBtn.addEventListener('click', ()=>{
+      addressIdType7.value = '';
+      addressIdUploads7.innerHTML = '';
+      addressIdCard7.classList.add('hidden');
+      removeSeventhAddressIdBtn.disabled = true;
+      addSecondAddressIdBtn.disabled = false;
+    });
+
+    removeEighthAddressIdBtn.addEventListener('click', ()=>{
+      addressIdType8.value = '';
+      addressIdUploads8.innerHTML = '';
+      addressIdCard8.classList.add('hidden');
+      removeEighthAddressIdBtn.disabled = true;
+      addSecondAddressIdBtn.disabled = false;
+    });
+
+    removeNinthAddressIdBtn.addEventListener('click', ()=>{
+      addressIdType9.value = '';
+      addressIdUploads9.innerHTML = '';
+      addressIdCard9.classList.add('hidden');
+      removeNinthAddressIdBtn.disabled = true;
+      addSecondAddressIdBtn.disabled = false;
+    });
+
+    removeTenthAddressIdBtn.addEventListener('click', ()=>{
+      addressIdType10.value = '';
+      addressIdUploads10.innerHTML = '';
+      addressIdCard10.classList.add('hidden');
+      removeTenthAddressIdBtn.disabled = true;
+      addSecondAddressIdBtn.disabled = false;
+    });
+
+    // Address ID type change handlers
+    [addressIdType1, addressIdType2, addressIdType3, addressIdType4, addressIdType5, addressIdType6, addressIdType7, addressIdType8, addressIdType9, addressIdType10].forEach((select, index) => {
+      if(select) {
+        select.addEventListener('change', ()=>{
+          const uploads = [addressIdUploads1, addressIdUploads2, addressIdUploads3, addressIdUploads4, addressIdUploads5, addressIdUploads6, addressIdUploads7, addressIdUploads8, addressIdUploads9, addressIdUploads10][index];
+          if(select.value){
+            uploads.innerHTML = '';
+            const uploader = makeUploader(`addressId${index + 1}`);
+            uploads.appendChild(uploader.wrap);
+            uploads.appendChild(uploader.input);
+          } else {
+            uploads.innerHTML = '';
+          }
+        });
+      }
+    });
+
+    nextFromSection2.addEventListener('click', ()=>{
+      hideError();
+      if(wantsPhotoId === null){ showError('Please choose Yes or No for Photo ID.'); return; }
+      const errs = validateSection2();
+      if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
+      showSection3();
+    });
+
+    nextToSection4.addEventListener('click', ()=>{
+      hideError();
+      const errs = validateSection3();
+      if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
+      showSection4();
+    });
+
+    finishBtn.addEventListener('click', ()=>{
+      console.log('Upload button clicked');
+      hideError();
+      if(wantsAddressId === null){ showError('Please choose Yes or No for Address ID.'); return; }
+      const errs = validateSection4();
+      console.log('Validation errors:', errs);
+      if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
+      
+      // Check if at least one file is uploaded
+      const files = collectFiles();
+      console.log('Collected files:', files);
+      if(files.length === 0){
+        showError('You must upload at least one form of either Address ID or Photo ID to upload this information. Please go back and add one and try again.');
+        return;
+      }
+      
+      // Start upload process
+      showUploadSection();
+    });
+
+    // Section 2 wiring
+    photoYesBtn.addEventListener('click', ()=>{ choosePhotoYes(); });
+    photoNoBtn.addEventListener('click', ()=>{ choosePhotoNo(); });
+
+    addSecondIdBtn.addEventListener('click', ()=>{
+      photoIdCard2.classList.remove('hidden'); 
+      addSecondIdBtn.disabled = true; 
+      removeFirstIdBtn.disabled = false;
+      removeSecondIdBtn.disabled = false;
+      updatePhotoHint();
+    });
+    
+    removeFirstIdBtn.addEventListener('click', ()=>{
+      photoIdType1.value=''; 
+      photoUploads1.innerHTML=''; 
+      if(photoIdCard2.classList.contains('hidden')){
+        // If only one card, hide the whole section
+        photoIdCards.classList.add('hidden');
+        wantsPhotoId = null;
+        photoYesBtn.classList.remove('selected');
+        photoNoBtn.classList.remove('selected');
+      } else {
+        // If two cards, move second to first position
+        photoIdType1.value = photoIdType2.value;
+        photoUploads1.innerHTML = photoUploads2.innerHTML;
+        photoIdType2.value=''; 
+        photoUploads2.innerHTML=''; 
+        photoIdCard2.classList.add('hidden'); 
+        addSecondIdBtn.disabled = false;
+        removeFirstIdBtn.disabled = true;
+        removeSecondIdBtn.disabled = true;
+      }
+      updatePhotoHint();
+    });
+    
+    removeSecondIdBtn.addEventListener('click', ()=>{
+      photoIdType2.value=''; 
+      photoUploads2.innerHTML=''; 
+      photoIdCard2.classList.add('hidden'); 
+      addSecondIdBtn.disabled = false; 
+      removeFirstIdBtn.disabled = true;
+      removeSecondIdBtn.disabled = true;
+      updatePhotoHint();
+    });
+
+    photoIdType1.addEventListener('change', ()=>{
+      if(photoIdType2.value && photoIdType2.value === photoIdType1.value){
+        showError('Photo ID 2 must be different from Photo ID 1.');
+        photoIdType1.value='';
+        return;
+      }
+      renderUploads(photoUploads1, photoIdType1.value);
+    });
+    photoIdType2.addEventListener('change', ()=>{
+      if(photoIdType1.value && photoIdType2.value === photoIdType1.value){
+        showError('Photo ID 2 must be different from Photo ID 1.');
+        photoIdType2.value='';
+        return;
+      }
+      renderUploads(photoUploads2, photoIdType2.value);
+    });
+
+    // ===== PARENT COMMUNICATION =====
+    // Listen for data from parent window
+    window.addEventListener('message', (event)=>{
+      if(event.data && event.data.type === 'initiation-data'){
+        // Clear form and reset all data before loading new data
+        resetForm();
+        loadData(event.data.data || {});
+      }
+    });
+
+    // Load data from parent and populate form
+    function loadData(data){
+      initialData = data || {}; 
+      currentTitleText = initialData.fe || '';
+      currentTitle = initialData.fe || '';
+      currentClientNumber = initialData.clientNumber || '';
+      currentMatterNumber = initialData.matterNumber || '';
+      currentClientName = initialData.name || '';
+      
+      showSection1();
+      document.getElementById('titlePrefix').value = initialData.titlePrefix || '';
+      document.getElementById('firstName').value = initialData.firstName || '';
+      document.getElementById('middleName').value = initialData.middleNames || '';
+      document.getElementById('lastName').value = initialData.surname || '';
+      worktype.value = initialData.worktype || '';
+      relation.value = initialData.relation || '';
+      matterDescription.value = initialData.matterDesc || '';
+
+      if(initialData.clientRecentNameChange){
+        recentNameChange.checked = true; nameChangeFields.classList.remove('hidden');
+        document.getElementById('previousName').setAttribute('required','true');
+        document.getElementById('reasonForNameChange').setAttribute('required','true');
+        prevNameLabel.style.display = 'block'; reasonLabel.style.display = 'block';
+      } else {
+        recentNameChange.checked = false; nameChangeFields.classList.add('hidden');
+        document.getElementById('previousName').removeAttribute('required');
+        document.getElementById('reasonForNameChange').removeAttribute('required');
+        prevNameLabel.style.display = 'none'; reasonLabel.style.display = 'none';
+      }
+
+      if(initialData.previousName) document.getElementById('previousName').value = initialData.previousName;
+      if(initialData.reasonForNameChange) document.getElementById('reasonForNameChange').value = initialData.reasonForNameChange;
+      if(initialData.birthdate){
+        const digits = initialData.birthdate.replace(/[^0-9]/g,'').slice(0,8).split('');
+        dobInputs.forEach((inp,i)=>{ inp.value = digits[i] || ''; });
+      } else {
+        dobInputs.forEach(inp=> inp.value='');
+      }
+
+      // Section 2 defaults
+      wantsPhotoId = null; resetPhotoCards();
+      nextFromSection2.disabled = true;
+      setPhotoPrompt(); // Set the appropriate prompt text based on existing data
+      if(initialData.likenessNOTConfirmed !== undefined){
+        likenessNotConfirmed.checked = initialData.likenessNOTConfirmed;
+      }
+
+      // Section 3 defaults
+      if(initialData.address) currentAddress.value = initialData.address;
+      if(initialData.clientRecentHomeMove) {
+        recentMove.checked = true;
+        togglePreviousAddressFields();
+      }
+      if(initialData.previousAddress) previousAddress.value = initialData.previousAddress;
+
+      // Section 4 defaults
+      wantsAddressId = null; // Always reset to null initially
+      finishBtn.disabled = true;
+      setAddressIdPrompt(); // Set the appropriate prompt text based on existing data
+    }
+
+    // ===== MOCK DATA =====
+    // Mock data for local testing
+    mockBtn.addEventListener('click', ()=>{
+      loadData({
+        fe: 'BA',
+        clientNumber: '50',
+        matterNumber: '52',
+        name: 'Mr J R Archer-Moran',
+        _id: 'mock-database-id-123',
+        uploader: 'test@example.com',
+        titlePrefix: 'Mr', firstName: 'Jacob', middleNames: 'Robert', surname: 'Archer-Moran',
+        worktype: 'Sale of',
+        relation: 'Our Client',
+        matterDesc: 'Property sale transaction',
+        birthdate: '11-01-2001', 
+        photographicIdTaken: true, 
+        likenessNOTConfirmed: false,
+        address: '123 Main Street, London, SW1A 1AA',
+        clientRecentHomeMove: false,
+        previousAddress: '',
+        addressIdTaken: false,
+        idImages: [
+          {
+            type: 'PhotoID',
+            document: 'Driving Licence',
+            side: 'Front',
+            name: '50-52 - Mr J R Archer-Moran - Driving Licence Front',
+            data: {
+              type: 'image/jpeg',
+              size: 1234567,
+              name: 'driving-licence-front.jpg',
+              lastModified: 1703001234567
+            },
+            s3Key: 'protected/mock-dl-front-12345',
+            date: '12/20/2023, 10:30:45 AM',
+            uploader: 'reception@thurstanhoskin.co.uk'
+          },
+          {
+            type: 'PhotoID',
+            document: 'Driving Licence',
+            side: 'Back',
+            name: '50-52 - Mr J R Archer-Moran - Driving Licence Back',
+            data: {
+              type: 'image/jpeg',
+              size: 1156789,
+              name: 'driving-licence-back.jpg',
+              lastModified: 1703001234567
+            },
+            s3Key: 'protected/mock-dl-back-67890',
+            date: '12/20/2023, 10:30:45 AM',
+            uploader: 'reception@thurstanhoskin.co.uk'
+          }
+        ]
+      });
+    });
+
+    // Ensure finish button starts disabled on page load
+    finishBtn.disabled = true;
+  </script>
+</body>
+</html>
