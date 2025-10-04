@@ -62,45 +62,357 @@
       gap:var(--gap); 
     }
     
-    /* Responsive breakpoints */
-    @media (max-width: 768px) {
-      :root { --gap: 15px; }
-      .card { padding: 12px; margin: 8px auto; }
-      .row-grid-20-80, .row-grid-50-50, .row-grid-40-60 { 
-        grid-template-columns: 1fr; 
-        gap: 10px; 
-      }
-      .birthdate-inputs { 
-        flex-wrap: wrap; 
-        gap: 4px; 
-      }
-      .birthdate-inputs input { 
-        width: calc(2ch + 6px); 
-        font-size: 0.8rem; 
-      }
-    }
+        /* Responsive breakpoints */
+        @media (max-width: 800px) {
+          :root { --gap: 18px; }
+          .responsive-container { padding: 0 10px; }
+          .card { 
+            padding: 14px; 
+            margin: 10px auto; 
+            width: 100%;
+            max-width: 100%;
+          }
+          /* Keep all grids as two columns at 800px */
+          .row-grid-20-80 { 
+            grid-template-columns: 20% 1fr; 
+            gap: 15px; 
+          }
+          .row-grid-50-50 { 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+          }
+          .row-grid-40-60 { 
+            grid-template-columns: 40% 1fr; 
+            gap: 15px; 
+          }
+          .birthdate-inputs { 
+            flex-wrap: nowrap; 
+            gap: 5px; 
+            overflow-x: auto;
+          }
+          .birthdate-inputs input { 
+            width: calc(2.2ch + 7px); 
+            font-size: 0.85rem; 
+            flex-shrink: 0;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          :root { --gap: 15px; }
+          .responsive-container { padding: 0 8px; }
+          .card { 
+            padding: 12px; 
+            margin: 8px auto; 
+            width: 100%;
+            max-width: 100%;
+          }
+          /* Keep 20-80 grids (title/firstname) as two columns */
+          .row-grid-20-80 { 
+            grid-template-columns: 20% 1fr; 
+            gap: 10px; 
+          }
+          /* Keep 50-50 grids (worktype/relation) as two columns at 768px+ */
+          .row-grid-50-50 { 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+          }
+          /* Keep 40-60 grids (address id) as two columns */
+          .row-grid-40-60 { 
+            grid-template-columns: 40% 1fr; 
+            gap: 10px; 
+          }
+          .birthdate-inputs { 
+            flex-wrap: nowrap; 
+            gap: 4px; 
+            overflow-x: auto;
+          }
+          .birthdate-inputs input { 
+            width: calc(2ch + 6px); 
+            font-size: 0.8rem; 
+            flex-shrink: 0;
+          }
+        }
     
     @media (max-width: 480px) {
       :root { --gap: 10px; }
-      .card { padding: 10px; margin: 5px auto; }
+      .responsive-container { padding: 0 5px; }
+      .card { 
+        padding: 10px; 
+        margin: 5px auto; 
+        width: 100%;
+        max-width: 100%;
+      }
       h2 { font-size: 1.2rem; }
       h3 { font-size: 0.9rem; }
       input, select { padding: 8px; font-size: 0.85rem; }
+      /* Keep 20-80 grids (title/firstname) as two columns even at 480px */
+      .row-grid-20-80 { 
+        grid-template-columns: 25% 1fr; 
+        gap: 8px; 
+      }
+      /* Stack 50-50 grids (worktype/relation) */
+      .row-grid-50-50 { 
+        grid-template-columns: 1fr; 
+        gap: 8px; 
+      }
+      /* Keep 40-60 grids (address id) as two columns */
+      .row-grid-40-60 { 
+        grid-template-columns: 35% 1fr; 
+        gap: 8px; 
+      }
+      .birthdate-inputs { 
+        flex-wrap: nowrap; 
+        gap: 3px; 
+        overflow-x: auto;
+      }
       .birthdate-inputs input { 
         width: calc(1.8ch + 4px); 
         padding: 6px; 
         font-size: 0.75rem; 
+        flex-shrink: 0;
       }
     }
     
     @media (max-width: 320px) {
-      .card { padding: 8px; }
+      .responsive-container { padding: 0 3px; }
+      .card { 
+        padding: 8px; 
+        width: 100%;
+        max-width: 100%;
+        margin: 3px auto;
+      }
       h2 { font-size: 1.1rem; }
+      h3 { font-size: 0.8rem; }
       input, select { padding: 6px; font-size: 0.8rem; }
+      /* Keep 20-80 grids (title/firstname) as two columns even at 320px */
+      .row-grid-20-80 { 
+        grid-template-columns: 30% 1fr; 
+        gap: 6px; 
+      }
+      /* Stack 50-50 grids (worktype/relation) */
+      .row-grid-50-50 { 
+        grid-template-columns: 1fr; 
+        gap: 6px; 
+      }
+      /* Stack 40-60 grids (address id) at 320px */
+      .row-grid-40-60 { 
+        grid-template-columns: 1fr; 
+        gap: 6px; 
+      }
+      .birthdate-inputs { 
+        flex-wrap: nowrap; 
+        gap: 0px; 
+        overflow-x: auto;
+      }
       .birthdate-inputs input { 
-        width: calc(1.5ch + 3px); 
+        width: calc(0.9ch + 1px); 
+        padding: 1px 2px; 
+        font-size: 0.6rem; 
+        flex-shrink: 0;
+        min-width: 0;
+        border: 1px solid #ccc;
+      }
+    }
+    
+    /* Specific breakpoint for 300px to handle uploaded images data spill */
+    @media (max-width: 300px) {
+      .responsive-container { padding: 0 2px; }
+      .card { 
+        padding: 6px; 
+        margin: 2px auto;
+      }
+      h2 { font-size: 1rem; }
+      h3 { font-size: 0.75rem; }
+      input, select { padding: 4px; font-size: 0.75rem; }
+      
+      /* Reduce uploaded images data size */
+      .file-item {
+        padding: 4px;
+        font-size: 0.7rem;
+      }
+      .file-item strong {
+        font-size: 0.65rem;
+      }
+      .file-item div {
+        font-size: 0.6rem;
+      }
+      
+      /* Keep 20-80 grids (title/firstname) as two columns */
+      .row-grid-20-80 { 
+        grid-template-columns: 35% 1fr; 
+        gap: 4px; 
+      }
+      /* Stack everything else */
+      .row-grid-50-50, .row-grid-40-60 { 
+        grid-template-columns: 1fr; 
+        gap: 4px; 
+      }
+      
+      .birthdate-inputs { 
+        gap: 0px; 
+      }
+      .birthdate-inputs input { 
+        width: calc(0.8ch + 1px); 
+        padding: 1px; 
+        font-size: 0.55rem; 
+        border: 1px solid #ccc;
+      }
+    }
+    
+    /* Specific breakpoint for 250px */
+    @media (max-width: 250px) {
+      .responsive-container { padding: 0 1px; }
+      .card { 
         padding: 4px; 
-        font-size: 0.7rem; 
+        margin: 1px auto;
+      }
+      h2 { font-size: 0.9rem; }
+      h3 { font-size: 0.7rem; }
+      input, select { padding: 3px; font-size: 0.7rem; }
+      
+      /* Minimal uploaded images data size */
+      .file-item {
+        padding: 2px;
+        font-size: 0.6rem;
+      }
+      .file-item strong {
+        font-size: 0.55rem;
+      }
+      .file-item div {
+        font-size: 0.5rem;
+      }
+      
+      /* Keep 20-80 grids (title/firstname) as two columns */
+      .row-grid-20-80 { 
+        grid-template-columns: 40% 1fr; 
+        gap: 2px; 
+      }
+      /* Stack everything else */
+      .row-grid-50-50, .row-grid-40-60 { 
+        grid-template-columns: 1fr; 
+        gap: 2px; 
+      }
+      
+      .birthdate-inputs { 
+        gap: 0px; 
+      }
+      .birthdate-inputs input { 
+        width: calc(0.7ch + 1px); 
+        padding: 1px; 
+        font-size: 0.5rem; 
+        border: 1px solid #ccc;
+        min-width: 0;
+      }
+      
+      /* Uploader cards at 250px */
+      .photo-upload-wrapper {
+        gap: 6px;
+      }
+      .photo-upload {
+        padding: 8px;
+        font-size: 0.7rem;
+      }
+      .photo-upload svg {
+        width: 16px;
+        height: 16px;
+        margin-right: 4px;
+      }
+      .photo-hint {
+        font-size: 0.7rem;
+        padding: 6px;
+      }
+      
+      /* Existing images data cards at 250px */
+      .image-card {
+        padding: 4px 6px;
+      }
+      .image-card h4 {
+        font-size: 0.7rem;
+        line-height: 1.2;
+      }
+      .image-meta {
+        font-size: 0.55rem;
+        white-space: normal;
+        text-align: left;
+        margin-top: 2px;
+        line-height: 1.2;
+      }
+      .image-title-section {
+        flex-direction: column;
+        gap: 2px;
+        align-items: flex-start;
+      }
+    }
+    
+    /* Uploader cards responsive styling for 320px */
+    @media (max-width: 320px) {
+      .photo-upload-wrapper {
+        gap: 8px;
+      }
+      .photo-upload {
+        padding: 12px;
+        font-size: 0.8rem;
+      }
+      .photo-upload svg {
+        width: 18px;
+        height: 18px;
+        margin-right: 4px;
+      }
+      .photo-hint {
+        font-size: 0.75rem;
+        padding: 8px;
+      }
+      .upload-block {
+        gap: 4px;
+      }
+      
+      /* Existing images data cards at 320px */
+      .image-card {
+        padding: 6px 8px;
+      }
+      .image-card h4 {
+        font-size: 0.75rem;
+        line-height: 1.2;
+      }
+      .image-meta {
+        font-size: 0.6rem;
+        white-space: normal;
+        text-align: left;
+        margin-top: 3px;
+        line-height: 1.2;
+      }
+      .image-title-section {
+        flex-direction: column;
+        gap: 3px;
+        align-items: flex-start;
+      }
+    }
+    
+    /* Ensure all sections are fully responsive */
+    @media (max-width: 768px) {
+      .card > * {
+        padding: 8px;
+      }
+      .row {
+        margin-bottom: 6px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .card > * {
+        padding: 6px;
+      }
+      .row {
+        margin-bottom: 4px;
+      }
+    }
+    
+    @media (max-width: 320px) {
+      .card > * {
+        padding: 4px;
+      }
+      .row {
+        margin-bottom: 3px;
       }
     }
 
@@ -123,7 +435,6 @@
       justify-content:space-between; 
       margin-top:var(--gap); 
       gap:var(--gap); 
-      flex-wrap: wrap;
     }
     .btn-primary { 
       background:var(--primary); 
@@ -134,8 +445,6 @@
       padding:10px 20px; 
       font-size:0.9rem; 
       cursor:pointer; 
-      flex: 1;
-      min-width: 120px;
     }
     .btn-primary:hover { background:#002b43; }
     .btn-primary:disabled { 
@@ -153,33 +462,12 @@
       padding:10px 20px; 
       font-size:0.9rem; 
       cursor:pointer; 
-      flex: 1;
-      min-width: 120px;
     }
     .btn-secondary:disabled { 
       background:none; 
       color:#666; 
       border:2px solid #ccc; 
       cursor:not-allowed; 
-    }
-    
-    /* Button responsive adjustments */
-    @media (max-width: 768px) {
-      .button-row { 
-        flex-direction: column; 
-        gap: 10px; 
-      }
-      .btn-primary, .btn-secondary { 
-        width: 100%; 
-        min-width: unset; 
-      }
-    }
-    
-    @media (max-width: 480px) {
-      .btn-primary, .btn-secondary { 
-        padding: 8px 16px; 
-        font-size: 0.85rem; 
-      }
     }
 
     /* Error popup: Modal for validation errors */

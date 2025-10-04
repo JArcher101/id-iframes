@@ -31,7 +31,7 @@
 
         .image-display-container {
             width: 100%;
-            max-width: 250px;
+            max-width: 980px;
             margin: 0 auto;
             position: relative;
         }
@@ -44,7 +44,7 @@
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            width: 250px;
+            width: 100%;
             margin: 0 auto;
         }
 
@@ -89,7 +89,7 @@
         .add-more-container {
             text-align: center;
             margin-top: 10px;
-            width: 250px;
+            width: 100%;
             margin-left: auto;
             margin-right: auto;
         }
@@ -114,7 +114,7 @@
 
         /* ID Image Uploader Section */
         .id-uploader-section {
-            width: 250px;
+            width: 100%;
             margin: 0 auto;
             padding: 15px;
             background: white;
@@ -846,7 +846,7 @@
         }
 
         .image-display-section {
-            width: 250px;
+            width: 100%;
             margin: 0 auto;
         }
 
@@ -863,7 +863,7 @@
 
         .reel-container {
             position: relative;
-            width: 250px;
+            width: 100%;
             height: 400px;
             margin: 0 auto;
             overflow: hidden;
@@ -879,7 +879,7 @@
         }
 
         .image-card {
-            min-width: 250px;
+            min-width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
@@ -1109,58 +1109,194 @@
         /* Responsive breakpoints */
         @media (max-width: 768px) {
             body { padding: 8px; }
-            .responsive-container { padding: 0 3px; }
-            .image-display-container { max-width: 220px; }
-            .awaiting-state { height: 350px; }
-            .reel-container { height: 350px; }
+            .responsive-container { padding: 0 8px; }
+            .image-display-container { 
+                max-width: 100%; 
+                width: 100%;
+                min-width: 220px;
+            }
+            .awaiting-state { 
+                height: 350px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .reel-container { 
+                height: 350px; 
+                width: 100%;
+                max-width: 100%;
+            }
             .client-heading { font-size: 0.85rem; padding: 6px 10px; }
+            .add-more-container {
+                width: 100%;
+                max-width: 100%;
+            }
+            .id-uploader-section {
+                width: 100%;
+                max-width: 100%;
+            }
         }
         
         @media (max-width: 480px) {
             body { padding: 5px; }
-            .responsive-container { padding: 0 2px; }
-            .image-display-container { max-width: 200px; }
-            .awaiting-state { height: 300px; }
-            .reel-container { height: 300px; }
+            .responsive-container { padding: 0 5px; }
+            .image-display-container { 
+                max-width: 100%; 
+                width: 100%;
+                min-width: 200px;
+            }
+            .awaiting-state { 
+                height: 300px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .reel-container { 
+                height: 300px; 
+                width: 100%;
+                max-width: 100%;
+            }
             .client-heading { font-size: 0.8rem; padding: 5px 8px; }
             .awaiting-content h3 { font-size: 1rem; }
             .awaiting-content p { font-size: 0.8rem; }
-            .mock-btn { padding: 8px 16px; font-size: 0.8rem; }
+            .add-more-container {
+                width: 100%;
+                max-width: 100%;
+            }
+            .id-uploader-section {
+                width: 100%;
+                max-width: 100%;
+            }
         }
         
         @media (max-width: 320px) {
-            .image-display-container { max-width: 180px; }
-            .awaiting-state { height: 280px; }
-            .reel-container { height: 280px; }
+            .responsive-container { padding: 0 3px; }
+            .image-display-container { 
+                max-width: 100%; 
+                width: 100%;
+                min-width: 180px;
+            }
+            .awaiting-state { 
+                height: 280px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .reel-container { 
+                height: 280px; 
+                width: 100%;
+                max-width: 100%;
+            }
             .client-heading { font-size: 0.75rem; padding: 4px 6px; }
             .awaiting-content h3 { font-size: 0.9rem; }
             .awaiting-content p { font-size: 0.75rem; }
-            .mock-btn { padding: 6px 12px; font-size: 0.75rem; }
+            .add-more-container {
+                width: 100%;
+                max-width: 100%;
+            }
+            .id-uploader-section {
+                width: 100%;
+                max-width: 100%;
+            }
         }
         
         /* Responsive uploader section */
         @media (max-width: 768px) {
-            .id-uploader-section { padding: 12px; }
+            .id-uploader-section { 
+                padding: 12px; 
+                width: 100%;
+                max-width: 100%;
+            }
             .uploader-header-container { padding: 6px 10px; }
             .uploader-header-top h2 { font-size: 1.1rem; }
             .uploader-header-subheading h3 { font-size: 0.8rem; }
+            .uploader-card {
+                width: 100%;
+                max-width: 100%;
+            }
+            .uploader-options {
+                width: 100%;
+            }
+            .uploader-option {
+                width: 100%;
+            }
         }
         
         @media (max-width: 480px) {
-            .id-uploader-section { padding: 10px; }
+            .id-uploader-section { 
+                padding: 10px; 
+                width: 100%;
+                max-width: 100%;
+            }
             .uploader-header-container { padding: 5px 8px; }
             .uploader-header-top h2 { font-size: 1rem; }
             .uploader-header-subheading h3 { font-size: 0.75rem; }
             .uploader-option h5 { font-size: 0.8rem; }
             .uploader-option { padding: 4px; }
+            .uploader-card {
+                width: 100%;
+                max-width: 100%;
+                padding: 8px;
+            }
+            .uploader-options {
+                width: 100%;
+            }
+            .uploader-option {
+                width: 100%;
+            }
         }
         
         @media (max-width: 320px) {
-            .id-uploader-section { padding: 8px; }
+            .id-uploader-section { 
+                padding: 8px; 
+                width: 100%;
+                max-width: 100%;
+            }
             .uploader-header-container { padding: 4px 6px; }
             .uploader-header-top h2 { font-size: 0.9rem; }
             .uploader-header-subheading h3 { font-size: 0.7rem; }
             .uploader-option h5 { font-size: 0.75rem; }
+            .uploader-card {
+                width: 100%;
+                max-width: 100%;
+                padding: 4px;
+                margin-bottom: 4px;
+            }
+            .uploader-card h4 {
+                font-size: 0.8rem;
+                margin: 0 0 6px 0;
+            }
+            .uploader-options {
+                width: 100%;
+            }
+            .uploader-option {
+                width: 100%;
+                padding: 2px;
+            }
+            .document-dropdown {
+                padding: 4px;
+                font-size: 0.75rem;
+            }
+            .upload-area, .upload-area-slimline {
+                padding: 8px;
+                font-size: 0.7rem;
+            }
+            .upload-text {
+                font-size: 0.7rem;
+            }
+            .upload-icon svg {
+                width: 14px;
+                height: 14px;
+            }
+            .side-tag-front, .side-tag-back {
+                font-size: 0.6rem;
+                padding: 1px 4px;
+                margin-bottom: 3px;
+            }
+            .photo-upload-side-by-side {
+                gap: 4px;
+            }
+            .remove-card-text-btn {
+                padding: 2px 4px;
+                font-size: 0.6rem;
+            }
         }
     </style>
 </head>
@@ -1266,7 +1402,9 @@
         function showImage(index) {
             if (images.length === 0) return;
             
-            const translateX = -index * 250;
+            // Get the current width of the reel container
+            const containerWidth = reelContainer.offsetWidth;
+            const translateX = -index * containerWidth;
             imageSlider.style.transform = `translateX(${translateX}px)`;
             
             // Update button states
@@ -2511,6 +2649,13 @@
                 
                 // Display the new images
                 displayImages(event.data.data, event.data.allowUploads, event.data.clientData, event.data.userEmail);
+            }
+        });
+
+        // Handle window resize for responsive image slider
+        window.addEventListener('resize', () => {
+            if (images.length > 0) {
+                showImage(currentImageIndex);
             }
         });
 
