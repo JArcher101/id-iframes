@@ -1677,12 +1677,8 @@
       nextFromSection2.disabled = false;
     }
     function choosePhotoNo(){ 
-      // Don't change wantsPhotoId if we already have photo ID uploaded
-      if (initialData.photographicIdTaken) {
-        wantsPhotoId = true; // Keep as true if we already have photos
-      } else {
-        wantsPhotoId = false; // Only set to false if no existing photos
-      }
+      // User explicitly chose "No" - this should always be false
+      wantsPhotoId = false;
       photoIdCards.classList.add('hidden'); 
       resetPhotoCards(); 
       photoNoBtn.classList.add('selected');
@@ -1838,7 +1834,7 @@
       if(t2Visible) checkUploads(photoUploads2, t2, 'Photo ID 2');
 
       // Only require photo ID if user wants it and doesn't have existing photo ID
-      if(!t1 && !t2Visible && wantsPhotoId && !initialData.photographicIdTaken){
+      if(!t1 && !t2Visible && wantsPhotoId === true && !initialData.photographicIdTaken){
         errors.push('Please add at least one form of Photo ID or choose No to continue without.');
       }
       return errors;
@@ -1857,19 +1853,21 @@
       form.classList.add('hidden'); section2.classList.remove('hidden'); section3.classList.add('hidden');
       mockBtn.classList.add('hidden');
       
-      // Check if a choice was already made
-      if (wantsPhotoId !== null) {
+      // Reset button states first
+      photoYesBtn.classList.remove('selected');
+      photoNoBtn.classList.remove('selected');
+      photoIdCards.classList.add('hidden');
+      
+      // Restore previous selection if user had made a choice
+      if (wantsPhotoId === true) {
+        photoYesBtn.classList.add('selected');
+        photoIdCards.classList.remove('hidden');
         nextFromSection2.disabled = false;
-        if (wantsPhotoId === true) {
-          photoYesBtn.classList.add('selected');
-          photoNoBtn.classList.remove('selected');
-          photoIdCards.classList.remove('hidden');
-        } else {
-          photoNoBtn.classList.add('selected');
-          photoYesBtn.classList.remove('selected');
-          photoIdCards.classList.add('hidden');
-        }
+      } else if (wantsPhotoId === false) {
+        photoNoBtn.classList.add('selected');
+        nextFromSection2.disabled = false;
       } else {
+        // No choice made yet - buttons remain unselected, Next disabled
         nextFromSection2.disabled = true;
       }
       
@@ -1888,21 +1886,22 @@
       form.classList.add('hidden'); section2.classList.add('hidden'); section3.classList.add('hidden'); section4.classList.remove('hidden');
       mockBtn.classList.add('hidden');
       
-      // Always reset button states - no pre-selection
+      // Reset button states first
       addressIdYesBtn.classList.remove('selected');
       addressIdNoBtn.classList.remove('selected');
       addressIdCards.classList.add('hidden');
-      finishBtn.disabled = true;
       
-      // Only restore state if user previously made a choice AND it's not null
-      if (wantsAddressId !== null && wantsAddressId !== undefined) {
+      // Restore previous selection if user had made a choice
+      if (wantsAddressId === true) {
+        addressIdYesBtn.classList.add('selected');
+        addressIdCards.classList.remove('hidden');
         finishBtn.disabled = false;
-        if (wantsAddressId === true) {
-          addressIdYesBtn.classList.add('selected');
-          addressIdCards.classList.remove('hidden');
-        } else if (wantsAddressId === false) {
-          addressIdNoBtn.classList.add('selected');
-        }
+      } else if (wantsAddressId === false) {
+        addressIdNoBtn.classList.add('selected');
+        finishBtn.disabled = false;
+      } else {
+        // No choice made yet - buttons remain unselected, Finish disabled
+        finishBtn.disabled = true;
       }
       
       setAddressIdPrompt();
@@ -2035,12 +2034,8 @@
       finishBtn.disabled = false;
     }
     function chooseAddressIdNo(){ 
-      // Don't change wantsAddressId if we already have address ID uploaded
-      if (initialData.addressIdTaken) {
-        wantsAddressId = true; // Keep as true if we already have address ID
-      } else {
-        wantsAddressId = false; // Only set to false if no existing address ID
-      }
+      // User explicitly chose "No" - this should always be false
+      wantsAddressId = false;
       addressIdCards.classList.add('hidden'); 
       resetAddressIdCards(); 
       addressIdNoBtn.classList.add('selected');
@@ -2095,7 +2090,7 @@
       });
 
       // Only require address ID if user wants it and doesn't have existing address ID
-      if (!hasAnyAddressId && wantsAddressId && !initialData.addressIdTaken) {
+      if (!hasAnyAddressId && wantsAddressId === true && !initialData.addressIdTaken) {
         errors.push('Please add at least one form of Address ID or choose No to continue without.');
       }
       
@@ -2493,40 +2488,6 @@
       updateHeader();
     }
 
-    // Show Section 2: Photo ID
-    function showSection2() {
-      cardTitle.textContent = 'Photo ID';
-      form.classList.add('hidden');
-      section2.classList.remove('hidden');
-      section3.classList.add('hidden');
-      section4.classList.add('hidden');
-      section5.classList.add('hidden');
-      mockBtn.classList.add('hidden');
-      setPhotoPrompt();
-    }
-
-    // Show Section 3: Address
-    function showSection3() {
-      cardTitle.textContent = 'Address';
-      form.classList.add('hidden');
-      section2.classList.add('hidden');
-      section3.classList.remove('hidden');
-      section4.classList.add('hidden');
-      section5.classList.add('hidden');
-      mockBtn.classList.add('hidden');
-    }
-
-    // Show Section 4: Address ID
-    function showSection4() {
-      cardTitle.textContent = 'Address ID';
-      form.classList.add('hidden');
-      section2.classList.add('hidden');
-      section3.classList.add('hidden');
-      section4.classList.remove('hidden');
-      section5.classList.add('hidden');
-      mockBtn.classList.add('hidden');
-      setAddressIdPrompt();
-    }
 
     // ===== EVENT LISTENERS =====
     // Navigation buttons
@@ -2680,6 +2641,14 @@
     nextFromSection2.addEventListener('click', ()=>{
       hideError();
       if(wantsPhotoId === null){ showError('Please choose Yes or No for Photo ID.'); return; }
+      
+      // If user selected "No", skip validation and proceed
+      if(wantsPhotoId === false){
+        showSection3();
+        return;
+      }
+      
+      // If user selected "Yes", run validation
       const errs = validateSection2();
       if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
       showSection3();
@@ -2696,6 +2665,22 @@
       console.log('Upload button clicked');
       hideError();
       if(wantsAddressId === null){ showError('Please choose Yes or No for Address ID.'); return; }
+      
+      // If user selected "No" for Address ID, check if they have Photo ID
+      if(wantsAddressId === false){
+        // Check if at least one file is uploaded (Photo ID only)
+        const files = collectFiles();
+        console.log('Collected files (Address ID = No):', files);
+        if(files.length === 0){
+          showError('You must upload at least one form of either Address ID or Photo ID to upload this information. Please go back and add one and try again.');
+          return;
+        }
+        // Start upload process
+        showUploadSection();
+        return;
+      }
+      
+      // If user selected "Yes" for Address ID, run validation
       const errs = validateSection4();
       console.log('Validation errors:', errs);
       if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
