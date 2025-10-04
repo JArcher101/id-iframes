@@ -682,6 +682,123 @@
             color: white;
         }
 
+        /* Toggle switch styling (copied from image uploader) */
+        .toggle { 
+            position: relative; 
+            display: inline-block; 
+            width: 50px; 
+            height: 24px; 
+            margin-top: 6px; 
+        }
+        .toggle input { 
+            display: none; 
+        }
+        .slider { 
+            position: absolute; 
+            cursor: pointer; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background: #e02424; 
+            transition: .4s; 
+            border-radius: 24px; 
+        }
+        .slider:before { 
+            position: absolute; 
+            content: ''; 
+            height: 18px; 
+            width: 18px; 
+            left: 3px; 
+            bottom: 3px; 
+            background: #fff; 
+            transition: .4s; 
+            border-radius: 50%; 
+        }
+        input:checked + .slider { 
+            background: #10a37f; 
+        }
+        input:checked + .slider:before { 
+            transform: translateX(26px); 
+        }
+
+        /* Likeness toggle card styling */
+        .likeness-toggle-card {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 12px 12px 12px;
+            margin-top: 8px;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+
+        /* Likeness toggle specific styling (reversed colors) */
+        .likeness-toggle { 
+            margin: 0; 
+            text-align: left; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .likeness-toggle label {
+            font-size: 0.8rem;
+            color: #666;
+            margin: 0;
+        }
+        .likeness-toggle .toggle { 
+            width: 40px; 
+            height: 20px; 
+            margin-top: 0; 
+        }
+        .likeness-toggle .toggle .slider { 
+            background: #10a37f; 
+        }
+        .likeness-toggle .toggle input:checked + .slider { 
+            background: #e02424; 
+        }
+        .likeness-toggle .toggle .slider:before { 
+            height: 14px; 
+            width: 14px; 
+            left: 3px; 
+            bottom: 3px; 
+        }
+        .likeness-toggle .toggle input:checked + .slider:before { 
+            transform: translateX(20px); 
+        }
+
+        /* Tooltip styling */
+        .toggle[title] {
+            position: relative;
+            cursor: help;
+        }
+        .toggle[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            margin-bottom: 5px;
+        }
+        .toggle[title]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #333;
+            margin-bottom: -5px;
+        }
+
         /* Photo ID Card Styling (matching main uploader) */
         .card-header {
             display: flex;
@@ -1130,6 +1247,14 @@
                 width: 100%;
                 max-width: 100%;
             }
+            .likeness-toggle-card {
+                padding: 6px 10px 10px 10px;
+                margin-top: 6px;
+                margin-bottom: 10px;
+            }
+            .likeness-toggle label {
+                font-size: 0.75rem;
+            }
             .id-uploader-section {
                 width: 100%;
                 max-width: 100%;
@@ -1161,6 +1286,14 @@
                 width: 100%;
                 max-width: 100%;
             }
+            .likeness-toggle-card {
+                padding: 5px 8px 8px 8px;
+                margin-top: 5px;
+                margin-bottom: 8px;
+            }
+            .likeness-toggle label {
+                font-size: 0.7rem;
+            }
             .id-uploader-section {
                 width: 100%;
                 max-width: 100%;
@@ -1190,6 +1323,14 @@
             .add-more-container {
                 width: 100%;
                 max-width: 100%;
+            }
+            .likeness-toggle-card {
+                padding: 4px 6px 6px 6px;
+                margin-top: 4px;
+                margin-bottom: 6px;
+            }
+            .likeness-toggle label {
+                font-size: 0.65rem;
             }
             .id-uploader-section {
                 width: 100%;
@@ -1372,6 +1513,7 @@
         let userEmail = '';
         let uploaderCards = [];
         let s3Keys = null;
+        let itemId = null; // Store the item _id for later use
         let uploadedImages = null;
         let imageSlider, prevBtn, nextBtn, loadingState, awaitingState, imageDisplaySection, reelContainer, mockBtn, addMoreContainer, addMoreBtn, clientHeading;
         let idUploaderSection, uploaderSubheading, uploaderCardsContainer, uploadAllBtn, cancelHeaderBtn, errorPopup, errorMessage, errorPopupClose, dynamicHint;
@@ -1608,6 +1750,7 @@
             updateUploaderSubheading();
             createInitialCard();
             updateUploadButton(); // Ensure button is in correct state
+            updateLikenessToggleVisibility(); // Update toggle visibility
         }
 
         function hideUploader() {
@@ -1640,6 +1783,21 @@
                 </div>
             `;
             uploaderCardsContainer.appendChild(optionsContainer);
+
+            // Add likeness toggle card below the add buttons
+            const likenessToggleCard = document.createElement('div');
+            likenessToggleCard.className = 'likeness-toggle-card hidden';
+            likenessToggleCard.id = 'likenessToggleCard';
+            likenessToggleCard.innerHTML = `
+                <div class="likeness-toggle">
+                    <label>Likeness Not Confirmed</label>
+                    <label class="toggle" title="Green - Likeness Confirmed | Red - Likeness NOT Confirmed">
+                        <input type="checkbox" id="likenessNotConfirmedViewer" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            `;
+            uploaderCardsContainer.appendChild(likenessToggleCard);
         }
 
         function addAdditionalCard(type) {
@@ -1653,6 +1811,9 @@
             uploaderCardsContainer.appendChild(card);
             uploaderCards.push(card);
             updateUploadButton();
+            
+            // Update likeness toggle visibility
+            updateLikenessToggleVisibility();
         }
 
         function createAdditionalCard(cardNumber, type) {
@@ -2057,16 +2218,60 @@
         function handleUploadSuccess() {
             hideUploadingState();
             
+            // Detect upload types from uploader cards
+            const { photoIdUploaded, addressIdUploaded } = detectUploadTypes();
+            
+            // Get likeness toggle value
+            const likenessNOTConfirmed = getLikenessToggleValue();
+            
             // Send success message to parent with images data from put-links response
             window.parent.postMessage({
-                type: 'upload-success',
-                message: 'Images uploaded successfully',
+                type: 'uploadSuccess',
                 images: uploadedImages,
-                s3Keys: s3Keys
+                _id: itemId,
+                uploader: userEmail,
+                photoIdUploaded: photoIdUploaded,
+                addressIdUploaded: addressIdUploaded,
+                likenessNOTConfirmed: likenessNOTConfirmed
             }, '*');
             
             // Return to awaiting data section
             returnToAwaitingData();
+        }
+
+        // Detect if Photo ID or Address ID types were uploaded
+        function detectUploadTypes() {
+            let photoIdUploaded = false;
+            let addressIdUploaded = false;
+            
+            // Check all uploader cards to see what types were uploaded
+            const uploaderCards = document.querySelectorAll('.uploader-card');
+            uploaderCards.forEach(card => {
+                const dropdown = card.querySelector('.document-dropdown');
+                if (dropdown && dropdown.value) {
+                    const documentType = dropdown.value;
+                    
+                    // Check if it's a Photo ID type
+                    const photoIdTypes = ['Passport', 'Driving Licence', 'Passport Card', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'];
+                    if (photoIdTypes.includes(documentType)) {
+                        photoIdUploaded = true;
+                    }
+                    
+                    // Check if it's an Address ID type
+                    const addressIdTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Voter Registration', 'Tenancy Agreement', 'Other'];
+                    if (addressIdTypes.includes(documentType)) {
+                        addressIdUploaded = true;
+                    }
+                }
+            });
+            
+            return { photoIdUploaded, addressIdUploaded };
+        }
+
+        // Get the current value of the likeness toggle
+        function getLikenessToggleValue() {
+            const likenessToggle = document.getElementById('likenessNotConfirmedViewer');
+            return likenessToggle ? likenessToggle.checked : false;
         }
 
         // Return to awaiting data section
@@ -2403,6 +2608,9 @@
             
             // Update upload button state
             updateUploadButton();
+            
+            // Update likeness toggle visibility
+            updateLikenessToggleVisibility();
         }
 
         function updateDynamicHintAfterRemoval() {
@@ -2415,6 +2623,25 @@
             
             if (!hasPhotoID) {
                 hideDynamicHint();
+            }
+        }
+
+        function updateLikenessToggleVisibility() {
+            const likenessToggleCard = document.getElementById('likenessToggleCard');
+            if (!likenessToggleCard) return;
+            
+            // Check if there are any photo ID uploaders
+            const photoCards = document.querySelectorAll('.uploader-card');
+            const hasPhotoID = Array.from(photoCards).some(card => {
+                const cardHeader = card.querySelector('.card-header label');
+                return cardHeader && cardHeader.textContent.includes('Photo ID');
+            });
+            
+            // Show toggle only when there are photo ID cards
+            if (hasPhotoID) {
+                likenessToggleCard.classList.remove('hidden');
+            } else {
+                likenessToggleCard.classList.add('hidden');
             }
         }
 
@@ -2649,6 +2876,12 @@
                 
                 // Display the new images
                 displayImages(event.data.data, event.data.allowUploads, event.data.clientData, event.data.userEmail);
+            } else if (event.data && event.data.type === 'display-images') {
+                handleDisplayImages(event.data);
+            } else if (event.data && event.data.type === 'put-links') {
+                handlePutLinks(event.data);
+            } else if (event.data && event.data.type === 'put-error') {
+                handlePutError(event.data);
             }
         });
 
@@ -2658,6 +2891,44 @@
                 showImage(currentImageIndex);
             }
         });
+
+        // Handle display images data from parent
+        function handleDisplayImages(data) {
+            console.log('Received display-images data from parent:', data);
+            
+            // Store the item ID for later use
+            itemId = data._id;
+            
+            // Store client data and user email
+            clientData = data.clientData || {};
+            userEmail = data.userEmail || '';
+            
+            // Process and display images
+            if (data.images && Array.isArray(data.images)) {
+                displayImages(data.images, true, data.clientData, data.userEmail);
+            } else {
+                // No images to display, show awaiting state
+                showAwaitingState();
+            }
+        }
+
+        // Handle PUT links for uploading files to S3
+        function handlePutLinks(data) {
+            console.log('Received PUT links:', data);
+            // This will be handled by the upload logic when files are ready
+            // The links and s3Keys are stored for use during upload
+        }
+
+        // Handle PUT error from backend
+        function handlePutError(data) {
+            console.error('PUT error from backend:', data);
+            showError(data.message || 'Upload failed. Please try again.');
+            
+            // Reset upload state
+            if (!idUploaderSection.classList.contains('hidden')) {
+                hideUploader();
+            }
+        }
 
         // Initialize
         console.log('Image display iframe loaded and ready');
