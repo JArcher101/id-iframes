@@ -832,6 +832,10 @@
             width: 50%;
         }
 
+        .photo-upload-half .upload-area {
+            width: 100%;
+        }
+
         .photo-upload {
             margin-bottom: 6px;
         }
@@ -858,7 +862,7 @@
             font-weight: 700;
             color: #444;
             font-size: 0.9rem;
-            max-width: 250px;
+            width: 100%;
             word-wrap: break-word;
             overflow-wrap: break-word;
             box-sizing: border-box;
@@ -880,7 +884,7 @@
             font-weight: 700;
             color: #444;
             font-size: 0.9rem;
-            max-width: 250px;
+            width: 100%;
             word-wrap: break-word;
             overflow-wrap: break-word;
             box-sizing: border-box;
@@ -960,6 +964,7 @@
             border-radius: 4px;
             font-size: 0.75rem;
             font-weight: 600;
+            text-align: center;
         }
 
         .image-display-section {
@@ -1017,6 +1022,67 @@
             object-position: center;
         }
 
+        .image-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background: #f8f9fa;
+            color: #6c757d;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .image-error-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #dee2e6;
+        }
+
+        .image-error-text {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .image-retry-btn {
+            margin-top: 15px;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .image-retry-btn:hover {
+            background: #357ABD;
+            transform: translateY(-1px);
+        }
+
+        .image-retry-btn:active {
+            transform: translateY(0);
+        }
+
+        .image-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background: #f8f9fa;
+            color: #6c757d;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
         .image-details {
             padding: 12px;
             background: #f5f5f5;
@@ -1045,7 +1111,7 @@
             border-radius: 3px;
             font-size: 0.7rem;
             font-weight: 600;
-            margin-bottom: 6px;
+            margin-left: 8px;
         }
 
         .uploader-info {
@@ -1549,6 +1615,8 @@
             const translateX = -index * containerWidth;
             imageSlider.style.transform = `translateX(${translateX}px)`;
             
+            console.log('Showing image at index:', index, 'translateX:', translateX, 'containerWidth:', containerWidth);
+            
             // Update button states
             prevBtn.disabled = index === 0;
             nextBtn.disabled = index === images.length - 1;
@@ -1568,9 +1636,84 @@
             }
         }
 
+        // Image error handling
+        function handleImageError(img, documentType, retryCount = 0) {
+            // Get the image card to find its index
+            const card = img.closest('.image-card');
+            const cards = document.querySelectorAll('.image-card');
+            const index = Array.from(cards).indexOf(card);
+            console.warn('Image failed to load:', img.src, 'for document:', documentType, 'Index:', index, 'Type:', index % 2 === 0 ? 'EVEN' : 'ODD', 'retry count:', retryCount);
+            
+            // Store the original source for retry
+            const originalSrc = img.src;
+            const maxRetries = 2; // Limit retries to prevent infinite loops
+            
+            // Replace the image with error placeholder
+            const container = img.parentElement;
+            const retryButton = retryCount < maxRetries ? 
+                `<button class="image-retry-btn" onclick="retryImageLoad('${originalSrc}', '${documentType}', this, ${retryCount + 1})">
+                    Retry (${maxRetries - retryCount} left)
+                </button>` : 
+                `<div class="image-error-text" style="margin-top: 15px; font-size: 0.8rem; color: #999;">
+                    Max retries reached
+                </div>`;
+            
+            container.innerHTML = `
+                <div class="image-error">
+                    <div class="image-error-icon">📷</div>
+                    <div class="image-error-text">
+                        <strong>Image unavailable</strong><br>
+                        ${documentType || 'Document image'} could not be loaded
+                    </div>
+                    ${retryButton}
+                </div>
+            `;
+        }
+
+        // Retry loading an image
+        function retryImageLoad(imageSrc, documentType, button, retryCount = 0) {
+            console.log('Retrying image load:', imageSrc, 'attempt:', retryCount + 1);
+            
+            // Show loading state
+            const container = button.closest('.image-error').parentElement;
+            container.innerHTML = `
+                <div class="image-loading">
+                    <div class="image-error-icon">⏳</div>
+                    <div class="image-error-text">Loading...</div>
+                </div>
+            `;
+            
+            // Create new image element
+            const img = document.createElement('img');
+            img.src = imageSrc;
+            img.alt = documentType || 'ID Document';
+            img.onerror = () => handleImageError(img, documentType, retryCount);
+            img.onload = () => handleImageLoad(img);
+            
+            // Replace loading state with image
+            container.innerHTML = '';
+            container.appendChild(img);
+        }
+
+        // Image load success
+        function handleImageLoad(img) {
+            // Get the image card to find its index
+            const card = img.closest('.image-card');
+            const cards = document.querySelectorAll('.image-card');
+            const index = Array.from(cards).indexOf(card);
+            console.log('Image loaded successfully:', img.src, 'Index:', index, 'Type:', index % 2 === 0 ? 'EVEN' : 'ODD');
+        }
+
         // Download function
         function downloadImage(imageData) {
             try {
+                // Check if imageData exists and has liveUrl
+                if (!imageData || !imageData.liveUrl) {
+                    console.error('Cannot download: image data is missing or invalid');
+                    alert('Cannot download image. Image data is missing or invalid.');
+                    return;
+                }
+                
                 const link = document.createElement('a');
                 link.href = imageData.liveUrl;
                 link.download = imageData.name || `image-${Date.now()}.jpg`;
@@ -1598,11 +1741,14 @@
             
             card.innerHTML = `
                 <div class="image-container">
-                    <img src="${imageData.liveUrl}" alt="${imageData.document || 'ID Document'}" loading="lazy">
+                    <img src="${imageData.liveUrl}" alt="${imageData.document || 'ID Document'}" onerror="handleImageError(this, '${imageData.document || 'ID Document'}')" onload="handleImageLoad(this)">
                 </div>
                 <div class="image-details">
                     <div class="document-header">
-                        <div class="document-type">${imageData.document || 'Unknown Document'}</div>
+                        <div class="document-type">
+                            ${imageData.document || 'Unknown Document'}
+                            ${sideTag}
+                        </div>
                         <button class="download-btn-header" onclick="downloadImage(images[${index}])" title="Download image">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -1611,7 +1757,6 @@
                             </svg>
                         </button>
                     </div>
-                    ${sideTag}
                     <div class="uploader-info">${uploaderInfo}</div>
                 </div>
             `;
@@ -1654,11 +1799,27 @@
             images.forEach((imageData, index) => {
                 const card = createImageCard(imageData, index);
                 imageSlider.appendChild(card);
+                
+                // Force load all images immediately to test if positioning is the issue
+                const img = card.querySelector('img');
+                if (img) {
+                    console.log('Forcing image load for index:', index, 'Type:', index % 2 === 0 ? 'EVEN' : 'ODD');
+                    // Trigger image load by setting src again
+                    img.src = img.src;
+                }
             });
             
             // Reset to first image
             currentImageIndex = 0;
-            showImage(0);
+            
+            // Debug: Check container width after cards are created
+            setTimeout(() => {
+                const containerWidth = reelContainer.offsetWidth;
+                console.log('Container width after cards created:', containerWidth);
+                
+                // Check if we need to wait for layout to complete
+                showImage(0);
+            }, 100);
             
             // Add image counter
             const counter = document.createElement('div');
@@ -1699,7 +1860,7 @@
                     document: 'Driving Licence',
                     side: 'Back',
                     name: '50-52 - Mr J R Archer-Moran - Driving Licence Back',
-                    liveUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6f?w=400&h=300&fit=crop',
+                    liveUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop',
                     uploader: 'reception@thurstanhoskin.co.uk',
                     date: '12/20/2023, 10:30:45 AM'
                 },
@@ -1715,7 +1876,7 @@
                     document: 'Bank Statement',
                     side: 'Single',
                     name: '50-52 - Mr J R Archer-Moran - Bank Statement',
-                    liveUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6f?w=400&h=300&fit=crop',
+                    liveUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop',
                     uploader: 'reception@thurstanhoskin.co.uk',
                     date: '12/20/2023, 10:40:30 AM'
                 },
@@ -1857,7 +2018,7 @@
                         <!-- Side-by-side uploaders for other photo IDs -->
                         <div class="photo-upload-side-by-side" style="display: none;">
                             <div class="photo-upload-half">
-                                <div class="side-tag-front" style="display: none; margin-bottom: 6px; font-size: 0.7rem; background: #d4a574; color: white; padding: 2px 6px; border-radius: 3px; font-weight: 600;">FRONT</div>
+                                <div class="side-tag-front" style="display: none; margin-bottom: 6px; font-size: 0.7rem; background: #d4a574; color: white; padding: 2px 6px; border-radius: 3px; font-weight: 600; width: 100%; box-sizing: border-box;">FRONT</div>
                             <div class="upload-area" onclick="triggerFileInput(this)" ondrop="handleDrop(event, this)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
                                     <div class="upload-icon">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1871,7 +2032,7 @@
                                 </div>
                             </div>
                             <div class="photo-upload-half">
-                                <div class="side-tag-back" style="display: none; margin-bottom: 6px; font-size: 0.7rem; background: #d4a574; color: white; padding: 2px 6px; border-radius: 3px; font-weight: 600;">BACK</div>
+                                <div class="side-tag-back" style="display: none; margin-bottom: 6px; font-size: 0.7rem; background: #d4a574; color: white; padding: 2px 6px; border-radius: 3px; font-weight: 600; width: 100%; box-sizing: border-box;">BACK</div>
                                 <div class="upload-area" onclick="triggerFileInput(this)" ondrop="handleDrop(event, this)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
                                     <div class="upload-icon">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1903,7 +2064,6 @@
                         <option value="NHS Letter">NHS Letter</option>
                         <option value="Home Insurance">Home Insurance</option>
                         <option value="Council Tax Bill">Council Tax Bill</option>
-                        <option value="Driving Licence">Driving Licence</option>
                         <option value="Voter Registration">Voter Registration</option>
                         <option value="Tenancy Agreement">Tenancy Agreement</option>
                         <option value="Other">Other</option>
@@ -1943,7 +2103,7 @@
                 photoUploadWrapper.classList.remove('hidden');
                 
                 // Determine if this is a photo ID or address ID card
-                const addressIDTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Driving Licence', 'Voter Registration', 'Tenancy Agreement', 'Other'];
+                const addressIDTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Voter Registration', 'Tenancy Agreement', 'Other'];
                 const isAddressID = addressIDTypes.includes(dropdown.value);
                 
                 if (isAddressID) {
@@ -2746,7 +2906,7 @@
             for (const card of visibleCards) {
                 const dropdown = card.querySelector('.document-dropdown');
                 const documentType = dropdown.value;
-                const addressIDTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Driving Licence', 'Voter Registration', 'Tenancy Agreement', 'Other'];
+                const addressIDTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Voter Registration', 'Tenancy Agreement', 'Other'];
                 const isAddressID = addressIDTypes.includes(documentType);
                 const needsSingleUpload = ['Passport', 'Firearms Certificate'].includes(documentType);
                 
