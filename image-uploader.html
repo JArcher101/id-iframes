@@ -2377,7 +2377,7 @@
     // ===== DATA COMPILATION & UPLOAD =====
     // Compile all form data into structured object
     function compileFormData() {
-      const formData = {
+      const compiledFormData = {
         fe: currentTitleText,
         clientNumber: currentClientNumber,
         matterNumber: currentMatterNumber,
@@ -2404,11 +2404,11 @@
       };
 
       // Format birthdate as nn-nn-nnnn
-      if (formData.birthdate.length === 8) {
-        formData.birthdate = `${formData.birthdate.substring(0,2)}-${formData.birthdate.substring(2,4)}-${formData.birthdate.substring(4)}`;
+      if (compiledFormData.birthdate.length === 8) {
+        compiledFormData.birthdate = `${compiledFormData.birthdate.substring(0,2)}-${compiledFormData.birthdate.substring(2,4)}-${compiledFormData.birthdate.substring(4)}`;
       }
 
-      return formData;
+      return compiledFormData;
     }
 
     // Collect all uploaded files with metadata
