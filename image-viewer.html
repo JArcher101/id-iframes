@@ -2233,10 +2233,10 @@
         // Generate filename with invalid characters replaced
         function generateFileName(fileData) {
             // Replace forward slashes with hyphens in path components
-            const fe = (clientData.fe || '').replace(/\//g, '-');
-            const clientNumber = (clientData.clientNumber || '').replace(/\//g, '-');
-            const matterNumber = (clientData.matterNumber || '').replace(/\//g, '-');
-            const clientName = (clientData.name || '').replace(/\//g, '-');
+            const fe = String(clientData.fe || '').replace(/\//g, '-');
+            const clientNumber = String(clientData.clientNumber || '').replace(/\//g, '-');
+            const matterNumber = String(clientData.matterNumber || '').replace(/\//g, '-');
+            const clientName = String(clientData.name || '').replace(/\//g, '-');
             
             return `${fe}/${clientNumber}/${matterNumber} - ${clientName} - ${fileData.documentType}${fileData.side !== 'Single' ? ' ' + fileData.side : ''}`;
         }
