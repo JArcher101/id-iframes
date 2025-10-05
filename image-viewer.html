@@ -1707,15 +1707,16 @@
         // Download function
         function downloadImage(imageData) {
             try {
-                // Check if imageData exists and has liveUrl
-                if (!imageData || !imageData.liveUrl) {
+                // Check if imageData exists and has a URL
+                const imageUrl = imageData.url || imageData.liveUrl;
+                if (!imageData || !imageUrl) {
                     console.error('Cannot download: image data is missing or invalid');
                     alert('Cannot download image. Image data is missing or invalid.');
                     return;
                 }
                 
                 const link = document.createElement('a');
-                link.href = imageData.liveUrl;
+                link.href = imageUrl;
                 link.download = imageData.name || `image-${Date.now()}.jpg`;
                 document.body.appendChild(link);
                 link.click();
@@ -1741,7 +1742,7 @@
             
             card.innerHTML = `
                 <div class="image-container">
-                    <img src="${imageData.liveUrl}" alt="${imageData.document || 'ID Document'}" onerror="handleImageError(this, '${imageData.document || 'ID Document'}')" onload="handleImageLoad(this)">
+                    <img src="${imageData.url || imageData.liveUrl}" alt="${imageData.document || 'ID Document'}" onerror="handleImageError(this, '${imageData.document || 'ID Document'}')" onload="handleImageLoad(this)">
                 </div>
                 <div class="image-details">
                     <div class="document-header">
