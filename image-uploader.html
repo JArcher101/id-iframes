@@ -2395,12 +2395,12 @@
         clientRecentNameChange: document.getElementById('recentNameChange').checked,
         previousName: document.getElementById('previousName').value,
         reasonForNameChange: document.getElementById('reasonForNameChange').value,
-        photographicIdTaken: wantsPhotoId,
+        photographicIdTaken: formData.photographicIdTaken || false,
         likenessNOTConfirmed: document.getElementById('likenessNotConfirmed').checked,
         address: document.getElementById('currentAddress').value,
         clientRecentHomeMove: document.getElementById('recentMove').checked,
         previousAddress: document.getElementById('previousAddress').value,
-        addressIdTaken: wantsAddressId
+        addressIdTaken: formData.addressIdTaken || false
       };
 
       // Format birthdate as nn-nn-nnnn
@@ -3157,6 +3157,7 @@
       wantsPhotoId = null; resetPhotoCards();
       nextFromSection2.disabled = true;
       setPhotoPrompt(); // Set the appropriate prompt text based on existing data
+      updatePhotographicIdTakenMarker(); // Update marker based on existing images
       if(formData.likenessNOTConfirmed !== undefined){
         likenessNotConfirmed.checked = formData.likenessNOTConfirmed;
       }
@@ -3173,6 +3174,7 @@
       wantsAddressId = null; // Always reset to null initially
       finishBtn.disabled = true;
       setAddressIdPrompt(); // Set the appropriate prompt text based on existing data
+      updateAddressIdTakenMarker(); // Update marker based on existing images
     }
 
     // ===== MOCK DATA =====
