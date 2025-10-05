@@ -97,6 +97,7 @@
           }
         }
         
+        
         @media (max-width: 768px) {
           :root { --gap: 15px; }
           .responsive-container { padding: 0 8px; }
@@ -366,25 +367,44 @@
         gap: 4px;
       }
       
-      /* Existing images data cards at 320px */
+      /* Existing images data cards at 320px - compact layout */
       .image-card {
         padding: 6px 8px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        text-align: left;
+        justify-content: flex-start;
       }
       .image-card h4 {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         line-height: 1.2;
+        margin: 0;
       }
       .image-meta {
-        font-size: 0.6rem;
+        font-size: 0.45rem;
         white-space: normal;
         text-align: left;
-        margin-top: 3px;
-        line-height: 1.2;
+        margin-top: 0;
+        line-height: 1.1;
+        order: 3;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        width: 100%;
       }
       .image-title-section {
-        flex-direction: column;
-        gap: 3px;
-        align-items: flex-start;
+        flex-direction: row;
+        gap: 6px;
+        align-items: center;
+        order: 1;
+        justify-content: flex-start;
+        width: 100%;
+        text-align: left;
+      }
+      .image-side-tag {
+        font-size: 0.6rem;
+        padding: 2px 4px;
+        order: 2;
       }
     }
     
@@ -602,7 +622,7 @@
       font-size:.85rem; 
       color:#666; 
       margin:var(--gap) 0; 
-      background:#f5f5f5; 
+      background:rgba(210, 180, 140, 0.3); /* Transparent yellowish brownish */
       padding:8px; 
       border-radius:8px; 
       text-align:center;
@@ -611,8 +631,13 @@
       background:var(--primary); 
       color:#fff; 
     }
+    .likeness-container {
+      background:#f5f5f5;
+      padding:12px;
+      border-radius:8px;
+      margin:var(--gap) 0;
+    }
     .likeness-toggle { 
-      margin:var(--gap) 0; 
       text-align:left; 
       display:flex;
       align-items:center;
@@ -894,6 +919,81 @@
       color: var(--primary);
       font-weight: 600;
     }
+    
+    /* 320px mobile styles - most specific, placed last */
+    @media (max-width: 320px) {
+      :root { --gap: 12px; }
+      .responsive-container { padding: 0 6px; }
+      .card { 
+        padding: 10px; 
+        margin: 6px auto; 
+        width: 100%;
+        max-width: 100%;
+      }
+      
+      /* Fix label spacing - add more padding above labels */
+      .row { margin-bottom: 8px; }
+      label { margin-bottom: 2px; margin-top: 8px; }
+      
+      /* Scale down birthdate inputs for 320px - single line, small */
+      .birthdate-inputs { 
+        display: flex !important;
+        gap: 2px !important;
+        max-width: 100%;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+      }
+      .birthdate-inputs input { 
+        width: calc(2.5ch + 6px) !important; 
+        font-size: 0.7rem !important; 
+        padding: 4px 3px !important;
+        text-align: center !important;
+        flex-shrink: 0 !important;
+      }
+      
+      /* Override image card styles for 320px */
+      .image-card {
+        padding: 6px 8px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+      }
+      .image-meta {
+        font-size: 0.5rem !important;
+        white-space: normal !important;
+        text-align: left !important;
+        margin-top: 0 !important;
+        line-height: 1.1 !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .image-title-section {
+        flex-direction: row !important;
+        gap: 6px !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        width: 100% !important;
+        text-align: left !important;
+      }
+      .image-card h4 {
+        font-size: 0.7rem !important;
+        margin: 0 !important;
+      }
+      .image-side-tag {
+        font-size: 0.6rem !important;
+        padding: 2px 4px !important;
+      }
+      
+      /* Add more space between yes/no and next/back buttons */
+      .button-row {
+        margin-top: 15px !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1046,12 +1146,14 @@
       </div>
 
       <div id="photoIdCards" class="hidden">
-        <div class="likeness-toggle">
-          <label>Likeness Not Confirmed</label>
-          <label class="toggle" title="Green - Likeness Confirmed | Red - Likeness NOT Confirmed">
-            <input type="checkbox" id="likenessNotConfirmed" />
-            <span class="slider"></span>
-          </label>
+        <div class="likeness-container">
+          <div class="likeness-toggle">
+            <label>Likeness Not Confirmed</label>
+            <label class="toggle" title="Green - Likeness Confirmed | Red - Likeness NOT Confirmed">
+              <input type="checkbox" id="likenessNotConfirmed" />
+              <span class="slider"></span>
+            </label>
+          </div>
         </div>
 
         <div class="photo-id-card" id="photoIdCard1">
@@ -1519,7 +1621,7 @@
     const uploadStatus = document.getElementById('uploadStatus');
 
     // ===== STATE VARIABLES =====
-    let errorTimeout; let currentTitleText = ''; let currentTitle = ''; let currentClientNumber = ''; let currentMatterNumber = ''; let currentClientName = ''; let initialData = {}; let wantsPhotoId = null; let wantsAddressId = null; let s3Keys = null;
+    let errorTimeout; let currentTitleText = ''; let currentTitle = ''; let currentClientNumber = ''; let currentMatterNumber = ''; let currentClientName = ''; let formData = {}; let wantsPhotoId = null; let wantsAddressId = null; let s3Keys = null; let imageData = [];
     
     // Initialize finish button as disabled
     finishBtn.disabled = true;
@@ -1649,10 +1751,10 @@
     // ===== SECTION 2: PHOTO ID =====
     // Set prompt text based on existing data
     function setPhotoPrompt(){
-      const hasExisting = Boolean(initialData.photographicIdTaken === true || initialData.photographicIdTaken === 'true');
+      const hasExisting = Boolean(formData.photographicIdTaken === true || formData.photographicIdTaken === 'true');
       photoIdPrompt.textContent = hasExisting
         ? 'Photo ID already uploaded, would you like to add more now?'
-        : 'Upload Photo ID now?';
+        : 'Would you like to upload Photo ID?';
       
       // Show/hide existing images table
       populateExistingImagesTable('photoId');
@@ -1677,17 +1779,87 @@
       nextFromSection2.disabled = false;
     }
     function choosePhotoNo(){ 
-      // User explicitly chose "No" - this should always be false
       wantsPhotoId = false;
       photoIdCards.classList.add('hidden'); 
       resetPhotoCards(); 
       photoNoBtn.classList.add('selected');
       photoYesBtn.classList.remove('selected');
       nextFromSection2.disabled = false;
+      
+      // Update photographicIdTaken based on existing images
+      updatePhotographicIdTakenMarker();
+      
       // Automatically proceed to Section 3
       setTimeout(() => {
         showSection3();
       }, 100);
+    }
+
+    // Update photographicIdTaken marker based on existing images and current uploads
+    function updatePhotographicIdTakenMarker() {
+      // Check if we have existing photo ID images
+      const hasExistingPhotoId = formData.idImages && Array.isArray(formData.idImages) && 
+        formData.idImages.some(img => img.type === 'PhotoID');
+      
+      // Check if we have current photo ID uploads with files
+      const hasCurrentPhotoId = wantsPhotoId && (
+        (photoIdType1.value && Array.from(photoUploads1.querySelectorAll('input[type="file"]')).some(input => input.files.length > 0)) ||
+        (photoIdType2.value && Array.from(photoUploads2.querySelectorAll('input[type="file"]')).some(input => input.files.length > 0))
+      );
+      
+      formData.photographicIdTaken = hasExistingPhotoId || hasCurrentPhotoId;
+    }
+
+    // Collect photo ID image data from uploaders
+    function collectPhotoIdImageData() {
+      const photoTypes = [photoIdType1.value, photoIdType2.value];
+      const photoUploads = [photoUploads1, photoUploads2];
+      const photoCards = [photoIdCard1, photoIdCard2];
+      
+      photoCards.forEach((card, index) => {
+        if (!card.classList.contains('hidden') && photoTypes[index]) {
+          const uploads = photoUploads[index];
+          const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
+          
+          inputs.forEach((input, fileIndex) => {
+            if (input.files && input.files[0]) {
+              const file = input.files[0];
+              
+              // Validate file type is an image
+              if (!file.type.startsWith('image/')) {
+                showError(`Invalid file type for ${photoTypes[index]}. Please select a valid image file.`);
+                return;
+              }
+              
+              let fileName = `${formData.fe}-${formData.clientNumber}-${formData.matterNumber} - ${formData.name} - ${photoTypes[index]}`;
+              
+              // Add front/back tag if applicable
+              const requiresFrontBack = needsFrontBack(photoTypes[index]);
+              if (requiresFrontBack) {
+                const isBack = fileIndex === 1;
+                fileName += ` ${isBack ? 'Back' : 'Front'}`;
+              }
+              
+              const imageInfo = {
+                type: 'PhotoID',
+                document: photoTypes[index],
+                side: requiresFrontBack ? (fileIndex === 1 ? 'Back' : 'Front') : 'Single',
+                name: fileName,
+                data: {
+                  type: file.type,
+                  size: file.size,
+                  name: file.name,
+                  lastModified: file.lastModified
+                },
+                date: new Date().toLocaleString(),
+                uploader: formData.uploader || 'Unknown'
+              };
+              
+              imageData.push(imageInfo);
+            }
+          });
+        }
+      });
     }
 
     // Check if ID type requires front/back images
@@ -1708,8 +1880,18 @@
       
       const handleFile = (files) => {
         if (files && files[0]) {
+          const file = files[0];
+          
+          // Validate file type is an image
+          if (!file.type.startsWith('image/')) {
+            showError('Please select a valid image file. Only image files are allowed.');
+            input.value = ''; // Clear the invalid file
+            wrap.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Select image or drag & drop`;
+            return;
+          }
+          
           input.files = files;
-          wrap.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> ${files[0].name}`;
+          wrap.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> ${file.name}`;
           if(onChangeCb) onChangeCb();
         }
       };
@@ -1801,11 +1983,11 @@
 
     // Section 2 validation: Photo ID types and file uploads
     function validateSection2(){
-      // If user doesn't want photo ID AND doesn't have existing photo ID, skip validation
-      if(wantsPhotoId === false && !initialData.photographicIdTaken) return [];
+      // If user selected "No" and doesn't have existing photo ID, skip validation
+      if(wantsPhotoId === false && !formData.photographicIdTaken) return [];
       
-      // If user has existing photo ID but selected "No" to adding more, skip validation
-      if(wantsPhotoId === true && initialData.photographicIdTaken && photoIdCard1.classList.contains('hidden') && photoIdCard2.classList.contains('hidden')) return [];
+      // If user selected "Yes" but has no visible cards, skip validation
+      if(wantsPhotoId === true && photoIdCard1.classList.contains('hidden') && photoIdCard2.classList.contains('hidden')) return [];
       
       const errors = [];
       const t1 = photoIdType1.value;
@@ -1817,6 +1999,7 @@
         if(!t2) errors.push('Please select a type for Photo ID 2.');
         if(t1 && t2 && t1 === t2) errors.push('Photo ID 2 must be different from Photo ID 1.');
       }
+      
       // Check files
       const checkUploads = (container, type, label) => {
         if(!type) return;
@@ -1833,10 +2016,6 @@
       checkUploads(photoUploads1, t1, 'Photo ID 1');
       if(t2Visible) checkUploads(photoUploads2, t2, 'Photo ID 2');
 
-      // Only require photo ID if user wants it and doesn't have existing photo ID
-      if(!t1 && !t2Visible && wantsPhotoId === true && !initialData.photographicIdTaken){
-        errors.push('Please add at least one form of Photo ID or choose No to continue without.');
-      }
       return errors;
     }
 
@@ -1938,7 +2117,7 @@
     // ===== SECTION 4: ADDRESS ID =====
     // Set prompt text based on existing data
     function setAddressIdPrompt(){
-      const hasExisting = Boolean(initialData.addressIdTaken === true || initialData.addressIdTaken === 'true');
+      const hasExisting = Boolean(formData.addressIdTaken === true || formData.addressIdTaken === 'true');
       addressIdPrompt.textContent = hasExisting
         ? 'Address ID already uploaded, would you like to add more now?'
         : 'Upload Address ID now?';
@@ -1958,9 +2137,9 @@
       list.innerHTML = '';
       
       // Check if we have existing images
-      if (initialData.idImages && Array.isArray(initialData.idImages) && initialData.idImages.length > 0) {
+      if (formData.idImages && Array.isArray(formData.idImages) && formData.idImages.length > 0) {
         // Filter images by type
-        const filteredImages = initialData.idImages.filter(img => {
+        const filteredImages = formData.idImages.filter(img => {
           if (type === 'photoId') {
             return img.type === 'PhotoID';
           } else {
@@ -2029,12 +2208,12 @@
     function chooseAddressIdYes(){ 
       wantsAddressId = true; 
       addressIdCards.classList.remove('hidden'); 
+      addressIdCard1.classList.remove('hidden'); // Ensure first card is visible
       addressIdYesBtn.classList.add('selected');
       addressIdNoBtn.classList.remove('selected');
       finishBtn.disabled = false;
     }
     function chooseAddressIdNo(){ 
-      // User explicitly chose "No" - this should always be false
       wantsAddressId = false;
       addressIdCards.classList.add('hidden'); 
       resetAddressIdCards(); 
@@ -2043,12 +2222,82 @@
       finishBtn.disabled = false;
     }
 
+    // Update addressIdTaken marker based on existing images and current uploads
+    function updateAddressIdTakenMarker() {
+      // Check if we have existing address ID images
+      const hasExistingAddressId = formData.idImages && Array.isArray(formData.idImages) && 
+        formData.idImages.some(img => img.type === 'Address ID');
+      
+      // Check if we have current address ID uploads with files
+      const addressIdTypes = [addressIdType1, addressIdType2, addressIdType3, addressIdType4, addressIdType5, addressIdType6, addressIdType7, addressIdType8, addressIdType9, addressIdType10];
+      const addressIdUploads = [addressIdUploads1, addressIdUploads2, addressIdUploads3, addressIdUploads4, addressIdUploads5, addressIdUploads6, addressIdUploads7, addressIdUploads8, addressIdUploads9, addressIdUploads10];
+      const addressIdCards = [addressIdCard1, addressIdCard2, addressIdCard3, addressIdCard4, addressIdCard5, addressIdCard6, addressIdCard7, addressIdCard8, addressIdCard9, addressIdCard10];
+      
+      let hasCurrentAddressId = false;
+      addressIdCards.forEach((card, index) => {
+        if (!card.classList.contains('hidden') && addressIdTypes[index].value) {
+          const uploads = addressIdUploads[index];
+          const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
+          if (inputs.length > 0 && inputs[0].files.length > 0) {
+            hasCurrentAddressId = true;
+          }
+        }
+      });
+      
+      formData.addressIdTaken = hasExistingAddressId || hasCurrentAddressId;
+    }
+
+    // Collect address ID image data from uploaders
+    function collectAddressIdImageData() {
+      const addressIdTypes = [addressIdType1, addressIdType2, addressIdType3, addressIdType4, addressIdType5, addressIdType6, addressIdType7, addressIdType8, addressIdType9, addressIdType10];
+      const addressIdUploads = [addressIdUploads1, addressIdUploads2, addressIdUploads3, addressIdUploads4, addressIdUploads5, addressIdUploads6, addressIdUploads7, addressIdUploads8, addressIdUploads9, addressIdUploads10];
+      const addressIdCards = [addressIdCard1, addressIdCard2, addressIdCard3, addressIdCard4, addressIdCard5, addressIdCard6, addressIdCard7, addressIdCard8, addressIdCard9, addressIdCard10];
+      
+      addressIdCards.forEach((card, index) => {
+        if (!card.classList.contains('hidden') && addressIdTypes[index].value) {
+          const uploads = addressIdUploads[index];
+          const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
+          
+          inputs.forEach((input) => {
+            if (input.files && input.files[0]) {
+              const file = input.files[0];
+              
+              // Validate file type is an image
+              if (!file.type.startsWith('image/')) {
+                showError(`Invalid file type for Address ID ${index + 1}. Please select a valid image file.`);
+                return;
+              }
+              
+              const fileName = `${formData.fe}-${formData.clientNumber}-${formData.matterNumber} - ${formData.name} - Address ID ${index + 1} - ${addressIdTypes[index].value}`;
+              
+              const imageInfo = {
+                type: 'Address ID',
+                document: addressIdTypes[index].value,
+                side: 'Single',
+                name: fileName,
+                data: {
+                  type: file.type,
+                  size: file.size,
+                  name: file.name,
+                  lastModified: file.lastModified
+                },
+                date: new Date().toLocaleString(),
+                uploader: formData.uploader || 'Unknown'
+              };
+              
+              imageData.push(imageInfo);
+            }
+          });
+        }
+      });
+    }
+
     // Section 4 validation: Address ID types and file uploads
     function validateSection4() {
-      console.log('validateSection4 - wantsAddressId:', wantsAddressId, 'addressIdTaken:', initialData.addressIdTaken);
+      console.log('validateSection4 - wantsAddressId:', wantsAddressId, 'addressIdTaken:', formData.addressIdTaken);
       
       // If user doesn't want address ID AND doesn't have existing address ID, skip validation
-      if(wantsAddressId === false && !initialData.addressIdTaken) {
+      if(wantsAddressId === false && !formData.addressIdTaken) {
         console.log('Skipping validation - no address ID wanted and none existing');
         return [];
       }
@@ -2058,7 +2307,7 @@
       const allCardsHidden = allAddressIdCards.every(card => card.classList.contains('hidden'));
       console.log('All cards hidden:', allCardsHidden);
       
-      if(wantsAddressId === true && initialData.addressIdTaken && allCardsHidden) {
+      if(wantsAddressId === true && formData.addressIdTaken && allCardsHidden) {
         console.log('Skipping validation - existing address ID but selected No to adding more');
         return [];
       }
@@ -2083,19 +2332,46 @@
             if (inputs.length === 0 || !inputs[0].files.length) {
               errors.push(`Please upload an image for Address ID ${index + 1}.`);
             } else {
-              hasValidAddressId = true;
+              // Validate file type is an image
+              const file = inputs[0].files[0];
+              if (!file.type.startsWith('image/')) {
+                errors.push(`Invalid file type for Address ID ${index + 1}. Please select a valid image file.`);
+              } else {
+                hasValidAddressId = true;
+              }
             }
           }
         }
       });
 
       // Only require address ID if user wants it and doesn't have existing address ID
-      if (!hasAnyAddressId && wantsAddressId === true && !initialData.addressIdTaken) {
+      if (!hasAnyAddressId && wantsAddressId === true && !formData.addressIdTaken) {
         errors.push('Please add at least one form of Address ID or choose No to continue without.');
       }
       
       console.log('Address ID validation errors:', errors);
       return errors;
+    }
+
+    // Start the upload process
+    function startUploadProcess() {
+      // Check if we have any images to upload
+      if(imageData.length === 0){
+        showError('No images to upload. Please add at least one form of Photo ID or Address ID.');
+        return;
+      }
+      
+      // Send image data to parent for S3 link generation
+      window.parent.postMessage({
+        type: 'image-data',
+        images: imageData
+      }, '*');
+      
+      // Listen for PUT links or PUT error response
+      window.addEventListener('message', handlePutResponse);
+      
+      // Show upload section
+      showUploadSection();
     }
 
     // ===== DATA COMPILATION & UPLOAD =====
@@ -2106,8 +2382,8 @@
         clientNumber: currentClientNumber,
         matterNumber: currentMatterNumber,
         name: currentClientName,
-        _id: initialData._id || undefined, // Include the original _id
-        uploader: initialData.uploader || undefined, // Include the uploader email
+        _id: formData._id || undefined, // Include the original _id
+        uploader: formData.uploader || undefined, // Include the uploader email
         titlePrefix: document.getElementById('titlePrefix').value,
         firstName: document.getElementById('firstName').value,
         middleNames: document.getElementById('middleName').value,
@@ -2324,7 +2600,7 @@
           },
           file: file, // File object for generating PUT (will be lost in postMessage)
           date: new Date().toLocaleString(),
-          uploader: initialData.uploader || undefined // Include the uploader email
+          uploader: formData.uploader || undefined // Include the uploader email
         };
       });
       
@@ -2405,17 +2681,16 @@
         } else {
           uploadStatus.textContent = 'Upload Complete!';
           // Send success message to parent with form data and S3 keys
-          const formData = compileFormData();
+          const finalFormData = compileFormData();
+          // Overwrite idImages with new S3 keys data (backend appends to existing)
+          finalFormData.idImages = s3Keys;
           window.parent.postMessage({
             type: 'upload-success',
-            data: formData,
+            data: finalFormData,
             idImages: s3Keys
           }, '*');
           
-          // Reset form after successful upload
-          setTimeout(() => {
-            resetForm();
-          }, 2000);
+          // Form stays active after successful upload - no reset needed
         }
       }
     }
@@ -2442,21 +2717,30 @@
     }
 
     // ===== FORM RESET =====
-    // Reset form to initial state
+    // Reset form to initial state - ONLY called on initiation-data message
     function resetForm() {
-      // Reset all form data
+      // Clear error timeout
+      if(errorTimeout) clearTimeout(errorTimeout);
+      errorTimeout = null;
+      
+      // Reset all form data and inputs
       form.reset();
+      
+      // Reset all state variables to initial values
       wantsPhotoId = null;
       wantsAddressId = null;
-      s3Keys = null; // Reset S3 keys
-      
-      // Reset all current data variables
+      s3Keys = null;
+      imageData = [];
       currentTitleText = '';
       currentTitle = '';
       currentClientNumber = '';
       currentMatterNumber = '';
       currentClientName = '';
-      initialData = {};
+      formData = {};
+      
+      // Reset all dropdowns to empty
+      worktypeDropdown.value = '';
+      relationDropdown.value = '';
       
       // Reset all sections - hide everything to show awaiting data state
       form.classList.add('hidden');
@@ -2465,11 +2749,24 @@
       section4.classList.add('hidden');
       section5.classList.add('hidden');
       
-      // Reset button states
+      // Reset all button states
       nextFromSection2.disabled = true;
       finishBtn.disabled = true;
+      photoYesBtn.classList.remove('selected');
+      photoNoBtn.classList.remove('selected');
+      addressIdYesBtn.classList.remove('selected');
+      addressIdNoBtn.classList.remove('selected');
       
-      // Show awaiting data
+      // Reset Section 2 specific elements
+      photoIdCards.classList.add('hidden');
+      resetPhotoCards();
+      likenessNotConfirmed.checked = false;
+      
+      // Reset Section 4 specific elements
+      addressIdCards.classList.add('hidden');
+      resetAddressIdCards();
+      
+      // Reset header and title
       cardTitle.textContent = 'Awaiting data';
       headerInfo.classList.add('hidden');
       mockBtn.classList.remove('hidden');
@@ -2478,7 +2775,7 @@
     // ===== SECTION NAVIGATION FUNCTIONS =====
     // Show Section 1: Client Details
     function showSection1() {
-      cardTitle.textContent = 'Client Details';
+      cardTitle.textContent = 'Section 1 - Client Details';
       form.classList.remove('hidden');
       section2.classList.add('hidden');
       section3.classList.add('hidden');
@@ -2488,6 +2785,27 @@
       updateHeader();
     }
 
+    // Update formData with current Section 1 inputs
+    function updateFormDataFromSection1() {
+      formData.titlePrefix = document.getElementById('titlePrefix').value;
+      formData.firstName = document.getElementById('firstName').value;
+      formData.middleNames = document.getElementById('middleName').value;
+      formData.surname = document.getElementById('lastName').value;
+      formData.worktype = worktype.value;
+      formData.relation = relation.value;
+      formData.matterDesc = matterDescription.value;
+      formData.birthdate = dobInputs.map(inp => inp.value).join('');
+      formData.clientRecentNameChange = document.getElementById('recentNameChange').checked;
+      formData.previousName = document.getElementById('previousName').value;
+      formData.reasonForNameChange = document.getElementById('reasonForNameChange').value;
+    }
+
+    // Update formData with current Section 3 inputs
+    function updateFormDataFromSection3() {
+      formData.address = currentAddress.value;
+      formData.clientRecentHomeMove = recentMove.checked;
+      formData.previousAddress = previousAddress.value;
+    }
 
     // ===== EVENT LISTENERS =====
     // Navigation buttons
@@ -2495,6 +2813,9 @@
       e.preventDefault(); hideError();
       const errors = validateSection1();
       if(errors.length){ showError('• ' + errors.join('\n• ')); return; }
+      
+      // Update formData with current Section 1 inputs before proceeding
+      updateFormDataFromSection1();
       showSection2();
     });
 
@@ -2642,8 +2963,9 @@
       hideError();
       if(wantsPhotoId === null){ showError('Please choose Yes or No for Photo ID.'); return; }
       
-      // If user selected "No", skip validation and proceed
+      // If user selected "No", update photographicIdTaken and proceed
       if(wantsPhotoId === false){
+        updatePhotographicIdTakenMarker();
         showSection3();
         return;
       }
@@ -2651,6 +2973,13 @@
       // If user selected "Yes", run validation
       const errs = validateSection2();
       if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
+      
+      // Collect image data from uploaders
+      collectPhotoIdImageData();
+      
+      // Update photographicIdTaken marker
+      updatePhotographicIdTakenMarker();
+      
       showSection3();
     });
 
@@ -2658,43 +2987,41 @@
       hideError();
       const errs = validateSection3();
       if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
+      
+      // Update formData with current Section 3 inputs before proceeding
+      updateFormDataFromSection3();
       showSection4();
     });
 
     finishBtn.addEventListener('click', ()=>{
-      console.log('Upload button clicked');
       hideError();
       if(wantsAddressId === null){ showError('Please choose Yes or No for Address ID.'); return; }
       
-      // If user selected "No" for Address ID, check if they have Photo ID
+      // If user selected "No" for Address ID
       if(wantsAddressId === false){
-        // Check if at least one file is uploaded (Photo ID only)
-        const files = collectFiles();
-        console.log('Collected files (Address ID = No):', files);
-        if(files.length === 0){
+        // Check if we have at least one photo ID uploaded
+        if(!formData.photographicIdTaken){
           showError('You must upload at least one form of either Address ID or Photo ID to upload this information. Please go back and add one and try again.');
           return;
         }
-        // Start upload process
-        showUploadSection();
+        // Update addressIdTaken marker and start upload process
+        updateAddressIdTakenMarker();
+        startUploadProcess();
         return;
       }
       
       // If user selected "Yes" for Address ID, run validation
       const errs = validateSection4();
-      console.log('Validation errors:', errs);
       if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
       
-      // Check if at least one file is uploaded
-      const files = collectFiles();
-      console.log('Collected files:', files);
-      if(files.length === 0){
-        showError('You must upload at least one form of either Address ID or Photo ID to upload this information. Please go back and add one and try again.');
-        return;
-      }
+      // Collect address ID image data
+      collectAddressIdImageData();
+      
+      // Update addressIdTaken marker
+      updateAddressIdTakenMarker();
       
       // Start upload process
-      showUploadSection();
+      startUploadProcess();
     });
 
     // Section 2 wiring
@@ -2771,23 +3098,23 @@
 
     // Load data from parent and populate form
     function loadData(data){
-      initialData = data || {}; 
-      currentTitleText = initialData.fe || '';
-      currentTitle = initialData.fe || '';
-      currentClientNumber = initialData.clientNumber || '';
-      currentMatterNumber = initialData.matterNumber || '';
-      currentClientName = initialData.name || '';
+      formData = data || {}; 
+      currentTitleText = formData.fe || '';
+      currentTitle = formData.fe || '';
+      currentClientNumber = formData.clientNumber || '';
+      currentMatterNumber = formData.matterNumber || '';
+      currentClientName = formData.name || '';
       
       showSection1();
-      document.getElementById('titlePrefix').value = initialData.titlePrefix || '';
-      document.getElementById('firstName').value = initialData.firstName || '';
-      document.getElementById('middleName').value = initialData.middleNames || '';
-      document.getElementById('lastName').value = initialData.surname || '';
-      worktype.value = initialData.worktype || '';
-      relation.value = initialData.relation || '';
-      matterDescription.value = initialData.matterDesc || '';
+      document.getElementById('titlePrefix').value = formData.titlePrefix || '';
+      document.getElementById('firstName').value = formData.firstName || '';
+      document.getElementById('middleName').value = formData.middleNames || '';
+      document.getElementById('lastName').value = formData.surname || '';
+      worktype.value = formData.worktype || '';
+      relation.value = formData.relation || '';
+      matterDescription.value = formData.matterDesc || '';
 
-      if(initialData.clientRecentNameChange){
+      if(formData.clientRecentNameChange){
         recentNameChange.checked = true; nameChangeFields.classList.remove('hidden');
         document.getElementById('previousName').setAttribute('required','true');
         document.getElementById('reasonForNameChange').setAttribute('required','true');
@@ -2799,10 +3126,11 @@
         prevNameLabel.style.display = 'none'; reasonLabel.style.display = 'none';
       }
 
-      if(initialData.previousName) document.getElementById('previousName').value = initialData.previousName;
-      if(initialData.reasonForNameChange) document.getElementById('reasonForNameChange').value = initialData.reasonForNameChange;
-      if(initialData.birthdate){
-        const digits = initialData.birthdate.replace(/[^0-9]/g,'').slice(0,8).split('');
+      if(formData.previousName) document.getElementById('previousName').value = formData.previousName;
+      if(formData.reasonForNameChange) document.getElementById('reasonForNameChange').value = formData.reasonForNameChange;
+      if(formData.birthdate){
+        // Handle nn-nn-nnnn format - remove dashes and populate 8-digit inputs
+        const digits = formData.birthdate.replace(/[^0-9]/g,'').slice(0,8).split('');
         dobInputs.forEach((inp,i)=>{ inp.value = digits[i] || ''; });
       } else {
         dobInputs.forEach(inp=> inp.value='');
@@ -2812,17 +3140,17 @@
       wantsPhotoId = null; resetPhotoCards();
       nextFromSection2.disabled = true;
       setPhotoPrompt(); // Set the appropriate prompt text based on existing data
-      if(initialData.likenessNOTConfirmed !== undefined){
-        likenessNotConfirmed.checked = initialData.likenessNOTConfirmed;
+      if(formData.likenessNOTConfirmed !== undefined){
+        likenessNotConfirmed.checked = formData.likenessNOTConfirmed;
       }
 
       // Section 3 defaults
-      if(initialData.address) currentAddress.value = initialData.address;
-      if(initialData.clientRecentHomeMove) {
+      if(formData.address) currentAddress.value = formData.address;
+      if(formData.clientRecentHomeMove) {
         recentMove.checked = true;
         togglePreviousAddressFields();
       }
-      if(initialData.previousAddress) previousAddress.value = initialData.previousAddress;
+      if(formData.previousAddress) previousAddress.value = formData.previousAddress;
 
       // Section 4 defaults
       wantsAddressId = null; // Always reset to null initially
