@@ -2619,6 +2619,7 @@
       if (event.data.type === 'put-links') {
         const links = event.data.links;
         s3Keys = event.data.s3Keys; // Store S3 keys
+        console.log('Received links:', { linksCount: links.length, links: links });
         uploadFiles(links);
       } else if (event.data.type === 'put-error') {
         // Show specific error message and go back to address ID section
@@ -2636,6 +2637,15 @@
       let completed = 0;
       let hasErrors = false;
       const total = files.length;
+      
+      console.log('Upload starting:', { totalFiles: total, files: files.map(f => f.fileName) });
+      
+      // Check if files and links arrays match
+      if (files.length !== links.length) {
+        console.error('Mismatch between files and links arrays:', { filesCount: files.length, linksCount: links.length });
+        showError(`File count mismatch: ${files.length} files but ${links.length} upload links. Please try again.`);
+        return;
+      }
       
       files.forEach((fileObj, index) => {
         const fileItem = document.getElementById(`file-${index}`);
@@ -2667,6 +2677,7 @@
     // Update progress bar and handle completion
     function updateProgress(completed, total, hasErrors = false) {
       const percentage = Math.round((completed / total) * 100);
+      console.log('Progress update:', { completed, total, percentage });
       progressFill.style.width = `${percentage}%`;
       progressText.textContent = `${percentage}% Complete`;
       
@@ -2765,6 +2776,12 @@
       // Reset Section 4 specific elements
       addressIdCards.classList.add('hidden');
       resetAddressIdCards();
+      
+      // Reset upload progress elements
+      progressFill.style.width = '0%';
+      progressText.textContent = '0% Complete';
+      fileList.innerHTML = '';
+      uploadStatus.textContent = '';
       
       // Reset header and title
       cardTitle.textContent = 'Awaiting data';
