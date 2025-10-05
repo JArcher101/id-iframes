@@ -1705,22 +1705,56 @@
         }
 
         // Download function
-        function downloadImage(imageData) {
+        function downloadImage(button) {
             try {
+                // Get the image index from the button's data attribute
+                const imageIndex = button.getAttribute('data-image-index');
+                const imageData = images[imageIndex];
+                
+                console.log('Download function called:', {
+                    button: button,
+                    imageIndex: imageIndex,
+                    imageData: imageData,
+                    imagesArray: images
+                });
+                
                 // Check if imageData exists and has a URL
-                const imageUrl = imageData.url || imageData.liveUrl;
+                const imageUrl = imageData?.url || imageData?.liveUrl;
                 if (!imageData || !imageUrl) {
-                    console.error('Cannot download: image data is missing or invalid');
+                    console.error('Cannot download: image data is missing or invalid', {
+                        imageData: imageData,
+                        url: imageData?.url,
+                        liveUrl: imageData?.liveUrl,
+                        imageUrl: imageUrl
+                    });
                     alert('Cannot download image. Image data is missing or invalid.');
                     return;
                 }
                 
-                const link = document.createElement('a');
-                link.href = imageUrl;
-                link.download = imageData.name || `image-${Date.now()}.jpg`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // For cross-origin images (like S3), we need to fetch and create a blob
+                fetch(imageUrl)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = imageData.name || `image-${Date.now()}.jpg`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(url);
+                    })
+                    .catch(error => {
+                        console.error('Error downloading image:', error);
+                        // Fallback: try direct download (may open in new tab)
+                        const link = document.createElement('a');
+                        link.href = imageUrl;
+                        link.download = imageData.name || `image-${Date.now()}.jpg`;
+                        link.target = '_blank';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    });
             } catch (error) {
                 console.error('Error downloading image:', error);
                 alert('Error downloading image. Please try again.');
@@ -1750,7 +1784,7 @@
                             ${imageData.document || 'Unknown Document'}
                             ${sideTag}
                         </div>
-                        <button class="download-btn-header" onclick="downloadImage(images[${index}])" title="Download image">
+                        <button class="download-btn-header" onclick="downloadImage(this)" title="Download image" data-image-index="${index}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                               <polyline points="7,14 12,19 17,14"/>
