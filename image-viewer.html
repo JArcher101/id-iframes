@@ -2425,7 +2425,7 @@
             // Send success message to parent with properly formatted images data
             window.parent.postMessage({
                 type: 'upload-success',
-                images: imagesWithS3Keys,
+                files: imagesWithS3Keys,
                 _id: itemId,
                 uploader: userEmail,
                 photoIdUploaded: photoIdUploaded,

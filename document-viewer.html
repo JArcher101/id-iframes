@@ -2793,7 +2793,7 @@
             // Send success message to parent with properly formatted documents data
             window.parent.postMessage({
                 type: 'upload-success',
-                documents: documentsWithS3Keys,
+                files: documentsWithS3Keys,
                 _id: itemId,
                 uploader: userEmail
             }, '*');
