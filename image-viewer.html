@@ -2442,7 +2442,25 @@
             let photoIdUploaded = false;
             let addressIdUploaded = false;
             
-            // Check all uploader cards to see what types were uploaded
+            // Define document type arrays
+            const photoIdTypes = ['Passport', 'Driving Licence', 'Passport Card', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'];
+            const addressIdTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Voter Registration', 'Tenancy Agreement', 'Other'];
+            
+            // Check existing images first
+            if (images && images.length > 0) {
+                images.forEach(image => {
+                    if (image.document) {
+                        if (photoIdTypes.includes(image.document)) {
+                            photoIdUploaded = true;
+                        }
+                        if (addressIdTypes.includes(image.document)) {
+                            addressIdUploaded = true;
+                        }
+                    }
+                });
+            }
+            
+            // Check newly uploaded images from uploader cards
             const uploaderCards = document.querySelectorAll('.uploader-card');
             uploaderCards.forEach(card => {
                 const dropdown = card.querySelector('.document-dropdown');
@@ -2450,13 +2468,11 @@
                     const documentType = dropdown.value;
                     
                     // Check if it's a Photo ID type
-                    const photoIdTypes = ['Passport', 'Driving Licence', 'Passport Card', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'];
                     if (photoIdTypes.includes(documentType)) {
                         photoIdUploaded = true;
                     }
                     
                     // Check if it's an Address ID type
-                    const addressIdTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Voter Registration', 'Tenancy Agreement', 'Other'];
                     if (addressIdTypes.includes(documentType)) {
                         addressIdUploaded = true;
                     }
