@@ -315,9 +315,138 @@
         .file-input {
             display: none;
         }
+
+        .error-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #dc3545;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            min-width: 200px;
+        }
+
+        .error-popup.show {
+            display: flex;
+        }
+
+        .error-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            margin-left: auto;
+            line-height: 1;
+        }
+
+        .error-close:hover {
+            opacity: 0.8;
+        }
+
+        .uploading-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .uploading-popup.show {
+            display: flex;
+        }
+
+        .uploading-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .uploading-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .file-details {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .uploading-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .uploading-text {
+            color: #666;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
+    <!-- Error popup -->
+    <div class="error-popup" id="errorPopup">
+        <span id="errorMessage">No message entered</span>
+        <button class="error-close" onclick="hideError()">&times;</button>
+    </div>
+
+    <!-- Uploading popup -->
+    <div class="uploading-popup" id="uploadingPopup">
+        <div class="uploading-content">
+            <div class="uploading-title">Uploading File</div>
+            <div class="file-details" id="fileDetails">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-size" id="fileSize"></div>
+            </div>
+            <div class="uploading-spinner"></div>
+            <div class="uploading-text">Please wait while we upload your file...</div>
+        </div>
+    </div>
+
     <div class="chat-wrapper">
         <div class="chat-header">
             <h2 class="chat-title">Cashiers Chat</h2>
@@ -359,6 +488,9 @@
         let userEmail = '';
         let itemId = '';
         let hasNotification = false;
+        let currentFile = null; // Store current file being uploaded
+        let currentMessage = null; // Store current message being sent
+        let currentFileData = null; // Store current file data
 
         // Initialize - hide notification elements on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -396,6 +528,29 @@
                 
                 // Always enable send button when receiving message data
                 document.getElementById('sendBtn').disabled = false;
+            } else if (event.data.type === 'put-links') {
+                // Handle PUT links response for file upload
+                const links = event.data.links;
+                const s3Keys = event.data.s3Keys;
+                
+                console.log('Received PUT links for file upload:', links);
+                console.log('S3 Keys:', s3Keys);
+                
+                // Upload file to S3 using the PUT link
+                if (links && links.length > 0) {
+                    uploadFileToS3(links[0], s3Keys[0]);
+                }
+            } else if (event.data.type === 'put-error') {
+                // Handle PUT error
+                console.error('PUT link generation failed:', event.data.message);
+                hideUploadingPopup();
+                showError('Failed to generate upload link. Please try again.');
+                // Re-enable send button
+                document.getElementById('sendBtn').disabled = false;
+                // Clear current data
+                currentFile = null;
+                currentMessage = null;
+                currentFileData = null;
             }
         });
 
@@ -556,20 +711,94 @@
         }
 
         function sendMessage() {
-            const message = document.getElementById('messageInput').value;
+            const sendBtn = document.getElementById('sendBtn');
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
             const file = document.getElementById('fileInput').files[0];
             
-            if (message.trim() || file) {
-                console.log('Sending message:', message);
-                console.log('With file:', file ? file.name : 'none');
-                
-                // Add message to container
-                addMessage(message, file, 'sent');
-                
-                // Clear inputs
-                document.getElementById('messageInput').value = '';
-                document.getElementById('fileInput').value = '';
+            // Disable send button immediately
+            sendBtn.disabled = true;
+            
+            // Check if message has a value
+            if (!message) {
+                // Show error popup
+                showError('No message entered');
+                // Re-enable send button
+                sendBtn.disabled = false;
+                return;
             }
+            
+            // Check if file is present and validate file type
+            if (file && !isValidDocumentType(file)) {
+                // Show error popup for invalid file type
+                showError('Invalid file type. To add images please upload to the ID Photos section');
+                // Re-enable send button
+                sendBtn.disabled = false;
+                return;
+            }
+            
+            // If file is present and valid, collect file data and request PUT links
+            if (file) {
+                // Store current file and message for upload
+                currentFile = file;
+                currentMessage = message;
+                
+                // Generate filename for the file
+                const fileName = `message-attachment-${Date.now()}-${file.name}`;
+                
+                // Collect file data similar to image viewer
+                const fileData = {
+                    type: 'Document',
+                    document: 'Message Attachment',
+                    side: 'Single',
+                    uploader: userEmail,
+                    data: {
+                        type: file.type,
+                        size: file.size,
+                        name: fileName,
+                        lastModified: file.lastModified
+                    },
+                    file: file // Keep reference to actual file
+                };
+                
+                // Store file data
+                currentFileData = fileData;
+                
+                // Show uploading popup
+                showUploadingPopup(file);
+                
+                // Post message to parent requesting PUT links for file upload
+                window.parent.postMessage({
+                    type: 'file-data',
+                    files: [fileData],
+                    _id: itemId
+                }, '*');
+                
+                console.log('File data sent to parent for PUT links:', fileData);
+                
+                // Don't clear inputs or re-enable button yet - wait for upload completion
+                return;
+            }
+            
+            // No file - proceed with text-only message
+            const messageObject = {
+                time: new Date().toLocaleString(),
+                user: userEmail,
+                message: message,
+                type: 'Staff'
+            };
+            
+            console.log('Constructed message object:', messageObject);
+            
+            // Add message to container
+            addMessage(message, null, 'sent');
+            
+            // Clear inputs
+            messageInput.value = '';
+            document.getElementById('fileInput').value = '';
+            
+            // Re-enable send button
+            sendBtn.disabled = false;
         }
 
         function addMessage(text, file, type) {
@@ -617,6 +846,137 @@
             }, '*');
             
             console.log('Dismiss notification sent to parent');
+        }
+
+        function showError(message = 'No message entered') {
+            const errorPopup = document.getElementById('errorPopup');
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorPopup.classList.add('show');
+        }
+
+        function hideError() {
+            const errorPopup = document.getElementById('errorPopup');
+            errorPopup.classList.remove('show');
+        }
+
+        function showUploadingPopup(file) {
+            const uploadingPopup = document.getElementById('uploadingPopup');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            
+            fileName.textContent = file.name;
+            fileSize.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+            
+            uploadingPopup.classList.add('show');
+        }
+
+        function hideUploadingPopup() {
+            const uploadingPopup = document.getElementById('uploadingPopup');
+            uploadingPopup.classList.remove('show');
+        }
+
+        function uploadFileToS3(putLink, s3Key) {
+            if (!currentFile || !currentMessage) {
+                console.error('No file or message to upload');
+                hideUploadingPopup();
+                document.getElementById('sendBtn').disabled = false;
+                return;
+            }
+
+            console.log('Uploading file to S3:', currentFile.name);
+            console.log('PUT link:', putLink);
+            console.log('S3 Key:', s3Key);
+
+            // Upload file to S3 using PUT request
+            fetch(putLink, {
+                method: 'PUT',
+                body: currentFile,
+                headers: {
+                    'Content-Type': currentFile.type
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('File uploaded successfully to S3');
+                    
+                    // Hide uploading popup
+                    hideUploadingPopup();
+                    
+                    // Create complete message object with file data
+                    const messageObject = {
+                        time: new Date().toLocaleString(),
+                        user: userEmail,
+                        message: currentMessage,
+                        type: 'Staff',
+                        file: {
+                            name: currentFile.name,
+                            size: currentFile.size,
+                            type: currentFile.type,
+                            s3Key: s3Key
+                        }
+                    };
+                    
+                    // Send message to parent
+                    window.parent.postMessage({
+                        type: 'message-sent',
+                        message: messageObject,
+                        _id: itemId
+                    }, '*');
+                    
+                    // Clear inputs
+                    document.getElementById('messageInput').value = '';
+                    document.getElementById('fileInput').value = '';
+                    
+                    // Re-enable send button
+                    document.getElementById('sendBtn').disabled = false;
+                    
+                    // Clear current data
+                    currentFile = null;
+                    currentMessage = null;
+                    currentFileData = null;
+                } else {
+                    throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+                }
+            })
+            .catch(error => {
+                console.error('File upload failed:', error);
+                hideUploadingPopup();
+                showError('Failed to upload file. Please try again.');
+                // Re-enable send button
+                document.getElementById('sendBtn').disabled = false;
+                // Clear current data
+                currentFile = null;
+                currentMessage = null;
+                currentFileData = null;
+            });
+        }
+
+        function isValidDocumentType(file) {
+            if (!file) return true; // No file is valid
+            
+            const allowedTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'text/plain',
+                'text/rtf'
+            ];
+            
+            const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.rtf'];
+            
+            // Check MIME type
+            if (allowedTypes.includes(file.type)) {
+                return true;
+            }
+            
+            // Check file extension as fallback
+            const fileName = file.name.toLowerCase();
+            return allowedExtensions.some(ext => fileName.endsWith(ext));
         }
 
         // Enable/disable send button based on input
