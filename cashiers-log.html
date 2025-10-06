@@ -106,9 +106,6 @@
         }
 
         .message-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 4px;
         }
 
@@ -120,9 +117,9 @@
 
 
         .message-time {
-            font-size: 11px;
+            font-size: 9px;
             color: #666;
-            margin: 0;
+            margin: 2px 0 0 0;
         }
 
         .message.received .message-time {
@@ -210,6 +207,43 @@
             
             console.log('Notification dismissed');
         }
+
+        // Listen for log data messages from parent
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'log-data') {
+                console.log('Received log data:', event.data);
+                displayLogs(event.data.logs);
+            }
+        });
+
+        function displayLogs(logs) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            
+            // Clear existing messages
+            messagesContainer.innerHTML = '';
+            
+            // Add each log entry as a message
+            if (logs && Array.isArray(logs)) {
+                logs.forEach(log => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message received';
+                    
+                    messageDiv.innerHTML = `
+                        <div class="message-header">
+                            <div class="message-email">${log.user}</div>
+                            <div class="message-time">${log.time}</div>
+                        </div>
+                        <div class="message-text">${log.message}</div>
+                    `;
+                    
+                    messagesContainer.appendChild(messageDiv);
+                });
+                
+                // Scroll to top to show latest entries (newest at top)
+                messagesContainer.scrollTop = 0;
+            }
+        }
+
 
     </script>
 </body>
