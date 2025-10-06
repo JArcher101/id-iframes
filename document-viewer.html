@@ -1,0 +1,3632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID Images Display</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: transparent;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+        
+        /* Responsive container */
+        .responsive-container {
+            width: 100%;
+            max-width: 980px;
+            min-width: 250px;
+            margin: 0 auto;
+            padding: 0 5px;
+            box-sizing: border-box;
+        }
+
+        .image-display-container {
+            width: 100%;
+            max-width: 980px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .awaiting-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .awaiting-content {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .awaiting-content h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .awaiting-content p {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .mock-btn {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .mock-btn:hover {
+            background: #357ABD;
+            transform: translateY(-1px);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .add-more-container {
+            text-align: center;
+            margin-top: 10px;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .add-more-btn {
+            background: rgb(0, 60, 113);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .add-more-btn:hover {
+            background: rgb(0, 40, 80);
+            transform: translateY(-1px);
+        }
+
+        /* ID Image Uploader Section */
+        .id-uploader-section {
+            width: 100%;
+            margin: 0 auto;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+
+        .uploader-card {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .uploader-card h4 {
+            font-size: 0.95rem;
+            margin: 0 0 10px 0;
+            color: rgb(0, 60, 113);
+        }
+
+        .dropdowns-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: flex-start;
+            padding-right: 10px;
+        }
+
+        .dropdowns-container .primary-dropdown {
+            width: 50%;
+            flex: none;
+        }
+
+        .dropdowns-container .secondary-dropdown {
+            width: 50%;
+            flex: none;
+        }
+
+        .dropdowns-container .other-input {
+            width: 50%;
+            flex: none;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .add-document-btn {
+            background: transparent;
+            color: rgb(0, 60, 113);
+            border: 1px solid rgb(0, 60, 113);
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .add-document-btn:hover {
+            background: rgb(0, 60, 113);
+            color: white;
+        }
+
+        .button-row {
+            margin-bottom: 5px;
+        }
+
+        .upload-button-row {
+            margin-top: 0;
+        }
+
+        .uploader-options {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+
+        .uploader-option {
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .uploader-option:hover {
+            border-color: rgb(0, 60, 113);
+            background: #f0f7ff;
+        }
+
+        .uploader-option.selected {
+            border-color: rgb(0, 60, 113);
+            background: #e6f2ff;
+        }
+
+        .uploader-option h5 {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #333;
+        }
+
+        .dynamic-hint {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 8px;
+            margin: 10px 0;
+            font-size: 0.8rem;
+            color: #856404;
+            display: none;
+        }
+
+        .document-type-section {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .document-type-section h5 {
+            font-size: 1rem;
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .document-dropdown {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            background: white;
+        }
+
+        .upload-hint {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 0.85rem;
+            color: #856404;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dual-uploader {
+            display: none;
+        }
+
+        .dual-uploader.show {
+            display: block;
+        }
+
+        .side-uploader {
+            margin-bottom: 8px;
+        }
+
+        .side-uploader:last-child {
+            margin-bottom: 0;
+        }
+
+        .side-uploader h6 {
+            font-size: 0.8rem;
+            margin: 0 0 6px 0;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .side-tag {
+            display: inline-block;
+            background: #d4a574;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .file-upload-area:hover {
+            border-color: rgb(0, 60, 113);
+            background: #f8f9fa;
+        }
+
+        .file-upload-area.dragover {
+            border-color: rgb(0, 60, 113);
+            background: #e6f2ff;
+        }
+
+        .file-upload-area p {
+            margin: 0 0 10px 0;
+            color: #666;
+        }
+
+        .file-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .file-list {
+            margin-top: 15px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-icon {
+            width: 20px;
+            height: 20px;
+            background: rgb(0, 60, 113);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .remove-file-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .remove-file-btn:hover {
+            background: #c82333;
+        }
+
+        .remove-card-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .remove-card-btn:hover {
+            background: #c82333;
+        }
+
+        .upload-actions {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .upload-btn {
+            background: rgb(0, 60, 113);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .upload-btn:hover {
+            background: rgb(0, 40, 80);
+            transform: translateY(-1px);
+        }
+
+        .upload-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+
+        /* Error popup styles */
+        .error-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .error-popup-content {
+            background: #dc3545;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            width: 250px;
+            position: relative;
+        }
+
+        .error-popup-header {
+            font-size: 1rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .error-popup-message {
+            font-size: 0.85rem;
+            color: white;
+            margin-bottom: 0;
+            line-height: 1.3;
+        }
+
+
+        .error-popup-close {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .error-popup-close:hover {
+            opacity: 0.8;
+        }
+
+        /* Uploading state styles */
+        .uploading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .uploading-message {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            width: 250px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid rgb(0, 60, 113);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .uploading-message h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .uploading-message p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4A90E2, #10a37f);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* File list matching Untitled-1 */
+        .file-list {
+            margin: 15px 0;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            padding: 8px;
+            margin: 3px 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #4A90E2;
+            text-align: left;
+            font-size: 0.75rem;
+        }
+
+        .file-item strong {
+            font-size: 0.7rem;
+            display: block;
+            margin-bottom: 3px;
+            word-wrap: break-word;
+        }
+
+        .file-item div {
+            font-size: 0.65rem;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .file-item .file-details {
+            display: flex;
+            flex-direction: column;
+            margin-top: 3px;
+        }
+
+        .file-item .file-size {
+            font-size: 0.65rem;
+            margin-bottom: 2px;
+        }
+
+        .file-item .file-status {
+            font-size: 0.65rem;
+        }
+
+        .file-item.uploading {
+            border-left-color: #ffa500;
+        }
+
+        .file-item.success {
+            border-left-color: #10a37f;
+        }
+
+        .file-item.error {
+            border-left-color: #e02424;
+        }
+
+        .upload-status {
+            text-align: center;
+            font-weight: 600;
+            margin: 15px 0;
+            font-size: 0.8rem;
+        }
+
+        #progressText {
+            font-size: 0.8rem;
+            margin: 10px 0;
+        }
+
+        .success-message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .success-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .success-content h3 {
+            color: #28a745;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .success-content p {
+            color: #666;
+            margin-bottom: 0;
+        }
+
+        .uploader-header-container {
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .uploader-header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .uploader-header-top h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: rgb(0, 60, 113);
+        }
+
+        .uploader-header-subheading {
+            width: 100%;
+        }
+
+        .uploader-header-subheading h3 {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .cancel-header-btn {
+            background: none;
+            color: rgb(0, 60, 113);
+            border: 1px solid rgb(0, 60, 113);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .cancel-header-btn:hover {
+            background: rgb(0, 60, 113);
+            color: white;
+        }
+
+        .remove-card-text-btn {
+            background: none;
+            color: rgb(0, 60, 113);
+            border: 1px solid rgb(0, 60, 113);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .remove-card-text-btn:hover {
+            background: rgb(0, 60, 113);
+            color: white;
+        }
+
+        /* Toggle switch styling (copied from image uploader) */
+        .toggle { 
+            position: relative; 
+            display: inline-block; 
+            width: 50px; 
+            height: 24px; 
+            margin-top: 6px; 
+        }
+        .toggle input { 
+            display: none; 
+        }
+        .slider { 
+            position: absolute; 
+            cursor: pointer; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background: #e02424; 
+            transition: .4s; 
+            border-radius: 24px; 
+        }
+        .slider:before { 
+            position: absolute; 
+            content: ''; 
+            height: 18px; 
+            width: 18px; 
+            left: 3px; 
+            bottom: 3px; 
+            background: #fff; 
+            transition: .4s; 
+            border-radius: 50%; 
+        }
+        input:checked + .slider { 
+            background: #10a37f; 
+        }
+        input:checked + .slider:before { 
+            transform: translateX(26px); 
+        }
+
+        /* Likeness toggle card styling */
+        .likeness-toggle-card {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 12px 12px 12px;
+            margin-top: 8px;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+
+        /* Likeness toggle specific styling (reversed colors) */
+        .likeness-toggle { 
+            margin: 0; 
+            text-align: left; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .likeness-toggle label {
+            font-size: 0.8rem;
+            color: #666;
+            margin: 0;
+        }
+        .likeness-toggle .toggle { 
+            width: 40px; 
+            height: 20px; 
+            margin-top: 0; 
+        }
+        .likeness-toggle .toggle .slider { 
+            background: #10a37f; 
+        }
+        .likeness-toggle .toggle input:checked + .slider { 
+            background: #e02424; 
+        }
+        .likeness-toggle .toggle .slider:before { 
+            height: 14px; 
+            width: 14px; 
+            left: 3px; 
+            bottom: 3px; 
+        }
+        .likeness-toggle .toggle input:checked + .slider:before { 
+            transform: translateX(20px); 
+        }
+
+        /* Tooltip styling */
+        .toggle[title] {
+            position: relative;
+            cursor: help;
+        }
+        .toggle[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            margin-bottom: 5px;
+        }
+        .toggle[title]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #333;
+            margin-bottom: -5px;
+        }
+
+        /* Photo ID Card Styling (matching main uploader) */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .card-header label {
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+
+        .photo-upload-wrapper {
+            margin-top: 8px;
+        }
+
+        .photo-upload-side-by-side {
+            display: flex;
+            gap: 8px;
+        }
+
+        .photo-upload-half {
+            flex: 1;
+            width: 50%;
+        }
+
+        .photo-upload-half .upload-area {
+            width: 100%;
+        }
+
+        .photo-upload {
+            margin-bottom: 6px;
+        }
+
+        .photo-upload:last-child {
+            margin-bottom: 0;
+        }
+
+        .upload-area {
+            border: 2px dashed #4A90E2;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(74, 144, 226, 0.1);
+            height: auto;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 700;
+            color: #444;
+            font-size: 0.9rem;
+            width: 100%;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            box-sizing: border-box;
+        }
+
+        .upload-area-slimline {
+            border: 2px dashed #4A90E2;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(74, 144, 226, 0.1);
+            height: auto;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 700;
+            color: #444;
+            font-size: 0.9rem;
+            width: 100%;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            box-sizing: border-box;
+        }
+
+        .upload-area:hover {
+            background: rgba(74, 144, 226, 0.2);
+        }
+
+        .upload-area-slimline:hover {
+            background: rgba(74, 144, 226, 0.2);
+        }
+
+        .upload-area.dragover {
+            border-color: #4A90E2;
+            background: rgba(74, 144, 226, 0.3);
+        }
+
+        .upload-area-slimline.dragover {
+            border-color: #4A90E2;
+            background: rgba(74, 144, 226, 0.3);
+        }
+
+        .upload-area svg, .upload-area-slimline svg {
+            width: 22px;
+            height: 22px;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .upload-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .upload-icon {
+            margin: 0;
+        }
+
+        .upload-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: rgb(0, 60, 113);
+        }
+
+        .upload-text {
+            font-weight: 600;
+            color: rgb(0, 60, 113);
+            margin: 0;
+            font-size: 0.8rem;
+        }
+
+
+        .photo-hint {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 0.85rem;
+            color: #856404;
+        }
+
+        .side-tags {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .side-tag-front,
+        .side-tag-back {
+            background: #d4a574;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .image-display-section {
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .client-heading {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: rgb(0, 60, 113);
+            margin: 0 0 7px 0;
+            text-align: left;
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .reel-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background: white;
+        }
+
+        .image-slider {
+            display: flex;
+            transition: transform 0.3s ease-in-out;
+            height: 100%;
+        }
+
+        .image-card {
+            min-width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .image-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .document-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .document-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .document-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            word-break: break-word;
+            max-width: 100%;
+        }
+
+        .document-size {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .documents-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px 0 0 0;
+            width: 100%;
+        }
+
+        .document-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: background-color 0.2s ease;
+            width: 100%;
+        }
+
+        .document-card:hover {
+            background: #e9ecef;
+        }
+
+        .document-card .document-details {
+            padding: 10px;
+        }
+
+        .document-card .document-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .document-card .document-type {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+            flex: 1;
+        }
+
+
+        .document-card .document-info {
+            margin: 12px 0;
+        }
+
+        .document-card .document-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+
+        .document-card .document-size {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .document-card .uploader-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+
+        .document-card .view-btn {
+            background: #f8f9fa;
+            color: rgb(0, 60, 113);
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s ease;
+        }
+
+        .document-card .view-btn:hover {
+            background: #e9ecef;
+        }
+
+        .document-card .view-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: rgb(0, 60, 113);
+        }
+
+        .document-category {
+            display: inline-block;
+            background: #9B945F;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .image-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background: #f8f9fa;
+            color: #6c757d;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .image-error-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #dee2e6;
+        }
+
+        .image-error-text {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .image-retry-btn {
+            margin-top: 15px;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .image-retry-btn:hover {
+            background: #357ABD;
+            transform: translateY(-1px);
+        }
+
+        .image-retry-btn:active {
+            transform: translateY(0);
+        }
+
+        .image-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background: #f8f9fa;
+            color: #6c757d;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .image-details {
+            padding: 12px;
+            background: #f5f5f5;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .document-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .document-type {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .side-tag {
+            display: inline-block;
+            background: #d4a574;
+            color: white;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .uploader-info {
+            font-size: 0.8rem;
+            color: #666;
+            line-height: 1.3;
+        }
+
+        .uploader-info strong {
+            color: #333;
+        }
+
+        .download-btn-header {
+            background: none;
+            color: rgb(0, 60, 113);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            padding: 4px;
+        }
+
+        .download-btn-header svg {
+            width: 18px;
+            height: 20px;
+        }
+
+        .download-btn-header:hover {
+            color: rgb(0, 40, 80);
+            transform: scale(1.1);
+        }
+
+        .navigation-arrows {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .navigation-arrows:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .nav-left {
+            left: 10px;
+        }
+
+        .nav-right {
+            right: 10px;
+        }
+
+        .nav-left:disabled,
+        .nav-right:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .nav-left:disabled:hover,
+        .nav-right:disabled:hover {
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .download-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .download-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+
+        .image-counter {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            z-index: 10;
+        }
+
+        .no-images {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e0e0e0;
+            border-top: 2px solid #4A90E2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+            transition: background 0.2s ease;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        ::-webkit-scrollbar-corner {
+            background: #f1f1f1;
+        }
+        /* Firefox scrollbar styling */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #c1c1c1 #f1f1f1;
+        }
+        
+        /* Responsive breakpoints */
+        @media (max-width: 980px) {
+            .document-card .document-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .document-card .document-type {
+                width: 100%;
+            }
+            
+            .document-card .uploader-info {
+                order: 2;
+                margin-top: 0;
+                margin-bottom: 8px;
+            }
+            
+            .document-card .view-btn {
+                order: 3;
+                align-self: flex-end;
+            }
+        }
+
+        @media (max-width: 800px) {
+            .document-card .document-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .document-card .document-type {
+                width: 100%;
+            }
+            
+            .document-card .uploader-info {
+                order: 2;
+                margin-top: 0;
+                margin-bottom: 8px;
+            }
+            
+            .document-card .view-btn {
+                order: 3;
+                align-self: flex-end;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 8px; }
+            .responsive-container { padding: 0 8px; }
+            .image-display-container { 
+                max-width: 100%; 
+                width: 100%;
+                min-width: 220px;
+            }
+            .awaiting-state { 
+                height: 350px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .reel-container { 
+                height: 350px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .client-heading { font-size: 0.85rem; padding: 6px 10px; }
+            .add-more-container {
+                width: 100%;
+                max-width: 100%;
+            }
+            .likeness-toggle-card {
+                padding: 6px 10px 10px 10px;
+                margin-top: 6px;
+                margin-bottom: 10px;
+            }
+            .likeness-toggle label {
+                font-size: 0.75rem;
+            }
+            .id-uploader-section {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body { padding: 5px; }
+            .responsive-container { padding: 0 5px; }
+            .image-display-container { 
+                max-width: 100%; 
+                width: 100%;
+                min-width: 200px;
+            }
+            .awaiting-state { 
+                height: 300px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .reel-container { 
+                height: 300px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .client-heading { font-size: 0.8rem; padding: 5px 8px; }
+            .awaiting-content h3 { font-size: 1rem; }
+            .awaiting-content p { font-size: 0.8rem; }
+            .add-more-container {
+                width: 100%;
+                max-width: 100%;
+            }
+            .likeness-toggle-card {
+                padding: 5px 8px 8px 8px;
+                margin-top: 5px;
+                margin-bottom: 8px;
+            }
+            .likeness-toggle label {
+                font-size: 0.7rem;
+            }
+            .id-uploader-section {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+        
+        @media (max-width: 320px) {
+            .responsive-container { padding: 0 3px; }
+            .image-display-container { 
+                max-width: 100%; 
+                width: 100%;
+                min-width: 180px;
+            }
+            .awaiting-state { 
+                height: 280px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .reel-container { 
+                height: 280px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .client-heading { font-size: 0.75rem; padding: 4px 6px; }
+            .awaiting-content h3 { font-size: 0.9rem; }
+            .awaiting-content p { font-size: 0.75rem; }
+            .add-more-container {
+                width: 100%;
+                max-width: 100%;
+            }
+            .likeness-toggle-card {
+                padding: 4px 6px 6px 6px;
+                margin-top: 4px;
+                margin-bottom: 6px;
+            }
+            .likeness-toggle label {
+                font-size: 0.65rem;
+            }
+            .id-uploader-section {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+        
+        /* Responsive uploader section */
+        @media (max-width: 768px) {
+            .id-uploader-section { 
+                padding: 12px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .uploader-header-container { padding: 6px 10px; }
+            .uploader-header-top h2 { font-size: 1.1rem; }
+            .uploader-header-subheading h3 { font-size: 0.8rem; }
+            .uploader-card {
+                width: 100%;
+                max-width: 100%;
+            }
+            .uploader-options {
+                width: 100%;
+            }
+            .uploader-option {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .id-uploader-section { 
+                padding: 10px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .uploader-header-container { padding: 5px 8px; }
+            .uploader-header-top h2 { font-size: 1rem; }
+            .uploader-header-subheading h3 { font-size: 0.75rem; }
+            .uploader-option h5 { font-size: 0.8rem; }
+            .uploader-option { padding: 4px; }
+            .uploader-card {
+                width: 100%;
+                max-width: 100%;
+                padding: 8px;
+            }
+            .uploader-options {
+                width: 100%;
+            }
+            .uploader-option {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 320px) {
+            .id-uploader-section { 
+                padding: 8px; 
+                width: 100%;
+                max-width: 100%;
+            }
+            .uploader-header-container { padding: 4px 6px; }
+            .uploader-header-top h2 { font-size: 0.9rem; }
+            .uploader-header-subheading h3 { font-size: 0.7rem; }
+            .uploader-option h5 { font-size: 0.75rem; }
+            .uploader-card {
+                width: 100%;
+                max-width: 100%;
+                padding: 4px;
+                margin-bottom: 4px;
+            }
+            .uploader-card h4 {
+                font-size: 0.8rem;
+                margin: 0 0 6px 0;
+            }
+            .uploader-options {
+                width: 100%;
+            }
+            .uploader-option {
+                width: 100%;
+                padding: 2px;
+            }
+            .document-dropdown {
+                padding: 4px;
+                font-size: 0.75rem;
+            }
+            .upload-area, .upload-area-slimline {
+                padding: 8px;
+                font-size: 0.7rem;
+            }
+            .upload-text {
+                font-size: 0.7rem;
+            }
+            .upload-icon svg {
+                width: 14px;
+                height: 14px;
+            }
+            .side-tag-front, .side-tag-back {
+                font-size: 0.6rem;
+                padding: 1px 4px;
+                margin-bottom: 3px;
+            }
+            .photo-upload-side-by-side {
+                gap: 4px;
+            }
+            .remove-card-text-btn {
+                padding: 2px 4px;
+                font-size: 0.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="responsive-container">
+        <div class="image-display-container">
+        <!-- Awaiting data state -->
+        <div class="awaiting-state" id="awaitingState">
+            <div class="awaiting-content">
+                <h3>Awaiting document data</h3>
+                <p>Waiting for document data to be loaded...</p>
+                <button class="mock-btn" id="mockBtn">Load Mock Data</button>
+            </div>
+        </div>
+
+        <!-- Document display state -->
+        <div class="image-display-section hidden" id="imageDisplaySection">
+            <h2 class="client-heading" id="clientHeading">ID Documents</h2>
+            <div class="documents-grid" id="documentsGrid">
+                <div class="loading" id="loadingState">Loading documents...</div>
+            </div>
+        </div>
+
+        <!-- Add more documents button -->
+        <div class="add-more-container hidden" id="addMoreContainer">
+            <button class="add-more-btn" id="addMoreBtn">Add documents</button>
+        </div>
+    </div>
+
+    <!-- ID Image Uploader Section -->
+    <div class="id-uploader-section hidden" id="idUploaderSection">
+        <div class="uploader-header-container">
+            <div class="uploader-header-top">
+                <h2>Document Uploader</h2>
+                <button class="cancel-header-btn" id="cancelHeaderBtn">Cancel</button>
+            </div>
+            <div class="uploader-header-subheading">
+                <h3 id="uploaderSubheading">Add more documents for...</h3>
+            </div>
+        </div>
+        
+        <div class="dynamic-hint" id="dynamicHint"></div>
+        
+        <div class="uploader-cards-container" id="uploaderCardsContainer">
+            <!-- Initial card will be added here -->
+        </div>
+        
+        <div class="upload-actions">
+            <div class="button-row">
+                <button class="add-document-btn" id="addDocumentBtn" onclick="addAnotherDocument()">Add another document</button>
+            </div>
+            <div class="upload-button-row">
+                <button class="upload-btn" id="uploadAllBtn">Upload All Documents</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Popup -->
+    <div class="error-popup" id="errorPopup">
+        <div class="error-popup-content">
+            <button class="error-popup-close" id="errorPopupClose">×</button>
+            <div class="error-popup-header">Upload Error</div>
+            <div class="error-popup-message" id="errorMessage">An error occurred during upload.</div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentImageIndex = 0;
+        let images = [];
+        let allowUploads = false;
+        let clientData = {};
+        let userEmail = '';
+        let uploaderCards = [];
+        let s3Keys = null;
+        let itemId = null; // Store the item _id for later use
+        let uploadedImages = null;
+        let imageSlider, prevBtn, nextBtn, loadingState, awaitingState, imageDisplaySection, reelContainer, mockBtn, addMoreContainer, addMoreBtn, clientHeading;
+        let idUploaderSection, uploaderSubheading, uploaderCardsContainer, uploadAllBtn, cancelHeaderBtn, errorPopup, errorMessage, errorPopupClose, dynamicHint;
+
+        // Initialize DOM elements and event listeners when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM elements
+            imageSlider = document.getElementById('imageSlider');
+            prevBtn = document.getElementById('prevBtn');
+            nextBtn = document.getElementById('nextBtn');
+            loadingState = document.getElementById('loadingState');
+            awaitingState = document.getElementById('awaitingState');
+            imageDisplaySection = document.getElementById('imageDisplaySection');
+            reelContainer = document.getElementById('reelContainer');
+            mockBtn = document.getElementById('mockBtn');
+            addMoreContainer = document.getElementById('addMoreContainer');
+            addMoreBtn = document.getElementById('addMoreBtn');
+            clientHeading = document.getElementById('clientHeading');
+            idUploaderSection = document.getElementById('idUploaderSection');
+            uploaderSubheading = document.getElementById('uploaderSubheading');
+            uploaderCardsContainer = document.getElementById('uploaderCardsContainer');
+            uploadAllBtn = document.getElementById('uploadAllBtn');
+            cancelHeaderBtn = document.getElementById('cancelHeaderBtn');
+            errorPopup = document.getElementById('errorPopup');
+            errorMessage = document.getElementById('errorMessage');
+            errorPopupClose = document.getElementById('errorPopupClose');
+            dynamicHint = document.getElementById('dynamicHint');
+            
+            // Set up event listeners
+            setupEventListeners();
+        });
+
+        // Navigation functions
+        function showImage(index) {
+            if (images.length === 0) return;
+            
+            // Get the current width of the reel container
+            const containerWidth = reelContainer.offsetWidth;
+            const translateX = -index * containerWidth;
+            imageSlider.style.transform = `translateX(${translateX}px)`;
+            
+            console.log('Showing image at index:', index, 'translateX:', translateX, 'containerWidth:', containerWidth);
+            
+            // Update button states
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = index === images.length - 1;
+        }
+
+        function nextImage() {
+            if (currentImageIndex < images.length - 1) {
+                currentImageIndex++;
+                showImage(currentImageIndex);
+            }
+        }
+
+        function prevImage() {
+            if (currentImageIndex > 0) {
+                currentImageIndex--;
+                showImage(currentImageIndex);
+            }
+        }
+
+        // Image error handling
+        function handleImageError(img, documentType, retryCount = 0) {
+            // Get the image card to find its index
+            const card = img.closest('.image-card');
+            const cards = document.querySelectorAll('.image-card');
+            const index = Array.from(cards).indexOf(card);
+            console.warn('Image failed to load:', img.src, 'for document:', documentType, 'Index:', index, 'Type:', index % 2 === 0 ? 'EVEN' : 'ODD', 'retry count:', retryCount);
+            
+            // Store the original source for retry
+            const originalSrc = img.src;
+            const maxRetries = 2; // Limit retries to prevent infinite loops
+            
+            // Replace the image with error placeholder
+            const container = img.parentElement;
+            const retryButton = retryCount < maxRetries ? 
+                `<button class="image-retry-btn" onclick="retryImageLoad('${originalSrc}', '${documentType}', this, ${retryCount + 1})">
+                    Retry (${maxRetries - retryCount} left)
+                </button>` : 
+                `<div class="image-error-text" style="margin-top: 15px; font-size: 0.8rem; color: #999;">
+                    Max retries reached
+                </div>`;
+            
+            container.innerHTML = `
+                <div class="image-error">
+                    <div class="image-error-icon">📷</div>
+                    <div class="image-error-text">
+                        <strong>Image unavailable</strong><br>
+                        ${documentType || 'Document image'} could not be loaded
+                    </div>
+                    ${retryButton}
+                </div>
+            `;
+        }
+
+        // Retry loading an image
+        function retryImageLoad(imageSrc, documentType, button, retryCount = 0) {
+            console.log('Retrying image load:', imageSrc, 'attempt:', retryCount + 1);
+            
+            // Show loading state
+            const container = button.closest('.image-error').parentElement;
+            container.innerHTML = `
+                <div class="image-loading">
+                    <div class="image-error-icon">⏳</div>
+                    <div class="image-error-text">Loading...</div>
+                </div>
+            `;
+            
+            // Create new image element
+            const img = document.createElement('img');
+            img.src = imageSrc;
+            img.alt = documentType || 'ID Document';
+            img.onerror = () => handleImageError(img, documentType, retryCount);
+            img.onload = () => handleImageLoad(img);
+            
+            // Replace loading state with image
+            container.innerHTML = '';
+            container.appendChild(img);
+        }
+
+        // Image load success
+        function handleImageLoad(img) {
+            // Get the image card to find its index
+            const card = img.closest('.image-card');
+            const cards = document.querySelectorAll('.image-card');
+            const index = Array.from(cards).indexOf(card);
+            console.log('Image loaded successfully:', img.src, 'Index:', index, 'Type:', index % 2 === 0 ? 'EVEN' : 'ODD');
+        }
+
+        // Download function
+        function downloadImage(button) {
+            try {
+                // Get the image index from the button's data attribute
+                const imageIndex = button.getAttribute('data-image-index');
+                const imageData = images[imageIndex];
+                
+                console.log('Download function called:', {
+                    button: button,
+                    imageIndex: imageIndex,
+                    imageData: imageData,
+                    imagesArray: images
+                });
+                
+                // Check if imageData exists and has a URL
+                const imageUrl = imageData?.url || imageData?.liveUrl;
+                if (!imageData || !imageUrl) {
+                    console.error('Cannot download: image data is missing or invalid', {
+                        imageData: imageData,
+                        url: imageData?.url,
+                        liveUrl: imageData?.liveUrl,
+                        imageUrl: imageUrl
+                    });
+                    alert('Cannot download image. Image data is missing or invalid.');
+                    return;
+                }
+                
+                // For cross-origin images (like S3), we need to fetch and create a blob
+                fetch(imageUrl)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = imageData.name || `image-${Date.now()}.jpg`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(url);
+                    })
+                    .catch(error => {
+                        console.error('Error downloading image:', error);
+                        // Fallback: try direct download (may open in new tab)
+                        const link = document.createElement('a');
+                        link.href = imageUrl;
+                        link.download = imageData.name || `image-${Date.now()}.jpg`;
+                        link.target = '_blank';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    });
+            } catch (error) {
+                console.error('Error downloading image:', error);
+                alert('Error downloading image. Please try again.');
+            }
+        }
+
+        // Create image card HTML
+        function createImageCard(imageData, index) {
+            const card = document.createElement('div');
+            card.className = 'image-card';
+            
+            const sideTag = imageData.side && imageData.side !== 'Single' 
+                ? `<div class="side-tag">${imageData.side}</div>` 
+                : '';
+            
+            const uploaderInfo = imageData.uploader && imageData.date
+                ? `Uploaded by <strong>${imageData.uploader}</strong> on ${imageData.date}`
+                : 'Upload information not available';
+            
+            card.innerHTML = `
+                <div class="image-container">
+                    <img src="${imageData.url || imageData.liveUrl}" alt="${imageData.document || 'ID Document'}" onerror="handleImageError(this, '${imageData.document || 'ID Document'}')" onload="handleImageLoad(this)">
+                </div>
+                <div class="image-details">
+                    <div class="document-header">
+                        <div class="document-type">
+                            ${imageData.document || 'Unknown Document'}
+                            ${sideTag}
+                        </div>
+                        <button class="download-btn-header" onclick="downloadImage(this)" title="Download image" data-image-index="${index}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <polyline points="7,14 12,19 17,14"/>
+                              <line x1="12" y1="19" x2="12" y2="7"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="uploader-info">${uploaderInfo}</div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Create document card function
+        function createDocumentCard(documentData, index) {
+            const card = document.createElement('div');
+            card.className = 'document-card';
+            
+            const uploaderInfo = documentData.uploader && documentData.date
+                ? `Uploaded by <strong>${documentData.uploader}</strong> on ${documentData.date}`
+                : 'Upload information not available';
+            
+            // Get document name and size from data object
+            const documentName = documentData.data?.name || documentData.name || 'Document';
+            const documentSize = formatFileSize(documentData.data?.size || 0);
+            
+            card.innerHTML = `
+                <div class="document-details">
+                    <div class="document-header">
+                        <div class="document-type">
+                            ${documentData.document || 'Unknown Document'}
+                            ${documentData.type ? `<span class="document-category">${documentData.type}</span>` : ''}
+                        </div>
+                        <button class="view-btn" onclick="viewDocument(this)" title="Open document" data-document-index="${index}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                              <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="uploader-info">${uploaderInfo}</div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Get document icon based on file type
+        function getDocumentIcon(fileType) {
+            if (!fileType) return '📄';
+            
+            if (fileType.includes('pdf')) return '📕';
+            if (fileType.includes('word') || fileType.includes('document')) return '📘';
+            if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📗';
+            if (fileType.includes('powerpoint') || fileType.includes('presentation')) return '📙';
+            if (fileType.includes('text')) return '📄';
+            return '📄';
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // View document function
+        function viewDocument(button) {
+            const index = parseInt(button.getAttribute('data-document-index'));
+            const documentData = images[index];
+            
+            if (documentData && documentData.liveUrl) {
+                // Open document in new tab for viewing
+                window.open(documentData.liveUrl, '_blank');
+            } else {
+                console.error('No liveUrl available for document:', documentData);
+            }
+        }
+
+
+        // Display images
+        function displayImages(imageData, allowUploadsData, clientDataParam, userEmailParam) {
+            images = imageData || [];
+            allowUploads = allowUploadsData || false;
+            clientData = clientDataParam || {};
+            userEmail = userEmailParam || '';
+            
+            // Hide awaiting state and show image display section
+            awaitingState.classList.add('hidden');
+            imageDisplaySection.classList.remove('hidden');
+            
+            // Update client heading
+            updateClientHeading();
+            
+            // Show/hide add more button based on allowUploads
+            if (allowUploads) {
+                addMoreContainer.classList.remove('hidden');
+            } else {
+                addMoreContainer.classList.add('hidden');
+            }
+            
+            if (images.length === 0) {
+                imageSlider.innerHTML = '<div class="no-images">No images available</div>';
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                return;
+            }
+            
+            // Clear loading state
+            imageSlider.innerHTML = '';
+            
+            // Create image cards
+            images.forEach((imageData, index) => {
+                const card = createImageCard(imageData, index);
+                imageSlider.appendChild(card);
+                
+                // Force load all images immediately to test if positioning is the issue
+                const img = card.querySelector('img');
+                if (img) {
+                    console.log('Forcing image load for index:', index, 'Type:', index % 2 === 0 ? 'EVEN' : 'ODD');
+                    // Trigger image load by setting src again
+                    img.src = img.src;
+                }
+            });
+            
+            // Reset to first image
+            currentImageIndex = 0;
+            
+            // Debug: Check container width after cards are created
+            setTimeout(() => {
+                const containerWidth = reelContainer.offsetWidth;
+                console.log('Container width after cards created:', containerWidth);
+                
+                // Check if we need to wait for layout to complete
+                showImage(0);
+            }, 100);
+            
+            // Add image counter
+            const counter = document.createElement('div');
+            counter.className = 'image-counter';
+            counter.textContent = `${currentImageIndex + 1} / ${images.length}`;
+            counter.id = 'imageCounter';
+            document.querySelector('.reel-container').appendChild(counter);
+        }
+
+        // Update client heading with client data
+        function updateClientHeading() {
+            if (clientData.fe && clientData.clientNumber && clientData.matterNumber && clientData.name) {
+                clientHeading.textContent = `ID Documents for ${clientData.fe}/${clientData.clientNumber}/${clientData.matterNumber} - ${clientData.name}`;
+            } else {
+                clientHeading.textContent = 'ID Documents';
+            }
+        }
+
+        // Display documents function
+        function displayDocuments(documentData, allowUploadsData, clientDataParam, userEmailParam) {
+            images = documentData || []; // Use the same images array for documents
+            allowUploads = allowUploadsData || false;
+            clientData = clientDataParam || {};
+            userEmail = userEmailParam || '';
+            
+            // Hide awaiting state and show image display section
+            awaitingState.classList.add('hidden');
+            imageDisplaySection.classList.remove('hidden');
+            
+            // Update client heading
+            updateClientHeading();
+            
+            // Show/hide add more button based on allowUploads
+            if (allowUploads) {
+                addMoreContainer.classList.remove('hidden');
+            } else {
+                addMoreContainer.classList.add('hidden');
+            }
+            
+            // Get documents grid container
+            const documentsGrid = document.getElementById('documentsGrid');
+            
+            if (images.length === 0) {
+                documentsGrid.innerHTML = '<div class="no-images">No documents available</div>';
+                return;
+            }
+            
+            // Clear loading state
+            documentsGrid.innerHTML = '';
+            
+            // Create document cards
+            images.forEach((documentData, index) => {
+                const card = createDocumentCard(documentData, index);
+                documentsGrid.appendChild(card);
+            });
+        }
+
+        // Mock data for testing
+        function loadMockData() {
+            const mockClientData = {
+                fe: 'BA',
+                clientNumber: '50',
+                matterNumber: '52',
+                name: 'Mr J R Archer-Moran'
+            };
+            
+            const mockDocuments = [
+                {
+                    name: "50-52 - Master J R Archer-Moran - Lite Screen",
+                    document: "Lite Screen",
+                    data: {
+                        type: "document/pdf",
+                        size: 1675231,
+                        name: "DSC01737.pdf",
+                        lastModified: 1698860392000
+                    },
+                    date: "05/10/2025, 17:33:04",
+                    uploader: "jacob.archer-moran@thurstanhoskin.co.uk",
+                    file: {},
+                    type: "AML Check",
+                    s3Key: "protected/oLLkjjeuIRn9p4QF",
+                    liveUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+                },
+                {
+                    name: "50-52 - Master J R Archer-Moran - Source of Funds",
+                    document: "Source of Funds Questionnaire",
+                    data: {
+                        type: "application/pdf",
+                        size: 2456789,
+                        name: "source-of-funds.pdf",
+                        lastModified: 1698860400000
+                    },
+                    date: "05/10/2025, 17:35:12",
+                    uploader: "jacob.archer-moran@thurstanhoskin.co.uk",
+                    file: {},
+                    type: "SoF/Sow Check",
+                    s3Key: "protected/sof-check-12345",
+                    liveUrl: "https://www.learningcontainer.com/wp-content/uploads/2019/09/sample-pdf-file.pdf"
+                },
+                {
+                    name: "50-52 - Master J R Archer-Moran - Combined Check",
+                    document: "Enhanced ID Check",
+                    data: {
+                        type: "application/pdf",
+                        size: 1892345,
+                        name: "combined-check.pdf",
+                        lastModified: 1698860410000
+                    },
+                    date: "05/10/2025, 17:36:50",
+                    uploader: "jacob.archer-moran@thurstanhoskin.co.uk",
+                    file: {},
+                    type: "Combined AML & SoF",
+                    s3Key: "protected/combined-check-67890",
+                    liveUrl: "https://www.africau.edu/images/default/sample.pdf"
+                },
+                {
+                    name: "50-52 - Master J R Archer-Moran - Other Document",
+                    document: "PEP Screening",
+                    data: {
+                        type: "application/pdf",
+                        size: 1234567,
+                        name: "other-document.pdf",
+                        lastModified: 1698860420000
+                    },
+                    date: "05/10/2025, 17:37:00",
+                    uploader: "jacob.archer-moran@thurstanhoskin.co.uk",
+                    file: {},
+                    type: "PEP & Sanctions Check",
+                    s3Key: "protected/other-document-11111",
+                    liveUrl: "https://www.orimi.com/pdf-test.pdf"
+                }
+            ];
+            
+            // Simulate receiving the message
+            const mockUserEmail = 'jacob.archer-moran@thurstanhoskin.co.uk';
+            displayDocuments(mockDocuments, true, mockClientData, mockUserEmail);
+        }
+
+        // Update counter
+        function updateCounter() {
+            const counter = document.getElementById('imageCounter');
+            if (counter) {
+                counter.textContent = `${currentImageIndex + 1} / ${images.length}`;
+            }
+        }
+
+        // Uploader functions
+        function showUploader() {
+            imageDisplaySection.classList.add('hidden');
+            addMoreContainer.classList.add('hidden');
+            idUploaderSection.classList.remove('hidden');
+            updateUploaderSubheading();
+            createInitialCard();
+            updateUploadButton(); // Ensure button is in correct state
+            updateLikenessToggleVisibility(); // Update toggle visibility
+        }
+
+        function hideUploader() {
+            idUploaderSection.classList.add('hidden');
+            imageDisplaySection.classList.remove('hidden');
+            if (allowUploads) {
+                addMoreContainer.classList.remove('hidden');
+            }
+            resetUploader();
+        }
+
+        function updateUploaderSubheading() {
+            if (clientData && clientData.fe && clientData.clientNumber && clientData.matterNumber && clientData.name) {
+                uploaderSubheading.textContent = `Add more ID images for ${clientData.fe}/${clientData.clientNumber}/${clientData.matterNumber} - ${clientData.name}`;
+            } else {
+                uploaderSubheading.textContent = 'Add more ID images';
+            }
+        }
+
+        function createInitialCard() {
+            // Create the first uploader card by default
+            const cardNumber = 1;
+            const card = createAdditionalCard(cardNumber, 'document');
+            uploaderCardsContainer.appendChild(card);
+            uploaderCards.push(card);
+            
+            // Update remove button states (first card should have disabled remove button)
+            updateRemoveButtonStates();
+            
+            updateUploadButton();
+        }
+
+        function addAnotherDocument() {
+            if (uploaderCards.length >= 10) { // Maximum of 10 documents
+                showError('Maximum of 10 documents allowed.');
+                return;
+            }
+
+            const cardNumber = uploaderCards.length + 1;
+            const card = createAdditionalCard(cardNumber, 'document');
+            uploaderCardsContainer.appendChild(card);
+            uploaderCards.push(card);
+            
+            // Update remove button states
+            updateRemoveButtonStates();
+            
+            updateUploadButton();
+        }
+
+        function addAdditionalCard(type) {
+            if (uploaderCards.length >= 10) { // Maximum of 10 uploaders
+                showError('Maximum of 10 additional ID documents allowed.');
+                return;
+            }
+            
+            const cardNumber = uploaderCards.length + 1; // Start from 1, not 0
+            const card = createAdditionalCard(cardNumber, type);
+            uploaderCardsContainer.appendChild(card);
+            uploaderCards.push(card);
+            updateUploadButton();
+            
+            // Update likeness toggle visibility
+            updateLikenessToggleVisibility();
+        }
+
+        function createAdditionalCard(cardNumber, type) {
+            const card = document.createElement('div');
+            card.className = 'uploader-card';
+            
+            card.innerHTML = `
+                <div class="card-header">
+                    <label class="required">Document ${cardNumber}</label>
+                    <button class="remove-card-text-btn" onclick="removeCard(this)">Remove</button>
+                </div>
+                <div class="dropdowns-container">
+                    <select class="document-dropdown primary-dropdown" onchange="updatePrimaryDropdown(this)">
+                        <option value="">Select document type...</option>
+                        <option value="AML Check">AML Check</option>
+                        <option value="SoF/SoW Check">SoF/SoW Check</option>
+                        <option value="Combined AML & SoF">Combined AML & SoF</option>
+                        <option value="PEP & Sanctions Check">PEP & Sanctions Check</option>
+                        <option value="Details form">Details form</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <select class="document-dropdown secondary-dropdown hidden" onchange="updateSecondaryDropdown(this)">
+                        <option value="">Select sub-type...</option>
+                    </select>
+                    <input type="text" class="other-input hidden" placeholder="Enter document type..." oninput="updateOtherInput(this)">
+                </div>
+                <div class="document-upload-wrapper hidden" id="documentUploads${cardNumber}">
+                    <div class="upload-area-slimline" onclick="triggerFileInput(this)" ondrop="handleDrop(event, this)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                        <div class="upload-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17,8 12,3 7,8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <div class="upload-text">Select document</div>
+                        <input type="file" accept=".pdf,.doc,.docx" onchange="handleFileSelect(this)" style="display: none;">
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Document type options mapping
+        const documentTypeOptions = {
+            'AML Check': ['Lite Screening', 'Identity Document Verification (IDV)', 'Original ID', 'Enhanced ID', 'Know Your Business (KYB)'],
+            'SoF/SoW Check': ['Original ID', 'Enhanced ID', 'SoF Questionnaire', 'Bank Linking'],
+            'Combined AML & SoF': ['Lite Screening', 'Identity Document Verification (IDV)', 'Original ID', 'Enhanced ID', 'Know Your Business (KYB)', 'SoF Questionnaire', 'Bank Linking'],
+            'PEP & Sanctions Check': ['OFSI Sanctions Search', 'Lite Screening'],
+            'Details form': ['Client Details form', 'Beneficiary details form']
+        };
+
+        function updatePrimaryDropdown(dropdown) {
+            const card = dropdown.closest('.uploader-card');
+            const secondaryDropdown = card.querySelector('.secondary-dropdown');
+            const otherInput = card.querySelector('.other-input');
+            const uploadWrapper = card.querySelector('.document-upload-wrapper');
+            
+            // Reset secondary dropdown and other input
+            secondaryDropdown.innerHTML = '<option value="">Select sub-type...</option>';
+            secondaryDropdown.classList.add('hidden');
+            otherInput.classList.add('hidden');
+            uploadWrapper.classList.add('hidden');
+            
+            const selectedValue = dropdown.value;
+            
+            if (selectedValue === 'Other') {
+                otherInput.classList.remove('hidden');
+            } else if (selectedValue && documentTypeOptions[selectedValue]) {
+                // Populate secondary dropdown
+                documentTypeOptions[selectedValue].forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    secondaryDropdown.appendChild(optionElement);
+                });
+                secondaryDropdown.classList.remove('hidden');
+            }
+        }
+
+        function updateSecondaryDropdown(dropdown) {
+            const card = dropdown.closest('.uploader-card');
+            const uploadWrapper = card.querySelector('.document-upload-wrapper');
+            
+            if (dropdown.value) {
+                uploadWrapper.classList.remove('hidden');
+            } else {
+                uploadWrapper.classList.add('hidden');
+            }
+        }
+
+        function updateOtherInput(input) {
+            const card = input.closest('.uploader-card');
+            const uploadWrapper = card.querySelector('.document-upload-wrapper');
+            
+            if (input.value.trim()) {
+                uploadWrapper.classList.remove('hidden');
+            } else {
+                uploadWrapper.classList.add('hidden');
+            }
+        }
+
+        function validateDocumentCard(card) {
+            const primaryDropdown = card.querySelector('.primary-dropdown');
+            const secondaryDropdown = card.querySelector('.secondary-dropdown');
+            const otherInput = card.querySelector('.other-input');
+            
+            // Check if primary dropdown is selected
+            if (!primaryDropdown.value) {
+                return { valid: false, message: 'Please select a document type' };
+            }
+            
+            // Check if secondary dropdown or other input is filled
+            if (primaryDropdown.value === 'Other') {
+                if (!otherInput.value.trim()) {
+                    return { valid: false, message: 'Please enter a document type' };
+                }
+            } else {
+                if (!secondaryDropdown.value) {
+                    return { valid: false, message: 'Please select a document sub-type' };
+                }
+            }
+            
+            return { valid: true };
+        }
+
+        function updateDocumentType(dropdown) {
+            const card = dropdown.closest('.uploader-card');
+            const photoUploadWrapper = card.querySelector('.photo-upload-wrapper');
+            const photoUploadSideBySide = card.querySelector('.photo-upload-side-by-side');
+            const photoUploadHalfs = card.querySelectorAll('.photo-upload-half');
+            const sideTagFront = card.querySelector('.side-tag-front');
+            const sideTagBack = card.querySelector('.side-tag-back');
+            const singleUploader = card.querySelector('.photo-upload:not(.photo-upload-half)');
+            
+            if (dropdown.value) {
+                // Show the upload wrapper
+                photoUploadWrapper.classList.remove('hidden');
+                
+                // Determine if this is a photo ID or address ID card
+                const addressIDTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Voter Registration', 'Tenancy Agreement', 'Other'];
+                const isAddressID = addressIDTypes.includes(dropdown.value);
+                
+                if (isAddressID) {
+                    // Address ID - always single uploader with slimline layout
+                    if (singleUploader) {
+                        singleUploader.style.display = 'block';
+                        // Ensure it uses slimline layout
+                        const uploadArea = singleUploader.querySelector('.upload-area');
+                        if (uploadArea) {
+                            uploadArea.className = 'upload-area-slimline';
+                        }
+                    }
+                    if (photoUploadSideBySide) photoUploadSideBySide.style.display = 'none';
+                } else {
+                    // Photo ID - check if single or dual upload needed
+                const needsSingleUpload = ['Passport', 'Firearms Certificate'].includes(dropdown.value);
+                
+                if (needsSingleUpload) {
+                        // Single uploader - use slimline layout
+                        if (singleUploader) {
+                            singleUploader.style.display = 'block';
+                            // Ensure it uses slimline layout
+                            const uploadArea = singleUploader.querySelector('.upload-area');
+                            if (uploadArea) {
+                                uploadArea.className = 'upload-area-slimline';
+                            }
+                        }
+                        if (photoUploadSideBySide) photoUploadSideBySide.style.display = 'none';
+                    if (sideTagFront) sideTagFront.style.display = 'none';
+                    if (sideTagBack) sideTagBack.style.display = 'none';
+                } else {
+                        // Dual uploaders - use side-by-side layout
+                        if (singleUploader) singleUploader.style.display = 'none';
+                        if (photoUploadSideBySide) photoUploadSideBySide.style.display = 'flex';
+                        if (photoUploadHalfs[1]) photoUploadHalfs[1].style.display = 'block';
+                    if (sideTagFront) sideTagFront.style.display = 'block';
+                    if (sideTagBack) sideTagBack.style.display = 'block';
+                    }
+                }
+                
+                // Update dynamic hint based on document type (only for photo IDs)
+                if (!isAddressID) {
+                    updateDynamicHint(dropdown.value);
+                }
+                
+                // Update upload button state
+                updateUploadButton();
+            } else {
+                // Hide everything when no selection
+                photoUploadWrapper.classList.add('hidden');
+                if (singleUploader) singleUploader.style.display = 'none';
+                if (photoUploadSideBySide) photoUploadSideBySide.style.display = 'none';
+                if (photoUploadHalfs[1]) photoUploadHalfs[1].style.display = 'none';
+                if (sideTagFront) sideTagFront.style.display = 'none';
+                if (sideTagBack) sideTagBack.style.display = 'none';
+                
+                // Hide dynamic hint
+                hideDynamicHint();
+                
+                // Update upload button state
+                updateUploadButton();
+            }
+        }
+
+        function updateDynamicHint(documentType) {
+            // Check if there are any photo ID uploaders
+            const photoCards = document.querySelectorAll('.uploader-card');
+            const hasPhotoID = Array.from(photoCards).some(card => {
+                const dropdown = card.querySelector('.document-dropdown');
+                return dropdown && dropdown.value && ['Passport', 'Driving Licence', 'Passport Card', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'].includes(dropdown.value);
+            });
+            
+            if (hasPhotoID) {
+                let hintText = '';
+                if (documentType === 'Passport' || documentType === 'Passport Card') {
+                    hintText = 'Remember to check image quality for blur and glare. Ensure the full MRZ (Machine Readable Zone) is visible.';
+                } else {
+                    hintText = 'Remember to check image quality for blur and glare.';
+                }
+                
+                dynamicHint.textContent = hintText;
+                dynamicHint.style.display = 'block';
+            } else {
+                hideDynamicHint();
+            }
+        }
+
+        function hideDynamicHint() {
+            dynamicHint.style.display = 'none';
+        }
+
+        // Generate filename with invalid characters replaced
+        function generateFileName(fileData) {
+            // Replace forward slashes with hyphens in path components
+            const fe = String(clientData.fe || '').replace(/\//g, '-');
+            const clientNumber = String(clientData.clientNumber || '').replace(/\//g, '-');
+            const matterNumber = String(clientData.matterNumber || '').replace(/\//g, '-');
+            const clientName = String(clientData.name || '').replace(/\//g, '-');
+            
+            return `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${fileData.documentType}${fileData.side !== 'Single' ? ' ' + fileData.side : ''}`;
+        }
+
+        // Show uploading state
+        function showUploadingState() {
+            // Disable upload button and show uploading text
+            uploadAllBtn.disabled = true;
+            uploadAllBtn.textContent = 'Uploading...';
+            
+            // Hide uploader section and show loading message
+            idUploaderSection.classList.add('hidden');
+            
+            // Collect files for display
+            const files = collectAllFiles();
+            
+            // Create file list HTML with S3 filenames
+            let fileListHTML = '';
+            files.forEach((fileData, index) => {
+                // Use the filename from the data object (already properly formatted)
+                const fileName = fileData.data.name;
+                
+                fileListHTML += `
+                    <div class="file-item" id="file-${index}">
+                        <div><strong>${fileName}</strong></div>
+                        <div class="file-details">
+                            <div class="file-size">${(fileData.file.size / 1024 / 1024).toFixed(2)} MB</div>
+                            <div class="file-status"><span class="status-text">Pending</span></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Show uploading message with file list (no loading spinner)
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'uploading-container';
+            loadingDiv.innerHTML = `
+                <div class="uploading-message">
+                    <h3>Uploading Files</h3>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div id="progressText">0% Complete</div>
+                    <div class="file-list">
+                        ${fileListHTML}
+                    </div>
+                    <div id="uploadStatus" class="upload-status"></div>
+                </div>
+            `;
+            loadingDiv.id = 'uploadingContainer';
+            
+            // Insert after image display container
+            document.querySelector('.image-display-container').appendChild(loadingDiv);
+        }
+
+        // Handle PUT response from parent (links or error)
+        function handlePutResponse(event) {
+            if (event.data.type === 'put-links') {
+                const links = event.data.links;
+                s3Keys = event.data.s3Keys; // Store S3 keys globally
+                uploadedImages = event.data.images; // Store images data with s3Keys
+                uploadFiles(links);
+            } else if (event.data.type === 'put-error') {
+                // Show specific error message and go back to uploader
+                const errorMessage = event.data.message || 'Failed to generate upload links';
+                showError(`There is an issue with the files: ${errorMessage}. Please go back to edit your selected files and try uploading again.`);
+                
+                // Hide uploading state and return to uploader
+                hideUploadingState();
+                
+                setTimeout(() => {
+                    showUploader();
+                }, 2000);
+            }
+        }
+
+        // Upload files to S3 with progress tracking
+        function uploadFiles(links) {
+            const files = collectAllFiles();
+            let completed = 0;
+            let hasErrors = false;
+            const total = files.length;
+            
+            files.forEach((fileData, index) => {
+                const fileItem = document.getElementById(`file-${index}`);
+                const statusText = fileItem ? fileItem.querySelector('.status-text') : null;
+                
+                if (fileItem && statusText) {
+                    fileItem.classList.add('uploading');
+                    statusText.textContent = 'Uploading...';
+                }
+                
+                // Upload to S3 using PUT links
+                uploadToS3(fileData.file, links[index])
+                    .then(() => {
+                        if (fileItem && statusText) {
+                            fileItem.classList.remove('uploading');
+                            fileItem.classList.add('success');
+                            statusText.textContent = 'Success';
+                        }
+                        completed++;
+                        updateUploadProgress(completed, total, hasErrors);
+                        
+                        if (completed === total) {
+                            // All uploads completed successfully
+                            setTimeout(() => {
+                                handleUploadSuccess();
+                            }, 1000);
+                        }
+                    })
+                    .catch((error) => {
+                        if (fileItem && statusText) {
+                            fileItem.classList.remove('uploading');
+                            fileItem.classList.add('error');
+                            statusText.textContent = `Error: ${error.message}`;
+                        }
+                        hasErrors = true;
+                        completed++;
+                        updateUploadProgress(completed, total, hasErrors);
+                        
+                        if (completed === total) {
+                            // All uploads completed with errors
+                            setTimeout(() => {
+                                handleUploadError();
+                            }, 1000);
+                        }
+                    });
+            });
+        }
+
+        // Upload single file to S3 using PUT URL
+        function uploadToS3(file, putUrl) {
+            return new Promise((resolve, reject) => {
+                fetch(putUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        resolve();
+                    } else {
+                        reject(new Error('Upload failed'));
+                    }
+                })
+                .catch(error => reject(error));
+            });
+        }
+
+        // Update upload progress (matching Untitled-1)
+        function updateUploadProgress(completed, total, hasErrors = false) {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const uploadStatus = document.getElementById('uploadStatus');
+            
+            if (progressFill && progressText) {
+                const percentage = Math.round((completed / total) * 100);
+                progressFill.style.width = `${percentage}%`;
+                progressText.textContent = `${percentage}% Complete`;
+            }
+            
+            if (uploadStatus && completed === total) {
+                if (hasErrors) {
+                    uploadStatus.textContent = 'Upload completed with errors!';
+                } else {
+                    uploadStatus.textContent = 'Upload completed successfully!';
+                }
+            }
+        }
+
+        // Handle successful upload
+        function handleUploadSuccess() {
+            hideUploadingState();
+            
+            // Use the s3Keys data directly as it already contains the properly formatted document data from parent
+            const documentsWithS3Keys = s3Keys || uploadedImages;
+            
+            // Send success message to parent with properly formatted documents data
+            window.parent.postMessage({
+                type: 'upload-success',
+                documents: documentsWithS3Keys,
+                _id: itemId,
+                uploader: userEmail
+            }, '*');
+            
+            // Return to awaiting data section
+            returnToAwaitingData();
+        }
+
+        // Detect if Photo ID or Address ID types were uploaded
+        function detectUploadTypes() {
+            let photoIdUploaded = false;
+            let addressIdUploaded = false;
+            
+            // Define document type arrays
+            const photoIdTypes = ['Passport', 'Driving Licence', 'Passport Card', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'];
+            const addressIdTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Voter Registration', 'Tenancy Agreement', 'Other'];
+            
+            // Check existing images first
+            if (images && images.length > 0) {
+                images.forEach(image => {
+                    if (image.document) {
+                        if (photoIdTypes.includes(image.document)) {
+                            photoIdUploaded = true;
+                        }
+                        if (addressIdTypes.includes(image.document)) {
+                            addressIdUploaded = true;
+                        }
+                    }
+                });
+            }
+            
+            // Check newly uploaded images from uploader cards
+            const uploaderCards = document.querySelectorAll('.uploader-card');
+            uploaderCards.forEach(card => {
+                const dropdown = card.querySelector('.document-dropdown');
+                if (dropdown && dropdown.value) {
+                    const documentType = dropdown.value;
+                    
+                    // Check if it's a Photo ID type
+                    if (photoIdTypes.includes(documentType)) {
+                        photoIdUploaded = true;
+                    }
+                    
+                    // Check if it's an Address ID type
+                    if (addressIdTypes.includes(documentType)) {
+                        addressIdUploaded = true;
+                    }
+                }
+            });
+            
+            return { photoIdUploaded, addressIdUploaded };
+        }
+
+        // Get the current value of the likeness toggle
+        function getLikenessToggleValue() {
+            const likenessToggle = document.getElementById('likenessNotConfirmedViewer');
+            return likenessToggle ? likenessToggle.checked : false;
+        }
+
+        // Return to awaiting data section
+        function returnToAwaitingData() {
+            // Hide all sections
+            imageDisplaySection.classList.add('hidden');
+            idUploaderSection.classList.add('hidden');
+            
+            // Show awaiting data section
+            awaitingState.classList.remove('hidden');
+            
+            // Reset all state
+            images = [];
+            allowUploads = false;
+            clientData = {};
+            userEmail = '';
+            uploaderCards = [];
+            s3Keys = null;
+            uploadedImages = null;
+            currentImageIndex = 0;
+            
+            // Clear uploader cards
+            if (uploaderCardsContainer) {
+                uploaderCardsContainer.innerHTML = '';
+            }
+            
+            // Reset upload button
+            if (uploadAllBtn) {
+                uploadAllBtn.disabled = true;
+                uploadAllBtn.textContent = 'Upload All Documents';
+            }
+            
+            // Hide dynamic hint
+            hideDynamicHint();
+            
+            console.log('Returned to awaiting data section');
+        }
+
+        // Handle upload error
+        function handleUploadError() {
+            hideUploadingState();
+            
+            // Show error message and return to uploader
+            showError('Upload failed. Please try again.');
+            
+            setTimeout(() => {
+                showUploader();
+            }, 2000);
+        }
+
+        // Hide uploading state
+        function hideUploadingState() {
+            const uploadingContainer = document.getElementById('uploadingContainer');
+            if (uploadingContainer) {
+                uploadingContainer.remove();
+            }
+            
+            // Re-enable upload button
+            uploadAllBtn.disabled = false;
+            uploadAllBtn.textContent = 'Upload All Documents';
+        }
+
+        // Show success message
+        function showSuccessMessage() {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.innerHTML = `
+                <div class="success-content">
+                    <h3>Upload Complete!</h3>
+                    <p>Your images have been uploaded successfully.</p>
+                </div>
+            `;
+            successDiv.id = 'successContainer';
+            
+            document.querySelector('.image-display-container').appendChild(successDiv);
+            
+            // Hide success message and return to image display after 2 seconds
+            setTimeout(() => {
+                successDiv.remove();
+                // Trigger a refresh of the image display
+                window.parent.postMessage({
+                    type: 'refresh-images'
+                }, '*');
+            }, 2000);
+        }
+
+        function triggerFileInput(card) {
+            const fileInput = card.querySelector('input[type="file"]');
+            fileInput.click();
+        }
+
+        function handleFileSelect(input) {
+            const files = Array.from(input.files);
+            const card = input.closest('.uploader-card');
+            
+            // Determine side based on uploader position
+            let side = null;
+            const photoUploadHalf = input.closest('.photo-upload-half');
+            if (photoUploadHalf) {
+                const sideBySideContainer = photoUploadHalf.closest('.photo-upload-side-by-side');
+                if (sideBySideContainer) {
+                    const firstHalf = sideBySideContainer.querySelector('.photo-upload-half:first-child');
+                    const lastHalf = sideBySideContainer.querySelector('.photo-upload-half:last-child');
+                    
+                    if (photoUploadHalf === firstHalf) {
+                    side = 'Front';
+                    } else if (photoUploadHalf === lastHalf) {
+                    side = 'Back';
+                    }
+                }
+            }
+            
+            // Check if this is a photo upload (front/back)
+            const photoUpload = input.closest('.photo-upload');
+            
+            addFilesToCard(card, files, side);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e, card) {
+            e.preventDefault();
+            card.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files);
+            
+            // Determine side based on uploader position
+            let side = null;
+            const photoUploadHalf = card.closest('.photo-upload-half');
+            if (photoUploadHalf) {
+                const sideBySideContainer = photoUploadHalf.closest('.photo-upload-side-by-side');
+                if (sideBySideContainer) {
+                    const firstHalf = sideBySideContainer.querySelector('.photo-upload-half:first-child');
+                    const lastHalf = sideBySideContainer.querySelector('.photo-upload-half:last-child');
+                    
+                    if (photoUploadHalf === firstHalf) {
+                        side = 'Front';
+                    } else if (photoUploadHalf === lastHalf) {
+                        side = 'Back';
+                    }
+                }
+            }
+            
+            addFilesToCard(card, files, side);
+        }
+
+        function addFilesToCard(card, files, side = null) {
+            const primaryDropdown = card.querySelector('.primary-dropdown');
+            const secondaryDropdown = card.querySelector('.secondary-dropdown');
+            const otherInput = card.querySelector('.other-input');
+            
+            if (!primaryDropdown.value) {
+                showError('Please select a document type first.');
+                return;
+            }
+            
+            // Check if secondary dropdown or other input is filled
+            if (primaryDropdown.value === 'Other') {
+                if (!otherInput.value.trim()) {
+                    showError('Please enter a document type.');
+                    return;
+                }
+            } else {
+                if (!secondaryDropdown.value) {
+                    showError('Please select a document sub-type.');
+                    return;
+                }
+            }
+            
+            files.forEach(file => {
+                // Debug logging
+                console.log('File type:', file.type);
+                console.log('File name:', file.name);
+                
+                // Simple validation for PDF and Word documents
+                const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                const isWord = file.type === 'application/msword' || 
+                              file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                              file.name.toLowerCase().endsWith('.doc') ||
+                              file.name.toLowerCase().endsWith('.docx');
+                
+                console.log('Is PDF:', isPDF);
+                console.log('Is Word:', isWord);
+                
+                if (!isPDF && !isWord) {
+                    console.log('File validation failed - not PDF or Word');
+                    showError('Only PDF and Word documents are allowed.');
+                    return;
+                }
+                
+                console.log('File validation passed');
+                
+                if (file.size > 15 * 1024 * 1024) {
+                    showError('File size must be less than 15MB.');
+                    return;
+                }
+                
+                // Find the document upload area
+                const uploadArea = card.querySelector('.upload-area-slimline');
+                
+                if (uploadArea) {
+                    displayDocumentPreview(uploadArea, file, primaryDropdown.value, secondaryDropdown.value || otherInput.value.trim());
+                } else {
+                    console.error('Document upload area not found');
+                }
+            });
+            
+            updateUploadButton();
+        }
+
+        function displayDocumentPreview(uploadArea, file, documentType, subType) {
+            // Generate the proper filename
+            const fe = (clientData?.fe || 'Unknown').replace(/\//g, '-');
+            const clientNumber = (clientData?.clientNumber || 'Unknown').replace(/\//g, '-');
+            const matterNumber = (clientData?.matterNumber || 'Unknown').replace(/\//g, '-');
+            const clientName = (clientData?.name || 'Unknown').replace(/\//g, '-');
+            const fileName = `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${subType}`;
+            
+            // Update upload area to show file selected
+            const uploadText = uploadArea.querySelector('.upload-text');
+            const displayName = fileName.length > 30 ? fileName.substring(0, 30) + '...' : fileName;
+            
+            if (uploadText) {
+                uploadText.textContent = displayName;
+            }
+            
+            // Store file data for upload
+            uploadArea.fileData = {
+                file: file,
+                documentType: documentType,
+                subType: subType,
+                uploader: userEmail
+            };
+            
+            // Add visual feedback
+            uploadArea.style.borderColor = '#28a745';
+            uploadArea.style.backgroundColor = '#f8fff9';
+        }
+
+        function displayFilePreview(photoUpload, file, documentType, uploaderType, side) {
+            // Look for both slimline and regular upload areas
+            const uploadArea = photoUpload.querySelector('.upload-area') || photoUpload.querySelector('.upload-area-slimline');
+            
+            // Check if elements exist before accessing properties
+            if (!uploadArea) {
+                console.error('Upload area element not found');
+                console.error('Looking for elements in:', photoUpload);
+                console.error('Found upload area:', uploadArea);
+                return;
+            }
+            
+            // Update upload area to show file selected (following Untitled-1 pattern)
+            // Truncate filename if too long to fit in 250px container
+            const maxLength = 30; // Adjust based on font size and container width
+            const displayName = file.name.length > maxLength ? 
+                file.name.substring(0, maxLength) + '...' : 
+                file.name;
+            
+            uploadArea.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> <span style="font-size: 0.8rem; line-height: 1.2;">${displayName}</span>`;
+            
+            // Add click handler to remove file
+            uploadArea.onclick = () => removeFilePreview(uploadArea);
+            
+            // Store file data for later use
+            uploadArea.fileData = {
+                    file: file,
+                    documentType: documentType,
+                    uploaderType: uploaderType,
+                    side: side || 'Single'
+                };
+        }
+
+        function removeFilePreview(uploadArea) {
+            // Reset upload area to original state (following Untitled-1 pattern)
+            const isSlimline = uploadArea.classList.contains('upload-area-slimline');
+            
+            if (isSlimline) {
+                // Slimline uploader (single file)
+                uploadArea.innerHTML = `
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17,8 12,3 7,8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="upload-text">Select image</div>
+                    <input type="file" accept="image/*" onchange="handleFileSelect(this)" style="display: none;">
+                `;
+                // Restore original click handlers
+                uploadArea.onclick = () => triggerFileInput(uploadArea);
+                uploadArea.ondrop = (e) => handleDrop(e, uploadArea);
+                uploadArea.ondragover = (e) => handleDragOver(e);
+                uploadArea.ondragleave = (e) => handleDragLeave(e);
+            } else {
+                // Regular uploader (dual file)
+                uploadArea.innerHTML = `
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17,8 12,3 7,8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="upload-text">Select image</div>
+                    <input type="file" accept="image/*" onchange="handleFileSelect(this)" style="display: none;">
+                `;
+                // Restore original click handlers
+                uploadArea.onclick = () => triggerFileInput(uploadArea);
+                uploadArea.ondrop = (e) => handleDrop(e, uploadArea);
+                uploadArea.ondragover = (e) => handleDragOver(e);
+                uploadArea.ondragleave = (e) => handleDragLeave(e);
+            }
+            
+            // Clear file data
+            uploadArea.fileData = null;
+            
+            updateUploadButton();
+        }
+
+        function createFileItem(file, documentType, uploaderType, side = null) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            
+            // Determine side display
+            let sideDisplay = '';
+            if (side) {
+                sideDisplay = `<span class="side-tag">${side.toUpperCase()}</span>`;
+            }
+            
+            fileItem.innerHTML = `
+                <div class="file-info">
+                    <div class="file-icon">IMG</div>
+                    <div class="file-details">
+                        <div class="file-name">${file.name} ${sideDisplay}</div>
+                        <div class="file-size">${formatFileSize(file.size)}</div>
+                    </div>
+                </div>
+                <button class="remove-file-btn" onclick="removeFile(this)">Remove</button>
+            `;
+            
+            // Store file data
+            fileItem.fileData = {
+                file: file,
+                documentType: documentType,
+                uploaderType: uploaderType,
+                side: side || 'Single'
+            };
+            
+            return fileItem;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function removeFile(button) {
+            const fileItem = button.closest('.file-item');
+            fileItem.remove();
+            updateUploadButton();
+        }
+
+        function removeCard(button) {
+            // Don't allow removal if only one card
+            if (uploaderCards.length <= 1) {
+                return;
+            }
+            
+            const card = button.closest('.uploader-card');
+            const cardIndex = uploaderCards.indexOf(card);
+            if (cardIndex > -1) {
+                uploaderCards.splice(cardIndex, 1);
+            }
+            card.remove();
+            
+            // Renumber all remaining cards
+            renumberCards();
+            
+            // Update remove button states
+            updateRemoveButtonStates();
+            
+            // Update dynamic hint after removing card
+            updateDynamicHintAfterRemoval();
+            
+            // Update upload button state
+            updateUploadButton();
+            
+            // Update likeness toggle visibility
+            updateLikenessToggleVisibility();
+        }
+
+        function renumberCards() {
+            uploaderCards.forEach((card, index) => {
+                const cardNumber = index + 1;
+                const label = card.querySelector('.card-header label');
+                if (label) {
+                    label.textContent = `Document ${cardNumber}`;
+                }
+            });
+        }
+
+        function updateRemoveButtonStates() {
+            const removeButtons = document.querySelectorAll('.remove-card-text-btn');
+            removeButtons.forEach(button => {
+                if (uploaderCards.length <= 1) {
+                    button.disabled = true;
+                    button.style.opacity = '0.5';
+                    button.style.cursor = 'not-allowed';
+                } else {
+                    button.disabled = false;
+                    button.style.opacity = '1';
+                    button.style.cursor = 'pointer';
+                }
+            });
+        }
+
+        function updateDynamicHintAfterRemoval() {
+            // Check if there are any photo ID uploaders left
+            const photoCards = document.querySelectorAll('.uploader-card');
+            const hasPhotoID = Array.from(photoCards).some(card => {
+                const dropdown = card.querySelector('.document-dropdown');
+                return dropdown && dropdown.value && ['Passport', 'Driving Licence', 'Passport Card', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'].includes(dropdown.value);
+            });
+            
+            if (!hasPhotoID) {
+                hideDynamicHint();
+            }
+        }
+
+        function updateLikenessToggleVisibility() {
+            const likenessToggleCard = document.getElementById('likenessToggleCard');
+            if (!likenessToggleCard) return;
+            
+            // Check if there are any photo ID uploaders
+            const photoCards = document.querySelectorAll('.uploader-card');
+            const hasPhotoID = Array.from(photoCards).some(card => {
+                const cardHeader = card.querySelector('.card-header label');
+                return cardHeader && cardHeader.textContent.includes('Photo ID');
+            });
+            
+            // Show toggle only when there are photo ID cards
+            if (hasPhotoID) {
+                likenessToggleCard.classList.remove('hidden');
+            } else {
+                likenessToggleCard.classList.add('hidden');
+            }
+        }
+
+        function updateUploadButton() {
+            // Button is always enabled for document uploads
+            if (uploadAllBtn) {
+                uploadAllBtn.disabled = false;
+                uploadAllBtn.textContent = 'Upload All Documents';
+            }
+        }
+
+        function resetUploader() {
+            uploaderCardsContainer.innerHTML = '';
+            uploaderCards = [];
+            // Button remains enabled for document uploads
+            if (uploadAllBtn) {
+                uploadAllBtn.disabled = false;
+                uploadAllBtn.textContent = 'Upload All Documents';
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorPopup.style.display = 'flex';
+        }
+
+        function hideError() {
+            errorPopup.style.display = 'none';
+        }
+
+        function collectAllFiles() {
+            const allFiles = [];
+            const uploaderCards = document.querySelectorAll('.uploader-card');
+            
+            uploaderCards.forEach(card => {
+                const primaryDropdown = card.querySelector('.primary-dropdown');
+                const secondaryDropdown = card.querySelector('.secondary-dropdown');
+                const otherInput = card.querySelector('.other-input');
+                const uploadArea = card.querySelector('.upload-area-slimline');
+                
+                if (uploadArea && uploadArea.fileData) {
+                    const file = uploadArea.fileData.file;
+                    const documentType = primaryDropdown.value;
+                    let subType = '';
+                    
+                    if (documentType === 'Other') {
+                        subType = otherInput.value.trim();
+                    } else if (secondaryDropdown.value) {
+                        subType = secondaryDropdown.value;
+                    }
+                    
+                    console.log('Document type:', documentType);
+                    console.log('Sub type:', subType);
+                    console.log('Other input value:', otherInput.value);
+                    console.log('Secondary dropdown value:', secondaryDropdown.value);
+                    
+                    // Generate filename with fallback values if clientData is not available
+                    console.log('clientData:', clientData);
+                    const fe = (clientData?.fe || 'Unknown').replace(/\//g, '-');
+                    const clientNumber = (clientData?.clientNumber || 'Unknown').replace(/\//g, '-');
+                    const matterNumber = (clientData?.matterNumber || 'Unknown').replace(/\//g, '-');
+                    const clientName = (clientData?.name || 'Unknown').replace(/\//g, '-');
+                    const fileName = `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${subType}`;
+                    console.log('Generated filename:', fileName);
+                    
+                    allFiles.push({
+                        type: documentType,
+                        document: subType,
+                        uploader: userEmail,
+                        data: {
+                            type: file.type,
+                            size: file.size,
+                            name: fileName,
+                            lastModified: file.lastModified
+                        },
+                        file: file
+                    });
+                }
+            });
+            
+            return allFiles;
+        }
+
+        function uploadAllFiles() {
+            // First validate all visible upload cards have files
+            const validationResult = validateAllUploadCards();
+            if (!validationResult.valid) {
+                showError(validationResult.message);
+                return;
+            }
+            
+            const files = collectAllFiles();
+            if (files.length === 0) {
+                showError('No files to upload.');
+                return;
+            }
+            
+            // Show uploading state
+            showUploadingState();
+            
+            // Send document data to parent for PUT link generation
+            window.parent.postMessage({
+                type: 'file-data',
+                files: files,
+                _id: itemId
+            }, '*');
+            
+            // Listen for PUT links or PUT error response (remove existing listener first)
+            window.removeEventListener('message', handlePutResponse);
+            window.addEventListener('message', handlePutResponse);
+        }
+
+        function validateAllUploadCards() {
+            // Get all visible upload cards
+            const visibleCards = Array.from(document.querySelectorAll('.uploader-card')).filter(card => {
+                const wrapper = card.querySelector('.document-upload-wrapper');
+                return wrapper && !wrapper.classList.contains('hidden');
+            });
+            
+            if (visibleCards.length === 0) {
+                return { valid: false, message: 'No upload cards are visible.' };
+            }
+            
+            // Check each visible card has required fields and files
+            for (const card of visibleCards) {
+                // First validate required fields
+                const validation = validateDocumentCard(card);
+                if (!validation.valid) {
+                    return validation;
+                }
+                
+                // Then check if file is uploaded
+                const uploadArea = card.querySelector('.upload-area-slimline');
+                if (!uploadArea || !uploadArea.fileData) {
+                    const primaryDropdown = card.querySelector('.primary-dropdown');
+                    const documentType = primaryDropdown.value;
+                    return { valid: false, message: `Please select a document for ${documentType}.` };
+                }
+                
+                // Validate file type (documents only)
+                const file = uploadArea.fileData.file;
+                const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                const isWord = file.type === 'application/msword' || 
+                              file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                              file.name.toLowerCase().endsWith('.doc') ||
+                              file.name.toLowerCase().endsWith('.docx');
+                
+                if (!isPDF && !isWord) {
+                    return { valid: false, message: 'File must be a PDF or Word document.' };
+                }
+            }
+            
+            return { valid: true, message: '' };
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    prevImage();
+                    updateCounter();
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    nextImage();
+                    updateCounter();
+                });
+            }
+
+            if (mockBtn) {
+                mockBtn.addEventListener('click', () => {
+                    loadMockData();
+                });
+            }
+
+            if (addMoreBtn) {
+                addMoreBtn.addEventListener('click', () => {
+                    showUploader();
+                });
+            }
+
+            if (uploadAllBtn) {
+                uploadAllBtn.addEventListener('click', () => {
+                    uploadAllFiles();
+                });
+            }
+
+            if (cancelHeaderBtn) {
+                cancelHeaderBtn.addEventListener('click', () => {
+                    hideUploader();
+                });
+            }
+
+            if (errorPopupClose) {
+                errorPopupClose.addEventListener('click', () => {
+                    hideError();
+                });
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                prevImage();
+                updateCounter();
+            } else if (e.key === 'ArrowRight') {
+                nextImage();
+                updateCounter();
+            }
+        });
+
+        // Reset uploaders when new image data is received
+        function resetUploaders() {
+            // Clear all uploader cards
+            uploaderCardsContainer.innerHTML = '';
+            uploaderCards = [];
+            
+            // Hide uploader section
+            idUploaderSection.classList.add('hidden');
+            
+            // Reset upload button
+            uploadAllBtn.disabled = true;
+            uploadAllBtn.textContent = 'Upload All Documents';
+            
+            // Hide any uploading state
+            hideUploadingState();
+            
+            // Clear dynamic hint
+            hideDynamicHint();
+            
+            // Remove any PUT response listeners
+            window.removeEventListener('message', handlePutResponse);
+            
+            // Reset upload-related data
+            s3Keys = null;
+            uploadedImages = null;
+            
+            console.log('Uploaders reset due to new image data');
+        }
+
+        // Listen for messages from parent
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'display-documents') {
+                console.log('Received document display data:', event.data);
+                
+                // If we're currently in uploader mode, reset everything first
+                if (!idUploaderSection.classList.contains('hidden')) {
+                    resetUploaders();
+                }
+                
+                // Display the new documents
+                displayDocuments(event.data.documents, event.data.allowUploads, event.data.clientData, event.data.userEmail);
+            } else if (event.data && event.data.type === 'image-display') {
+                console.log('Received image display data:', event.data);
+                
+                // If we're currently in uploader mode, reset everything first
+                if (!idUploaderSection.classList.contains('hidden')) {
+                    resetUploaders();
+                }
+                
+                // Display the new images
+                displayImages(event.data.data, event.data.allowUploads, event.data.clientData, event.data.userEmail);
+            } else if (event.data && event.data.type === 'display-images') {
+                handleDisplayImages(event.data);
+            } else if (event.data && event.data.type === 'put-links') {
+                handlePutLinks(event.data);
+            } else if (event.data && event.data.type === 'put-error') {
+                handlePutError(event.data);
+            }
+        });
+
+        // Handle window resize for responsive image slider
+        window.addEventListener('resize', () => {
+            if (images.length > 0) {
+                showImage(currentImageIndex);
+            }
+        });
+
+        // Handle display images data from parent
+        function handleDisplayImages(data) {
+            console.log('Received display-images data from parent:', data);
+            
+            // Store the item ID for later use
+            itemId = data._id;
+            
+            // Store client data and user email
+            clientData = data.clientData || {};
+            userEmail = data.userEmail || '';
+            
+            // Process and display images
+            if (data.images && Array.isArray(data.images)) {
+                displayImages(data.images, true, data.clientData, data.userEmail);
+            } else {
+                // No images to display, show awaiting state
+                showAwaitingState();
+            }
+        }
+
+        // Handle PUT links for uploading files to S3
+        function handlePutLinks(data) {
+            console.log('Received PUT links:', data);
+            // This will be handled by the upload logic when files are ready
+            // The links and s3Keys are stored for use during upload
+        }
+
+        // Handle PUT error from backend
+        function handlePutError(data) {
+            console.error('PUT error from backend:', data);
+            showError(data.message || 'Upload failed. Please try again.');
+            
+            // Reset upload state
+            if (!idUploaderSection.classList.contains('hidden')) {
+                hideUploader();
+            }
+        }
+
+        // Initialize
+        console.log('Image display iframe loaded and ready');
+    </script>
+    </div>
+</body>
+</html>
