@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Small Iframe</title>
     <style>
-        * {
+        * { 
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -63,7 +63,7 @@
             display: none;
             gap: 4px;
             flex: 1;
-            justify-content: flex-end;
+            justify-content: flex-start;
         }
 
         .tag {
@@ -153,7 +153,6 @@
             font-weight: 500;
             transition: all 0.2s ease;
             margin-left: 6px;
-            display: none;
         }
 
         .message-file-btn:hover {
@@ -179,7 +178,6 @@
             animation: pulse 2s infinite;
             margin-left: 6px;
             margin-right: 6px;
-            display: none;
         }
 
         .message-time {
@@ -357,6 +355,175 @@
     </div>
 
     <script>
+        // Store variables from parent message
+        let userEmail = '';
+        let itemId = '';
+        let hasNotification = false;
+
+        // Initialize - hide notification elements on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const dot = document.querySelector('.notification-dot');
+            const dismissBtn = document.querySelector('.dismiss-btn');
+            const tagsContainer = document.querySelector('.tags-container');
+            
+            if (dot) dot.style.display = 'none';
+            if (dismissBtn) dismissBtn.style.display = 'none';
+            if (tagsContainer) tagsContainer.style.display = 'none';
+        });
+
+        // Message listener for parent communication
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'message-data') {
+                const data = event.data;
+                
+                // Clear user input and selected file
+                document.getElementById('messageInput').value = '';
+                document.getElementById('fileInput').value = '';
+                
+                // Store userEmail and _id
+                userEmail = data.userEmail || '';
+                itemId = data._id || '';
+                hasNotification = data.notification || false;
+                
+                // Clear existing messages and display new chat messages
+                displayMessages(data.chat || [], data.white || 'Staff');
+                
+                // Reset and handle notification
+                handleNotification(hasNotification);
+                
+                // Reset and handle tags
+                handleTags(data.tags || []);
+                
+                // Always enable send button when receiving message data
+                document.getElementById('sendBtn').disabled = false;
+            }
+        });
+
+        function displayMessages(chatData, whiteType) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            messagesContainer.innerHTML = '';
+            
+            // Find the last blue message index
+            let lastBlueMessageIndex = -1;
+            for (let i = chatData.length - 1; i >= 0; i--) {
+                if (chatData[i].type !== whiteType) {
+                    lastBlueMessageIndex = i;
+                    break;
+                }
+            }
+            
+            chatData.forEach((message, index) => {
+                const messageDiv = document.createElement('div');
+                const isWhiteCard = message.type === whiteType;
+                messageDiv.className = `message ${isWhiteCard ? 'sent' : 'received'}`;
+                
+                // Check if this is the last blue message and should show notification
+                const isLastBlueMessage = !isWhiteCard && index === lastBlueMessageIndex;
+                const showNotification = isLastBlueMessage && hasNotification;
+                
+                // File button for messages with liveUrl
+                const fileButton = message.liveUrl ? 
+                    `<button class="message-file-btn" onclick="downloadFile('${message.liveUrl}')">File</button>` : '';
+                
+                // Notification dot for last blue message
+                const notificationDot = showNotification ? '<div class="message-notification-dot" style="display: block;"></div>' : '<div class="message-notification-dot" style="display: none;"></div>';
+                
+                messageDiv.innerHTML = `
+                    <div class="message-header">
+                        <div style="display: flex; align-items: center;">
+                            <div class="message-email">${message.user}</div>
+                            ${notificationDot}
+                            ${fileButton}
+                        </div>
+                        <div class="message-time">${message.time}</div>
+                    </div>
+                    <div class="message-text">${message.message}</div>
+                `;
+                
+                messagesContainer.appendChild(messageDiv);
+            });
+            
+            // Scroll to bottom to show latest messages
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function handleNotification(showNotification) {
+            const dot = document.querySelector('.notification-dot');
+            const dismissBtn = document.querySelector('.dismiss-btn');
+            
+            if (showNotification) {
+                dot.style.display = 'block';
+                dismissBtn.style.display = 'block';
+            } else {
+                dot.style.display = 'none';
+                dismissBtn.style.display = 'none';
+            }
+        }
+
+        function handleTags(tagsArray) {
+            const tagsContainer = document.querySelector('.tags-container');
+            const tagElements = tagsContainer.querySelectorAll('.tag');
+            
+            // Hide all tags first
+            tagElements.forEach(tag => tag.style.display = 'none');
+            
+            // Show tags based on the tags array
+            tagsArray.forEach(tagName => {
+                let tagElement = null;
+                switch(tagName) {
+                    case 'note':
+                        tagElement = tagElements[0]; // Note
+                        break;
+                    case 'pepUpdate':
+                        tagElement = tagElements[1]; // PEP Update
+                        break;
+                    case 'update':
+                        tagElement = tagElements[2]; // Issue Update
+                        break;
+                    case 'formJ':
+                        tagElement = tagElements[3]; // Form J
+                        break;
+                    case 'formK':
+                        tagElement = tagElements[4]; // Form K
+                        break;
+                    case 'formE':
+                        tagElement = tagElements[5]; // Form E
+                        break;
+                }
+                
+                if (tagElement) {
+                    tagElement.style.display = 'flex';
+                }
+            });
+            
+            // Show tags container if any tags are visible
+            const hasVisibleTags = Array.from(tagElements).some(tag => tag.style.display !== 'none');
+            tagsContainer.style.display = hasVisibleTags ? 'flex' : 'none';
+        }
+
+        function downloadFile(liveUrl) {
+            // Fetch the file as a blob and download it
+            fetch(liveUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'attachment.jpg'; // Give it a proper filename
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url); // Clean up the object URL
+                })
+                .catch(error => {
+                    console.error('Download failed:', error);
+                    // Fallback to opening in new tab if fetch fails
+                    window.open(liveUrl, '_blank');
+                });
+        }
+
+
         function triggerFileInput() {
             document.getElementById('fileInput').click();
         }
@@ -411,7 +578,7 @@
             messageDiv.className = `message ${type}`;
             
             const currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            const email = type === 'sent' ? 'user@example.com' : 'support@cashiers.com';
+            const email = type === 'sent' ? userEmail : 'support@cashiers.com';
             
             let messageContent = '';
             if (file) {
@@ -421,14 +588,10 @@
                 messageContent += `<div class="message-text">${text}</div>`;
             }
             
-            // Add notification dot for received messages
-            const notificationDot = type === 'received' ? '<div class="message-notification-dot"></div>' : '';
-            
             messageDiv.innerHTML = `
                 <div class="message-header">
                     <div style="display: flex; align-items: center;">
                         <div class="message-email">${email}</div>
-                        ${notificationDot}
                         <button class="message-file-btn" onclick="openFile()">File</button>
                     </div>
                     <div class="message-time">${currentTime}</div>
@@ -446,14 +609,14 @@
         }
 
         function dismissNotification() {
-            const dot = document.querySelector('.notification-dot');
-            const dismissBtn = document.querySelector('.dismiss-btn');
+            // Post message back to parent
+            window.parent.postMessage({
+                type: "dismiss-notification",
+                _id: itemId,
+                userEmail: userEmail
+            }, '*');
             
-            // Hide the notification dot and dismiss button
-            dot.style.display = 'none';
-            dismissBtn.style.display = 'none';
-            
-            console.log('Notification dismissed');
+            console.log('Dismiss notification sent to parent');
         }
 
         // Enable/disable send button based on input
