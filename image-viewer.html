@@ -2419,10 +2419,13 @@
             // Get likeness toggle value
             const likenessNOTConfirmed = getLikenessToggleValue();
             
-            // Send success message to parent with images data from put-links response
+            // Use the s3Keys data directly as it already contains the properly formatted image data from parent
+            const imagesWithS3Keys = s3Keys || uploadedImages;
+            
+            // Send success message to parent with properly formatted images data
             window.parent.postMessage({
-                type: 'uploadSuccess',
-                images: uploadedImages,
+                type: 'upload-success',
+                images: imagesWithS3Keys,
                 _id: itemId,
                 uploader: userEmail,
                 photoIdUploaded: photoIdUploaded,
@@ -2915,10 +2918,12 @@
                 };
             });
             
+            
             // Send image data to parent for PUT link generation
             window.parent.postMessage({
                 type: 'image-data',
-                images: imagesData
+                images: imagesData,
+                _id: itemId
             }, '*');
             
             // Listen for PUT links or PUT error response (remove existing listener first)
