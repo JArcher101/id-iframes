@@ -20,8 +20,30 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        .left-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .right-panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px;
+            height: fit-content;
         }
 
         h1 {
@@ -35,19 +57,48 @@
             background: #e8f4f8;
             padding: 20px;
             border-radius: 8px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             border-left: 4px solid #003B5C;
+            transition: all 0.3s ease;
+        }
+
+        .description.collapsed {
+            padding: 15px 20px;
         }
 
         .description h2 {
             color: #003B5C;
             margin-bottom: 10px;
             font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .description h2:hover {
+            color: #002b43;
         }
 
         .description p {
             color: #555;
             margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .description.collapsed p {
+            display: none;
+        }
+
+        .collapse-arrow {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+            color: #003B5C;
+        }
+
+        .description.collapsed .collapse-arrow {
+            transform: rotate(-90deg);
         }
 
         .controls {
@@ -93,13 +144,122 @@
             box-shadow: 0 2px 8px rgba(16, 163, 127, 0.3);
         }
 
-        .current-width {
-            background: #f0f7ff;
-            padding: 10px;
-            border-radius: 6px;
+
+        .iframe-selector {
+            margin-bottom: 20px;
+        }
+
+        .iframe-selector label {
+            display: block;
+            margin-bottom: 8px;
             font-weight: 600;
             color: #003B5C;
-            border: 1px solid #003B5C;
+        }
+
+        .iframe-dropdown {
+            width: 100%;
+            max-width: 300px;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            background: white;
+            color: #003B5C;
+        }
+
+        .iframe-dropdown:focus {
+            outline: none;
+            border-color: #003B5C;
+        }
+
+        .custom-dimensions {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .custom-dimensions.collapsed {
+            padding: 12px 15px;
+        }
+
+        .custom-dimensions h4 {
+            color: #003B5C;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .custom-dimensions h4:hover {
+            color: #002b43;
+        }
+
+        .custom-dimensions.collapsed h4 {
+            margin-bottom: 0;
+        }
+
+        .custom-dimensions .dimension-inputs {
+            transition: all 0.3s ease;
+        }
+
+        .custom-dimensions.collapsed .dimension-inputs {
+            display: none;
+        }
+
+        .dimension-inputs {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 120px;
+        }
+
+        .input-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #003B5C;
+            margin-bottom: 5px;
+        }
+
+        .input-group input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #003B5C;
+        }
+
+        .custom-btn {
+            background: #10a37f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            height: fit-content;
+        }
+
+        .custom-btn:hover {
+            background: #0d8a6b;
+            transform: translateY(-1px);
         }
 
         .iframe-container {
@@ -149,23 +309,35 @@
             background: white;
         }
 
-        .uploader-iframe {
-            width: 100%;
-            height: 900px;
-        }
-
-        .viewer-iframe {
+        .test-iframe {
             width: 100%;
             height: 600px;
         }
 
         /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .left-panel {
+                position: static;
+                order: 2;
+            }
+            
+            .right-panel {
+                order: 1;
+            }
+        }
+
         @media (max-width: 768px) {
             body { padding: 10px; }
             h1 { font-size: 1.5rem; }
             .width-buttons { flex-direction: column; align-items: center; }
             .width-btn { width: 200px; }
-            .iframe-container { padding: 15px; }
+            .dimension-inputs { flex-direction: column; align-items: stretch; }
+            .input-group { min-width: auto; }
         }
 
         /* Custom widths */
@@ -191,16 +363,35 @@
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .instructions.collapsed {
+            padding: 12px 15px;
         }
 
         .instructions h4 {
             color: #856404;
             margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .instructions h4:hover {
+            color: #6c4a00;
         }
 
         .instructions ul {
             color: #856404;
             margin-left: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .instructions.collapsed ul {
+            display: none;
         }
 
         .instructions li {
@@ -210,135 +401,223 @@
 </head>
 <body>
     <div class="container">
-        <h1>Responsive iframe Test</h1>
-        
-        <div class="description">
-            <h2>ID Management System - Responsive Testing</h2>
-            <p>This page demonstrates how both iframe components respond to different screen widths.</p>
-            <p><strong>Uploader:</strong> Client details form with document upload functionality</p>
-            <p><strong>Viewer:</strong> Image display and additional upload interface</p>
-        </div>
-
-        <div class="instructions">
-            <h4>Testing Instructions:</h4>
-            <ul>
-                <li>Click the width buttons below to test different screen sizes</li>
-                <li>Observe how the layouts adapt at each breakpoint</li>
-                <li>Check mobile responsiveness at 250px and 320px</li>
-                <li>Verify desktop layout at 800px and 980px</li>
-                <li>Test the "Load Mock Data" button in the uploader iframe</li>
-            </ul>
-        </div>
-
-        <div class="controls">
-            <h3>Test Different Widths</h3>
-            <div class="width-buttons">
-                <button class="width-btn active" data-width="980">980px (Desktop)</button>
-                <button class="width-btn" data-width="800">800px (Laptop)</button>
-                <button class="width-btn" data-width="320">320px (Mobile)</button>
-                <button class="width-btn" data-width="250">250px (Small Mobile)</button>
+        <div class="left-panel">
+            <h1>Responsive iframe Test</h1>
+            
+            <div class="description collapsed" id="descriptionCard">
+                <h2 onclick="toggleCard('descriptionCard')">
+                    ID Management System - Responsive Testing
+                    <span class="collapse-arrow">▼</span>
+                </h2>
+                <p>This page allows you to test any iframe component at different screen sizes and custom dimensions.</p>
+                <p><strong>Available Components:</strong> Image Uploader, Image Viewer, Document Viewer, Message iframe, and Cashiers Log</p>
+                <p><strong>Testing Features:</strong> Preset width buttons, custom dimension inputs, and real-time iframe switching</p>
             </div>
-            <div class="current-width">
-                Current Width: <span id="currentWidth">980px</span>
-            </div>
-        </div>
 
-        <div class="iframe-container" id="iframeContainer">
-            <div class="iframe-section">
-                <div class="iframe-header">
-                    <h3>Image Uploader (Client Details Form)</h3>
-                    <div class="iframe-size-info">
-                        <span id="uploaderSize">980px × 900px</span>
+            <div class="instructions collapsed" id="instructionsCard">
+                <h4 onclick="toggleCard('instructionsCard')">
+                    Testing Instructions
+                    <span class="collapse-arrow">▼</span>
+                </h4>
+                <ul>
+                    <li>Select an iframe component from the dropdown above</li>
+                    <li>Use preset width buttons (250px-980px) to test common breakpoints</li>
+                    <li>Enter custom width and height values for specific testing needs</li>
+                    <li>Observe how each component adapts to different screen sizes</li>
+                    <li>Test mobile responsiveness at 250px and 320px</li>
+                    <li>Verify desktop layout at 800px and 980px</li>
+                    <li>Use custom dimensions to test edge cases or specific requirements</li>
+                </ul>
+            </div>
+
+            <div class="controls">
+                <h3>Test Different Dimensions</h3>
+                
+                <div class="iframe-selector">
+                    <label for="iframeSelect">Select iframe to test:</label>
+                    <select id="iframeSelect" class="iframe-dropdown">
+                        <option value="image-uploader.html">Image Uploader</option>
+                        <option value="image-viewer.html">Image Viewer</option>
+                        <option value="document-viewer.html">Document Viewer</option>
+                        <option value="message-iframe.html">Message iframe</option>
+                        <option value="cashiers-log.html">Cashiers Log</option>
+                    </select>
+                </div>
+
+                <div class="width-buttons">
+                    <button class="width-btn active" data-width="980">980px (Desktop)</button>
+                    <button class="width-btn" data-width="800">800px (Laptop)</button>
+                    <button class="width-btn" data-width="320">320px (Mobile)</button>
+                    <button class="width-btn" data-width="250">250px (Small Mobile)</button>
+                </div>
+
+                <div class="custom-dimensions collapsed" id="customDimensionsCard">
+                    <h4 onclick="toggleCard('customDimensionsCard')">
+                        Custom Dimensions
+                        <span class="collapse-arrow">▼</span>
+                    </h4>
+                    <div class="dimension-inputs">
+                        <div class="input-group">
+                            <label for="customWidth">Width (px):</label>
+                            <input type="number" id="customWidth" placeholder="980" min="200" max="2000">
+                        </div>
+                        <div class="input-group">
+                            <label for="customHeight">Height (px):</label>
+                            <input type="number" id="customHeight" placeholder="600" min="200" max="2000">
+                        </div>
+                        <button id="applyCustom" class="custom-btn">Apply</button>
                     </div>
                 </div>
-                <iframe 
-                    id="uploaderIframe"
-                    class="uploader-iframe"
-                    src="image-uploader.html"
-                    title="Image Uploader">
-                </iframe>
-            </div>
 
-            <div class="iframe-section">
-                <div class="iframe-header">
-                    <h3>Image Viewer (Document Display)</h3>
-                    <div class="iframe-size-info">
-                        <span id="viewerSize">980px × 600px</span>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="iframe-container" id="iframeContainer">
+                <div class="iframe-section">
+                    <div class="iframe-header">
+                        <h3 id="iframeTitle">Image Uploader (Client Details Form)</h3>
+                        <div class="iframe-size-info">
+                            <span id="iframeSize">980px × 600px</span>
+                        </div>
                     </div>
+                    <iframe 
+                        id="testIframe"
+                        class="test-iframe"
+                        src="image-uploader.html"
+                        title="Test iframe">
+                    </iframe>
                 </div>
-                <iframe 
-                    id="viewerIframe"
-                    class="viewer-iframe"
-                    src="image-viewer.html"
-                    title="Image Viewer">
-                </iframe>
             </div>
         </div>
     </div>
 
     <script>
+        // iframe configuration
+        const iframeConfig = {
+            'image-uploader.html': { name: 'Image Uploader', defaultHeight: '900px' },
+            'image-viewer.html': { name: 'Image Viewer', defaultHeight: '600px' },
+            'document-viewer.html': { name: 'Document Viewer', defaultHeight: '600px' },
+            'message-iframe.html': { name: 'Message iframe', defaultHeight: '500px' },
+            'cashiers-log.html': { name: 'Cashiers Log', defaultHeight: '400px' }
+        };
+
         // Width configuration
         const widthConfig = {
             '980': { 
                 container: 'width-980',
-                uploaderHeight: '900px',
-                viewerHeight: '600px',
+                height: '600px',
                 label: 'Desktop'
             },
             '800': { 
                 container: 'width-800',
-                uploaderHeight: '900px',
-                viewerHeight: '600px',
+                height: '600px',
                 label: 'Laptop'
             },
             '320': { 
                 container: 'width-320',
-                uploaderHeight: '800px',
-                viewerHeight: '500px',
+                height: '500px',
                 label: 'Mobile'
             },
             '250': { 
                 container: 'width-250',
-                uploaderHeight: '700px',
-                viewerHeight: '400px',
+                height: '400px',
                 label: 'Small Mobile'
             }
         };
 
         // DOM elements
         const widthButtons = document.querySelectorAll('.width-btn');
-        const currentWidthSpan = document.getElementById('currentWidth');
+        const iframeSelect = document.getElementById('iframeSelect');
         const iframeContainer = document.getElementById('iframeContainer');
-        const uploaderIframe = document.getElementById('uploaderIframe');
-        const viewerIframe = document.getElementById('viewerIframe');
-        const uploaderSize = document.getElementById('uploaderSize');
-        const viewerSize = document.getElementById('viewerSize');
+        const testIframe = document.getElementById('testIframe');
+        const iframeTitle = document.getElementById('iframeTitle');
+        const iframeSize = document.getElementById('iframeSize');
+        const customWidthInput = document.getElementById('customWidth');
+        const customHeightInput = document.getElementById('customHeight');
+        const applyCustomBtn = document.getElementById('applyCustom');
+
+        // Current dimensions
+        let currentWidth = 980;
+        let currentHeight = 600;
+
+        // Update iframe display
+        function updateIframeDisplay() {
+            const selectedIframe = iframeSelect.value;
+            const config = iframeConfig[selectedIframe];
+            
+            // Update iframe source and title
+            testIframe.src = selectedIframe;
+            testIframe.title = config.name;
+            iframeTitle.textContent = config.name;
+            
+            // Update dimensions
+            testIframe.style.width = `${currentWidth}px`;
+            testIframe.style.height = `${currentHeight}px`;
+            
+            // Update iframe header display
+            iframeSize.textContent = `${currentWidth}px × ${currentHeight}px`;
+            
+            console.log(`Switched to ${config.name} at ${currentWidth}x${currentHeight}`);
+        }
+
+        // Handle iframe selection change
+        iframeSelect.addEventListener('change', () => {
+            const selectedIframe = iframeSelect.value;
+            const config = iframeConfig[selectedIframe];
+            
+            // Set default height for the selected iframe
+            currentHeight = parseInt(config.defaultHeight);
+            customHeightInput.value = currentHeight;
+            
+            updateIframeDisplay();
+        });
 
         // Handle width button clicks
         widthButtons.forEach(button => {
             button.addEventListener('click', () => {
-                const width = button.dataset.width;
-                const config = widthConfig[width];
+                const width = parseInt(button.dataset.width);
+                const config = widthConfig[button.dataset.width];
                 
                 // Update active button
                 widthButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
                 
+                // Update dimensions
+                currentWidth = width;
+                currentHeight = parseInt(config.height);
+                
+                // Update custom inputs
+                customWidthInput.value = currentWidth;
+                customHeightInput.value = currentHeight;
+                
                 // Update container width
                 iframeContainer.className = `iframe-container ${config.container}`;
                 
-                // Update iframe heights
-                uploaderIframe.style.height = config.uploaderHeight;
-                viewerIframe.style.height = config.viewerHeight;
-                
-                // Update display
-                currentWidthSpan.textContent = `${width}px (${config.label})`;
-                uploaderSize.textContent = `${width}px × ${config.uploaderHeight}`;
-                viewerSize.textContent = `${width}px × ${config.viewerHeight}`;
-                
-                // Log for debugging
-                console.log(`Switched to ${width}px width`);
+                updateIframeDisplay();
             });
+        });
+
+        // Handle custom dimensions
+        applyCustomBtn.addEventListener('click', () => {
+            const customWidth = parseInt(customWidthInput.value);
+            const customHeight = parseInt(customHeightInput.value);
+            
+            if (customWidth && customHeight && customWidth >= 200 && customWidth <= 2000 && customHeight >= 200 && customHeight <= 2000) {
+                currentWidth = customWidth;
+                currentHeight = customHeight;
+                
+                // Remove active state from preset buttons
+                widthButtons.forEach(btn => btn.classList.remove('active'));
+                
+                // Update container to custom width
+                iframeContainer.className = 'iframe-container';
+                iframeContainer.style.width = `${currentWidth}px`;
+                
+                updateIframeDisplay();
+            } else {
+                alert('Please enter valid dimensions (200-2000px)');
+            }
         });
 
         // Handle iframe communication
@@ -347,22 +626,25 @@
             
             // Handle upload completion from uploader iframe
             if (event.data.type === 'upload-complete') {
-                console.log('Upload completed, sending data to viewer');
-                
-                // Send data to viewer iframe
-                viewerIframe.contentWindow.postMessage({
-                    type: 'image-display',
-                    data: event.data.images,
-                    allowUploads: true,
-                    clientData: event.data.clientData,
-                    userEmail: event.data.userEmail
-                }, '*');
+                console.log('Upload completed, data received:', event.data);
             }
         });
 
+        // Toggle card collapse/expand
+        function toggleCard(cardId) {
+            const card = document.getElementById(cardId);
+            card.classList.toggle('collapsed');
+        }
+
         // Initialize
         console.log('Responsive iframe test page loaded');
+        console.log('Available iframes:', Object.keys(iframeConfig));
         console.log('Available widths:', Object.keys(widthConfig));
+        
+        // Set initial values
+        customWidthInput.value = currentWidth;
+        customHeightInput.value = currentHeight;
+        updateIframeDisplay();
     </script>
 </body>
 </html>
