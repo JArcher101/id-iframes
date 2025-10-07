@@ -3,8 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Small Iframe</title>
+    <title>Cashiers Log</title>
     <style>
+        /*
+        =====================================================================
+        CASHIERS LOG IFRAME - STYLE SECTION
+        =====================================================================
+        This iframe is embedded in a parent window and displays a read-only
+        log of cashier activities and system events.
+        
+        COMMUNICATION ARCHITECTURE:
+        - Uses window.postMessage() API for parent-child communication
+        - Parent sends: log-data
+        - Child sends: (currently no outgoing messages)
+        
+        LOG DISPLAY FLOW:
+        1. Parent sends 'log-data' message with array of log entries
+        2. Child receives and renders logs via displayLogs() function
+        3. Logs displayed in reverse chronological order (newest at top)
+        =====================================================================
+        */
+        
+        /* Global reset for consistent styling */
         * {
             margin: 0;
             padding: 0;
@@ -20,9 +40,13 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
-
-
-
+        /* 
+        =====================================================================
+        TAGS SYSTEM (Currently unused in log view)
+        - Styling preserved for potential future features
+        - Tags could be used to categorize log entries by type
+        =====================================================================
+        */
         .tags-container {
             display: flex;
             gap: 4px;
@@ -31,7 +55,7 @@
         }
 
         .tag {
-            background: #D4A574; /* Pantone 451C */
+            background: #D4A574; /* Pantone 451C - Brand tan color */
             color: white;
             padding: 4px 10px;
             border-radius: 4px;
@@ -45,6 +69,7 @@
             justify-content: center;
         }
 
+        /* Pulse animation - available for future notification features */
         @keyframes pulse {
             0% {
                 opacity: 1;
@@ -60,7 +85,12 @@
             }
         }
 
-
+        /* 
+        =====================================================================
+        CONTAINER (Currently unused)
+        - Preserved for potential future input features
+        =====================================================================
+        */
         .container {
             width: 640px;
             height: 80px;
@@ -73,11 +103,21 @@
             justify-content: center;
         }
 
+        /* Main wrapper containing the log display */
         .chat-wrapper {
             display: flex;
             flex-direction: column;
         }
 
+        /* 
+        =====================================================================
+        MESSAGES DISPLAY AREA - Main log container
+        - Fixed dimensions: 290px × 420px (compact size for sidebar display)
+        - Scrollable container for all log entries
+        - Auto-scrolls to top when new logs added (newest first)
+        - Logs populated via displayLogs() function
+        =====================================================================
+        */
         .messages-container {
             width: 290px;
             height: 420px;
@@ -88,27 +128,38 @@
             box-sizing: border-box;
         }
 
+        /* Header within each log entry showing email and timestamp */
         .message-header {
             margin-bottom: 4px;
         }
 
+        /* Email address shown in log entry header - uses brand tan color */
         .message-email {
             color: #D4A574; /* Pantone 451C */
             font-size: 10px;
             font-weight: bold;
         }
 
-
+        /* Timestamp displayed on each log entry */
         .message-time {
             font-size: 9px;
             color: #666;
             margin: 2px 0 0 0;
         }
 
+        /* Override time color for consistency in log view */
         .message.received .message-time {
             color: #666;
         }
 
+        /* 
+        =====================================================================
+        LOG ENTRY CARDS
+        - All entries use "received" style (light gray background)
+        - Full-width cards with word wrapping for long messages
+        - Rounded corners for modern card aesthetic
+        =====================================================================
+        */
         .message {
             margin-bottom: 10px;
             padding: 10px;
@@ -118,11 +169,13 @@
             box-sizing: border-box;
         }
 
+        /* Log entries - light gray card style for read-only display */
         .message.received {
             background: #f5f5f5;
             color: #333;
         }
 
+        /* Log entry message text */
         .message-text {
             font-size: 14px;
             line-height: 1.4;
@@ -140,7 +193,60 @@
     </div>
 
     <script>
+        /*
+        =====================================================================
+        CASHIERS LOG IFRAME - JAVASCRIPT SECTION
+        =====================================================================
+        
+        PURPOSE:
+        This iframe displays a read-only activity log for cashier operations.
+        It receives log data from the parent window and renders it in a
+        scrollable list format with newest entries at the top.
+        
+        PARENT-CHILD COMMUNICATION:
+        This iframe uses window.postMessage() to communicate with parent window.
+        
+        INCOMING MESSAGES (from parent):
+        1. 'log-data' - Complete array of log entries to display
+        
+        OUTGOING MESSAGES (to parent):
+        - None currently implemented (read-only view)
+        
+        LOG DATA FLOW:
+        1. Parent sends 'log-data' message with logs array
+        2. displayLogs() function clears existing entries
+        3. Each log entry is rendered as a message card
+        4. Container scrolls to top to show newest entries first
+        
+        LOG ENTRY STRUCTURE (from parent):
+        {
+            user: 'user@example.com',     // Email of user who created the log
+            message: 'Log entry text',     // Description of the activity
+            time: '1/1/2024, 12:00:00 PM' // Timestamp of the event
+        }
+        
+        IMPORTANT: This is a READ-ONLY display. No user interaction or
+        data modification is supported. All log entries come from parent.
+        
+        =====================================================================
+        */
 
+        /*
+        =====================================================================
+        ADD MESSAGE - Legacy function for creating individual log entries
+        =====================================================================
+        Parameters:
+        - text: Message text to display
+        - file: File object (currently unused in log view)
+        - type: Message type ('sent' or 'received')
+        
+        Note: This function is currently NOT used in the normal log display flow.
+        The displayLogs() function is used instead, which receives complete
+        log data from the parent and renders all entries at once.
+        
+        This function is preserved for potential future features or debugging.
+        =====================================================================
+        */
         function addMessage(text, file, type) {
             const messagesContainer = document.getElementById('messagesContainer');
             const messageDiv = document.createElement('div');
@@ -149,6 +255,7 @@
             const currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             const email = type === 'sent' ? 'user@example.com' : 'support@cashiers.com';
             
+            // Build message content from text and file (if present)
             let messageContent = '';
             if (file) {
                 messageContent = `<div class="message-text">📎 ${file.name}</div>`;
@@ -157,9 +264,10 @@
                 messageContent += `<div class="message-text">${text}</div>`;
             }
             
-            // Add notification dot for received messages
+            // Add notification dot for received messages (legacy feature)
             const notificationDot = type === 'received' ? '<div class="message-notification-dot"></div>' : '';
             
+            // Construct message HTML
             messageDiv.innerHTML = `
                 <div class="message-header">
                     <div style="display: flex; align-items: center;">
@@ -172,23 +280,61 @@
                 ${messageContent}
             `;
             
+            // Add to container and scroll to bottom
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-
+        /*
+        =====================================================================
+        DISMISS NOTIFICATION - Handles notification dismissal (Legacy)
+        =====================================================================
+        Note: This function references DOM elements that don't exist in the
+        current HTML structure. Preserved for backwards compatibility.
+        
+        In the current implementation, logs are read-only and have no
+        notification system requiring dismissal.
+        =====================================================================
+        */
         function dismissNotification() {
             const dot = document.querySelector('.notification-dot');
             const dismissBtn = document.querySelector('.dismiss-btn');
             
-            // Hide the notification dot and dismiss button
-            dot.style.display = 'none';
-            dismissBtn.style.display = 'none';
+            // Hide the notification dot and dismiss button (if they exist)
+            if (dot) dot.style.display = 'none';
+            if (dismissBtn) dismissBtn.style.display = 'none';
             
             console.log('Notification dismissed');
         }
 
-        // Listen for log data messages from parent
+        /*
+        =====================================================================
+        MAIN MESSAGE LISTENER - Handles parent-child communication
+        =====================================================================
+        Listens for postMessage events from the parent window.
+        
+        INCOMING MESSAGE TYPES:
+        
+        1. 'log-data' - Parent sends complete array of log entries
+           Data structure:
+           {
+               type: 'log-data',
+               logs: [
+                   {
+                       user: 'email@example.com',
+                       message: 'Log entry text',
+                       time: '1/1/2024, 12:00:00 PM'
+                   },
+                   ...
+               ]
+           }
+           
+           Triggers displayLogs() to render all log entries.
+        
+        SECURITY NOTE: Currently accepts messages from any origin ('*').
+        In production, consider validating event.origin for security.
+        =====================================================================
+        */
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'log-data') {
                 console.log('Received log data:', event.data);
@@ -196,18 +342,48 @@
             }
         });
 
+        /*
+        =====================================================================
+        DISPLAY LOGS - Renders all log entries in the container
+        =====================================================================
+        Parameters:
+        - logs: Array of log entry objects from parent
+        
+        Log entry structure:
+        {
+            user: 'email@example.com',     // User who created the log entry
+            message: 'Log entry text',     // Description of the activity
+            time: '1/1/2024, 12:00:00 PM' // When the event occurred
+        }
+        
+        Rendering process:
+        1. Clears all existing log entries from container
+        2. Validates logs is a non-empty array
+        3. Creates a message card for each log entry with:
+           - User email in header (brand tan color)
+           - Timestamp in header
+           - Message text in body
+        4. Uses 'received' styling (light gray background) for all entries
+        5. Scrolls to top to show newest entries (assuming newest first in array)
+        
+        Note: This function completely replaces the log display each time
+        it's called. It does not append to existing logs.
+        =====================================================================
+        */
         function displayLogs(logs) {
             const messagesContainer = document.getElementById('messagesContainer');
             
-            // Clear existing messages
+            // Clear existing messages to start fresh
             messagesContainer.innerHTML = '';
             
-            // Add each log entry as a message
+            // Validate logs array and render each entry
             if (logs && Array.isArray(logs)) {
                 logs.forEach(log => {
+                    // Create log entry card
                     const messageDiv = document.createElement('div');
-                    messageDiv.className = 'message received';
+                    messageDiv.className = 'message received'; // All logs use 'received' style
                     
+                    // Build log entry HTML with user, time, and message
                     messageDiv.innerHTML = `
                         <div class="message-header">
                             <div class="message-email">${log.user}</div>
@@ -216,15 +392,21 @@
                         <div class="message-text">${log.message}</div>
                     `;
                     
+                    // Add log entry to container
                     messagesContainer.appendChild(messageDiv);
                 });
                 
-                // Scroll to top to show latest entries (newest at top)
+                // Scroll to top to show latest entries
+                // (Assumes parent sends logs in reverse chronological order - newest first)
                 messagesContainer.scrollTop = 0;
             }
         }
 
-
+        /*
+        =====================================================================
+        END OF CASHIERS LOG IFRAME SCRIPT
+        =====================================================================
+        */
     </script>
 </body>
 </html>

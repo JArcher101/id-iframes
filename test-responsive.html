@@ -6,6 +6,36 @@
     <title>Responsive iframe Test - ID Management System</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        /*
+        =====================================================================
+        RESPONSIVE IFRAME TEST PAGE - STYLE SECTION
+        =====================================================================
+        This page provides a testing environment for all iframe components
+        in the ID Management System.
+        
+        PURPOSE:
+        - Test iframe responsiveness at different screen sizes
+        - Preview components at common breakpoints (250px, 320px, 800px, 980px)
+        - Apply custom dimensions for edge case testing
+        - Switch between different iframe components dynamically
+        
+        AVAILABLE COMPONENTS:
+        - Image Uploader (Client Details Form)
+        - Image Viewer (View uploaded ID photos)
+        - Document Viewer (View uploaded documents)
+        - Message iframe (Cashiers Chat)
+        - Cashiers Log (Transaction log)
+        
+        FEATURES:
+        - Preset width buttons for common breakpoints
+        - Custom width/height inputs for specific testing
+        - Real-time iframe switching via dropdown
+        - Collapsible information cards
+        - Responsive two-column layout (stacks on mobile)
+        =====================================================================
+        */
+        
+        /* Global reset for consistent styling across browsers */
         * {
             margin: 0;
             padding: 0;
@@ -19,6 +49,14 @@
             line-height: 1.6;
         }
 
+        /* 
+        =====================================================================
+        MAIN CONTAINER - Two-column grid layout
+        - Left panel: Controls and information (400px fixed width)
+        - Right panel: iframe preview area (flexible width)
+        - Stacks to single column on tablets/mobile (< 1024px)
+        =====================================================================
+        */
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -28,6 +66,14 @@
             min-height: 100vh;
         }
 
+        /* 
+        =====================================================================
+        LEFT PANEL - Controls and Information
+        - Contains title, description, instructions, and controls
+        - Sticky positioning keeps it visible while scrolling
+        - Moves below iframe on mobile/tablet (via @media query)
+        =====================================================================
+        */
         .left-panel {
             background: #f8f9fa;
             padding: 20px;
@@ -38,6 +84,13 @@
             top: 20px;
         }
 
+        /* 
+        =====================================================================
+        RIGHT PANEL - iframe Preview Area
+        - Contains the iframe container and current iframe being tested
+        - Flexible width adapts to available space
+        =====================================================================
+        */
         .right-panel {
             background: white;
             border-radius: 12px;
@@ -46,6 +99,7 @@
             height: fit-content;
         }
 
+        /* Main page title - Brand navy color */
         h1 {
             text-align: center;
             color: #003B5C;
@@ -53,6 +107,14 @@
             font-size: 2rem;
         }
 
+        /* 
+        =====================================================================
+        DESCRIPTION CARD - Collapsible information card
+        - Explains the purpose of the test page
+        - Can be collapsed/expanded by clicking header
+        - Blue accent border for visual distinction
+        =====================================================================
+        */
         .description {
             background: #e8f4f8;
             padding: 20px;
@@ -62,10 +124,16 @@
             transition: all 0.3s ease;
         }
 
+        /* Collapsed state - reduced padding */
         .description.collapsed {
             padding: 15px 20px;
         }
 
+        /* 
+        Description card header
+        - Clickable to toggle collapse/expand
+        - Arrow icon indicates collapsible state
+        */
         .description h2 {
             color: #003B5C;
             margin-bottom: 10px;
@@ -81,16 +149,23 @@
             color: #002b43;
         }
 
+        /* Description card content paragraphs */
         .description p {
             color: #555;
             margin-bottom: 8px;
             transition: all 0.3s ease;
         }
 
+        /* Hide content when collapsed */
         .description.collapsed p {
             display: none;
         }
 
+        /* 
+        Collapse arrow indicator
+        - Points down when expanded
+        - Rotates -90deg (points right) when collapsed
+        */
         .collapse-arrow {
             font-size: 1.2rem;
             transition: transform 0.3s ease;
@@ -101,6 +176,14 @@
             transform: rotate(-90deg);
         }
 
+        /* 
+        =====================================================================
+        CONTROLS SECTION - Main testing controls
+        - Contains iframe selector dropdown
+        - Preset width buttons
+        - Custom dimension inputs
+        =====================================================================
+        */
         .controls {
             background: white;
             padding: 20px;
@@ -115,6 +198,14 @@
             margin-bottom: 15px;
         }
 
+        /* 
+        =====================================================================
+        WIDTH BUTTONS - Preset breakpoint testing buttons
+        - Four preset widths: 980px, 800px, 320px, 250px
+        - Active button shown in green (#10a37f)
+        - Hover effects for better UX
+        =====================================================================
+        */
         .width-buttons {
             display: flex;
             gap: 10px;
@@ -123,6 +214,7 @@
             margin-bottom: 20px;
         }
 
+        /* Individual width button styling */
         .width-btn {
             background: #003B5C;
             color: white;
@@ -139,12 +231,19 @@
             transform: translateY(-1px);
         }
 
+        /* Active button state - green to indicate current selection */
         .width-btn.active {
             background: #10a37f;
             box-shadow: 0 2px 8px rgba(16, 163, 127, 0.3);
         }
 
-
+        /* 
+        =====================================================================
+        IFRAME SELECTOR - Dropdown to switch between iframe components
+        - Dynamically loads selected iframe in preview area
+        - Updates title and dimensions based on selection
+        =====================================================================
+        */
         .iframe-selector {
             margin-bottom: 20px;
         }
@@ -156,6 +255,7 @@
             color: #003B5C;
         }
 
+        /* Dropdown select element */
         .iframe-dropdown {
             width: 100%;
             max-width: 300px;
@@ -172,6 +272,14 @@
             border-color: #003B5C;
         }
 
+        /* 
+        =====================================================================
+        CUSTOM DIMENSIONS CARD - Collapsible custom size inputs
+        - Allows testing at any width/height between 200px - 2000px
+        - Validates inputs before applying
+        - Can be collapsed to save space
+        =====================================================================
+        */
         .custom-dimensions {
             background: #f8f9fa;
             padding: 15px;
@@ -181,10 +289,12 @@
             transition: all 0.3s ease;
         }
 
+        /* Collapsed state - reduced padding */
         .custom-dimensions.collapsed {
             padding: 12px 15px;
         }
 
+        /* Custom dimensions header - clickable to toggle collapse */
         .custom-dimensions h4 {
             color: #003B5C;
             margin-bottom: 15px;
@@ -204,6 +314,7 @@
             margin-bottom: 0;
         }
 
+        /* Dimension inputs wrapper - hidden when collapsed */
         .custom-dimensions .dimension-inputs {
             transition: all 0.3s ease;
         }
@@ -212,6 +323,11 @@
             display: none;
         }
 
+        /* 
+        Container for width/height inputs and apply button
+        - Flexbox layout with gap
+        - Wraps on small screens
+        */
         .dimension-inputs {
             display: flex;
             gap: 15px;
@@ -219,6 +335,7 @@
             flex-wrap: wrap;
         }
 
+        /* Individual input field group (label + input) */
         .input-group {
             display: flex;
             flex-direction: column;
@@ -232,6 +349,7 @@
             margin-bottom: 5px;
         }
 
+        /* Number input for width/height values */
         .input-group input {
             padding: 8px 12px;
             border: 2px solid #e0e0e0;
@@ -245,6 +363,7 @@
             border-color: #003B5C;
         }
 
+        /* Apply button for custom dimensions - green accent color */
         .custom-btn {
             background: #10a37f;
             color: white;
@@ -262,6 +381,14 @@
             transform: translateY(-1px);
         }
 
+        /* 
+        =====================================================================
+        IFRAME CONTAINER - Preview area styling
+        - Contains iframe header and the actual iframe element
+        - Width dynamically changes based on preset or custom selection
+        - Smooth transitions for dimension changes
+        =====================================================================
+        */
         .iframe-container {
             background: white;
             border-radius: 12px;
@@ -271,6 +398,7 @@
             transition: all 0.3s ease;
         }
 
+        /* Individual iframe section wrapper */
         .iframe-section {
             margin-bottom: 30px;
         }
@@ -279,6 +407,11 @@
             margin-bottom: 0;
         }
 
+        /* 
+        iframe header section
+        - Shows component name and current dimensions
+        - Flexbox layout for alignment
+        */
         .iframe-header {
             display: flex;
             align-items: center;
@@ -293,6 +426,7 @@
             font-size: 1.2rem;
         }
 
+        /* Size indicator badge - shows current iframe dimensions */
         .iframe-size-info {
             background: #e8f4f8;
             padding: 5px 10px;
@@ -302,6 +436,7 @@
             font-weight: 600;
         }
 
+        /* Global iframe styling */
         iframe {
             border: 2px solid #e0e0e0;
             border-radius: 8px;
@@ -309,18 +444,30 @@
             background: white;
         }
 
+        /* 
+        Test iframe element
+        - Width and height set dynamically via JavaScript
+        - Default: 100% width, 600px height
+        */
         .test-iframe {
             width: 100%;
             height: 600px;
         }
 
-        /* Responsive adjustments */
+        /* 
+        =====================================================================
+        RESPONSIVE ADJUSTMENTS
+        - Tablet (< 1024px): Stack panels vertically, iframe shown first
+        - Mobile (< 768px): Reduce spacing, stack controls vertically
+        =====================================================================
+        */
         @media (max-width: 1024px) {
             .container {
                 grid-template-columns: 1fr;
                 gap: 15px;
             }
             
+            /* Show iframe preview first, controls panel below */
             .left-panel {
                 position: static;
                 order: 2;
@@ -340,7 +487,13 @@
             .input-group { min-width: auto; }
         }
 
-        /* Custom widths */
+        /* 
+        =====================================================================
+        PRESET WIDTH CLASSES - Applied to iframe container
+        - Four preset widths matching common breakpoints
+        - Set by JavaScript when preset buttons are clicked
+        =====================================================================
+        */
         .width-250 {
             width: 250px;
         }
@@ -357,6 +510,14 @@
             width: 980px;
         }
 
+        /* 
+        =====================================================================
+        INSTRUCTIONS CARD - Collapsible testing instructions
+        - Yellow/warning color scheme for visibility
+        - Can be collapsed to save space
+        - Lists step-by-step testing procedures
+        =====================================================================
+        */
         .instructions {
             background: #fff3cd;
             border: 1px solid #ffeaa7;
@@ -366,10 +527,12 @@
             transition: all 0.3s ease;
         }
 
+        /* Collapsed state - reduced padding */
         .instructions.collapsed {
             padding: 12px 15px;
         }
 
+        /* Instructions header - clickable to toggle collapse */
         .instructions h4 {
             color: #856404;
             margin-bottom: 8px;
@@ -384,12 +547,14 @@
             color: #6c4a00;
         }
 
+        /* Instructions list */
         .instructions ul {
             color: #856404;
             margin-left: 20px;
             transition: all 0.3s ease;
         }
 
+        /* Hide list when collapsed */
         .instructions.collapsed ul {
             display: none;
         }
@@ -493,7 +658,46 @@
     </div>
 
     <script>
-        // iframe configuration
+        /*
+        =====================================================================
+        RESPONSIVE IFRAME TEST PAGE - JAVASCRIPT SECTION
+        =====================================================================
+        
+        PURPOSE:
+        This script manages the iframe testing interface, allowing users to:
+        - Switch between different iframe components
+        - Test at preset breakpoint widths
+        - Apply custom dimensions
+        - Toggle collapsible information cards
+        
+        CONFIGURATION OBJECTS:
+        - iframeConfig: Defines available iframes and their default heights
+        - widthConfig: Defines preset width breakpoints and associated settings
+        
+        STATE MANAGEMENT:
+        - currentWidth: Current iframe width in pixels
+        - currentHeight: Current iframe height in pixels
+        
+        EVENT HANDLING:
+        - iframe selection change
+        - Preset width button clicks
+        - Custom dimension application
+        - Card collapse/expand toggles
+        
+        KEY FUNCTIONS:
+        - updateIframeDisplay(): Updates iframe src, dimensions, and display info
+        - toggleCard(): Toggles collapse state of information cards
+        =====================================================================
+        */
+        
+        /* 
+        =====================================================================
+        IFRAME CONFIGURATION OBJECT
+        - Maps iframe filename to display name and default height
+        - Default heights optimized for each component type
+        - Used to populate dropdown and set initial dimensions
+        =====================================================================
+        */
         const iframeConfig = {
             'image-uploader.html': { name: 'Image Uploader', defaultHeight: '900px' },
             'image-viewer.html': { name: 'Image Viewer', defaultHeight: '600px' },
@@ -502,7 +706,17 @@
             'cashiers-log.html': { name: 'Cashiers Log', defaultHeight: '400px' }
         };
 
-        // Width configuration
+        /* 
+        =====================================================================
+        WIDTH CONFIGURATION OBJECT
+        - Defines preset breakpoints (980px, 800px, 320px, 250px)
+        - Each breakpoint has:
+        *   container: CSS class to apply to iframe container
+        *   height: Default iframe height for this breakpoint
+        *   label: Display label for button text
+        - Heights adjusted based on typical content needs at each breakpoint
+        =====================================================================
+        */
         const widthConfig = {
             '980': { 
                 container: 'width-980',
@@ -526,7 +740,13 @@
             }
         };
 
-        // DOM elements
+        /* 
+        =====================================================================
+        DOM ELEMENT REFERENCES
+        - Cached for performance (avoid repeated querySelector calls)
+        - All interactive elements and display elements
+        =====================================================================
+        */
         const widthButtons = document.querySelectorAll('.width-btn');
         const iframeSelect = document.getElementById('iframeSelect');
         const iframeContainer = document.getElementById('iframeContainer');
@@ -537,11 +757,38 @@
         const customHeightInput = document.getElementById('customHeight');
         const applyCustomBtn = document.getElementById('applyCustom');
 
-        // Current dimensions
+        /* 
+        =====================================================================
+        GLOBAL STATE - Current iframe dimensions
+        - Initialized to desktop defaults (980px × 600px)
+        - Updated by preset buttons or custom inputs
+        - Used by updateIframeDisplay() to set iframe size
+        =====================================================================
+        */
         let currentWidth = 980;
         let currentHeight = 600;
 
-        // Update iframe display
+        /*
+        =====================================================================
+        UPDATE IFRAME DISPLAY - Main function to refresh iframe preview
+        =====================================================================
+        Called whenever iframe selection or dimensions change
+        
+        Actions performed:
+        1. Gets selected iframe filename from dropdown
+        2. Looks up configuration (name, default height)
+        3. Updates iframe src attribute to load new component
+        4. Updates iframe title attribute for accessibility
+        5. Updates header text to show component name
+        6. Applies current width and height to iframe element
+        7. Updates size indicator badge with dimensions
+        8. Logs change to console for debugging
+        
+        Dependencies:
+        - Requires currentWidth and currentHeight to be set
+        - Uses iframeConfig object for component metadata
+        =====================================================================
+        */
         function updateIframeDisplay() {
             const selectedIframe = iframeSelect.value;
             const config = iframeConfig[selectedIframe];
@@ -551,66 +798,123 @@
             testIframe.title = config.name;
             iframeTitle.textContent = config.name;
             
-            // Update dimensions
+            // Update dimensions - applied as inline styles
             testIframe.style.width = `${currentWidth}px`;
             testIframe.style.height = `${currentHeight}px`;
             
-            // Update iframe header display
+            // Update iframe header display (size indicator badge)
             iframeSize.textContent = `${currentWidth}px × ${currentHeight}px`;
             
             console.log(`Switched to ${config.name} at ${currentWidth}x${currentHeight}`);
         }
 
-        // Handle iframe selection change
+        /*
+        =====================================================================
+        IFRAME SELECTION CHANGE HANDLER
+        =====================================================================
+        Triggered when user selects different iframe from dropdown
+        
+        Flow:
+        1. Gets selected iframe value
+        2. Looks up default height from config
+        3. Updates currentHeight to component-specific default
+        4. Updates custom height input field to match
+        5. Calls updateIframeDisplay() to load new iframe
+        
+        Note: Width remains unchanged - only height resets to default
+        This allows user to maintain their width preference across switches
+        =====================================================================
+        */
         iframeSelect.addEventListener('change', () => {
             const selectedIframe = iframeSelect.value;
             const config = iframeConfig[selectedIframe];
             
-            // Set default height for the selected iframe
+            // Set default height for the selected iframe component
             currentHeight = parseInt(config.defaultHeight);
             customHeightInput.value = currentHeight;
             
             updateIframeDisplay();
         });
 
-        // Handle width button clicks
+        /*
+        =====================================================================
+        PRESET WIDTH BUTTON CLICK HANDLERS
+        =====================================================================
+        Attached to all width preset buttons (980px, 800px, 320px, 250px)
+        
+        Flow:
+        1. Gets width value from button's data-width attribute
+        2. Looks up configuration (container class, default height)
+        3. Removes 'active' class from all buttons
+        4. Adds 'active' class to clicked button (green styling)
+        5. Updates global state (currentWidth, currentHeight)
+        6. Updates custom input fields to match new dimensions
+        7. Applies width class to container (e.g., 'width-980')
+        8. Calls updateIframeDisplay() to apply changes
+        
+        Note: Each preset has its own default height optimized for that breakpoint
+        =====================================================================
+        */
         widthButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const width = parseInt(button.dataset.width);
                 const config = widthConfig[button.dataset.width];
                 
-                // Update active button
+                // Update active button styling - only one active at a time
                 widthButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
                 
-                // Update dimensions
+                // Update global dimension state
                 currentWidth = width;
                 currentHeight = parseInt(config.height);
                 
-                // Update custom inputs
+                // Sync custom input fields with preset values
                 customWidthInput.value = currentWidth;
                 customHeightInput.value = currentHeight;
                 
-                // Update container width
+                // Apply preset width class to container
                 iframeContainer.className = `iframe-container ${config.container}`;
                 
                 updateIframeDisplay();
             });
         });
 
-        // Handle custom dimensions
+        /*
+        =====================================================================
+        CUSTOM DIMENSIONS APPLY BUTTON HANDLER
+        =====================================================================
+        Triggered when user clicks "Apply" button in custom dimensions section
+        
+        Validation:
+        - Both width and height must be provided
+        - Values must be between 200px and 2000px (inclusive)
+        - Shows alert if validation fails
+        
+        Flow on success:
+        1. Parses width and height from input fields
+        2. Validates range (200-2000px)
+        3. Updates global state (currentWidth, currentHeight)
+        4. Removes 'active' class from all preset buttons (custom mode)
+        5. Removes preset width class from container
+        6. Applies custom width as inline style
+        7. Calls updateIframeDisplay() to apply changes
+        
+        Note: Custom dimensions override preset button selections
+        =====================================================================
+        */
         applyCustomBtn.addEventListener('click', () => {
             const customWidth = parseInt(customWidthInput.value);
             const customHeight = parseInt(customHeightInput.value);
             
+            // Validate input ranges (200px minimum, 2000px maximum)
             if (customWidth && customHeight && customWidth >= 200 && customWidth <= 2000 && customHeight >= 200 && customHeight <= 2000) {
                 currentWidth = customWidth;
                 currentHeight = customHeight;
                 
-                // Remove active state from preset buttons
+                // Remove active state from preset buttons (now in custom mode)
                 widthButtons.forEach(btn => btn.classList.remove('active'));
                 
-                // Update container to custom width
+                // Remove preset width class and apply custom width
                 iframeContainer.className = 'iframe-container';
                 iframeContainer.style.width = `${currentWidth}px`;
                 
@@ -620,7 +924,25 @@
             }
         });
 
-        // Handle iframe communication
+        /*
+        =====================================================================
+        IFRAME COMMUNICATION LISTENER
+        =====================================================================
+        Listens for postMessage events from child iframes
+        
+        Purpose:
+        - Allows child iframes to communicate with test page
+        - Useful for debugging and monitoring iframe behavior
+        
+        Example use cases:
+        - Image Uploader sends 'upload-complete' when files uploaded
+        - Message iframe sends chat messages
+        - Document Viewer sends file download events
+        
+        Note: Currently logs all messages for debugging
+        Can be extended to handle specific message types
+        =====================================================================
+        */
         window.addEventListener('message', function(event) {
             console.log('Test page received message:', event.data);
             
@@ -630,20 +952,55 @@
             }
         });
 
-        // Toggle card collapse/expand
+        /*
+        =====================================================================
+        TOGGLE CARD - Collapse/Expand collapsible cards
+        =====================================================================
+        Parameters:
+        - cardId: ID of the card element to toggle
+        
+        Used by:
+        - Description card (descriptionCard)
+        - Instructions card (instructionsCard)
+        - Custom dimensions card (customDimensionsCard)
+        
+        Behavior:
+        - Toggles 'collapsed' class on/off
+        - CSS handles visual changes (padding, content visibility)
+        - Arrow icon rotates via CSS transition
+        =====================================================================
+        */
         function toggleCard(cardId) {
             const card = document.getElementById(cardId);
             card.classList.toggle('collapsed');
         }
 
-        // Initialize
+        /*
+        =====================================================================
+        INITIALIZATION
+        =====================================================================
+        Runs when page loads to set up initial state
+        
+        Actions:
+        1. Logs available iframes and widths to console
+        2. Sets custom input fields to match current dimensions
+        3. Calls updateIframeDisplay() to render initial iframe
+        
+        Initial state:
+        - iframe: Image Uploader (first option in dropdown)
+        - Width: 980px (Desktop preset, active button)
+        - Height: 600px (Default for Image Uploader)
+        =====================================================================
+        */
         console.log('Responsive iframe test page loaded');
         console.log('Available iframes:', Object.keys(iframeConfig));
         console.log('Available widths:', Object.keys(widthConfig));
         
-        // Set initial values
+        // Set initial values in custom dimension inputs
         customWidthInput.value = currentWidth;
         customHeightInput.value = currentHeight;
+        
+        // Render initial iframe (Image Uploader at 980px × 600px)
         updateIframeDisplay();
     </script>
 </body>

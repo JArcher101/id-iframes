@@ -6,6 +6,36 @@
     <title>ID Images Display</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        /*
+        =====================================================================
+        DOCUMENT VIEWER IFRAME - STYLE SECTION
+        =====================================================================
+        This iframe is embedded in a parent window and provides document
+        viewing and uploading capabilities for AML checks, ID documents,
+        and other compliance documentation.
+        
+        COMMUNICATION ARCHITECTURE:
+        - Uses window.postMessage() API for parent-child communication
+        - Parent sends: display-documents, display-images, put-links, put-error
+        - Child sends: file-data, upload-success
+        
+        DOCUMENT UPLOAD FLOW:
+        1. User clicks "Add documents" button
+        2. User selects document type and sub-type from dropdowns
+        3. User uploads PDF or Word document files
+        4. Child requests S3 PUT links from parent
+        5. Child uploads directly to S3
+        6. Child sends success message with S3 keys to parent
+        
+        DISPLAY MODES:
+        - Awaiting State: Waiting for parent to send document data
+        - Document Display: Shows list of uploaded documents with view buttons
+        - Image Display: Shows carousel of ID images (legacy support)
+        - Uploader: Interface for adding new documents
+        =====================================================================
+        */
+        
+        /* Global reset for consistent styling */
         * {
             margin: 0;
             padding: 0;
@@ -19,7 +49,13 @@
             overflow-x: hidden;
         }
         
-        /* Responsive container */
+        /* 
+        =====================================================================
+        RESPONSIVE CONTAINERS
+        - Adapts from 250px (mobile) to 980px (desktop)
+        - All child elements inherit responsive behavior
+        =====================================================================
+        */
         .responsive-container {
             width: 100%;
             max-width: 980px;
@@ -36,6 +72,13 @@
             position: relative;
         }
 
+        /* 
+        =====================================================================
+        AWAITING STATE
+        - Displayed when no document data has been received from parent
+        - Shows loading message and mock data button for testing
+        =====================================================================
+        */
         .awaiting-state {
             display: flex;
             align-items: center;
@@ -112,7 +155,16 @@
             transform: translateY(-1px);
         }
 
-        /* ID Image Uploader Section */
+        /* 
+        =====================================================================
+        DOCUMENT UPLOADER SECTION
+        - Interface for uploading new documents
+        - Supports multiple document types: AML, SoF/SoW, PEP, Details forms
+        - Accepts PDF and Word documents only
+        - Each card requires: primary type → sub-type → file selection
+        - Sends file metadata to parent for S3 PUT link generation
+        =====================================================================
+        */
         .id-uploader-section {
             width: 100%;
             margin: 0 auto;
@@ -146,6 +198,12 @@
             padding-right: 10px;
         }
 
+        /* 
+        Cascading dropdown system:
+        - Primary: Main document type (AML, SoF, PEP, etc.)
+        - Secondary: Sub-type based on primary selection
+        - Other input: Free text for "Other" document type
+        */
         .dropdowns-container .primary-dropdown {
             width: 50%;
             flex: none;
@@ -266,6 +324,12 @@
             color: #856404;
         }
 
+        /* 
+        File upload drop zone
+        - Accepts click to browse and drag-and-drop
+        - PDF and Word documents only (.pdf, .doc, .docx)
+        - Visual feedback on hover and drag
+        */
         .file-upload-area {
             border: 2px dashed #ddd;
             border-radius: 8px;
@@ -442,8 +506,14 @@
             transform: none;
         }
 
-
-        /* Error popup styles */
+        /* 
+        =====================================================================
+        ERROR POPUP
+        - Modal overlay for displaying error messages
+        - Appears when validation fails or upload errors occur
+        - User dismisses by clicking X button
+        =====================================================================
+        */
         .error-popup {
             display: none;
             position: fixed;
@@ -502,7 +572,15 @@
             opacity: 0.8;
         }
 
-        /* Uploading state styles */
+        /* 
+        =====================================================================
+        UPLOADING STATE
+        - Full-screen modal shown during file upload to S3
+        - Displays progress bar and file list with status
+        - Shows individual file upload progress (Pending → Uploading → Success/Error)
+        - Prevents user interaction during upload
+        =====================================================================
+        */
         .uploading-container {
             position: fixed;
             top: 0;
@@ -1794,6 +1872,49 @@
     </div>
 
     <script>
+        /*
+        =====================================================================
+        DOCUMENT VIEWER IFRAME - JAVASCRIPT SECTION
+        =====================================================================
+        
+        GLOBAL STATE VARIABLES:
+        - currentImageIndex: Current image in carousel (for image display mode)
+        - images: Array of document/image objects received from parent
+        - allowUploads: Boolean flag - whether user can upload new documents
+        - clientData: Client info (fe, clientNumber, matterNumber, name)
+        - userEmail: Current user's email address
+        - uploaderCards: Array of uploader card DOM elements
+        - s3Keys: S3 keys returned from parent after PUT link generation
+        - itemId: Database _id for this item
+        - uploadedImages: Image data with s3Keys after upload
+        
+        PARENT-CHILD COMMUNICATION:
+        This iframe uses window.postMessage() to communicate with parent window.
+        
+        INCOMING MESSAGES (from parent):
+        1. 'display-documents' - Document data to display in list view
+        2. 'display-images' / 'image-display' - Image data to display in carousel
+        3. 'put-links' - S3 pre-signed PUT URLs for file upload
+        4. 'put-error' - Error response when PUT link generation fails
+        
+        OUTGOING MESSAGES (to parent):
+        1. 'file-data' - Request for S3 PUT links before file upload
+        2. 'upload-success' - Complete upload confirmation with S3 keys
+        
+        DOCUMENT UPLOAD FLOW:
+        1. User clicks "Add documents" → showUploader()
+        2. User selects document type → dropdown cascade
+        3. User selects file → file validation (PDF/Word only)
+        4. User clicks "Upload All Documents" → uploadAllFiles()
+        5. Child sends 'file-data' to parent
+        6. Parent generates S3 keys and sends 'put-links'
+        7. Child uploads to S3 → uploadToS3()
+        8. Child sends 'upload-success' to parent
+        9. Parent saves to DB and refreshes display
+        
+        =====================================================================
+        */
+        
         // Global variables
         let currentImageIndex = 0;
         let images = [];
@@ -1807,7 +1928,13 @@
         let imageSlider, prevBtn, nextBtn, loadingState, awaitingState, imageDisplaySection, reelContainer, mockBtn, addMoreContainer, addMoreBtn, clientHeading;
         let idUploaderSection, uploaderSubheading, uploaderCardsContainer, uploadAllBtn, cancelHeaderBtn, errorPopup, errorMessage, errorPopupClose, dynamicHint;
 
-        // Initialize DOM elements and event listeners when DOM is loaded
+        /*
+        =====================================================================
+        INITIALIZATION
+        - Stores references to DOM elements
+        - Sets up event listeners for navigation, upload buttons, etc.
+        =====================================================================
+        */
         document.addEventListener('DOMContentLoaded', function() {
             // DOM elements
             imageSlider = document.getElementById('imageSlider');
@@ -1835,7 +1962,14 @@
             setupEventListeners();
         });
 
-        // Navigation functions
+        /*
+        =====================================================================
+        IMAGE CAROUSEL NAVIGATION FUNCTIONS
+        - Legacy support for image-based document display
+        - Shows one image at a time in sliding carousel
+        - Navigation via buttons or keyboard arrows
+        =====================================================================
+        */
         function showImage(index) {
             if (images.length === 0) return;
             
@@ -1865,7 +1999,14 @@
             }
         }
 
-        // Image error handling
+        /*
+        =====================================================================
+        IMAGE ERROR HANDLING AND RETRY
+        - Handles failed image loads with retry mechanism
+        - Shows error placeholder with retry button
+        - Limits retries to prevent infinite loops
+        =====================================================================
+        */
         function handleImageError(img, documentType, retryCount = 0) {
             // Get the image card to find its index
             const card = img.closest('.image-card');
@@ -1933,7 +2074,14 @@
             console.log('Image loaded successfully:', img.src, 'Index:', index, 'Type:', index % 2 === 0 ? 'EVEN' : 'ODD');
         }
 
-        // Download function
+        /*
+        =====================================================================
+        DOWNLOAD FUNCTION
+        - Downloads image/document file from S3
+        - Fetches as blob to handle CORS
+        - Triggers browser download with proper filename
+        =====================================================================
+        */
         function downloadImage(button) {
             try {
                 // Get the image index from the button's data attribute
@@ -2028,7 +2176,14 @@
             return card;
         }
 
-        // Create document card function
+        /*
+        =====================================================================
+        CREATE DOCUMENT CARD
+        - Generates HTML for document list item
+        - Shows document type, sub-type, uploader info
+        - Includes view button to open document in new tab
+        =====================================================================
+        */
         function createDocumentCard(documentData, index) {
             const card = document.createElement('div');
             card.className = 'document-card';
@@ -2096,8 +2251,15 @@
             }
         }
 
-
-        // Display images
+        /*
+        =====================================================================
+        DISPLAY IMAGES (LEGACY)
+        - Displays ID images in carousel format
+        - Creates image cards with navigation
+        - Shows/hides "Add more" button based on allowUploads
+        - Auto-scrolls to first image
+        =====================================================================
+        */
         function displayImages(imageData, allowUploadsData, clientDataParam, userEmailParam) {
             images = imageData || [];
             allowUploads = allowUploadsData || false;
@@ -2171,7 +2333,15 @@
             }
         }
 
-        // Display documents function
+        /*
+        =====================================================================
+        DISPLAY DOCUMENTS
+        - Main display function for document list view
+        - Creates document cards for each uploaded file
+        - Shows/hides "Add documents" button based on allowUploads
+        - Updates client heading with matter information
+        =====================================================================
+        */
         function displayDocuments(documentData, allowUploadsData, clientDataParam, userEmailParam) {
             images = documentData || []; // Use the same images array for documents
             allowUploads = allowUploadsData || false;
@@ -2210,7 +2380,14 @@
             });
         }
 
-        // Mock data for testing
+        /*
+        =====================================================================
+        MOCK DATA FOR TESTING
+        - Generates sample document data for development/testing
+        - Includes various document types (AML, SoF, PEP checks)
+        - Uses publicly available sample PDF files
+        =====================================================================
+        */
         function loadMockData() {
             const mockClientData = {
                 fe: 'BA',
@@ -2299,7 +2476,15 @@
             }
         }
 
-        // Uploader functions
+        /*
+        =====================================================================
+        DOCUMENT UPLOADER FUNCTIONS
+        - Shows/hides uploader interface
+        - Creates uploader cards with dropdown cascades
+        - Manages upload button state based on validation
+        - Handles dynamic document type selection
+        =====================================================================
+        */
         function showUploader() {
             imageDisplaySection.classList.add('hidden');
             addMoreContainer.classList.add('hidden');
@@ -2415,7 +2600,19 @@
             return card;
         }
 
-        // Document type options mapping
+        /*
+        =====================================================================
+        DOCUMENT TYPE DROPDOWN MAPPING
+        - Defines cascading dropdown options
+        - Primary dropdown → Secondary dropdown options
+        - Covers all compliance document types:
+          * AML Check: Lite Screening, IDV, Original/Enhanced ID, KYB
+          * SoF/SoW Check: Original/Enhanced ID, Questionnaire, Bank Linking
+          * Combined: All AML + SoF options
+          * PEP & Sanctions: OFSI Search, Lite Screening
+          * Details forms: Client/Beneficiary forms
+        =====================================================================
+        */
         const documentTypeOptions = {
             'AML Check': ['Lite Screening', 'Identity Document Verification (IDV)', 'Original ID', 'Enhanced ID', 'Know Your Business (KYB)'],
             'SoF/SoW Check': ['Original ID', 'Enhanced ID', 'SoF Questionnaire', 'Bank Linking'],
@@ -2604,7 +2801,15 @@
             dynamicHint.style.display = 'none';
         }
 
-        // Generate filename with invalid characters replaced
+        /*
+        =====================================================================
+        FILENAME GENERATION
+        - Creates standardized filenames for uploads
+        - Format: FE-CLIENT-MATTER - Name - Document Type
+        - Replaces invalid characters (/) with hyphens
+        - Ensures S3-compatible naming
+        =====================================================================
+        */
         function generateFileName(fileData) {
             // Replace forward slashes with hyphens in path components
             const fe = String(clientData.fe || '').replace(/\//g, '-');
@@ -2615,7 +2820,15 @@
             return `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${fileData.documentType}${fileData.side !== 'Single' ? ' ' + fileData.side : ''}`;
         }
 
-        // Show uploading state
+        /*
+        =====================================================================
+        UPLOAD STATE MANAGEMENT
+        - Shows full-screen modal during upload
+        - Displays progress bar and file status list
+        - Updates individual file states: Pending → Uploading → Success/Error
+        - Disables uploader to prevent duplicate uploads
+        =====================================================================
+        */
         function showUploadingState() {
             // Disable upload button and show uploading text
             uploadAllBtn.disabled = true;
@@ -2666,7 +2879,14 @@
             document.querySelector('.image-display-container').appendChild(loadingDiv);
         }
 
-        // Handle PUT response from parent (links or error)
+        /*
+        =====================================================================
+        S3 UPLOAD MESSAGE HANDLING
+        - Handles responses from parent after requesting PUT links
+        - PUT-LINKS: Stores S3 keys and initiates upload
+        - PUT-ERROR: Shows error and returns to uploader
+        =====================================================================
+        */
         function handlePutResponse(event) {
             if (event.data.type === 'put-links') {
                 const links = event.data.links;
@@ -2687,7 +2907,15 @@
             }
         }
 
-        // Upload files to S3 with progress tracking
+        /*
+        =====================================================================
+        S3 FILE UPLOAD WITH PROGRESS TRACKING
+        - Uploads each file to S3 using PUT requests
+        - Tracks progress and updates UI for each file
+        - Handles success/error states individually
+        - Completes when all files finish (success or error)
+        =====================================================================
+        */
         function uploadFiles(links) {
             const files = collectAllFiles();
             let completed = 0;
@@ -3336,6 +3564,15 @@
             errorPopup.style.display = 'none';
         }
 
+        /*
+        =====================================================================
+        FILE COLLECTION AND VALIDATION
+        - Gathers all files from uploader cards
+        - Generates proper filenames for each file
+        - Creates file metadata objects for parent
+        - Returns array ready for PUT link request
+        =====================================================================
+        */
         function collectAllFiles() {
             const allFiles = [];
             const uploaderCards = document.querySelectorAll('.uploader-card');
@@ -3389,6 +3626,21 @@
             return allFiles;
         }
 
+        /*
+        =====================================================================
+        UPLOAD ALL FILES - MAIN UPLOAD FUNCTION
+        - Validates all cards have required fields and files
+        - Collects file metadata
+        - Sends 'file-data' message to parent for PUT link generation
+        - Waits for parent response before initiating S3 upload
+        
+        VALIDATION RULES:
+        - All visible cards must have document type selected
+        - All visible cards must have sub-type or "Other" text
+        - All visible cards must have file selected
+        - Files must be PDF or Word format only
+        =====================================================================
+        */
         function uploadAllFiles() {
             // First validate all visible upload cards have files
             const validationResult = validateAllUploadCards();
@@ -3548,7 +3800,27 @@
             console.log('Uploaders reset due to new image data');
         }
 
-        // Listen for messages from parent
+        /*
+        =====================================================================
+        MAIN MESSAGE LISTENER - Parent-Child Communication
+        
+        Handles all incoming messages from parent window:
+        
+        1. 'display-documents' - Shows document list view
+           - Resets uploader if active
+           - Displays documents with view buttons
+           
+        2. 'display-images' / 'image-display' - Shows image carousel (legacy)
+           - Resets uploader if active
+           - Displays images with navigation
+           
+        3. 'put-links' - S3 upload URLs received
+           - Handled by handlePutResponse()
+           
+        4. 'put-error' - Upload preparation failed
+           - Handled by handlePutError()
+        =====================================================================
+        */
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'display-documents') {
                 console.log('Received document display data:', event.data);

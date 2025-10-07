@@ -5,12 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Client Details Form</title>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
-  <!-- CSS: Client onboarding form with 5 sections, file uploads, validation -->
+  
   <style>
+    /*
+    =====================================================================
+    CLIENT ONBOARDING FORM - STYLE SECTION
+    =====================================================================
+    This iframe is embedded in a parent window and provides a multi-step
+    client onboarding form for collecting personal details and ID documents.
+    
+    COMMUNICATION ARCHITECTURE:
+    - Uses window.postMessage() API for parent-child communication
+    - Parent sends: initiation-data (client info and existing data)
+    - Child sends: image-data (file metadata), upload-success (completion)
+    - Parent responds: put-links (S3 upload URLs) or put-error (failures)
+    
+    FILE UPLOAD FLOW:
+    1. User fills form across 4 sections (Details, Photo ID, Address, Address ID)
+    2. Child collects files and generates metadata
+    3. Child requests S3 PUT links from parent via 'image-data' message
+    4. Parent generates S3 keys and returns PUT URLs via 'put-links'
+    5. Child uploads directly to S3 using PUT requests
+    6. Child sends completion message with S3 keys via 'upload-success'
+    
+    FORM SECTIONS:
+    1. Client Details - Personal info, DOB, name changes
+    2. Photo ID - Passport/Driving License uploads (front/back)
+    3. Address History - Current and previous addresses
+    4. Address ID - Utility bills/bank statements (up to 10)
+    5. Upload Progress - Real-time S3 upload tracking
+    =====================================================================
+    */
+    
+    /* CSS Variables - Brand colors and spacing */
     :root { --gap: 20px; --primary:#003B5C; --error:#e02424; }
+    
+    /* Global body styling */
     body { font-family: 'Quicksand', sans-serif; background:transparent; color:#111; padding:0; margin:0; line-height:1.5; }
     
-    /* Responsive container */
+    /* 
+    =====================================================================
+    MAIN CONTAINER AND CARD STYLING
+    - Responsive container adapts from 980px down to 250px
+    - Card is the main white container holding all form sections
+    - Card padding and margins scale responsively for mobile devices
+    =====================================================================
+    */
     .responsive-container {
       width: 100%;
       max-width: 980px;
@@ -19,6 +59,8 @@
       padding: 0 10px;
       box-sizing: border-box;
     }
+    
+    /* Main card container - white background with subtle shadow */
     .card { 
       width: 100%; 
       max-width: 940px; 
@@ -36,15 +78,37 @@
     .card > * > * { margin-bottom: 10px; }
     .card > * > *:last-child { margin-bottom: 0; }
 
+    /* 
+    =====================================================================
+    TYPOGRAPHY - Headers and Labels
+    =====================================================================
+    */
     h2 { font-size:1.4rem; font-weight:700; margin:0 0 3px 0; }
     h3 { font-size:0.95rem; font-weight:600; margin:0 0 4px 0; color:#444; }
 
+    /* Form labels - required fields get red asterisk via ::after */
     label { display:block; margin-bottom:4px; font-weight:600; font-size:0.9rem; }
     label.required::after { content:" *"; color:var(--error); margin-left:4px; }
 
+    /* 
+    =====================================================================
+    FORM INPUTS - Text fields and dropdowns
+    - Full width with consistent padding and border radius
+    - Focus state shows brand blue border with subtle shadow
+    =====================================================================
+    */
     input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:0.9rem; transition:border .2s, box-shadow .2s; box-sizing:border-box; }
     input:focus, select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 2px rgba(0,59,92,.2); }
 
+    /* 
+    =====================================================================
+    GRID LAYOUT ROWS
+    - row-grid-20-80: Title/Firstname layout (Title: 20%, Name: 80%)
+    - row-grid-50-50: Equal split layout (Work Type / Relation)
+    - row-grid-40-60: Address ID layout (40% / 60% split)
+    - Responsive breakpoints below adjust to single column on mobile
+    =====================================================================
+    */
     .row { margin-bottom:8px; }
     .row-grid-20-80 { 
       display:grid; 
@@ -62,7 +126,17 @@
       gap:var(--gap); 
     }
     
-        /* Responsive breakpoints */
+    /* 
+    =====================================================================
+    RESPONSIVE BREAKPOINTS
+    - 800px: Maintain all grids as two columns
+    - 768px: Keep title/firstname and address grids, stack others
+    - 480px: Stack 50-50 grids (worktype/relation) to single column
+    - 320px: All grids adapt to smaller sizes
+    - 300px: Compress uploaded images data to prevent spill
+    - 250px: Minimum supported width with ultra-compact layout
+    =====================================================================
+    */
         @media (max-width: 800px) {
           :root { --gap: 18px; }
           .responsive-container { padding: 0 10px; }
@@ -436,12 +510,29 @@
       }
     }
 
-    /* DOB: 8 individual digit inputs for DD-MM-YYYY format */
+    /* 
+    =====================================================================
+    DATE OF BIRTH (DOB) INPUT
+    - 8 individual digit inputs for DD-MM-YYYY format (e.g., 11-01-2001)
+    - Auto-tabs between inputs when digit entered
+    - Backspace navigates to previous input
+    - Validates date is real (e.g., rejects 32-01-2001)
+    - Responsive sizing adjusts down to 250px width
+    =====================================================================
+    */
     .birthdate-inputs { display:flex; gap:6px; margin-top:6px; align-items:center; }
     .birthdate-inputs input { width:calc(2.5ch + 8px); text-align:center; padding:8px; font-size:0.9rem; }
     .birthdate-inputs input:nth-of-type(2), .birthdate-inputs input:nth-of-type(4) { margin-right:var(--gap); }
 
-    /* Toggle: Custom switch for Yes/No questions */
+    /* 
+    =====================================================================
+    TOGGLE SWITCH - Custom Yes/No Switch
+    - Used for: Recent Name Change, Recent Move, Likeness Confirmation
+    - Default: Red (No/Off) - Checked: Green (Yes/On)
+    - Exception: Likeness toggle is inverted (Green=Confirmed, Red=Not Confirmed)
+    - Has hover tooltip showing current state
+    =====================================================================
+    */
     .toggle { position:relative; display:inline-block; width:50px; height:24px; margin-top:6px; }
     .toggle input { display:none; }
     .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#e02424; transition:.4s; border-radius:24px; }
@@ -449,7 +540,15 @@
     input:checked + .slider { background:#10a37f; }
     input:checked + .slider:before { transform:translateX(26px); }
 
-    /* Buttons */
+    /* 
+    =====================================================================
+    BUTTONS - Primary and Secondary actions
+    - btn-primary: Main action buttons (Next, Upload) - Blue background
+    - btn-secondary: Secondary actions (Back, Yes/No choices) - White with blue border
+    - Both have disabled states (greyed out, cursor not-allowed)
+    - .selected class on secondary buttons shows active choice (blue background)
+    =====================================================================
+    */
     .button-row { 
       display:flex; 
       justify-content:space-between; 
@@ -490,7 +589,15 @@
       cursor:not-allowed; 
     }
 
-    /* Error popup: Modal for validation errors */
+    /* 
+    =====================================================================
+    ERROR POPUP - Modal for validation errors
+    - Fixed center position with semi-transparent red background
+    - Shows validation errors (missing fields, invalid files, etc.)
+    - Auto-hides after 5 seconds or via X button click
+    - Supports multi-line error messages with bullet points
+    =====================================================================
+    */
     .error-popup { 
       position:fixed; 
       top:50%; 
@@ -539,7 +646,17 @@
     }
     .hidden { display:none; }
 
-    /* Section 2: Photo ID upload styles */
+    /* 
+    =====================================================================
+    SECTION 2: PHOTO ID UPLOAD STYLES
+    - photo-id-question: Prompt asking user if they want to upload Photo ID
+    - photo-id-options: Yes/No buttons to choose whether to upload
+    - photo-id-card: Individual card for each Photo ID (up to 2 allowed)
+    - Supports multiple ID types: Passport, Driving License, etc.
+    - Some IDs require front/back images (Driving License)
+    - Others require single image only (Passport)
+    =====================================================================
+    */
     .photo-id-question { 
       margin: 0 auto var(--gap) auto; 
       font-weight:600; 
@@ -595,6 +712,14 @@
       flex:1;
       width:100%;
     }
+    /* 
+    =====================================================================
+    UPLOAD TAGS AND AREAS
+    - upload-tag: Labels for FRONT/BACK sides of ID documents
+    - photo-upload: Clickable upload area with drag-and-drop support
+    - photo-hint: Contextual hints (e.g., "Ensure MRZ is visible for passports")
+    =====================================================================
+    */
     .upload-tag { 
       font-size:.8rem; 
       font-weight:700; 
@@ -604,6 +729,12 @@
       border-radius:4px; 
       text-align:center;
     }
+    /* 
+    File upload area - supports both click-to-browse and drag-and-drop
+    - Changes to checkmark icon and shows filename when file selected
+    - Validates file type (images only) and shows error for invalid files
+    - Accessible via keyboard (Enter/Space to trigger)
+    */
     .photo-upload { 
       border:2px dashed #4A90E2; 
       padding:20px; 
@@ -618,6 +749,7 @@
     }
     .photo-upload:hover { background:rgba(74, 144, 226, 0.2); }
     .photo-upload svg { width:22px; height:22px; vertical-align:middle; margin-right:6px; }
+    /* Dynamic hint text shown below upload areas */
     .photo-hint { 
       font-size:.85rem; 
       color:#666; 
@@ -671,7 +803,16 @@
       }
     }
     
-    /* Section 5: Upload progress indicators */
+    /* 
+    =====================================================================
+    SECTION 5: UPLOAD PROGRESS INDICATORS
+    - Shows real-time progress bar during S3 file uploads
+    - File list displays each file with status (Pending → Uploading → Success/Error)
+    - Border colors indicate status: Blue=Default, Orange=Uploading, Green=Success, Red=Error
+    - Progress percentage updates as files complete
+    - Upload fails if any file errors, returns user to Address ID section to retry
+    =====================================================================
+    */
     .progress-bar {
       width: 100%;
       height: 20px;
@@ -779,7 +920,15 @@
       border-top-color: var(--primary);
     }
     
-    /* Header styling */
+    /* 
+    =====================================================================
+    HEADER DISPLAY - Client Information Badge
+    - Shows: Title (BA/RP/etc.), Client Number-Matter Number, Full Name
+    - Format example: "BA | 50-52 | Mr J R Archer-Moran"
+    - Hidden initially, shown when data loaded from parent
+    - Title badge has blue background, number badge has grey background
+    =====================================================================
+    */
     #headerInfo {
       display: flex;
       align-items: center;
@@ -853,7 +1002,17 @@
       scrollbar-color: #c1c1c1 #f1f1f1;
     }
     
-    /* Existing Images Container Styling */
+    /* 
+    =====================================================================
+    EXISTING IMAGES CONTAINER - Display Previously Uploaded Documents
+    - Shows images already in database when editing existing client
+    - Displayed BEFORE Yes/No prompt in Photo ID and Address ID sections
+    - Each card shows: Document type, side (Front/Back), uploader, date
+    - Hidden if no existing images of that type
+    - Data comes from formData.idImages array sent by parent
+    - Example: "Driving Licence | Front | Uploaded by reception@... on 12/20/2023"
+    =====================================================================
+    */
     .images-repeater {
       display: flex;
       flex-direction: column;
@@ -861,6 +1020,7 @@
       margin: 10px 0 20px 0;
     }
     
+    /* Individual card for each previously uploaded image */
     .image-card {
       background: white;
       border: 1px solid #e0e0e0;
@@ -877,6 +1037,7 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     
+    /* Left section: Document type and side tag */
     .image-title-section {
       display: flex;
       align-items: center;
@@ -890,6 +1051,7 @@
       margin: 0;
     }
     
+    /* Side tag (Front/Back) shown for Photo ID only */
     .image-side-tag {
       display: inline-block;
       background: #d4a574;
@@ -900,6 +1062,7 @@
       font-weight: 600;
     }
     
+    /* Right section: Uploader and date metadata */
     .image-meta {
       text-align: right;
       font-size: 0.8rem;
@@ -1504,6 +1667,58 @@
   </div>
 
   <script>
+    /*
+    =====================================================================
+    CLIENT ONBOARDING FORM - JAVASCRIPT SECTION
+    =====================================================================
+    
+    GLOBAL STATE VARIABLES:
+    - formData: Complete client data from parent (includes existing data)
+    - currentTitle, currentClientNumber, currentMatterNumber, currentClientName: Header display values
+    - wantsPhotoId: Boolean - user choice to upload Photo ID (null = no choice yet)
+    - wantsAddressId: Boolean - user choice to upload Address ID (null = no choice yet)
+    - imageData: Array of image metadata objects to upload
+    - s3Keys: Array of S3 key objects returned by parent after upload
+    
+    PARENT-CHILD COMMUNICATION:
+    This iframe uses window.postMessage() to communicate with parent window.
+    
+    INCOMING MESSAGES (from parent):
+    1. 'initiation-data' - Client data to populate form (includes existing images)
+    2. 'put-links' - S3 pre-signed PUT URLs for file upload
+    3. 'put-error' - Error response when PUT link generation fails
+    
+    OUTGOING MESSAGES (to parent):
+    1. 'image-data' - Request for S3 PUT links before file upload (sends file metadata)
+    2. 'upload-success' - Complete form data after successful S3 uploads (includes s3Keys)
+    
+    FORM FLOW:
+    1. Parent sends 'initiation-data' → Child populates form with existing data
+    2. User fills Section 1 (Client Details) → validates → proceeds to Section 2
+    3. User chooses Photo ID (Yes/No) → if Yes, selects types and uploads files
+    4. User proceeds to Section 3 (Address History) → fills addresses
+    5. User proceeds to Section 4 (Address ID) → chooses Yes/No, uploads if Yes
+    6. User clicks Upload → Child collects all files and sends 'image-data' to parent
+    7. Parent generates S3 keys and sends 'put-links' → Child uploads to S3
+    8. Child sends 'upload-success' with form data and s3Keys → Form remains active
+    
+    FILE UPLOAD PROCESS:
+    - Child creates file metadata objects (type, document, side, name, data, uploader, date)
+    - Child sends metadata to parent via 'image-data' message
+    - Parent generates unique S3 keys and returns PUT URLs via 'put-links'
+    - Child uploads files directly to S3 using PUT requests
+    - On success, child sends 'upload-success' with s3Keys to parent
+    - Parent appends new s3Keys to existing idImages array in database
+    
+    IMPORTANT NOTES:
+    - Form does NOT reset after successful upload (user can add more images)
+    - photographicIdTaken and addressIdTaken markers update based on existing + new uploads
+    - Existing images displayed in separate container above upload prompts
+    - Validation prevents upload if neither Photo ID nor Address ID present
+    
+    =====================================================================
+    */
+    
     // ===== DOM ELEMENTS =====
     // Section 1: Client details form elements
     const cardTitle = document.getElementById('cardTitle');
@@ -1621,13 +1836,32 @@
     const uploadStatus = document.getElementById('uploadStatus');
 
     // ===== STATE VARIABLES =====
+    /*
+    Global state management:
+    - errorTimeout: Timer for auto-hiding error popup
+    - currentTitleText, currentTitle: FE initials (BA, RP, etc.)
+    - currentClientNumber, currentMatterNumber: Matter reference (e.g., 50, 52)
+    - currentClientName: Full name (e.g., "Mr J R Archer-Moran")
+    - formData: Complete client data object from parent
+    - wantsPhotoId: null (no choice) | true (Yes) | false (No)
+    - wantsAddressId: null (no choice) | true (Yes) | false (No)
+    - s3Keys: Array of file objects with s3Key property (from parent 'put-links')
+    - imageData: Array of image metadata to upload
+    */
     let errorTimeout; let currentTitleText = ''; let currentTitle = ''; let currentClientNumber = ''; let currentMatterNumber = ''; let currentClientName = ''; let formData = {}; let wantsPhotoId = null; let wantsAddressId = null; let s3Keys = null; let imageData = [];
     
     // Initialize finish button as disabled
     finishBtn.disabled = true;
 
     // ===== UTILITY FUNCTIONS =====
-    // Error handling: Show modal with auto-hide after 5s
+    /*
+    =====================================================================
+    ERROR HANDLING
+    - showError(msg): Displays error popup with message
+    - hideError(): Hides error popup and clears timeout
+    - Auto-hides after 5 seconds if not manually dismissed
+    =====================================================================
+    */
     function showError(msg){
       errorMessage.textContent = msg; errorPopup.classList.remove('hidden');
       if(errorTimeout) clearTimeout(errorTimeout);
@@ -1711,7 +1945,15 @@
       });
     });
 
-    // Validation: Check DOB format and validity
+    /*
+    =====================================================================
+    DATE OF BIRTH VALIDATION
+    - Validates 8-digit input is a real date
+    - Format: DDMMYYYY (e.g., 11012001 for 11-01-2001)
+    - Rejects invalid dates like 32-01-2001, 29-02-2023, etc.
+    - Returns: Boolean (true if valid)
+    =====================================================================
+    */
     function validateDOB(){
       const dobString = dobInputs.map(inp => inp.value).join('');
       if(dobString.length !== 8) return false;
@@ -1721,7 +1963,14 @@
       return d && d.getMonth()===(mm-1) && d.getDate()===dd && d.getFullYear()===yyyy;
     }
 
-    // Section 1 validation: All required fields + conditional name change fields
+    /*
+    =====================================================================
+    SECTION 1 VALIDATION - Client Details
+    - Checks all required fields: title, first name, surname, worktype, relation, DOB
+    - If name change toggle is ON, also requires previous name and reason
+    - Returns: Array of error messages (empty if valid)
+    =====================================================================
+    */
     function validateSection1(){
       const errors = [];
       const titlePrefix = document.getElementById('titlePrefix').value.trim();
@@ -1748,8 +1997,18 @@
       return errors;
     }
 
-    // ===== SECTION 2: PHOTO ID =====
-    // Set prompt text based on existing data
+    /*
+    =====================================================================
+    SECTION 2: PHOTO ID FUNCTIONS
+    =====================================================================
+    */
+    
+    /*
+    Set Photo ID prompt text based on existing data
+    - If existing Photo ID found in formData.idImages: "already uploaded, add more?"
+    - Otherwise: "Would you like to upload Photo ID?"
+    - Also populates existing images table if images present
+    */
     function setPhotoPrompt(){
       const hasExisting = Boolean(formData.photographicIdTaken === true || formData.photographicIdTaken === 'true');
       photoIdPrompt.textContent = hasExisting
@@ -1810,7 +2069,23 @@
       formData.photographicIdTaken = hasExistingPhotoId || hasCurrentPhotoId;
     }
 
-    // Collect photo ID image data from uploaders
+    /*
+    =====================================================================
+    COLLECT PHOTO ID IMAGE DATA
+    - Loops through visible Photo ID cards (up to 2)
+    - For each card with a selected type and uploaded file(s):
+    -   Creates image metadata object with:
+    -     type: 'PhotoID'
+    -     document: ID type (e.g., 'Driving Licence')
+    -     side: 'Front', 'Back', or 'Single'
+    -     name: Formatted filename (e.g., "BA-50-52 - Mr J R Archer-Moran - Driving Licence Front")
+    -     data: File metadata (type, size, name, lastModified)
+    -     date: Current timestamp
+    -     uploader: Email from formData
+    - Validates file type is an image, shows error if not
+    - Pushes to imageData array for later upload
+    =====================================================================
+    */
     function collectPhotoIdImageData() {
       const photoTypes = [photoIdType1.value, photoIdType2.value];
       const photoUploads = [photoUploads1, photoUploads2];
@@ -1862,12 +2137,32 @@
       });
     }
 
-    // Check if ID type requires front/back images
+    /*
+    =====================================================================
+    CHECK IF ID TYPE REQUIRES FRONT/BACK IMAGES
+    - Passport and Firearms Certificate: Single image only
+    - All other ID types (Driving License, etc.): Front AND Back required
+    - Returns: Boolean (true if front/back needed)
+    =====================================================================
+    */
     function needsFrontBack(type){
       return !(type === 'Passport' || type === 'Firearms Certificate');
     }
 
-    // Create file upload component with drag/drop support
+    /*
+    =====================================================================
+    CREATE FILE UPLOAD COMPONENT
+    - Generates clickable upload area with drag-and-drop support
+    - Shows upload arrow icon initially
+    - Changes to checkmark icon + filename when file selected
+    - Validates file type is an image, rejects non-images
+    - Keyboard accessible (Enter/Space to trigger)
+    - Parameters:
+    -   id: Unique identifier for this uploader
+    -   onChangeCb: Optional callback function when file selected
+    - Returns: Object with { wrap, input } elements
+    =====================================================================
+    */
     function makeUploader(id, onChangeCb){
       const wrap = document.createElement('div');
       wrap.className = 'photo-upload';
@@ -2126,7 +2421,19 @@
       populateExistingImagesTable('addressId');
     }
 
-    // Populate existing images container based on type
+    /*
+    =====================================================================
+    POPULATE EXISTING IMAGES TABLE
+    - Displays previously uploaded images in Section 2 (Photo ID) or Section 4 (Address ID)
+    - Filters formData.idImages array by type ('PhotoID' or 'Address ID')
+    - Creates image-card elements for each existing image
+    - Each card shows: Document type, side tag (Front/Back), uploader, date
+    - Container hidden if no existing images of that type
+    - Called by setPhotoPrompt() and setAddressIdPrompt()
+    - Parameters:
+    -   type: 'photoId' or 'addressId' (determines which container to populate)
+    =====================================================================
+    */
     function populateExistingImagesTable(type) {
       const containerId = type === 'photoId' ? 'existingPhotoIdContainer' : 'existingAddressIdContainer';
       const listId = type === 'photoId' ? 'photoIdImagesList' : 'addressIdImagesList';
@@ -2614,7 +2921,19 @@
       window.addEventListener('message', handlePutResponse);
     }
 
-    // Handle PUT response from parent (links or error)
+    /*
+    =====================================================================
+    HANDLE PUT RESPONSE FROM PARENT
+    - Listens for parent response after sending 'image-data' message
+    - CASE 1: 'put-links' received (success)
+    -   Stores s3Keys array (file objects with s3Key property added by parent)
+    -   Calls uploadFiles() to upload to S3 using PUT URLs
+    - CASE 2: 'put-error' received (failure)
+    -   Shows error message explaining issue
+    -   Returns user to Address ID section after 2 seconds to retry
+    - Note: s3Keys contains full file objects from imageData with s3Key added
+    =====================================================================
+    */
     function handlePutResponse(event) {
       if (event.data.type === 'put-links') {
         const links = event.data.links;
@@ -2631,7 +2950,18 @@
       }
     }
 
-    // Upload files to S3 with progress tracking
+    /*
+    =====================================================================
+    UPLOAD FILES TO S3 - Progress Tracking
+    - Collects all files to upload via collectFiles()
+    - Iterates through files and uploads each to S3 using PUT URL
+    - Updates progress bar and file status in real-time:
+    -   Pending → Uploading (orange border) → Success (green) or Error (red)
+    - On success: Shows "Upload Complete!" and sends 'upload-success' to parent
+    - On error: Shows error message and returns to Address ID section
+    - Validates files array matches links array length
+    =====================================================================
+    */
     function uploadFiles(links) {
       const files = collectFiles();
       let completed = 0;
@@ -2706,7 +3036,18 @@
       }
     }
 
-    // Upload single file to S3 using PUT URL
+    /*
+    =====================================================================
+    UPLOAD SINGLE FILE TO S3
+    - Uses fetch() with PUT method to upload file to S3
+    - Sets Content-Type header to file's MIME type
+    - Returns Promise that resolves on success, rejects on error
+    - Called by uploadFiles() for each file in parallel
+    - Parameters:
+    -   file: File object to upload
+    -   putUrl: Pre-signed S3 PUT URL from parent
+    =====================================================================
+    */
     function uploadToS3(file, putUrl) {
       return new Promise((resolve, reject) => {
         fetch(putUrl, {
@@ -2727,8 +3068,17 @@
       });
     }
 
-    // ===== FORM RESET =====
-    // Reset form to initial state - ONLY called on initiation-data message
+    /*
+    =====================================================================
+    FORM RESET - Return to Initial State
+    - ONLY called when parent sends 'initiation-data' message
+    - Clears all form inputs and state variables
+    - Hides all sections and shows "Awaiting data" state
+    - Resets button states and upload areas
+    - Does NOT reset after successful upload (form stays active)
+    - Purpose: Prepare form for new client data from parent
+    =====================================================================
+    */
     function resetForm() {
       // Clear error timeout
       if(errorTimeout) clearTimeout(errorTimeout);
@@ -3103,8 +3453,58 @@
       renderUploads(photoUploads2, photoIdType2.value);
     });
 
-    // ===== PARENT COMMUNICATION =====
-    // Listen for data from parent window
+    /*
+    =====================================================================
+    PARENT COMMUNICATION - Message Listener
+    =====================================================================
+    Listens for 'initiation-data' message from parent window
+    
+    Message structure:
+    {
+      type: 'initiation-data',
+      data: {
+        _id: 'database-id',
+        fe: 'BA',
+        clientNumber: '50',
+        matterNumber: '52',
+        name: 'Mr J R Archer-Moran',
+        uploader: 'email@example.com',
+        titlePrefix: 'Mr',
+        firstName: 'Jacob',
+        middleNames: 'Robert',
+        surname: 'Archer-Moran',
+        worktype: 'Sale of',
+        relation: 'Our Client',
+        matterDesc: 'Property sale',
+        birthdate: '11-01-2001',
+        photographicIdTaken: true/false,
+        likenessNOTConfirmed: true/false,
+        address: '123 Main Street...',
+        clientRecentHomeMove: true/false,
+        previousAddress: '...',
+        addressIdTaken: true/false,
+        idImages: [
+          {
+            type: 'PhotoID' or 'Address ID',
+            document: 'Driving Licence',
+            side: 'Front'/'Back'/'Single',
+            name: 'filename',
+            data: { type, size, name, lastModified },
+            s3Key: 'protected/...',
+            date: '12/20/2023, 10:30:45 AM',
+            uploader: 'email@example.com'
+          },
+          ...
+        ]
+      }
+    }
+    
+    Flow:
+    1. Parent sends 'initiation-data' → Child resets form via resetForm()
+    2. Child populates form with data via loadData()
+    3. Child shows Section 1 and displays existing images if present
+    =====================================================================
+    */
     window.addEventListener('message', (event)=>{
       if(event.data && event.data.type === 'initiation-data'){
         // Clear form and reset all data before loading new data
@@ -3113,7 +3513,18 @@
       }
     });
 
-    // Load data from parent and populate form
+    /*
+    =====================================================================
+    LOAD DATA FROM PARENT - Populate Form
+    - Receives complete client data object from parent
+    - Populates all form fields with existing data
+    - Sets header display (FE, client number, name)
+    - Populates DOB inputs (converts nn-nn-nnnn to 8 digits)
+    - Shows Section 1 (Client Details) initially
+    - Existing images shown in Section 2 and 4 when reached
+    - photographicIdTaken and addressIdTaken markers set based on existing images
+    =====================================================================
+    */
     function loadData(data){
       formData = data || {}; 
       currentTitleText = formData.fe || '';
