@@ -129,56 +129,13 @@
         =====================================================================
         AWAITING STATE SECTION
         - Displayed when no image data has been loaded
-        - Shows "Awaiting Image Data" message with mock data button
+        - Looks like empty image carousel with disabled controls
         - Hidden once parent sends display-images or image-display data
         =====================================================================
         */
         .awaiting-state {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 400px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             width: 100%;
             margin: 0 auto;
-        }
-
-        .awaiting-content {
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        .awaiting-content h3 {
-            font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: #2c3e50;
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-        }
-
-        .awaiting-content p {
-            color: #666;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-        }
-
-        .mock-btn {
-            font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #4A90E2;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .mock-btn:hover {
-            background: #357ABD;
-            transform: translateY(-1px);
         }
 
         .hidden {
@@ -218,6 +175,13 @@
         .add-more-btn:hover {
             background: rgb(0, 40, 80);
             transform: translateY(-1px);
+        }
+
+        .add-more-btn:disabled {
+            background: #999;
+            cursor: not-allowed;
+            transform: none;
+            opacity: 1;
         }
 
         /* 
@@ -1458,16 +1422,10 @@
             .reel-container { 
                 height: 630px; 
             }
-            .awaiting-state { 
-                height: 630px; 
-            }
         }
         
         @media (max-width: 370px) {
             .reel-container { 
-                height: 400px; 
-            }
-            .awaiting-state { 
                 height: 400px; 
             }
         }
@@ -1479,11 +1437,6 @@
                 max-width: 100%; 
                 width: 100%;
                 min-width: 220px;
-            }
-            .awaiting-state { 
-                height: 350px; 
-                width: 100%;
-                max-width: 100%;
             }
             .reel-container { 
                 height: 350px; 
@@ -1517,19 +1470,12 @@
                 width: 100%;
                 min-width: 200px;
             }
-            .awaiting-state { 
-                height: 300px; 
-                width: 100%;
-                max-width: 100%;
-            }
             .reel-container { 
                 height: 300px; 
                 width: 100%;
                 max-width: 100%;
             }
             .client-heading { font-size: 0.8rem; padding: 5px 8px; }
-            .awaiting-content h3 { font-size: 1rem; }
-            .awaiting-content p { font-size: 0.8rem; }
             .add-more-container {
                 width: 100%;
                 max-width: 100%;
@@ -1555,19 +1501,12 @@
                 width: 100%;
                 min-width: 180px;
             }
-            .awaiting-state { 
-                height: 280px; 
-                width: 100%;
-                max-width: 100%;
-            }
             .reel-container { 
                 height: 280px; 
                 width: 100%;
                 max-width: 100%;
             }
             .client-heading { font-size: 0.75rem; padding: 4px 6px; }
-            .awaiting-content h3 { font-size: 0.9rem; }
-            .awaiting-content p { font-size: 0.75rem; }
             .add-more-container {
                 width: 100%;
                 max-width: 100%;
@@ -1692,12 +1631,38 @@
 <body>
     <div class="responsive-container">
         <div class="image-display-container">
-        <!-- Awaiting data state -->
+        <!-- Awaiting data state - looks like empty carousel -->
         <div class="awaiting-state" id="awaitingState">
-            <div class="awaiting-content">
-                <h3>Awaiting Image Data</h3>
-                <p>Waiting for image data to be loaded...</p>
-                <button class="mock-btn" id="mockBtn">Load Mock Data</button>
+            <h2 class="client-heading">ID Photos</h2>
+            <div class="reel-container">
+                <div class="image-slider">
+                    <div class="image-card">
+                        <div class="image-container" style="background: #f5f5f5;">
+                            <!-- Empty image area -->
+                        </div>
+                        <div class="image-details">
+                            <div class="document-header">
+                                <div class="document-type" style="visibility: hidden;">Placeholder</div>
+                                <button class="download-btn-header" disabled style="opacity: 0.3; cursor: not-allowed;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                      <polyline points="7,14 12,19 17,14"/>
+                                      <line x1="12" y1="19" x2="12" y2="7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="uploader-info" style="visibility: hidden;">Placeholder text</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hidden arrows and counter -->
+                <button class="navigation-arrows nav-left" disabled style="display: none;">‹</button>
+                <button class="navigation-arrows nav-right" disabled style="display: none;">›</button>
+            </div>
+            <!-- Disabled add button -->
+            <div class="add-more-container" style="margin-top: 10px;">
+                <button class="add-more-btn" disabled>Add more ID images</button>
             </div>
         </div>
 
@@ -3417,9 +3382,10 @@
             updateCounter();
         });
 
-        mockBtn.addEventListener('click', () => {
-            loadMockData();
-        });
+        // Mock button removed from UI
+        // mockBtn.addEventListener('click', () => {
+        //     loadMockData();
+        // });
 
         addMoreBtn.addEventListener('click', () => {
             showUploader();

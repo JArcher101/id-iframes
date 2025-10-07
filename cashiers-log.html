@@ -166,8 +166,10 @@
         /* 
         =====================================================================
         MESSAGES DISPLAY AREA - Main log container
-        - Fixed dimensions: 290px × 393px (reduced from 420px to accommodate button)
-        - Height reduced by ~27px to make room for "Load more" button below
+        - Fixed dimensions: 290px × variable height
+        - Height dynamically adjusts based on "Load more" button visibility:
+          * 393px when button is shown (leaves room for button)
+          * 420px when button is hidden (expands to fill space)
         - Scrollable container for all log entries
         - Auto-scrolls to top when new logs added (newest first)
         - Logs populated via displayLogs() function
@@ -175,12 +177,17 @@
         */
         .messages-container {
             width: 290px;
-            height: 393px;
+            height: 420px; /* Default height when button is hidden */
             background: white;
             border-radius: 5px;
             overflow-y: auto;
             padding: 10px;
             box-sizing: border-box;
+            transition: height 0.3s ease;
+        }
+
+        .messages-container.with-button {
+            height: 393px; /* Reduced height when button is visible */
         }
 
         /* Header within each log entry showing email and timestamp */
@@ -494,11 +501,13 @@
                     }
                 }
                 
-                // Show/hide load more button
+                // Show/hide load more button and adjust container height
                 if (displayedCount < allLogs.length) {
                     loadMoreBtn.style.display = 'block';
+                    messagesContainer.classList.add('with-button');
                 } else {
                     loadMoreBtn.style.display = 'none';
+                    messagesContainer.classList.remove('with-button');
                 }
                 
                 // Scroll to top to show latest entries
@@ -561,9 +570,10 @@
                 displayedCount++;
             }
             
-            // Hide button if all logs are now displayed
+            // Hide button and expand container if all logs are now displayed
             if (displayedCount >= allLogs.length) {
                 loadMoreBtn.style.display = 'none';
+                messagesContainer.classList.remove('with-button');
             }
         }
 
