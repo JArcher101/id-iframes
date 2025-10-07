@@ -64,17 +64,17 @@
         
         LOG DISPLAY FLOW:
         1. Parent sends 'log-data' message with array of log entries
-        2. Child receives and renders first 5 logs via displayLogs() function
-        3. User clicks "Load more" to load next 5 logs (appended to bottom)
+        2. Child receives and renders first 4 logs via displayLogs() function
+        3. User clicks "Load more" to load next 4 logs (appended to bottom)
         4. Logs displayed in reverse chronological order (newest at top)
-        5. New log data from parent resets display to first 5 logs
+        5. New log data from parent resets display to first 4 logs
         
         PAGINATION:
-        - Initial display: First 5 logs only
-        - "Load more" button shown if more than 5 logs exist
-        - Each click loads next 5 logs and appends them
+        - Initial display: First 4 logs only
+        - "Load more" button shown if more than 4 logs exist
+        - Each click loads next 4 logs and appends them
         - Button hidden when all logs displayed
-        - Receiving new log-data resets to first 5
+        - Receiving new log-data resets to first 4
         =====================================================================
         */
         
@@ -254,10 +254,8 @@
             font-weight: 400;
             cursor: pointer;
             display: none; /* Hidden by default */
-            margin-top: 10px;
-            margin-left: auto;
-            float: right;
-            clear: both;
+            margin-top: 5px;
+            text-align: left;
         }
 
         .load-more-btn:hover {
@@ -302,8 +300,8 @@
         
         LOG DATA FLOW:
         1. Parent sends 'log-data' message with logs array
-        2. displayLogs() function shows first 5 entries
-        3. User can click "Load more" to load 5 more entries
+        2. displayLogs() function shows first 4 entries
+        3. User can click "Load more" to load 4 more entries
         4. Container scrolls to top to show newest entries first
         
         LOG ENTRY STRUCTURE (from parent):
@@ -314,10 +312,10 @@
         }
         
         PAGINATION:
-        - Shows 5 logs initially
-        - "Load more" button loads next 5 logs
+        - Shows 4 logs initially
+        - "Load more" button loads next 4 logs
         - Button hidden when all logs displayed
-        - New log array resets to first 5
+        - New log array resets to first 4
         
         IMPORTANT: This is a READ-ONLY display. No user interaction or
         data modification is supported. All log entries come from parent.
@@ -328,7 +326,7 @@
         // Pagination state
         let allLogs = []; // Store all logs from parent
         let displayedCount = 0; // Track how many logs are currently shown
-        const LOGS_PER_PAGE = 5; // Number of logs to load at a time
+        const LOGS_PER_PAGE = 4; // Number of logs to load at a time
 
         /*
         =====================================================================
@@ -443,7 +441,7 @@
 
         /*
         =====================================================================
-        DISPLAY LOGS - Renders first 5 log entries (with pagination)
+        DISPLAY LOGS - Renders first 4 log entries (with pagination)
         =====================================================================
         Parameters:
         - logs: Array of log entry objects from parent
@@ -459,7 +457,7 @@
         1. Stores logs in allLogs array
         2. Resets displayedCount to 0
         3. Clears all existing log entries from container
-        4. Displays first 5 logs (or fewer if less than 5 total)
+        4. Displays first 4 logs (or fewer if less than 4 total)
         5. Shows/hides "Load more" button based on whether more logs exist
         6. Scrolls to top to show newest entries
         
@@ -536,7 +534,7 @@
         =====================================================================
         LOAD MORE - Loads next batch of logs when button is clicked
         =====================================================================
-        Loads the next 5 logs (or remaining logs if fewer than 5 left)
+        Loads the next 4 logs (or remaining logs if fewer than 4 left)
         and appends them to the bottom of the current list.
         
         Hides the "Load more" button when all logs have been displayed.
