@@ -3903,10 +3903,10 @@
                     console.log('userEmail:', userEmail);
                     console.log('file object:', file);
                     
-                    const fe = (clientData?.fe || 'Unknown').replace(/\//g, '-');
-                    const clientNumber = (clientData?.clientNumber || 'Unknown').replace(/\//g, '-');
-                    const matterNumber = (clientData?.matterNumber || 'Unknown').replace(/\//g, '-');
-                    const clientName = (clientData?.name || 'Unknown').replace(/\//g, '-');
+                    const fe = String(clientData?.fe || 'Unknown').replace(/\//g, '-');
+                    const clientNumber = String(clientData?.clientNumber || 'Unknown').replace(/\//g, '-');
+                    const matterNumber = String(clientData?.matterNumber || 'Unknown').replace(/\//g, '-');
+                    const clientName = String(clientData?.name || 'Unknown').replace(/\//g, '-');
                     const fileName = `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${subType}`;
                     console.log('Generated filename:', fileName);
                     
