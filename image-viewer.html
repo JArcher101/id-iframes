@@ -6,6 +6,43 @@
     <title>ID Images Display</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        /*
+        =====================================================================
+        ID IMAGES VIEWER & UPLOADER IFRAME - STYLE SECTION
+        =====================================================================
+        This iframe is embedded in a parent window and provides functionality
+        for viewing and uploading ID images (Photo ID and Address ID documents).
+        
+        COMMUNICATION ARCHITECTURE:
+        - Uses window.postMessage() API for parent-child communication
+        - Parent sends: display-images, put-links, put-error, image-display
+        - Child sends: image-data, upload-success, refresh-images, dismiss-notification
+        
+        FILE UPLOAD FLOW:
+        1. User clicks "Add more ID images" button
+        2. User selects document type (Photo ID or Address ID)
+        3. User uploads image files (single or dual for front/back)
+        4. Child requests S3 PUT links from parent with file metadata
+        5. Parent generates s3Keys and returns PUT links
+        6. Child uploads directly to S3 using PUT requests
+        7. Child sends upload-success with s3Keys to parent
+        8. Parent saves to database and sends fresh display-images data
+        
+        IMAGE DISPLAY FLOW:
+        1. Parent sends display-images with array of image objects
+        2. Each image has: document type, side, name, liveUrl, uploader, date
+        3. Images displayed in carousel/reel with navigation arrows
+        4. Download buttons use liveUrl (S3 signed URLs) for each image
+        
+        MAIN SECTIONS:
+        - Awaiting State: Shown when no data loaded
+        - Image Display: Carousel viewer for existing images
+        - Uploader Section: Form for adding more images
+        - Upload Progress: Modal showing file upload status
+        =====================================================================
+        */
+        
+        /* Global reset for consistent styling */
         * {
             margin: 0;
             padding: 0;
@@ -19,7 +56,13 @@
             overflow-x: hidden;
         }
         
-        /* Responsive container */
+        /* 
+        =====================================================================
+        RESPONSIVE CONTAINER SECTION
+        - Main container with responsive width (250px - 980px)
+        - Centers content and provides padding
+        =====================================================================
+        */
         .responsive-container {
             width: 100%;
             max-width: 980px;
@@ -36,6 +79,14 @@
             position: relative;
         }
 
+        /* 
+        =====================================================================
+        AWAITING STATE SECTION
+        - Displayed when no image data has been loaded
+        - Shows "Awaiting Image Data" message with mock data button
+        - Hidden once parent sends display-images or image-display data
+        =====================================================================
+        */
         .awaiting-state {
             display: flex;
             align-items: center;
@@ -86,6 +137,14 @@
             display: none !important;
         }
 
+        /* 
+        =====================================================================
+        ADD MORE BUTTON SECTION
+        - Button to trigger ID uploader section
+        - Only shown when allowUploads is true (from parent)
+        - Opens uploader form for adding additional ID images
+        =====================================================================
+        */
         .add-more-container {
             text-align: center;
             margin-top: 10px;
@@ -112,7 +171,19 @@
             transform: translateY(-1px);
         }
 
-        /* ID Image Uploader Section */
+        /* 
+        =====================================================================
+        ID IMAGE UPLOADER SECTION
+        - Form section for uploading new ID images
+        - Supports both Photo ID (e.g., Passport, Driving Licence) and 
+          Address ID (e.g., Bank Statement, Utility Bill)
+        - Photo IDs can be single-sided (Passport) or dual-sided (Driving Licence)
+        - Address IDs are always single-sided
+        - Files validated for image type and max 15MB size
+        - Shows dynamic hints for quality checks (blur, glare, MRZ visibility)
+        - Includes likeness toggle for Photo ID uploads
+        =====================================================================
+        */
         .id-uploader-section {
             width: 100%;
             margin: 0 auto;
@@ -449,7 +520,18 @@
             opacity: 0.8;
         }
 
-        /* Uploading state styles */
+        /* 
+        =====================================================================
+        UPLOADING PROGRESS MODAL
+        - Full-screen modal shown during file upload to S3
+        - Displays individual file progress with:
+          * File name and size
+          * Upload status (Pending → Uploading → Success/Error)
+          * Progress bar showing overall completion percentage
+        - Shown via showUploadingState(), hidden via hideUploadingState()
+        - Prevents user interaction during upload
+        =====================================================================
+        */
         .uploading-container {
             position: fixed;
             top: 0;
@@ -967,6 +1049,17 @@
             text-align: center;
         }
 
+        /* 
+        =====================================================================
+        IMAGE DISPLAY SECTION - CAROUSEL/REEL VIEWER
+        - Displays uploaded ID images in a horizontal carousel
+        - Navigation: Left/Right arrow buttons and keyboard arrows
+        - Each image card shows: document type, side tag, uploader info, download button
+        - Images loaded from S3 with signed liveUrl from parent
+        - Auto-scrolls to show current image, centered in viewport
+        - Responsive heights: 280px (mobile) to 630px (desktop)
+        =====================================================================
+        */
         .image-display-section {
             width: 100%;
             margin: 0 auto;
@@ -1589,7 +1682,58 @@
     </div>
 
     <script>
-        // Global variables
+        /*
+        =====================================================================
+        ID IMAGES VIEWER & UPLOADER IFRAME - JAVASCRIPT SECTION
+        =====================================================================
+        
+        GLOBAL STATE VARIABLES:
+        - currentImageIndex: Currently displayed image in carousel (0-based)
+        - images: Array of image objects from parent (document, side, liveUrl, etc.)
+        - allowUploads: Boolean from parent - controls "Add more" button visibility
+        - clientData: Object with fe, clientNumber, matterNumber, name
+        - userEmail: Current user's email (sent with uploads)
+        - uploaderCards: Array of uploader card DOM elements
+        - s3Keys: Array of file objects with s3Key property (from parent after PUT request)
+        - itemId: Database _id for this item
+        - uploadedImages: Backup copy of images data during upload
+        
+        PARENT-CHILD COMMUNICATION:
+        This iframe uses window.postMessage() to communicate with parent window.
+        
+        INCOMING MESSAGES (from parent):
+        1. 'image-display' - Initial data with images array, allowUploads, clientData, userEmail
+        2. 'display-images' - Full data structure with _id, images, clientData, userEmail
+        3. 'put-links' - S3 pre-signed PUT URLs and s3Keys for file upload
+        4. 'put-error' - Error response when PUT link generation fails
+        
+        OUTGOING MESSAGES (to parent):
+        1. 'image-data' - Request for S3 PUT links before file upload (includes file metadata)
+        2. 'upload-success' - Complete upload notification with s3Keys, uploader, flags
+        3. 'refresh-images' - Request to refresh image display after upload
+        
+        IMAGE DISPLAY FLOW:
+        - Parent sends display-images/image-display → displayImages() renders carousel →
+          User navigates with arrows → Download button fetches from liveUrl
+        
+        UPLOAD FLOW:
+        - User clicks "Add more" → showUploader() displays form →
+          User selects document type and files → validateAllUploadCards() checks completion →
+          uploadAllFiles() sends 'image-data' to parent → parent generates s3Keys →
+          parent sends 'put-links' → uploadFiles() uploads to S3 →
+          handleUploadSuccess() sends 'upload-success' to parent →
+          parent saves to DB and sends fresh 'display-images' →
+          returnToAwaitingData() resets state
+        
+        IMPORTANT RULES:
+        - Child NEVER modifies image display directly
+        - All uploads go through parent for s3Key generation
+        - Parent always sends complete image list via display-images
+        - Uploader validates: file types (images only), size (max 15MB), required fields
+        =====================================================================
+        */
+        
+        // Global state variables
         let currentImageIndex = 0;
         let images = [];
         let allowUploads = false;
@@ -1624,7 +1768,24 @@
         errorPopupClose = document.getElementById('errorPopupClose');
         dynamicHint = document.getElementById('dynamicHint');
 
-        // Navigation functions
+        /*
+        =====================================================================
+        CAROUSEL NAVIGATION FUNCTIONS
+        =====================================================================
+        Controls for the image carousel/reel viewer
+        */
+        
+        /*
+        Shows image at specified index by translating the slider
+        Parameters:
+        - index: Image index to display (0-based)
+        
+        Logic:
+        1. Gets container width (responsive)
+        2. Calculates translateX offset (-index * width)
+        3. Applies transform to slide carousel
+        4. Updates prev/next button disabled states
+        */
         function showImage(index) {
             if (images.length === 0) return;
             
@@ -1652,7 +1813,25 @@
             }
         }
 
-        // Image error handling
+        /*
+        =====================================================================
+        IMAGE ERROR HANDLING
+        =====================================================================
+        Handles failed image loads with retry capability and error display
+        */
+        
+        /*
+        Handles image load errors with retry button
+        Parameters:
+        - img: Image element that failed to load
+        - documentType: Type of document for error message
+        - retryCount: Current retry attempt (max 2 retries)
+        
+        Logic:
+        1. Replaces failed image with error placeholder
+        2. Shows retry button if retries remain
+        3. Shows "Max retries reached" if limit exceeded
+        */
         function handleImageError(img, documentType, retryCount = 0) {
             // Get the image card to find its index
             const card = img.closest('.image-card');
@@ -1813,7 +1992,37 @@
             return card;
         }
 
-        // Display images
+        /*
+        =====================================================================
+        DISPLAY IMAGES - Main rendering function for image carousel
+        =====================================================================
+        Called when parent sends image data via 'display-images' or 'image-display'
+        
+        Parameters:
+        - imageData: Array of image objects from parent
+        - allowUploadsData: Boolean - controls "Add more" button visibility
+        - clientDataParam: Object {fe, clientNumber, matterNumber, name}
+        - userEmailParam: Current user's email address
+        
+        Image object structure:
+        {
+            document: 'Passport', 'Driving Licence', etc.
+            side: 'Front', 'Back', or 'Single'
+            name: 'Filename for download'
+            liveUrl: 'S3 signed URL for image'
+            uploader: 'email@example.com'
+            date: '12/20/2023, 10:30:45 AM'
+        }
+        
+        Flow:
+        1. Stores data in global state
+        2. Hides awaiting state, shows image display
+        3. Updates client heading with clientData
+        4. Shows/hides "Add more" button based on allowUploads
+        5. Creates image cards for each image
+        6. Initializes carousel at first image
+        7. Adds image counter (1 / 5, etc.)
+        */
         function displayImages(imageData, allowUploadsData, clientDataParam, userEmailParam) {
             images = imageData || [];
             allowUploads = allowUploadsData || false;
@@ -1947,7 +2156,25 @@
             }
         }
 
-        // Uploader functions
+        /*
+        =====================================================================
+        UPLOADER SECTION FUNCTIONS
+        =====================================================================
+        Controls for showing/hiding and managing the ID image uploader form
+        */
+        
+        /*
+        Shows the uploader section and hides image display
+        Called when user clicks "Add more ID images" button
+        
+        Flow:
+        1. Hides image display and "Add more" button
+        2. Shows uploader section
+        3. Updates subheading with client info
+        4. Creates initial card selection options
+        5. Updates upload button state
+        6. Updates likeness toggle visibility
+        */
         function showUploader() {
             imageDisplaySection.classList.add('hidden');
             addMoreContainer.classList.add('hidden');
@@ -2301,7 +2528,34 @@
             document.querySelector('.image-display-container').appendChild(loadingDiv);
         }
 
-        // Handle PUT response from parent (links or error)
+        /*
+        =====================================================================
+        UPLOAD FLOW - S3 UPLOAD HANDLING
+        =====================================================================
+        Functions that handle the S3 upload process after user submits files
+        */
+        
+        /*
+        Handles PUT link response from parent
+        Called when parent responds to 'image-data' request
+        
+        Parameters:
+        - event: Message event from parent window
+        
+        Response types:
+        1. 'put-links' - Contains links array and s3Keys array with file objects
+        2. 'put-error' - Error response with message
+        
+        Flow for put-links:
+        1. Extracts links and s3Keys from event.data
+        2. Stores s3Keys and uploadedImages in global state
+        3. Calls uploadFiles() to perform S3 uploads
+        
+        Flow for put-error:
+        1. Shows specific error message
+        2. Hides uploading state
+        3. Returns user to uploader form to retry
+        */
         function handlePutResponse(event) {
             if (event.data.type === 'put-links') {
                 const links = event.data.links;
@@ -2418,7 +2672,29 @@
             }
         }
 
-        // Handle successful upload
+        /*
+        =====================================================================
+        HANDLE UPLOAD SUCCESS - Post-upload processing
+        =====================================================================
+        Called after all files successfully uploaded to S3
+        
+        Flow:
+        1. Hides uploading state modal
+        2. Detects upload types (photoIdUploaded, addressIdUploaded)
+        3. Gets likeness toggle value (for Photo ID uploads)
+        4. Uses s3Keys data from parent (contains properly formatted image data)
+        5. Sends 'upload-success' to parent with:
+           - files: Array with s3Keys
+           - _id: Item database ID
+           - uploader: User email
+           - photoIdUploaded: Boolean flag
+           - addressIdUploaded: Boolean flag
+           - likenessNOTConfirmed: Boolean flag
+        6. Returns to awaiting data section
+        7. Parent saves to database and sends fresh 'display-images' data
+        
+        Note: s3Keys contains full file objects with s3Key property added by parent
+        */
         function handleUploadSuccess() {
             hideUploadingState();
             
@@ -2906,6 +3182,30 @@
             return allFiles;
         }
 
+        /*
+        =====================================================================
+        UPLOAD ALL FILES - Initiates the upload process
+        =====================================================================
+        Called when user clicks "Upload All Images" button
+        
+        Flow:
+        1. Validates all visible upload cards have required files
+        2. Collects all files from upload areas
+        3. Shows uploading state with file list
+        4. Compiles image data with metadata (type, document, side, uploader)
+        5. Sends 'image-data' to parent requesting PUT links
+        6. Waits for parent to respond with 'put-links' or 'put-error'
+        
+        File data structure sent to parent:
+        {
+            type: 'PhotoID' or 'AddressID',
+            document: 'Passport', 'Bank Statement', etc.,
+            side: 'Front', 'Back', or 'Single',
+            uploader: userEmail,
+            data: {type, size, name, lastModified},
+            file: File object
+        }
+        */
         function uploadAllFiles() {
             // First validate all visible upload cards have files
             const validationResult = validateAllUploadCards();
@@ -3089,7 +3389,30 @@
             console.log('Uploaders reset due to new image data');
         }
 
-        // Listen for messages from parent
+        /*
+        =====================================================================
+        MAIN MESSAGE LISTENER - Handles all parent-child communication
+        =====================================================================
+        Listens for postMessage events from parent window
+        
+        Message types handled:
+        
+        1. 'image-display' - Legacy format
+           Data: {type, data, allowUploads, clientData, userEmail}
+           Action: Resets uploaders if active, displays images
+        
+        2. 'display-images' - Full format  
+           Data: {type, _id, images, clientData, userEmail}
+           Action: Stores itemId, displays images with full data
+        
+        3. 'put-links' - S3 upload URLs
+           Data: {type, links, s3Keys}
+           Action: Handled by handlePutLinks() or handlePutResponse()
+        
+        4. 'put-error' - Upload error
+           Data: {type, message}
+           Action: Handled by handlePutError() or handlePutResponse()
+        */
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'image-display') {
                 console.log('Received image display data:', event.data);
