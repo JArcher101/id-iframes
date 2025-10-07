@@ -3193,7 +3193,10 @@
         =====================================================================
         */
         function uploadFiles(links) {
+            // Collect files from DOM (they still have the actual File objects)
             const files = collectAllFiles();
+            console.log('Collected files from DOM for upload:', files.length, 'files');
+            
             let completed = 0;
             let hasErrors = false;
             const total = files.length;
@@ -3987,11 +3990,19 @@
             }
             
             const files = collectAllFiles();
-            console.log('Files collected:', files.length, files);
+            console.log('Files collected for validation:', files.length, files);
             
             if (files.length === 0) {
                 console.log('No files found, showing error');
                 showError('No files to upload.');
+                return;
+            }
+            
+            // Validate all files have content
+            const invalidFiles = files.filter(f => !f.file || f.file.size === 0);
+            if (invalidFiles.length > 0) {
+                console.error('Found invalid/empty files:', invalidFiles);
+                showError('One or more files are empty or corrupted. Please re-select your files and try again.');
                 return;
             }
             
@@ -4000,6 +4011,7 @@
             showUploadingState();
             
             // Send document data to parent for PUT link generation
+            // Note: File objects will be serialized to {} during postMessage
             console.log('Sending file-data message to parent:', {
                 type: 'file-data',
                 files: files,
