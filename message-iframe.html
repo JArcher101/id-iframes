@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Small Iframe</title>
     <style>
+        /*
+        =====================================================================
+        CASHIERS CHAT IFRAME - STYLE SECTION
+        =====================================================================
+        This iframe is embedded in a parent window and provides a chat interface
+        for communication between staff and cashiers.
+        
+        COMMUNICATION ARCHITECTURE:
+        - Uses window.postMessage() API for parent-child communication
+        - Parent sends: message-data, put-links, put-error
+        - Child sends: file-data, message-sent, dismiss-notification
+        
+        FILE UPLOAD FLOW:
+        1. User selects document file (NO images allowed)
+        2. Child requests S3 PUT link from parent
+        3. Child uploads directly to S3
+        4. Child sends message with S3 key to parent
+        =====================================================================
+        */
+        
+        /* Global reset for consistent styling */
         * { 
             margin: 0;
             padding: 0;
@@ -20,6 +41,13 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
+        /* 
+        =====================================================================
+        CHAT HEADER SECTION
+        - Contains title, notification dot, dismiss button, and tags
+        - Fixed width: 640px, Height: 40px
+        =====================================================================
+        */
         .chat-header {
             width: 640px;
             height: 40px;
@@ -32,6 +60,10 @@
             gap: 10px;
         }
 
+        /* 
+        Pulsing orange notification dot - shown when there's an unread message
+        Visibility controlled by JavaScript based on notification status from parent
+        */
         .notification-dot {
             width: 8px;
             height: 8px;
@@ -40,6 +72,10 @@
             animation: pulse 2s infinite;
         }
 
+        /* 
+        Dismiss button - allows user to mark notifications as read
+        Sends 'dismiss-notification' message to parent when clicked
+        */
         .dismiss-btn {
             background: none;
             color: rgb(0, 60, 113);
@@ -59,6 +95,15 @@
             transform: translateY(-1px);
         }
 
+        /* 
+        =====================================================================
+        TAGS SYSTEM
+        - Container for category tags (Note, PEP Update, Issue Update, Form J/K/E)
+        - Tags array comes from parent in message-data
+        - Individual tags shown/hidden based on tags array
+        - Possible values: 'note', 'pepUpdate', 'update', 'formJ', 'formK', 'formE'
+        =====================================================================
+        */
         .tags-container {
             display: none;
             gap: 4px;
@@ -67,7 +112,7 @@
         }
 
         .tag {
-            background: #D4A574; /* Pantone 451C */
+            background: #D4A574; /* Pantone 451C - Brand tan color */
             color: white;
             padding: 4px 10px;
             border-radius: 4px;
@@ -81,6 +126,7 @@
             justify-content: center;
         }
 
+        /* Pulse animation for notification dots */
         @keyframes pulse {
             0% {
                 opacity: 1;
@@ -103,6 +149,13 @@
             margin: 0;
         }
 
+        /* 
+        =====================================================================
+        INPUT CONTAINER
+        - Bottom section containing message input, file upload, and send button
+        - Fixed height: 80px to accommodate input controls
+        =====================================================================
+        */
         .container {
             width: 640px;
             height: 80px;
@@ -115,11 +168,21 @@
             justify-content: center;
         }
 
+        /* Main wrapper containing header, messages, and input sections */
         .chat-wrapper {
             display: flex;
             flex-direction: column;
         }
 
+        /* 
+        =====================================================================
+        MESSAGES DISPLAY AREA
+        - Scrollable container for all chat messages
+        - Fixed dimensions: 640px × 500px
+        - Auto-scrolls to bottom when new messages added
+        - Messages populated via displayMessages() function
+        =====================================================================
+        */
         .messages-container {
             width: 640px;
             height: 500px;
@@ -129,6 +192,7 @@
             box-sizing: border-box;
         }
 
+        /* Header within each message bubble showing email, time, and file button */
         .message-header {
             display: flex;
             justify-content: space-between;
@@ -136,12 +200,18 @@
             margin-bottom: 4px;
         }
 
+        /* Email address shown in message header - uses brand tan color */
         .message-email {
             color: #D4A574; /* Pantone 451C */
             font-size: 10px;
             font-weight: bold;
         }
 
+        /* 
+        File button shown in messages that have attachments
+        - Only appears when message has liveUrl property
+        - Triggers downloadFile() function on click
+        */
         .message-file-btn {
             background: none;
             color: rgb(0, 60, 113);
@@ -170,6 +240,11 @@
             color: rgb(0, 60, 113);
         }
 
+        /* 
+        Notification dot shown ONLY on the last blue (received) message
+        - Indicates this message triggered the notification
+        - Visibility controlled in displayMessages() function
+        */
         .message-notification-dot {
             width: 6px;
             height: 6px;
@@ -180,16 +255,27 @@
             margin-right: 6px;
         }
 
+        /* Timestamp displayed on each message */
         .message-time {
             font-size: 11px;
             color: #666;
             margin: 0;
         }
 
+        /* Override time color for received messages to ensure readability on blue background */
         .message.received .message-time {
             color: rgba(255, 255, 255, 0.8);
         }
 
+        /* 
+        =====================================================================
+        MESSAGE BUBBLES
+        - Two types based on message.type property from parent:
+          1. SENT (white background, right-aligned) - type matches 'whiteType' (usually 'Staff')
+          2. RECEIVED (blue background, left-aligned) - type doesn't match 'whiteType'
+        - Max width 80% to create chat bubble effect
+        =====================================================================
+        */
         .message {
             margin-bottom: 10px;
             padding: 8px 12px;
@@ -198,14 +284,16 @@
             word-wrap: break-word;
         }
 
+        /* Sent messages - staff messages (white card style) */
         .message.sent {
             background: white;
             margin-left: auto;
             text-align: right;
         }
 
+        /* Received messages - cashier messages (blue card style) */
         .message.received {
-            background: rgb(0, 60, 113);
+            background: rgb(0, 60, 113); /* Brand navy blue */
             color: white;
             margin-right: auto;
         }
@@ -216,6 +304,11 @@
             margin: 0;
         }
 
+        /* 
+        =====================================================================
+        INPUT ROW - Contains text input, upload area, and send button
+        =====================================================================
+        */
         .input-row {
             display: flex;
             gap: 8px;
@@ -223,6 +316,11 @@
             height: 60px;
         }
 
+        /* 
+        Text input for typing messages
+        - Has input event listener to enable/disable send button
+        - Cleared after successful message send
+        */
         .text-input {
             flex: 1;
             padding: 8px;
@@ -240,6 +338,19 @@
             box-shadow: 0 0 0 2px rgba(0, 60, 113, 0.2);
         }
 
+        /* 
+        =====================================================================
+        FILE UPLOAD AREA
+        - Accepts ONLY document types (PDF, Word, Excel, PowerPoint, text)
+        - REJECTS images with error message directing user to ID Photos section
+        - Browser file picker restricted via accept attribute
+        - Supports click to browse and drag-and-drop
+        - File validation in isValidDocumentType() and handleFileSelect()
+        - UI Updates on file selection:
+          * Valid file: Shows tick icon + filename
+          * Invalid file: Shows error popup + resets to default
+        =====================================================================
+        */
         .upload-area {
             border: 2px dashed #4A90E2;
             border-radius: 6px;
@@ -287,6 +398,12 @@
             text-align: center;
         }
 
+        /* 
+        Send button
+        - Disabled by default until message text entered
+        - Disabled during file upload to prevent duplicates
+        - Re-enabled after successful send or error
+        */
         .send-btn {
             background: rgb(0, 60, 113);
             color: white;
@@ -312,10 +429,19 @@
             transform: none;
         }
 
+        /* Hidden file input - triggered by clicking upload area */
         .file-input {
             display: none;
         }
 
+        /* 
+        =====================================================================
+        ERROR POPUP
+        - Shown for validation errors (no message, invalid file type)
+        - Auto-displays with .show class via showError() function
+        - User dismisses by clicking X button
+        =====================================================================
+        */
         .error-popup {
             position: fixed;
             top: 50%;
@@ -355,6 +481,15 @@
             opacity: 0.8;
         }
 
+        /* 
+        =====================================================================
+        UPLOADING POPUP
+        - Full-screen modal shown during file upload to S3
+        - Displays file name, size, and spinner
+        - Shown via showUploadingPopup(), hidden via hideUploadingPopup()
+        - Prevents user interaction during upload
+        =====================================================================
+        */
         .uploading-popup {
             position: fixed;
             top: 0;
@@ -467,16 +602,16 @@
         <div class="container">
             <div class="input-row">
                 <textarea class="text-input" placeholder="Type your message here..." id="messageInput"></textarea>
-                <div class="upload-area" onclick="triggerFileInput()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                    <div class="upload-icon">
+                <div class="upload-area" onclick="triggerFileInput()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" id="uploadArea">
+                    <div class="upload-icon" id="uploadIcon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="17,8 12,3 7,8"/>
                             <line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                     </div>
-                    <div class="upload-text">Upload</div>
-                    <input type="file" class="file-input" accept="image/*" id="fileInput" onchange="handleFileSelect(event)">
+                    <div class="upload-text" id="uploadText">Upload</div>
+                    <input type="file" class="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/rtf" id="fileInput" onchange="handleFileSelect(event)">
                 </div>
                 <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>Send</button>
             </div>
@@ -484,15 +619,66 @@
     </div>
 
     <script>
-        // Store variables from parent message
-        let userEmail = '';
-        let itemId = '';
-        let hasNotification = false;
-        let currentFile = null; // Store current file being uploaded
-        let currentMessage = null; // Store current message being sent
-        let currentFileData = null; // Store current file data
+        /*
+        =====================================================================
+        CASHIERS CHAT IFRAME - JAVASCRIPT SECTION
+        =====================================================================
+        
+        GLOBAL STATE VARIABLES:
+        - userEmail: Current user's email (sent in every message)
+        - itemId: Database _id for this chat item
+        - hasNotification: Whether there's an unread notification
+        - currentFile: File object being uploaded (during upload process)
+        - currentMessage: Message text being sent (during upload process)
+        - currentFileData: Metadata for file being uploaded
+        
+        PARENT-CHILD COMMUNICATION:
+        This iframe uses window.postMessage() to communicate with parent window.
+        
+        INCOMING MESSAGES (from parent):
+        1. 'message-data' - Full chat data including messages, user info, notifications
+        2. 'put-links' - S3 pre-signed PUT URLs for file upload
+        3. 'put-error' - Error response when PUT link generation fails
+        
+        OUTGOING MESSAGES (to parent):
+        1. 'file-data' - Request for S3 PUT links before file upload
+        2. 'message-sent' - Complete message data (sent for BOTH text-only and file messages)
+        3. 'dismiss-notification' - Request to clear notification status
+        
+        MESSAGE FLOW:
+        - Text-only: sendMessage() → 'message-sent' (with message object) to parent → 
+                     parent saves to DB → parent sends fresh 'message-data' → 
+                     displayMessages() refreshes entire chat
+        
+        - With file: sendMessage() → 'file-data' (with file metadata + s3Key request) to parent → 
+                     parent generates s3Key and sends 'put-links' (with full file objects + s3Key) →
+                     uploadFileToS3() uploads to S3 → 'message-sent' (with message + file.s3Key) to parent →
+                     parent saves to DB and generates liveUrl from s3Key →
+                     parent sends fresh 'message-data' (messages with liveUrl for downloads) →
+                     displayMessages() refreshes entire chat and shows File buttons
+        
+        IMPORTANT: Child NEVER displays messages locally. Parent always sends complete chat
+        history via 'message-data' and child renders via displayMessages().
+        File flow: child sends s3Key → parent stores and generates liveUrl → child displays with liveUrl.
+        
+        =====================================================================
+        */
+        
+        // Global state variables
+        let userEmail = '';        // User's email address
+        let itemId = '';           // Database _id for this chat item
+        let hasNotification = false; // Notification flag
+        let currentFile = null;     // File being uploaded (File object)
+        let currentMessage = null;  // Message text during upload
+        let currentFileData = null; // File metadata during upload
 
-        // Initialize - hide notification elements on page load
+        /*
+        =====================================================================
+        INITIALIZATION
+        - Hides notification elements on page load
+        - Elements only shown when parent sends notification: true
+        =====================================================================
+        */
         document.addEventListener('DOMContentLoaded', function() {
             const dot = document.querySelector('.notification-dot');
             const dismissBtn = document.querySelector('.dismiss-btn');
@@ -503,62 +689,165 @@
             if (tagsContainer) tagsContainer.style.display = 'none';
         });
 
-        // Message listener for parent communication
+        /*
+        =====================================================================
+        MAIN MESSAGE LISTENER - Handles all parent-child communication
+        =====================================================================
+        */
         window.addEventListener('message', function(event) {
+            /*
+            ----------------------------------------------------------------
+            CASE 1: 'message-data' - Parent sends complete chat data
+            ----------------------------------------------------------------
+            Received when:
+            - Initial load of chat
+            - After parent saves a new message to database
+            - Any time parent wants to refresh the chat display
+            
+            Data structure:
+            {
+                type: 'message-data',
+                userEmail: 'user@example.com',
+                _id: 'item-database-id',
+                notification: true/false,
+                white: 'Staff',  // Determines which message type is white/sent
+                tags: ['note', 'pepUpdate', 'formJ', ...],
+                chat: [
+                    {
+                        user: 'email@example.com',
+                        message: 'Message text',
+                        time: '1/1/2024, 12:00:00 PM',
+                        type: 'Staff' or other,
+                        liveUrl: 'https://s3-url...' (optional - only present for file attachments)
+                    },
+                    ...
+                ]
+            }
+            
+            Note: When child sends 'message-sent' with file.s3Key, parent generates
+            liveUrl from the s3Key and includes it in the message when responding
+            with 'message-data'. The liveUrl is used by the File download button.
+            */
             if (event.data.type === 'message-data') {
                 const data = event.data;
                 
-                // Clear user input and selected file
+                // Clear user input and reset upload area from previous interaction
                 document.getElementById('messageInput').value = '';
-                document.getElementById('fileInput').value = '';
+                resetUploadArea(); // Clears file input and resets UI to default
                 
-                // Store userEmail and _id
+                // Store critical data for later use in message sending
                 userEmail = data.userEmail || '';
                 itemId = data._id || '';
                 hasNotification = data.notification || false;
                 
-                // Clear existing messages and display new chat messages
+                // Display all messages in chat array
                 displayMessages(data.chat || [], data.white || 'Staff');
                 
-                // Reset and handle notification
+                // Update notification UI (dot and dismiss button)
                 handleNotification(hasNotification);
                 
-                // Reset and handle tags
+                // Update visible tags based on tags array
                 handleTags(data.tags || []);
                 
                 // Always enable send button when receiving message data
                 document.getElementById('sendBtn').disabled = false;
-            } else if (event.data.type === 'put-links') {
-                // Handle PUT links response for file upload
+            } 
+            /*
+            ----------------------------------------------------------------
+            CASE 2: 'put-links' - Parent responds with S3 upload URLs
+            ----------------------------------------------------------------
+            Received after child sends 'file-data' request
+            
+            Response structure:
+            {
+                type: 'put-links',
+                links: ['https://s3-presigned-url...'],
+                s3Keys: [
+                    {
+                        type: 'Document',
+                        document: 'Message Attachment',
+                        uploader: 'user@example.com',
+                        data: { type, size, name, lastModified },
+                        file: <File object>,
+                        s3Key: 'uploads/message-attachment-123.pdf'  // ADDED by parent
+                    }
+                ]
+            }
+            
+            Note: s3Keys is NOT just strings - it's the full file objects we sent,
+            with s3Key property added by parent.
+            
+            Triggers uploadFileToS3() to perform actual upload to S3.
+            */
+            else if (event.data.type === 'put-links') {
                 const links = event.data.links;
                 const s3Keys = event.data.s3Keys;
                 
                 console.log('Received PUT links for file upload:', links);
-                console.log('S3 Keys:', s3Keys);
+                console.log('File objects with S3 Keys:', s3Keys);
                 
-                // Upload file to S3 using the PUT link
-                if (links && links.length > 0) {
-                    uploadFileToS3(links[0], s3Keys[0]);
+                // Extract s3Key from the full file object returned by parent
+                // Parent returns our fileData with s3Key property added
+                if (links && links.length > 0 && s3Keys && s3Keys.length > 0) {
+                    uploadFileToS3(links[0], s3Keys[0].s3Key);
                 }
-            } else if (event.data.type === 'put-error') {
-                // Handle PUT error
+            } 
+            /*
+            ----------------------------------------------------------------
+            CASE 3: 'put-error' - Parent failed to generate upload link
+            ----------------------------------------------------------------
+            Error handling when S3 link generation fails
+            */
+            else if (event.data.type === 'put-error') {
                 console.error('PUT link generation failed:', event.data.message);
                 hideUploadingPopup();
                 showError('Failed to generate upload link. Please try again.');
-                // Re-enable send button
+                
+                // Re-enable send button so user can retry
                 document.getElementById('sendBtn').disabled = false;
-                // Clear current data
+                
+                // Clear global state to reset for retry attempt
                 currentFile = null;
                 currentMessage = null;
                 currentFileData = null;
+                
+                // Note: Inputs remain populated so user can retry without re-typing
             }
         });
 
+        /*
+        =====================================================================
+        DISPLAY MESSAGES - Renders all chat messages in the container
+        =====================================================================
+        Parameters:
+        - chatData: Array of message objects from parent's message-data
+        - whiteType: String determining which message type appears as "sent" (white)
+        
+        Message object structure (from parent):
+        {
+            user: 'email@example.com',
+            message: 'Text content',
+            time: '1/1/2024, 12:00:00 PM',
+            type: 'Staff' or other,
+            liveUrl: 'https://s3-url...' (optional - only for file attachments)
+        }
+        
+        Logic:
+        1. Clears existing messages
+        2. Finds last blue (received) message for notification dot placement
+        3. Creates message bubbles with appropriate styling based on type
+        4. Shows File button if message.liveUrl exists (file attachment present)
+        5. Shows notification dot ONLY on last blue message if hasNotification is true
+        6. Auto-scrolls to bottom to show latest messages
+        
+        Note: Parent generates liveUrl from s3Key when we send 'message-sent' with file
+        */
         function displayMessages(chatData, whiteType) {
             const messagesContainer = document.getElementById('messagesContainer');
-            messagesContainer.innerHTML = '';
+            messagesContainer.innerHTML = ''; // Clear all existing messages
             
-            // Find the last blue message index
+            // Find the last blue message index (for notification dot placement)
+            // Blue messages are those where type !== whiteType
             let lastBlueMessageIndex = -1;
             for (let i = chatData.length - 1; i >= 0; i--) {
                 if (chatData[i].type !== whiteType) {
@@ -567,22 +856,27 @@
                 }
             }
             
+            // Create and append each message bubble
             chatData.forEach((message, index) => {
                 const messageDiv = document.createElement('div');
                 const isWhiteCard = message.type === whiteType;
                 messageDiv.className = `message ${isWhiteCard ? 'sent' : 'received'}`;
                 
-                // Check if this is the last blue message and should show notification
+                // Determine if this message should show notification dot
                 const isLastBlueMessage = !isWhiteCard && index === lastBlueMessageIndex;
                 const showNotification = isLastBlueMessage && hasNotification;
                 
-                // File button for messages with liveUrl
+                // File button appears only if message has liveUrl property (file attachment)
+                // Parent generates liveUrl from s3Key and includes it in message-data
                 const fileButton = message.liveUrl ? 
                     `<button class="message-file-btn" onclick="downloadFile('${message.liveUrl}')">File</button>` : '';
                 
-                // Notification dot for last blue message
-                const notificationDot = showNotification ? '<div class="message-notification-dot" style="display: block;"></div>' : '<div class="message-notification-dot" style="display: none;"></div>';
+                // Notification dot shown only on last blue message when notification flag is true
+                const notificationDot = showNotification ? 
+                    '<div class="message-notification-dot" style="display: block;"></div>' : 
+                    '<div class="message-notification-dot" style="display: none;"></div>';
                 
+                // Build message HTML
                 messageDiv.innerHTML = `
                     <div class="message-header">
                         <div style="display: flex; align-items: center;">
@@ -598,10 +892,21 @@
                 messagesContainer.appendChild(messageDiv);
             });
             
-            // Scroll to bottom to show latest messages
+            // Auto-scroll to bottom to show latest messages
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
+        /*
+        =====================================================================
+        HANDLE NOTIFICATION - Shows/hides notification elements in header
+        =====================================================================
+        Parameters:
+        - showNotification: Boolean from parent's message-data
+        
+        Toggles visibility of:
+        - Pulsing orange dot in header
+        - Dismiss button in header
+        */
         function handleNotification(showNotification) {
             const dot = document.querySelector('.notification-dot');
             const dismissBtn = document.querySelector('.dismiss-btn');
@@ -615,6 +920,19 @@
             }
         }
 
+        /*
+        =====================================================================
+        HANDLE TAGS - Shows/hides category tags in header
+        =====================================================================
+        Parameters:
+        - tagsArray: Array of tag names from parent
+          Possible values: ['note', 'pepUpdate', 'update', 'formJ', 'formK', 'formE']
+        
+        Logic:
+        1. Hides all tag elements
+        2. Shows only tags present in tagsArray
+        3. Shows tags container only if at least one tag is visible
+        */
         function handleTags(tagsArray) {
             const tagsContainer = document.querySelector('.tags-container');
             const tagElements = tagsContainer.querySelectorAll('.tag');
@@ -622,7 +940,8 @@
             // Hide all tags first
             tagElements.forEach(tag => tag.style.display = 'none');
             
-            // Show tags based on the tags array
+            // Map tag names to tag elements and show them
+            // Order in HTML: Note, PEP Update, Issue Update, Form J, Form K, Form E
             tagsArray.forEach(tagName => {
                 let tagElement = null;
                 switch(tagName) {
@@ -651,23 +970,37 @@
                 }
             });
             
-            // Show tags container if any tags are visible
+            // Show tags container only if at least one tag is visible
             const hasVisibleTags = Array.from(tagElements).some(tag => tag.style.display !== 'none');
             tagsContainer.style.display = hasVisibleTags ? 'flex' : 'none';
         }
 
+        /*
+        =====================================================================
+        DOWNLOAD FILE - Downloads file attachment from message
+        =====================================================================
+        Parameters:
+        - liveUrl: S3 URL or file URL from message.liveUrl
+        
+        Logic:
+        1. Fetches file as blob
+        2. Creates temporary download link
+        3. Triggers download with default filename
+        4. Fallback: Opens in new tab if fetch fails
+        */
         function downloadFile(liveUrl) {
             // Fetch the file as a blob and download it
             fetch(liveUrl)
                 .then(response => response.blob())
                 .then(blob => {
+                    // Create temporary object URL
                     const url = window.URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = 'attachment.jpg'; // Give it a proper filename
+                    link.download = 'attachment.jpg'; // Default filename
                     link.style.display = 'none';
                     document.body.appendChild(link);
-                    link.click();
+                    link.click(); // Trigger download
                     document.body.removeChild(link);
                     window.URL.revokeObjectURL(url); // Clean up the object URL
                 })
@@ -678,22 +1011,106 @@
                 });
         }
 
-
+        /*
+        =====================================================================
+        FILE UPLOAD UI HANDLERS
+        =====================================================================
+        These functions manage the upload area UI and file selection process:
+        
+        1. triggerFileInput() - Opens browser file picker on click
+        2. handleFileSelect() - Validates file and updates UI
+        3. updateUploadAreaWithFile() - Shows tick icon + filename for valid files
+        4. resetUploadArea() - Resets to default upload arrow + "Upload" text
+        
+        Upload area states:
+        - DEFAULT: Upload arrow icon + "Upload" text
+        - FILE SELECTED: Checkmark icon + truncated filename (hover for full name)
+        - ERROR: Resets to default after showing error popup
+        =====================================================================
+        */
+        
+        // Triggers hidden file input when upload area is clicked
         function triggerFileInput() {
             document.getElementById('fileInput').click();
         }
 
+        /*
+        Called when file is selected via browse dialog
+        Validates file type and updates upload area UI accordingly
+        */
         function handleFileSelect(event) {
             const file = event.target.files[0];
-            if (file) {
-                console.log('File selected:', file.name);
-                // Handle file selection here
+            if (!file) return;
+            
+            console.log('File selected:', file.name);
+            
+            // Validate file type (documents only, NO images)
+            if (!isValidDocumentType(file)) {
+                // Invalid file type - show error and reset
+                showError('Invalid file type. To add images please upload to the ID Photos section');
+                resetUploadArea();
+                return;
             }
+            
+            // Valid document - update UI to show success
+            updateUploadAreaWithFile(file);
+        }
+        
+        /*
+        Updates upload area to show tick icon and filename when valid file selected
+        */
+        function updateUploadAreaWithFile(file) {
+            const uploadIcon = document.getElementById('uploadIcon');
+            const uploadText = document.getElementById('uploadText');
+            
+            // Change icon to checkmark/tick
+            uploadIcon.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            `;
+            
+            // Show filename (truncate if too long)
+            const maxLength = 12;
+            let displayName = file.name;
+            if (displayName.length > maxLength) {
+                const ext = displayName.substring(displayName.lastIndexOf('.'));
+                displayName = displayName.substring(0, maxLength - ext.length - 3) + '...' + ext;
+            }
+            uploadText.textContent = displayName;
+            uploadText.title = file.name; // Full name on hover
+        }
+        
+        /*
+        Resets upload area to default state (upload icon and "Upload" text)
+        Called on error or when inputs are cleared after send
+        */
+        function resetUploadArea() {
+            const uploadIcon = document.getElementById('uploadIcon');
+            const uploadText = document.getElementById('uploadText');
+            const fileInput = document.getElementById('fileInput');
+            
+            // Reset icon to upload arrow
+            uploadIcon.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17,8 12,3 7,8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            `;
+            
+            // Reset text to "Upload"
+            uploadText.textContent = 'Upload';
+            uploadText.title = '';
+            
+            // Clear file input
+            fileInput.value = '';
         }
 
+        // Drag-and-drop handlers for upload area
         function handleDragOver(event) {
             event.preventDefault();
-            event.currentTarget.classList.add('dragover');
+            event.currentTarget.classList.add('dragover'); // Visual feedback
         }
 
         function handleDragLeave(event) {
@@ -704,53 +1121,101 @@
             event.preventDefault();
             event.currentTarget.classList.remove('dragover');
             const files = event.dataTransfer.files;
+            
             if (files.length > 0) {
-                console.log('File dropped:', files[0].name);
-                // Handle file drop here
+                const file = files[0];
+                console.log('File dropped:', file.name);
+                
+                // Validate file type (documents only, NO images)
+                if (!isValidDocumentType(file)) {
+                    // Invalid file type - show error and reset
+                    showError('Invalid file type. To add images please upload to the ID Photos section');
+                    resetUploadArea();
+                    return;
+                }
+                
+                // Valid document - update file input and UI
+                const fileInput = document.getElementById('fileInput');
+                fileInput.files = files; // Set the dropped file to the input
+                updateUploadAreaWithFile(file);
             }
         }
 
+        /*
+        =====================================================================
+        SEND MESSAGE - Main message sending function
+        =====================================================================
+        Flow:
+        1. Validates message text (required)
+        2. Validates file type if file present (documents only, NO images)
+        3. If file present (PATH 1 - FILE UPLOAD):
+           a. Stores file and message in global state (currentFile, currentMessage)
+           b. Generates timestamped filename: message-attachment-{timestamp}-{originalname}
+           c. Creates fileData object with type, document, uploader, and file metadata
+           d. Shows uploading popup with file name and size
+           e. Posts 'file-data' to parent requesting S3 PUT link
+           f. Button disabled, inputs REMAIN POPULATED during upload
+           g. Waits for parent 'put-links' response (handler extracts s3Key from file object)
+           h. uploadFileToS3() uploads file to S3 using PUT request
+           i. After successful S3 upload, posts 'message-sent' to parent
+           j. IMMEDIATELY clears message input and resets file uploader (always clear on message-sent)
+           k. Re-enables send button and clears global state
+           l. Waits for parent to save to DB and respond with fresh 'message-data'
+        4. If no file (PATH 2 - TEXT-ONLY):
+           a. Creates message object with time, user, message, type
+           b. Posts 'message-sent' to parent
+           c. IMMEDIATELY clears message input and resets file uploader (always clear on message-sent)
+           d. Re-enables send button for next message
+           e. Waits for parent to save to DB and respond with fresh 'message-data'
+        
+        IMPORTANT RULES:
+        - NO local display updates! Child posts message, parent refreshes display.
+        - ALWAYS clear inputs when posting 'message-sent' (both paths do this)
+        - During upload: inputs remain populated (in case of error, user can retry)
+        - On errors: inputs kept, button re-enabled, global state cleared
+        - Parent saves to database and responds with complete 'message-data',
+          which triggers displayMessages() to refresh the entire chat display.
+        =====================================================================
+        */
         function sendMessage() {
             const sendBtn = document.getElementById('sendBtn');
             const messageInput = document.getElementById('messageInput');
             const message = messageInput.value.trim();
             const file = document.getElementById('fileInput').files[0];
             
-            // Disable send button immediately
+            // Disable send button immediately to prevent double-sends
             sendBtn.disabled = true;
             
-            // Check if message has a value
+            // VALIDATION STEP 1: Check if message text exists
             if (!message) {
-                // Show error popup
                 showError('No message entered');
-                // Re-enable send button
-                sendBtn.disabled = false;
+                sendBtn.disabled = false; // Re-enable for retry
                 return;
             }
             
-            // Check if file is present and validate file type
+            // VALIDATION STEP 2: Check if file type is valid (documents only)
+            // Note: This is a safety check - validation also happens in handleFileSelect()
             if (file && !isValidDocumentType(file)) {
-                // Show error popup for invalid file type
                 showError('Invalid file type. To add images please upload to the ID Photos section');
-                // Re-enable send button
-                sendBtn.disabled = false;
+                resetUploadArea(); // Clear the invalid file and reset UI
+                sendBtn.disabled = false; // Re-enable for retry
                 return;
             }
             
-            // If file is present and valid, collect file data and request PUT links
+            // PATH 1: FILE UPLOAD FLOW
+            // If file is present and valid, initiate S3 upload process
             if (file) {
-                // Store current file and message for upload
+                // Store in global state for use in uploadFileToS3() later
                 currentFile = file;
                 currentMessage = message;
                 
-                // Generate filename for the file
+                // Generate unique filename with timestamp
                 const fileName = `message-attachment-${Date.now()}-${file.name}`;
                 
-                // Collect file data similar to image viewer
+                // Prepare file metadata for parent
                 const fileData = {
                     type: 'Document',
                     document: 'Message Attachment',
-                    side: 'Single',
                     uploader: userEmail,
                     data: {
                         type: file.type,
@@ -758,16 +1223,15 @@
                         name: fileName,
                         lastModified: file.lastModified
                     },
-                    file: file // Keep reference to actual file
+                    file: file // Keep reference to actual file for upload
                 };
                 
-                // Store file data
                 currentFileData = fileData;
                 
-                // Show uploading popup
+                // Show modal with file info and spinner
                 showUploadingPopup(file);
                 
-                // Post message to parent requesting PUT links for file upload
+                // Request S3 PUT link from parent
                 window.parent.postMessage({
                     type: 'file-data',
                     files: [fileData],
@@ -776,11 +1240,13 @@
                 
                 console.log('File data sent to parent for PUT links:', fileData);
                 
-                // Don't clear inputs or re-enable button yet - wait for upload completion
+                // Don't clear inputs or re-enable button yet
+                // Wait for 'put-links' response, then uploadFileToS3() will complete the process
                 return;
             }
             
-            // No file - proceed with text-only message
+            // PATH 2: TEXT-ONLY MESSAGE FLOW
+            // No file attached, send message to parent immediately
             const messageObject = {
                 time: new Date().toLocaleString(),
                 user: userEmail,
@@ -788,19 +1254,42 @@
                 type: 'Staff'
             };
             
-            console.log('Constructed message object:', messageObject);
+            console.log('Sending text-only message to parent:', messageObject);
             
-            // Add message to container
-            addMessage(message, null, 'sent');
+            // Post message to parent for database storage
+            window.parent.postMessage({
+                type: 'message-sent',
+                message: messageObject,
+                _id: itemId
+            }, '*');
             
-            // Clear inputs
+            // Clear inputs immediately (before parent responds)
             messageInput.value = '';
-            document.getElementById('fileInput').value = '';
+            resetUploadArea(); // Clears file input and resets UI to default
             
-            // Re-enable send button
+            // Re-enable send button - ready for next message
             sendBtn.disabled = false;
+            
+            // Now waiting for parent to save to DB and respond with fresh 'message-data'
+            // which will trigger displayMessages() to refresh the chat display
         }
 
+        /*
+        =====================================================================
+        ADD MESSAGE - Locally adds a message bubble to the chat (DEPRECATED)
+        =====================================================================
+        Parameters:
+        - text: Message text to display
+        - file: File object (optional, for file attachments)
+        - type: 'sent' or 'received' for styling
+        
+        Note: This function is currently NOT used in normal message flow.
+        All messages (text-only and with files) are sent to parent, which
+        then refreshes the display via 'message-data' and displayMessages().
+        
+        This function may be used for future features or can be removed.
+        =====================================================================
+        */
         function addMessage(text, file, type) {
             const messagesContainer = document.getElementById('messagesContainer');
             const messageDiv = document.createElement('div');
@@ -809,6 +1298,7 @@
             const currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             const email = type === 'sent' ? userEmail : 'support@cashiers.com';
             
+            // Build message content
             let messageContent = '';
             if (file) {
                 messageContent = `<div class="message-text">📎 ${file.name}</div>`;
@@ -829,16 +1319,29 @@
             `;
             
             messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; // Auto-scroll
         }
 
+        /*
+        =====================================================================
+        OPEN FILE - Placeholder for file opening logic
+        =====================================================================
+        Note: Currently unused - file downloads handled by downloadFile()
+        */
         function openFile() {
             console.log('File button clicked');
             // Handle file opening logic here
         }
 
+        /*
+        =====================================================================
+        DISMISS NOTIFICATION - Sends notification dismissal to parent
+        =====================================================================
+        Triggered by clicking "Dismiss" button in header
+        Sends message to parent to clear notification flag in database
+        */
         function dismissNotification() {
-            // Post message back to parent
+            // Send dismissal request to parent
             window.parent.postMessage({
                 type: "dismiss-notification",
                 _id: itemId,
@@ -848,6 +1351,13 @@
             console.log('Dismiss notification sent to parent');
         }
 
+        /*
+        =====================================================================
+        ERROR POPUP FUNCTIONS
+        =====================================================================
+        */
+        
+        // Shows error popup with custom message
         function showError(message = 'No message entered') {
             const errorPopup = document.getElementById('errorPopup');
             const errorMessage = document.getElementById('errorMessage');
@@ -855,11 +1365,19 @@
             errorPopup.classList.add('show');
         }
 
+        // Hides error popup (triggered by X button)
         function hideError() {
             const errorPopup = document.getElementById('errorPopup');
             errorPopup.classList.remove('show');
         }
 
+        /*
+        =====================================================================
+        UPLOADING POPUP FUNCTIONS
+        =====================================================================
+        */
+        
+        // Shows uploading modal with file details
         function showUploadingPopup(file) {
             const uploadingPopup = document.getElementById('uploadingPopup');
             const fileName = document.getElementById('fileName');
@@ -871,12 +1389,44 @@
             uploadingPopup.classList.add('show');
         }
 
+        // Hides uploading modal
         function hideUploadingPopup() {
             const uploadingPopup = document.getElementById('uploadingPopup');
             uploadingPopup.classList.remove('show');
         }
 
+        /*
+        =====================================================================
+        UPLOAD FILE TO S3 - Performs actual file upload
+        =====================================================================
+        Called after receiving 'put-links' from parent
+        
+        Parameters:
+        - putLink: Pre-signed S3 PUT URL from parent (string)
+        - s3Key: S3 object key extracted from s3Keys[0].s3Key (string)
+        
+        Note: Inputs remain populated during this entire function (until success)
+        
+        Flow:
+        1. Validates currentFile and currentMessage exist in global state
+        2. Uploads file to S3 using fetch PUT request with file content-type
+        3. On S3 UPLOAD SUCCESS:
+           a. Hides uploading popup
+           b. Creates message object with file metadata (name, size, type, s3Key)
+           c. Posts 'message-sent' to parent for database storage
+           d. IMMEDIATELY clears message input and resets file uploader (always on message-sent)
+           e. Re-enables send button for next message
+           f. Clears global state (currentFile, currentMessage, currentFileData)
+           g. Waits for parent to save and respond with fresh 'message-data'
+        4. On S3 UPLOAD FAILURE:
+           a. Hides uploading popup
+           b. Shows error popup: "Failed to upload file. Please try again."
+           c. Re-enables send button for user to retry
+           d. Clears global state to reset for retry
+           e. Inputs REMAIN POPULATED so user can click Send again without re-typing
+        */
         function uploadFileToS3(putLink, s3Key) {
+            // Validate we have the required data
             if (!currentFile || !currentMessage) {
                 console.error('No file or message to upload');
                 hideUploadingPopup();
@@ -888,7 +1438,7 @@
             console.log('PUT link:', putLink);
             console.log('S3 Key:', s3Key);
 
-            // Upload file to S3 using PUT request
+            // Upload file directly to S3 using PUT request
             fetch(putLink, {
                 method: 'PUT',
                 body: currentFile,
@@ -900,10 +1450,9 @@
                 if (response.ok) {
                     console.log('File uploaded successfully to S3');
                     
-                    // Hide uploading popup
                     hideUploadingPopup();
                     
-                    // Create complete message object with file data
+                    // Build complete message object with file metadata
                     const messageObject = {
                         time: new Date().toLocaleString(),
                         user: userEmail,
@@ -913,28 +1462,31 @@
                             name: currentFile.name,
                             size: currentFile.size,
                             type: currentFile.type,
-                            s3Key: s3Key
+                            s3Key: s3Key  // Parent uses this to generate liveUrl
                         }
                     };
                     
-                    // Send message to parent
+                    // Post complete message to parent for database storage
                     window.parent.postMessage({
                         type: 'message-sent',
                         message: messageObject,
                         _id: itemId
                     }, '*');
                     
-                    // Clear inputs
+                    // Clear inputs immediately (before parent responds)
                     document.getElementById('messageInput').value = '';
-                    document.getElementById('fileInput').value = '';
+                    resetUploadArea(); // Clears file input and resets UI to default
                     
-                    // Re-enable send button
+                    // Re-enable send button - ready for next message
                     document.getElementById('sendBtn').disabled = false;
                     
-                    // Clear current data
+                    // Clear global state - upload process complete
                     currentFile = null;
                     currentMessage = null;
                     currentFileData = null;
+                    
+                    // Now waiting for parent to save to DB and respond with fresh 'message-data'
+                    // which will trigger displayMessages() to refresh the chat display
                 } else {
                     throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
                 }
@@ -943,52 +1495,99 @@
                 console.error('File upload failed:', error);
                 hideUploadingPopup();
                 showError('Failed to upload file. Please try again.');
-                // Re-enable send button
+                
+                // Re-enable send button so user can retry
                 document.getElementById('sendBtn').disabled = false;
-                // Clear current data
+                
+                // Clear global state to reset for retry attempt
                 currentFile = null;
                 currentMessage = null;
                 currentFileData = null;
+                
+                // Note: Inputs remain populated so user can retry without re-typing
             });
         }
 
+        /*
+        =====================================================================
+        FILE TYPE VALIDATION - Ensures only documents are uploaded
+        =====================================================================
+        Parameters:
+        - file: File object to validate
+        
+        Returns: Boolean - true if valid document type, false otherwise
+        
+        ALLOWED TYPES:
+        - PDF documents
+        - Microsoft Word (.doc, .docx)
+        - Microsoft Excel (.xls, .xlsx)
+        - Microsoft PowerPoint (.ppt, .pptx)
+        - Plain text (.txt)
+        - Rich Text Format (.rtf)
+        
+        REJECTED TYPES:
+        - Images (JPEG, PNG, GIF, etc.)
+        - User directed to upload images in "ID Photos" section instead
+        
+        Validation strategy:
+        1. First checks MIME type
+        2. Falls back to file extension check if MIME type unavailable
+        =====================================================================
+        */
         function isValidDocumentType(file) {
-            if (!file) return true; // No file is valid
+            if (!file) return true; // No file is valid (text-only messages allowed)
             
+            // List of allowed MIME types (documents only, NO images)
             const allowedTypes = [
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/vnd.ms-powerpoint',
-                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                'text/plain',
-                'text/rtf'
+                'application/pdf',                                                          // PDF
+                'application/msword',                                                       // Word (.doc)
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  // Word (.docx)
+                'application/vnd.ms-excel',                                                 // Excel (.xls)
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',        // Excel (.xlsx)
+                'application/vnd.ms-powerpoint',                                            // PowerPoint (.ppt)
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',// PowerPoint (.pptx)
+                'text/plain',                                                               // Text files
+                'text/rtf'                                                                  // Rich Text Format
             ];
             
+            // File extensions as fallback (some browsers may not set MIME type correctly)
             const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.rtf'];
             
-            // Check MIME type
+            // Primary check: MIME type
             if (allowedTypes.includes(file.type)) {
                 return true;
             }
             
-            // Check file extension as fallback
+            // Fallback check: File extension
             const fileName = file.name.toLowerCase();
             return allowedExtensions.some(ext => fileName.endsWith(ext));
         }
 
-        // Enable/disable send button based on input
+        /*
+        =====================================================================
+        EVENT LISTENERS - Real-time UI updates
+        =====================================================================
+        These listeners enable/disable the send button based on input state:
+        - Button ENABLED when message text is present
+        - Button DISABLED when message text is empty
+        
+        Note: File alone is not sufficient - message text is required
+        =====================================================================
+        */
+        
+        // Listen for text input changes
         document.getElementById('messageInput').addEventListener('input', function() {
             const message = this.value.trim();
             const file = document.getElementById('fileInput').files[0];
+            // Enable button only if message has text (file is optional)
             document.getElementById('sendBtn').disabled = !message && !file;
         });
 
+        // Listen for file selection changes
         document.getElementById('fileInput').addEventListener('change', function() {
             const message = document.getElementById('messageInput').value.trim();
             const file = this.files[0];
+            // Enable button only if message has text (file is optional)
             document.getElementById('sendBtn').disabled = !message && !file;
         });
     </script>
