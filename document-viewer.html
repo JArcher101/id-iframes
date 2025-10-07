@@ -638,32 +638,28 @@
         /* 
         =====================================================================
         UPLOADING STATE
-        - Full-screen modal shown during file upload to S3
+        - Full-size section card shown during file upload to S3
         - Displays progress bar and file list with status
         - Shows individual file upload progress (Pending → Uploading → Success/Error)
-        - Prevents user interaction during upload
+        - Displayed as a normal section instead of modal overlay
         =====================================================================
         */
         .uploading-container {
-            position: fixed;
-            top: 0;
-            left: 0;
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
+            margin: 0 auto;
+            padding: 15px;
+            box-sizing: border-box;
         }
 
         .uploading-message {
             background: white;
-            padding: 20px;
+            padding: 25px;
             border-radius: 12px;
             text-align: center;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            width: 250px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .loading-spinner {
