@@ -166,7 +166,8 @@
         /* 
         =====================================================================
         MESSAGES DISPLAY AREA - Main log container
-        - Fixed dimensions: 290px × 420px (compact size for sidebar display)
+        - Fixed dimensions: 290px × 393px (reduced from 420px to accommodate button)
+        - Height reduced by ~27px to make room for "Load more" button below
         - Scrollable container for all log entries
         - Auto-scrolls to top when new logs added (newest first)
         - Logs populated via displayLogs() function
@@ -174,7 +175,7 @@
         */
         .messages-container {
             width: 290px;
-            height: 420px;
+            height: 393px;
             background: white;
             border-radius: 5px;
             overflow-y: auto;
