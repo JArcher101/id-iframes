@@ -718,8 +718,10 @@
             background: #f8f9fa;
             border-radius: 6px;
             border-left: 4px solid #4A90E2;
-            text-align: left;
             font-size: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
         }
 
         .file-item strong {
@@ -738,7 +740,9 @@
         .file-item .file-details {
             display: flex;
             flex-direction: column;
-            margin-top: 3px;
+            align-items: flex-end;
+            text-align: right;
+            margin-top: 0;
         }
 
         .file-item .file-size {
@@ -3918,6 +3922,7 @@
                 }
             });
             
+            console.log('collectAllFiles returning:', allFiles.length, 'files', allFiles);
             return allFiles;
         }
 
@@ -3937,23 +3942,38 @@
         =====================================================================
         */
         function uploadAllFiles() {
+            console.log('uploadAllFiles called');
+            
             // First validate all visible upload cards have files
             const validationResult = validateAllUploadCards();
+            console.log('Validation result:', validationResult);
+            
             if (!validationResult.valid) {
+                console.log('Validation failed, showing error:', validationResult.message);
                 showError(validationResult.message);
                 return;
             }
             
             const files = collectAllFiles();
+            console.log('Files collected:', files.length, files);
+            
             if (files.length === 0) {
+                console.log('No files found, showing error');
                 showError('No files to upload.');
                 return;
             }
             
             // Show uploading state
+            console.log('Showing uploading state');
             showUploadingState();
             
             // Send document data to parent for PUT link generation
+            console.log('Sending file-data message to parent:', {
+                type: 'file-data',
+                files: files,
+                _id: itemId
+            });
+            
             window.parent.postMessage({
                 type: 'file-data',
                 files: files,
