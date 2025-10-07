@@ -3248,6 +3248,17 @@
         // Upload single file to S3 using PUT URL
         function uploadToS3(file, putUrl) {
             return new Promise((resolve, reject) => {
+                // Validate file before upload
+                if (!file || !file.size || file.size === 0) {
+                    reject(new Error('Invalid or empty file'));
+                    return;
+                }
+                
+                if (!putUrl) {
+                    reject(new Error('No upload URL provided'));
+                    return;
+                }
+                
                 fetch(putUrl, {
                     method: 'PUT',
                     body: file,
@@ -3259,7 +3270,7 @@
                     if (response.ok) {
                         resolve();
                     } else {
-                        reject(new Error('Upload failed'));
+                        reject(new Error(`Upload failed with status ${response.status}`));
                     }
                 })
                 .catch(error => reject(error));
@@ -3552,6 +3563,11 @@
                 }
                 
                 console.log('File validation passed');
+                
+                if (file.size === 0) {
+                    showError('File is empty or corrupted. Please select a valid file.');
+                    return;
+                }
                 
                 if (file.size > 15 * 1024 * 1024) {
                     showError('File size must be less than 15MB.');
@@ -3886,6 +3902,13 @@
                 
                 if (uploadArea && uploadArea.fileData) {
                     const file = uploadArea.fileData.file;
+                    
+                    // Validate file before adding to collection
+                    if (!file || file.size === 0) {
+                        console.error('Skipping empty or invalid file:', file);
+                        continue; // Skip this file
+                    }
+                    
                     const documentType = primaryDropdown.value;
                     let subType = '';
                     
