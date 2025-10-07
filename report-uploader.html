@@ -359,61 +359,50 @@
         .uploading-file-card {
             flex: 0 0 200px;
             min-width: 200px;
-            background: white;
-            border: 1px solid #ddd;
+            padding: 8px;
+            margin: 3px 0;
+            background: #f8f9fa;
             border-radius: 6px;
-            padding: 10px;
+            border-left: 4px solid #4A90E2;
+            font-size: 0.75rem;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
+        }
+
+        .uploading-file-card.uploading {
+            border-left-color: #ffa500;
+        }
+
+        .uploading-file-card.success {
+            border-left-color: #10a37f;
+        }
+
+        .uploading-file-card.error {
+            border-left-color: #e02424;
         }
 
         .uploading-file-name {
             font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 0.75rem;
-            font-weight: 400;
+            font-size: 0.7rem;
+            font-weight: 600;
             color: #333;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            display: block;
+            margin-bottom: 3px;
+            word-wrap: break-word;
+        }
+
+        .uploading-file-size {
+            font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 0.65rem;
+            color: #666;
+            margin-bottom: 2px;
         }
 
         .uploading-file-status {
             font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 0.7rem;
-            font-weight: 300;
+            font-size: 0.65rem;
             color: #666;
-        }
-
-        .uploading-file-status.success {
-            color: #28a745;
-        }
-
-        .uploading-file-status.error {
-            color: #dc3545;
-        }
-
-        .uploading-file-status.uploading {
-            color: #4A90E2;
-        }
-
-        .uploading-progress-bar {
-            width: 100%;
-            height: 4px;
-            background: #e0e0e0;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .uploading-progress-fill {
-            height: 100%;
-            background: #4A90E2;
-            border-radius: 2px;
-            transition: width 0.3s ease;
-        }
-
-        .uploading-progress-fill.complete {
-            background: #28a745;
         }
 
         /* 
@@ -1089,6 +1078,8 @@
         function showUploadingSection(files) {
             const uploadingContainer = document.getElementById('uploadingContainer');
             const uploadingFilesScroll = document.getElementById('uploadingFilesScroll');
+            const uploadersGrid = document.getElementById('uploadersGrid');
+            const addReportsContainer = document.querySelector('.add-reports-container');
             
             // Clear previous file cards
             uploadingFilesScroll.innerHTML = '';
@@ -1099,68 +1090,76 @@
                 card.className = 'uploading-file-card';
                 card.id = `uploadCard${index}`;
                 
+                const fileSizeMB = (fileObj.file.size / 1024 / 1024).toFixed(2);
+                
                 card.innerHTML = `
                     <div class="uploading-file-name" title="${fileObj.data.name}">${fileObj.document}</div>
-                    <div class="uploading-file-status uploading" id="uploadStatus${index}">Preparing...</div>
-                    <div class="uploading-progress-bar">
-                        <div class="uploading-progress-fill" id="uploadProgress${index}" style="width: 0%"></div>
-                    </div>
+                    <div class="uploading-file-size">${fileSizeMB} MB</div>
+                    <div class="uploading-file-status" id="uploadStatus${index}">Preparing...</div>
                 `;
                 
                 uploadingFilesScroll.appendChild(card);
             });
             
-            // Show the uploading container
+            // Show the uploading container and hide uploaders/buttons
             uploadingContainer.classList.add('active');
+            if (uploadersGrid) uploadersGrid.style.display = 'none';
+            if (addReportsContainer) addReportsContainer.style.display = 'none';
         }
 
         function updateFileProgress(index, progress, status) {
             const statusEl = document.getElementById(`uploadStatus${index}`);
-            const progressEl = document.getElementById(`uploadProgress${index}`);
+            const card = document.getElementById(`uploadCard${index}`);
             
             if (statusEl) {
                 statusEl.textContent = status;
-                statusEl.className = 'uploading-file-status uploading';
             }
             
-            if (progressEl) {
-                progressEl.style.width = `${progress}%`;
+            if (card) {
+                card.classList.add('uploading');
+                card.classList.remove('success', 'error');
             }
         }
 
         function updateFileSuccess(index) {
             const statusEl = document.getElementById(`uploadStatus${index}`);
-            const progressEl = document.getElementById(`uploadProgress${index}`);
+            const card = document.getElementById(`uploadCard${index}`);
             
             if (statusEl) {
-                statusEl.textContent = 'Uploaded ✓';
-                statusEl.className = 'uploading-file-status success';
+                statusEl.textContent = 'Success';
             }
             
-            if (progressEl) {
-                progressEl.style.width = '100%';
-                progressEl.classList.add('complete');
+            if (card) {
+                card.classList.remove('uploading');
+                card.classList.add('success');
             }
         }
 
         function updateFileError(index, errorMessage) {
             const statusEl = document.getElementById(`uploadStatus${index}`);
-            const progressEl = document.getElementById(`uploadProgress${index}`);
+            const card = document.getElementById(`uploadCard${index}`);
             
             if (statusEl) {
                 statusEl.textContent = errorMessage || 'Upload failed';
-                statusEl.className = 'uploading-file-status error';
             }
             
-            if (progressEl) {
-                progressEl.style.width = '100%';
-                progressEl.style.background = '#dc3545';
+            if (card) {
+                card.classList.remove('uploading');
+                card.classList.add('error');
             }
         }
 
         function hideUploadingSection() {
             const uploadingContainer = document.getElementById('uploadingContainer');
+            const uploadersGrid = document.getElementById('uploadersGrid');
+            const addReportsContainer = document.querySelector('.add-reports-container');
+            
+            // Hide uploading container
             uploadingContainer.classList.remove('active');
+            
+            // Show uploaders and buttons again
+            if (uploadersGrid) uploadersGrid.style.display = 'flex';
+            if (addReportsContainer) addReportsContainer.style.display = 'block';
         }
 
         /*
@@ -1247,7 +1246,7 @@
                     document.getElementById('addReportsBtn').disabled = false;
                     localFilesForUpload = [];
                     
-                    // Reset all file inputs
+                    // Reset all file inputs and upload areas
                     for (let i = 1; i <= 6; i++) {
                         const fileInput = document.getElementById(`fileInput${i}`);
                         if (fileInput) fileInput.value = '';
@@ -1266,6 +1265,33 @@
                             if (text) text.textContent = 'Select document';
                         }
                     }
+                    
+                    // Reset all dropdowns to default values
+                    // Card 1: ID Check (E) - AML Check, Enhanced ID
+                    const primary1 = document.getElementById('primaryType1');
+                    const secondary1 = document.getElementById('secondaryType1');
+                    if (primary1) primary1.value = 'AML Check';
+                    if (secondary1) secondary1.value = 'Enhanced ID';
+                    
+                    // Card 2: IDV (J) - AML Check
+                    const primary2 = document.getElementById('primaryType2');
+                    if (primary2) primary2.value = 'AML Check';
+                    
+                    // Card 3: Lite Screen (J) - Combined AML & PEP
+                    const primary3 = document.getElementById('primaryType3');
+                    if (primary3) primary3.value = 'Combined AML & PEP';
+                    
+                    // Card 4: PEP Report - no dropdowns
+                    
+                    // Card 5: eSoF Report - SoF/SoW Check, Combined Questionnaire & Linking
+                    const primary5 = document.getElementById('primaryType5');
+                    const secondary5 = document.getElementById('secondaryType5');
+                    if (primary5) primary5.value = 'SoF/SoW Check';
+                    if (secondary5) secondary5.value = 'Combined Questionnaire & Linking';
+                    
+                    // Card 6: KYB - AML Check
+                    const primary6 = document.getElementById('primaryType6');
+                    if (primary6) primary6.value = 'AML Check';
                 }, 2000);
                 
             } catch (error) {
@@ -1313,9 +1339,13 @@
                     itemId = event.data._id;
                 }
                 
+                // Hide uploading section and restore uploaders
+                hideUploadingSection();
+                
+                // Show error popup
                 showError(event.data.message || 'Upload failed. Please try again.');
                 
-                // Re-enable button
+                // Re-enable button so user can try again
                 document.getElementById('addReportsBtn').disabled = false;
                 
                 // Clear local files
