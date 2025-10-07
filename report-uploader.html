@@ -745,6 +745,7 @@
         <!-- Add All Reports Button -->
         <div class="add-reports-container">
             <button class="add-reports-btn" id="addReportsBtn" disabled>Add all reports</button>
+            <button class="add-reports-btn" id="testBtn" style="background: #666; margin-top: 5px;">Enable for Testing</button>
         </div>
     </div>
 
@@ -813,6 +814,7 @@
         function setupEventListeners() {
             const addReportsBtn = document.getElementById('addReportsBtn');
             const errorPopupClose = document.getElementById('errorPopupClose');
+            const testBtn = document.getElementById('testBtn');
             
             if (addReportsBtn) {
                 addReportsBtn.addEventListener('click', addAllReports);
@@ -820,6 +822,28 @@
             
             if (errorPopupClose) {
                 errorPopupClose.addEventListener('click', hideError);
+            }
+            
+            if (testBtn) {
+                testBtn.addEventListener('click', function() {
+                    // Simulate display-data message with mock data
+                    clientData = {
+                        fe: 'BA',
+                        clientNumber: 50,
+                        matterNumber: '52',
+                        name: 'Test Client'
+                    };
+                    userEmail = 'test@example.com';
+                    itemId = 'test-id-12345';
+                    
+                    // Enable the Add all reports button
+                    document.getElementById('addReportsBtn').disabled = false;
+                    
+                    // Hide test button after clicking
+                    testBtn.style.display = 'none';
+                    
+                    console.log('Test mode enabled with mock data');
+                });
             }
         }
 
