@@ -2191,7 +2191,15 @@
                   name: file.name,
                   lastModified: file.lastModified
                 },
-                date: new Date().toLocaleString(),
+                date: new Date().toLocaleString('en-GB', { 
+                  year: 'numeric', 
+                  month: '2-digit', 
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: false
+                }),
                 uploader: formData.uploader || 'Unknown'
               };
               
@@ -2653,7 +2661,15 @@
                   name: file.name,
                   lastModified: file.lastModified
                 },
-                date: new Date().toLocaleString(),
+                date: new Date().toLocaleString('en-GB', { 
+                  year: 'numeric', 
+                  month: '2-digit', 
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: false
+                }),
                 uploader: formData.uploader || 'Unknown'
               };
               
@@ -2971,7 +2987,15 @@
             lastModified: file.lastModified // File timestamp
           },
           file: file, // File object for generating PUT (will be lost in postMessage)
-          date: new Date().toLocaleString(),
+          date: new Date().toLocaleString('en-GB', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          }),
           uploader: formData.uploader || undefined // Include the uploader email
         };
       });
