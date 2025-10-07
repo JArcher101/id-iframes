@@ -4164,6 +4164,9 @@
             if (event.data && event.data.type === 'display-documents') {
                 console.log('Received document display data:', event.data);
                 
+                // Store the item ID for later use
+                itemId = event.data._id;
+                
                 // If we're currently in uploader mode, reset everything first
                 if (!idUploaderSection.classList.contains('hidden')) {
                     resetUploaders();
@@ -4173,6 +4176,9 @@
                 displayDocuments(event.data.documents, event.data.allowUploads, event.data.clientData, event.data.userEmail);
             } else if (event.data && event.data.type === 'image-display') {
                 console.log('Received image display data:', event.data);
+                
+                // Store the item ID for later use
+                itemId = event.data._id;
                 
                 // If we're currently in uploader mode, reset everything first
                 if (!idUploaderSection.classList.contains('hidden')) {
