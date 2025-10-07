@@ -1108,7 +1108,56 @@
                 <div class="message-text">${message.message}</div>
             `;
             
-            // Append message to container
+            // Insert message after the load button (so messages appear in correct order when iterating backward)
+            const loadEarlierBtn = document.getElementById('loadEarlierBtn');
+            messagesContainer.insertBefore(messageDiv, loadEarlierBtn.nextSibling);
+        }
+
+        // Append message element in order (for forward iteration through array)
+        function appendMessageElementInOrder(message, index, whiteType) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            
+            // Find the last blue message index (for notification dot placement)
+            let lastBlueMessageIndex = -1;
+            for (let i = allMessages.length - 1; i >= 0; i--) {
+                if (allMessages[i].type !== whiteType) {
+                    lastBlueMessageIndex = i;
+                    break;
+                }
+            }
+            
+            const messageDiv = document.createElement('div');
+            const isWhiteCard = message.type === whiteType;
+            messageDiv.className = `message ${isWhiteCard ? 'sent' : 'received'}`;
+            
+            // Determine if this message should show notification dot
+            const isLastBlueMessage = !isWhiteCard && index === lastBlueMessageIndex;
+            const showNotification = isLastBlueMessage && hasNotification;
+            
+            // File button appears only if message has liveUrl property (file attachment)
+            const fileName = message.file?.name || 'attachment';
+            const fileButton = message.liveUrl ? 
+                `<button class="message-file-btn" onclick="downloadFile('${message.liveUrl}', '${fileName}')">File</button>` : '';
+            
+            // Notification dot shown only on last blue message when notification flag is true
+            const notificationDot = showNotification ? 
+                '<div class="message-notification-dot" style="display: block;"></div>' : 
+                '<div class="message-notification-dot" style="display: none;"></div>';
+            
+            // Build message HTML
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div style="display: flex; align-items: center;">
+                        <div class="message-email">${message.user}</div>
+                        ${notificationDot}
+                        ${fileButton}
+                    </div>
+                    <div class="message-time">${message.time}</div>
+                </div>
+                <div class="message-text">${message.message}</div>
+            `;
+            
+            // Append to end (for forward iteration: oldest → newest)
             messagesContainer.appendChild(messageDiv);
         }
 
@@ -1140,9 +1189,9 @@
             const messages = messagesContainer.querySelectorAll('.message');
             messages.forEach(msg => msg.remove());
             
-            // Display ALL messages
+            // Display ALL messages - use appendChild for forward iteration to maintain correct order
             allMessages.forEach((message, index) => {
-                appendMessageElement(message, index, currentWhiteType);
+                appendMessageElementInOrder(message, index, currentWhiteType);
             });
             
             // Calculate new scroll position to maintain user's view
