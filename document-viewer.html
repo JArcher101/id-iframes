@@ -3966,18 +3966,15 @@
         }
 
         function validateAllUploadCards() {
-            // Get all visible upload cards
-            const visibleCards = Array.from(document.querySelectorAll('.uploader-card')).filter(card => {
-                const wrapper = card.querySelector('.document-upload-wrapper');
-                return wrapper && !wrapper.classList.contains('hidden');
-            });
+            // Get all uploader cards (not just ones with visible upload areas)
+            const allCards = Array.from(document.querySelectorAll('.uploader-card'));
             
-            if (visibleCards.length === 0) {
-                return { valid: false, message: 'No upload cards are visible.' };
+            if (allCards.length === 0) {
+                return { valid: false, message: 'Please add at least one document card.' };
             }
             
-            // Check each visible card has required fields and files
-            for (const card of visibleCards) {
+            // Check each card has required fields and files
+            for (const card of allCards) {
                 // First validate required fields
                 const validation = validateDocumentCard(card);
                 if (!validation.valid) {
@@ -3988,8 +3985,17 @@
                 const uploadArea = card.querySelector('.upload-area-slimline');
                 if (!uploadArea || !uploadArea.fileData) {
                     const primaryDropdown = card.querySelector('.primary-dropdown');
-                    const documentType = primaryDropdown.value;
-                    return { valid: false, message: `Please select a document for ${documentType}.` };
+                    const secondaryDropdown = card.querySelector('.secondary-dropdown');
+                    const otherInput = card.querySelector('.other-input');
+                    
+                    let documentType = 'this document';
+                    if (primaryDropdown.value === 'Other' && otherInput.value.trim()) {
+                        documentType = otherInput.value.trim();
+                    } else if (secondaryDropdown.value) {
+                        documentType = secondaryDropdown.value;
+                    }
+                    
+                    return { valid: false, message: `Please select a file for ${documentType}.` };
                 }
                 
                 // Validate file type (documents only)
