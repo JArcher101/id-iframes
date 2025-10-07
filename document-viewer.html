@@ -4213,8 +4213,8 @@
         // Handle PUT links for uploading files to S3
         function handlePutLinks(data) {
             console.log('Received PUT links:', data);
-            // This will be handled by the upload logic when files are ready
-            // The links and s3Keys are stored for use during upload
+            // Call handlePutResponse to actually process and upload the files
+            handlePutResponse({ data: data });
         }
 
         // Handle PUT error from backend
