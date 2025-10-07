@@ -811,6 +811,7 @@
         let itemId = null;
         let localFilesForUpload = [];
         let s3Keys = null;
+        let uploadedImages = null;
 
         /*
         =====================================================================
@@ -1296,11 +1297,15 @@
                 
                 // Send upload-success to parent (even if some failed)
                 console.log('All uploads completed, sending upload-success to parent');
+                
+                // Use the s3Keys data directly as it already contains the properly formatted document data from parent
+                const documentsWithS3Keys = s3Keys || uploadedImages;
+                
                 window.parent.postMessage({
                     type: 'upload-success',
-                    s3Keys: s3Keys,
+                    files: documentsWithS3Keys,
                     _id: itemId,
-                    errors: uploadErrors.length > 0 ? uploadErrors : undefined
+                    uploader: userEmail
                 }, '*');
                 
                 // Hide uploading section after a brief delay to show completion
@@ -1390,6 +1395,7 @@
                 // Store s3Keys and upload files to S3
                 itemId = event.data._id;
                 s3Keys = event.data.s3Keys;
+                uploadedImages = event.data.images; // Store images data with s3Keys
                 const links = event.data.links;
                 
                 // Upload files to S3
