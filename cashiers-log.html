@@ -64,8 +64,17 @@
         
         LOG DISPLAY FLOW:
         1. Parent sends 'log-data' message with array of log entries
-        2. Child receives and renders logs via displayLogs() function
-        3. Logs displayed in reverse chronological order (newest at top)
+        2. Child receives and renders first 5 logs via displayLogs() function
+        3. User clicks "Load more" to load next 5 logs (appended to bottom)
+        4. Logs displayed in reverse chronological order (newest at top)
+        5. New log data from parent resets display to first 5 logs
+        
+        PAGINATION:
+        - Initial display: First 5 logs only
+        - "Load more" button shown if more than 5 logs exist
+        - Each click loads next 5 logs and appends them
+        - Button hidden when all logs displayed
+        - Receiving new log-data resets to first 5
         =====================================================================
         */
         
@@ -233,6 +242,32 @@
             margin: 0;
         }
 
+        /* Load more button - text-only style with italic font for subtle embedded feel */
+        .load-more-btn {
+            font-family: 'RotisItalic', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: none;
+            border: none;
+            color: #666; /* Dark grey for readability */
+            padding: 10px;
+            font-size: 12px;
+            font-style: italic;
+            font-weight: 400;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            display: none; /* Hidden by default */
+            margin-top: 5px;
+        }
+
+        .load-more-btn:hover {
+            color: #003C71; /* Navy blue on hover */
+            text-decoration: underline;
+        }
+
+        .load-more-btn:active {
+            opacity: 0.7;
+        }
+
 
     </style>
 </head>
@@ -241,6 +276,7 @@
         <div class="messages-container" id="messagesContainer">
             <!-- Messages will be added here dynamically -->
         </div>
+        <button id="loadMoreBtn" class="load-more-btn" onclick="loadMore()">Load more</button>
     </div>
 
     <script>
@@ -265,8 +301,8 @@
         
         LOG DATA FLOW:
         1. Parent sends 'log-data' message with logs array
-        2. displayLogs() function clears existing entries
-        3. Each log entry is rendered as a message card
+        2. displayLogs() function shows first 5 entries
+        3. User can click "Load more" to load 5 more entries
         4. Container scrolls to top to show newest entries first
         
         LOG ENTRY STRUCTURE (from parent):
@@ -276,11 +312,22 @@
             time: '1/1/2024, 12:00:00 PM' // Timestamp of the event
         }
         
+        PAGINATION:
+        - Shows 5 logs initially
+        - "Load more" button loads next 5 logs
+        - Button hidden when all logs displayed
+        - New log array resets to first 5
+        
         IMPORTANT: This is a READ-ONLY display. No user interaction or
         data modification is supported. All log entries come from parent.
         
         =====================================================================
         */
+
+        // Pagination state
+        let allLogs = []; // Store all logs from parent
+        let displayedCount = 0; // Track how many logs are currently shown
+        const LOGS_PER_PAGE = 5; // Number of logs to load at a time
 
         /*
         =====================================================================
@@ -395,7 +442,7 @@
 
         /*
         =====================================================================
-        DISPLAY LOGS - Renders all log entries in the container
+        DISPLAY LOGS - Renders first 5 log entries (with pagination)
         =====================================================================
         Parameters:
         - logs: Array of log entry objects from parent
@@ -408,48 +455,109 @@
         }
         
         Rendering process:
-        1. Clears all existing log entries from container
-        2. Validates logs is a non-empty array
-        3. Creates a message card for each log entry with:
-           - User email in header (brand tan color)
-           - Timestamp in header
-           - Message text in body
-        4. Uses 'received' styling (light gray background) for all entries
-        5. Scrolls to top to show newest entries (assuming newest first in array)
+        1. Stores logs in allLogs array
+        2. Resets displayedCount to 0
+        3. Clears all existing log entries from container
+        4. Displays first 5 logs (or fewer if less than 5 total)
+        5. Shows/hides "Load more" button based on whether more logs exist
+        6. Scrolls to top to show newest entries
         
-        Note: This function completely replaces the log display each time
-        it's called. It does not append to existing logs.
+        Note: This function resets pagination when new logs are received.
         =====================================================================
         */
         function displayLogs(logs) {
             const messagesContainer = document.getElementById('messagesContainer');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            
+            // Store all logs and reset pagination
+            allLogs = logs || [];
+            displayedCount = 0;
             
             // Clear existing messages to start fresh
             messagesContainer.innerHTML = '';
             
-            // Validate logs array and render each entry
-            if (logs && Array.isArray(logs)) {
-                logs.forEach(log => {
-                    // Create log entry card
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = 'message received'; // All logs use 'received' style
-                    
-                    // Build log entry HTML with user, time, and message
-                    messageDiv.innerHTML = `
-                        <div class="message-header">
-                            <div class="message-email">${log.user}</div>
-                            <div class="message-time">${log.time}</div>
-                        </div>
-                        <div class="message-text">${log.message}</div>
-                    `;
-                    
-                    // Add log entry to container
-                    messagesContainer.appendChild(messageDiv);
+            // Validate logs array
+            if (allLogs && Array.isArray(allLogs) && allLogs.length > 0) {
+                // Display first batch of logs
+                const initialBatch = allLogs.slice(0, LOGS_PER_PAGE);
+                initialBatch.forEach(log => {
+                    appendLogEntry(log);
                 });
                 
+                displayedCount = initialBatch.length;
+                
+                // Show/hide load more button
+                if (allLogs.length > LOGS_PER_PAGE) {
+                    loadMoreBtn.style.display = 'block';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                }
+                
                 // Scroll to top to show latest entries
-                // (Assumes parent sends logs in reverse chronological order - newest first)
                 messagesContainer.scrollTop = 0;
+            } else {
+                // No logs to display, hide button
+                loadMoreBtn.style.display = 'none';
+            }
+        }
+
+        /*
+        =====================================================================
+        APPEND LOG ENTRY - Helper function to create and append a single log
+        =====================================================================
+        Parameters:
+        - log: Single log entry object
+        
+        Creates a message card and appends it to the messages container.
+        =====================================================================
+        */
+        function appendLogEntry(log) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            
+            // Create log entry card
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message received'; // All logs use 'received' style
+            
+            // Build log entry HTML with user, time, and message
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-email">${log.user}</div>
+                    <div class="message-time">${log.time}</div>
+                </div>
+                <div class="message-text">${log.message}</div>
+            `;
+            
+            // Add log entry to container
+            messagesContainer.appendChild(messageDiv);
+        }
+
+        /*
+        =====================================================================
+        LOAD MORE - Loads next batch of logs when button is clicked
+        =====================================================================
+        Loads the next 5 logs (or remaining logs if fewer than 5 left)
+        and appends them to the bottom of the current list.
+        
+        Hides the "Load more" button when all logs have been displayed.
+        =====================================================================
+        */
+        function loadMore() {
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            
+            // Calculate next batch
+            const nextBatch = allLogs.slice(displayedCount, displayedCount + LOGS_PER_PAGE);
+            
+            // Append next batch of logs
+            nextBatch.forEach(log => {
+                appendLogEntry(log);
+            });
+            
+            // Update displayed count
+            displayedCount += nextBatch.length;
+            
+            // Hide button if all logs are now displayed
+            if (displayedCount >= allLogs.length) {
+                loadMoreBtn.style.display = 'none';
             }
         }
 

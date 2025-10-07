@@ -74,6 +74,13 @@
         2. Child requests S3 PUT link from parent
         3. Child uploads directly to S3
         4. Child sends message with S3 key to parent
+        
+        MESSAGE DISPLAY & PAGINATION:
+        1. Initial display shows last 4 messages (newest at bottom)
+        2. "Load Earlier messages" button shown if more than 4 messages exist
+        3. Clicking button loads ALL messages and preserves scroll position
+        4. User can then scroll up to see earlier messages
+        5. New message-data from parent resets to last 4 messages
         =====================================================================
         */
         
@@ -364,6 +371,32 @@
             font-weight: 400;
             line-height: 1.4;
             margin: 0;
+        }
+
+        /* Load earlier messages button - text-only style with italic font for subtle embedded feel */
+        .load-earlier-btn {
+            font-family: 'RotisItalic', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: none;
+            border: none;
+            color: #666; /* Dark grey for readability */
+            padding: 10px;
+            font-size: 12px;
+            font-style: italic;
+            font-weight: 400;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            display: none; /* Hidden by default */
+            margin-bottom: 5px;
+        }
+
+        .load-earlier-btn:hover {
+            color: rgb(0, 60, 113); /* Navy blue on hover */
+            text-decoration: underline;
+        }
+
+        .load-earlier-btn:active {
+            opacity: 0.7;
         }
 
         /* 
@@ -691,6 +724,7 @@
             </div>
         </div>
         <div class="messages-container" id="messagesContainer">
+            <button id="loadEarlierBtn" class="load-earlier-btn" onclick="loadEarlierMessages()">Load Earlier messages</button>
             <!-- Messages will be added here dynamically -->
         </div>
         <div class="container">
@@ -725,6 +759,10 @@
         - currentFile: File object being uploaded (during upload process)
         - currentMessage: Message text being sent (during upload process)
         - currentFileData: Metadata for file being uploaded
+        - allMessages: Complete message array from parent (for pagination)
+        - currentWhiteType: Stores white type for message styling
+        - showingAllMessages: Tracks if full chat log is displayed
+        - INITIAL_MESSAGE_COUNT: Set to 4 - number of messages shown initially
         
         PARENT-CHILD COMMUNICATION:
         This iframe uses window.postMessage() to communicate with parent window.
@@ -742,14 +780,21 @@
         MESSAGE FLOW:
         - Text-only: sendMessage() → 'message-sent' (with message object) to parent → 
                      parent saves to DB → parent sends fresh 'message-data' → 
-                     displayMessages() refreshes entire chat
+                     displayMessages() shows last 4 messages (resets pagination)
         
         - With file: sendMessage() → 'file-data' (with file metadata + s3Key request) to parent → 
                      parent generates s3Key and sends 'put-links' (with full file objects + s3Key) →
                      uploadFileToS3() uploads to S3 → 'message-sent' (with message + file.s3Key) to parent →
                      parent saves to DB and generates liveUrl from s3Key →
                      parent sends fresh 'message-data' (messages with liveUrl for downloads) →
-                     displayMessages() refreshes entire chat and shows File buttons
+                     displayMessages() shows last 4 messages and File buttons (resets pagination)
+        
+        PAGINATION FLOW:
+        - displayMessages() initially shows last 4 messages (newest at bottom)
+        - "Load Earlier messages" button shown if more than 4 messages
+        - Clicking button loads ALL messages while preserving scroll position
+        - User can scroll up to see earlier messages
+        - New message-data from parent resets to last 4 messages
         
         IMPORTANT: Child NEVER displays messages locally. Parent always sends complete chat
         history via 'message-data' and child renders via displayMessages().
@@ -765,6 +810,12 @@
         let currentFile = null;     // File being uploaded (File object)
         let currentMessage = null;  // Message text during upload
         let currentFileData = null; // File metadata during upload
+        
+        // Pagination state
+        let allMessages = [];      // Store all messages from parent
+        let currentWhiteType = ''; // Store white type for message styling
+        let showingAllMessages = false; // Track if showing full chat log
+        const INITIAL_MESSAGE_COUNT = 4; // Number of messages to show initially
 
         /*
         =====================================================================
@@ -918,7 +969,7 @@
 
         /*
         =====================================================================
-        DISPLAY MESSAGES - Renders all chat messages in the container
+        DISPLAY MESSAGES - Renders last 4 chat messages (with pagination)
         =====================================================================
         Parameters:
         - chatData: Array of message objects from parent's message-data
@@ -940,11 +991,11 @@
         }
         
         Logic:
-        1. Clears existing messages
-        2. Finds last blue (received) message for notification dot placement
-        3. Creates message bubbles with appropriate styling based on type
-        4. Shows File button if message.liveUrl exists (file attachment present)
-        5. Shows notification dot ONLY on last blue message if hasNotification is true
+        1. Stores all messages and whiteType in global state
+        2. Resets showingAllMessages flag to false
+        3. Clears existing messages (except button)
+        4. Shows only LAST 4 messages (newest messages at end of array)
+        5. Shows "Load Earlier messages" button if more than 4 total messages
         6. Auto-scrolls to bottom to show latest messages
         
         Note: Parent generates liveUrl from s3Key when we send 'message-sent' with file.
@@ -952,57 +1003,144 @@
         */
         function displayMessages(chatData, whiteType) {
             const messagesContainer = document.getElementById('messagesContainer');
-            messagesContainer.innerHTML = ''; // Clear all existing messages
+            const loadEarlierBtn = document.getElementById('loadEarlierBtn');
+            
+            // Store all messages and reset pagination
+            allMessages = chatData || [];
+            currentWhiteType = whiteType;
+            showingAllMessages = false;
+            
+            // Clear existing messages (keep button element)
+            const messages = messagesContainer.querySelectorAll('.message');
+            messages.forEach(msg => msg.remove());
+            
+            // Validate messages array
+            if (allMessages && Array.isArray(allMessages) && allMessages.length > 0) {
+                // Display last 4 messages (newest messages at end of array)
+                const startIndex = Math.max(0, allMessages.length - INITIAL_MESSAGE_COUNT);
+                const initialMessages = allMessages.slice(startIndex);
+                
+                initialMessages.forEach((message, relativeIndex) => {
+                    const absoluteIndex = startIndex + relativeIndex;
+                    appendMessageElement(message, absoluteIndex, whiteType);
+                });
+                
+                // Show/hide "Load Earlier messages" button
+                if (allMessages.length > INITIAL_MESSAGE_COUNT) {
+                    loadEarlierBtn.style.display = 'block';
+                } else {
+                    loadEarlierBtn.style.display = 'none';
+                }
+                
+                // Auto-scroll to bottom to show latest messages
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            } else {
+                // No messages to display, hide button
+                loadEarlierBtn.style.display = 'none';
+            }
+        }
+
+        /*
+        =====================================================================
+        APPEND MESSAGE ELEMENT - Helper function to create and append a message
+        =====================================================================
+        Parameters:
+        - message: Single message object
+        - index: Index in allMessages array (for notification dot placement)
+        - whiteType: String determining which message type appears as "sent"
+        
+        Creates a message bubble and appends it to the messages container.
+        =====================================================================
+        */
+        function appendMessageElement(message, index, whiteType) {
+            const messagesContainer = document.getElementById('messagesContainer');
             
             // Find the last blue message index (for notification dot placement)
-            // Blue messages are those where type !== whiteType
             let lastBlueMessageIndex = -1;
-            for (let i = chatData.length - 1; i >= 0; i--) {
-                if (chatData[i].type !== whiteType) {
+            for (let i = allMessages.length - 1; i >= 0; i--) {
+                if (allMessages[i].type !== whiteType) {
                     lastBlueMessageIndex = i;
                     break;
                 }
             }
             
-            // Create and append each message bubble
-            chatData.forEach((message, index) => {
-                const messageDiv = document.createElement('div');
-                const isWhiteCard = message.type === whiteType;
-                messageDiv.className = `message ${isWhiteCard ? 'sent' : 'received'}`;
-                
-                // Determine if this message should show notification dot
-                const isLastBlueMessage = !isWhiteCard && index === lastBlueMessageIndex;
-                const showNotification = isLastBlueMessage && hasNotification;
-                
-                // File button appears only if message has liveUrl property (file attachment)
-                // Parent generates liveUrl from s3Key and includes it in message-data
-                const fileName = message.file?.name || 'attachment';
-                const fileButton = message.liveUrl ? 
-                    `<button class="message-file-btn" onclick="downloadFile('${message.liveUrl}', '${fileName}')">File</button>` : '';
-                
-                // Notification dot shown only on last blue message when notification flag is true
-                const notificationDot = showNotification ? 
-                    '<div class="message-notification-dot" style="display: block;"></div>' : 
-                    '<div class="message-notification-dot" style="display: none;"></div>';
-                
-                // Build message HTML
-                messageDiv.innerHTML = `
-                    <div class="message-header">
-                        <div style="display: flex; align-items: center;">
-                            <div class="message-email">${message.user}</div>
-                            ${notificationDot}
-                            ${fileButton}
-                        </div>
-                        <div class="message-time">${message.time}</div>
+            const messageDiv = document.createElement('div');
+            const isWhiteCard = message.type === whiteType;
+            messageDiv.className = `message ${isWhiteCard ? 'sent' : 'received'}`;
+            
+            // Determine if this message should show notification dot
+            const isLastBlueMessage = !isWhiteCard && index === lastBlueMessageIndex;
+            const showNotification = isLastBlueMessage && hasNotification;
+            
+            // File button appears only if message has liveUrl property (file attachment)
+            const fileName = message.file?.name || 'attachment';
+            const fileButton = message.liveUrl ? 
+                `<button class="message-file-btn" onclick="downloadFile('${message.liveUrl}', '${fileName}')">File</button>` : '';
+            
+            // Notification dot shown only on last blue message when notification flag is true
+            const notificationDot = showNotification ? 
+                '<div class="message-notification-dot" style="display: block;"></div>' : 
+                '<div class="message-notification-dot" style="display: none;"></div>';
+            
+            // Build message HTML
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div style="display: flex; align-items: center;">
+                        <div class="message-email">${message.user}</div>
+                        ${notificationDot}
+                        ${fileButton}
                     </div>
-                    <div class="message-text">${message.message}</div>
-                `;
-                
-                messagesContainer.appendChild(messageDiv);
+                    <div class="message-time">${message.time}</div>
+                </div>
+                <div class="message-text">${message.message}</div>
+            `;
+            
+            // Append message to container
+            messagesContainer.appendChild(messageDiv);
+        }
+
+        /*
+        =====================================================================
+        LOAD EARLIER MESSAGES - Loads full chat log while preserving scroll
+        =====================================================================
+        When clicked:
+        1. Saves current scroll position
+        2. Clears all displayed messages
+        3. Loads ALL messages from allMessages array
+        4. Restores scroll position (so user stays where they were)
+        5. Hides the "Load Earlier messages" button
+        6. Sets showingAllMessages flag to true
+        
+        This allows the user to scroll UP to see earlier messages while
+        staying at their current position in the conversation.
+        =====================================================================
+        */
+        function loadEarlierMessages() {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const loadEarlierBtn = document.getElementById('loadEarlierBtn');
+            
+            // Save current scroll position
+            const currentScrollPosition = messagesContainer.scrollTop;
+            const currentScrollHeight = messagesContainer.scrollHeight;
+            
+            // Clear existing messages (keep button element)
+            const messages = messagesContainer.querySelectorAll('.message');
+            messages.forEach(msg => msg.remove());
+            
+            // Display ALL messages
+            allMessages.forEach((message, index) => {
+                appendMessageElement(message, index, currentWhiteType);
             });
             
-            // Auto-scroll to bottom to show latest messages
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            // Calculate new scroll position to maintain user's view
+            // We need to account for the new content added above
+            const newScrollHeight = messagesContainer.scrollHeight;
+            const scrollDifference = newScrollHeight - currentScrollHeight;
+            messagesContainer.scrollTop = currentScrollPosition + scrollDifference;
+            
+            // Hide the button since all messages are now loaded
+            loadEarlierBtn.style.display = 'none';
+            showingAllMessages = true;
         }
 
         /*
