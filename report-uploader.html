@@ -405,6 +405,35 @@
             color: #666;
         }
 
+        .uploading-progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .uploading-progress-fill {
+            height: 100%;
+            background: #4A90E2;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .uploading-file-card.uploading .uploading-progress-fill {
+            background: #ffa500;
+        }
+
+        .uploading-file-card.success .uploading-progress-fill {
+            background: #10a37f;
+        }
+
+        .uploading-file-card.error .uploading-progress-fill {
+            background: #e02424;
+        }
+
         /* 
         =====================================================================
         ERROR POPUP
@@ -1096,6 +1125,9 @@
                     <div class="uploading-file-name" title="${fileObj.data.name}">${fileObj.document}</div>
                     <div class="uploading-file-size">${fileSizeMB} MB</div>
                     <div class="uploading-file-status" id="uploadStatus${index}">Preparing...</div>
+                    <div class="uploading-progress-bar">
+                        <div class="uploading-progress-fill" id="uploadProgress${index}"></div>
+                    </div>
                 `;
                 
                 uploadingFilesScroll.appendChild(card);
@@ -1109,10 +1141,15 @@
 
         function updateFileProgress(index, progress, status) {
             const statusEl = document.getElementById(`uploadStatus${index}`);
+            const progressEl = document.getElementById(`uploadProgress${index}`);
             const card = document.getElementById(`uploadCard${index}`);
             
             if (statusEl) {
                 statusEl.textContent = status;
+            }
+            
+            if (progressEl) {
+                progressEl.style.width = `${progress}%`;
             }
             
             if (card) {
@@ -1123,10 +1160,15 @@
 
         function updateFileSuccess(index) {
             const statusEl = document.getElementById(`uploadStatus${index}`);
+            const progressEl = document.getElementById(`uploadProgress${index}`);
             const card = document.getElementById(`uploadCard${index}`);
             
             if (statusEl) {
                 statusEl.textContent = 'Success';
+            }
+            
+            if (progressEl) {
+                progressEl.style.width = '100%';
             }
             
             if (card) {
@@ -1137,10 +1179,15 @@
 
         function updateFileError(index, errorMessage) {
             const statusEl = document.getElementById(`uploadStatus${index}`);
+            const progressEl = document.getElementById(`uploadProgress${index}`);
             const card = document.getElementById(`uploadCard${index}`);
             
             if (statusEl) {
                 statusEl.textContent = errorMessage || 'Upload failed';
+            }
+            
+            if (progressEl) {
+                progressEl.style.width = '100%';
             }
             
             if (card) {
@@ -1197,7 +1244,18 @@
                     }
                     
                     try {
-                        updateFileProgress(i, 10, 'Uploading...');
+                        updateFileProgress(i, 0, 'Uploading...');
+                        
+                        // Simulate progress animation (since fetch doesn't provide upload progress)
+                        const progressInterval = setInterval(() => {
+                            const progressEl = document.getElementById(`uploadProgress${i}`);
+                            if (progressEl) {
+                                const currentWidth = parseInt(progressEl.style.width) || 0;
+                                if (currentWidth < 90) {
+                                    updateFileProgress(i, currentWidth + 10, 'Uploading...');
+                                }
+                            }
+                        }, 100);
                         
                         // Upload file to S3 using PUT request
                         const response = await fetch(link, {
@@ -1208,6 +1266,8 @@
                             }
                         });
                         
+                        clearInterval(progressInterval);
+                        
                         if (!response.ok) {
                             throw new Error(`S3 upload failed: ${response.status} ${response.statusText}`);
                         }
@@ -1216,6 +1276,9 @@
                         console.log(`File ${i} uploaded successfully`);
                         
                     } catch (error) {
+                        if (typeof progressInterval !== 'undefined') {
+                            clearInterval(progressInterval);
+                        }
                         console.error(`Error uploading file ${i}:`, error);
                         updateFileError(i, 'Upload failed');
                         uploadErrors.push(`${fileObj.document}: ${error.message}`);
