@@ -3900,6 +3900,9 @@
                     
                     // Generate filename with fallback values if clientData is not available
                     console.log('clientData:', clientData);
+                    console.log('userEmail:', userEmail);
+                    console.log('file object:', file);
+                    
                     const fe = (clientData?.fe || 'Unknown').replace(/\//g, '-');
                     const clientNumber = (clientData?.clientNumber || 'Unknown').replace(/\//g, '-');
                     const matterNumber = (clientData?.matterNumber || 'Unknown').replace(/\//g, '-');
@@ -3907,7 +3910,7 @@
                     const fileName = `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${subType}`;
                     console.log('Generated filename:', fileName);
                     
-                    allFiles.push({
+                    const fileObject = {
                         type: documentType,
                         document: subType,
                         uploader: userEmail,
@@ -3918,7 +3921,11 @@
                             lastModified: file.lastModified
                         },
                         file: file
-                    });
+                    };
+                    
+                    console.log('Pushing file object:', fileObject);
+                    allFiles.push(fileObject);
+                    console.log('Successfully pushed, allFiles.length now:', allFiles.length);
                 }
             });
             
