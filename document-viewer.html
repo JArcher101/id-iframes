@@ -3318,8 +3318,8 @@
                 uploader: userEmail
             }, '*');
             
-            // Return to awaiting data section
-            returnToAwaitingData();
+            // Return to document list section (parent will send fresh display-documents data)
+            hideUploader();
         }
 
         // Detect if Photo ID or Address ID types were uploaded

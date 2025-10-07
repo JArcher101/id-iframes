@@ -2768,7 +2768,7 @@
            - photoIdUploaded: Boolean flag
            - addressIdUploaded: Boolean flag
            - likenessNOTConfirmed: Boolean flag
-        6. Returns to awaiting data section
+        6. Returns to image carousel section
         7. Parent saves to database and sends fresh 'display-images' data
         
         Note: s3Keys contains full file objects with s3Key property added by parent
@@ -2796,8 +2796,8 @@
                 likenessNOTConfirmed: likenessNOTConfirmed
             }, '*');
             
-            // Return to awaiting data section
-            returnToAwaitingData();
+            // Return to image carousel section (parent will send fresh display-images data)
+            hideUploader();
         }
 
         // Detect if Photo ID or Address ID types were uploaded
