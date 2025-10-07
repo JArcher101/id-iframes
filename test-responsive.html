@@ -161,6 +161,18 @@
             display: none;
         }
 
+        /* Code elements in description - inline display with proper styling */
+        .description code {
+            background: #d4e9f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+            color: #002b43;
+            display: inline;
+            white-space: normal;
+            word-break: break-all;
+        }
+
         /* 
         Collapse arrow indicator
         - Points down when expanded
@@ -448,16 +460,19 @@
         Test iframe element
         - Width and height set dynamically via JavaScript
         - Default: 100% width, 600px height
+        - Centered within container using margin auto
         */
         .test-iframe {
             width: 100%;
             height: 600px;
+            display: block;
+            margin: 0 auto;
         }
 
         /* 
         =====================================================================
         RESPONSIVE ADJUSTMENTS
-        - Tablet (< 1024px): Stack panels vertically, iframe shown first
+        - Tablet (< 1024px): Stack panels vertically, settings shown first
         - Mobile (< 768px): Reduce spacing, stack controls vertically
         =====================================================================
         */
@@ -467,14 +482,14 @@
                 gap: 15px;
             }
             
-            /* Show iframe preview first, controls panel below */
+            /* Show controls panel first, iframe preview below */
             .left-panel {
                 position: static;
-                order: 2;
+                order: 1;
             }
             
             .right-panel {
-                order: 1;
+                order: 2;
             }
         }
 
@@ -492,22 +507,23 @@
         PRESET WIDTH CLASSES - Applied to iframe container
         - Four preset widths matching common breakpoints
         - Set by JavaScript when preset buttons are clicked
+        - Width = iframe width + 40px (to account for 20px padding on each side)
         =====================================================================
         */
         .width-250 {
-            width: 250px;
+            width: 290px;
         }
 
         .width-320 {
-            width: 320px;
+            width: 360px;
         }
 
         .width-800 {
-            width: 800px;
+            width: 840px;
         }
 
         .width-980 {
-            width: 980px;
+            width: 1020px;
         }
 
         /* 
@@ -577,6 +593,15 @@
                 <p>This page allows you to test any iframe component at different screen sizes and custom dimensions.</p>
                 <p><strong>Available Components:</strong> Image Uploader, Image Viewer, Document Viewer, Message iframe, and Cashiers Log</p>
                 <p><strong>Testing Features:</strong> Preset width buttons, custom dimension inputs, and real-time iframe switching</p>
+                <p><strong>URL Parameters:</strong> Configure the page via URL - <code>?iframe=document-viewer.html&width=320&height=500&desc=true&instructions=true&custom=true</code></p>
+                <p style="margin-left: 20px; font-size: 0.9em;">
+                    • <code>iframe</code> - Set iframe to load (e.g., message-iframe.html)<br>
+                    • <code>width</code> - Set width in pixels (200-2000)<br>
+                    • <code>height</code> - Set height in pixels (200-2000)<br>
+                    • <code>desc</code> - Expand description card (true/1/yes)<br>
+                    • <code>instructions</code> - Expand instructions card (true/1/yes)<br>
+                    • <code>custom</code> - Expand custom dimensions card (true/1/yes)
+                </p>
             </div>
 
             <div class="instructions collapsed" id="instructionsCard">
@@ -820,6 +845,7 @@
         3. Updates currentHeight to component-specific default
         4. Updates custom height input field to match
         5. Calls updateIframeDisplay() to load new iframe
+        6. Updates URL to reflect new selection
         
         Note: Width remains unchanged - only height resets to default
         This allows user to maintain their width preference across switches
@@ -834,6 +860,7 @@
             customHeightInput.value = currentHeight;
             
             updateIframeDisplay();
+            updateUrl();
         });
 
         /*
@@ -851,6 +878,7 @@
         6. Updates custom input fields to match new dimensions
         7. Applies width class to container (e.g., 'width-980')
         8. Calls updateIframeDisplay() to apply changes
+        9. Updates URL to reflect new dimensions
         
         Note: Each preset has its own default height optimized for that breakpoint
         =====================================================================
@@ -876,6 +904,7 @@
                 iframeContainer.className = `iframe-container ${config.container}`;
                 
                 updateIframeDisplay();
+                updateUrl();
             });
         });
 
@@ -898,6 +927,7 @@
         5. Removes preset width class from container
         6. Applies custom width as inline style
         7. Calls updateIframeDisplay() to apply changes
+        8. Updates URL to reflect new dimensions
         
         Note: Custom dimensions override preset button selections
         =====================================================================
@@ -914,11 +944,12 @@
                 // Remove active state from preset buttons (now in custom mode)
                 widthButtons.forEach(btn => btn.classList.remove('active'));
                 
-                // Remove preset width class and apply custom width
+                // Remove preset width class and apply custom width (add 40px for padding)
                 iframeContainer.className = 'iframe-container';
-                iframeContainer.style.width = `${currentWidth}px`;
+                iframeContainer.style.width = `${currentWidth + 40}px`;
                 
                 updateIframeDisplay();
+                updateUrl();
             } else {
                 alert('Please enter valid dimensions (200-2000px)');
             }
@@ -968,11 +999,177 @@
         - Toggles 'collapsed' class on/off
         - CSS handles visual changes (padding, content visibility)
         - Arrow icon rotates via CSS transition
+        - Updates URL to reflect new state
         =====================================================================
         */
         function toggleCard(cardId) {
             const card = document.getElementById(cardId);
             card.classList.toggle('collapsed');
+            updateUrl();
+        }
+
+        /*
+        =====================================================================
+        URL PARAMETER PARSER
+        =====================================================================
+        Parses URL query parameters and applies settings on page load
+        
+        Supported parameters:
+        - iframe: Set the selected iframe (e.g., ?iframe=document-viewer.html)
+        - width: Set the iframe width in pixels (e.g., ?width=320)
+        - height: Set the iframe height in pixels (e.g., ?height=500)
+        - desc: Expand description card (true/1/yes, default collapsed)
+        - instructions: Expand instructions card (true/1/yes, default collapsed)
+        - custom: Expand custom dimensions card (true/1/yes, default collapsed)
+        
+        Example URLs:
+        - ?iframe=message-iframe.html&width=320&height=500
+        - ?iframe=document-viewer.html&width=800&height=600&desc=true
+        - ?width=250&height=400&instructions=true&custom=true
+        =====================================================================
+        */
+        function applyUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Helper function to check if a parameter is "truthy"
+            const isTrue = (value) => {
+                if (!value) return false;
+                const v = value.toLowerCase();
+                return v === 'true' || v === '1' || v === 'yes';
+            };
+            
+            // Apply iframe selection if specified
+            if (urlParams.has('iframe')) {
+                const iframeParam = urlParams.get('iframe');
+                // Check if the iframe exists in our config
+                if (iframeConfig[iframeParam]) {
+                    iframeSelect.value = iframeParam;
+                    // Update height to the default for this iframe
+                    currentHeight = parseInt(iframeConfig[iframeParam].defaultHeight);
+                    console.log(`URL param: Set iframe to ${iframeParam}`);
+                }
+            }
+            
+            // Apply width if specified
+            if (urlParams.has('width')) {
+                const widthParam = parseInt(urlParams.get('width'));
+                if (widthParam >= 200 && widthParam <= 2000) {
+                    currentWidth = widthParam;
+                    console.log(`URL param: Set width to ${widthParam}px`);
+                    
+                    // Check if this matches a preset width
+                    const matchingPreset = widthConfig[widthParam.toString()];
+                    if (matchingPreset) {
+                        // Activate the corresponding preset button
+                        widthButtons.forEach(btn => {
+                            btn.classList.remove('active');
+                            if (parseInt(btn.dataset.width) === widthParam) {
+                                btn.classList.add('active');
+                            }
+                        });
+                        iframeContainer.className = `iframe-container ${matchingPreset.container}`;
+                    } else {
+                        // Custom width - remove all active states (add 40px for padding)
+                        widthButtons.forEach(btn => btn.classList.remove('active'));
+                        iframeContainer.className = 'iframe-container';
+                        iframeContainer.style.width = `${widthParam + 40}px`;
+                    }
+                }
+            }
+            
+            // Apply height if specified (overrides iframe default)
+            if (urlParams.has('height')) {
+                const heightParam = parseInt(urlParams.get('height'));
+                if (heightParam >= 200 && heightParam <= 2000) {
+                    currentHeight = heightParam;
+                    console.log(`URL param: Set height to ${heightParam}px`);
+                }
+            }
+            
+            // Apply collapsible card states
+            // Description card
+            if (urlParams.has('desc') || urlParams.has('description')) {
+                const descValue = urlParams.get('desc') || urlParams.get('description');
+                const descCard = document.getElementById('descriptionCard');
+                if (isTrue(descValue)) {
+                    descCard.classList.remove('collapsed');
+                    console.log('URL param: Expanded description card');
+                } else {
+                    descCard.classList.add('collapsed');
+                }
+            }
+            
+            // Instructions card
+            if (urlParams.has('instructions')) {
+                const instructionsValue = urlParams.get('instructions');
+                const instructionsCard = document.getElementById('instructionsCard');
+                if (isTrue(instructionsValue)) {
+                    instructionsCard.classList.remove('collapsed');
+                    console.log('URL param: Expanded instructions card');
+                } else {
+                    instructionsCard.classList.add('collapsed');
+                }
+            }
+            
+            // Custom dimensions card
+            if (urlParams.has('custom') || urlParams.has('customDimensions')) {
+                const customValue = urlParams.get('custom') || urlParams.get('customDimensions');
+                const customCard = document.getElementById('customDimensionsCard');
+                if (isTrue(customValue)) {
+                    customCard.classList.remove('collapsed');
+                    console.log('URL param: Expanded custom dimensions card');
+                } else {
+                    customCard.classList.add('collapsed');
+                }
+            }
+        }
+
+        /*
+        =====================================================================
+        UPDATE URL - Sync URL params with current state
+        =====================================================================
+        Updates the browser URL to reflect the current page configuration
+        without reloading the page. This allows users to copy/share the URL
+        with the exact current settings.
+        
+        Called automatically when:
+        - Page loads (to set initial params if not present)
+        - User changes iframe selection
+        - User changes dimensions
+        - User toggles collapsible cards
+        
+        Uses history.replaceState() to avoid creating browser history entries
+        =====================================================================
+        */
+        function updateUrl() {
+            const params = new URLSearchParams();
+            
+            // Add iframe parameter
+            params.set('iframe', iframeSelect.value);
+            
+            // Add width and height parameters
+            params.set('width', currentWidth);
+            params.set('height', currentHeight);
+            
+            // Add collapsible card states (only if expanded)
+            const descCard = document.getElementById('descriptionCard');
+            if (!descCard.classList.contains('collapsed')) {
+                params.set('desc', 'true');
+            }
+            
+            const instructionsCard = document.getElementById('instructionsCard');
+            if (!instructionsCard.classList.contains('collapsed')) {
+                params.set('instructions', 'true');
+            }
+            
+            const customCard = document.getElementById('customDimensionsCard');
+            if (!customCard.classList.contains('collapsed')) {
+                params.set('custom', 'true');
+            }
+            
+            // Update URL without reloading page
+            const newUrl = `${window.location.pathname}?${params.toString()}`;
+            history.replaceState(null, '', newUrl);
         }
 
         /*
@@ -983,25 +1180,37 @@
         
         Actions:
         1. Logs available iframes and widths to console
-        2. Sets custom input fields to match current dimensions
-        3. Calls updateIframeDisplay() to render initial iframe
+        2. Applies URL parameters if present
+        3. Sets custom input fields to match current dimensions
+        4. Calls updateIframeDisplay() to render initial iframe
+        5. Updates URL to include all current settings
         
-        Initial state:
+        Default state (no URL params):
         - iframe: Image Uploader (first option in dropdown)
         - Width: 980px (Desktop preset, active button)
         - Height: 600px (Default for Image Uploader)
+        - All cards: Collapsed
+        
+        URL is always updated to reflect current state, making it easy
+        to copy/share the exact configuration.
         =====================================================================
         */
         console.log('Responsive iframe test page loaded');
         console.log('Available iframes:', Object.keys(iframeConfig));
         console.log('Available widths:', Object.keys(widthConfig));
         
+        // Apply URL parameters if present
+        applyUrlParameters();
+        
         // Set initial values in custom dimension inputs
         customWidthInput.value = currentWidth;
         customHeightInput.value = currentHeight;
         
-        // Render initial iframe (Image Uploader at 980px × 600px)
+        // Render initial iframe with applied settings
         updateIframeDisplay();
+        
+        // Update URL to reflect current state (sets default params if none present)
+        updateUrl();
     </script>
 </body>
 </html>
