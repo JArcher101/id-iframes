@@ -3103,8 +3103,8 @@
             `;
             loadingDiv.id = 'uploadingContainer';
             
-            // Insert after image display container
-            document.querySelector('.image-display-container').appendChild(loadingDiv);
+            // Insert as sibling to image display container (inside responsive-container)
+            document.querySelector('.responsive-container').appendChild(loadingDiv);
         }
 
         /*
@@ -4222,8 +4222,11 @@
         // Handle PUT links for uploading files to S3
         function handlePutLinks(data) {
             console.log('Received PUT links:', data);
-            // Call handlePutResponse to actually process and upload the files
-            handlePutResponse({ data: data });
+            // Extract links and s3Keys from the data
+            const links = data.links;
+            s3Keys = data.s3Keys; // Store S3 keys globally
+            uploadedImages = data.images; // Store images data with s3Keys
+            uploadFiles(links);
         }
 
         // Handle PUT error from backend
