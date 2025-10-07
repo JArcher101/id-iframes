@@ -718,7 +718,13 @@
                         message: 'Message text',
                         time: '1/1/2024, 12:00:00 PM',
                         type: 'Staff' or other,
-                        liveUrl: 'https://s3-url...' (optional - only present for file attachments)
+                        liveUrl: 'https://s3-url...' (optional - only present for file attachments),
+                        file: {
+                            name: 'filename.pdf',
+                            size: 12345,
+                            type: 'application/pdf',
+                            s3Key: 'uploads/...'
+                        } (optional - only present for file attachments)
                     },
                     ...
                 ]
@@ -727,6 +733,7 @@
             Note: When child sends 'message-sent' with file.s3Key, parent generates
             liveUrl from the s3Key and includes it in the message when responding
             with 'message-data'. The liveUrl is used by the File download button.
+            The file.name property ensures downloads use the correct filename.
             */
             if (event.data.type === 'message-data') {
                 const data = event.data;
@@ -829,7 +836,13 @@
             message: 'Text content',
             time: '1/1/2024, 12:00:00 PM',
             type: 'Staff' or other,
-            liveUrl: 'https://s3-url...' (optional - only for file attachments)
+            liveUrl: 'https://s3-url...' (optional - only for file attachments),
+            file: {
+                name: 'filename.pdf',
+                size: 12345,
+                type: 'application/pdf',
+                s3Key: 'uploads/...'
+            } (optional - only for file attachments)
         }
         
         Logic:
@@ -840,7 +853,8 @@
         5. Shows notification dot ONLY on last blue message if hasNotification is true
         6. Auto-scrolls to bottom to show latest messages
         
-        Note: Parent generates liveUrl from s3Key when we send 'message-sent' with file
+        Note: Parent generates liveUrl from s3Key when we send 'message-sent' with file.
+        The file.name property is passed to downloadFile() for correct filename on download.
         */
         function displayMessages(chatData, whiteType) {
             const messagesContainer = document.getElementById('messagesContainer');
@@ -868,8 +882,9 @@
                 
                 // File button appears only if message has liveUrl property (file attachment)
                 // Parent generates liveUrl from s3Key and includes it in message-data
+                const fileName = message.file?.name || 'attachment';
                 const fileButton = message.liveUrl ? 
-                    `<button class="message-file-btn" onclick="downloadFile('${message.liveUrl}')">File</button>` : '';
+                    `<button class="message-file-btn" onclick="downloadFile('${message.liveUrl}', '${fileName}')">File</button>` : '';
                 
                 // Notification dot shown only on last blue message when notification flag is true
                 const notificationDot = showNotification ? 
@@ -981,14 +996,31 @@
         =====================================================================
         Parameters:
         - liveUrl: S3 URL or file URL from message.liveUrl
+        - fileName: Original filename from message.file.name (optional)
         
         Logic:
         1. Fetches file as blob
         2. Creates temporary download link
-        3. Triggers download with default filename
+        3. Triggers download with actual filename (or extracted from URL)
         4. Fallback: Opens in new tab if fetch fails
         */
-        function downloadFile(liveUrl) {
+        function downloadFile(liveUrl, fileName) {
+            // Use provided fileName or try to extract from URL
+            let downloadName = fileName || 'attachment';
+            
+            // If no fileName provided, try to extract from URL
+            if (!fileName) {
+                try {
+                    const urlPath = new URL(liveUrl).pathname;
+                    const extractedName = urlPath.split('/').pop();
+                    if (extractedName) {
+                        downloadName = extractedName;
+                    }
+                } catch (e) {
+                    console.warn('Could not extract filename from URL');
+                }
+            }
+            
             // Fetch the file as a blob and download it
             fetch(liveUrl)
                 .then(response => response.blob())
@@ -997,7 +1029,7 @@
                     const url = window.URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.href = url;
-                    link.download = 'attachment.jpg'; // Default filename
+                    link.download = downloadName;
                     link.style.display = 'none';
                     document.body.appendChild(link);
                     link.click(); // Trigger download
