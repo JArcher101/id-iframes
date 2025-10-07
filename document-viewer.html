@@ -3911,7 +3911,7 @@
                     // Validate file before adding to collection
                     if (!file || file.size === 0) {
                         console.error('Skipping empty or invalid file:', file);
-                        continue; // Skip this file
+                        return; // Skip this file (forEach uses return, not continue)
                     }
                     
                     const documentType = primaryDropdown.value;
