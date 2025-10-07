@@ -687,12 +687,6 @@
                 <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>Send</button>
             </div>
         </div>
-        <!-- Test button for font visualization -->
-        <div style="padding: 10px; text-align: center; background: #f0f0f0; border-top: 2px solid #ddd;">
-            <button onclick="loadMockData()" style="background: #4A90E2; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                Load Mock Data (Test Fonts)
-            </button>
-        </div>
     </div>
 
     <script>
@@ -1700,84 +1694,6 @@
             document.getElementById('sendBtn').disabled = !message && !file;
         });
 
-        /*
-        =====================================================================
-        MOCK DATA LOADER - For testing fonts and UI
-        =====================================================================
-        Simulates receiving message-data from parent with:
-        - Multiple messages (sent and received)
-        - Notification enabled (shows dot and dismiss button)
-        - Various tags (note, pepUpdate, formJ, etc.)
-        - File attachment example
-        */
-        function loadMockData() {
-            const mockData = {
-                type: 'message-data',
-                userEmail: 'staff.member@thurstanhoskin.co.uk',
-                _id: 'mock-item-123',
-                notification: true,
-                white: 'Staff',
-                tags: ['note', 'pepUpdate', 'formJ', 'formK'],
-                chat: [
-                    {
-                        user: 'cashier@example.com',
-                        message: 'Hello! I have a question about the new PEP requirements.',
-                        time: new Date(Date.now() - 3600000).toLocaleString(),
-                        type: 'Cashier'
-                    },
-                    {
-                        user: 'staff.member@thurstanhoskin.co.uk',
-                        message: 'Hi there! I\'d be happy to help. What specific aspect would you like to know about?',
-                        time: new Date(Date.now() - 3500000).toLocaleString(),
-                        type: 'Staff'
-                    },
-                    {
-                        user: 'cashier@example.com',
-                        message: 'I need clarification on the documentation requirements for Form J.',
-                        time: new Date(Date.now() - 3400000).toLocaleString(),
-                        type: 'Cashier'
-                    },
-                    {
-                        user: 'staff.member@thurstanhoskin.co.uk',
-                        message: 'Let me send you the updated guidelines document. Please review sections 3 and 4.',
-                        time: new Date(Date.now() - 3300000).toLocaleString(),
-                        type: 'Staff',
-                        liveUrl: 'https://example.com/mock-file.pdf',
-                        file: {
-                            name: 'PEP-Guidelines-2024.pdf',
-                            size: 245678,
-                            type: 'application/pdf',
-                            s3Key: 'uploads/pep-guidelines.pdf'
-                        }
-                    },
-                    {
-                        user: 'cashier@example.com',
-                        message: 'Thank you! This is very helpful. One more question - what about the timeline for implementation?',
-                        time: new Date(Date.now() - 1800000).toLocaleString(),
-                        type: 'Cashier'
-                    },
-                    {
-                        user: 'staff.member@thurstanhoskin.co.uk',
-                        message: 'The implementation deadline is end of month. Make sure all Forms J and K are submitted by then.',
-                        time: new Date(Date.now() - 1200000).toLocaleString(),
-                        type: 'Staff'
-                    },
-                    {
-                        user: 'cashier@example.com',
-                        message: 'Perfect! I understand now. I\'ll get those forms completed this week. Is there anything else I should be aware of?',
-                        time: new Date(Date.now() - 300000).toLocaleString(),
-                        type: 'Cashier'
-                    }
-                ]
-            };
-
-            // Simulate receiving message-data from parent
-            window.dispatchEvent(new MessageEvent('message', {
-                data: mockData
-            }));
-
-            console.log('Mock data loaded with notification and tags');
-        }
     </script>
 </body>
 </html>
