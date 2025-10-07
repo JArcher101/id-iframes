@@ -1633,8 +1633,6 @@
             const translateX = -index * containerWidth;
             imageSlider.style.transform = `translateX(${translateX}px)`;
             
-            console.log('Showing image at index:', index, 'translateX:', translateX, 'containerWidth:', containerWidth);
-            
             // Update button states
             prevBtn.disabled = index === 0;
             nextBtn.disabled = index === images.length - 1;
@@ -1660,7 +1658,6 @@
             const card = img.closest('.image-card');
             const cards = document.querySelectorAll('.image-card');
             const index = Array.from(cards).indexOf(card);
-            console.warn('Image failed to load:', img.src, 'for document:', documentType, 'Index:', index, 'Type:', index % 2 === 0 ? 'EVEN' : 'ODD', 'retry count:', retryCount);
             
             // Store the original source for retry
             const originalSrc = img.src;
@@ -1719,7 +1716,6 @@
             const card = img.closest('.image-card');
             const cards = document.querySelectorAll('.image-card');
             const index = Array.from(cards).indexOf(card);
-            console.log('Image loaded successfully:', img.src, 'Index:', index, 'Type:', index % 2 === 0 ? 'EVEN' : 'ODD');
         }
 
         // Download function
@@ -1856,7 +1852,6 @@
                 // Force load all images immediately to test if positioning is the issue
                 const img = card.querySelector('img');
                 if (img) {
-                    console.log('Forcing image load for index:', index, 'Type:', index % 2 === 0 ? 'EVEN' : 'ODD');
                     // Trigger image load by setting src again
                     img.src = img.src;
                 }
@@ -1865,12 +1860,8 @@
             // Reset to first image
             currentImageIndex = 0;
             
-            // Debug: Check container width after cards are created
+            // Show first image after layout completes
             setTimeout(() => {
-                const containerWidth = reelContainer.offsetWidth;
-                console.log('Container width after cards created:', containerWidth);
-                
-                // Check if we need to wait for layout to complete
                 showImage(0);
             }, 100);
             
