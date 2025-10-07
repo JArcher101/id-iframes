@@ -1820,7 +1820,7 @@
         1. Gets container width (responsive)
         2. Calculates translateX offset (-index * width)
         3. Applies transform to slide carousel
-        4. Updates prev/next button disabled states
+        4. Keeps navigation arrows enabled for looping
         */
         function showImage(index) {
             if (images.length === 0) return;
@@ -1830,23 +1830,29 @@
             const translateX = -index * containerWidth;
             imageSlider.style.transform = `translateX(${translateX}px)`;
             
-            // Update button states
-            prevBtn.disabled = index === 0;
-            nextBtn.disabled = index === images.length - 1;
+            // Keep arrows enabled for looping navigation
+            prevBtn.disabled = false;
+            nextBtn.disabled = false;
         }
 
         function nextImage() {
+            // Loop to first image if at the end
             if (currentImageIndex < images.length - 1) {
                 currentImageIndex++;
-                showImage(currentImageIndex);
+            } else {
+                currentImageIndex = 0;
             }
+            showImage(currentImageIndex);
         }
 
         function prevImage() {
+            // Loop to last image if at the beginning
             if (currentImageIndex > 0) {
                 currentImageIndex--;
-                showImage(currentImageIndex);
+            } else {
+                currentImageIndex = images.length - 1;
             }
+            showImage(currentImageIndex);
         }
 
         /*
@@ -2116,12 +2122,12 @@
                 oldCounter.remove();
             }
             
-            // Add image counter
+            // Add image counter to the image display section's reel-container (not the awaiting state one)
             const counter = document.createElement('div');
             counter.className = 'image-counter';
             counter.textContent = `${currentImageIndex + 1} / ${images.length}`;
             counter.id = 'imageCounter';
-            document.querySelector('.reel-container').appendChild(counter);
+            reelContainer.appendChild(counter);
         }
 
         // Update client heading with client data
@@ -2567,8 +2573,8 @@
             `;
             loadingDiv.id = 'uploadingContainer';
             
-            // Insert after image display container
-            document.querySelector('.image-display-container').appendChild(loadingDiv);
+            // Insert into responsive container (sibling to image-display-container)
+            document.querySelector('.responsive-container').appendChild(loadingDiv);
         }
 
         /*

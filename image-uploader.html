@@ -1228,8 +1228,6 @@
 <body>
   <div class="responsive-container">
     <div class="card" id="cardContainer">
-    <h2 id="cardTitle" class="awaiting" style="color:#888;">Awaiting data</h2>
-    <button id="mockBtn" class="btn-primary">Load Mock Data</button>
     
     <!-- Header: Client info display (title, client number, name) -->
     <div id="headerInfo" class="hidden">
@@ -1811,7 +1809,8 @@
 
     // DOB inputs (8 individual digit fields)
     const dobInputs = Array.from(document.querySelectorAll('.birthdate-inputs input'));
-    const mockBtn = document.getElementById('mockBtn');
+    // Mock button removed from UI
+    // const mockBtn = document.getElementById('mockBtn');
     const nextBtn = document.getElementById('nextBtn');
 
     // Section 2: Photo ID upload elements
@@ -2385,13 +2384,13 @@
     function showSection1(){
       cardTitle.textContent = 'Section 1 - Client Details';
       form.classList.remove('hidden'); section2.classList.add('hidden'); section3.classList.add('hidden');
-      mockBtn.classList.add('hidden');
+      // mockBtn.classList.add('hidden'); // Mock button removed
       updateHeader();
     }
     function showSection2(){
       cardTitle.textContent = 'Section 2 - Photo ID';
       form.classList.add('hidden'); section2.classList.remove('hidden'); section3.classList.add('hidden');
-      mockBtn.classList.add('hidden');
+      // mockBtn.classList.add('hidden'); // Mock button removed
       
       // Reset button states first
       photoYesBtn.classList.remove('selected');
@@ -2417,14 +2416,14 @@
     function showSection3(){
       cardTitle.textContent = 'Section 3 - Address History';
       form.classList.add('hidden'); section2.classList.add('hidden'); section3.classList.remove('hidden'); section4.classList.add('hidden');
-      mockBtn.classList.add('hidden');
+      // mockBtn.classList.add('hidden'); // Mock button removed
       updateHeader();
     }
 
     function showSection4(){
       cardTitle.textContent = 'Section 4 - Address ID';
       form.classList.add('hidden'); section2.classList.add('hidden'); section3.classList.add('hidden'); section4.classList.remove('hidden'); section5.classList.add('hidden');
-      mockBtn.classList.add('hidden');
+      // mockBtn.classList.add('hidden'); // Mock button removed
       
       // Reset button states first
       addressIdYesBtn.classList.remove('selected');
@@ -2861,7 +2860,7 @@
       section3.classList.add('hidden'); 
       section4.classList.add('hidden'); 
       section5.classList.remove('hidden');
-      mockBtn.classList.add('hidden');
+      // mockBtn.classList.add('hidden'); // Mock button removed
       
       // Reset progress
       progressFill.style.width = '0%';
@@ -3200,9 +3199,9 @@
       uploadStatus.textContent = '';
       
       // Reset header and title
-      cardTitle.textContent = 'Awaiting data';
+      cardTitle.textContent = '';
       headerInfo.classList.add('hidden');
-      mockBtn.classList.remove('hidden');
+      // mockBtn.classList.remove('hidden'); // Mock button removed
     }
 
     // ===== SECTION NAVIGATION FUNCTIONS =====
@@ -3214,7 +3213,7 @@
       section3.classList.add('hidden');
       section4.classList.add('hidden');
       section5.classList.add('hidden');
-      mockBtn.classList.add('hidden');
+      // mockBtn.classList.add('hidden'); // Mock button removed
       updateHeader();
     }
 
@@ -3655,60 +3654,60 @@
     }
 
     // ===== MOCK DATA =====
-    // Mock data for local testing
-    mockBtn.addEventListener('click', ()=>{
-      loadData({
-        fe: 'BA',
-        clientNumber: '50',
-        matterNumber: '52',
-        name: 'Mr J R Archer-Moran',
-        _id: 'mock-database-id-123',
-        uploader: 'test@example.com',
-        titlePrefix: 'Mr', firstName: 'Jacob', middleNames: 'Robert', surname: 'Archer-Moran',
-        worktype: 'Sale of',
-        relation: 'Our Client',
-        matterDesc: 'Property sale transaction',
-        birthdate: '11-01-2001', 
-        photographicIdTaken: true, 
-        likenessNOTConfirmed: false,
-        address: '123 Main Street, London, SW1A 1AA',
-        clientRecentHomeMove: false,
-        previousAddress: '',
-        addressIdTaken: false,
-        idImages: [
-          {
-            type: 'PhotoID',
-            document: 'Driving Licence',
-            side: 'Front',
-            name: '50-52 - Mr J R Archer-Moran - Driving Licence Front',
-            data: {
-              type: 'image/jpeg',
-              size: 1234567,
-              name: 'driving-licence-front.jpg',
-              lastModified: 1703001234567
-            },
-            s3Key: 'protected/mock-dl-front-12345',
-            date: '12/20/2023, 10:30:45 AM',
-            uploader: 'reception@thurstanhoskin.co.uk'
-          },
-          {
-            type: 'PhotoID',
-            document: 'Driving Licence',
-            side: 'Back',
-            name: '50-52 - Mr J R Archer-Moran - Driving Licence Back',
-            data: {
-              type: 'image/jpeg',
-              size: 1156789,
-              name: 'driving-licence-back.jpg',
-              lastModified: 1703001234567
-            },
-            s3Key: 'protected/mock-dl-back-67890',
-            date: '12/20/2023, 10:30:45 AM',
-            uploader: 'reception@thurstanhoskin.co.uk'
-          }
-        ]
-      });
-    });
+    // Mock button removed from UI
+    // mockBtn.addEventListener('click', ()=>{
+    //   loadData({
+    //     fe: 'BA',
+    //     clientNumber: '50',
+    //     matterNumber: '52',
+    //     name: 'Mr J R Archer-Moran',
+    //     _id: 'mock-database-id-123',
+    //     uploader: 'test@example.com',
+    //     titlePrefix: 'Mr', firstName: 'Jacob', middleNames: 'Robert', surname: 'Archer-Moran',
+    //     worktype: 'Sale of',
+    //     relation: 'Our Client',
+    //     matterDesc: 'Property sale transaction',
+    //     birthdate: '11-01-2001', 
+    //     photographicIdTaken: true, 
+    //     likenessNOTConfirmed: false,
+    //     address: '123 Main Street, London, SW1A 1AA',
+    //     clientRecentHomeMove: false,
+    //     previousAddress: '',
+    //     addressIdTaken: false,
+    //     idImages: [
+    //       {
+    //         type: 'PhotoID',
+    //         document: 'Driving Licence',
+    //         side: 'Front',
+    //         name: '50-52 - Mr J R Archer-Moran - Driving Licence Front',
+    //         data: {
+    //           type: 'image/jpeg',
+    //           size: 1234567,
+    //           name: 'driving-licence-front.jpg',
+    //           lastModified: 1703001234567
+    //         },
+    //         s3Key: 'protected/mock-dl-front-12345',
+    //         date: '12/20/2023, 10:30:45 AM',
+    //         uploader: 'reception@thurstanhoskin.co.uk'
+    //       },
+    //       {
+    //         type: 'PhotoID',
+    //         document: 'Driving Licence',
+    //         side: 'Back',
+    //         name: '50-52 - Mr J R Archer-Moran - Driving Licence Back',
+    //         data: {
+    //           type: 'image/jpeg',
+    //           size: 1156789,
+    //           name: 'driving-licence-back.jpg',
+    //           lastModified: 1703001234567
+    //         },
+    //         s3Key: 'protected/mock-dl-back-67890',
+    //         date: '12/20/2023, 10:30:45 AM',
+    //         uploader: 'reception@thurstanhoskin.co.uk'
+    //       }
+    //     ]
+    //   });
+    // });
 
     // Ensure finish button starts disabled on page load
     finishBtn.disabled = true;

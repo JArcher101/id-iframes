@@ -2069,6 +2069,7 @@
         let s3Keys = null;
         let itemId = null; // Store the item _id for later use
         let uploadedImages = null;
+        let localFilesForUpload = []; // Store actual File objects locally (can't be sent via postMessage)
         let imageSlider, prevBtn, nextBtn, loadingState, awaitingState, imageDisplaySection, reelContainer, mockBtn, addMoreContainer, addMoreBtn, clientHeading;
         let idUploaderSection, uploaderSubheading, uploaderCardsContainer, uploadAllBtn, cancelHeaderBtn, errorPopup, errorMessage, errorPopupClose, dynamicHint;
 
@@ -3144,9 +3145,17 @@
         =====================================================================
         */
         function uploadFiles(links) {
-            // Collect files from DOM (they still have the actual File objects)
-            const files = collectAllFiles();
-            console.log('Collected files from DOM for upload:', files.length, 'files');
+            // Use locally stored files (with actual File objects) instead of collecting again
+            const files = localFilesForUpload;
+            console.log('Using local files for upload:', files.length, 'files');
+            
+            // Validate we have files to upload
+            if (!files || files.length === 0) {
+                console.error('No files available for upload');
+                showError('No files to upload. Please try again.');
+                hideUploadingState();
+                return;
+            }
             
             let completed = 0;
             let hasErrors = false;
@@ -3267,6 +3276,9 @@
                 uploader: userEmail
             }, '*');
             
+            // Clear local files after successful upload
+            localFilesForUpload = [];
+            
             // Return to document list section (parent will send fresh display-documents data)
             hideUploader();
         }
@@ -3339,6 +3351,7 @@
             uploaderCards = [];
             s3Keys = null;
             uploadedImages = null;
+            localFilesForUpload = [];
             currentImageIndex = 0;
             
             // Clear uploader cards
@@ -3361,6 +3374,9 @@
         // Handle upload error
         function handleUploadError() {
             hideUploadingState();
+            
+            // Clear local files on error (user will need to re-select)
+            localFilesForUpload = [];
             
             // Show error message and return to uploader
             showError('Upload failed. Please try again.');
@@ -3819,6 +3835,7 @@
         function resetUploader() {
             uploaderCardsContainer.innerHTML = '';
             uploaderCards = [];
+            localFilesForUpload = []; // Clear local files
             // Button remains enabled for document uploads
             if (uploadAllBtn) {
                 uploadAllBtn.disabled = false;
@@ -3956,6 +3973,10 @@
                 showError('One or more files are empty or corrupted. Please re-select your files and try again.');
                 return;
             }
+            
+            // Store files locally before hiding uploader (preserves File objects for S3 upload)
+            localFilesForUpload = files;
+            console.log('Stored local files for upload:', localFilesForUpload.length);
             
             // Show uploading state
             console.log('Showing uploading state');
@@ -4113,8 +4134,9 @@
             // Reset upload-related data
             s3Keys = null;
             uploadedImages = null;
+            localFilesForUpload = []; // Clear local files
             
-            console.log('Uploaders reset due to new image data');
+            console.log('Uploaders reset due to new document data');
         }
 
         /*
