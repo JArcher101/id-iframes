@@ -76,11 +76,11 @@
         4. Child sends message with S3 key to parent
         
         MESSAGE DISPLAY & PAGINATION:
-        1. Initial display shows last 4 messages (newest at bottom)
-        2. "Load Earlier messages" button shown if more than 4 messages exist
+        1. Initial display shows as many messages as fit without scrolling (newest at bottom)
+        2. "Load Earlier messages" button shown if more messages exist than can fit
         3. Clicking button loads ALL messages and preserves scroll position
         4. User can then scroll up to see earlier messages
-        5. New message-data from parent resets to last 4 messages
+        5. New message-data from parent resets to dynamic initial count
         =====================================================================
         */
         
@@ -790,11 +790,11 @@
                      displayMessages() shows last 4 messages and File buttons (resets pagination)
         
         PAGINATION FLOW:
-        - displayMessages() initially shows last 4 messages (newest at bottom)
-        - "Load Earlier messages" button shown if more than 4 messages
+        - displayMessages() initially shows as many messages as fit without scrolling
+        - "Load Earlier messages" button shown if more messages exist
         - Clicking button loads ALL messages while preserving scroll position
         - User can scroll up to see earlier messages
-        - New message-data from parent resets to last 4 messages
+        - New message-data from parent resets to dynamic initial count
         
         IMPORTANT: Child NEVER displays messages locally. Parent always sends complete chat
         history via 'message-data' and child renders via displayMessages().
@@ -815,7 +815,6 @@
         let allMessages = [];      // Store all messages from parent
         let currentWhiteType = ''; // Store white type for message styling
         let showingAllMessages = false; // Track if showing full chat log
-        const INITIAL_MESSAGE_COUNT = 4; // Number of messages to show initially
 
         /*
         =====================================================================
@@ -969,7 +968,7 @@
 
         /*
         =====================================================================
-        DISPLAY MESSAGES - Renders last 4 chat messages (with pagination)
+        DISPLAY MESSAGES - Renders messages that fit without scrolling (with pagination)
         =====================================================================
         Parameters:
         - chatData: Array of message objects from parent's message-data
@@ -994,8 +993,8 @@
         1. Stores all messages and whiteType in global state
         2. Resets showingAllMessages flag to false
         3. Clears existing messages (except button)
-        4. Shows only LAST 4 messages (newest messages at end of array)
-        5. Shows "Load Earlier messages" button if more than 4 total messages
+        4. Renders messages from newest backward until container would need to scroll
+        5. Shows "Load Earlier messages" button if more messages exist
         6. Auto-scrolls to bottom to show latest messages
         
         Note: Parent generates liveUrl from s3Key when we send 'message-sent' with file.
@@ -1016,17 +1015,31 @@
             
             // Validate messages array
             if (allMessages && Array.isArray(allMessages) && allMessages.length > 0) {
-                // Display last 4 messages (newest messages at end of array)
-                const startIndex = Math.max(0, allMessages.length - INITIAL_MESSAGE_COUNT);
-                const initialMessages = allMessages.slice(startIndex);
+                // Calculate how many messages fit without scrolling
+                // Start from the end (newest) and work backward
+                let displayCount = 0;
+                const containerHeight = messagesContainer.clientHeight;
                 
-                initialMessages.forEach((message, relativeIndex) => {
-                    const absoluteIndex = startIndex + relativeIndex;
-                    appendMessageElement(message, absoluteIndex, whiteType);
-                });
+                // Temporarily render messages to measure height
+                for (let i = allMessages.length - 1; i >= 0; i--) {
+                    appendMessageElement(allMessages[i], i, whiteType);
+                    displayCount++;
+                    
+                    // Check if we've exceeded container height (would cause scrolling)
+                    if (messagesContainer.scrollHeight > containerHeight) {
+                        // Remove the last message that caused overflow
+                        const lastMessage = messagesContainer.querySelector('.message:first-of-type');
+                        if (lastMessage) lastMessage.remove();
+                        displayCount--;
+                        break;
+                    }
+                }
                 
-                // Show/hide "Load Earlier messages" button
-                if (allMessages.length > INITIAL_MESSAGE_COUNT) {
+                // If we rendered all messages without overflow, we're done
+                // If we stopped early, we need to show "Load Earlier" button
+                const hasMoreMessages = displayCount < allMessages.length;
+                
+                if (hasMoreMessages) {
                     loadEarlierBtn.style.display = 'block';
                 } else {
                     loadEarlierBtn.style.display = 'none';

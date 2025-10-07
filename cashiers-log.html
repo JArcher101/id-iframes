@@ -64,17 +64,17 @@
         
         LOG DISPLAY FLOW:
         1. Parent sends 'log-data' message with array of log entries
-        2. Child receives and renders first 4 logs via displayLogs() function
-        3. User clicks "Load more" to load next 4 logs (appended to bottom)
+        2. Child receives and renders as many logs as fit without scrolling
+        3. User clicks "Load more" to load next batch (appended to bottom)
         4. Logs displayed in reverse chronological order (newest at top)
-        5. New log data from parent resets display to first 4 logs
+        5. New log data from parent resets display to dynamic initial count
         
         PAGINATION:
-        - Initial display: First 4 logs only
-        - "Load more" button shown if more than 4 logs exist
-        - Each click loads next 4 logs and appends them
+        - Initial display: As many logs as fit without scrolling
+        - "Load more" button shown if more logs exist than can fit
+        - Each click loads next batch and appends them
         - Button hidden when all logs displayed
-        - Receiving new log-data resets to first 4
+        - Receiving new log-data resets to dynamic initial count
         =====================================================================
         */
         
@@ -301,8 +301,8 @@
         
         LOG DATA FLOW:
         1. Parent sends 'log-data' message with logs array
-        2. displayLogs() function shows first 4 entries
-        3. User can click "Load more" to load 4 more entries
+        2. displayLogs() function shows as many entries as fit without scrolling
+        3. User can click "Load more" to load next batch of entries
         4. Container scrolls to top to show newest entries first
         
         LOG ENTRY STRUCTURE (from parent):
@@ -313,10 +313,10 @@
         }
         
         PAGINATION:
-        - Shows 4 logs initially
-        - "Load more" button loads next 4 logs
+        - Shows as many logs as fit without scrolling initially
+        - "Load more" button loads next batch
         - Button hidden when all logs displayed
-        - New log array resets to first 4
+        - New log array resets to dynamic initial count
         
         IMPORTANT: This is a READ-ONLY display. No user interaction or
         data modification is supported. All log entries come from parent.
@@ -327,7 +327,6 @@
         // Pagination state
         let allLogs = []; // Store all logs from parent
         let displayedCount = 0; // Track how many logs are currently shown
-        const LOGS_PER_PAGE = 4; // Number of logs to load at a time
 
         /*
         =====================================================================
@@ -442,7 +441,7 @@
 
         /*
         =====================================================================
-        DISPLAY LOGS - Renders first 4 log entries (with pagination)
+        DISPLAY LOGS - Renders as many log entries as fit without scrolling (with pagination)
         =====================================================================
         Parameters:
         - logs: Array of log entry objects from parent
@@ -458,7 +457,7 @@
         1. Stores logs in allLogs array
         2. Resets displayedCount to 0
         3. Clears all existing log entries from container
-        4. Displays first 4 logs (or fewer if less than 4 total)
+        4. Renders logs until container would need to scroll
         5. Shows/hides "Load more" button based on whether more logs exist
         6. Scrolls to top to show newest entries
         
@@ -478,16 +477,25 @@
             
             // Validate logs array
             if (allLogs && Array.isArray(allLogs) && allLogs.length > 0) {
-                // Display first batch of logs
-                const initialBatch = allLogs.slice(0, LOGS_PER_PAGE);
-                initialBatch.forEach(log => {
-                    appendLogEntry(log);
-                });
+                const containerHeight = messagesContainer.clientHeight;
                 
-                displayedCount = initialBatch.length;
+                // Add logs one by one until we would cause scrolling
+                for (let i = 0; i < allLogs.length; i++) {
+                    appendLogEntry(allLogs[i]);
+                    displayedCount++;
+                    
+                    // Check if we've exceeded container height (would cause scrolling)
+                    if (messagesContainer.scrollHeight > containerHeight) {
+                        // Remove the last log that caused overflow
+                        const lastLog = messagesContainer.lastChild;
+                        if (lastLog) messagesContainer.removeChild(lastLog);
+                        displayedCount--;
+                        break;
+                    }
+                }
                 
                 // Show/hide load more button
-                if (allLogs.length > LOGS_PER_PAGE) {
+                if (displayedCount < allLogs.length) {
                     loadMoreBtn.style.display = 'block';
                 } else {
                     loadMoreBtn.style.display = 'none';
@@ -535,25 +543,23 @@
         =====================================================================
         LOAD MORE - Loads next batch of logs when button is clicked
         =====================================================================
-        Loads the next 4 logs (or remaining logs if fewer than 4 left)
-        and appends them to the bottom of the current list.
+        Loads additional logs (up to 4 more) and appends them to the
+        bottom of the current list.
         
         Hides the "Load more" button when all logs have been displayed.
         =====================================================================
         */
         function loadMore() {
+            const messagesContainer = document.getElementById('messagesContainer');
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             
-            // Calculate next batch
-            const nextBatch = allLogs.slice(displayedCount, displayedCount + LOGS_PER_PAGE);
+            // Load next batch (up to 4 more logs)
+            const logsToLoad = Math.min(4, allLogs.length - displayedCount);
             
-            // Append next batch of logs
-            nextBatch.forEach(log => {
-                appendLogEntry(log);
-            });
-            
-            // Update displayed count
-            displayedCount += nextBatch.length;
+            for (let i = 0; i < logsToLoad; i++) {
+                appendLogEntry(allLogs[displayedCount]);
+                displayedCount++;
+            }
             
             // Hide button if all logs are now displayed
             if (displayedCount >= allLogs.length) {
