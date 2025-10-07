@@ -1011,12 +1011,12 @@
                     documentType = config.name;
                 }
                 
-                // Generate filename
+                // Generate filename using uploader card title (e.g., "ID Check (E)", "IDV (J)", etc.)
                 const fe = String(clientData?.fe || 'Unknown').replace(/\//g, '-');
                 const clientNumber = String(clientData?.clientNumber || 'Unknown').replace(/\//g, '-');
                 const matterNumber = String(clientData?.matterNumber || 'Unknown').replace(/\//g, '-');
                 const clientName = String(clientData?.name || 'Unknown').replace(/\//g, '-');
-                const fileName = `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${documentType}`;
+                const fileName = `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${config.name}`;
                 
                 const fileObject = {
                     type: type,
