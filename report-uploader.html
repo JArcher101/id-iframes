@@ -977,20 +977,20 @@
                 
                 // Determine type and document based on card configuration
                 let type = '';
-                let document = '';
+                let documentType = '';
                 
                 if (config.noPrimary) {
                     // PEP Report - no dropdowns, use fixed values
                     type = 'PEP & Sanctions Check';
-                    document = config.name;
+                    documentType = config.name;
                 } else if (config.hasSecondary) {
                     // Has both primary and secondary dropdowns
                     type = primaryType || '';
-                    document = secondaryType || config.name;
+                    documentType = secondaryType || config.name;
                 } else {
                     // Has only primary dropdown
                     type = primaryType || '';
-                    document = config.name;
+                    documentType = config.name;
                 }
                 
                 // Generate filename
@@ -998,11 +998,11 @@
                 const clientNumber = String(clientData?.clientNumber || 'Unknown').replace(/\//g, '-');
                 const matterNumber = String(clientData?.matterNumber || 'Unknown').replace(/\//g, '-');
                 const clientName = String(clientData?.name || 'Unknown').replace(/\//g, '-');
-                const fileName = `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${document}`;
+                const fileName = `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${documentType}`;
                 
                 const fileObject = {
                     type: type,
-                    document: document,
+                    document: documentType,
                     uploader: userEmail,
                     date: new Date().toLocaleString('en-GB', { 
                         year: 'numeric', 
