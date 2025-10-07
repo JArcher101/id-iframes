@@ -3117,6 +3117,8 @@
         */
         function handlePutResponse(event) {
             if (event.data.type === 'put-links') {
+                // Store the item ID from PUT links response
+                itemId = event.data._id;
                 const links = event.data.links;
                 s3Keys = event.data.s3Keys; // Store S3 keys globally
                 uploadedImages = event.data.images; // Store images data with s3Keys
@@ -4165,7 +4167,7 @@
                 console.log('Received document display data:', event.data);
                 
                 // Store the item ID for later use
-                itemId = event.data._id;
+                itemId = event.data._id ? event.data._id : null;
                 
                 // If we're currently in uploader mode, reset everything first
                 if (!idUploaderSection.classList.contains('hidden')) {
@@ -4178,7 +4180,7 @@
                 console.log('Received image display data:', event.data);
                 
                 // Store the item ID for later use
-                itemId = event.data._id;
+                itemId = event.data._id ? event.data._id : null;
                 
                 // If we're currently in uploader mode, reset everything first
                 if (!idUploaderSection.classList.contains('hidden')) {
@@ -4228,6 +4230,8 @@
         // Handle PUT links for uploading files to S3
         function handlePutLinks(data) {
             console.log('Received PUT links:', data);
+            // Store the item ID from PUT links response
+            itemId = data._id;
             // Extract links and s3Keys from the data
             const links = data.links;
             s3Keys = data.s3Keys; // Store S3 keys globally
@@ -4238,6 +4242,10 @@
         // Handle PUT error from backend
         function handlePutError(data) {
             console.error('PUT error from backend:', data);
+            // Store the item ID if present
+            if (data._id) {
+                itemId = data._id;
+            }
             showError(data.message || 'Upload failed. Please try again.');
             
             // Reset upload state
