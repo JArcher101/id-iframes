@@ -26,6 +26,7 @@
             font-weight: 500;
             font-style: normal;
             font-display: swap;
+            unicode-range: U+0000-003F, U+0041-FFFF; /* Exclude U+0040 (@ symbol) to fallback to Quicksand */
             src: url(data:font/truetype;charset=utf-8;base64,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) format('truetype');
         }
         
@@ -520,20 +521,39 @@
             transform: translate(-50%, -50%);
             background: #dc3545;
             color: white;
-            padding: 15px 20px;
+            padding: 16px 20px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             z-index: 1000;
             display: none;
             align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            font-weight: 500;
-            min-width: 200px;
+            gap: 12px;
+            min-width: 250px;
         }
 
         .error-popup.show {
             display: flex;
+        }
+
+        .error-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .error-title {
+            font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            color: white;
+        }
+
+        .error-message {
+            font-family: 'RotisLight', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            font-weight: 300;
+            color: white;
         }
 
         .error-close {
@@ -636,7 +656,10 @@
 <body>
     <!-- Error popup -->
     <div class="error-popup" id="errorPopup">
-        <span id="errorMessage">No message entered</span>
+        <div class="error-content">
+            <div class="error-title" id="errorTitle">Validation Error</div>
+            <div class="error-message" id="errorMessage">No message entered</div>
+        </div>
         <button class="error-close" onclick="hideError()">&times;</button>
     </div>
 
@@ -879,7 +902,7 @@
             else if (event.data.type === 'put-error') {
                 console.error('PUT link generation failed:', event.data.message);
                 hideUploadingPopup();
-                showError('Failed to generate upload link. Please try again.');
+                showError('Please try again.', 'Upload Failed');
                 
                 // Re-enable send button so user can retry
                 document.getElementById('sendBtn').disabled = false;
@@ -1150,7 +1173,7 @@
             // Validate file type (documents only, NO images)
             if (!isValidDocumentType(file)) {
                 // Invalid file type - show error and reset
-                showError('Invalid file type. To add images please upload to the ID Photos section');
+                showError('To add images please upload to the ID Photos section', 'Invalid File Type');
                 resetUploadArea();
                 return;
             }
@@ -1232,7 +1255,7 @@
                 // Validate file type (documents only, NO images)
                 if (!isValidDocumentType(file)) {
                     // Invalid file type - show error and reset
-                    showError('Invalid file type. To add images please upload to the ID Photos section');
+                    showError('To add images please upload to the ID Photos section', 'Invalid File Type');
                     resetUploadArea();
                     return;
                 }
@@ -1299,7 +1322,7 @@
             // VALIDATION STEP 2: Check if file type is valid (documents only)
             // Note: This is a safety check - validation also happens in handleFileSelect()
             if (file && !isValidDocumentType(file)) {
-                showError('Invalid file type. To add images please upload to the ID Photos section');
+                showError('To add images please upload to the ID Photos section', 'Invalid File Type');
                 resetUploadArea(); // Clear the invalid file and reset UI
                 sendBtn.disabled = false; // Re-enable for retry
                 return;
@@ -1460,10 +1483,12 @@
         =====================================================================
         */
         
-        // Shows error popup with custom message
-        function showError(message = 'No message entered') {
+        // Shows error popup with custom message and optional title
+        function showError(message = 'No message entered', title = 'Validation Error') {
             const errorPopup = document.getElementById('errorPopup');
+            const errorTitle = document.getElementById('errorTitle');
             const errorMessage = document.getElementById('errorMessage');
+            errorTitle.textContent = title;
             errorMessage.textContent = message;
             errorPopup.classList.add('show');
         }
@@ -1597,7 +1622,7 @@
             .catch(error => {
                 console.error('File upload failed:', error);
                 hideUploadingPopup();
-                showError('Failed to upload file. Please try again.');
+                showError('Please try again.', 'Upload Failed');
                 
                 // Re-enable send button so user can retry
                 document.getElementById('sendBtn').disabled = false;
