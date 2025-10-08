@@ -4189,6 +4189,12 @@
            
         4. 'put-error' - Upload preparation failed
            - Handled by handlePutError()
+        
+        5. 'button-enable' - Enable upload more button
+           - Enables the "Upload more documents" button
+        
+        6. 'button-disable' - Disable upload more button
+           - Disables the "Upload more documents" button
         =====================================================================
         */
         window.addEventListener('message', (event) => {
@@ -4224,6 +4230,16 @@
                 handlePutLinks(event.data);
             } else if (event.data && event.data.type === 'put-error') {
                 handlePutError(event.data);
+            } else if (event.data && event.data.type === 'button-enable') {
+                // Enable the "Upload more documents" button
+                if (addMoreBtn) {
+                    addMoreBtn.disabled = false;
+                }
+            } else if (event.data && event.data.type === 'button-disable') {
+                // Disable the "Upload more documents" button
+                if (addMoreBtn) {
+                    addMoreBtn.disabled = true;
+                }
             }
         });
 

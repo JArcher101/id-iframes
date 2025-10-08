@@ -3503,6 +3503,14 @@
         4. 'put-error' - Upload error
            Data: {type, message}
            Action: Handled by handlePutError() or handlePutResponse()
+        
+        5. 'button-enable' - Enable add more button
+           Data: {type}
+           Action: Enables the "Add more ID images" button
+        
+        6. 'button-disable' - Disable add more button
+           Data: {type}
+           Action: Disables the "Add more ID images" button
         */
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'image-display') {
@@ -3521,6 +3529,16 @@
                 handlePutLinks(event.data);
             } else if (event.data && event.data.type === 'put-error') {
                 handlePutError(event.data);
+            } else if (event.data && event.data.type === 'button-enable') {
+                // Enable the "Add more ID images" button
+                if (addMoreBtn) {
+                    addMoreBtn.disabled = false;
+                }
+            } else if (event.data && event.data.type === 'button-disable') {
+                // Disable the "Add more ID images" button
+                if (addMoreBtn) {
+                    addMoreBtn.disabled = true;
+                }
             }
         });
 
