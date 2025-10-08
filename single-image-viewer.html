@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID Image Viewer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /*
+        =====================================================================
+        CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
+        =====================================================================
+        Transport Medium → fallback to Quicksand Bold (700)
+        Rotis fonts → fallback to Quicksand Regular (400/600)
+        =====================================================================
+        */
+        
+       /* Transport Medium - for headings and buttons */
+       @font-face {
+            font-family: 'Transport';
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+            unicode-range: U+0000-003F, U+0041-FFFF; /* Exclude U+0040 (@ symbol) to fallback to Quicksand */
+            src: url(data:font/truetype;charset=utf-8;base64,) format('truetype');
+        }
+        
+        /* Rotis Sans Serif Regular - for body text */
+        @font-face {
+            font-family: 'RotisRegular';
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,) format('opentype');
+        }
+        
+        /* Rotis Sans Serif Italic - for timestamps and metadata */
+        @font-face {
+            font-family: 'RotisItalic';
+            font-weight: 400;
+            font-style: italic;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,) format('opentype');
+        }
+        
+        /* Rotis Sans Serif Extra Bold - for tags and emphasis */
+        @font-face {
+            font-family: 'RotisBold';
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,) format('truetype');
+        }
+        
+        /*
+        =====================================================================
+        SINGLE IMAGE VIEWER - RESPONSIVE ZOOM/SCROLL VIEWER
+        =====================================================================
+        This iframe displays a single ID image with zoom and scroll capabilities.
+        
+        URL PARAMETERS:
+        - document: Document type (e.g., "Passport", "Driving Licence")
+        - side: Side of document ("Front", "Back", "Single")
+        - name: Filename for download
+        - liveUrl: S3 signed URL for the image
+        - uploader: Uploader's email
+        - date: Upload timestamp
+        
+        FEATURES:
+        - Responsive container that fits any modal size
+        - Image zoom: Mouse wheel, pinch zoom, zoom buttons
+        - Pan/scroll: Click and drag on zoomed image
+        - Double-click to zoom in/out
+        - Bottom banner with image details and download button
+        - Image fits container initially, can zoom up to 3x size
+        =====================================================================
+        */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a1a;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Image container with zoom/scroll */
+        .image-viewer-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+        }
+
+        .image-viewer-container.dragging {
+            cursor: grabbing;
+        }
+
+        .image-wrapper {
+            position: relative;
+            transform-origin: center center;
+            transition: transform 0.2s ease;
+        }
+
+        .image-wrapper.no-transition {
+            transition: none;
+        }
+
+        .image-wrapper img {
+            display: block;
+            max-width: 100%;
+            max-height: calc(100vh - 120px);
+            width: auto;
+            height: auto;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        /* Zoom controls */
+        .zoom-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .zoom-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+
+        .zoom-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .zoom-btn:disabled:hover {
+            transform: none;
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        /* Bottom banner with image details */
+        .image-details-banner {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 12px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 70px;
+        }
+
+        .image-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .document-type-banner {
+            font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 1rem;
+            font-weight: 500;
+            color: white;
+            margin: 0 0 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .side-tag {
+            font-family: 'RotisBold', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            display: inline-block;
+            background: #D4A574;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .uploader-info-banner {
+            font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.3;
+        }
+
+        .uploader-info-banner strong {
+            font-weight: 400;
+            color: white;
+        }
+
+        .download-btn-banner {
+            background: rgb(0, 60, 113);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .download-btn-banner svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .download-btn-banner:hover {
+            background: rgb(0, 40, 80);
+            transform: translateY(-1px);
+        }
+
+        .download-btn-banner:active {
+            transform: translateY(0);
+        }
+
+        /* Loading state */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Error state */
+        .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: white;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .error-message {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .error-details {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Zoom indicator */
+        .zoom-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .zoom-indicator.show {
+            opacity: 1;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .zoom-controls {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .zoom-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 1.3rem;
+            }
+            
+            .image-details-banner {
+                padding: 10px 12px;
+                min-height: 60px;
+            }
+            
+            .document-type-banner {
+                font-size: 0.9rem;
+            }
+            
+            .uploader-info-banner {
+                font-size: 0.75rem;
+            }
+            
+            .download-btn-banner {
+                padding: 8px 16px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .zoom-controls {
+                top: 8px;
+                right: 8px;
+            }
+            
+            .zoom-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 1.1rem;
+            }
+            
+            .image-details-banner {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 8px 10px;
+                gap: 8px;
+            }
+            
+            .download-btn-banner {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="image-viewer-container" id="imageViewerContainer">
+        <div class="loading-container" id="loadingContainer">
+            <div class="loading-spinner"></div>
+            <div>Loading image...</div>
+        </div>
+    </div>
+
+    <div class="zoom-controls" id="zoomControls" style="display: none;">
+        <button class="zoom-btn" id="zoomInBtn" title="Zoom in">+</button>
+        <button class="zoom-btn" id="zoomOutBtn" title="Zoom out">−</button>
+        <button class="zoom-btn" id="zoomResetBtn" title="Reset zoom">⟲</button>
+    </div>
+
+    <div class="zoom-indicator" id="zoomIndicator">100%</div>
+
+    <div class="image-details-banner" id="imageDetailsBanner" style="display: none;">
+        <div class="image-info">
+            <div class="document-type-banner" id="documentTypeBanner">
+                <span id="documentName">Document</span>
+                <span class="side-tag" id="sideTag" style="display: none;">FRONT</span>
+            </div>
+            <div class="uploader-info-banner" id="uploaderInfoBanner">
+                Loading...
+            </div>
+        </div>
+        <button class="download-btn-banner" id="downloadBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7,14 12,19 17,14"/>
+                <line x1="12" y1="19" x2="12" y2="7"/>
+            </svg>
+            Download
+        </button>
+    </div>
+
+    <script>
+        /*
+        =====================================================================
+        SINGLE IMAGE VIEWER - JAVASCRIPT
+        =====================================================================
+        
+        URL PARAMETERS (Base64 encoded JSON):
+        - data: Base64 encoded JSON string containing:
+          {
+              document: "Passport",
+              side: "Front",
+              name: "Filename.jpg",
+              liveUrl: "https://s3.amazonaws.com/...",
+              uploader: "email@example.com",
+              date: "12/20/2023, 10:30:45 AM"
+          }
+        
+        ZOOM FEATURES:
+        - Mouse wheel: Zoom in/out
+        - Pinch zoom: Touch devices
+        - Double-click: Toggle zoom
+        - Zoom buttons: +/- controls
+        - Reset button: Return to fit-to-screen
+        
+        PAN FEATURES:
+        - Click and drag: Pan around zoomed image
+        - Touch drag: Pan on touch devices
+        =====================================================================
+        */
+        
+        // Global state
+        let imageData = null;
+        let currentZoom = 1;
+        let minZoom = 1;
+        let maxZoom = 3;
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let translateX = 0;
+        let translateY = 0;
+        let imageWrapper = null;
+
+        // Parse URL parameters
+        function getImageDataFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dataParam = urlParams.get('data');
+            
+            if (!dataParam) {
+                return null;
+            }
+            
+            try {
+                // Decode base64 and parse JSON
+                const jsonString = atob(dataParam);
+                return JSON.parse(jsonString);
+            } catch (error) {
+                console.error('Error parsing URL parameters:', error);
+                return null;
+            }
+        }
+
+        // Display image
+        function displayImage(data) {
+            const container = document.getElementById('imageViewerContainer');
+            const loadingContainer = document.getElementById('loadingContainer');
+            const zoomControls = document.getElementById('zoomControls');
+            const banner = document.getElementById('imageDetailsBanner');
+            
+            // Update banner details
+            updateBanner(data);
+            
+            // Create image element
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-wrapper';
+            wrapper.id = 'imageWrapper';
+            imageWrapper = wrapper;
+            
+            const img = document.createElement('img');
+            img.src = data.liveUrl;
+            img.alt = data.document || 'ID Document';
+            
+            img.onload = () => {
+                // Hide loading, show image and controls
+                loadingContainer.style.display = 'none';
+                zoomControls.style.display = 'flex';
+                banner.style.display = 'flex';
+                
+                wrapper.appendChild(img);
+                container.innerHTML = '';
+                container.appendChild(wrapper);
+                
+                // Initialize zoom/pan
+                initializeZoomPan();
+                
+                // Update zoom button states
+                updateZoomButtons();
+            };
+            
+            img.onerror = () => {
+                showError('Failed to load image', 'The image could not be loaded. The link may have expired.');
+            };
+        }
+
+        // Update banner with image details
+        function updateBanner(data) {
+            const documentName = document.getElementById('documentName');
+            const sideTag = document.getElementById('sideTag');
+            const uploaderInfo = document.getElementById('uploaderInfoBanner');
+            
+            // Set document name
+            documentName.textContent = data.document || 'Unknown Document';
+            
+            // Set side tag
+            if (data.side && data.side !== 'Single') {
+                sideTag.textContent = data.side.toUpperCase();
+                sideTag.style.display = 'inline-block';
+            } else {
+                sideTag.style.display = 'none';
+            }
+            
+            // Set uploader info
+            if (data.uploader && data.date) {
+                uploaderInfo.innerHTML = `Uploaded by <strong>${data.uploader}</strong> on ${data.date}`;
+            } else {
+                uploaderInfo.textContent = 'Upload information not available';
+            }
+        }
+
+        // Initialize zoom and pan functionality
+        function initializeZoomPan() {
+            const container = document.getElementById('imageViewerContainer');
+            
+            // Mouse wheel zoom
+            container.addEventListener('wheel', handleWheel, { passive: false });
+            
+            // Double-click zoom
+            container.addEventListener('dblclick', handleDoubleClick);
+            
+            // Mouse drag
+            container.addEventListener('mousedown', handleMouseDown);
+            container.addEventListener('mousemove', handleMouseMove);
+            container.addEventListener('mouseup', handleMouseUp);
+            container.addEventListener('mouseleave', handleMouseUp);
+            
+            // Touch events
+            container.addEventListener('touchstart', handleTouchStart, { passive: false });
+            container.addEventListener('touchmove', handleTouchMove, { passive: false });
+            container.addEventListener('touchend', handleTouchEnd);
+            
+            // Prevent context menu
+            container.addEventListener('contextmenu', (e) => e.preventDefault());
+        }
+
+        // Zoom functions
+        function setZoom(newZoom, centerX = null, centerY = null) {
+            currentZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
+            
+            if (imageWrapper) {
+                // If zooming out to min, reset position
+                if (currentZoom === minZoom) {
+                    translateX = 0;
+                    translateY = 0;
+                }
+                
+                imageWrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentZoom})`;
+                
+                // Show zoom indicator
+                showZoomIndicator();
+                
+                // Update zoom button states
+                updateZoomButtons();
+            }
+        }
+
+        function zoomIn() {
+            setZoom(currentZoom + 0.25);
+        }
+
+        function zoomOut() {
+            setZoom(currentZoom - 0.25);
+        }
+
+        function resetZoom() {
+            currentZoom = minZoom;
+            translateX = 0;
+            translateY = 0;
+            if (imageWrapper) {
+                imageWrapper.style.transform = `translate(0px, 0px) scale(1)`;
+                updateZoomButtons();
+                showZoomIndicator();
+            }
+        }
+
+        function updateZoomButtons() {
+            const zoomInBtn = document.getElementById('zoomInBtn');
+            const zoomOutBtn = document.getElementById('zoomOutBtn');
+            const zoomResetBtn = document.getElementById('zoomResetBtn');
+            
+            if (zoomInBtn) zoomInBtn.disabled = currentZoom >= maxZoom;
+            if (zoomOutBtn) zoomOutBtn.disabled = currentZoom <= minZoom;
+            if (zoomResetBtn) zoomResetBtn.disabled = currentZoom === minZoom && translateX === 0 && translateY === 0;
+        }
+
+        function showZoomIndicator() {
+            const indicator = document.getElementById('zoomIndicator');
+            indicator.textContent = `${Math.round(currentZoom * 100)}%`;
+            indicator.classList.add('show');
+            
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 1000);
+        }
+
+        // Mouse wheel handler
+        function handleWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            setZoom(currentZoom + delta);
+        }
+
+        // Double-click handler
+        function handleDoubleClick(e) {
+            if (currentZoom === minZoom) {
+                // Zoom in to 2x
+                setZoom(2);
+            } else {
+                // Reset to fit
+                resetZoom();
+            }
+        }
+
+        // Mouse drag handlers
+        function handleMouseDown(e) {
+            if (currentZoom <= minZoom) return;
+            
+            isDragging = true;
+            startX = e.clientX - translateX;
+            startY = e.clientY - translateY;
+            
+            document.getElementById('imageViewerContainer').classList.add('dragging');
+            
+            if (imageWrapper) {
+                imageWrapper.classList.add('no-transition');
+            }
+        }
+
+        function handleMouseMove(e) {
+            if (!isDragging) return;
+            
+            e.preventDefault();
+            translateX = e.clientX - startX;
+            translateY = e.clientY - startY;
+            
+            if (imageWrapper) {
+                imageWrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentZoom})`;
+            }
+        }
+
+        function handleMouseUp() {
+            if (isDragging) {
+                isDragging = false;
+                document.getElementById('imageViewerContainer').classList.remove('dragging');
+                
+                if (imageWrapper) {
+                    imageWrapper.classList.remove('no-transition');
+                }
+            }
+        }
+
+        // Touch handlers for pinch zoom and drag
+        let touchStartDistance = 0;
+        let touchStartZoom = 1;
+        let touches = [];
+
+        function handleTouchStart(e) {
+            touches = Array.from(e.touches);
+            
+            if (touches.length === 2) {
+                // Pinch zoom start
+                e.preventDefault();
+                touchStartDistance = getTouchDistance(touches[0], touches[1]);
+                touchStartZoom = currentZoom;
+            } else if (touches.length === 1 && currentZoom > minZoom) {
+                // Drag start
+                isDragging = true;
+                startX = touches[0].clientX - translateX;
+                startY = touches[0].clientY - translateY;
+                
+                if (imageWrapper) {
+                    imageWrapper.classList.add('no-transition');
+                }
+            }
+        }
+
+        function handleTouchMove(e) {
+            touches = Array.from(e.touches);
+            
+            if (touches.length === 2) {
+                // Pinch zoom
+                e.preventDefault();
+                const currentDistance = getTouchDistance(touches[0], touches[1]);
+                const scale = currentDistance / touchStartDistance;
+                setZoom(touchStartZoom * scale);
+            } else if (touches.length === 1 && isDragging) {
+                // Drag
+                e.preventDefault();
+                translateX = touches[0].clientX - startX;
+                translateY = touches[0].clientY - startY;
+                
+                if (imageWrapper) {
+                    imageWrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentZoom})`;
+                }
+            }
+        }
+
+        function handleTouchEnd() {
+            if (isDragging) {
+                isDragging = false;
+                
+                if (imageWrapper) {
+                    imageWrapper.classList.remove('no-transition');
+                }
+            }
+        }
+
+        function getTouchDistance(touch1, touch2) {
+            const dx = touch1.clientX - touch2.clientX;
+            const dy = touch1.clientY - touch2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        // Download function
+        function downloadImage() {
+            if (!imageData || !imageData.liveUrl) {
+                alert('Cannot download image. Image data is missing.');
+                return;
+            }
+            
+            // Fetch image and trigger download
+            fetch(imageData.liveUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = imageData.name || `image-${Date.now()}.jpg`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('Error downloading image:', error);
+                    // Fallback: try direct download
+                    const link = document.createElement('a');
+                    link.href = imageData.liveUrl;
+                    link.download = imageData.name || `image-${Date.now()}.jpg`;
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
+        }
+
+        // Show error state
+        function showError(title, message) {
+            const container = document.getElementById('imageViewerContainer');
+            container.innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-message">${title}</div>
+                    <div class="error-details">${message}</div>
+                </div>
+            `;
+        }
+
+        // Event listeners
+        document.getElementById('zoomInBtn').addEventListener('click', zoomIn);
+        document.getElementById('zoomOutBtn').addEventListener('click', zoomOut);
+        document.getElementById('zoomResetBtn').addEventListener('click', resetZoom);
+        document.getElementById('downloadBtn').addEventListener('click', downloadImage);
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            imageData = getImageDataFromURL();
+            
+            if (!imageData) {
+                showError('Invalid URL', 'No image data was provided in the URL parameters.');
+                return;
+            }
+            
+            if (!imageData.liveUrl) {
+                showError('Missing Image URL', 'The image URL is missing from the data.');
+                return;
+            }
+            
+            displayImage(imageData);
+        });
+    </script>
+</body>
+</html>
+
