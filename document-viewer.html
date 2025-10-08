@@ -1685,11 +1685,12 @@
             background: #f8f9fa;
             border-radius: 8px;
             padding: 20px;
-            text-align: center;
+            text-align: left;
             width: 100%;
         }
         
         .no-documents-card .document-name {
+            font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 14px;
             font-weight: 500;
             color: #333;
@@ -2533,7 +2534,7 @@
             if (images.length === 0) {
                 documentsGrid.innerHTML = `
                     <div class="no-documents-card">
-                        <div class="document-name">No documents available</div>
+                        <div class="document-name">No documents uploaded</div>
                     </div>
                 `;
                 return;
