@@ -2020,6 +2020,9 @@
                 const baseUrl = window.location.href.split('/').slice(0, -1).join('/');
                 const viewerUrl = `${baseUrl}/single-image-viewer.html#${dataHash}`;
                 
+                console.log('Generated viewer URL with hash:', viewerUrl);
+                console.log('Hash data:', dataHash);
+                
                 // Send message to parent to open the viewer iframe in modal
                 window.parent.postMessage({
                     type: 'open-image',
