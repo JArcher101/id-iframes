@@ -262,18 +262,15 @@
             align-items: center;
             justify-content: center;
             height: 100%;
-            color: white;
-            font-size: 1rem;
         }
 
         .loading-spinner {
             width: 50px;
             height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid white;
+            border: 4px solid rgba(0, 114, 188, 0.2); /* Pantone 541C with transparency */
+            border-top: 4px solid #0072BC; /* Pantone 541C solid */
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 20px;
         }
 
         @keyframes spin {
@@ -415,7 +412,6 @@
     <div class="image-viewer-container" id="imageViewerContainer">
         <div class="loading-container" id="loadingContainer">
             <div class="loading-spinner"></div>
-            <div>Loading image...</div>
         </div>
     </div>
 
@@ -511,9 +507,19 @@
         // Display image
         function displayImage(data) {
             const container = document.getElementById('imageViewerContainer');
-            const loadingContainer = document.getElementById('loadingContainer');
+            let loadingContainer = document.getElementById('loadingContainer');
             const zoomControls = document.getElementById('zoomControls');
             const banner = document.getElementById('imageDetailsBanner');
+            
+            // If loading container doesn't exist (e.g., after error screen), recreate it
+            if (!loadingContainer) {
+                container.innerHTML = `
+                    <div class="loading-container" id="loadingContainer">
+                        <div class="loading-spinner"></div>
+                    </div>
+                `;
+                loadingContainer = document.getElementById('loadingContainer');
+            }
             
             // Update banner details
             updateBanner(data);
@@ -530,7 +536,9 @@
             
             img.onload = () => {
                 // Hide loading, show image and controls
-                loadingContainer.style.display = 'none';
+                if (loadingContainer) {
+                    loadingContainer.style.display = 'none';
+                }
                 zoomControls.style.display = 'flex';
                 banner.style.display = 'flex';
                 
