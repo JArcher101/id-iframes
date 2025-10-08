@@ -58,13 +58,18 @@
         =====================================================================
         This iframe displays a single ID image with zoom and scroll capabilities.
         
-        URL PARAMETERS:
-        - document: Document type (e.g., "Passport", "Driving Licence")
-        - side: Side of document ("Front", "Back", "Single")
-        - name: Filename for download
-        - liveUrl: S3 signed URL for the image
-        - uploader: Uploader's email
-        - date: Upload timestamp
+        COMMUNICATION:
+        - Receives image data via URL hash (to avoid Wix modifying query params)
+        - URL format: single-image-viewer.html#base64EncodedJSON
+        - Data format (base64 encoded in hash):
+          {
+              document: "Passport",
+              side: "Front",
+              name: "Filename.jpg",
+              liveUrl: "https://s3.amazonaws.com/...",
+              uploader: "email@example.com",
+              date: "12/20/2023, 10:30:45 AM"
+          }
         
         FEATURES:
         - Responsive container that fits any modal size
@@ -448,8 +453,10 @@
         SINGLE IMAGE VIEWER - JAVASCRIPT
         =====================================================================
         
-        URL PARAMETERS (Base64 encoded JSON):
-        - data: Base64 encoded JSON string containing:
+        COMMUNICATION:
+        - Reads image data from URL hash (immune to Wix parameter modification)
+        - URL format: single-image-viewer.html#base64EncodedJSON
+        - Data format (base64 encoded):
           {
               document: "Passport",
               side: "Front",
@@ -484,21 +491,21 @@
         let translateY = 0;
         let imageWrapper = null;
 
-        // Parse URL parameters
-        function getImageDataFromURL() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const dataParam = urlParams.get('data');
+        // Parse image data from URL hash
+        function getImageDataFromHash() {
+            // Get the hash (everything after #)
+            const hash = window.location.hash.substring(1); // Remove the #
             
-            if (!dataParam) {
+            if (!hash) {
                 return null;
             }
             
             try {
                 // Decode base64 and parse JSON
-                const jsonString = atob(dataParam);
+                const jsonString = atob(hash);
                 return JSON.parse(jsonString);
             } catch (error) {
-                console.error('Error parsing URL parameters:', error);
+                console.error('Error parsing hash data:', error);
                 return null;
             }
         }
@@ -859,10 +866,10 @@
 
         // Initialize on load
         window.addEventListener('load', () => {
-            imageData = getImageDataFromURL();
+            imageData = getImageDataFromHash();
             
             if (!imageData) {
-                showError('Invalid URL', 'No image data was provided in the URL parameters.');
+                showError('Invalid URL', 'No image data was provided in the URL hash.');
                 return;
             }
             

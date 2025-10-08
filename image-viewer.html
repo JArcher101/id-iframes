@@ -2013,12 +2013,12 @@
                     date: imageData.date
                 };
                 
-                // Encode data as base64 JSON for URL parameter
-                const dataParam = btoa(JSON.stringify(viewerData));
+                // Encode data as base64 JSON for URL hash (Wix won't modify hash)
+                const dataHash = btoa(JSON.stringify(viewerData));
                 
-                // Construct the iframe URL (assuming it's hosted at the same location)
+                // Construct the iframe URL using hash instead of query params
                 const baseUrl = window.location.href.split('/').slice(0, -1).join('/');
-                const viewerUrl = `${baseUrl}/single-image-viewer.html?data=${dataParam}`;
+                const viewerUrl = `${baseUrl}/single-image-viewer.html#${dataHash}`;
                 
                 // Send message to parent to open the viewer iframe in modal
                 window.parent.postMessage({
