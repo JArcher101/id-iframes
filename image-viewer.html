@@ -1253,6 +1253,13 @@
             color: #333;
         }
 
+        .image-action-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .open-btn-header,
         .download-btn-header {
             background: none;
             color: rgb(0, 60, 113);
@@ -1265,11 +1272,13 @@
             padding: 4px;
         }
 
+        .open-btn-header svg,
         .download-btn-header svg {
             width: 18px;
             height: 20px;
         }
 
+        .open-btn-header:hover,
         .download-btn-header:hover {
             color: rgb(0, 40, 80);
             transform: scale(1.1);
@@ -1664,13 +1673,22 @@
                         <div class="image-details">
                             <div class="document-header">
                                 <div class="document-type" style="visibility: hidden;">Placeholder</div>
-                                <button class="download-btn-header" disabled style="opacity: 0.3; cursor: not-allowed;">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                      <polyline points="7,14 12,19 17,14"/>
-                                      <line x1="12" y1="19" x2="12" y2="7"/>
-                                    </svg>
-                                </button>
+                                <div class="image-action-buttons">
+                                    <button class="open-btn-header" disabled style="opacity: 0.3; cursor: not-allowed;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                            <polyline points="15 3 21 3 21 9"></polyline>
+                                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                                        </svg>
+                                    </button>
+                                    <button class="download-btn-header" disabled style="opacity: 0.3; cursor: not-allowed;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                          <polyline points="7,14 12,19 17,14"/>
+                                          <line x1="12" y1="19" x2="12" y2="7"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                             <div class="uploader-info" style="visibility: hidden;">Placeholder text</div>
                         </div>
@@ -1960,6 +1978,44 @@
             const index = Array.from(cards).indexOf(card);
         }
 
+        // Open image function - sends message to parent
+        function openImage(button) {
+            try {
+                // Get the image index from the button's data attribute
+                const imageIndex = button.getAttribute('data-image-index');
+                const imageData = images[imageIndex];
+                
+                console.log('Open image function called:', {
+                    button: button,
+                    imageIndex: imageIndex,
+                    imageData: imageData
+                });
+                
+                // Check if imageData exists and has a URL
+                const imageUrl = imageData?.url || imageData?.liveUrl;
+                if (!imageData || !imageUrl) {
+                    console.error('Cannot open: image data is missing or invalid', {
+                        imageData: imageData,
+                        url: imageData?.url,
+                        liveUrl: imageData?.liveUrl,
+                        imageUrl: imageUrl
+                    });
+                    alert('Cannot open image. Image data is missing or invalid.');
+                    return;
+                }
+                
+                // Send message to parent to open the image
+                window.parent.postMessage({
+                    type: 'open-image',
+                    liveUrl: imageUrl
+                }, '*');
+                
+            } catch (error) {
+                console.error('Error opening image:', error);
+                alert('Error opening image. Please try again.');
+            }
+        }
+
         // Download function
         function downloadImage(button) {
             try {
@@ -2040,13 +2096,22 @@
                             ${imageData.document || 'Unknown Document'}
                             ${sideTag}
                         </div>
-                        <button class="download-btn-header" onclick="downloadImage(this)" title="Download image" data-image-index="${index}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7,14 12,19 17,14"/>
-                              <line x1="12" y1="19" x2="12" y2="7"/>
-                            </svg>
-                        </button>
+                        <div class="image-action-buttons">
+                            <button class="open-btn-header" onclick="openImage(this)" title="Open image" data-image-index="${index}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="download-btn-header" onclick="downloadImage(this)" title="Download image" data-image-index="${index}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                  <polyline points="7,14 12,19 17,14"/>
+                                  <line x1="12" y1="19" x2="12" y2="7"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     <div class="uploader-info">${uploaderInfo}</div>
                 </div>
