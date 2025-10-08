@@ -1680,6 +1680,21 @@
             text-align: center;
             padding: 20px;
         }
+        
+        .no-documents-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .no-documents-card .document-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin: 0;
+        }
 
         .loading {
             display: flex;
@@ -2516,7 +2531,11 @@
             const documentsGrid = document.getElementById('documentsGrid');
             
             if (images.length === 0) {
-                documentsGrid.innerHTML = '<div class="no-images">No documents available</div>';
+                documentsGrid.innerHTML = `
+                    <div class="no-documents-card">
+                        <div class="document-name">No documents available</div>
+                    </div>
+                `;
                 return;
             }
             
