@@ -2853,6 +2853,22 @@
             return likenessToggle ? likenessToggle.checked : false;
         }
 
+        // Show awaiting state (without resetting client data)
+        function showAwaitingState() {
+            // Hide all sections
+            imageDisplaySection.classList.add('hidden');
+            idUploaderSection.classList.add('hidden');
+            
+            // Show awaiting data section
+            awaitingState.classList.remove('hidden');
+            
+            // Reset image-related state but keep client data
+            images = [];
+            currentImageIndex = 0;
+            
+            console.log('Showing awaiting state');
+        }
+
         // Return to awaiting data section
         function returnToAwaitingData() {
             // Hide all sections
@@ -3542,9 +3558,13 @@
             clientData = data.clientData || {};
             userEmail = data.userEmail || '';
             
-            // Process and display images
-            if (data.images && Array.isArray(data.images)) {
-                displayImages(data.images, true, data.clientData, data.userEmail);
+            // Store allowUploads flag
+            allowUploads = data.allowUploads !== undefined ? data.allowUploads : false;
+            
+            // Process and display images (check both 'data' and 'images' for backwards compatibility)
+            const imagesToDisplay = data.data || data.images;
+            if (imagesToDisplay && Array.isArray(imagesToDisplay) && imagesToDisplay.length > 0) {
+                displayImages(imagesToDisplay, data.allowUploads, data.clientData, data.userEmail);
             } else {
                 // No images to display, show awaiting state
                 showAwaitingState();

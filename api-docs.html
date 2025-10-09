@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID iFrames - API Documentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-main: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-code: #1e293b;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --sidebar-width: 280px;
+            --header-height: 64px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-primary);
+            line-height: 1.6;
+            background: var(--bg-secondary);
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--bg-main);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .header-subtitle {
+            margin-left: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            margin-top: var(--header-height);
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background: var(--bg-main);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 2rem 0;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            padding: 0 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 0.625rem 1.5rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.15s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover {
+            background: var(--bg-secondary);
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            background: var(--bg-secondary);
+            color: var(--primary);
+            border-left-color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 3rem;
+            max-width: 1200px;
+        }
+
+        .section {
+            background: var(--bg-main);
+            border-radius: 12px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .section h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            color: var(--text-primary);
+        }
+
+        .section h4 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .section p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        /* Message Type Badge */
+        .message-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin: 1rem 0;
+        }
+
+        .message-type.incoming {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .message-type.outgoing {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .arrow {
+            font-size: 1rem;
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background: var(--bg-code);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            border: 1px solid #334155;
+        }
+
+        .code-block pre {
+            margin: 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            line-height: 1.7;
+            color: #e2e8f0;
+        }
+
+        .code-block .keyword { color: #c678dd; }
+        .code-block .string { color: #98c379; }
+        .code-block .number { color: #d19a66; }
+        .code-block .comment { color: #5c6370; font-style: italic; }
+        .code-block .function { color: #61afef; }
+        .code-block .property { color: #e06c75; }
+
+        /* Live Demo */
+        .demo-container {
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .demo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .demo-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .demo-iframe {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            margin-bottom: 1rem;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .demo-output {
+            background: var(--bg-code);
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        /* Table */
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.875rem;
+        }
+
+        .api-table th {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .api-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .api-table code {
+            background: var(--bg-secondary);
+            padding: 0.125rem 0.375rem;
+            border-radius: 3px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8125rem;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .badge-required {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-optional {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.25rem;
+            margin: 1.5rem 0;
+            border-radius: 6px;
+        }
+
+        .info-box-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid var(--warning);
+        }
+
+        .warning-box .info-box-title {
+            color: #92400e;
+        }
+
+        /* Scroll to top */
+        .scroll-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.15s ease;
+        }
+
+        .scroll-top:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .scroll-top.visible {
+            display: flex;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            :root {
+                --sidebar-width: 280px;
+            }
+        }
+
+        /* Syntax highlighting helpers */
+        .hl-json { color: #e2e8f0; }
+        .hl-key { color: #e06c75; }
+        .hl-string { color: #98c379; }
+        .hl-number { color: #d19a66; }
+        .hl-boolean { color: #c678dd; }
+        .hl-null { color: #c678dd; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>ID iFrames</h1>
+        <span class="header-subtitle">API Documentation v1.0</span>
+    </header>
+
+    <!-- Container -->
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar" id="sidebar">
+            <div class="nav-section">
+                <div class="nav-section-title">Getting Started</div>
+                <a href="#introduction" class="nav-link">Introduction</a>
+                <a href="#integration" class="nav-link">Integration Guide</a>
+                <a href="#security" class="nav-link">Security</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Components</div>
+                <a href="#image-viewer" class="nav-link">Image Viewer</a>
+                <a href="#image-uploader" class="nav-link">Image Uploader</a>
+                <a href="#document-viewer" class="nav-link">Document Viewer</a>
+                <a href="#message-iframe" class="nav-link">Message iframe</a>
+                <a href="#report-uploader" class="nav-link">Report Uploader</a>
+                <a href="#cashiers-log" class="nav-link">Cashiers Log</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Reference</div>
+                <a href="#message-types" class="nav-link">Message Types</a>
+                <a href="#data-structures" class="nav-link">Data Structures</a>
+                <a href="#error-handling" class="nav-link">Error Handling</a>
+                <a href="#troubleshooting" class="nav-link">Troubleshooting</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Introduction -->
+            <section id="introduction" class="section">
+                <h2>Introduction</h2>
+                <p>ID iFrames is a collection of standalone HTML components designed for image viewing, document management, and communication interfaces. All components use the <code>window.postMessage()</code> API for secure parent-child communication.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">Why postMessage?</div>
+                    <p style="margin: 0; color: var(--text-secondary);">The postMessage API enables secure cross-origin communication between the parent window and embedded iframes, allowing data exchange without compromising security.</p>
+                </div>
+
+                <h3>Key Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Standalone HTML files - no build process required</li>
+                    <li>S3 direct upload with presigned URLs</li>
+                    <li>Custom typography with automatic fallbacks</li>
+                    <li>Responsive design across all components</li>
+                    <li>Consistent API patterns across iframes</li>
+                </ul>
+            </section>
+
+            <!-- Integration Guide -->
+            <section id="integration" class="section">
+                <h2>Integration Guide</h2>
+                
+                <h3>Basic Setup</h3>
+                <p>Embed an iframe and set up bidirectional communication:</p>
+
+                <div class="code-block">
+                    <pre><code><span class="keyword">&lt;iframe</span> 
+  <span class="property">id</span>=<span class="string">"imageViewer"</span>
+  <span class="property">src</span>=<span class="string">"image-viewer.html"</span>
+  <span class="property">width</span>=<span class="string">"100%"</span>
+  <span class="property">height</span>=<span class="string">"800"</span><span class="keyword">&gt;&lt;/iframe&gt;</span>
+
+<span class="keyword">&lt;script&gt;</span>
+  <span class="keyword">const</span> iframe = <span class="function">document.getElementById</span>(<span class="string">'imageViewer'</span>).contentWindow;
+  
+  <span class="comment">// Listen for messages from iframe</span>
+  window.<span class="function">addEventListener</span>(<span class="string">'message'</span>, <span class="keyword">function</span>(event) {
+    <span class="function">console.log</span>(<span class="string">'Received:'</span>, event.data);
+    
+    <span class="keyword">if</span> (event.data.type === <span class="string">'image-data'</span>) {
+      <span class="comment">// Handle upload request</span>
+      <span class="function">handleImageUpload</span>(event.data);
+    }
+  });
+  
+  <span class="comment">// Send data to iframe after it loads</span>
+  <span class="function">document.getElementById</span>(<span class="string">'imageViewer'</span>).<span class="function">addEventListener</span>(<span class="string">'load'</span>, <span class="keyword">function</span>() {
+    iframe.<span class="function">postMessage</span>({
+      type: <span class="string">'display-images'</span>,
+      data: [],
+      allowUploads: <span class="keyword">true</span>,
+      clientData: { fe: <span class="string">'TL'</span>, clientNumber: <span class="string">'12345'</span> },
+      userEmail: <span class="string">'user@example.com'</span>
+    }, <span class="string">'*'</span>);
+  });
+<span class="keyword">&lt;/script&gt;</span></code></pre>
+                </div>
+
+                <div class="warning-box info-box">
+                    <div class="info-box-title">⚠️ Production Security</div>
+                    <p style="margin: 0; color: #78350f;">Replace <code>'*'</code> with your specific origin (e.g., <code>'https://yourdomain.com'</code>) and always validate <code>event.origin</code> in message listeners.</p>
+                </div>
+            </section>
+
+            <!-- Security -->
+            <section id="security" class="section">
+                <h2>Security</h2>
+                
+                <h3>Origin Validation</h3>
+                <p>Always validate message origins in production:</p>
+
+                <div class="code-block">
+                    <pre><code>window.<span class="function">addEventListener</span>(<span class="string">'message'</span>, <span class="keyword">function</span>(event) {
+  <span class="keyword">const</span> allowedOrigins = [<span class="string">'https://yourdomain.com'</span>];
+  
+  <span class="keyword">if</span> (!allowedOrigins.<span class="function">includes</span>(event.origin)) {
+    <span class="function">console.warn</span>(<span class="string">'Blocked message from:'</span>, event.origin);
+    <span class="keyword">return</span>;
+  }
+  
+  <span class="comment">// Process message safely</span>
+  <span class="function">handleMessage</span>(event.data);
+});</code></pre>
+                </div>
+            </section>
+
+            <!-- Image Viewer -->
+            <section id="image-viewer" class="section">
+                <h2>Image Viewer</h2>
+                <p><strong>File:</strong> <code>image-viewer.html</code></p>
+                <p>Displays ID images (Photo ID and Address ID documents) with upload capabilities and image carousel.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-images, put-links, put-error<br>
+                    <strong>Sends:</strong> image-data, upload-success, refresh-images</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="imageViewerDemo" 
+                        src="image-viewer.html" 
+                        class="demo-iframe" 
+                        height="600"
+                        title="Image Viewer Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendDisplayImages()">Load Sample Images</button>
+                        <button class="btn btn-secondary" onclick="sendEmptyDisplay()">Clear Images</button>
+                        <button class="btn btn-secondary" onclick="clearConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="imageViewerConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>display-images</code>
+                </div>
+                <p>Initial display of existing images with upload permissions.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"display-images"</span>,
+  <span class="property">"data"</span>: [
+    {
+      <span class="property">"url"</span>: <span class="string">"https://example.com/image1.jpg"</span>,
+      <span class="property">"documentType"</span>: <span class="string">"Passport"</span>,
+      <span class="property">"date"</span>: <span class="string">"2025-10-01T12:00:00Z"</span>
+    }
+  ],
+  <span class="property">"allowUploads"</span>: <span class="keyword">true</span>,
+  <span class="property">"clientData"</span>: {
+    <span class="property">"fe"</span>: <span class="string">"TL"</span>,
+    <span class="property">"clientNumber"</span>: <span class="string">"12345"</span>,
+    <span class="property">"matterNumber"</span>: <span class="string">"M001"</span>,
+    <span class="property">"name"</span>: <span class="string">"John Doe"</span>
+  },
+  <span class="property">"userEmail"</span>: <span class="string">"user@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>put-links</code>
+                </div>
+                <p>Provides S3 PUT URLs for uploading images.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"put-links"</span>,
+  <span class="property">"links"</span>: [
+    {
+      <span class="property">"url"</span>: <span class="string">"https://s3.amazonaws.com/bucket/presigned-url"</span>,
+      <span class="property">"contentType"</span>: <span class="string">"image/jpeg"</span>
+    }
+  ],
+  <span class="property">"s3Keys"</span>: [...],
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>image-data</code>
+                </div>
+                <p>Requests PUT links for image upload.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"image-data"</span>,
+  <span class="property">"images"</span>: [
+    {
+      <span class="property">"documentType"</span>: <span class="string">"Passport"</span>,
+      <span class="property">"s3Key"</span>: <span class="keyword">null</span>,
+      <span class="property">"file"</span>: {
+        <span class="property">"name"</span>: <span class="string">"passport.jpg"</span>,
+        <span class="property">"type"</span>: <span class="string">"image/jpeg"</span>,
+        <span class="property">"size"</span>: <span class="number">1024000</span>
+      }
+    }
+  ],
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>upload-success</code>
+                </div>
+                <p>Notifies completion of successful upload.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"upload-success"</span>,
+  <span class="property">"docType"</span>: <span class="string">"Photo ID"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>refresh-images</code>
+                </div>
+                <p>Requests parent to reload image data (e.g., after successful upload).</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"refresh-images"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>
+}</code></pre>
+                </div>
+
+                <h3>Expected Message Flow</h3>
+                <ol style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Parent sends <code>display-images</code> to initialize the iframe</li>
+                    <li>User selects images to upload</li>
+                    <li>iframe sends <code>image-data</code> with file metadata</li>
+                    <li>Parent generates presigned URLs and sends <code>put-links</code> back</li>
+                    <li>iframe uploads directly to S3 using PUT requests</li>
+                    <li>iframe sends <code>upload-success</code> when complete</li>
+                    <li>iframe sends <code>refresh-images</code> to reload updated data</li>
+                </ol>
+
+                <h3>Properties Reference</h3>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>data</code></td>
+                            <td>Array</td>
+                            <td><span class="badge badge-required">Required</span></td>
+                            <td>Array of image objects to display</td>
+                        </tr>
+                        <tr>
+                            <td><code>allowUploads</code></td>
+                            <td>Boolean</td>
+                            <td><span class="badge badge-optional">Optional</span></td>
+                            <td>Enable/disable upload functionality</td>
+                        </tr>
+                        <tr>
+                            <td><code>clientData</code></td>
+                            <td>Object</td>
+                            <td><span class="badge badge-required">Required</span></td>
+                            <td>Client information object</td>
+                        </tr>
+                        <tr>
+                            <td><code>userEmail</code></td>
+                            <td>String</td>
+                            <td><span class="badge badge-required">Required</span></td>
+                            <td>Current user's email address</td>
+                        </tr>
+                        <tr>
+                            <td><code>_id</code></td>
+                            <td>String</td>
+                            <td><span class="badge badge-required">Required</span></td>
+                            <td>Database item identifier</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Image Uploader -->
+            <section id="image-uploader" class="section">
+                <h2>Image Uploader</h2>
+                <p><strong>File:</strong> <code>image-uploader.html</code></p>
+                <p>Client onboarding form for collecting personal details and ID documents.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> initiation-data, put-links, put-error<br>
+                    <strong>Sends:</strong> image-data, upload-success</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="imageUploaderDemo" 
+                        src="image-uploader.html" 
+                        class="demo-iframe" 
+                        height="700"
+                        title="Image Uploader Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendInitiationData()">Initialize Form</button>
+                        <button class="btn btn-secondary" onclick="clearUploaderConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="imageUploaderConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>initiation-data</code>
+                </div>
+                <p>Populates the form with client data.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"initiation-data"</span>,
+  <span class="property">"clientData"</span>: {
+    <span class="property">"fe"</span>: <span class="string">"TL"</span>,
+    <span class="property">"clientNumber"</span>: <span class="string">"12345"</span>,
+    <span class="property">"matterNumber"</span>: <span class="string">"M001"</span>,
+    <span class="property">"name"</span>: <span class="string">"John Doe"</span>,
+    <span class="property">"titlePrefix"</span>: <span class="string">"Mr"</span>,
+    <span class="property">"firstName"</span>: <span class="string">"John"</span>,
+    <span class="property">"worktype"</span>: <span class="string">"Purchase"</span>
+  }
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+                
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>image-data</code>
+                </div>
+                <p>Sends form data and image metadata for processing.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"image-data"</span>,
+  <span class="property">"images"</span>: [
+    {
+      <span class="property">"documentType"</span>: <span class="string">"Passport"</span>,
+      <span class="property">"s3Key"</span>: <span class="keyword">null</span>,
+      <span class="property">"file"</span>: {
+        <span class="property">"name"</span>: <span class="string">"passport.jpg"</span>,
+        <span class="property">"type"</span>: <span class="string">"image/jpeg"</span>,
+        <span class="property">"size"</span>: <span class="number">1024000</span>
+      }
+    }
+  ],
+  <span class="property">"formData"</span>: {
+    <span class="property">"titlePrefix"</span>: <span class="string">"Mr"</span>,
+    <span class="property">"firstName"</span>: <span class="string">"John"</span>,
+    <span class="property">"surname"</span>: <span class="string">"Doe"</span>,
+    <span class="comment">// ... other form fields</span>
+  }
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>upload-success</code>
+                </div>
+                <p>Final submission with all form data and uploaded images.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"upload-success"</span>,
+  <span class="property">"docType"</span>: <span class="string">"Photo ID"</span>
+}</code></pre>
+                </div>
+
+                <h3>Expected Message Flow</h3>
+                <ol style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Parent sends <code>initiation-data</code> to pre-populate form fields</li>
+                    <li>User fills out form and selects ID images</li>
+                    <li>User clicks submit</li>
+                    <li>iframe sends <code>image-data</code> with form data and file metadata</li>
+                    <li>Parent generates presigned URLs and sends <code>put-links</code></li>
+                    <li>iframe uploads files to S3</li>
+                    <li>iframe sends <code>upload-success</code> when complete</li>
+                </ol>
+            </section>
+
+            <!-- Document Viewer -->
+            <section id="document-viewer" class="section">
+                <h2>Document Viewer</h2>
+                <p><strong>File:</strong> <code>document-viewer.html</code></p>
+                <p>Displays and manages compliance documents and other file uploads.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-documents, put-links, put-error<br>
+                    <strong>Sends:</strong> file-data, upload-success, refresh-documents</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="documentViewerDemo" 
+                        src="document-viewer.html" 
+                        class="demo-iframe" 
+                        height="600"
+                        title="Document Viewer Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendDisplayDocuments()">Load Sample Documents</button>
+                        <button class="btn btn-secondary" onclick="clearDocConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="documentViewerConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Message Flow</h3>
+                <p>Similar to Image Viewer but handles various document types including PDFs.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">Document Types Supported</div>
+                    <p style="margin: 0; color: var(--text-secondary);">Bank Statement, Utility Bill, GOV Letter, Official Letter, NHS Letter, Home Insurance, Council Tax Bill, Voter Registration, Tenancy Agreement, and more.</p>
+                </div>
+            </section>
+
+            <!-- Message iframe -->
+            <section id="message-iframe" class="section">
+                <h2>Message iframe</h2>
+                <p><strong>File:</strong> <code>message-iframe.html</code></p>
+                <p>Chat interface for communication between staff and cashiers with file attachment support.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> message-data, put-links, put-error<br>
+                    <strong>Sends:</strong> message-sent, dismiss-notification, file-data (for attachments)</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="messageDemo" 
+                        src="message-iframe.html" 
+                        class="demo-iframe" 
+                        height="500"
+                        title="Message iframe Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendMessageData()">Load Sample Chat</button>
+                        <button class="btn btn-secondary" onclick="clearMessageConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="messageConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>message-data</code>
+                </div>
+                <p>Complete chat data including messages, notifications, and user context.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"message-data"</span>,
+  <span class="property">"userEmail"</span>: <span class="string">"staff@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-id"</span>,
+  <span class="property">"notification"</span>: <span class="keyword">true</span>,
+  <span class="property">"white"</span>: <span class="string">"Staff"</span>,
+  <span class="property">"tags"</span>: [<span class="string">"note"</span>, <span class="string">"pepUpdate"</span>],
+  <span class="property">"chat"</span>: [
+    {
+      <span class="property">"user"</span>: <span class="string">"staff@example.com"</span>,
+      <span class="property">"timestamp"</span>: <span class="string">"2025-10-09T10:30:00Z"</span>,
+      <span class="property">"message"</span>: <span class="string">"Hello from staff"</span>,
+      <span class="property">"type"</span>: <span class="string">"text"</span>,
+      <span class="property">"attachments"</span>: []
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+                
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>message-sent</code>
+                </div>
+                <p>New message to be saved to database.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"message-sent"</span>,
+  <span class="property">"message"</span>: <span class="string">"Hello, I need help with this case."</span>,
+  <span class="property">"messageType"</span>: <span class="string">"text"</span>,
+  <span class="property">"userEmail"</span>: <span class="string">"staff@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"chat-id"</span>,
+  <span class="property">"timestamp"</span>: <span class="string">"2025-10-09T10:30:00Z"</span>,
+  <span class="property">"attachments"</span>: []
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>dismiss-notification</code>
+                </div>
+                <p>Requests to clear notification indicator.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"dismiss-notification"</span>,
+  <span class="property">"_id"</span>: <span class="string">"chat-id"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>file-data</code>
+                </div>
+                <p>Requests PUT links for file attachments.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"file-data"</span>,
+  <span class="property">"files"</span>: [
+    {
+      <span class="property">"name"</span>: <span class="string">"document.pdf"</span>,
+      <span class="property">"type"</span>: <span class="string">"application/pdf"</span>,
+      <span class="property">"size"</span>: <span class="number">1024000</span>
+    }
+  ],
+  <span class="property">"_id"</span>: <span class="string">"chat-id"</span>
+}</code></pre>
+                </div>
+
+                <h3>Expected Message Flow</h3>
+                <ol style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Parent sends <code>message-data</code> with chat history</li>
+                    <li>iframe displays messages and notification indicator</li>
+                    <li>User types message and clicks send</li>
+                    <li>iframe sends <code>message-sent</code> to parent</li>
+                    <li>Parent saves message and refreshes iframe with updated data</li>
+                    <li>If user attaches files: iframe sends <code>file-data</code> for PUT links</li>
+                    <li>iframe sends <code>dismiss-notification</code> when user views messages</li>
+                </ol>
+            </section>
+
+            <!-- Report Uploader -->
+            <section id="report-uploader" class="section">
+                <h2>Report Uploader</h2>
+                <p><strong>File:</strong> <code>report-uploader.html</code></p>
+                <p>Upload system for standard report documents (EID, SA302, P60, payslips, etc.).</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-data, put-links, put-error<br>
+                    <strong>Sends:</strong> file-data, upload-success</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="reportUploaderDemo" 
+                        src="report-uploader.html" 
+                        class="demo-iframe" 
+                        height="600"
+                        title="Report Uploader Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendReportDisplayData()">Initialize Uploader</button>
+                        <button class="btn btn-secondary" onclick="clearReportConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="reportConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>display-data</code>
+                </div>
+                <p>Initializes the uploader with client context.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"display-data"</span>,
+  <span class="property">"clientData"</span>: {
+    <span class="property">"fe"</span>: <span class="string">"TL"</span>,
+    <span class="property">"clientNumber"</span>: <span class="string">"12345"</span>,
+    <span class="property">"matterNumber"</span>: <span class="string">"M001"</span>,
+    <span class="property">"name"</span>: <span class="string">"John Doe"</span>
+  },
+  <span class="property">"userEmail"</span>: <span class="string">"user@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-id"</span>
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+                
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>file-data</code>
+                </div>
+                <p>Requests PUT links for selected report documents.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"file-data"</span>,
+  <span class="property">"files"</span>: [
+    {
+      <span class="property">"reportType"</span>: <span class="string">"EID Report"</span>,
+      <span class="property">"name"</span>: <span class="string">"eid-report-2025.pdf"</span>,
+      <span class="property">"type"</span>: <span class="string">"application/pdf"</span>,
+      <span class="property">"size"</span>: <span class="number">2048000</span>
+    }
+  ],
+  <span class="property">"_id"</span>: <span class="string">"item-id"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>upload-success</code>
+                </div>
+                <p>Confirms successful upload of all report files.</p>
+
+                <h3>Key Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Pre-configured report types with auto-naming</li>
+                    <li>Multi-file upload support</li>
+                    <li>Drag-and-drop interface</li>
+                    <li>Real-time validation</li>
+                </ul>
+
+                <h3>Expected Message Flow</h3>
+                <ol style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>Parent sends <code>display-data</code> to initialize uploader</li>
+                    <li>User selects report type and files</li>
+                    <li>iframe sends <code>file-data</code> with file metadata</li>
+                    <li>Parent generates presigned URLs and sends <code>put-links</code></li>
+                    <li>iframe uploads files to S3</li>
+                    <li>iframe sends <code>upload-success</code> when complete</li>
+                </ol>
+            </section>
+
+            <!-- Cashiers Log -->
+            <section id="cashiers-log" class="section">
+                <h2>Cashiers Log</h2>
+                <p><strong>File:</strong> <code>cashiers-log.html</code></p>
+                <p>Activity log display for cashier operations and audit trails.</p>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="cashiersLogDemo" 
+                        src="cashiers-log.html" 
+                        class="demo-iframe" 
+                        height="500"
+                        title="Cashiers Log Demo">
+                    </iframe>
+                </div>
+
+                <div class="info-box">
+                    <div class="info-box-title">ℹ️ Standalone Component</div>
+                    <p style="margin: 0; color: var(--text-secondary);">This component currently operates independently without postMessage communication. It displays pre-configured log data.</p>
+                </div>
+            </section>
+
+            <!-- Message Types Reference -->
+            <section id="message-types" class="section">
+                <h2>Message Types Reference</h2>
+                
+                <h3>Common Patterns</h3>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Message Type</th>
+                            <th>Direction</th>
+                            <th>Purpose</th>
+                            <th>Used By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>display-images</code></td>
+                            <td>Parent → iframe</td>
+                            <td>Initialize/update image display</td>
+                            <td>Image Viewer, Document Viewer</td>
+                        </tr>
+                        <tr>
+                            <td><code>image-data</code></td>
+                            <td>iframe → Parent</td>
+                            <td>Request PUT links for images</td>
+                            <td>Image Viewer, Image Uploader</td>
+                        </tr>
+                        <tr>
+                            <td><code>file-data</code></td>
+                            <td>iframe → Parent</td>
+                            <td>Request PUT links for files</td>
+                            <td>Document Viewer, Message iframe, Report Uploader</td>
+                        </tr>
+                        <tr>
+                            <td><code>put-links</code></td>
+                            <td>Parent → iframe</td>
+                            <td>Provide S3 upload URLs</td>
+                            <td>All upload-enabled iframes</td>
+                        </tr>
+                        <tr>
+                            <td><code>put-error</code></td>
+                            <td>Parent → iframe</td>
+                            <td>Signal upload error</td>
+                            <td>All upload-enabled iframes</td>
+                        </tr>
+                        <tr>
+                            <td><code>upload-success</code></td>
+                            <td>iframe → Parent</td>
+                            <td>Confirm upload completion</td>
+                            <td>All upload-enabled iframes</td>
+                        </tr>
+                        <tr>
+                            <td><code>refresh-images</code></td>
+                            <td>iframe → Parent</td>
+                            <td>Request data refresh</td>
+                            <td>Image Viewer, Document Viewer</td>
+                        </tr>
+                        <tr>
+                            <td><code>message-sent</code></td>
+                            <td>iframe → Parent</td>
+                            <td>Save new chat message</td>
+                            <td>Message iframe</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Data Structures -->
+            <section id="data-structures" class="section">
+                <h2>Data Structures</h2>
+                
+                <h3>ClientData Object</h3>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"fe"</span>: <span class="string">"TL"</span>,              <span class="comment">// Fee earner initials</span>
+  <span class="property">"clientNumber"</span>: <span class="string">"12345"</span>, <span class="comment">// Client reference</span>
+  <span class="property">"matterNumber"</span>: <span class="string">"M001"</span>,  <span class="comment">// Matter reference</span>
+  <span class="property">"name"</span>: <span class="string">"John Doe"</span>       <span class="comment">// Client full name</span>
+}</code></pre>
+                </div>
+
+                <h3>Image/Document Object</h3>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"url"</span>: <span class="string">"https://example.com/image.jpg"</span>,
+  <span class="property">"s3Key"</span>: <span class="string">"uploads/abc123.jpg"</span>,
+  <span class="property">"documentType"</span>: <span class="string">"Passport"</span>,
+  <span class="property">"date"</span>: <span class="string">"2025-10-01T12:00:00Z"</span>,
+  <span class="property">"fe"</span>: <span class="string">"TL"</span>,
+  <span class="property">"clientNumber"</span>: <span class="string">"12345"</span>,
+  <span class="property">"matterNumber"</span>: <span class="string">"M001"</span>,
+  <span class="property">"name"</span>: <span class="string">"John Doe"</span>
+}</code></pre>
+                </div>
+
+                <h3>File Metadata Object</h3>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"name"</span>: <span class="string">"document.pdf"</span>,
+  <span class="property">"type"</span>: <span class="string">"application/pdf"</span>,
+  <span class="property">"size"</span>: <span class="number">1024000</span>,
+  <span class="property">"lastModified"</span>: <span class="number">1234567890000</span>
+}</code></pre>
+                </div>
+            </section>
+
+            <!-- Error Handling -->
+            <section id="error-handling" class="section">
+                <h2>Error Handling</h2>
+                
+                <h3>PUT Link Generation Errors</h3>
+                <p>When the parent cannot generate PUT links, send an error message:</p>
+                <div class="code-block">
+                    <pre><code>iframe.<span class="function">postMessage</span>({
+  type: <span class="string">'put-error'</span>,
+  error: <span class="string">'Failed to generate upload URLs. Please try again.'</span>
+}, <span class="string">'*'</span>);</code></pre>
+                </div>
+
+                <p>The iframe will automatically:</p>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>Display error message to user</li>
+                    <li>Reset to previous state</li>
+                    <li>Allow user to retry</li>
+                </ul>
+
+                <h3>Upload Failures</h3>
+                <p>iframes handle S3 upload failures with automatic retry logic (typically 3 attempts with exponential backoff).</p>
+            </section>
+
+            <!-- Troubleshooting -->
+            <section id="troubleshooting" class="section">
+                <h2>Troubleshooting</h2>
+                
+                <h3>iframe not receiving messages</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Ensure iframe has loaded: use <code>iframe.addEventListener('load', ...)</code></li>
+                    <li>Check console for CORS errors</li>
+                    <li>Verify <code>contentWindow</code> is accessible</li>
+                </ul>
+
+                <h3>Messages not sending from iframe</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Verify <code>window.parent</code> is accessible</li>
+                    <li>Check browser console for postMessage errors</li>
+                    <li>Ensure message data is serializable (no circular references)</li>
+                </ul>
+
+                <h3>File objects not transferring</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>File objects cannot be cloned by postMessage</li>
+                    <li>Send only file metadata, keep File objects in iframe</li>
+                    <li>Upload directly from iframe using PUT URLs</li>
+                </ul>
+
+                <h3>Upload failures</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>Check S3 presigned URL expiration</li>
+                    <li>Verify CORS configuration on S3 bucket</li>
+                    <li>Ensure content-type matches between metadata and upload</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        ↑
+    </button>
+
+    <script>
+        // Console logging helper
+        function logToConsole(consoleId, message, type = 'info') {
+            const console = document.getElementById(consoleId);
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#94a3b8';
+            
+            const line = document.createElement('div');
+            line.style.color = color;
+            line.style.marginBottom = '0.25rem';
+            line.innerHTML = `<span style="color: #64748b;">[${timestamp}]</span> ${message}`;
+            
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('imageViewerConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        function clearUploaderConsole() {
+            document.getElementById('imageUploaderConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        function clearDocConsole() {
+            document.getElementById('documentViewerConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        function clearMessageConsole() {
+            document.getElementById('messageConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        function clearReportConsole() {
+            document.getElementById('reportConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        // Image Viewer Demo Functions
+        function sendDisplayImages() {
+            const iframe = document.getElementById('imageViewerDemo').contentWindow;
+            const message = {
+                type: 'display-images',
+                data: [
+                    {
+                        url: 'https://via.placeholder.com/800x600/4F46E5/ffffff?text=Sample+Passport',
+                        documentType: 'Passport',
+                        date: new Date().toISOString()
+                    },
+                    {
+                        url: 'https://via.placeholder.com/800x600/10B981/ffffff?text=Sample+Driving+Licence',
+                        documentType: 'Driving Licence',
+                        date: new Date().toISOString()
+                    }
+                ],
+                allowUploads: true,
+                clientData: {
+                    fe: 'TL',
+                    clientNumber: '12345',
+                    matterNumber: 'M001',
+                    name: 'John Doe'
+                },
+                userEmail: 'demo@example.com',
+                _id: 'demo-item-123'
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('imageViewerConsole', `Sent: display-images with ${message.data.length} images`, 'success');
+        }
+
+        function sendEmptyDisplay() {
+            const iframe = document.getElementById('imageViewerDemo').contentWindow;
+            const message = {
+                type: 'display-images',
+                data: [],
+                allowUploads: true,
+                clientData: {
+                    fe: 'TL',
+                    clientNumber: '12345',
+                    matterNumber: 'M001',
+                    name: 'John Doe'
+                },
+                userEmail: 'demo@example.com'
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('imageViewerConsole', 'Sent: display-images with empty data', 'success');
+        }
+
+        // Image Uploader Demo Functions
+        function sendInitiationData() {
+            const iframe = document.getElementById('imageUploaderDemo').contentWindow;
+            const message = {
+                type: 'initiation-data',
+                clientData: {
+                    fe: 'TL',
+                    clientNumber: '12345',
+                    matterNumber: 'M001',
+                    name: 'John Doe',
+                    titlePrefix: 'Mr',
+                    firstName: 'John',
+                    middleNames: 'William',
+                    surname: 'Doe',
+                    worktype: 'Purchase'
+                }
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('imageUploaderConsole', 'Sent: initiation-data with client info', 'success');
+        }
+
+        // Document Viewer Demo Functions
+        function sendDisplayDocuments() {
+            const iframe = document.getElementById('documentViewerDemo').contentWindow;
+            const message = {
+                type: 'display-documents',
+                documents: [
+                    {
+                        url: 'https://via.placeholder.com/800x1000/EF4444/ffffff?text=Bank+Statement',
+                        documentType: 'Bank Statement',
+                        date: new Date().toISOString()
+                    }
+                ],
+                allowUploads: true,
+                clientData: {
+                    fe: 'TL',
+                    clientNumber: '12345',
+                    matterNumber: 'M001',
+                    name: 'John Doe'
+                },
+                userEmail: 'demo@example.com',
+                _id: 'demo-doc-123'
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('documentViewerConsole', 'Sent: display-documents with sample data', 'success');
+        }
+
+        // Message iframe Demo Functions
+        function sendMessageData() {
+            const iframe = document.getElementById('messageDemo').contentWindow;
+            const message = {
+                type: 'message-data',
+                userEmail: 'staff@example.com',
+                _id: 'demo-chat-123',
+                notification: true,
+                white: 'Staff',
+                tags: ['note', 'pepUpdate'],
+                chat: [
+                    {
+                        user: 'staff@example.com',
+                        timestamp: new Date(Date.now() - 3600000).toISOString(),
+                        message: 'Hello! How can I help you today?',
+                        type: 'text',
+                        attachments: []
+                    },
+                    {
+                        user: 'cashier@example.com',
+                        timestamp: new Date(Date.now() - 1800000).toISOString(),
+                        message: 'I need assistance with document verification.',
+                        type: 'text',
+                        attachments: []
+                    },
+                    {
+                        user: 'staff@example.com',
+                        timestamp: new Date().toISOString(),
+                        message: 'I can help with that. Please upload the documents.',
+                        type: 'text',
+                        attachments: []
+                    }
+                ]
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('messageConsole', `Sent: message-data with ${message.chat.length} messages`, 'success');
+        }
+
+        // Report Uploader Demo Functions
+        function sendReportDisplayData() {
+            const iframe = document.getElementById('reportUploaderDemo').contentWindow;
+            const message = {
+                type: 'display-data',
+                clientData: {
+                    fe: 'TL',
+                    clientNumber: '12345',
+                    matterNumber: 'M001',
+                    name: 'John Doe'
+                },
+                userEmail: 'demo@example.com',
+                _id: 'demo-report-123'
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('reportConsole', 'Sent: display-data to initialize uploader', 'success');
+        }
+
+        // Global message listener for all demos
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            
+            // Determine which console to log to based on message type
+            let consoleId = 'imageViewerConsole';
+            
+            if (data.type === 'image-data' || data.type === 'upload-success' && data.docType === 'Photo ID') {
+                consoleId = 'imageViewerConsole';
+            } else if (data.type === 'file-data') {
+                consoleId = 'documentViewerConsole';
+            } else if (data.type === 'message-sent' || data.type === 'dismiss-notification') {
+                consoleId = 'messageConsole';
+            }
+            
+            // Format message for display
+            const messageStr = JSON.stringify(data, null, 2)
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            logToConsole(consoleId, `<strong>Received from iframe:</strong><br><pre style="margin: 0.5rem 0 0 0; font-size: 0.7rem; color: #cbd5e1;">${messageStr}</pre>`);
+        });
+
+        // Active nav link highlighting on scroll
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        function highlightNav() {
+            let current = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (window.pageYOffset >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', highlightNav);
+        highlightNav(); // Initial call
+
+        // Scroll to top button
+        const scrollTopBtn = document.getElementById('scrollTop');
+        
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+        });
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const target = document.getElementById(targetId);
+                
+                if (target) {
+                    const headerHeight = 64; // matches --header-height CSS variable
+                    const offsetTop = target.offsetTop - headerHeight - 20;
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
