@@ -163,7 +163,7 @@
         }
 
         .add-more-btn:disabled {
-            background: #999;
+            background: #ccc;
             cursor: not-allowed;
             transform: none;
             opacity: 1;
@@ -1685,11 +1685,12 @@
             background: #f8f9fa;
             border-radius: 8px;
             padding: 20px;
-            text-align: center;
+            text-align: left;
             width: 100%;
         }
         
         .no-documents-card .document-name {
+            font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 14px;
             font-weight: 500;
             color: #333;
@@ -2533,7 +2534,7 @@
             if (images.length === 0) {
                 documentsGrid.innerHTML = `
                     <div class="no-documents-card">
-                        <div class="document-name">No documents available</div>
+                        <div class="document-name">No documents uploaded</div>
                     </div>
                 `;
                 return;
@@ -4189,6 +4190,12 @@
            
         4. 'put-error' - Upload preparation failed
            - Handled by handlePutError()
+        
+        5. 'button-enable' - Enable upload more button
+           - Enables the "Upload more documents" button
+        
+        6. 'button-disable' - Disable upload more button
+           - Disables the "Upload more documents" button
         =====================================================================
         */
         window.addEventListener('message', (event) => {
@@ -4224,6 +4231,16 @@
                 handlePutLinks(event.data);
             } else if (event.data && event.data.type === 'put-error') {
                 handlePutError(event.data);
+            } else if (event.data && event.data.type === 'button-enable') {
+                // Enable the "Upload more documents" button
+                if (addMoreBtn) {
+                    addMoreBtn.disabled = false;
+                }
+            } else if (event.data && event.data.type === 'button-disable') {
+                // Disable the "Upload more documents" button
+                if (addMoreBtn) {
+                    addMoreBtn.disabled = true;
+                }
             }
         });
 

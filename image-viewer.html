@@ -178,7 +178,7 @@
         }
 
         .add-more-btn:disabled {
-            background: #999;
+            background: #ccc;
             cursor: not-allowed;
             transform: none;
             opacity: 1;
@@ -1253,6 +1253,13 @@
             color: #333;
         }
 
+        .image-action-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .open-btn-header,
         .download-btn-header {
             background: none;
             color: rgb(0, 60, 113);
@@ -1265,11 +1272,13 @@
             padding: 4px;
         }
 
+        .open-btn-header svg,
         .download-btn-header svg {
             width: 18px;
             height: 20px;
         }
 
+        .open-btn-header:hover,
         .download-btn-header:hover {
             color: rgb(0, 40, 80);
             transform: scale(1.1);
@@ -1362,6 +1371,7 @@
             align-items: center;
             justify-content: center;
             height: 100%;
+            width: 100%;
             color: #666;
             font-size: 0.9rem;
             text-align: center;
@@ -1372,6 +1382,9 @@
             font-size: 3.5rem;
             margin-bottom: 15px;
             color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .no-images-icon svg {
@@ -1385,6 +1398,7 @@
             font-size: 1rem;
             font-weight: 500;
             color: #666;
+            text-align: center;
         }
 
         .loading {
@@ -1664,13 +1678,21 @@
                         <div class="image-details">
                             <div class="document-header">
                                 <div class="document-type" style="visibility: hidden;">Placeholder</div>
-                                <button class="download-btn-header" disabled style="opacity: 0.3; cursor: not-allowed;">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                      <polyline points="7,14 12,19 17,14"/>
-                                      <line x1="12" y1="19" x2="12" y2="7"/>
-                                    </svg>
-                                </button>
+                                <div class="image-action-buttons">
+                                    <button class="open-btn-header" disabled style="opacity: 0.3; cursor: not-allowed;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                          <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+                                    <button class="download-btn-header" disabled style="opacity: 0.3; cursor: not-allowed;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                          <polyline points="7,14 12,19 17,14"/>
+                                          <line x1="12" y1="19" x2="12" y2="7"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                             <div class="uploader-info" style="visibility: hidden;">Placeholder text</div>
                         </div>
@@ -1960,6 +1982,64 @@
             const index = Array.from(cards).indexOf(card);
         }
 
+        // Open image function - sends message to parent
+        function openImage(button) {
+            try {
+                // Get the image index from the button's data attribute
+                const imageIndex = button.getAttribute('data-image-index');
+                const imageData = images[imageIndex];
+                
+                console.log('Open image function called:', {
+                    button: button,
+                    imageIndex: imageIndex,
+                    imageData: imageData
+                });
+                
+                // Check if imageData exists and has a URL
+                const imageUrl = imageData?.url || imageData?.liveUrl;
+                if (!imageData || !imageUrl) {
+                    console.error('Cannot open: image data is missing or invalid', {
+                        imageData: imageData,
+                        url: imageData?.url,
+                        liveUrl: imageData?.liveUrl,
+                        imageUrl: imageUrl
+                    });
+                    alert('Cannot open image. Image data is missing or invalid.');
+                    return;
+                }
+                
+                // Prepare data for single-image-viewer.html
+                const viewerData = {
+                    document: imageData.document,
+                    side: imageData.side,
+                    name: imageData.name,
+                    liveUrl: imageUrl,
+                    uploader: imageData.uploader,
+                    date: imageData.date
+                };
+                
+                // Encode data as base64 JSON for URL hash (Wix won't modify hash)
+                const dataHash = btoa(JSON.stringify(viewerData));
+                
+                // Construct the iframe URL using hash instead of query params
+                const baseUrl = window.location.href.split('/').slice(0, -1).join('/');
+                const viewerUrl = `${baseUrl}/single-image-viewer.html#${dataHash}`;
+                
+                console.log('Generated viewer URL with hash:', viewerUrl);
+                console.log('Hash data:', dataHash);
+                
+                // Send message to parent to open the viewer iframe in modal
+                window.parent.postMessage({
+                    type: 'open-image',
+                    viewerUrl: viewerUrl
+                }, '*');
+                
+            } catch (error) {
+                console.error('Error opening image:', error);
+                alert('Error opening image. Please try again.');
+            }
+        }
+
         // Download function
         function downloadImage(button) {
             try {
@@ -2040,13 +2120,21 @@
                             ${imageData.document || 'Unknown Document'}
                             ${sideTag}
                         </div>
-                        <button class="download-btn-header" onclick="downloadImage(this)" title="Download image" data-image-index="${index}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7,14 12,19 17,14"/>
-                              <line x1="12" y1="19" x2="12" y2="7"/>
-                            </svg>
-                        </button>
+                        <div class="image-action-buttons">
+                            <button class="open-btn-header" onclick="openImage(this)" title="Open image" data-image-index="${index}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                  <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                            <button class="download-btn-header" onclick="downloadImage(this)" title="Download image" data-image-index="${index}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                  <polyline points="7,14 12,19 17,14"/>
+                                  <line x1="12" y1="19" x2="12" y2="7"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     <div class="uploader-info">${uploaderInfo}</div>
                 </div>
@@ -2115,7 +2203,7 @@
                                 <circle cx="12" cy="13" r="4"></circle>
                             </svg>
                         </div>
-                        <div class="no-images-text">No images available</div>
+                        <div class="no-images-text">No images uploaded</div>
                     </div>
                 `;
                 prevBtn.disabled = true;
@@ -3519,6 +3607,14 @@
         4. 'put-error' - Upload error
            Data: {type, message}
            Action: Handled by handlePutError() or handlePutResponse()
+        
+        5. 'button-enable' - Enable add more button
+           Data: {type}
+           Action: Enables the "Add more ID images" button
+        
+        6. 'button-disable' - Disable add more button
+           Data: {type}
+           Action: Disables the "Add more ID images" button
         */
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'image-display') {
@@ -3537,6 +3633,16 @@
                 handlePutLinks(event.data);
             } else if (event.data && event.data.type === 'put-error') {
                 handlePutError(event.data);
+            } else if (event.data && event.data.type === 'button-enable') {
+                // Enable the "Add more ID images" button
+                if (addMoreBtn) {
+                    addMoreBtn.disabled = false;
+                }
+            } else if (event.data && event.data.type === 'button-disable') {
+                // Disable the "Add more ID images" button
+                if (addMoreBtn) {
+                    addMoreBtn.disabled = true;
+                }
             }
         });
 
