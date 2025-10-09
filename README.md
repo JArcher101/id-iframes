@@ -19,6 +19,13 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - View and display document images
   - Similar styling to image viewer
 
+### Data Visualization
+- **`single-chart-viewer.html`** - Chart Viewer
+  - Dynamic Chart.js visualization
+  - Supports multiple chart types (pie, doughnut, bar, line, etc.)
+  - Responsive charts with custom fonts
+  - Handles empty data states gracefully
+
 ### Utilities
 - **`cashiers-log.html`** - Cashiers Log
   - Track cashier activities and events

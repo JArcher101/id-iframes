@@ -448,6 +448,7 @@
                 <a href="#message-iframe" class="nav-link">Message iframe</a>
                 <a href="#report-uploader" class="nav-link">Report Uploader</a>
                 <a href="#cashiers-log" class="nav-link">Cashiers Log</a>
+                <a href="#chart-viewer" class="nav-link">Chart Viewer</a>
             </div>
 
             <div class="nav-section">
@@ -1137,6 +1138,133 @@
                 </div>
             </section>
 
+            <!-- Chart Viewer -->
+            <section id="chart-viewer" class="section">
+                <h2>Chart Viewer</h2>
+                <p><strong>File:</strong> <code>single-chart-viewer.html</code></p>
+                <p>Dynamic chart visualization component powered by Chart.js. Displays data in various chart formats with automatic chart updates and empty state handling.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📊 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> chart-data<br>
+                    <strong>Sends:</strong> Nothing (display-only component)<br>
+                    <strong>Chart Types:</strong> bar, line, pie, doughnut, radar, polarArea, bubble, scatter</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="chartViewerDemo" 
+                        src="single-chart-viewer.html" 
+                        class="demo-iframe" 
+                        height="600"
+                        title="Chart Viewer Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendAwaitingChart()">Awaiting Chart</button>
+                        <button class="btn btn-primary" onclick="sendPassesChart()">Passes Chart</button>
+                        <button class="btn btn-primary" onclick="sendIssuesChart()">Issues Chart</button>
+                        <button class="btn btn-primary" onclick="sendBioChart()">E-ID Chart</button>
+                        <button class="btn btn-secondary" onclick="clearChartConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="chartConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>chart-data</code>
+                </div>
+                <p>Sends chart configuration and data to render a visualization.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"chart-data"</span>,
+  <span class="property">"chartType"</span>: <span class="string">"doughnut"</span>,
+  <span class="property">"title"</span>: <span class="string">"Outstanding & Requests Breakdown"</span>,
+  <span class="property">"description"</span>: <span class="string">"Total: 223 items"</span>,
+  <span class="property">"chartData"</span>: {
+    <span class="property">"labels"</span>: [
+      <span class="string">"Added in last 7 days"</span>,
+      <span class="string">"8 - 30 Days"</span>,
+      <span class="string">"Over 30 Days Old"</span>
+    ],
+    <span class="property">"datasets"</span>: [{
+      <span class="property">"label"</span>: <span class="string">"Outstanding Items"</span>,
+      <span class="property">"data"</span>: [<span class="number">8</span>, <span class="number">21</span>, <span class="number">127</span>],
+      <span class="property">"backgroundColor"</span>: [
+        <span class="string">"rgba(0, 204, 102, 0.6)"</span>,
+        <span class="string">"rgba(255, 206, 86, 0.6)"</span>,
+        <span class="string">"rgba(255, 99, 132, 0.6)"</span>
+      ],
+      <span class="property">"borderColor"</span>: [
+        <span class="string">"rgba(0, 204, 102, 1)"</span>,
+        <span class="string">"rgba(255, 206, 86, 1)"</span>,
+        <span class="string">"rgba(255, 99, 132, 1)"</span>
+      ],
+      <span class="property">"borderWidth"</span>: <span class="number">1</span>
+    }]
+  },
+  <span class="property">"options"</span>: {
+    <span class="property">"plugins"</span>: {
+      <span class="property">"legend"</span>: {
+        <span class="property">"position"</span>: <span class="string">"right"</span>
+      }
+    }
+  }
+}</code></pre>
+                </div>
+
+                <h3>Chart Behavior</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><strong>Dynamic Updates:</strong> Receiving new chart-data destroys the current chart and renders the new one</li>
+                    <li><strong>Empty Data Handling:</strong> If all dataset values are 0, the iframe remains blank</li>
+                    <li><strong>Responsive:</strong> Charts automatically resize to fit container</li>
+                    <li><strong>Custom Fonts:</strong> Uses Transport and Rotis fonts with Quicksand fallback</li>
+                </ul>
+
+                <h3>Supported Chart Types</h3>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Chart Type</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>doughnut</code></td>
+                            <td>Pie chart with hollow center - ideal for proportional data</td>
+                        </tr>
+                        <tr>
+                            <td><code>pie</code></td>
+                            <td>Circular pie chart - proportional data visualization</td>
+                        </tr>
+                        <tr>
+                            <td><code>bar</code></td>
+                            <td>Vertical bar chart - comparing values across categories</td>
+                        </tr>
+                        <tr>
+                            <td><code>line</code></td>
+                            <td>Line chart - showing trends over time</td>
+                        </tr>
+                        <tr>
+                            <td><code>radar</code></td>
+                            <td>Spider/radar chart - multivariate data</td>
+                        </tr>
+                        <tr>
+                            <td><code>polarArea</code></td>
+                            <td>Polar area chart - similar to pie but with variable radii</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
             <!-- Message Types Reference -->
             <section id="message-types" class="section">
                 <h2>Message Types Reference</h2>
@@ -1199,6 +1327,12 @@
                             <td>iframe → Parent</td>
                             <td>Save new chat message</td>
                             <td>Message iframe</td>
+                        </tr>
+                        <tr>
+                            <td><code>chart-data</code></td>
+                            <td>Parent → iframe</td>
+                            <td>Display chart visualization</td>
+                            <td>Chart Viewer</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1341,6 +1475,10 @@
 
         function clearReportConsole() {
             document.getElementById('reportConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        function clearChartConsole() {
+            document.getElementById('chartConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
         }
 
         // Image Viewer Demo Functions
@@ -1499,6 +1637,91 @@
             
             iframe.postMessage(message, '*');
             logToConsole('reportConsole', 'Sent: display-data to initialize uploader', 'success');
+        }
+
+        // Chart Viewer Demo Functions
+        function sendAwaitingChart() {
+            const iframe = document.getElementById('chartViewerDemo').contentWindow;
+            const message = {
+                type: 'chart-data',
+                chartType: 'doughnut',
+                title: 'Outstanding & Requests Breakdown',
+                description: 'Total: 223 items',
+                chartData: {
+                    labels: ['Added in last 7 days', '8 - 30 Days', 'Over 30 Days Old', 'With Photo ID', 'Requests', 'Pending'],
+                    datasets: [{
+                        label: 'Outstanding & Requests Breakdown',
+                        data: [8, 21, 127, 16, 0, 21],
+                        backgroundColor: ['rgba(0, 204, 102, 0.6)', 'rgba(255, 206, 86, 0.6)', 'rgba(255, 99, 132, 0.6)', 'rgba(255, 255, 102, 0.6)', 'rgba(211, 211, 211, 0.6)', 'rgba(173, 216, 230, 0.6)'],
+                        borderWidth: 1
+                    }]
+                }
+            };
+            iframe.postMessage(message, '*');
+            logToConsole('chartConsole', 'Sent: Awaiting chart with doughnut type', 'success');
+        }
+
+        function sendPassesChart() {
+            const iframe = document.getElementById('chartViewerDemo').contentWindow;
+            const message = {
+                type: 'chart-data',
+                chartType: 'doughnut',
+                title: 'Passes by Type',
+                description: 'Last 90 days - 117 total passes',
+                chartData: {
+                    labels: ['Pass', 'ePass', 'ID Held'],
+                    datasets: [{
+                        label: 'Passes by Type',
+                        data: [59, 39, 19],
+                        backgroundColor: ['rgba(166, 157, 108, 0.6)', 'rgba(0, 57, 96, 0.6)', 'rgba(0, 255, 128, 0.6)'],
+                        borderWidth: 1
+                    }]
+                }
+            };
+            iframe.postMessage(message, '*');
+            logToConsole('chartConsole', 'Sent: Passes chart with doughnut type', 'success');
+        }
+
+        function sendIssuesChart() {
+            const iframe = document.getElementById('chartViewerDemo').contentWindow;
+            const message = {
+                type: 'chart-data',
+                chartType: 'doughnut',
+                title: 'Issue Breakdown',
+                description: 'Total: 12 issues',
+                chartData: {
+                    labels: ['Issues in last 7 Days', 'Issues over 1 week old'],
+                    datasets: [{
+                        label: 'Issue Breakdown',
+                        data: [5, 7],
+                        backgroundColor: ['rgba(255, 206, 86, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                        borderWidth: 1
+                    }]
+                }
+            };
+            iframe.postMessage(message, '*');
+            logToConsole('chartConsole', 'Sent: Issues chart with doughnut type', 'success');
+        }
+
+        function sendBioChart() {
+            const iframe = document.getElementById('chartViewerDemo').contentWindow;
+            const message = {
+                type: 'chart-data',
+                chartType: 'doughnut',
+                title: 'E-ID Breakdown',
+                description: 'Total: 5 E-ID requests in progress',
+                chartData: {
+                    labels: ['E-ID initiated in last 7 Days', 'E-ID over 1 week old'],
+                    datasets: [{
+                        label: 'E-ID Breakdown',
+                        data: [2, 3],
+                        backgroundColor: ['rgba(255, 206, 86, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                        borderWidth: 1
+                    }]
+                }
+            };
+            iframe.postMessage(message, '*');
+            logToConsole('chartConsole', 'Sent: E-ID chart with doughnut type', 'success');
         }
 
         // Global message listener for all demos

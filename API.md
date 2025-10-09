@@ -10,7 +10,8 @@ This document describes the communication interface for each iframe component. A
 4. [Message iframe](#message-iframe)
 5. [Report Uploader](#report-uploader)
 6. [Cashiers Log](#cashiers-log)
-7. [General Integration Guide](#general-integration-guide)
+7. [Chart Viewer](#chart-viewer)
+8. [General Integration Guide](#general-integration-guide)
 
 ---
 
@@ -534,6 +535,181 @@ Currently operates independently without postMessage communication (standalone d
 
 ---
 
+## Chart Viewer
+
+**File:** `single-chart-viewer.html`
+
+### Description
+Dynamic chart visualization component powered by Chart.js. Displays data in various chart formats including pie, doughnut, bar, line, radar, and more. The iframe starts with a blank screen and renders charts based on incoming data.
+
+### Parent → iframe (Incoming Messages)
+
+#### `chart-data`
+Sends chart configuration and data to render a visualization.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'chart-data',
+  chartType: 'doughnut',  // 'bar', 'line', 'pie', 'doughnut', 'radar', 'polarArea', etc.
+  title: 'Outstanding & Requests Breakdown',
+  description: 'Total: 223 items',
+  chartData: {
+    labels: [
+      'Added in last 7 days',
+      '8 - 30 Days',
+      'Over 30 Days Old'
+    ],
+    datasets: [{
+      label: 'Outstanding Items',
+      data: [8, 21, 127],
+      backgroundColor: [
+        'rgba(0, 204, 102, 0.6)',
+        'rgba(255, 206, 86, 0.6)',
+        'rgba(255, 99, 132, 0.6)'
+      ],
+      borderColor: [
+        'rgba(0, 204, 102, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(255, 99, 132, 1)'
+      ],
+      borderWidth: 1
+    }]
+  },
+  options: {
+    // Optional: Chart.js configuration options
+    plugins: {
+      legend: {
+        position: 'right'
+      }
+    }
+  }
+}, '*');
+```
+
+### iframe → Parent (Outgoing Messages)
+
+The Chart Viewer is a display-only component and does not send messages back to the parent.
+
+### Chart Behavior
+
+#### Chart Replacement
+When a new `chart-data` message is received:
+1. The existing chart is destroyed
+2. A new chart is created with the updated data
+3. This allows real-time chart updates without reloading the iframe
+4. If a popup window is open, it receives the updated data automatically
+
+#### Empty Data Handling
+If all data values in the datasets are `0`, the iframe:
+- Remains blank (empty state)
+- Does not render the chart
+- Waits for meaningful data
+
+#### Expand to Popup Window
+Charts can be expanded to a larger popup window:
+- Click the **"⤢ Expand"** button (top-right when chart is displayed)
+- Opens the chart in a 1400x900px popup window
+- Uses unique ID handshake via sessionStorage for secure data transfer
+- Popup stays synchronized - updates when iframe receives new data
+- Multiple popups supported simultaneously (each with unique ID)
+- Data auto-deleted after popup loads (prevents reload issues)
+
+#### Bullet Point Lists
+When the `description` field contains bullet points (`•`), they are automatically:
+- Split into separate lines
+- Displayed as a vertical list
+- Each item on its own line for better readability
+
+#### Supported Chart Types
+- `bar` - Vertical bar chart
+- `line` - Line chart
+- `pie` - Circular pie chart
+- `doughnut` - Pie chart with hollow center
+- `radar` - Radar/spider chart
+- `polarArea` - Polar area chart
+- `bubble` - Bubble chart
+- `scatter` - Scatter plot
+
+### Chart.js Data Format
+
+The `chartData` object follows the standard Chart.js data structure:
+
+```javascript
+chartData: {
+  labels: ['Label 1', 'Label 2', 'Label 3'],
+  datasets: [{
+    label: 'Dataset Name',
+    data: [value1, value2, value3],
+    backgroundColor: ['color1', 'color2', 'color3'],
+    borderColor: ['borderColor1', 'borderColor2', 'borderColor3'],
+    borderWidth: 1
+  }]
+}
+```
+
+### Custom Options
+
+You can override default chart options by providing an `options` object. These will be merged with the default configuration:
+
+```javascript
+options: {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'top',  // 'top', 'right', 'bottom', 'left'
+      labels: {
+        font: {
+          size: 14
+        }
+      }
+    },
+    tooltip: {
+      enabled: true
+    }
+  },
+  scales: {
+    y: {
+      beginAtZero: true
+    }
+  }
+}
+```
+
+### Example Integration
+
+```javascript
+// Send doughnut chart data
+const chartIframe = document.getElementById('chartViewer').contentWindow;
+
+chartIframe.postMessage({
+  type: 'chart-data',
+  chartType: 'doughnut',
+  title: 'Passes by Type',
+  description: 'Last 90 days - 117 total passes',
+  chartData: {
+    labels: ['Pass', 'ePass', 'ID Held'],
+    datasets: [{
+      label: 'Passes by Type',
+      data: [59, 39, 19],
+      backgroundColor: [
+        'rgba(166, 157, 108, 0.6)',
+        'rgba(0, 57, 96, 0.6)',
+        'rgba(0, 255, 128, 0.6)'
+      ]
+    }]
+  }
+}, '*');
+```
+
+### Typography
+
+The Chart Viewer uses:
+- **Transport Medium** - For chart title and axis labels
+- **Rotis Sans Serif Light** - For chart descriptions and data labels
+
+---
+
 ## General Integration Guide
 
 ### Basic Setup
@@ -852,7 +1028,8 @@ type MessageType =
   | 'refresh-images'
   | 'message-data'
   | 'message-sent'
-  | 'dismiss-notification';
+  | 'dismiss-notification'
+  | 'chart-data';
 
 // Client Data
 interface ClientData {
@@ -906,6 +1083,25 @@ interface OutgoingMessage {
   message?: any;
   userEmail?: string;
   docType?: string;
+}
+
+// Chart Data Message
+interface ChartDataMessage {
+  type: 'chart-data';
+  chartType: 'bar' | 'line' | 'pie' | 'doughnut' | 'radar' | 'polarArea' | 'bubble' | 'scatter';
+  title: string;
+  description?: string;
+  chartData: {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      backgroundColor: string[];
+      borderColor?: string[];
+      borderWidth?: number;
+    }[];
+  };
+  options?: any;  // Chart.js options object
 }
 ```
 

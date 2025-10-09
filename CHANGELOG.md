@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API.md with comprehensive postMessage API documentation
 - Interactive API documentation page (api-docs.html)
 - CHANGELOG.md for tracking project changes
+- `single-chart-viewer.html` - Dynamic Chart.js visualization iframe
+  - Supports multiple chart types (bar, line, pie, doughnut, radar, polarArea, bubble, scatter)
+  - Responsive design with custom Transport and Rotis fonts
+  - Real-time chart updates via postMessage
+  - Automatic chart destruction and recreation when receiving new data
+  - Empty data state handling (remains blank when all values are 0)
+  - Integration with Chart.js 4.4.0 CDN
+  - Expand to popup window feature with unique ID handshake
+  - Real-time popup synchronization when data updates
+  - Automatic bullet point list formatting in descriptions
+  - Support for horizontal stacked bar charts for dashboard views
 
 ## [1.0.0] - 2025-10-09
 
