@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Client Details Form</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
+  
+  <style>
+    /*
+    =====================================================================
+    CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
+    =====================================================================
+    Transport Medium → fallback to Quicksand Bold (700)
+    Rotis fonts → fallback to Quicksand Regular (400/600)
+    =====================================================================
+    */
+    
+    /* Transport Medium - for headings and buttons */
+    @font-face {
+      font-family: 'Transport';
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+      unicode-range: U+0000-003F, U+0041-FFFF;
+      src: url(data:font/truetype;charset=utf-8;base64,) format('truetype');
+    }
+    
+    /* Rotis Sans Serif Regular - for body text */
+    @font-face {
+      font-family: 'RotisRegular';
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
+      src: url(data:font/truetype;charset=utf-8;base64,) format('opentype');
+    }
+    
+    /*
+    =====================================================================
+    CLIENT DETAILS FORM - STYLE SECTION
+    =====================================================================
+    Lightweight iframe for collecting client details and addresses only.
+    Uses getaddress.io autocomplete via Wix backend proxy.
+    
+    COMMUNICATION ARCHITECTURE:
+    - Uses window.postMessage() API for parent-child communication
+    - Parent sends: initiation-data (client info and existing data)
+    - Child sends: form-data (complete client details with Thirdfort addresses)
+    
+    ADDRESS AUTOCOMPLETE FLOW:
+    1. User types in address field (7+ chars)
+    2. Child sends 'address-search' to parent via postMessage
+    3. Parent calls Wix backend → backend calls getaddress.io
+    4. Parent sends 'address-results' back with suggestions
+    5. User selects address → Child sends 'address-lookup' to parent
+    6. Parent sends 'address-data' with full address object
+    7. Child converts to Thirdfort format and stores
+    =====================================================================
+    */
+    
+    /* CSS Variables */
+    :root { --gap: 20px; --primary:#003C71; --error:#e02424; }
+    
+    /* Global body styling */
+    body { 
+      font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+      background: transparent; 
+      color: #111; 
+      padding: 0; 
+      margin: 0; 
+      line-height: 1.5; 
+    }
+    
+    /* Main container */
+    .container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      box-sizing: border-box;
+      background: transparent;
+    }
+    
+    /* Section styling */
+    .section {
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    
+    /* Typography */
+    h2 { 
+      font-family: 'Transport', 'Quicksand', sans-serif; 
+      font-size: 1.4rem; 
+      font-weight: 500; 
+      margin: 0 0 20px 0; 
+      color: var(--primary);
+    }
+    
+    h3 { 
+      font-family: 'Transport', 'Quicksand', sans-serif; 
+      font-size: 1rem; 
+      font-weight: 500; 
+      margin: 20px 0 10px 0; 
+      color: #444; 
+    }
+    
+    /* Form labels */
+    label { 
+      display: block; 
+      margin-bottom: 6px; 
+      font-weight: 400; 
+      font-size: 0.9rem; 
+      color: #333;
+    }
+    label.required::after { 
+      content: " *"; 
+      color: var(--error); 
+      margin-left: 4px; 
+    }
+    
+    /* Form inputs */
+    input, select { 
+      font-family: 'RotisRegular', 'Quicksand', sans-serif; 
+      width: 100%; 
+      padding: 10px; 
+      border: 1px solid #ddd; 
+      border-radius: 8px; 
+      font-size: 0.9rem; 
+      font-weight: 300; 
+      transition: border 0.2s, box-shadow 0.2s; 
+      box-sizing: border-box; 
+    }
+    input:focus, select:focus { 
+      outline: none; 
+      border-color: var(--primary); 
+      box-shadow: 0 0 0 2px rgba(0,60,113,0.2); 
+    }
+    
+    /* Grid layouts */
+    .row { margin-bottom: 15px; }
+    
+    .row-grid-20-80 { 
+      display: grid; 
+      grid-template-columns: 20% 1fr; 
+      gap: var(--gap); 
+    }
+    
+    .row-grid-50-50 { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: var(--gap); 
+    }
+    
+    /* Date of birth inputs */
+    .birthdate-inputs { 
+      display: flex; 
+      gap: 6px; 
+      margin-top: 6px; 
+      align-items: center; 
+    }
+    .birthdate-inputs input { 
+      width: calc(2.5ch + 8px); 
+      text-align: center; 
+      padding: 8px; 
+      font-size: 0.9rem; 
+    }
+    .birthdate-inputs input:nth-of-type(2), 
+    .birthdate-inputs input:nth-of-type(4) { 
+      margin-right: var(--gap); 
+    }
+    
+    /* Toggle switch */
+    .toggle { 
+      position: relative; 
+      display: inline-block; 
+      width: 50px; 
+      height: 24px; 
+      margin-top: 6px; 
+    }
+    .toggle input { display: none; }
+    .slider { 
+      position: absolute; 
+      cursor: pointer; 
+      top: 0; 
+      left: 0; 
+      right: 0; 
+      bottom: 0; 
+      background: #e02424; 
+      transition: 0.4s; 
+      border-radius: 24px; 
+    }
+    .slider:before { 
+      position: absolute; 
+      content: ''; 
+      height: 18px; 
+      width: 18px; 
+      left: 3px; 
+      bottom: 3px; 
+      background: #fff; 
+      transition: 0.4s; 
+      border-radius: 50%; 
+    }
+    input:checked + .slider { background: #10a37f; }
+    input:checked + .slider:before { transform: translateX(26px); }
+    
+    /* Buttons */
+    .button-row { 
+      display: flex; 
+      justify-content: space-between; 
+      margin-top: 20px; 
+      gap: var(--gap); 
+    }
+    
+    .btn-primary { 
+      font-family: 'Transport', 'Quicksand', sans-serif;
+      background: var(--primary); 
+      color: #fff; 
+      border: none; 
+      font-weight: 500; 
+      border-radius: 8px; 
+      padding: 10px 20px; 
+      font-size: 0.9rem; 
+      cursor: pointer; 
+      transition: background 0.2s;
+    }
+    .btn-primary:hover { background: #002b43; }
+    .btn-primary:disabled { 
+      background: #ccc; 
+      color: #666; 
+      cursor: not-allowed; 
+    }
+    
+    .btn-secondary { 
+      font-family: 'Transport', 'Quicksand', sans-serif;
+      background: none; 
+      color: var(--primary); 
+      border: 2px solid var(--primary); 
+      font-weight: 500; 
+      border-radius: 8px; 
+      padding: 10px 20px; 
+      font-size: 0.9rem; 
+      cursor: pointer; 
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { 
+      background: rgba(0,60,113,0.05); 
+    }
+    .btn-secondary:disabled { 
+      background: none; 
+      color: #999; 
+      border-color: #ccc; 
+      cursor: not-allowed; 
+    }
+    
+    /* Error popup */
+    .error-popup { 
+      position: fixed; 
+      top: 50%; 
+      left: 50%; 
+      transform: translate(-50%, -50%);
+      background: var(--error); 
+      color: #fff; 
+      padding: 20px; 
+      border-radius: 12px; 
+      display: flex; 
+      flex-direction: column;
+      gap: 12px; 
+      font-weight: 600; 
+      max-width: 420px; 
+      min-width: 300px;
+      width: 90%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      z-index: 9999;
+    }
+    
+    .error-popup-header {
+      font-family: 'Transport', 'Quicksand', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      margin: 0;
+    }
+    
+    .error-popup-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .error-popup button { 
+      background: none; 
+      border: none; 
+      color: #fff; 
+      font-size: 1.2rem; 
+      cursor: pointer; 
+      margin-left: auto;
+    }
+    
+    .hidden { display: none !important; }
+    
+    /* Worktype and Relation dropdown styling */
+    .worktype-input, .relation-input {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      border-bottom: none;
+    }
+    
+    .worktype-dropdown, .relation-dropdown {
+      width: 100%;
+      padding: 8px 25px 8px 8px;
+      border: 1px solid #ddd;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      font-size: 0.8rem;
+      background: #f9f9f9;
+      color: #555;
+      margin-top: 0;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      background-size: 14px;
+    }
+    
+    .worktype-dropdown:focus, .relation-dropdown:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(0,60,113,0.2);
+      background: #fff;
+    }
+    
+    /* Address autocomplete dropdown */
+    .address-autocomplete-container {
+      position: relative;
+      width: 100%;
+    }
+    
+    .address-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #4A90E2;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-top: -8px;
+    }
+    
+    .address-dropdown-item {
+      padding: 10px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background-color 0.2s;
+    }
+    
+    .address-dropdown-item:last-child {
+      border-bottom: none;
+    }
+    
+    .address-dropdown-item:hover {
+      background-color: rgba(74, 144, 226, 0.1);
+    }
+    
+    .address-dropdown-item.selected {
+      background-color: rgba(74, 144, 226, 0.2);
+    }
+    
+    .address-loading {
+      padding: 10px;
+      text-align: center;
+      color: #666;
+      font-size: 0.85rem;
+    }
+    
+    .address-no-results {
+      padding: 10px;
+      text-align: center;
+      color: #999;
+      font-size: 0.85rem;
+    }
+    
+    /* Checkbox styling for "Address not listed" */
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    
+    .checkbox-container input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      border-radius: 5px;
+      border: 2px solid #ddd;
+      transition: all 0.2s;
+    }
+    
+    .checkbox-container input[type="checkbox"]:checked {
+      background-color: var(--primary);
+      border-color: var(--primary);
+    }
+    
+    .checkbox-container input[type="checkbox"]:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0,60,113,0.2);
+    }
+    
+    .checkbox-container label {
+      margin: 0;
+      cursor: pointer;
+      font-size: 0.9rem;
+      user-select: none;
+    }
+    
+    /* Country dropdown styling */
+    .country-dropdown {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 300;
+      transition: border 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+      background: white;
+      cursor: pointer;
+    }
+    
+    .country-dropdown:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(0,60,113,0.2);
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .container { padding: 15px; }
+      .section { padding: 15px; }
+      .row-grid-20-80 { 
+        grid-template-columns: 25% 1fr; 
+        gap: 15px; 
+      }
+      .row-grid-50-50 { 
+        grid-template-columns: 1fr 1fr; 
+        gap: 15px; 
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .container { padding: 10px; }
+      .section { padding: 12px; }
+      h2 { font-size: 1.2rem; }
+      input, select { padding: 8px; font-size: 0.85rem; }
+      
+      .row-grid-20-80 { 
+        grid-template-columns: 30% 1fr; 
+        gap: 10px; 
+      }
+      
+      .row-grid-50-50 { 
+        grid-template-columns: 1fr; 
+        gap: 10px; 
+      }
+      
+      .birthdate-inputs { 
+        gap: 4px; 
+      }
+      .birthdate-inputs input { 
+        width: calc(2ch + 6px); 
+        padding: 6px; 
+        font-size: 0.8rem; 
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Client Details Section -->
+    <div class="section" id="detailsSection">
+      <h2>Client Details</h2>
+      
+      <form id="clientForm">
+        <div class="row row-grid-50-50">
+          <div>
+            <label for="worktype" class="required">Work Type</label>
+            <input type="text" id="worktype" name="worktype" required class="worktype-input" />
+            <select id="worktypeDropdown" class="worktype-dropdown">
+              <option value="">or choose from list...</option>
+              <option value="Sale of">Sale of</option>
+              <option value="Purchase of">Purchase of</option>
+              <option value="Transfer of">Transfer of</option>
+              <option value="1st Registration">1st Registration</option>
+              <option value="Equity Release">Equity Release</option>
+              <option value="Auction">Auction</option>
+              <option value="Wills">Wills</option>
+              <option value="Lasting Power of Attorney">Lasting Power of Attorney</option>
+              <option value="Change of Name Deed">Change of Name Deed</option>
+              <option value="Estates">Estates</option>
+              <option value="Deeds & Declarations">Deeds & Declarations</option>
+              <option value="Assent">Assent</option>
+              <option value="Adverse Possesion">Adverse Possesion</option>
+            </select>
+          </div>
+          <div>
+            <label for="relation" class="required">Relation</label>
+            <input type="text" id="relation" name="relation" required class="relation-input" />
+            <select id="relationDropdown" class="relation-dropdown">
+              <option value="">or choose from list...</option>
+              <option value="Our Client">Our Client</option>
+              <option value="Gifter">Gifter</option>
+              <option value="Executor">Executor</option>
+              <option value="Beneficiary">Beneficiary</option>
+              <option value="Occupier">Occupier</option>
+              <option value="Leaseholder">Leaseholder</option>
+              <option value="Freeholder">Freeholder</option>
+              <option value="Tenant">Tenant</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="matterDescription">Matter Description</label>
+          <input type="text" id="matterDescription" name="matterDescription" />
+        </div>
+
+        <div class="row row-grid-20-80">
+          <div>
+            <label for="titlePrefix" class="required">Title</label>
+            <select id="titlePrefix" name="titlePrefix" required>
+              <option value="">Select...</option>
+              <option value="Mr">Mr</option>
+              <option value="Mrs">Mrs</option>
+              <option value="Ms">Ms</option>
+              <option value="Miss">Miss</option>
+              <option value="Master">Master</option>
+              <option value="Dr">Dr</option>
+              <option value="Lord">Lord</option>
+              <option value="Rev">Rev</option>
+              <option value="Mx">Mx</option>
+              <option value="Lad">Lad</option>
+              <option value="Dame">Dame</option>
+            </select>
+          </div>
+          <div>
+            <label for="firstName" class="required">First Name</label>
+            <input type="text" id="firstName" name="firstName" required />
+          </div>
+        </div>
+
+        <div class="row row-grid-50-50">
+          <div>
+            <label for="middleName">Middle Name</label>
+            <input type="text" id="middleName" name="middleName" />
+          </div>
+          <div>
+            <label for="lastName" class="required">Surname</label>
+            <input type="text" id="lastName" name="lastName" required />
+          </div>
+        </div>
+
+        <div class="row">
+          <label>Recent Name Change</label>
+          <label class="toggle" title="If the client has changed their name in the last three years please select the toggle">
+            <input type="checkbox" id="recentNameChange" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div id="nameChangeFields" class="hidden">
+          <div class="row">
+            <label for="previousName" class="required">Previous Name</label>
+            <input type="text" id="previousName" name="previousName" />
+          </div>
+          <div class="row">
+            <label for="reasonForNameChange" class="required">Reason for Name Change</label>
+            <input type="text" id="reasonForNameChange" name="reasonForNameChange" />
+          </div>
+        </div>
+
+        <div class="row row-grid-50-50">
+          <div>
+            <label class="required">Date of Birth</label>
+            <div class="birthdate-inputs">
+              <input type="text" maxlength="1" id="dob1" required />
+              <input type="text" maxlength="1" id="dob2" required />
+              <input type="text" maxlength="1" id="dob3" required />
+              <input type="text" maxlength="1" id="dob4" required />
+              <input type="text" maxlength="1" id="dob5" required />
+              <input type="text" maxlength="1" id="dob6" required />
+              <input type="text" maxlength="1" id="dob7" required />
+              <input type="text" maxlength="1" id="dob8" required />
+            </div>
+          </div>
+          <div></div>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Address Section -->
+    <div class="section" id="addressSection">
+      <h2>Address History</h2>
+      
+      <h3>Current Address</h3>
+      
+      <div class="row">
+        <label for="currentCountry" class="required">Country</label>
+        <select id="currentCountry" name="currentCountry" class="country-dropdown" required>
+          <option value="GBR">United Kingdom</option>
+          <option value="USA">United States</option>
+          <option value="CAN">Canada</option>
+          <option value="AUS">Australia</option>
+          <option value="NZL">New Zealand</option>
+          <option value="IRL">Ireland</option>
+          <option value="FRA">France</option>
+          <option value="DEU">Germany</option>
+          <option value="ESP">Spain</option>
+          <option value="ITA">Italy</option>
+          <option value="PRT">Portugal</option>
+          <option value="NLD">Netherlands</option>
+          <option value="BEL">Belgium</option>
+          <option value="CHE">Switzerland</option>
+          <option value="AUT">Austria</option>
+          <option value="DNK">Denmark</option>
+          <option value="SWE">Sweden</option>
+          <option value="NOR">Norway</option>
+          <option value="FIN">Finland</option>
+          <option value="POL">Poland</option>
+          <option value="GRC">Greece</option>
+          <option value="TUR">Turkey</option>
+          <option value="RUS">Russia</option>
+          <option value="CHN">China</option>
+          <option value="JPN">Japan</option>
+          <option value="IND">India</option>
+          <option value="BRA">Brazil</option>
+          <option value="MEX">Mexico</option>
+          <option value="ZAF">South Africa</option>
+          <option value="ARE">United Arab Emirates</option>
+          <option value="SAU">Saudi Arabia</option>
+          <option value="SGP">Singapore</option>
+          <option value="HKG">Hong Kong</option>
+          <option value="KOR">South Korea</option>
+          <option value="OTHER">Other</option>
+        </select>
+      </div>
+      
+      <div class="row" id="currentAddressAutocompleteRow">
+        <label for="currentAddress" class="required" id="currentAddressLabel">Search Address</label>
+        <div class="address-autocomplete-container">
+          <input type="text" id="currentAddress" name="currentAddress" required autocomplete="off" placeholder="Start typing address or postcode..." />
+          <div id="currentAddressDropdown" class="address-dropdown hidden"></div>
+        </div>
+      </div>
+      
+      <div class="row" id="addressNotListedRow">
+        <div class="checkbox-container">
+          <input type="checkbox" id="addressNotListed" />
+          <label for="addressNotListed">Address not listed (enter manually)</label>
+        </div>
+      </div>
+      
+      <!-- Manual address entry fields -->
+      <div id="manualAddressFields" class="hidden">
+        <div class="row row-grid-50-50">
+          <div>
+            <label for="flatNumber">Flat Number</label>
+            <input type="text" id="flatNumber" name="flatNumber" />
+          </div>
+          <div>
+            <label for="buildingNumber">Building Number</label>
+            <input type="text" id="buildingNumber" name="buildingNumber" />
+          </div>
+        </div>
+        
+        <div class="row">
+          <label for="buildingName">Building Name</label>
+          <input type="text" id="buildingName" name="buildingName" />
+        </div>
+        
+        <div class="row row-grid-50-50">
+          <div>
+            <label for="street">Street</label>
+            <input type="text" id="street" name="street" />
+          </div>
+          <div>
+            <label for="subStreet">Sub Street</label>
+            <input type="text" id="subStreet" name="subStreet" />
+          </div>
+        </div>
+        
+        <div class="row row-grid-50-50">
+          <div>
+            <label for="town" class="required">Town/City</label>
+            <input type="text" id="town" name="town" />
+          </div>
+          <div>
+            <label for="postcode" class="required">Postcode</label>
+            <input type="text" id="postcode" name="postcode" />
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <label>Recent Move (within last year)</label>
+        <label class="toggle" title="If the client has moved home in the past 1 year please enter their previous address">
+          <input type="checkbox" id="recentMove" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div id="previousAddressFields" class="hidden">
+        <h3>Previous Address</h3>
+        
+        <div class="row">
+          <label for="previousCountry" class="required">Country</label>
+          <select id="previousCountry" name="previousCountry" class="country-dropdown" required>
+            <option value="GBR">United Kingdom</option>
+            <option value="USA">United States</option>
+            <option value="CAN">Canada</option>
+            <option value="AUS">Australia</option>
+            <option value="NZL">New Zealand</option>
+            <option value="IRL">Ireland</option>
+            <option value="FRA">France</option>
+            <option value="DEU">Germany</option>
+            <option value="ESP">Spain</option>
+            <option value="ITA">Italy</option>
+            <option value="PRT">Portugal</option>
+            <option value="NLD">Netherlands</option>
+            <option value="BEL">Belgium</option>
+            <option value="CHE">Switzerland</option>
+            <option value="AUT">Austria</option>
+            <option value="DNK">Denmark</option>
+            <option value="SWE">Sweden</option>
+            <option value="NOR">Norway</option>
+            <option value="FIN">Finland</option>
+            <option value="POL">Poland</option>
+            <option value="GRC">Greece</option>
+            <option value="TUR">Turkey</option>
+            <option value="RUS">Russia</option>
+            <option value="CHN">China</option>
+            <option value="JPN">Japan</option>
+            <option value="IND">India</option>
+            <option value="BRA">Brazil</option>
+            <option value="MEX">Mexico</option>
+            <option value="ZAF">South Africa</option>
+            <option value="ARE">United Arab Emirates</option>
+            <option value="SAU">Saudi Arabia</option>
+            <option value="SGP">Singapore</option>
+            <option value="HKG">Hong Kong</option>
+            <option value="KOR">South Korea</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        
+        <div class="row" id="previousAddressAutocompleteRow">
+          <label for="previousAddress" class="required" id="previousAddressLabel">Search Address</label>
+          <div class="address-autocomplete-container">
+            <input type="text" id="previousAddress" name="previousAddress" autocomplete="off" placeholder="Start typing address or postcode..." />
+            <div id="previousAddressDropdown" class="address-dropdown hidden"></div>
+          </div>
+        </div>
+        
+        <div class="row" id="previousAddressNotListedRow">
+          <div class="checkbox-container">
+            <input type="checkbox" id="previousAddressNotListed" />
+            <label for="previousAddressNotListed">Address not listed (enter manually)</label>
+          </div>
+        </div>
+        
+        <!-- Manual previous address entry fields -->
+        <div id="manualPreviousAddressFields" class="hidden">
+          <div class="row row-grid-50-50">
+            <div>
+              <label for="prevFlatNumber">Flat Number</label>
+              <input type="text" id="prevFlatNumber" name="prevFlatNumber" />
+            </div>
+            <div>
+              <label for="prevBuildingNumber">Building Number</label>
+              <input type="text" id="prevBuildingNumber" name="prevBuildingNumber" />
+            </div>
+          </div>
+          
+          <div class="row">
+            <label for="prevBuildingName">Building Name</label>
+            <input type="text" id="prevBuildingName" name="prevBuildingName" />
+          </div>
+          
+          <div class="row row-grid-50-50">
+            <div>
+              <label for="prevStreet">Street</label>
+              <input type="text" id="prevStreet" name="prevStreet" />
+            </div>
+            <div>
+              <label for="prevSubStreet">Sub Street</label>
+              <input type="text" id="prevSubStreet" name="prevSubStreet" />
+            </div>
+          </div>
+          
+          <div class="row row-grid-50-50">
+            <div>
+              <label for="prevTown" class="required">Town/City</label>
+              <input type="text" id="prevTown" name="prevTown" />
+            </div>
+            <div>
+              <label for="prevPostcode" class="required">Postcode</label>
+              <input type="text" id="prevPostcode" name="prevPostcode" />
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="button-row">
+        <div></div>
+        <button type="button" class="btn-primary" id="saveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error popup -->
+  <div id="errorPopup" class="error-popup hidden">
+    <h4 class="error-popup-header">Validation Error</h4>
+    <div class="error-popup-content">
+      <span id="errorMessage" style="white-space:pre-wrap;"></span>
+      <button type="button" id="closeError">×</button>
+    </div>
+  </div>
+
+  <script>
+    /*
+    =====================================================================
+    CLIENT DETAILS FORM - JAVASCRIPT
+    =====================================================================
+    
+    GLOBAL STATE:
+    - formData: Client data from parent
+    - currentAddressObject: Thirdfort-formatted current address
+    - previousAddressObject: Thirdfort-formatted previous address
+    - addressDebounceTimer: Debounce timer for current address
+    - previousAddressDebounceTimer: Debounce timer for previous address
+    
+    PARENT-CHILD COMMUNICATION:
+    
+    INCOMING MESSAGES:
+    1. 'initiation-data' - Load client data
+    2. 'address-results' - Autocomplete suggestions
+    3. 'address-data' - Full address object after selection
+    
+    OUTGOING MESSAGES:
+    1. 'address-search' - Request autocomplete suggestions
+    2. 'address-lookup' - Request full address by ID
+    3. 'form-data' - Send complete form with Thirdfort addresses
+    =====================================================================
+    */
+    
+    // DOM Elements
+    const detailsSection = document.getElementById('detailsSection');
+    const addressSection = document.getElementById('addressSection');
+    const clientForm = document.getElementById('clientForm');
+    const saveBtn = document.getElementById('saveBtn');
+    const errorPopup = document.getElementById('errorPopup');
+    const errorMessage = document.getElementById('errorMessage');
+    const closeError = document.getElementById('closeError');
+    
+    // Form inputs
+    const worktype = document.getElementById('worktype');
+    const worktypeDropdown = document.getElementById('worktypeDropdown');
+    const relation = document.getElementById('relation');
+    const relationDropdown = document.getElementById('relationDropdown');
+    const matterDescription = document.getElementById('matterDescription');
+    const titlePrefix = document.getElementById('titlePrefix');
+    const firstName = document.getElementById('firstName');
+    const middleName = document.getElementById('middleName');
+    const lastName = document.getElementById('lastName');
+    const recentNameChange = document.getElementById('recentNameChange');
+    const nameChangeFields = document.getElementById('nameChangeFields');
+    const previousName = document.getElementById('previousName');
+    const reasonForNameChange = document.getElementById('reasonForNameChange');
+    const dobInputs = Array.from(document.querySelectorAll('.birthdate-inputs input'));
+    
+    // Address inputs
+    const currentCountry = document.getElementById('currentCountry');
+    const currentAddressAutocompleteRow = document.getElementById('currentAddressAutocompleteRow');
+    const currentAddress = document.getElementById('currentAddress');
+    const currentAddressDropdown = document.getElementById('currentAddressDropdown');
+    const currentAddressLabel = document.getElementById('currentAddressLabel');
+    const addressNotListedRow = document.getElementById('addressNotListedRow');
+    const addressNotListed = document.getElementById('addressNotListed');
+    const manualAddressFields = document.getElementById('manualAddressFields');
+    const flatNumber = document.getElementById('flatNumber');
+    const buildingNumber = document.getElementById('buildingNumber');
+    const buildingName = document.getElementById('buildingName');
+    const street = document.getElementById('street');
+    const subStreet = document.getElementById('subStreet');
+    const town = document.getElementById('town');
+    const postcode = document.getElementById('postcode');
+    const recentMove = document.getElementById('recentMove');
+    const previousAddressFields = document.getElementById('previousAddressFields');
+    const previousCountry = document.getElementById('previousCountry');
+    const previousAddressAutocompleteRow = document.getElementById('previousAddressAutocompleteRow');
+    const previousAddress = document.getElementById('previousAddress');
+    const previousAddressDropdown = document.getElementById('previousAddressDropdown');
+    const previousAddressLabel = document.getElementById('previousAddressLabel');
+    const previousAddressNotListedRow = document.getElementById('previousAddressNotListedRow');
+    const previousAddressNotListed = document.getElementById('previousAddressNotListed');
+    const manualPreviousAddressFields = document.getElementById('manualPreviousAddressFields');
+    const prevFlatNumber = document.getElementById('prevFlatNumber');
+    const prevBuildingNumber = document.getElementById('prevBuildingNumber');
+    const prevBuildingName = document.getElementById('prevBuildingName');
+    const prevStreet = document.getElementById('prevStreet');
+    const prevSubStreet = document.getElementById('prevSubStreet');
+    const prevTown = document.getElementById('prevTown');
+    const prevPostcode = document.getElementById('prevPostcode');
+    
+    // State variables
+    let errorTimeout = null;
+    let formData = {};
+    let currentAddressObject = null;
+    let previousAddressObject = null;
+    let addressDebounceTimer = null;
+    let previousAddressDebounceTimer = null;
+    
+    // ===== UTILITY FUNCTIONS =====
+    
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorPopup.classList.remove('hidden');
+      if (errorTimeout) clearTimeout(errorTimeout);
+      errorTimeout = setTimeout(() => {
+        errorPopup.classList.add('hidden');
+      }, 5000);
+    }
+    
+    function hideError() {
+      errorPopup.classList.add('hidden');
+      if (errorTimeout) clearTimeout(errorTimeout);
+    }
+    
+    closeError.addEventListener('click', hideError);
+    
+    // ===== CACHE MANAGEMENT =====
+    
+    /*
+    LocalStorage Cache for Address API Results
+    - Reduces API calls by caching autocomplete suggestions and full address objects
+    - 7-day expiry on cached items
+    - LRU eviction: max 50 autocomplete results, max 50 address objects
+    - Cache keys: 'auto_SEARCHTERM' for suggestions, 'addr_ADDRESSID' for full addresses
+    */
+    
+    const CACHE_EXPIRY_DAYS = 7;
+    const MAX_AUTOCOMPLETE_CACHE = 50;
+    const MAX_ADDRESS_CACHE = 50;
+    
+    // Clear expired cache items on page load
+    clearExpiredCache();
+    
+    function isCacheExpired(timestamp) {
+      const now = Date.now();
+      const expiryMs = CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+      return (now - timestamp) > expiryMs;
+    }
+    
+    function getCachedItem(key, type) {
+      try {
+        const cached = localStorage.getItem(key);
+        if (!cached) return null;
+        
+        const parsed = JSON.parse(cached);
+        
+        // Check if expired
+        if (isCacheExpired(parsed.timestamp)) {
+          localStorage.removeItem(key);
+          return null;
+        }
+        
+        // Update timestamp for LRU (mark as recently accessed)
+        parsed.timestamp = Date.now();
+        localStorage.setItem(key, JSON.stringify(parsed));
+        
+        return parsed.data;
+      } catch (error) {
+        console.error('Cache read error:', error);
+        return null;
+      }
+    }
+    
+    function setCachedItem(key, data, type) {
+      try {
+        const item = {
+          data: data,
+          timestamp: Date.now(),
+          type: type
+        };
+        
+        localStorage.setItem(key, JSON.stringify(item));
+        
+        // Enforce cache limits with LRU eviction
+        enforceCacheLimit(type);
+      } catch (error) {
+        console.error('Cache write error:', error);
+      }
+    }
+    
+    function enforceCacheLimit(type) {
+      try {
+        const prefix = type === 'autocomplete' ? 'auto_' : 'addr_';
+        const maxItems = type === 'autocomplete' ? MAX_AUTOCOMPLETE_CACHE : MAX_ADDRESS_CACHE;
+        
+        // Get all items of this type
+        const items = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(prefix)) {
+            const cached = localStorage.getItem(key);
+            if (cached) {
+              try {
+                const parsed = JSON.parse(cached);
+                items.push({ key: key, timestamp: parsed.timestamp });
+              } catch (e) {
+                // Invalid item, remove it
+                localStorage.removeItem(key);
+              }
+            }
+          }
+        }
+        
+        // If over limit, remove oldest items
+        if (items.length > maxItems) {
+          // Sort by timestamp (oldest first)
+          items.sort((a, b) => a.timestamp - b.timestamp);
+          
+          // Remove oldest items until we're at the limit
+          const toRemove = items.length - maxItems;
+          for (let i = 0; i < toRemove; i++) {
+            localStorage.removeItem(items[i].key);
+          }
+        }
+      } catch (error) {
+        console.error('Cache limit enforcement error:', error);
+      }
+    }
+    
+    function clearExpiredCache() {
+      try {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('auto_') || key.startsWith('addr_'))) {
+            const cached = localStorage.getItem(key);
+            if (cached) {
+              try {
+                const parsed = JSON.parse(cached);
+                if (isCacheExpired(parsed.timestamp)) {
+                  keysToRemove.push(key);
+                }
+              } catch (e) {
+                keysToRemove.push(key); // Remove malformed items
+              }
+            }
+          }
+        }
+        
+        // Remove expired items
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        
+        if (keysToRemove.length > 0) {
+          console.log(`Cleared ${keysToRemove.length} expired cache items`);
+        }
+      } catch (error) {
+        console.error('Cache cleanup error:', error);
+      }
+    }
+    
+    // ===== ADDRESS FORMATTING FUNCTIONS =====
+    
+    /*
+    Parse manual address text into Thirdfort API format
+    - Used when user types address manually (no autocomplete match)
+    - Attempts to extract postcode, town, and address lines
+    */
+    function parseManualAddress(addressText) {
+      if (!addressText || !addressText.trim()) return null;
+      
+      const text = addressText.trim();
+      
+      // Try to extract UK postcode
+      const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2})\b/i);
+      const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase() : '';
+      
+      // Split by commas
+      const parts = text.split(',').map(p => p.trim()).filter(p => p);
+      
+      let town = '';
+      let addressLines = [];
+      
+      if (parts.length > 0) {
+        if (postcode) {
+          const postcodeIndex = parts.findIndex(p => p.toUpperCase().includes(postcode));
+          if (postcodeIndex > 0) {
+            town = parts[postcodeIndex - 1];
+            addressLines = parts.slice(0, postcodeIndex - 1);
+          } else {
+            if (parts.length > 1) {
+              town = parts[parts.length - 2];
+              addressLines = parts.slice(0, parts.length - 2);
+            } else {
+              addressLines = [parts[0]];
+            }
+          }
+        } else {
+          if (parts.length > 1) {
+            town = parts[parts.length - 1];
+            addressLines = parts.slice(0, parts.length - 1);
+          } else {
+            addressLines = [parts[0]];
+          }
+        }
+      }
+      
+      return {
+        address_1: addressLines[0] || text,
+        address_2: addressLines[1] || '',
+        building_name: '',
+        building_number: '',
+        flat_number: '',
+        postcode: postcode,
+        street: '',
+        sub_street: '',
+        town: town || 'Unknown',
+        state: '',
+        country: 'GBR'
+      };
+    }
+    
+    /*
+    Format getaddress.io address object to Thirdfort API format
+    */
+    function formatToThirdfort(getAddressData, country = 'GBR') {
+      if (!getAddressData) return null;
+      
+      return {
+        address_1: getAddressData.line_1 || '',
+        address_2: getAddressData.line_2 || getAddressData.line_3 || getAddressData.line_4 || '',
+        building_name: getAddressData.building_name || '',
+        building_number: getAddressData.building_number || '',
+        flat_number: getAddressData.flat_number || '',
+        postcode: getAddressData.postcode || '',
+        street: getAddressData.thoroughfare || getAddressData.street || '',
+        sub_street: getAddressData.sub_street || '',
+        town: getAddressData.town_or_city || getAddressData.town || '',
+        state: '',
+        country: country
+      };
+    }
+    
+    /*
+    Format Thirdfort address object for display in input field
+    - Used when loading existing data from database
+    */
+    function formatThirdfortForDisplay(thirdfortAddress) {
+      if (!thirdfortAddress) return '';
+      
+      const parts = [
+        thirdfortAddress.flat_number,
+        thirdfortAddress.building_number,
+        thirdfortAddress.building_name,
+        thirdfortAddress.address_1,
+        thirdfortAddress.address_2,
+        thirdfortAddress.street,
+        thirdfortAddress.sub_street,
+        thirdfortAddress.town,
+        thirdfortAddress.postcode
+      ].filter(p => p && p.trim());
+      
+      return parts.join(', ');
+    }
+    
+    /*
+    Format getaddress.io address for display
+    */
+    function formatAddressForDisplay(getAddressData) {
+      if (!getAddressData) return '';
+      
+      const parts = [
+        getAddressData.line_1,
+        getAddressData.line_2,
+        getAddressData.line_3,
+        getAddressData.line_4,
+        getAddressData.locality,
+        getAddressData.town_or_city,
+        getAddressData.postcode
+      ].filter(p => p && p.trim());
+      
+      return parts.join(', ');
+    }
+    
+    // ===== ADDRESS AUTOCOMPLETE =====
+    
+    /*
+    Setup address autocomplete with debouncing
+    */
+    function setupAddressAutocomplete(inputElement, dropdownElement, timerType, isCurrentAddress) {
+      let selectedIndex = -1;
+      
+      inputElement.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.trim();
+        
+        // Clear timer
+        if (timerType === 'current') {
+          if (addressDebounceTimer) clearTimeout(addressDebounceTimer);
+        } else {
+          if (previousAddressDebounceTimer) clearTimeout(previousAddressDebounceTimer);
+        }
+        
+        // Clear stored object when user types
+        if (isCurrentAddress) {
+          currentAddressObject = null;
+        } else {
+          previousAddressObject = null;
+        }
+        
+        // Hide dropdown if too short
+        if (searchTerm.length < 7) {
+          dropdownElement.classList.add('hidden');
+          dropdownElement.innerHTML = '';
+          return;
+        }
+        
+        // Check cache first
+        const cacheKey = 'auto_' + searchTerm.toLowerCase();
+        const cachedSuggestions = getCachedItem(cacheKey, 'autocomplete');
+        
+        if (cachedSuggestions) {
+          console.log('✅ Cache hit for autocomplete:', searchTerm);
+          displayAddressSuggestions(cachedSuggestions, isCurrentAddress ? 'current' : 'previous');
+          return;
+        }
+        
+        // Show loading
+        dropdownElement.classList.remove('hidden');
+        dropdownElement.innerHTML = '<div class="address-loading">Searching addresses...</div>';
+        
+        // Debounce 300ms
+        const timer = setTimeout(() => {
+          console.log('📡 API call for autocomplete:', searchTerm);
+          window.parent.postMessage({
+            type: 'address-search',
+            searchTerm: searchTerm,
+            field: isCurrentAddress ? 'current' : 'previous'
+          }, '*');
+        }, 300);
+        
+        if (timerType === 'current') {
+          addressDebounceTimer = timer;
+        } else {
+          previousAddressDebounceTimer = timer;
+        }
+      });
+      
+      // Keyboard navigation
+      inputElement.addEventListener('keydown', (e) => {
+        const items = dropdownElement.querySelectorAll('.address-dropdown-item');
+        if (items.length === 0) return;
+        
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+          updateSelectedItem(items, selectedIndex);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, -1);
+          updateSelectedItem(items, selectedIndex);
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+          e.preventDefault();
+          items[selectedIndex].click();
+        } else if (e.key === 'Escape') {
+          dropdownElement.classList.add('hidden');
+          selectedIndex = -1;
+        }
+      });
+      
+      // Click outside to close
+      document.addEventListener('click', (e) => {
+        if (!inputElement.contains(e.target) && !dropdownElement.contains(e.target)) {
+          dropdownElement.classList.add('hidden');
+          selectedIndex = -1;
+        }
+      });
+      
+      function updateSelectedItem(items, index) {
+        items.forEach((item, i) => {
+          if (i === index) {
+            item.classList.add('selected');
+          } else {
+            item.classList.remove('selected');
+          }
+        });
+      }
+    }
+    
+    /*
+    Display address suggestions in dropdown
+    */
+    function displayAddressSuggestions(suggestions, field) {
+      const dropdownElement = field === 'current' ? currentAddressDropdown : previousAddressDropdown;
+      const isCurrentAddress = field === 'current';
+      
+      if (!suggestions || suggestions.length === 0) {
+        dropdownElement.innerHTML = '<div class="address-no-results">No addresses found</div>';
+        return;
+      }
+      
+      dropdownElement.innerHTML = '';
+      
+      suggestions.forEach((suggestion) => {
+        const item = document.createElement('div');
+        item.className = 'address-dropdown-item';
+        item.textContent = suggestion.address;
+        
+        item.addEventListener('click', () => {
+          selectAddressSuggestion(suggestion.id, suggestion.address, isCurrentAddress);
+        });
+        
+        dropdownElement.appendChild(item);
+      });
+    }
+    
+    /*
+    Handle address selection from dropdown
+    */
+    function selectAddressSuggestion(addressId, displayText, isCurrentAddress) {
+      const inputElement = isCurrentAddress ? currentAddress : previousAddress;
+      const dropdownElement = isCurrentAddress ? currentAddressDropdown : previousAddressDropdown;
+      
+      inputElement.value = displayText;
+      dropdownElement.classList.add('hidden');
+      
+      // Check cache for full address first
+      const cacheKey = 'addr_' + addressId;
+      const cachedAddress = getCachedItem(cacheKey, 'address');
+      
+      if (cachedAddress) {
+        console.log('✅ Cache hit for full address:', addressId);
+        handleAddressData(cachedAddress, isCurrentAddress ? 'current' : 'previous');
+        return;
+      }
+      
+      // Request full address from parent
+      console.log('📡 API call for full address:', addressId);
+      window.parent.postMessage({
+        type: 'address-lookup',
+        addressId: addressId,
+        field: isCurrentAddress ? 'current' : 'previous'
+      }, '*');
+    }
+    
+    /*
+    Handle full address data from parent
+    */
+    function handleAddressData(addressData, field) {
+      const country = field === 'current' ? currentCountry.value : previousCountry.value;
+      const thirdfortAddress = formatToThirdfort(addressData, country);
+      
+      if (field === 'current') {
+        currentAddressObject = thirdfortAddress;
+      } else {
+        previousAddressObject = thirdfortAddress;
+      }
+    }
+    
+    // ===== FORM VALIDATION =====
+    
+    function validateDOB() {
+      const dobString = dobInputs.map(inp => inp.value).join('');
+      if (dobString.length !== 8) return false;
+      const formatted = `${dobString.substring(0,2)}-${dobString.substring(2,4)}-${dobString.substring(4)}`;
+      const [dd, mm, yyyy] = formatted.split('-').map(Number);
+      const d = new Date(yyyy, mm - 1, dd);
+      return d && d.getMonth() === (mm - 1) && d.getDate() === dd && d.getFullYear() === yyyy;
+    }
+    
+    function validateForm() {
+      const errors = [];
+      
+      if (!titlePrefix.value.trim()) errors.push('Please select a title.');
+      if (!firstName.value.trim()) errors.push('Please enter first name.');
+      if (!lastName.value.trim()) errors.push('Please enter surname.');
+      if (!worktype.value.trim()) errors.push('Please enter work type.');
+      if (!relation.value.trim()) errors.push('Please enter relation.');
+      if (!validateDOB()) errors.push('Please enter a valid date of birth (DD-MM-YYYY).');
+      
+      if (recentNameChange.checked) {
+        if (!previousName.value.trim()) errors.push('Please enter previous name.');
+        if (!reasonForNameChange.value.trim()) errors.push('Please enter reason for name change.');
+      }
+      
+      // Validate current address
+      const isCurrentUK = currentCountry.value === 'GBR';
+      
+      if (isCurrentUK && !addressNotListed.checked) {
+        // UK address with autocomplete
+        if (!currentAddress.value.trim()) {
+          errors.push('Please enter the current address or check "Address not listed" to enter manually.');
+        }
+      } else {
+        // Manual entry (non-UK or "address not listed")
+        if (!town.value.trim()) errors.push('Please enter the town/city for current address.');
+        if (!postcode.value.trim()) errors.push('Please enter the postcode for current address.');
+        // Per Thirdfort API: Must have ONE OF flat_number, building_number, or building_name
+        if (!flatNumber.value.trim() && !buildingNumber.value.trim() && !buildingName.value.trim()) {
+          errors.push('Please enter at least one of: Flat Number, Building Number, or Building Name for current address.');
+        }
+      }
+      
+      // Validate previous address if recent move checked
+      if (recentMove.checked) {
+        const isPreviousUK = previousCountry.value === 'GBR';
+        
+        if (isPreviousUK && !previousAddressNotListed.checked) {
+          // UK address with autocomplete
+          if (!previousAddress.value.trim()) {
+            errors.push('Please enter the previous address or check "Address not listed" to enter manually.');
+          }
+        } else {
+          // Manual entry (non-UK or "address not listed")
+          if (!prevTown.value.trim()) errors.push('Please enter the town/city for previous address.');
+          if (!prevPostcode.value.trim()) errors.push('Please enter the postcode for previous address.');
+          // Must have ONE OF flat_number, building_number, or building_name
+          if (!prevFlatNumber.value.trim() && !prevBuildingNumber.value.trim() && !prevBuildingName.value.trim()) {
+            errors.push('Please enter at least one of: Flat Number, Building Number, or Building Name for previous address.');
+          }
+        }
+      }
+      
+      return errors;
+    }
+    
+    // ===== DATA COMPILATION =====
+    
+    function compileFormData() {
+      // Build current address object
+      const isCurrentUK = currentCountry.value === 'GBR';
+      
+      if (!isCurrentUK || addressNotListed.checked) {
+        // Build from manual fields (non-UK or manual entry)
+        currentAddressObject = {
+          address_1: '',
+          address_2: '',
+          building_name: buildingName.value.trim(),
+          building_number: buildingNumber.value.trim(),
+          flat_number: flatNumber.value.trim(),
+          postcode: postcode.value.trim(),
+          street: street.value.trim(),
+          sub_street: subStreet.value.trim(),
+          town: town.value.trim(),
+          state: '',
+          country: currentCountry.value
+        };
+      } else if (!currentAddressObject && currentAddress.value.trim()) {
+        // Parse from autocomplete text if no object stored
+        currentAddressObject = parseManualAddress(currentAddress.value);
+        if (currentAddressObject) {
+          currentAddressObject.country = currentCountry.value;
+        }
+      }
+      
+      // Ensure country is set even if object was from API
+      if (currentAddressObject) {
+        currentAddressObject.country = currentCountry.value;
+      }
+      
+      // Build previous address object
+      if (recentMove.checked) {
+        const isPreviousUK = previousCountry.value === 'GBR';
+        
+        if (!isPreviousUK || previousAddressNotListed.checked) {
+          // Build from manual fields (non-UK or manual entry)
+          previousAddressObject = {
+            address_1: '',
+            address_2: '',
+            building_name: prevBuildingName.value.trim(),
+            building_number: prevBuildingNumber.value.trim(),
+            flat_number: prevFlatNumber.value.trim(),
+            postcode: prevPostcode.value.trim(),
+            street: prevStreet.value.trim(),
+            sub_street: prevSubStreet.value.trim(),
+            town: prevTown.value.trim(),
+            state: '',
+            country: previousCountry.value
+          };
+        } else if (!previousAddressObject && previousAddress.value.trim()) {
+          // Parse from autocomplete text if no object stored
+          previousAddressObject = parseManualAddress(previousAddress.value);
+          if (previousAddressObject) {
+            previousAddressObject.country = previousCountry.value;
+          }
+        }
+        
+        // Ensure country is set even if object was from API
+        if (previousAddressObject) {
+          previousAddressObject.country = previousCountry.value;
+        }
+      }
+      
+      // Generate display text from addressObject
+      const currentAddressDisplayText = currentAddressObject ? formatThirdfortForDisplay(currentAddressObject) : currentAddress.value;
+      const previousAddressDisplayText = previousAddressObject ? formatThirdfortForDisplay(previousAddressObject) : previousAddress.value;
+      
+      const compiled = {
+        _id: formData._id || undefined,
+        titlePrefix: titlePrefix.value,
+        firstName: firstName.value,
+        middleNames: middleName.value,
+        surname: lastName.value,
+        worktype: worktype.value,
+        relation: relation.value,
+        matterDesc: matterDescription.value,
+        birthdate: dobInputs.map(inp => inp.value).join(''),
+        clientRecentNameChange: recentNameChange.checked,
+        previousName: previousName.value,
+        reasonForNameChange: reasonForNameChange.value,
+        address: currentAddressDisplayText,
+        addressObject: currentAddressObject,
+        clientRecentHomeMove: recentMove.checked,
+        previousAddress: previousAddressDisplayText,
+        previousAddressObject: previousAddressObject
+      };
+      
+      // Format birthdate as nn-nn-nnnn
+      if (compiled.birthdate.length === 8) {
+        compiled.birthdate = `${compiled.birthdate.substring(0,2)}-${compiled.birthdate.substring(2,4)}-${compiled.birthdate.substring(4)}`;
+      }
+      
+      return compiled;
+    }
+    
+    // ===== EVENT LISTENERS =====
+    
+    // Country change for current address - show autocomplete for UK, manual for others
+    currentCountry.addEventListener('change', () => {
+      const isUK = currentCountry.value === 'GBR';
+      
+      if (isUK) {
+        // Show autocomplete and "address not listed" checkbox
+        currentAddressAutocompleteRow.classList.remove('hidden');
+        addressNotListedRow.classList.remove('hidden');
+        
+        // Hide manual fields unless checkbox is checked
+        if (!addressNotListed.checked) {
+          manualAddressFields.classList.add('hidden');
+        }
+      } else {
+        // Hide autocomplete and checkbox, show manual fields
+        currentAddressAutocompleteRow.classList.add('hidden');
+        addressNotListedRow.classList.add('hidden');
+        manualAddressFields.classList.remove('hidden');
+        
+        // Uncheck "address not listed" since we're forcing manual
+        addressNotListed.checked = false;
+      }
+    });
+    
+    // Country change for previous address
+    previousCountry.addEventListener('change', () => {
+      const isUK = previousCountry.value === 'GBR';
+      
+      if (isUK) {
+        // Show autocomplete and "address not listed" checkbox
+        previousAddressAutocompleteRow.classList.remove('hidden');
+        previousAddressNotListedRow.classList.remove('hidden');
+        
+        // Hide manual fields unless checkbox is checked
+        if (!previousAddressNotListed.checked) {
+          manualPreviousAddressFields.classList.add('hidden');
+        }
+      } else {
+        // Hide autocomplete and checkbox, show manual fields
+        previousAddressAutocompleteRow.classList.add('hidden');
+        previousAddressNotListedRow.classList.add('hidden');
+        manualPreviousAddressFields.classList.remove('hidden');
+        
+        // Uncheck "address not listed" since we're forcing manual
+        previousAddressNotListed.checked = false;
+      }
+    });
+    
+    // Toggle name change fields
+    recentNameChange.addEventListener('change', () => {
+      if (recentNameChange.checked) {
+        nameChangeFields.classList.remove('hidden');
+        previousName.setAttribute('required', 'true');
+        reasonForNameChange.setAttribute('required', 'true');
+      } else {
+        nameChangeFields.classList.add('hidden');
+        previousName.removeAttribute('required');
+        reasonForNameChange.removeAttribute('required');
+      }
+    });
+    
+    // Toggle manual address fields for current address
+    addressNotListed.addEventListener('change', () => {
+      if (addressNotListed.checked) {
+        // Show manual fields, hide autocomplete
+        manualAddressFields.classList.remove('hidden');
+        currentAddress.classList.add('hidden');
+        currentAddressLabel.classList.add('hidden');
+        currentAddress.removeAttribute('required');
+        
+        // Set required on manual fields
+        town.setAttribute('required', 'true');
+        postcode.setAttribute('required', 'true');
+      } else {
+        // Hide manual fields, show autocomplete
+        manualAddressFields.classList.add('hidden');
+        currentAddress.classList.remove('hidden');
+        currentAddressLabel.classList.remove('hidden');
+        currentAddress.setAttribute('required', 'true');
+        
+        // Remove required from manual fields
+        town.removeAttribute('required');
+        postcode.removeAttribute('required');
+        
+        // Clear manual fields
+        flatNumber.value = '';
+        buildingNumber.value = '';
+        buildingName.value = '';
+        street.value = '';
+        subStreet.value = '';
+        town.value = '';
+        postcode.value = '';
+      }
+    });
+    
+    // Toggle manual address fields for previous address
+    previousAddressNotListed.addEventListener('change', () => {
+      if (previousAddressNotListed.checked) {
+        // Show manual fields, hide autocomplete
+        manualPreviousAddressFields.classList.remove('hidden');
+        previousAddress.classList.add('hidden');
+        previousAddressLabel.classList.add('hidden');
+        previousAddress.removeAttribute('required');
+        
+        // Set required on manual fields
+        prevTown.setAttribute('required', 'true');
+        prevPostcode.setAttribute('required', 'true');
+      } else {
+        // Hide manual fields, show autocomplete
+        manualPreviousAddressFields.classList.add('hidden');
+        previousAddress.classList.remove('hidden');
+        previousAddressLabel.classList.remove('hidden');
+        if (recentMove.checked) {
+          previousAddress.setAttribute('required', 'true');
+        }
+        
+        // Remove required from manual fields
+        prevTown.removeAttribute('required');
+        prevPostcode.removeAttribute('required');
+        
+        // Clear manual fields
+        prevFlatNumber.value = '';
+        prevBuildingNumber.value = '';
+        prevBuildingName.value = '';
+        prevStreet.value = '';
+        prevSubStreet.value = '';
+        prevTown.value = '';
+        prevPostcode.value = '';
+      }
+    });
+    
+    // Toggle previous address fields
+    recentMove.addEventListener('change', () => {
+      if (recentMove.checked) {
+        previousAddressFields.classList.remove('hidden');
+        if (!previousAddressNotListed.checked) {
+          previousAddress.setAttribute('required', 'true');
+        } else {
+          prevTown.setAttribute('required', 'true');
+          prevPostcode.setAttribute('required', 'true');
+        }
+      } else {
+        previousAddressFields.classList.add('hidden');
+        previousAddress.removeAttribute('required');
+        prevTown.removeAttribute('required');
+        prevPostcode.removeAttribute('required');
+      }
+    });
+    
+    // Dropdown helpers
+    worktypeDropdown.addEventListener('change', () => {
+      if (worktypeDropdown.value) {
+        worktype.value = worktypeDropdown.value;
+        worktypeDropdown.value = '';
+      }
+    });
+    
+    relationDropdown.addEventListener('change', () => {
+      if (relationDropdown.value) {
+        relation.value = relationDropdown.value;
+        relationDropdown.value = '';
+      }
+    });
+    
+    // DOB auto-tab
+    dobInputs.forEach((input, idx) => {
+      input.addEventListener('focus', () => {
+        input.value = '';
+      });
+      
+      input.addEventListener('input', (e) => {
+        const value = e.target.value;
+        if (value.length > 1) {
+          input.value = value.slice(-1);
+        }
+        if (input.value.length === 1 && idx < dobInputs.length - 1) {
+          dobInputs[idx + 1].focus();
+        }
+      });
+      
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && input.value === '' && idx > 0) {
+          e.preventDefault();
+          dobInputs[idx - 1].focus();
+          dobInputs[idx - 1].value = '';
+        }
+      });
+    });
+    
+    // Save button
+    saveBtn.addEventListener('click', () => {
+      hideError();
+      
+      const errors = validateForm();
+      if (errors.length) {
+        showError('• ' + errors.join('\n• '));
+        return;
+      }
+      
+      const data = compileFormData();
+      
+      // Send to parent
+      window.parent.postMessage({
+        type: 'form-data',
+        data: data
+      }, '*');
+    });
+    
+    // ===== MESSAGE LISTENER =====
+    
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'initiation-data') {
+        loadData(event.data.data || {});
+      } else if (event.data && event.data.type === 'address-results') {
+        // Cache the autocomplete results
+        if (event.data.searchTerm && event.data.suggestions) {
+          const cacheKey = 'auto_' + event.data.searchTerm.toLowerCase();
+          setCachedItem(cacheKey, event.data.suggestions, 'autocomplete');
+          console.log('💾 Cached autocomplete results for:', event.data.searchTerm);
+        }
+        
+        displayAddressSuggestions(event.data.suggestions, event.data.field);
+      } else if (event.data && event.data.type === 'address-data') {
+        // Cache the full address object
+        if (event.data.addressId && event.data.address) {
+          const cacheKey = 'addr_' + event.data.addressId;
+          setCachedItem(cacheKey, event.data.address, 'address');
+          console.log('💾 Cached full address for ID:', event.data.addressId);
+        }
+        
+        handleAddressData(event.data.address, event.data.field);
+      }
+    });
+    
+    // ===== LOAD DATA =====
+    
+    function loadData(data) {
+      formData = data || {};
+      
+      // Clear address objects on new data load
+      currentAddressObject = null;
+      previousAddressObject = null;
+      
+      // Clear timers
+      if (addressDebounceTimer) clearTimeout(addressDebounceTimer);
+      if (previousAddressDebounceTimer) clearTimeout(previousAddressDebounceTimer);
+      addressDebounceTimer = null;
+      previousAddressDebounceTimer = null;
+      
+      // Reset "address not listed" toggles (they're just UI helpers, not saved)
+      addressNotListed.checked = false;
+      previousAddressNotListed.checked = false;
+      manualAddressFields.classList.add('hidden');
+      manualPreviousAddressFields.classList.add('hidden');
+      currentAddress.classList.remove('hidden');
+      currentAddressLabel.classList.remove('hidden');
+      previousAddress.classList.remove('hidden');
+      previousAddressLabel.classList.remove('hidden');
+      
+      // Clear manual fields
+      flatNumber.value = '';
+      buildingNumber.value = '';
+      buildingName.value = '';
+      street.value = '';
+      subStreet.value = '';
+      town.value = '';
+      postcode.value = '';
+      prevFlatNumber.value = '';
+      prevBuildingNumber.value = '';
+      prevBuildingName.value = '';
+      prevStreet.value = '';
+      prevSubStreet.value = '';
+      prevTown.value = '';
+      prevPostcode.value = '';
+      
+      // Populate form fields
+      titlePrefix.value = formData.titlePrefix || '';
+      firstName.value = formData.firstName || '';
+      middleName.value = formData.middleNames || '';
+      lastName.value = formData.surname || '';
+      worktype.value = formData.worktype || '';
+      relation.value = formData.relation || '';
+      matterDescription.value = formData.matterDesc || '';
+      
+      // Name change
+      if (formData.clientRecentNameChange) {
+        recentNameChange.checked = true;
+        nameChangeFields.classList.remove('hidden');
+        previousName.value = formData.previousName || '';
+        reasonForNameChange.value = formData.reasonForNameChange || '';
+        previousName.setAttribute('required', 'true');
+        reasonForNameChange.setAttribute('required', 'true');
+      } else {
+        recentNameChange.checked = false;
+        nameChangeFields.classList.add('hidden');
+        previousName.removeAttribute('required');
+        reasonForNameChange.removeAttribute('required');
+      }
+      
+      // DOB
+      if (formData.birthdate) {
+        const digits = formData.birthdate.replace(/[^0-9]/g, '').slice(0, 8).split('');
+        dobInputs.forEach((inp, i) => {
+          inp.value = digits[i] || '';
+        });
+      } else {
+        dobInputs.forEach(inp => inp.value = '');
+      }
+      
+      // Load current address - prioritize addressObject over plain text
+      if (formData.addressObject) {
+        currentAddressObject = formData.addressObject;
+        currentCountry.value = formData.addressObject.country || 'GBR';
+        
+        const isCurrentUK = currentCountry.value === 'GBR';
+        
+        if (!isCurrentUK) {
+          // Non-UK address - show manual fields, hide autocomplete
+          currentAddressAutocompleteRow.classList.add('hidden');
+          addressNotListedRow.classList.add('hidden');
+          manualAddressFields.classList.remove('hidden');
+          
+          // Populate manual fields
+          flatNumber.value = formData.addressObject.flat_number || '';
+          buildingNumber.value = formData.addressObject.building_number || '';
+          buildingName.value = formData.addressObject.building_name || '';
+          street.value = formData.addressObject.street || '';
+          subStreet.value = formData.addressObject.sub_street || '';
+          town.value = formData.addressObject.town || '';
+          postcode.value = formData.addressObject.postcode || '';
+        } else {
+          // UK address - show autocomplete
+          currentAddressAutocompleteRow.classList.remove('hidden');
+          addressNotListedRow.classList.remove('hidden');
+          currentAddress.value = formatThirdfortForDisplay(formData.addressObject);
+        }
+      } else if (formData.address) {
+        // Legacy text format
+        currentCountry.value = 'GBR';
+        currentAddress.value = formData.address;
+        currentAddressObject = null;
+      }
+      
+      // Load previous address
+      if (formData.clientRecentHomeMove) {
+        recentMove.checked = true;
+        previousAddressFields.classList.remove('hidden');
+        
+        if (formData.previousAddressObject) {
+          previousAddressObject = formData.previousAddressObject;
+          previousCountry.value = formData.previousAddressObject.country || 'GBR';
+          
+          const isPreviousUK = previousCountry.value === 'GBR';
+          
+          if (!isPreviousUK) {
+            // Non-UK address - show manual fields, hide autocomplete
+            previousAddressAutocompleteRow.classList.add('hidden');
+            previousAddressNotListedRow.classList.add('hidden');
+            manualPreviousAddressFields.classList.remove('hidden');
+            
+            // Populate manual fields
+            prevFlatNumber.value = formData.previousAddressObject.flat_number || '';
+            prevBuildingNumber.value = formData.previousAddressObject.building_number || '';
+            prevBuildingName.value = formData.previousAddressObject.building_name || '';
+            prevStreet.value = formData.previousAddressObject.street || '';
+            prevSubStreet.value = formData.previousAddressObject.sub_street || '';
+            prevTown.value = formData.previousAddressObject.town || '';
+            prevPostcode.value = formData.previousAddressObject.postcode || '';
+          } else {
+            // UK address - show autocomplete
+            previousAddressAutocompleteRow.classList.remove('hidden');
+            previousAddressNotListedRow.classList.remove('hidden');
+            previousAddress.value = formatThirdfortForDisplay(formData.previousAddressObject);
+          }
+        } else if (formData.previousAddress) {
+          // Legacy text format
+          previousCountry.value = 'GBR';
+          previousAddress.value = formData.previousAddress;
+          previousAddressObject = null;
+        }
+      } else {
+        recentMove.checked = false;
+        previousAddressFields.classList.add('hidden');
+      }
+    }
+    
+    // ===== INITIALIZE =====
+    setupAddressAutocomplete(currentAddress, currentAddressDropdown, 'current', true);
+    setupAddressAutocomplete(previousAddress, previousAddressDropdown, 'previous', false);
+  </script>
+</body>
+</html>
+
