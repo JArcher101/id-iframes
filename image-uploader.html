@@ -1223,6 +1223,70 @@
         margin-top: 15px !important;
       }
     }
+    
+    /* 
+    =====================================================================
+    ADDRESS AUTOCOMPLETE DROPDOWN
+    - Appears below address input fields when user types
+    - Shows suggestions from getaddress.io API via backend proxy
+    - Clicking a suggestion populates input with formatted address
+    - Stores structured address object for Thirdfort API submission
+    =====================================================================
+    */
+    .address-autocomplete-container {
+      position: relative;
+      width: 100%;
+    }
+    
+    .address-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #4A90E2;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-top: -8px;
+    }
+    
+    .address-dropdown-item {
+      padding: 10px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background-color 0.2s;
+    }
+    
+    .address-dropdown-item:last-child {
+      border-bottom: none;
+    }
+    
+    .address-dropdown-item:hover {
+      background-color: rgba(74, 144, 226, 0.1);
+    }
+    
+    .address-dropdown-item.selected {
+      background-color: rgba(74, 144, 226, 0.2);
+    }
+    
+    .address-loading {
+      padding: 10px;
+      text-align: center;
+      color: #666;
+      font-size: 0.85rem;
+    }
+    
+    .address-no-results {
+      padding: 10px;
+      text-align: center;
+      color: #999;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
@@ -1434,9 +1498,63 @@
 
     <!-- Section 3: Address History - Current and previous addresses -->
     <div id="section3" class="hidden">
+      <h3>Current Address</h3>
+      
       <div class="row">
-        <label for="currentAddress" class="required">Current Address</label>
-        <input type="text" id="currentAddress" name="currentAddress" required />
+        <label for="currentAddress" class="required" id="currentAddressLabel">Search Address</label>
+        <div class="address-autocomplete-container">
+          <input type="text" id="currentAddress" name="currentAddress" required autocomplete="off" placeholder="Start typing address or postcode..." />
+          <div id="currentAddressDropdown" class="address-dropdown hidden"></div>
+        </div>
+      </div>
+      
+      <div class="row">
+        <label>Address not listed</label>
+        <label class="toggle" title="If you cannot find the address in the search, check this box to enter it manually">
+          <input type="checkbox" id="addressNotListed" />
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <!-- Manual address entry fields (shown when "Address not listed" is checked) -->
+      <div id="manualAddressFields" class="hidden">
+        <div class="row row-grid-50-50">
+          <div>
+            <label for="flatNumber">Flat Number</label>
+            <input type="text" id="flatNumber" name="flatNumber" />
+          </div>
+          <div>
+            <label for="buildingNumber">Building Number</label>
+            <input type="text" id="buildingNumber" name="buildingNumber" />
+          </div>
+        </div>
+        
+        <div class="row">
+          <label for="buildingName">Building Name</label>
+          <input type="text" id="buildingName" name="buildingName" />
+        </div>
+        
+        <div class="row row-grid-50-50">
+          <div>
+            <label for="street">Street</label>
+            <input type="text" id="street" name="street" />
+          </div>
+          <div>
+            <label for="subStreet">Sub Street</label>
+            <input type="text" id="subStreet" name="subStreet" />
+          </div>
+        </div>
+        
+        <div class="row row-grid-50-50">
+          <div>
+            <label for="town" class="required">Town/City</label>
+            <input type="text" id="town" name="town" />
+          </div>
+          <div>
+            <label for="postcode" class="required">Postcode</label>
+            <input type="text" id="postcode" name="postcode" />
+          </div>
+        </div>
       </div>
 
       <div class="row">
@@ -1448,9 +1566,63 @@
       </div>
 
       <div id="previousAddressFields" class="hidden">
+        <h3>Previous Address</h3>
+        
         <div class="row">
-          <label for="previousAddress" class="required">Previous Address</label>
-          <input type="text" id="previousAddress" name="previousAddress" />
+          <label for="previousAddress" class="required" id="previousAddressLabel">Search Address</label>
+          <div class="address-autocomplete-container">
+            <input type="text" id="previousAddress" name="previousAddress" autocomplete="off" placeholder="Start typing address or postcode..." />
+            <div id="previousAddressDropdown" class="address-dropdown hidden"></div>
+          </div>
+        </div>
+        
+        <div class="row">
+          <label>Address not listed</label>
+          <label class="toggle" title="If you cannot find the previous address in the search, check this box to enter it manually">
+            <input type="checkbox" id="previousAddressNotListed" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <!-- Manual previous address entry fields -->
+        <div id="manualPreviousAddressFields" class="hidden">
+          <div class="row row-grid-50-50">
+            <div>
+              <label for="prevFlatNumber">Flat Number</label>
+              <input type="text" id="prevFlatNumber" name="prevFlatNumber" />
+            </div>
+            <div>
+              <label for="prevBuildingNumber">Building Number</label>
+              <input type="text" id="prevBuildingNumber" name="prevBuildingNumber" />
+            </div>
+          </div>
+          
+          <div class="row">
+            <label for="prevBuildingName">Building Name</label>
+            <input type="text" id="prevBuildingName" name="prevBuildingName" />
+          </div>
+          
+          <div class="row row-grid-50-50">
+            <div>
+              <label for="prevStreet">Street</label>
+              <input type="text" id="prevStreet" name="prevStreet" />
+            </div>
+            <div>
+              <label for="prevSubStreet">Sub Street</label>
+              <input type="text" id="prevSubStreet" name="prevSubStreet" />
+            </div>
+          </div>
+          
+          <div class="row row-grid-50-50">
+            <div>
+              <label for="prevTown" class="required">Town/City</label>
+              <input type="text" id="prevTown" name="prevTown" />
+            </div>
+            <div>
+              <label for="prevPostcode" class="required">Postcode</label>
+              <input type="text" id="prevPostcode" name="prevPostcode" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1838,9 +2010,31 @@
     const backToSection2 = document.getElementById('backToSection2');
     const nextToSection4 = document.getElementById('nextToSection4');
     const currentAddress = document.getElementById('currentAddress');
+    const currentAddressDropdown = document.getElementById('currentAddressDropdown');
+    const currentAddressLabel = document.getElementById('currentAddressLabel');
+    const addressNotListed = document.getElementById('addressNotListed');
+    const manualAddressFields = document.getElementById('manualAddressFields');
+    const flatNumber = document.getElementById('flatNumber');
+    const buildingNumber = document.getElementById('buildingNumber');
+    const buildingName = document.getElementById('buildingName');
+    const street = document.getElementById('street');
+    const subStreet = document.getElementById('subStreet');
+    const town = document.getElementById('town');
+    const postcode = document.getElementById('postcode');
     const recentMove = document.getElementById('recentMove');
     const previousAddressFields = document.getElementById('previousAddressFields');
     const previousAddress = document.getElementById('previousAddress');
+    const previousAddressDropdown = document.getElementById('previousAddressDropdown');
+    const previousAddressLabel = document.getElementById('previousAddressLabel');
+    const previousAddressNotListed = document.getElementById('previousAddressNotListed');
+    const manualPreviousAddressFields = document.getElementById('manualPreviousAddressFields');
+    const prevFlatNumber = document.getElementById('prevFlatNumber');
+    const prevBuildingNumber = document.getElementById('prevBuildingNumber');
+    const prevBuildingName = document.getElementById('prevBuildingName');
+    const prevStreet = document.getElementById('prevStreet');
+    const prevSubStreet = document.getElementById('prevSubStreet');
+    const prevTown = document.getElementById('prevTown');
+    const prevPostcode = document.getElementById('prevPostcode');
 
     // Section 4: Address ID upload elements (up to 10 cards)
     const section4 = document.getElementById('section4');
@@ -1912,8 +2106,12 @@
     - wantsAddressId: null (no choice) | true (Yes) | false (No)
     - s3Keys: Array of file objects with s3Key property (from parent 'put-links')
     - imageData: Array of image metadata to upload
+    - currentAddressObject: Thirdfort-formatted address object for current address
+    - previousAddressObject: Thirdfort-formatted address object for previous address
+    - addressDebounceTimer: Debounce timer for address autocomplete
+    - previousAddressDebounceTimer: Debounce timer for previous address autocomplete
     */
-    let errorTimeout; let currentTitleText = ''; let currentTitle = ''; let currentClientNumber = ''; let currentMatterNumber = ''; let currentClientName = ''; let formData = {}; let wantsPhotoId = null; let wantsAddressId = null; let s3Keys = null; let imageData = [];
+    let errorTimeout; let currentTitleText = ''; let currentTitle = ''; let currentClientNumber = ''; let currentMatterNumber = ''; let currentClientName = ''; let formData = {}; let wantsPhotoId = null; let wantsAddressId = null; let s3Keys = null; let imageData = []; let currentAddressObject = null; let previousAddressObject = null; let addressDebounceTimer = null; let previousAddressDebounceTimer = null;
     
     // Initialize finish button as disabled
     finishBtn.disabled = true;
@@ -1944,6 +2142,330 @@
         headerInfo.classList.remove('hidden');
       } else {
         headerInfo.classList.add('hidden');
+      }
+    }
+
+    // ===== ADDRESS AUTOCOMPLETE FUNCTIONS =====
+    /*
+    =====================================================================
+    ADDRESS AUTOCOMPLETE WITH BACKEND PROXY
+    - User types in address field → triggers debounced search
+    - Sends 'address-search' message to parent with search term
+    - Parent calls Wix backend → backend calls getaddress.io API
+    - Parent sends 'address-results' back with suggestions
+    - Displays dropdown with clickable suggestions
+    - On select: Populates input with formatted text, stores Thirdfort object
+    - If no match: Converts manual text entry to Thirdfort format
+    =====================================================================
+    */
+    
+    /*
+    Parse manual address text into Thirdfort API format
+    - Used when user types address manually (no autocomplete match)
+    - Attempts to extract postcode, town, and address lines
+    - Returns Thirdfort-compatible address object
+    */
+    function parseManualAddress(addressText) {
+      if (!addressText || !addressText.trim()) return null;
+      
+      const text = addressText.trim();
+      
+      // Try to extract UK postcode (basic regex)
+      const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2})\b/i);
+      const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase() : '';
+      
+      // Split by commas to try to identify components
+      const parts = text.split(',').map(p => p.trim()).filter(p => p);
+      
+      // Basic heuristic: Last part before postcode might be town
+      let town = '';
+      let addressLines = [];
+      
+      if (parts.length > 0) {
+        // If we found a postcode, everything before it (except last) goes to address lines
+        // Last part before postcode is likely the town
+        if (postcode) {
+          const postcodeIndex = parts.findIndex(p => p.toUpperCase().includes(postcode));
+          if (postcodeIndex > 0) {
+            town = parts[postcodeIndex - 1];
+            addressLines = parts.slice(0, postcodeIndex - 1);
+          } else {
+            // Postcode might be in the last part
+            if (parts.length > 1) {
+              town = parts[parts.length - 2];
+              addressLines = parts.slice(0, parts.length - 2);
+            } else {
+              addressLines = [parts[0]];
+            }
+          }
+        } else {
+          // No postcode found - assume last part is town, rest is address
+          if (parts.length > 1) {
+            town = parts[parts.length - 1];
+            addressLines = parts.slice(0, parts.length - 1);
+          } else {
+            addressLines = [parts[0]];
+          }
+        }
+      }
+      
+      // Build Thirdfort address object
+      return {
+        address_1: addressLines[0] || text, // Fallback to full text if parsing fails
+        address_2: addressLines[1] || '',
+        building_name: '',
+        building_number: '',
+        flat_number: '',
+        postcode: postcode,
+        street: '',
+        sub_street: '',
+        town: town || 'Unknown',
+        state: '',
+        country: 'GBR' // Default to UK
+      };
+    }
+    
+    /*
+    Format getaddress.io address object to Thirdfort API format
+    - Converts getaddress.io fields to Thirdfort required fields
+    - Handles empty fields gracefully
+    - Returns Thirdfort-compatible address object
+    */
+    function formatToThirdfort(getAddressData) {
+      if (!getAddressData) return null;
+      
+      // Filter out empty lines
+      const line1 = getAddressData.line_1 || '';
+      const line2 = getAddressData.line_2 || '';
+      const line3 = getAddressData.line_3 || '';
+      const line4 = getAddressData.line_4 || '';
+      
+      return {
+        address_1: line1,
+        address_2: line2 || line3 || line4, // Use first non-empty additional line
+        building_name: getAddressData.building_name || '',
+        building_number: getAddressData.building_number || '',
+        flat_number: getAddressData.flat_number || '',
+        postcode: getAddressData.postcode || '',
+        street: getAddressData.thoroughfare || getAddressData.street || '',
+        sub_street: getAddressData.sub_street || '',
+        town: getAddressData.town_or_city || getAddressData.town || '',
+        state: '',
+        country: 'GBR' // UK addresses only
+      };
+    }
+    
+    /*
+    Format Thirdfort address object for display in input field
+    - Converts Thirdfort API format to human-readable single-line format
+    - Used when loading existing data from database
+    - Returns formatted string for input field
+    */
+    function formatThirdfortForDisplay(thirdfortAddress) {
+      if (!thirdfortAddress) return '';
+      
+      const parts = [
+        thirdfortAddress.flat_number,
+        thirdfortAddress.building_number,
+        thirdfortAddress.building_name,
+        thirdfortAddress.address_1,
+        thirdfortAddress.address_2,
+        thirdfortAddress.street,
+        thirdfortAddress.sub_street,
+        thirdfortAddress.town,
+        thirdfortAddress.postcode
+      ].filter(p => p && p.trim());
+      
+      return parts.join(', ');
+    }
+    
+    /*
+    Format address for display in input field
+    - Creates human-readable single-line format
+    - Used to populate input after autocomplete selection
+    */
+    function formatAddressForDisplay(getAddressData) {
+      if (!getAddressData) return '';
+      
+      const parts = [
+        getAddressData.line_1,
+        getAddressData.line_2,
+        getAddressData.line_3,
+        getAddressData.line_4,
+        getAddressData.locality,
+        getAddressData.town_or_city,
+        getAddressData.postcode
+      ].filter(p => p && p.trim());
+      
+      return parts.join(', ');
+    }
+    
+    /*
+    Setup address autocomplete with debouncing
+    - Attaches to input field and shows dropdown
+    - Debounces API calls (300ms after user stops typing)
+    - Sends 'address-search' message to parent
+    - Handles keyboard navigation (up/down arrows, enter)
+    */
+    function setupAddressAutocomplete(inputElement, dropdownElement, debounceTimerVar, isCurrentAddress) {
+      let selectedIndex = -1;
+      let suggestions = [];
+      
+      // Input handler with debouncing
+      inputElement.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.trim();
+        
+        // Clear previous timer
+        if (debounceTimerVar === 'current') {
+          if (addressDebounceTimer) clearTimeout(addressDebounceTimer);
+        } else {
+          if (previousAddressDebounceTimer) clearTimeout(previousAddressDebounceTimer);
+        }
+        
+        // Clear stored address object when user manually types
+        if (isCurrentAddress) {
+          currentAddressObject = null;
+        } else {
+          previousAddressObject = null;
+        }
+        
+        // Hide dropdown if search term is too short (7 chars = min UK postcode without space)
+        if (searchTerm.length < 7) {
+          dropdownElement.classList.add('hidden');
+          dropdownElement.innerHTML = '';
+          return;
+        }
+        
+        // Show loading state
+        dropdownElement.classList.remove('hidden');
+        dropdownElement.innerHTML = '<div class="address-loading">Searching addresses...</div>';
+        
+        // Debounce: Wait 300ms after user stops typing
+        const timer = setTimeout(() => {
+          // Send search request to parent via postMessage
+          window.parent.postMessage({
+            type: 'address-search',
+            searchTerm: searchTerm,
+            field: isCurrentAddress ? 'current' : 'previous'
+          }, '*');
+        }, 300);
+        
+        // Store timer
+        if (debounceTimerVar === 'current') {
+          addressDebounceTimer = timer;
+        } else {
+          previousAddressDebounceTimer = timer;
+        }
+      });
+      
+      // Keyboard navigation
+      inputElement.addEventListener('keydown', (e) => {
+        const items = dropdownElement.querySelectorAll('.address-dropdown-item');
+        if (items.length === 0) return;
+        
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+          updateSelectedItem(items, selectedIndex);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, -1);
+          updateSelectedItem(items, selectedIndex);
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+          e.preventDefault();
+          items[selectedIndex].click();
+        } else if (e.key === 'Escape') {
+          dropdownElement.classList.add('hidden');
+          selectedIndex = -1;
+        }
+      });
+      
+      // Click outside to close
+      document.addEventListener('click', (e) => {
+        if (!inputElement.contains(e.target) && !dropdownElement.contains(e.target)) {
+          dropdownElement.classList.add('hidden');
+          selectedIndex = -1;
+        }
+      });
+      
+      function updateSelectedItem(items, index) {
+        items.forEach((item, i) => {
+          if (i === index) {
+            item.classList.add('selected');
+          } else {
+            item.classList.remove('selected');
+          }
+        });
+      }
+    }
+    
+    /*
+    Handle address selection from dropdown
+    - Stores getaddress.io ID for full address lookup
+    - Sends 'address-lookup' message to parent
+    - Parent returns full address object
+    */
+    function selectAddressSuggestion(addressId, displayText, isCurrentAddress) {
+      const inputElement = isCurrentAddress ? currentAddress : previousAddress;
+      const dropdownElement = isCurrentAddress ? currentAddressDropdown : previousAddressDropdown;
+      
+      // Set display text in input
+      inputElement.value = displayText;
+      
+      // Hide dropdown
+      dropdownElement.classList.add('hidden');
+      
+      // Request full address details from parent
+      window.parent.postMessage({
+        type: 'address-lookup',
+        addressId: addressId,
+        field: isCurrentAddress ? 'current' : 'previous'
+      }, '*');
+    }
+    
+    /*
+    Display address suggestions in dropdown
+    - Called when parent sends 'address-results' message
+    - Creates clickable list of suggestions
+    - Handles empty results gracefully
+    */
+    function displayAddressSuggestions(suggestions, field) {
+      const dropdownElement = field === 'current' ? currentAddressDropdown : previousAddressDropdown;
+      const isCurrentAddress = field === 'current';
+      
+      if (!suggestions || suggestions.length === 0) {
+        dropdownElement.innerHTML = '<div class="address-no-results">No addresses found</div>';
+        return;
+      }
+      
+      dropdownElement.innerHTML = '';
+      
+      suggestions.forEach((suggestion) => {
+        const item = document.createElement('div');
+        item.className = 'address-dropdown-item';
+        item.textContent = suggestion.address;
+        
+        item.addEventListener('click', () => {
+          selectAddressSuggestion(suggestion.id, suggestion.address, isCurrentAddress);
+        });
+        
+        dropdownElement.appendChild(item);
+      });
+    }
+    
+    /*
+    Handle full address data from parent
+    - Called when parent sends 'address-data' message after lookup
+    - Converts getaddress.io format to Thirdfort format
+    - Stores in currentAddressObject or previousAddressObject
+    */
+    function handleAddressData(addressData, field) {
+      const thirdfortAddress = formatToThirdfort(addressData);
+      
+      if (field === 'current') {
+        currentAddressObject = thirdfortAddress;
+      } else {
+        previousAddressObject = thirdfortAddress;
       }
     }
 
@@ -2456,14 +2978,92 @@
     }
 
     // ===== SECTION 3: ADDRESS HISTORY =====
+    
+    // Toggle manual address fields for current address
+    addressNotListed.addEventListener('change', () => {
+      if (addressNotListed.checked) {
+        // Show manual fields, hide autocomplete
+        manualAddressFields.classList.remove('hidden');
+        currentAddress.classList.add('hidden');
+        currentAddressLabel.classList.add('hidden');
+        currentAddress.removeAttribute('required');
+        
+        // Set required on manual fields (town and postcode per Thirdfort API)
+        town.setAttribute('required', 'true');
+        postcode.setAttribute('required', 'true');
+      } else {
+        // Hide manual fields, show autocomplete
+        manualAddressFields.classList.add('hidden');
+        currentAddress.classList.remove('hidden');
+        currentAddressLabel.classList.remove('hidden');
+        currentAddress.setAttribute('required', 'true');
+        
+        // Remove required from manual fields
+        town.removeAttribute('required');
+        postcode.removeAttribute('required');
+        
+        // Clear manual fields
+        flatNumber.value = '';
+        buildingNumber.value = '';
+        buildingName.value = '';
+        street.value = '';
+        subStreet.value = '';
+        town.value = '';
+        postcode.value = '';
+      }
+    });
+    
+    // Toggle manual address fields for previous address
+    previousAddressNotListed.addEventListener('change', () => {
+      if (previousAddressNotListed.checked) {
+        // Show manual fields, hide autocomplete
+        manualPreviousAddressFields.classList.remove('hidden');
+        previousAddress.classList.add('hidden');
+        previousAddressLabel.classList.add('hidden');
+        previousAddress.removeAttribute('required');
+        
+        // Set required on manual fields (town and postcode per Thirdfort API)
+        prevTown.setAttribute('required', 'true');
+        prevPostcode.setAttribute('required', 'true');
+      } else {
+        // Hide manual fields, show autocomplete
+        manualPreviousAddressFields.classList.add('hidden');
+        previousAddress.classList.remove('hidden');
+        previousAddressLabel.classList.remove('hidden');
+        if (recentMove.checked) {
+          previousAddress.setAttribute('required', 'true');
+        }
+        
+        // Remove required from manual fields
+        prevTown.removeAttribute('required');
+        prevPostcode.removeAttribute('required');
+        
+        // Clear manual fields
+        prevFlatNumber.value = '';
+        prevBuildingNumber.value = '';
+        prevBuildingName.value = '';
+        prevStreet.value = '';
+        prevSubStreet.value = '';
+        prevTown.value = '';
+        prevPostcode.value = '';
+      }
+    });
+    
     // Toggle previous address fields based on recent move
     function togglePreviousAddressFields() {
       if (recentMove.checked) {
         previousAddressFields.classList.remove('hidden');
-        previousAddress.setAttribute('required', 'true');
+        if (!previousAddressNotListed.checked) {
+          previousAddress.setAttribute('required', 'true');
+        } else {
+          prevTown.setAttribute('required', 'true');
+          prevPostcode.setAttribute('required', 'true');
+        }
       } else {
         previousAddressFields.classList.add('hidden');
         previousAddress.removeAttribute('required');
+        prevTown.removeAttribute('required');
+        prevPostcode.removeAttribute('required');
       }
     }
 
@@ -2471,12 +3071,46 @@
     function validateSection3() {
       const errors = [];
       
-      if (!currentAddress.value.trim()) {
-        errors.push('Please enter the current address.');
+      // Validate current address
+      if (addressNotListed.checked) {
+        // Manual entry mode - validate Thirdfort required fields
+        if (!town.value.trim()) {
+          errors.push('Please enter the town/city for current address.');
+        }
+        if (!postcode.value.trim()) {
+          errors.push('Please enter the postcode for current address.');
+        }
+        // Per Thirdfort API: Must have ONE OF flat_number, building_number, or building_name
+        if (!flatNumber.value.trim() && !buildingNumber.value.trim() && !buildingName.value.trim()) {
+          errors.push('Please enter at least one of: Flat Number, Building Number, or Building Name for current address.');
+        }
+      } else {
+        // Autocomplete mode
+        if (!currentAddress.value.trim()) {
+          errors.push('Please enter the current address or check "Address not listed" to enter manually.');
+        }
       }
       
-      if (recentMove.checked && !previousAddress.value.trim()) {
-        errors.push('Please enter the previous address.');
+      // Validate previous address if recent move is checked
+      if (recentMove.checked) {
+        if (previousAddressNotListed.checked) {
+          // Manual entry mode
+          if (!prevTown.value.trim()) {
+            errors.push('Please enter the town/city for previous address.');
+          }
+          if (!prevPostcode.value.trim()) {
+            errors.push('Please enter the postcode for previous address.');
+          }
+          // Must have ONE OF flat_number, building_number, or building_name
+          if (!prevFlatNumber.value.trim() && !prevBuildingNumber.value.trim() && !prevBuildingName.value.trim()) {
+            errors.push('Please enter at least one of: Flat Number, Building Number, or Building Name for previous address.');
+          }
+        } else {
+          // Autocomplete mode
+          if (!previousAddress.value.trim()) {
+            errors.push('Please enter the previous address or check "Address not listed" to enter manually.');
+          }
+        }
       }
       
       return errors;
@@ -2765,6 +3399,54 @@
     // ===== DATA COMPILATION & UPLOAD =====
     // Compile all form data into structured object
     function compileFormData() {
+      // Build current address object
+      if (addressNotListed.checked) {
+        // Build from manual fields
+        currentAddressObject = {
+          address_1: '', // Not captured separately in manual mode
+          address_2: '',
+          building_name: buildingName.value.trim(),
+          building_number: buildingNumber.value.trim(),
+          flat_number: flatNumber.value.trim(),
+          postcode: postcode.value.trim(),
+          street: street.value.trim(),
+          sub_street: subStreet.value.trim(),
+          town: town.value.trim(),
+          state: '',
+          country: 'GBR'
+        };
+      } else if (!currentAddressObject && currentAddress.value.trim()) {
+        // Parse from autocomplete text if no object stored
+        currentAddressObject = parseManualAddress(currentAddress.value);
+      }
+      
+      // Build previous address object
+      if (recentMove.checked) {
+        if (previousAddressNotListed.checked) {
+          // Build from manual fields
+          previousAddressObject = {
+            address_1: '',
+            address_2: '',
+            building_name: prevBuildingName.value.trim(),
+            building_number: prevBuildingNumber.value.trim(),
+            flat_number: prevFlatNumber.value.trim(),
+            postcode: prevPostcode.value.trim(),
+            street: prevStreet.value.trim(),
+            sub_street: prevSubStreet.value.trim(),
+            town: prevTown.value.trim(),
+            state: '',
+            country: 'GBR'
+          };
+        } else if (!previousAddressObject && previousAddress.value.trim()) {
+          // Parse from autocomplete text if no object stored
+          previousAddressObject = parseManualAddress(previousAddress.value);
+        }
+      }
+      
+      // Generate display text from addressObject for database storage
+      const currentAddressDisplayText = currentAddressObject ? formatThirdfortForDisplay(currentAddressObject) : currentAddress.value;
+      const previousAddressDisplayText = previousAddressObject ? formatThirdfortForDisplay(previousAddressObject) : previousAddress.value;
+      
       const compiledFormData = {
         fe: currentTitleText,
         clientNumber: currentClientNumber,
@@ -2785,9 +3467,11 @@
         reasonForNameChange: document.getElementById('reasonForNameChange').value,
         photographicIdTaken: formData.photographicIdTaken || false,
         likenessNOTConfirmed: document.getElementById('likenessNotConfirmed').checked,
-        address: document.getElementById('currentAddress').value,
+        address: currentAddressDisplayText, // Display text from object
+        addressObject: currentAddressObject, // Thirdfort-formatted object
         clientRecentHomeMove: document.getElementById('recentMove').checked,
-        previousAddress: document.getElementById('previousAddress').value,
+        previousAddress: previousAddressDisplayText, // Display text from object
+        previousAddressObject: previousAddressObject, // Thirdfort-formatted object
         addressIdTaken: formData.addressIdTaken || false
       };
 
@@ -3187,10 +3871,44 @@
       currentMatterNumber = '';
       currentClientName = '';
       formData = {};
+      currentAddressObject = null;
+      previousAddressObject = null;
+      
+      // Clear debounce timers
+      if (addressDebounceTimer) clearTimeout(addressDebounceTimer);
+      if (previousAddressDebounceTimer) clearTimeout(previousAddressDebounceTimer);
+      addressDebounceTimer = null;
+      previousAddressDebounceTimer = null;
       
       // Reset all dropdowns to empty
       worktypeDropdown.value = '';
       relationDropdown.value = '';
+      
+      // Reset address not listed toggles and manual fields
+      addressNotListed.checked = false;
+      previousAddressNotListed.checked = false;
+      manualAddressFields.classList.add('hidden');
+      manualPreviousAddressFields.classList.add('hidden');
+      currentAddress.classList.remove('hidden');
+      currentAddressLabel.classList.remove('hidden');
+      previousAddress.classList.remove('hidden');
+      previousAddressLabel.classList.remove('hidden');
+      
+      // Clear manual address fields
+      flatNumber.value = '';
+      buildingNumber.value = '';
+      buildingName.value = '';
+      street.value = '';
+      subStreet.value = '';
+      town.value = '';
+      postcode.value = '';
+      prevFlatNumber.value = '';
+      prevBuildingNumber.value = '';
+      prevBuildingName.value = '';
+      prevStreet.value = '';
+      prevSubStreet.value = '';
+      prevTown.value = '';
+      prevPostcode.value = '';
       
       // Reset all sections - hide everything to show awaiting data state
       form.classList.add('hidden');
@@ -3546,9 +4264,11 @@
     =====================================================================
     PARENT COMMUNICATION - Message Listener
     =====================================================================
-    Listens for 'initiation-data' message from parent window
+    Listens for messages from parent window
     
-    Message structure:
+    INCOMING MESSAGE TYPES:
+    
+    1. 'initiation-data' - Initial client data load
     {
       type: 'initiation-data',
       data: {
@@ -3569,29 +4289,39 @@
         photographicIdTaken: true/false,
         likenessNOTConfirmed: true/false,
         address: '123 Main Street...',
+        addressObject: { Thirdfort format },
         clientRecentHomeMove: true/false,
         previousAddress: '...',
+        previousAddressObject: { Thirdfort format },
         addressIdTaken: true/false,
-        idImages: [
-          {
-            type: 'PhotoID' or 'Address ID',
-            document: 'Driving Licence',
-            side: 'Front'/'Back'/'Single',
-            name: 'filename',
-            data: { type, size, name, lastModified },
-            s3Key: 'protected/...',
-            date: '12/20/2023, 10:30:45 AM',
-            uploader: 'email@example.com'
-          },
-          ...
-        ]
+        idImages: [...]
       }
+    }
+    
+    2. 'address-results' - Autocomplete suggestions from getaddress.io
+    {
+      type: 'address-results',
+      field: 'current' or 'previous',
+      suggestions: [
+        { id: 'abc123', address: '123 Main Street, London, SW1A 1AA' },
+        ...
+      ]
+    }
+    
+    3. 'address-data' - Full address object after selection
+    {
+      type: 'address-data',
+      field: 'current' or 'previous',
+      address: { getaddress.io format }
     }
     
     Flow:
     1. Parent sends 'initiation-data' → Child resets form via resetForm()
     2. Child populates form with data via loadData()
-    3. Child shows Section 1 and displays existing images if present
+    3. User types address → Child sends 'address-search' to parent
+    4. Parent sends 'address-results' → Child shows dropdown
+    5. User selects → Child sends 'address-lookup' to parent
+    6. Parent sends 'address-data' → Child stores Thirdfort object
     =====================================================================
     */
     window.addEventListener('message', (event)=>{
@@ -3599,6 +4329,12 @@
         // Clear form and reset all data before loading new data
         resetForm();
         loadData(event.data.data || {});
+      } else if (event.data && event.data.type === 'address-results') {
+        // Display autocomplete suggestions
+        displayAddressSuggestions(event.data.suggestions, event.data.field);
+      } else if (event.data && event.data.type === 'address-data') {
+        // Store full address object
+        handleAddressData(event.data.address, event.data.field);
       }
     });
 
@@ -3663,12 +4399,42 @@
       }
 
       // Section 3 defaults
-      if(formData.address) currentAddress.value = formData.address;
+      // Reset "address not listed" toggles (they're just UI helpers, not saved)
+      addressNotListed.checked = false;
+      previousAddressNotListed.checked = false;
+      manualAddressFields.classList.add('hidden');
+      manualPreviousAddressFields.classList.add('hidden');
+      currentAddress.classList.remove('hidden');
+      currentAddressLabel.classList.remove('hidden');
+      previousAddress.classList.remove('hidden');
+      previousAddressLabel.classList.remove('hidden');
+      
+      // Load address data - prioritize addressObject (Thirdfort format) over plain text
+      if(formData.addressObject) {
+        // We have structured address object - use it and format for display
+        currentAddressObject = formData.addressObject;
+        currentAddress.value = formatThirdfortForDisplay(formData.addressObject);
+      } else if(formData.address) {
+        // Fallback to plain text if no object (legacy data)
+        currentAddress.value = formData.address;
+        currentAddressObject = null; // Will be parsed from text on save
+      }
+      
       if(formData.clientRecentHomeMove) {
         recentMove.checked = true;
         togglePreviousAddressFields();
       }
-      if(formData.previousAddress) previousAddress.value = formData.previousAddress;
+      
+      // Load previous address data - prioritize previousAddressObject over plain text
+      if(formData.previousAddressObject) {
+        // We have structured address object - use it and format for display
+        previousAddressObject = formData.previousAddressObject;
+        previousAddress.value = formatThirdfortForDisplay(formData.previousAddressObject);
+      } else if(formData.previousAddress) {
+        // Fallback to plain text if no object (legacy data)
+        previousAddress.value = formData.previousAddress;
+        previousAddressObject = null; // Will be parsed from text on save
+      }
 
       // Section 4 defaults
       wantsAddressId = null; // Always reset to null initially
@@ -3735,6 +4501,11 @@
 
     // Ensure finish button starts disabled on page load
     finishBtn.disabled = true;
+    
+    // ===== INITIALIZE ADDRESS AUTOCOMPLETE =====
+    // Setup autocomplete for both address fields
+    setupAddressAutocomplete(currentAddress, currentAddressDropdown, 'current', true);
+    setupAddressAutocomplete(previousAddress, previousAddressDropdown, 'previous', false);
   </script>
   </div>
 </body>
