@@ -522,6 +522,10 @@
             width: 840px;
         }
 
+        .width-950 {
+            width: 990px;
+        }
+
         .width-980 {
             width: 1020px;
         }
@@ -632,11 +636,13 @@
                         <option value="message-iframe.html">Message iframe</option>
                         <option value="cashiers-log.html">Cashiers Log</option>
                         <option value="report-uploader.html">Report Uploader</option>
+                        <option value="client-details.html">Client Details Form</option>
                     </select>
                 </div>
 
                 <div class="width-buttons">
                     <button class="width-btn active" data-width="980">980px (Desktop)</button>
+                    <button class="width-btn" data-width="950">950px (Card)</button>
                     <button class="width-btn" data-width="800">800px (Laptop)</button>
                     <button class="width-btn" data-width="320">320px (Mobile)</button>
                     <button class="width-btn" data-width="250">250px (Small Mobile)</button>
@@ -730,7 +736,8 @@
             'document-viewer.html': { name: 'Document Viewer', defaultHeight: '600px' },
             'message-iframe.html': { name: 'Message iframe', defaultHeight: '500px' },
             'cashiers-log.html': { name: 'Cashiers Log', defaultHeight: '400px' },
-            'report-uploader.html': { name: 'Report Uploader', defaultHeight: '200px' }
+            'report-uploader.html': { name: 'Report Uploader', defaultHeight: '200px' },
+            'client-details.html': { name: 'Client Details Form', defaultHeight: '700px' }
         };
 
         /* 
@@ -749,6 +756,11 @@
                 container: 'width-980',
                 height: '600px',
                 label: 'Desktop'
+            },
+            '950': { 
+                container: 'width-950',
+                height: '700px',
+                label: 'Card'
             },
             '800': { 
                 container: 'width-800',
