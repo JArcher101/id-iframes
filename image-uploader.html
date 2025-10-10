@@ -1293,6 +1293,9 @@
   <div class="responsive-container">
     <div class="card" id="cardContainer">
     
+    <!-- Section Title -->
+    <h2 id="cardTitle"></h2>
+    
     <!-- Header: Client info display (title, client number, name) -->
     <div id="headerInfo" class="hidden">
       <div class="header-badge client-number" id="clientNumberBadge">
@@ -4325,7 +4328,10 @@
     =====================================================================
     */
     window.addEventListener('message', (event)=>{
+      console.log('Iframe received message:', event.data?.type, event.data);
+      
       if(event.data && event.data.type === 'initiation-data'){
+        console.log('Loading initiation data:', event.data.data);
         // Clear form and reset all data before loading new data
         resetForm();
         loadData(event.data.data || {});
@@ -4354,8 +4360,8 @@
       formData = data || {}; 
       currentTitleText = formData.fe || '';
       currentTitle = formData.fe || '';
-      currentClientNumber = formData.clientNumber || '';
-      currentMatterNumber = formData.matterNumber || '';
+      currentClientNumber = formData.clientNumber ? String(formData.clientNumber) : '';
+      currentMatterNumber = formData.matterNumber ? String(formData.matterNumber) : '';
       currentClientName = formData.name || '';
       
       showSection1();
