@@ -144,10 +144,6 @@
             justify-content: center;
         }
 
-        .empty-state {
-            /* Completely blank - no styling */
-        }
-
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .container {
@@ -218,23 +214,23 @@
         const chartTitle = document.getElementById('chartTitle');
         const chartDescription = document.getElementById('chartDescription');
 
-        // Check if opened as popup and load data from sessionStorage with unique ID handshake
+        // Check if opened as popup
         const urlParams = new URLSearchParams(window.location.search);
         const popupId = urlParams.get('popupId');
         
         if (popupId && window.opener) {
             document.body.classList.add('popup-mode');
-            const storageKey = `chartPopupData_${popupId}`;
-            const storedData = sessionStorage.getItem(storageKey);
             
-            if (storedData) {
-                try {
-                    const data = JSON.parse(storedData);
-                    createChart(data);
-                    sessionStorage.removeItem(storageKey); // Delete immediately to prevent reload
-                } catch (e) {
-                    console.error('Failed to load popup chart data:', e);
+            // Request chart data from opener (iframe or parent window)
+            window.addEventListener('message', function(event) {
+                if (event.data.type === 'chart-data' && event.data.popupId === popupId) {
+                    createChart(event.data);
                 }
+            });
+            
+            // Signal to opener that we're ready for data
+            if (window.opener) {
+                window.opener.postMessage({ type: 'popup-ready', popupId: popupId }, '*');
             }
         }
 
@@ -380,16 +376,12 @@
             return item && typeof item === 'object' && !Array.isArray(item);
         }
 
-        // Expand chart to popup window with unique ID handshake
+        // Expand chart to popup window with postMessage
         function expandChart() {
             if (!currentChartData) return;
             
             // Generate unique ID for this popup instance
             const uniqueId = 'chart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            
-            // Store chart data with unique ID
-            const storageKey = `chartPopupData_${uniqueId}`;
-            sessionStorage.setItem(storageKey, JSON.stringify(currentChartData));
             
             // Get base URL (without any existing query params from iframe src)
             const baseUrl = window.location.href.split('?')[0];
@@ -400,6 +392,20 @@
                 `chartPopup_${uniqueId}`,  // Unique window name allows multiple popups
                 'width=1400,height=900,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,location=no'
             );
+            
+            // Listen for popup ready signal and send chart data
+            const popupReadyHandler = function(event) {
+                if (event.data.type === 'popup-ready' && event.data.popupId === uniqueId) {
+                    // Send chart data to popup
+                    const dataToSend = Object.assign({}, currentChartData, { popupId: uniqueId });
+                    popupWindow.postMessage(dataToSend, '*');
+                    
+                    // Remove listener after sending
+                    window.removeEventListener('message', popupReadyHandler);
+                }
+            };
+            
+            window.addEventListener('message', popupReadyHandler);
         }
     </script>
 </body>
