@@ -586,6 +586,21 @@
     .slider:before { position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background:#fff; transition:.4s; border-radius:50%; }
     input:checked + .slider { background:#10a37f; }
     input:checked + .slider:before { transform:translateX(26px); }
+    
+    /* 
+    =====================================================================
+    CHECKBOX - For Address Not Listed
+    - Simple checkbox with 5px rounded corners
+    - Used for toggling between autocomplete and manual address entry
+    =====================================================================
+    */
+    .address-checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 6px;
+    }
 
     /* 
     =====================================================================
@@ -1504,6 +1519,94 @@
       <h3>Current Address</h3>
       
       <div class="row">
+        <label for="currentCountry" class="required">Country</label>
+        <select id="currentCountry" name="currentCountry" required>
+          <option value="GBR">United Kingdom</option>
+          <option value="USA">United States</option>
+          <option value="CAN">Canada</option>
+          <option value="AUS">Australia</option>
+          <option value="NZL">New Zealand</option>
+          <option value="IRL">Ireland</option>
+          <option value="FRA">France</option>
+          <option value="DEU">Germany</option>
+          <option value="ESP">Spain</option>
+          <option value="ITA">Italy</option>
+          <option value="NLD">Netherlands</option>
+          <option value="BEL">Belgium</option>
+          <option value="CHE">Switzerland</option>
+          <option value="SWE">Sweden</option>
+          <option value="NOR">Norway</option>
+          <option value="DNK">Denmark</option>
+          <option value="FIN">Finland</option>
+          <option value="POL">Poland</option>
+          <option value="PRT">Portugal</option>
+          <option value="GRC">Greece</option>
+          <option value="AUT">Austria</option>
+          <option value="CZE">Czech Republic</option>
+          <option value="HUN">Hungary</option>
+          <option value="ROU">Romania</option>
+          <option value="BGR">Bulgaria</option>
+          <option value="HRV">Croatia</option>
+          <option value="SVK">Slovakia</option>
+          <option value="SVN">Slovenia</option>
+          <option value="LTU">Lithuania</option>
+          <option value="LVA">Latvia</option>
+          <option value="EST">Estonia</option>
+          <option value="CYP">Cyprus</option>
+          <option value="MLT">Malta</option>
+          <option value="LUX">Luxembourg</option>
+          <option value="ISL">Iceland</option>
+          <option value="ZAF">South Africa</option>
+          <option value="IND">India</option>
+          <option value="CHN">China</option>
+          <option value="JPN">Japan</option>
+          <option value="KOR">South Korea</option>
+          <option value="SGP">Singapore</option>
+          <option value="HKG">Hong Kong</option>
+          <option value="MYS">Malaysia</option>
+          <option value="THA">Thailand</option>
+          <option value="IDN">Indonesia</option>
+          <option value="PHL">Philippines</option>
+          <option value="VNM">Vietnam</option>
+          <option value="PAK">Pakistan</option>
+          <option value="BGD">Bangladesh</option>
+          <option value="LKA">Sri Lanka</option>
+          <option value="NPL">Nepal</option>
+          <option value="ARE">United Arab Emirates</option>
+          <option value="SAU">Saudi Arabia</option>
+          <option value="QAT">Qatar</option>
+          <option value="KWT">Kuwait</option>
+          <option value="BHR">Bahrain</option>
+          <option value="OMN">Oman</option>
+          <option value="EGY">Egypt</option>
+          <option value="NGA">Nigeria</option>
+          <option value="KEN">Kenya</option>
+          <option value="GHA">Ghana</option>
+          <option value="TZA">Tanzania</option>
+          <option value="UGA">Uganda</option>
+          <option value="ZWE">Zimbabwe</option>
+          <option value="BRA">Brazil</option>
+          <option value="MEX">Mexico</option>
+          <option value="ARG">Argentina</option>
+          <option value="CHL">Chile</option>
+          <option value="COL">Colombia</option>
+          <option value="PER">Peru</option>
+          <option value="VEN">Venezuela</option>
+          <option value="TUR">Turkey</option>
+          <option value="RUS">Russia</option>
+          <option value="UKR">Ukraine</option>
+          <option value="ISR">Israel</option>
+          <option value="JOR">Jordan</option>
+          <option value="LBN">Lebanon</option>
+          <option value="SYR">Syria</option>
+          <option value="IRQ">Iraq</option>
+          <option value="IRN">Iran</option>
+          <option value="AFG">Afghanistan</option>
+          <option value="OTHER">Other</option>
+        </select>
+      </div>
+      
+      <div class="row" id="currentAddressAutocompleteRow">
         <label for="currentAddress" class="required" id="currentAddressLabel">Search Address</label>
         <div class="address-autocomplete-container">
           <input type="text" id="currentAddress" name="currentAddress" required autocomplete="off" placeholder="Start typing address or postcode..." />
@@ -1512,11 +1615,8 @@
       </div>
       
       <div class="row">
-        <label>Address not listed</label>
-        <label class="toggle" title="If you cannot find the address in the search, check this box to enter it manually">
-          <input type="checkbox" id="addressNotListed" />
-          <span class="slider"></span>
-        </label>
+        <label for="addressNotListed">Address not listed</label>
+        <input type="checkbox" id="addressNotListed" class="address-checkbox" title="If you cannot find the address in the search, check this box to enter it manually" />
       </div>
       
       <!-- Manual address entry fields (shown when "Address not listed" is checked) -->
@@ -1572,6 +1672,94 @@
         <h3>Previous Address</h3>
         
         <div class="row">
+          <label for="previousCountry" class="required">Country</label>
+          <select id="previousCountry" name="previousCountry" required>
+            <option value="GBR">United Kingdom</option>
+            <option value="USA">United States</option>
+            <option value="CAN">Canada</option>
+            <option value="AUS">Australia</option>
+            <option value="NZL">New Zealand</option>
+            <option value="IRL">Ireland</option>
+            <option value="FRA">France</option>
+            <option value="DEU">Germany</option>
+            <option value="ESP">Spain</option>
+            <option value="ITA">Italy</option>
+            <option value="NLD">Netherlands</option>
+            <option value="BEL">Belgium</option>
+            <option value="CHE">Switzerland</option>
+            <option value="SWE">Sweden</option>
+            <option value="NOR">Norway</option>
+            <option value="DNK">Denmark</option>
+            <option value="FIN">Finland</option>
+            <option value="POL">Poland</option>
+            <option value="PRT">Portugal</option>
+            <option value="GRC">Greece</option>
+            <option value="AUT">Austria</option>
+            <option value="CZE">Czech Republic</option>
+            <option value="HUN">Hungary</option>
+            <option value="ROU">Romania</option>
+            <option value="BGR">Bulgaria</option>
+            <option value="HRV">Croatia</option>
+            <option value="SVK">Slovakia</option>
+            <option value="SVN">Slovenia</option>
+            <option value="LTU">Lithuania</option>
+            <option value="LVA">Latvia</option>
+            <option value="EST">Estonia</option>
+            <option value="CYP">Cyprus</option>
+            <option value="MLT">Malta</option>
+            <option value="LUX">Luxembourg</option>
+            <option value="ISL">Iceland</option>
+            <option value="ZAF">South Africa</option>
+            <option value="IND">India</option>
+            <option value="CHN">China</option>
+            <option value="JPN">Japan</option>
+            <option value="KOR">South Korea</option>
+            <option value="SGP">Singapore</option>
+            <option value="HKG">Hong Kong</option>
+            <option value="MYS">Malaysia</option>
+            <option value="THA">Thailand</option>
+            <option value="IDN">Indonesia</option>
+            <option value="PHL">Philippines</option>
+            <option value="VNM">Vietnam</option>
+            <option value="PAK">Pakistan</option>
+            <option value="BGD">Bangladesh</option>
+            <option value="LKA">Sri Lanka</option>
+            <option value="NPL">Nepal</option>
+            <option value="ARE">United Arab Emirates</option>
+            <option value="SAU">Saudi Arabia</option>
+            <option value="QAT">Qatar</option>
+            <option value="KWT">Kuwait</option>
+            <option value="BHR">Bahrain</option>
+            <option value="OMN">Oman</option>
+            <option value="EGY">Egypt</option>
+            <option value="NGA">Nigeria</option>
+            <option value="KEN">Kenya</option>
+            <option value="GHA">Ghana</option>
+            <option value="TZA">Tanzania</option>
+            <option value="UGA">Uganda</option>
+            <option value="ZWE">Zimbabwe</option>
+            <option value="BRA">Brazil</option>
+            <option value="MEX">Mexico</option>
+            <option value="ARG">Argentina</option>
+            <option value="CHL">Chile</option>
+            <option value="COL">Colombia</option>
+            <option value="PER">Peru</option>
+            <option value="VEN">Venezuela</option>
+            <option value="TUR">Turkey</option>
+            <option value="RUS">Russia</option>
+            <option value="UKR">Ukraine</option>
+            <option value="ISR">Israel</option>
+            <option value="JOR">Jordan</option>
+            <option value="LBN">Lebanon</option>
+            <option value="SYR">Syria</option>
+            <option value="IRQ">Iraq</option>
+            <option value="IRN">Iran</option>
+            <option value="AFG">Afghanistan</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        
+        <div class="row" id="previousAddressAutocompleteRow">
           <label for="previousAddress" class="required" id="previousAddressLabel">Search Address</label>
           <div class="address-autocomplete-container">
             <input type="text" id="previousAddress" name="previousAddress" autocomplete="off" placeholder="Start typing address or postcode..." />
@@ -1580,11 +1768,8 @@
         </div>
         
         <div class="row">
-          <label>Address not listed</label>
-          <label class="toggle" title="If you cannot find the previous address in the search, check this box to enter it manually">
-            <input type="checkbox" id="previousAddressNotListed" />
-            <span class="slider"></span>
-          </label>
+          <label for="previousAddressNotListed">Address not listed</label>
+          <input type="checkbox" id="previousAddressNotListed" class="address-checkbox" title="If you cannot find the previous address in the search, check this box to enter it manually" />
         </div>
         
         <!-- Manual previous address entry fields -->
@@ -2012,6 +2197,8 @@
     const section3 = document.getElementById('section3');
     const backToSection2 = document.getElementById('backToSection2');
     const nextToSection4 = document.getElementById('nextToSection4');
+    const currentCountry = document.getElementById('currentCountry');
+    const currentAddressAutocompleteRow = document.getElementById('currentAddressAutocompleteRow');
     const currentAddress = document.getElementById('currentAddress');
     const currentAddressDropdown = document.getElementById('currentAddressDropdown');
     const currentAddressLabel = document.getElementById('currentAddressLabel');
@@ -2026,6 +2213,8 @@
     const postcode = document.getElementById('postcode');
     const recentMove = document.getElementById('recentMove');
     const previousAddressFields = document.getElementById('previousAddressFields');
+    const previousCountry = document.getElementById('previousCountry');
+    const previousAddressAutocompleteRow = document.getElementById('previousAddressAutocompleteRow');
     const previousAddress = document.getElementById('previousAddress');
     const previousAddressDropdown = document.getElementById('previousAddressDropdown');
     const previousAddressLabel = document.getElementById('previousAddressLabel');
@@ -2982,7 +3171,40 @@
 
     // ===== SECTION 3: ADDRESS HISTORY =====
     
-    // Toggle manual address fields for current address
+    // Handle country change for current address
+    currentCountry.addEventListener('change', () => {
+      const isUK = currentCountry.value === 'GBR';
+      
+      if (isUK) {
+        // UK address - show autocomplete row, hide manual checkbox initially
+        currentAddressAutocompleteRow.classList.remove('hidden');
+        addressNotListed.parentElement.classList.remove('hidden');
+        
+        // If manual fields were showing, hide them
+        if (!addressNotListed.checked) {
+          manualAddressFields.classList.add('hidden');
+          currentAddress.setAttribute('required', 'true');
+          town.removeAttribute('required');
+          postcode.removeAttribute('required');
+        }
+      } else {
+        // Non-UK address - hide autocomplete, show manual fields
+        currentAddressAutocompleteRow.classList.add('hidden');
+        addressNotListed.parentElement.classList.add('hidden');
+        manualAddressFields.classList.remove('hidden');
+        currentAddress.removeAttribute('required');
+        
+        // Set required on manual fields
+        town.setAttribute('required', 'true');
+        postcode.setAttribute('required', 'true');
+        
+        // Clear autocomplete field
+        currentAddress.value = '';
+        currentAddressObject = null;
+      }
+    });
+    
+    // Toggle manual address fields for current address (UK only)
     addressNotListed.addEventListener('change', () => {
       if (addressNotListed.checked) {
         // Show manual fields, hide autocomplete
@@ -3016,7 +3238,42 @@
       }
     });
     
-    // Toggle manual address fields for previous address
+    // Handle country change for previous address
+    previousCountry.addEventListener('change', () => {
+      const isUK = previousCountry.value === 'GBR';
+      
+      if (isUK) {
+        // UK address - show autocomplete row
+        previousAddressAutocompleteRow.classList.remove('hidden');
+        previousAddressNotListed.parentElement.classList.remove('hidden');
+        
+        // If manual fields were showing, hide them
+        if (!previousAddressNotListed.checked) {
+          manualPreviousAddressFields.classList.add('hidden');
+          if (recentMove.checked) {
+            previousAddress.setAttribute('required', 'true');
+          }
+          prevTown.removeAttribute('required');
+          prevPostcode.removeAttribute('required');
+        }
+      } else {
+        // Non-UK address - hide autocomplete, show manual fields
+        previousAddressAutocompleteRow.classList.add('hidden');
+        previousAddressNotListed.parentElement.classList.add('hidden');
+        manualPreviousAddressFields.classList.remove('hidden');
+        previousAddress.removeAttribute('required');
+        
+        // Set required on manual fields
+        prevTown.setAttribute('required', 'true');
+        prevPostcode.setAttribute('required', 'true');
+        
+        // Clear autocomplete field
+        previousAddress.value = '';
+        previousAddressObject = null;
+      }
+    });
+    
+    // Toggle manual address fields for previous address (UK only)
     previousAddressNotListed.addEventListener('change', () => {
       if (previousAddressNotListed.checked) {
         // Show manual fields, hide autocomplete
@@ -3074,9 +3331,11 @@
     function validateSection3() {
       const errors = [];
       
+      const isCurrentUK = currentCountry.value === 'GBR';
+      
       // Validate current address
-      if (addressNotListed.checked) {
-        // Manual entry mode - validate Thirdfort required fields
+      if (!isCurrentUK || addressNotListed.checked) {
+        // Manual entry mode (non-UK or UK manual) - validate Thirdfort required fields
         if (!town.value.trim()) {
           errors.push('Please enter the town/city for current address.');
         }
@@ -3088,7 +3347,7 @@
           errors.push('Please enter at least one of: Flat Number, Building Number, or Building Name for current address.');
         }
       } else {
-        // Autocomplete mode
+        // UK Autocomplete mode
         if (!currentAddress.value.trim()) {
           errors.push('Please enter the current address or check "Address not listed" to enter manually.');
         }
@@ -3096,8 +3355,10 @@
       
       // Validate previous address if recent move is checked
       if (recentMove.checked) {
-        if (previousAddressNotListed.checked) {
-          // Manual entry mode
+        const isPreviousUK = previousCountry.value === 'GBR';
+        
+        if (!isPreviousUK || previousAddressNotListed.checked) {
+          // Manual entry mode (non-UK or UK manual)
           if (!prevTown.value.trim()) {
             errors.push('Please enter the town/city for previous address.');
           }
@@ -3109,7 +3370,7 @@
             errors.push('Please enter at least one of: Flat Number, Building Number, or Building Name for previous address.');
           }
         } else {
-          // Autocomplete mode
+          // UK Autocomplete mode
           if (!previousAddress.value.trim()) {
             errors.push('Please enter the previous address or check "Address not listed" to enter manually.');
           }
@@ -3403,8 +3664,10 @@
     // Compile all form data into structured object
     function compileFormData() {
       // Build current address object
-      if (addressNotListed.checked) {
-        // Build from manual fields
+      const isCurrentUK = currentCountry.value === 'GBR';
+      
+      if (!isCurrentUK || addressNotListed.checked) {
+        // Build from manual fields (for non-UK or UK manual entry)
         currentAddressObject = {
           address_1: '', // Not captured separately in manual mode
           address_2: '',
@@ -3416,17 +3679,20 @@
           sub_street: subStreet.value.trim(),
           town: town.value.trim(),
           state: '',
-          country: 'GBR'
+          country: currentCountry.value || 'GBR'
         };
       } else if (!currentAddressObject && currentAddress.value.trim()) {
-        // Parse from autocomplete text if no object stored
+        // Parse from autocomplete text if no object stored (UK only)
         currentAddressObject = parseManualAddress(currentAddress.value);
+        currentAddressObject.country = 'GBR';
       }
       
       // Build previous address object
       if (recentMove.checked) {
-        if (previousAddressNotListed.checked) {
-          // Build from manual fields
+        const isPreviousUK = previousCountry.value === 'GBR';
+        
+        if (!isPreviousUK || previousAddressNotListed.checked) {
+          // Build from manual fields (for non-UK or UK manual entry)
           previousAddressObject = {
             address_1: '',
             address_2: '',
@@ -3438,11 +3704,12 @@
             sub_street: prevSubStreet.value.trim(),
             town: prevTown.value.trim(),
             state: '',
-            country: 'GBR'
+            country: previousCountry.value || 'GBR'
           };
         } else if (!previousAddressObject && previousAddress.value.trim()) {
-          // Parse from autocomplete text if no object stored
+          // Parse from autocomplete text if no object stored (UK only)
           previousAddressObject = parseManualAddress(previousAddress.value);
+          previousAddressObject.country = 'GBR';
         }
       }
       
@@ -3887,15 +4154,23 @@
       worktypeDropdown.value = '';
       relationDropdown.value = '';
       
-      // Reset address not listed toggles and manual fields
+      // Reset country dropdowns to UK
+      currentCountry.value = 'GBR';
+      previousCountry.value = 'GBR';
+      
+      // Reset address not listed checkboxes and manual fields
       addressNotListed.checked = false;
       previousAddressNotListed.checked = false;
       manualAddressFields.classList.add('hidden');
       manualPreviousAddressFields.classList.add('hidden');
       currentAddress.classList.remove('hidden');
       currentAddressLabel.classList.remove('hidden');
+      currentAddressAutocompleteRow.classList.remove('hidden');
+      addressNotListed.parentElement.classList.remove('hidden');
       previousAddress.classList.remove('hidden');
       previousAddressLabel.classList.remove('hidden');
+      previousAddressAutocompleteRow.classList.remove('hidden');
+      previousAddressNotListed.parentElement.classList.remove('hidden');
       
       // Clear manual address fields
       flatNumber.value = '';
@@ -4417,7 +4692,7 @@
       }
 
       // Section 3 defaults
-      // Reset "address not listed" toggles (they're just UI helpers, not saved)
+      // Reset "address not listed" checkboxes (they're just UI helpers, not saved)
       addressNotListed.checked = false;
       previousAddressNotListed.checked = false;
       manualAddressFields.classList.add('hidden');
@@ -4427,11 +4702,46 @@
       previousAddress.classList.remove('hidden');
       previousAddressLabel.classList.remove('hidden');
       
+      // Set country dropdowns from addressObject or default to UK
+      if(formData.addressObject && formData.addressObject.country) {
+        currentCountry.value = formData.addressObject.country;
+      } else {
+        currentCountry.value = 'GBR'; // Default to UK
+      }
+      
+      if(formData.previousAddressObject && formData.previousAddressObject.country) {
+        previousCountry.value = formData.previousAddressObject.country;
+      } else {
+        previousCountry.value = 'GBR'; // Default to UK
+      }
+      
+      // Trigger country change to set up autocomplete/manual fields correctly
+      const isCurrentUK = currentCountry.value === 'GBR';
+      if (!isCurrentUK) {
+        currentAddressAutocompleteRow.classList.add('hidden');
+        addressNotListed.parentElement.classList.add('hidden');
+        manualAddressFields.classList.remove('hidden');
+      } else {
+        currentAddressAutocompleteRow.classList.remove('hidden');
+        addressNotListed.parentElement.classList.remove('hidden');
+      }
+      
       // Load address data - prioritize addressObject (Thirdfort format) over plain text
       if(formData.addressObject) {
         // We have structured address object - use it and format for display
         currentAddressObject = formData.addressObject;
-        currentAddress.value = formatThirdfortForDisplay(formData.addressObject);
+        if (isCurrentUK) {
+          currentAddress.value = formatThirdfortForDisplay(formData.addressObject);
+        } else {
+          // Non-UK: populate manual fields
+          flatNumber.value = formData.addressObject.flat_number || '';
+          buildingNumber.value = formData.addressObject.building_number || '';
+          buildingName.value = formData.addressObject.building_name || '';
+          street.value = formData.addressObject.street || '';
+          subStreet.value = formData.addressObject.sub_street || '';
+          town.value = formData.addressObject.town || '';
+          postcode.value = formData.addressObject.postcode || '';
+        }
       } else if(formData.address) {
         // Fallback to plain text if no object (legacy data)
         currentAddress.value = formData.address;
@@ -4441,17 +4751,39 @@
       if(formData.clientRecentHomeMove) {
         recentMove.checked = true;
         togglePreviousAddressFields();
-      }
-      
-      // Load previous address data - prioritize previousAddressObject over plain text
-      if(formData.previousAddressObject) {
-        // We have structured address object - use it and format for display
-        previousAddressObject = formData.previousAddressObject;
-        previousAddress.value = formatThirdfortForDisplay(formData.previousAddressObject);
-      } else if(formData.previousAddress) {
-        // Fallback to plain text if no object (legacy data)
-        previousAddress.value = formData.previousAddress;
-        previousAddressObject = null; // Will be parsed from text on save
+        
+        // Set up previous address autocomplete/manual based on country
+        const isPreviousUK = previousCountry.value === 'GBR';
+        if (!isPreviousUK) {
+          previousAddressAutocompleteRow.classList.add('hidden');
+          previousAddressNotListed.parentElement.classList.add('hidden');
+          manualPreviousAddressFields.classList.remove('hidden');
+        } else {
+          previousAddressAutocompleteRow.classList.remove('hidden');
+          previousAddressNotListed.parentElement.classList.remove('hidden');
+        }
+        
+        // Load previous address data - prioritize previousAddressObject over plain text
+        if(formData.previousAddressObject) {
+          // We have structured address object - use it and format for display
+          previousAddressObject = formData.previousAddressObject;
+          if (isPreviousUK) {
+            previousAddress.value = formatThirdfortForDisplay(formData.previousAddressObject);
+          } else {
+            // Non-UK: populate manual fields
+            prevFlatNumber.value = formData.previousAddressObject.flat_number || '';
+            prevBuildingNumber.value = formData.previousAddressObject.building_number || '';
+            prevBuildingName.value = formData.previousAddressObject.building_name || '';
+            prevStreet.value = formData.previousAddressObject.street || '';
+            prevSubStreet.value = formData.previousAddressObject.sub_street || '';
+            prevTown.value = formData.previousAddressObject.town || '';
+            prevPostcode.value = formData.previousAddressObject.postcode || '';
+          }
+        } else if(formData.previousAddress) {
+          // Fallback to plain text if no object (legacy data)
+          previousAddress.value = formData.previousAddress;
+          previousAddressObject = null; // Will be parsed from text on save
+        }
       }
 
       // Section 4 defaults
