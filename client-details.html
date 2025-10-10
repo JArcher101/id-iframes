@@ -1169,74 +1169,131 @@
     /*
     Parse manual address text into Thirdfort API format
     - Used when user types address manually (no autocomplete match)
-    - Attempts to extract postcode, town, and address lines
+    - Attempts to extract postcode, town, and address components
+    - Returns UK-format address (no address_1/address_2 as per API spec)
     */
-    function parseManualAddress(addressText) {
+    function parseManualAddress(addressText, country = 'GBR') {
       if (!addressText || !addressText.trim()) return null;
       
       const text = addressText.trim();
       
-      // Try to extract UK postcode
-      const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2})\b/i);
+      // UK addresses: Don't use address_1/address_2 (not allowed per API spec)
+      if (country === 'GBR') {
+        // Try to extract UK postcode
+        const postcodeMatch = text.match(/\b([A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2})\b/i);
+        const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase() : '';
+        
+        // Split by commas
+        const parts = text.split(',').map(p => p.trim()).filter(p => p);
+        
+        let town = '';
+        let street = '';
+        
+        if (parts.length > 0) {
+          if (postcode) {
+            const postcodeIndex = parts.findIndex(p => p.toUpperCase().includes(postcode));
+            if (postcodeIndex > 0) {
+              town = parts[postcodeIndex - 1];
+              street = parts[0]; // First part is likely the street with building number
+            } else if (parts.length > 1) {
+              town = parts[parts.length - 1];
+              street = parts[0];
+            } else {
+              street = parts[0];
+            }
+          } else {
+            if (parts.length > 1) {
+              town = parts[parts.length - 1];
+              street = parts[0];
+            } else {
+              street = parts[0];
+            }
+          }
+        }
+        
+        return {
+          building_name: '',
+          building_number: '',
+          flat_number: '',
+          postcode: postcode,
+          street: street || text,
+          sub_street: '',
+          town: town || 'Unknown',
+          country: 'GBR'
+        };
+      }
+      
+      // Non-UK addresses: Use address_1, address_2
+      const postcodeMatch = text.match(/\b([A-Z0-9]{3,10})\b/i);
       const postcode = postcodeMatch ? postcodeMatch[1].toUpperCase() : '';
       
-      // Split by commas
       const parts = text.split(',').map(p => p.trim()).filter(p => p);
-      
       let town = '';
       let addressLines = [];
       
       if (parts.length > 0) {
-        if (postcode) {
-          const postcodeIndex = parts.findIndex(p => p.toUpperCase().includes(postcode));
-          if (postcodeIndex > 0) {
-            town = parts[postcodeIndex - 1];
-            addressLines = parts.slice(0, postcodeIndex - 1);
-          } else {
-            if (parts.length > 1) {
-              town = parts[parts.length - 2];
-              addressLines = parts.slice(0, parts.length - 2);
-            } else {
-              addressLines = [parts[0]];
-            }
-          }
+        if (parts.length > 1) {
+          town = parts[parts.length - 1];
+          addressLines = parts.slice(0, parts.length - 1);
         } else {
-          if (parts.length > 1) {
-            town = parts[parts.length - 1];
-            addressLines = parts.slice(0, parts.length - 1);
-          } else {
-            addressLines = [parts[0]];
-          }
+          addressLines = [parts[0]];
         }
       }
       
       return {
         address_1: addressLines[0] || text,
         address_2: addressLines[1] || '',
-        building_name: '',
-        building_number: '',
-        flat_number: '',
         postcode: postcode,
         street: '',
         sub_street: '',
         town: town || 'Unknown',
         state: '',
-        country: 'GBR'
+        country: country
       };
     }
     
     /*
     Format getaddress.io address object to Thirdfort API format
+    - UK (GBR): Uses individual fields (building_name, building_number, flat_number, street, etc.)
+    - USA/CAN: Uses address_1, address_2, state
+    - Other: Uses address_1, address_2
+    - Per Thirdfort API spec: UK addresses must NOT include address_1/address_2
     */
     function formatToThirdfort(getAddressData, country = 'GBR') {
       if (!getAddressData) return null;
       
+      // UK addresses: Individual fields only (no address_1, address_2)
+      if (country === 'GBR') {
+        return {
+          building_name: getAddressData.building_name || '',
+          building_number: getAddressData.building_number || '',
+          flat_number: getAddressData.flat_number || '',
+          postcode: getAddressData.postcode || '',
+          street: getAddressData.thoroughfare || getAddressData.street || '',
+          sub_street: getAddressData.sub_street || '',
+          town: getAddressData.town_or_city || getAddressData.town || '',
+          country: country
+        };
+      }
+      
+      // USA/Canada: address_1, address_2, state required
+      if (country === 'USA' || country === 'CAN') {
+        return {
+          address_1: getAddressData.line_1 || '',
+          address_2: getAddressData.line_2 || getAddressData.line_3 || getAddressData.line_4 || '',
+          postcode: getAddressData.postcode || '',
+          street: getAddressData.thoroughfare || getAddressData.street || '',
+          sub_street: getAddressData.sub_street || '',
+          town: getAddressData.town_or_city || getAddressData.town || '',
+          state: getAddressData.state || getAddressData.province || '',
+          country: country
+        };
+      }
+      
+      // Other countries: address_1, address_2 (no individual building fields)
       return {
         address_1: getAddressData.line_1 || '',
         address_2: getAddressData.line_2 || getAddressData.line_3 || getAddressData.line_4 || '',
-        building_name: getAddressData.building_name || '',
-        building_number: getAddressData.building_number || '',
-        flat_number: getAddressData.flat_number || '',
         postcode: getAddressData.postcode || '',
         street: getAddressData.thoroughfare || getAddressData.street || '',
         sub_street: getAddressData.sub_street || '',
@@ -1249,19 +1306,21 @@
     /*
     Format Thirdfort address object for display in input field
     - Used when loading existing data from database
-    - Prioritizes pre-formatted address_1/address_2 lines from API to avoid duplicates
-    - Falls back to individual components if address_1 is not available (manual entry)
+    - UK addresses use individual fields (building_number, street, etc.)
+    - Non-UK addresses use address_1, address_2
+    - Per Thirdfort API spec: UK addresses don't have address_1/address_2
     */
     function formatThirdfortForDisplay(thirdfortAddress) {
       if (!thirdfortAddress) return '';
       
-      // If we have address_1, it's from the API and already contains building number/name and street
-      // So we only need flat_number (if separate), address_1, address_2, town, postcode
-      if (thirdfortAddress.address_1 && thirdfortAddress.address_1.trim()) {
+      // UK addresses: Build from individual fields
+      if (thirdfortAddress.country === 'GBR') {
         const parts = [
           thirdfortAddress.flat_number,
-          thirdfortAddress.address_1,
-          thirdfortAddress.address_2,
+          thirdfortAddress.building_number,
+          thirdfortAddress.building_name,
+          thirdfortAddress.street,
+          thirdfortAddress.sub_street,
           thirdfortAddress.town,
           thirdfortAddress.postcode
         ].filter(p => p && p.trim());
@@ -1269,14 +1328,12 @@
         return parts.join(', ');
       }
       
-      // Fallback: If address_1 is empty (manual entry), build from individual components
+      // Non-UK addresses: Use address_1, address_2
       const parts = [
-        thirdfortAddress.flat_number,
-        thirdfortAddress.building_number,
-        thirdfortAddress.building_name,
-        thirdfortAddress.street,
-        thirdfortAddress.sub_street,
+        thirdfortAddress.address_1,
+        thirdfortAddress.address_2,
         thirdfortAddress.town,
+        thirdfortAddress.state,
         thirdfortAddress.postcode
       ].filter(p => p && p.trim());
       
@@ -1586,14 +1643,14 @@
     
     function compileFormData() {
       try {
-        // Build current address object
-        const isCurrentUK = currentCountry.value === 'GBR';
-        
-        if (!isCurrentUK || addressNotListed?.checked) {
-          // Build from manual fields (non-UK or manual entry)
+      // Build current address object
+      const isCurrentUK = currentCountry.value === 'GBR';
+      
+      if (!isCurrentUK || addressNotListed?.checked) {
+        // Build from manual fields
+        if (isCurrentUK) {
+          // UK manual: Individual fields only (no address_1/address_2)
           currentAddressObject = {
-            address_1: '',
-            address_2: '',
             building_name: buildingName?.value?.trim() || '',
             building_number: buildingNumber?.value?.trim() || '',
             flat_number: flatNumber?.value?.trim() || '',
@@ -1601,15 +1658,24 @@
             street: street?.value?.trim() || '',
             sub_street: subStreet?.value?.trim() || '',
             town: town?.value?.trim() || '',
+            country: 'GBR'
+          };
+        } else {
+          // Non-UK: address_1, address_2 (no individual building fields)
+          currentAddressObject = {
+            address_1: buildingName?.value?.trim() || buildingNumber?.value?.trim() || flatNumber?.value?.trim() || street?.value?.trim() || '',
+            address_2: subStreet?.value?.trim() || '',
+            postcode: postcode?.value?.trim() || '',
+            street: street?.value?.trim() || '',
+            sub_street: subStreet?.value?.trim() || '',
+            town: town?.value?.trim() || '',
             state: '',
             country: currentCountry?.value || 'GBR'
           };
-        } else if (!currentAddressObject && currentAddress?.value?.trim()) {
-        // Parse from autocomplete text if no object stored
-        currentAddressObject = parseManualAddress(currentAddress.value);
-        if (currentAddressObject) {
-          currentAddressObject.country = currentCountry.value;
         }
+      } else if (!currentAddressObject && currentAddress?.value?.trim()) {
+        // Parse from autocomplete text if no object stored
+        currentAddressObject = parseManualAddress(currentAddress.value, currentCountry.value);
       }
       
       // Ensure country is set even if object was from API
@@ -1617,15 +1683,15 @@
         currentAddressObject.country = currentCountry.value;
       }
       
-        // Build previous address object
-        if (recentMove?.checked) {
-          const isPreviousUK = previousCountry?.value === 'GBR';
-          
-          if (!isPreviousUK || previousAddressNotListed?.checked) {
-            // Build from manual fields (non-UK or manual entry)
+      // Build previous address object
+      if (recentMove?.checked) {
+        const isPreviousUK = previousCountry?.value === 'GBR';
+        
+        if (!isPreviousUK || previousAddressNotListed?.checked) {
+          // Build from manual fields
+          if (isPreviousUK) {
+            // UK manual: Individual fields only (no address_1/address_2)
             previousAddressObject = {
-              address_1: '',
-              address_2: '',
               building_name: prevBuildingName?.value?.trim() || '',
               building_number: prevBuildingNumber?.value?.trim() || '',
               flat_number: prevFlatNumber?.value?.trim() || '',
@@ -1633,22 +1699,26 @@
               street: prevStreet?.value?.trim() || '',
               sub_street: prevSubStreet?.value?.trim() || '',
               town: prevTown?.value?.trim() || '',
+              country: 'GBR'
+            };
+          } else {
+            // Non-UK: address_1, address_2 (no individual building fields)
+            previousAddressObject = {
+              address_1: prevBuildingName?.value?.trim() || prevBuildingNumber?.value?.trim() || prevFlatNumber?.value?.trim() || prevStreet?.value?.trim() || '',
+              address_2: prevSubStreet?.value?.trim() || '',
+              postcode: prevPostcode?.value?.trim() || '',
+              street: prevStreet?.value?.trim() || '',
+              sub_street: prevSubStreet?.value?.trim() || '',
+              town: prevTown?.value?.trim() || '',
               state: '',
               country: previousCountry?.value || 'GBR'
             };
-          } else if (!previousAddressObject && previousAddress?.value?.trim()) {
-            // Parse from autocomplete text if no object stored
-            previousAddressObject = parseManualAddress(previousAddress.value);
-            if (previousAddressObject) {
-              previousAddressObject.country = previousCountry?.value || 'GBR';
-            }
           }
-          
-          // Ensure country is set even if object was from API
-          if (previousAddressObject) {
-            previousAddressObject.country = previousCountry?.value || 'GBR';
-          }
+        } else if (!previousAddressObject && previousAddress?.value?.trim()) {
+          // Parse from autocomplete text if no object stored
+          previousAddressObject = parseManualAddress(previousAddress.value, previousCountry?.value || 'GBR');
         }
+      }
       
       // Format phone number in international format
       const countryCode = phoneCountryCode?.value || '+44';
