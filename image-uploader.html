@@ -3713,10 +3713,6 @@
         }
       }
       
-      // Generate display text from addressObject for database storage
-      const currentAddressDisplayText = currentAddressObject ? formatThirdfortForDisplay(currentAddressObject) : currentAddress.value;
-      const previousAddressDisplayText = previousAddressObject ? formatThirdfortForDisplay(previousAddressObject) : previousAddress.value;
-      
       const compiledFormData = {
         fe: currentTitleText,
         clientNumber: currentClientNumber,
@@ -3737,11 +3733,9 @@
         reasonForNameChange: document.getElementById('reasonForNameChange').value,
         photographicIdTaken: formData.photographicIdTaken || false,
         likenessNOTConfirmed: document.getElementById('likenessNotConfirmed').checked,
-        address: currentAddressDisplayText, // Display text from object
-        addressObject: currentAddressObject, // Thirdfort-formatted object
+        address: currentAddressObject, // Thirdfort-formatted object
         clientRecentHomeMove: document.getElementById('recentMove').checked,
-        previousAddress: previousAddressDisplayText, // Display text from object
-        previousAddressObject: previousAddressObject, // Thirdfort-formatted object
+        previousAddress: previousAddressObject, // Thirdfort-formatted object
         addressIdTaken: formData.addressIdTaken || false
       };
 
@@ -4702,87 +4696,88 @@
       previousAddress.classList.remove('hidden');
       previousAddressLabel.classList.remove('hidden');
       
-      // Set country dropdowns from addressObject or default to UK
-      if(formData.addressObject && formData.addressObject.country) {
-        currentCountry.value = formData.addressObject.country;
-      } else {
-        currentCountry.value = 'GBR'; // Default to UK
-      }
-      
-      if(formData.previousAddressObject && formData.previousAddressObject.country) {
-        previousCountry.value = formData.previousAddressObject.country;
-      } else {
-        previousCountry.value = 'GBR'; // Default to UK
-      }
-      
-      // Trigger country change to set up autocomplete/manual fields correctly
-      const isCurrentUK = currentCountry.value === 'GBR';
-      if (!isCurrentUK) {
-        currentAddressAutocompleteRow.classList.add('hidden');
-        addressNotListed.parentElement.classList.add('hidden');
-        manualAddressFields.classList.remove('hidden');
-      } else {
+      // Load address data - check if it's an object or legacy text
+      if(formData.address && typeof formData.address === 'object') {
+        // New format: address is already an object
+        currentAddressObject = formData.address;
+        currentCountry.value = formData.address.country || 'GBR';
+        
+        const isCurrentUK = currentCountry.value === 'GBR';
+        
+        // Set up UI based on country
+        if (!isCurrentUK) {
+          currentAddressAutocompleteRow.classList.add('hidden');
+          addressNotListed.parentElement.classList.add('hidden');
+          manualAddressFields.classList.remove('hidden');
+          // Populate manual fields
+          flatNumber.value = formData.address.flat_number || '';
+          buildingNumber.value = formData.address.building_number || '';
+          buildingName.value = formData.address.building_name || '';
+          street.value = formData.address.street || '';
+          subStreet.value = formData.address.sub_street || '';
+          town.value = formData.address.town || '';
+          postcode.value = formData.address.postcode || '';
+        } else {
+          currentAddressAutocompleteRow.classList.remove('hidden');
+          addressNotListed.parentElement.classList.remove('hidden');
+          currentAddress.value = formatThirdfortForDisplay(formData.address);
+        }
+      } else if(formData.address && typeof formData.address === 'string') {
+        // Legacy format: address is plain text
+        currentCountry.value = 'GBR';
         currentAddressAutocompleteRow.classList.remove('hidden');
         addressNotListed.parentElement.classList.remove('hidden');
-      }
-      
-      // Load address data - prioritize addressObject (Thirdfort format) over plain text
-      if(formData.addressObject) {
-        // We have structured address object - use it and format for display
-        currentAddressObject = formData.addressObject;
-        if (isCurrentUK) {
-          currentAddress.value = formatThirdfortForDisplay(formData.addressObject);
-        } else {
-          // Non-UK: populate manual fields
-          flatNumber.value = formData.addressObject.flat_number || '';
-          buildingNumber.value = formData.addressObject.building_number || '';
-          buildingName.value = formData.addressObject.building_name || '';
-          street.value = formData.addressObject.street || '';
-          subStreet.value = formData.addressObject.sub_street || '';
-          town.value = formData.addressObject.town || '';
-          postcode.value = formData.addressObject.postcode || '';
-        }
-      } else if(formData.address) {
-        // Fallback to plain text if no object (legacy data)
         currentAddress.value = formData.address;
         currentAddressObject = null; // Will be parsed from text on save
+      } else {
+        // No address data - default to UK
+        currentCountry.value = 'GBR';
+        currentAddressAutocompleteRow.classList.remove('hidden');
+        addressNotListed.parentElement.classList.remove('hidden');
       }
       
       if(formData.clientRecentHomeMove) {
         recentMove.checked = true;
         togglePreviousAddressFields();
         
-        // Set up previous address autocomplete/manual based on country
-        const isPreviousUK = previousCountry.value === 'GBR';
-        if (!isPreviousUK) {
-          previousAddressAutocompleteRow.classList.add('hidden');
-          previousAddressNotListed.parentElement.classList.add('hidden');
-          manualPreviousAddressFields.classList.remove('hidden');
-        } else {
+        // Load previous address data - check if it's an object or legacy text
+        if(formData.previousAddress && typeof formData.previousAddress === 'object') {
+          // New format: previousAddress is already an object
+          previousAddressObject = formData.previousAddress;
+          previousCountry.value = formData.previousAddress.country || 'GBR';
+          
+          const isPreviousUK = previousCountry.value === 'GBR';
+          
+          // Set up UI based on country
+          if (!isPreviousUK) {
+            previousAddressAutocompleteRow.classList.add('hidden');
+            previousAddressNotListed.parentElement.classList.add('hidden');
+            manualPreviousAddressFields.classList.remove('hidden');
+            // Populate manual fields
+            prevFlatNumber.value = formData.previousAddress.flat_number || '';
+            prevBuildingNumber.value = formData.previousAddress.building_number || '';
+            prevBuildingName.value = formData.previousAddress.building_name || '';
+            prevStreet.value = formData.previousAddress.street || '';
+            prevSubStreet.value = formData.previousAddress.sub_street || '';
+            prevTown.value = formData.previousAddress.town || '';
+            prevPostcode.value = formData.previousAddress.postcode || '';
+          } else {
+            previousAddressAutocompleteRow.classList.remove('hidden');
+            previousAddressNotListed.parentElement.classList.remove('hidden');
+            previousAddress.value = formatThirdfortForDisplay(formData.previousAddress);
+          }
+        } else if(formData.previousAddress && typeof formData.previousAddress === 'string') {
+          // Legacy format: previousAddress is plain text
+          previousCountry.value = 'GBR';
           previousAddressAutocompleteRow.classList.remove('hidden');
           previousAddressNotListed.parentElement.classList.remove('hidden');
-        }
-        
-        // Load previous address data - prioritize previousAddressObject over plain text
-        if(formData.previousAddressObject) {
-          // We have structured address object - use it and format for display
-          previousAddressObject = formData.previousAddressObject;
-          if (isPreviousUK) {
-            previousAddress.value = formatThirdfortForDisplay(formData.previousAddressObject);
-          } else {
-            // Non-UK: populate manual fields
-            prevFlatNumber.value = formData.previousAddressObject.flat_number || '';
-            prevBuildingNumber.value = formData.previousAddressObject.building_number || '';
-            prevBuildingName.value = formData.previousAddressObject.building_name || '';
-            prevStreet.value = formData.previousAddressObject.street || '';
-            prevSubStreet.value = formData.previousAddressObject.sub_street || '';
-            prevTown.value = formData.previousAddressObject.town || '';
-            prevPostcode.value = formData.previousAddressObject.postcode || '';
-          }
-        } else if(formData.previousAddress) {
-          // Fallback to plain text if no object (legacy data)
           previousAddress.value = formData.previousAddress;
           previousAddressObject = null; // Will be parsed from text on save
+        } else {
+          // No previous address data - default to UK
+          previousCountry.value = 'GBR';
+          previousAddressAutocompleteRow.classList.remove('hidden');
+          previousAddressNotListed.parentElement.classList.remove('hidden');
         }
       }
 
