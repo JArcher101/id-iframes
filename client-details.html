@@ -555,7 +555,7 @@
           </div>
           <div>
             <label for="phoneNumber">Mobile Number</label>
-            <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="7700000000" />
+            <input type="tel" id="phoneNumber" name="phoneNumber" />
           </div>
           <div>
             <label for="email">Email Address</label>
@@ -1714,7 +1714,10 @@
       let formattedPhone = undefined;
       if (phoneNumber?.value?.trim()) {
         const countryCode = phoneCountryCode?.value || '+44';
-        const phoneNum = phoneNumber.value.trim().replace(/^0+/, '');
+        // Strip only leading zeros, but keep the number if it's all zeros or becomes empty
+        let phoneNum = phoneNumber.value.trim().replace(/^0+/, '');
+        // If stripping zeros left us with nothing, use original (edge case)
+        if (!phoneNum) phoneNum = phoneNumber.value.trim();
         formattedPhone = countryCode + phoneNum;
       }
       
