@@ -207,7 +207,7 @@
     <script>
         let currentChart = null;
         let currentChartData = null; // Store current chart data for expansion
-        let popupWindow = null; // Reference to opened popup window
+        let openPopups = new Map(); // Track multiple popup windows with their IDs
         const canvas = document.getElementById('chartCanvas');
         const chartWrapper = document.getElementById('chartWrapper');
         const emptyState = document.getElementById('emptyState');
@@ -241,10 +241,16 @@
             if (data.type === 'chart-data') {
                 createChart(data);
                 
-                // If popup window is open, update it with new data
-                if (popupWindow && !popupWindow.closed) {
-                    popupWindow.postMessage(data, '*');
-                }
+                // Update ALL open popup windows with new data
+                openPopups.forEach((popup, popupId) => {
+                    if (popup && !popup.closed) {
+                        const dataToSend = Object.assign({}, data, { popupId: popupId });
+                        popup.postMessage(dataToSend, window.location.origin);
+                    } else {
+                        // Remove closed popups from tracking
+                        openPopups.delete(popupId);
+                    }
+                });
             }
         });
 
@@ -386,19 +392,27 @@
             // Get base URL (without any existing query params from iframe src)
             const baseUrl = window.location.href.split('?')[0];
             
-            // Open popup with unique ID in URL and store reference
-            popupWindow = window.open(
+            // Open popup with unique ID in URL
+            const popup = window.open(
                 `${baseUrl}?popupId=${uniqueId}`,
                 `chartPopup_${uniqueId}`,  // Unique window name allows multiple popups
                 'width=1400,height=900,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,location=no'
             );
             
+            if (!popup) {
+                console.error('Popup blocked by browser');
+                return;
+            }
+            
+            // Track this popup
+            openPopups.set(uniqueId, popup);
+            
             // Listen for popup ready signal and send chart data
             const popupReadyHandler = function(event) {
                 if (event.data.type === 'popup-ready' && event.data.popupId === uniqueId) {
-                    // Send chart data to popup
+                    // Send chart data to popup with specific origin for security
                     const dataToSend = Object.assign({}, currentChartData, { popupId: uniqueId });
-                    popupWindow.postMessage(dataToSend, '*');
+                    popup.postMessage(dataToSend, window.location.origin);
                     
                     // Remove listener after sending
                     window.removeEventListener('message', popupReadyHandler);
@@ -406,6 +420,15 @@
             };
             
             window.addEventListener('message', popupReadyHandler);
+            
+            // Cleanup when popup closes
+            const checkClosed = setInterval(() => {
+                if (popup.closed) {
+                    openPopups.delete(uniqueId);
+                    clearInterval(checkClosed);
+                    console.log(`Popup ${uniqueId} closed and removed from tracking`);
+                }
+            }, 1000);
         }
     </script>
 </body>
