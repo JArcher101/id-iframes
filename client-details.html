@@ -1576,9 +1576,7 @@
           }
         }
         
-        // Phone and email required for both modes
-        if (!phoneNumber?.value?.trim()) errors.push('Please enter mobile number.');
-        if (!email?.value?.trim()) errors.push('Please enter email address.');
+        // Phone and email are NOT required - removed validation
       
       // Validate current address
       const isCurrentUK = currentCountry?.value === 'GBR';
@@ -1720,13 +1718,16 @@
         }
       }
       
-      // Format phone number in international format
-      const countryCode = phoneCountryCode?.value || '+44';
-      const phoneNum = phoneNumber?.value?.replace(/^0+/, '') || '';
-      const formattedPhone = countryCode + phoneNum;
+      // Format phone number in international format (undefined if no number entered)
+      let formattedPhone = undefined;
+      if (phoneNumber?.value?.trim()) {
+        const countryCode = phoneCountryCode?.value || '+44';
+        const phoneNum = phoneNumber.value.trim().replace(/^0+/, '');
+        formattedPhone = countryCode + phoneNum;
+      }
       
       // Compile DOB from individual inputs (only for individual mode)
-      let dobFormatted = '';
+      let dobFormatted = undefined;
       if (!isEntityMode) {
         const dobDigits = dobInputs.map(inp => inp?.value || '').join('');
         if (dobDigits.length === 8) {
@@ -1739,23 +1740,23 @@
       const compiled = {
         _id: formData._id || undefined,
         n: isEntityMode ? {
-          b: businessName?.value?.trim() || ''  // businessName
+          b: businessName?.value?.trim() || undefined  // businessName
         } : {
-          t: titlePrefix?.value || '',          // titlePrefix
-          f: firstName?.value || '',            // firstName
-          m: middleName?.value || '',           // middleNames
-          l: lastName?.value || ''              // lastName
+          t: titlePrefix?.value || undefined,          // titlePrefix
+          f: firstName?.value || undefined,            // firstName
+          m: middleName?.value || undefined,           // middleNames
+          l: lastName?.value || undefined              // lastName
         },
-        b: dobFormatted,                        // birthdate (dd-mm-yyyy)
-        a: currentAddressObject,                // address object
-        pA: previousAddressObject,              // previousAddress object
-        rM: recentMove?.checked || false,       // clientRecentHomeMove
-        nC: recentNameChange?.checked || false, // clientRecentNameChange
-        pN: previousName?.value || '',          // previousName
-        rC: reasonForNameChange?.value || '',   // reasonForNameChange
-        m: formattedPhone,                      // mobileNumber
-        e: email?.value?.trim() || '',          // email
-        eN: entityNumber?.value?.trim() || ''   // entityNumber
+        b: dobFormatted || undefined,                        // birthdate (dd-mm-yyyy)
+        a: currentAddressObject || undefined,                // address object (undefined if cleared/empty)
+        pA: previousAddressObject || undefined,              // previousAddress object (undefined if cleared/empty)
+        rM: recentMove?.checked || false,                    // clientRecentHomeMove
+        nC: recentNameChange?.checked || false,              // clientRecentNameChange
+        pN: previousName?.value || undefined,                // previousName
+        rC: reasonForNameChange?.value || undefined,         // reasonForNameChange
+        m: formattedPhone || undefined,                      // mobileNumber
+        e: email?.value?.trim() || undefined,                // email
+        eN: entityNumber?.value?.trim() || undefined         // entityNumber
       };
       
       return compiled;
@@ -1983,8 +1984,8 @@
         
         const errors = validateForm();
         if (errors.length) {
-          showError('• ' + errors.join('\n• '));
-          // Send validation error to parent
+          // Send validation error to parent (don't show error popup in iframe)
+          console.log('❌ Validation errors:', errors);
           window.parent.postMessage({
             type: 'validation-error',
             errors: errors
@@ -1996,7 +1997,7 @@
         
         // Check if data compilation failed
         if (!data) {
-          showError('An error occurred while compiling form data. Please try again.');
+          console.error('❌ Data compilation failed');
           window.parent.postMessage({
             type: 'validation-error',
             errors: ['Data compilation error']
