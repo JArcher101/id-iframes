@@ -964,6 +964,30 @@
                 
                 // Note: Inputs remain populated so user can retry without re-typing
             }
+            /*
+            ----------------------------------------------------------------
+            CASE 4: 'button-enable' - Enable send button from parent
+            ----------------------------------------------------------------
+            */
+            else if (event.data.type === 'button-enable') {
+                const sendBtn = document.getElementById('sendBtn');
+                if (sendBtn) {
+                    sendBtn.disabled = false;
+                    console.log('Send button enabled by parent');
+                }
+            }
+            /*
+            ----------------------------------------------------------------
+            CASE 5: 'button-disable' - Disable send button from parent
+            ----------------------------------------------------------------
+            */
+            else if (event.data.type === 'button-disable') {
+                const sendBtn = document.getElementById('sendBtn');
+                if (sendBtn) {
+                    sendBtn.disabled = true;
+                    console.log('Send button disabled by parent');
+                }
+            }
         });
 
         /*
