@@ -2580,17 +2580,32 @@
     Format Thirdfort address object for display in input field
     - Converts Thirdfort API format to human-readable single-line format
     - Used when loading existing data from database
+    - Prioritizes pre-formatted address_1/address_2 lines from API to avoid duplicates
+    - Falls back to individual components if address_1 is not available (manual entry)
     - Returns formatted string for input field
     */
     function formatThirdfortForDisplay(thirdfortAddress) {
       if (!thirdfortAddress) return '';
       
+      // If we have address_1, it's from the API and already contains building number/name and street
+      // So we only need flat_number (if separate), address_1, address_2, town, postcode
+      if (thirdfortAddress.address_1 && thirdfortAddress.address_1.trim()) {
+        const parts = [
+          thirdfortAddress.flat_number,
+          thirdfortAddress.address_1,
+          thirdfortAddress.address_2,
+          thirdfortAddress.town,
+          thirdfortAddress.postcode
+        ].filter(p => p && p.trim());
+        
+        return parts.join(', ');
+      }
+      
+      // Fallback: If address_1 is empty (manual entry), build from individual components
       const parts = [
         thirdfortAddress.flat_number,
         thirdfortAddress.building_number,
         thirdfortAddress.building_name,
-        thirdfortAddress.address_1,
-        thirdfortAddress.address_2,
         thirdfortAddress.street,
         thirdfortAddress.sub_street,
         thirdfortAddress.town,
