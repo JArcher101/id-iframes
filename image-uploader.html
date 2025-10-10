@@ -2337,17 +2337,146 @@
       }
     }
 
+    // ===== ADDRESS CACHE MANAGEMENT =====
+    /*
+    =====================================================================
+    ADDRESS CACHE - localStorage with LRU Eviction
+    - Caches autocomplete results and full address objects
+    - 7-day expiry on all cached items
+    - Max 50 autocomplete results, max 50 address objects
+    - LRU (Least Recently Used) eviction when limit reached
+    - Saves API calls for repeat addresses (couples, families, etc.)
+    =====================================================================
+    */
+    
+    const CACHE_PREFIX = 'addr_';
+    const CACHE_EXPIRY_DAYS = 7;
+    const MAX_AUTOCOMPLETE_CACHE = 50;
+    const MAX_ADDRESS_CACHE = 50;
+    
+    // Check if cache item is expired
+    function isCacheExpired(timestamp) {
+      const expiryMs = CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+      return (Date.now() - timestamp) > expiryMs;
+    }
+    
+    // Get from cache with expiry check
+    function getCachedItem(key) {
+      try {
+        const item = localStorage.getItem(CACHE_PREFIX + key);
+        if (!item) return null;
+        
+        const parsed = JSON.parse(item);
+        if (isCacheExpired(parsed.timestamp)) {
+          // Expired - remove it
+          localStorage.removeItem(CACHE_PREFIX + key);
+          return null;
+        }
+        
+        // Update last accessed timestamp for LRU
+        parsed.timestamp = Date.now();
+        localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(parsed));
+        
+        return parsed.data;
+      } catch (e) {
+        console.error('Cache read error:', e);
+        return null;
+      }
+    }
+    
+    // Store in cache with LRU eviction
+    function setCachedItem(key, data, type) {
+      try {
+        const maxItems = type === 'autocomplete' ? MAX_AUTOCOMPLETE_CACHE : MAX_ADDRESS_CACHE;
+        const prefix = type === 'autocomplete' ? CACHE_PREFIX + 'auto_' : CACHE_PREFIX + 'addr_';
+        
+        // Get all cache keys of this type
+        const allKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const storageKey = localStorage.key(i);
+          if (storageKey && storageKey.startsWith(prefix)) {
+            allKeys.push(storageKey);
+          }
+        }
+        
+        // If at limit, remove oldest item
+        if (allKeys.length >= maxItems) {
+          let oldestKey = null;
+          let oldestTime = Date.now();
+          
+          allKeys.forEach(k => {
+            try {
+              const item = JSON.parse(localStorage.getItem(k));
+              if (item.timestamp < oldestTime) {
+                oldestTime = item.timestamp;
+                oldestKey = k;
+              }
+            } catch (e) {
+              // Invalid item - remove it
+              localStorage.removeItem(k);
+            }
+          });
+          
+          if (oldestKey) {
+            localStorage.removeItem(oldestKey);
+            console.log('Cache evicted oldest item:', oldestKey);
+          }
+        }
+        
+        // Store new item
+        const fullKey = prefix + key;
+        localStorage.setItem(fullKey, JSON.stringify({
+          data: data,
+          timestamp: Date.now()
+        }));
+        
+        console.log(`Cached ${type}:`, fullKey);
+      } catch (e) {
+        console.error('Cache write error:', e);
+        // If localStorage is full, clear old caches
+        if (e.name === 'QuotaExceededError') {
+          clearExpiredCache();
+        }
+      }
+    }
+    
+    // Clear all expired cache items
+    function clearExpiredCache() {
+      try {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(CACHE_PREFIX)) {
+            const item = JSON.parse(localStorage.getItem(key));
+            if (isCacheExpired(item.timestamp)) {
+              keysToRemove.push(key);
+            }
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        console.log('Cleared expired cache items:', keysToRemove.length);
+      } catch (e) {
+        console.error('Cache cleanup error:', e);
+      }
+    }
+    
+    // Clear expired cache on page load
+    clearExpiredCache();
+    
     // ===== ADDRESS AUTOCOMPLETE FUNCTIONS =====
     /*
     =====================================================================
-    ADDRESS AUTOCOMPLETE WITH BACKEND PROXY
+    ADDRESS AUTOCOMPLETE WITH BACKEND PROXY + CACHING
+    - Checks localStorage cache BEFORE calling API
     - User types in address field → triggers debounced search
-    - Sends 'address-search' message to parent with search term
+    - If cached: Uses cached results (no API call)
+    - If not cached: Sends 'address-search' message to parent
     - Parent calls Wix backend → backend calls getaddress.io API
     - Parent sends 'address-results' back with suggestions
+    - Caches results for 7 days (max 50 items, LRU eviction)
     - Displays dropdown with clickable suggestions
-    - On select: Populates input with formatted text, stores Thirdfort object
-    - If no match: Converts manual text entry to Thirdfort format
+    - On select: Checks cache for full address, or requests from parent
+    - Caches full address objects for 7 days (max 50 items, LRU eviction)
     =====================================================================
     */
     
@@ -2528,12 +2657,23 @@
           return;
         }
         
-        // Show loading state
-        dropdownElement.classList.remove('hidden');
-        dropdownElement.innerHTML = '<div class="address-loading">Searching addresses...</div>';
-        
         // Debounce: Wait 300ms after user stops typing
         const timer = setTimeout(() => {
+          // Check cache first
+          const cacheKey = 'auto_' + searchTerm.toLowerCase();
+          const cachedResults = getCachedItem(cacheKey);
+          
+          if (cachedResults) {
+            console.log('✅ Using cached autocomplete results for:', searchTerm);
+            dropdownElement.classList.remove('hidden');
+            displayAddressSuggestions(cachedResults, isCurrentAddress ? 'current' : 'previous');
+            return;
+          }
+          
+          // Not cached - show loading and request from parent
+          dropdownElement.classList.remove('hidden');
+          dropdownElement.innerHTML = '<div class="address-loading">Searching addresses...</div>';
+          
           // Send search request to parent via postMessage
           window.parent.postMessage({
             type: 'address-search',
@@ -2593,9 +2733,10 @@
     
     /*
     Handle address selection from dropdown
-    - Stores getaddress.io ID for full address lookup
-    - Sends 'address-lookup' message to parent
-    - Parent returns full address object
+    - Checks cache for full address first
+    - If cached: Uses cached data (no API call)
+    - If not cached: Sends 'address-lookup' message to parent
+    - Parent returns full address object which gets cached
     */
     function selectAddressSuggestion(addressId, displayText, isCurrentAddress) {
       const inputElement = isCurrentAddress ? currentAddress : previousAddress;
@@ -2607,7 +2748,19 @@
       // Hide dropdown
       dropdownElement.classList.add('hidden');
       
-      // Request full address details from parent
+      // Check cache for full address first
+      const cacheKey = 'addr_' + addressId;
+      const cachedAddress = getCachedItem(cacheKey);
+      
+      if (cachedAddress) {
+        console.log('✅ Using cached full address for:', addressId);
+        // Use cached address directly
+        handleAddressData(cachedAddress, isCurrentAddress ? 'current' : 'previous');
+        return;
+      }
+      
+      // Not cached - request from parent
+      console.log('📡 Requesting full address from API:', addressId);
       window.parent.postMessage({
         type: 'address-lookup',
         addressId: addressId,
@@ -4614,10 +4767,26 @@
         console.log('✅ Data loaded, form should be visible');
       } else if (event.data && event.data.type === 'address-results') {
         console.log('✅ Processing address-results...');
+        
+        // Cache the autocomplete results
+        if (event.data.searchTerm && event.data.suggestions) {
+          const cacheKey = 'auto_' + event.data.searchTerm.toLowerCase();
+          setCachedItem(cacheKey, event.data.suggestions, 'autocomplete');
+          console.log('💾 Cached autocomplete results for:', event.data.searchTerm);
+        }
+        
         // Display autocomplete suggestions
         displayAddressSuggestions(event.data.suggestions, event.data.field);
       } else if (event.data && event.data.type === 'address-data') {
         console.log('✅ Processing address-data...');
+        
+        // Cache the full address object
+        if (event.data.addressId && event.data.address) {
+          const cacheKey = 'addr_' + event.data.addressId;
+          setCachedItem(cacheKey, event.data.address, 'address');
+          console.log('💾 Cached full address for ID:', event.data.addressId);
+        }
+        
         // Store full address object
         handleAddressData(event.data.address, event.data.field);
       } else {
