@@ -4327,20 +4327,32 @@
     6. Parent sends 'address-data' → Child stores Thirdfort object
     =====================================================================
     */
+    // Add immediate listener log to verify script is running
+    console.log('Image uploader iframe loaded and ready');
+    
     window.addEventListener('message', (event)=>{
-      console.log('Iframe received message:', event.data?.type, event.data);
+      console.log('=== MESSAGE RECEIVED ===');
+      console.log('Origin:', event.origin);
+      console.log('Type:', event.data?.type);
+      console.log('Full data:', event.data);
+      console.log('========================');
       
       if(event.data && event.data.type === 'initiation-data'){
-        console.log('Loading initiation data:', event.data.data);
+        console.log('✅ Processing initiation-data...');
         // Clear form and reset all data before loading new data
         resetForm();
         loadData(event.data.data || {});
+        console.log('✅ Data loaded, form should be visible');
       } else if (event.data && event.data.type === 'address-results') {
+        console.log('✅ Processing address-results...');
         // Display autocomplete suggestions
         displayAddressSuggestions(event.data.suggestions, event.data.field);
       } else if (event.data && event.data.type === 'address-data') {
+        console.log('✅ Processing address-data...');
         // Store full address object
         handleAddressData(event.data.address, event.data.field);
+      } else {
+        console.log('⚠️ Unknown message type or missing type');
       }
     });
 
