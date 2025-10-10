@@ -1559,73 +1559,65 @@
       const errors = [];
       
       try {
-        if (isEntityMode) {
-          // Entity mode validation
-          if (!businessName?.value?.trim()) errors.push('Please enter business name.');
-          if (!entityNumber?.value?.trim()) errors.push('Please enter entity number.');
-        } else {
+        if (!isEntityMode) {
           // Individual mode validation
-          if (!titlePrefix?.value?.trim()) errors.push('Please select a title.');
-          if (!firstName?.value?.trim()) errors.push('Please enter first name.');
-          if (!lastName?.value?.trim()) errors.push('Please enter surname.');
-          if (!validateDOB()) errors.push('Please enter a valid date of birth (DD-MM-YYYY).');
           
+          // DOB is NOT required, but if partially filled or invalid, throw error
+          const dobDigits = dobInputs.map(inp => inp?.value || '').join('');
+          if (dobDigits.length > 0 && dobDigits.length < 8) {
+            errors.push('Please complete all 8 digits of the date of birth, or leave it blank.');
+          } else if (dobDigits.length === 8 && !validateDOB()) {
+            errors.push('The date of birth you have entered is not valid. Please use the format DD-MM-YYYY.');
+          }
+          
+          // Name change fields only required if toggle is on
           if (recentNameChange?.checked) {
-            if (!previousName?.value?.trim()) errors.push('Please enter previous name.');
+            if (!previousName?.value?.trim()) errors.push('Please enter previous/known as name.');
             if (!reasonForNameChange?.value?.trim()) errors.push('Please enter reason for name change.');
           }
         }
         
-        // Phone and email are NOT required - removed validation
+        // Phone and email are NOT required - no validation
       
-      // Validate current address
-      const isCurrentUK = currentCountry?.value === 'GBR';
-      
-      if (isCurrentUK && !addressNotListed?.checked) {
-        // UK address with autocomplete
-        if (!currentAddress?.value?.trim()) {
-          errors.push('Please enter the current address or check "Address not listed" to enter manually.');
-        }
-      } else {
-        // Manual entry (non-UK or "address not listed")
-        const isManualUK = isCurrentUK && addressNotListed?.checked;
-        const addressContext = isManualUK ? 'You have indicated current address not listed' : 'For non-UK addresses';
+      // Current address is NOT required
+      // Manual address fields only required if "Address not listed" is checked
+      if (addressNotListed?.checked) {
+        const isCurrentUK = currentCountry?.value === 'GBR';
         
         if (!town?.value?.trim()) {
-          errors.push(`${addressContext}, please ensure the Town/City is entered for current address.`);
+          errors.push('You have indicated current address not listed, please enter the Town/City.');
         }
         if (!postcode?.value?.trim()) {
-          errors.push(`${addressContext}, please ensure the Postcode is entered for current address.`);
+          errors.push('You have indicated current address not listed, please enter the Postcode.');
         }
         // Per Thirdfort API: Must have ONE OF flat_number, building_number, or building_name
         if (!flatNumber?.value?.trim() && !buildingNumber?.value?.trim() && !buildingName?.value?.trim()) {
-          errors.push(`${addressContext}, please ensure at least one of the following is entered for current address: Flat Number, Building Number, or Building Name.`);
+          errors.push('You have indicated current address not listed, please enter at least one of: Flat Number, Building Number, or Building Name.');
         }
       }
         
-        // Validate previous address if recent move checked
+        // Previous address validation - only if recent move toggle is on
         if (recentMove?.checked) {
           const isPreviousUK = previousCountry?.value === 'GBR';
           
+          // Previous address autocomplete only required if UK and "not listed" is NOT checked
           if (isPreviousUK && !previousAddressNotListed?.checked) {
-            // UK address with autocomplete
             if (!previousAddress?.value?.trim()) {
-              errors.push('Please enter the previous address or check "Address not listed" to enter manually.');
+              errors.push('You have indicated a recent move, please enter the previous address or check "Address not listed" to enter manually.');
             }
-          } else {
-            // Manual entry (non-UK or "address not listed")
-            const isManualPrevUK = isPreviousUK && previousAddressNotListed?.checked;
-            const prevAddressContext = isManualPrevUK ? 'You have indicated previous address not listed' : 'For non-UK previous addresses';
-            
+          }
+          
+          // Previous address manual fields only required if "not listed" is checked
+          if (previousAddressNotListed?.checked) {
             if (!prevTown?.value?.trim()) {
-              errors.push(`${prevAddressContext}, please ensure the Town/City is entered for previous address.`);
+              errors.push('You have indicated previous address not listed, please enter the Town/City.');
             }
             if (!prevPostcode?.value?.trim()) {
-              errors.push(`${prevAddressContext}, please ensure the Postcode is entered for previous address.`);
+              errors.push('You have indicated previous address not listed, please enter the Postcode.');
             }
             // Must have ONE OF flat_number, building_number, or building_name
             if (!prevFlatNumber?.value?.trim() && !prevBuildingNumber?.value?.trim() && !prevBuildingName?.value?.trim()) {
-              errors.push(`${prevAddressContext}, please ensure at least one of the following is entered for previous address: Flat Number, Building Number, or Building Name.`);
+              errors.push('You have indicated previous address not listed, please enter at least one of: Flat Number, Building Number, or Building Name.');
             }
           }
         }
