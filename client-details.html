@@ -565,8 +565,8 @@
 
         <div class="row toggle-dob-row" id="nameChangeDobRow">
           <div>
-            <label>Recent Name Change</label>
-            <label class="toggle" title="If the client has changed their name in the last three years please select the toggle">
+            <label>Known as/Name change</label>
+            <label class="toggle" title="If the client has changed their name in the last three years or is known by another name please select the toggle">
               <input type="checkbox" id="recentNameChange" />
               <span class="slider"></span>
             </label>
@@ -589,12 +589,12 @@
         <div id="nameChangeFields" class="hidden">
           <div class="row name-change-row">
             <div>
-              <label for="previousName" class="required">Previous Name</label>
+              <label for="previousName" class="required">Previous/Known as name</label>
               <input type="text" id="previousName" name="previousName" />
             </div>
             <div>
               <label for="reasonForNameChange" class="required">Reason for Name Change</label>
-              <input type="text" id="reasonForNameChange" name="reasonForNameChange" />
+              <input type="text" id="reasonForNameChange" name="reasonForNameChange" placeholder="Marriage/Divorce, Name change by deed poll, Known as..." />
             </div>
           </div>
         </div>
