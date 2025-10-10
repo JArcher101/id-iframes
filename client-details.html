@@ -481,7 +481,7 @@
         <!-- Entity Mode Fields (hidden by default) -->
         <div id="entityFields" class="hidden">
           <div class="row">
-            <label for="businessName" class="required">Business Name</label>
+            <label for="businessName">Business Name</label>
             <input type="text" id="businessName" name="businessName" placeholder="Enter company or organisation name" />
           </div>
           
@@ -489,7 +489,7 @@
             <div></div>
             <div></div>
             <div>
-              <label for="entityNumber" class="required">Entity Number</label>
+              <label for="entityNumber">Entity Number</label>
               <input type="text" id="entityNumber" name="entityNumber" placeholder="Company registration number" />
             </div>
           </div>
@@ -499,7 +499,7 @@
         <div id="individualFields">
         <div class="row name-row">
           <div>
-            <label for="titlePrefix" class="required">Title</label>
+            <label for="titlePrefix">Title</label>
             <select id="titlePrefix" name="titlePrefix">
               <option value="">Select...</option>
               <option value="Mr">Mr</option>
@@ -516,7 +516,7 @@
             </select>
           </div>
           <div>
-            <label for="firstName" class="required">First Name</label>
+            <label for="firstName">First Name</label>
             <input type="text" id="firstName" name="firstName" />
           </div>
           <div>
@@ -524,7 +524,7 @@
             <input type="text" id="middleName" name="middleName" />
           </div>
           <div>
-            <label for="lastName" class="required">Surname</label>
+            <label for="lastName">Surname</label>
             <input type="text" id="lastName" name="lastName" />
           </div>
         </div>
@@ -539,7 +539,7 @@
 
         <div class="row phone-email-row">
           <div>
-            <label for="phoneCountryCode" class="required">Code</label>
+            <label for="phoneCountryCode">Code</label>
             <select id="phoneCountryCode" name="phoneCountryCode">
               <option value="+44">🇬🇧 +44</option>
               <option value="+1">🇺🇸 +1</option>
@@ -554,11 +554,11 @@
             </select>
           </div>
           <div>
-            <label for="phoneNumber" class="required">Mobile Number</label>
+            <label for="phoneNumber">Mobile Number</label>
             <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="7700000000" />
           </div>
           <div>
-            <label for="email" class="required">Email Address</label>
+            <label for="email">Email Address</label>
             <input type="email" id="email" name="email" placeholder="name@example.com" />
           </div>
         </div>
@@ -572,7 +572,7 @@
             </label>
           </div>
           <div>
-            <label class="required">Date of Birth</label>
+            <label>Date of Birth</label>
             <div class="birthdate-inputs">
               <input type="text" maxlength="1" id="dob1" />
               <input type="text" maxlength="1" id="dob2" />
@@ -589,11 +589,11 @@
         <div id="nameChangeFields" class="hidden">
           <div class="row name-change-row">
             <div>
-              <label for="previousName" class="required">Previous/Known as name</label>
+              <label for="previousName">Previous/Known as name</label>
               <input type="text" id="previousName" name="previousName" />
             </div>
             <div>
-              <label for="reasonForNameChange" class="required">Reason for Name Change</label>
+              <label for="reasonForNameChange">Reason for Name Change</label>
               <input type="text" id="reasonForNameChange" name="reasonForNameChange" placeholder="Marriage/Divorce, Name change by deed poll, Known as..." />
             </div>
           </div>
@@ -604,7 +604,7 @@
         <!-- Address Fields (shown for both entity and individual) -->
         <div class="row name-change-row">
           <div>
-            <label for="currentCountry" class="required">Country</label>
+            <label for="currentCountry">Country</label>
             <select id="currentCountry" name="currentCountry" class="country-dropdown">
               <option value="GBR">United Kingdom</option>
               <option value="USA">United States</option>
@@ -644,7 +644,7 @@
             </select>
           </div>
           <div id="currentAddressAutocompleteRow">
-            <label for="currentAddress" class="required" id="currentAddressLabel">Search Address</label>
+            <label for="currentAddress" id="currentAddressLabel">Search Address</label>
             <div class="address-autocomplete-container">
               <input type="text" id="currentAddress" name="currentAddress" autocomplete="off" placeholder="Start typing address or postcode..." />
               <div id="currentAddressDropdown" class="address-dropdown hidden"></div>
@@ -699,11 +699,11 @@
         
         <div class="row row-grid-50-50">
           <div>
-            <label for="town" class="required">Town/City</label>
+            <label for="town">Town/City</label>
             <input type="text" id="town" name="town" />
           </div>
           <div>
-            <label for="postcode" class="required">Postcode</label>
+            <label for="postcode">Postcode</label>
             <input type="text" id="postcode" name="postcode" />
           </div>
         </div>
@@ -712,7 +712,7 @@
         <div id="previousAddressFields" class="hidden">
           <div class="row name-change-row">
             <div>
-              <label for="previousCountry" class="required">Country</label>
+              <label for="previousCountry">Country</label>
               <select id="previousCountry" name="previousCountry" class="country-dropdown">
                 <option value="GBR">United Kingdom</option>
                 <option value="USA">United States</option>
@@ -752,7 +752,7 @@
               </select>
             </div>
             <div id="previousAddressAutocompleteRow">
-              <label for="previousAddress" class="required" id="previousAddressLabel">Search Address</label>
+              <label for="previousAddress" id="previousAddressLabel">Search Address</label>
               <div class="address-autocomplete-container">
                 <input type="text" id="previousAddress" name="previousAddress" autocomplete="off" placeholder="Start typing address or postcode..." />
                 <div id="previousAddressDropdown" class="address-dropdown hidden"></div>
@@ -801,11 +801,11 @@
           
           <div class="row row-grid-50-50">
             <div>
-              <label for="prevTown" class="required">Town/City</label>
+              <label for="prevTown">Town/City</label>
               <input type="text" id="prevTown" name="prevTown" />
             </div>
             <div>
-              <label for="prevPostcode" class="required">Postcode</label>
+              <label for="prevPostcode">Postcode</label>
               <input type="text" id="prevPostcode" name="prevPostcode" />
             </div>
           </div>
