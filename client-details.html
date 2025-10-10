@@ -71,12 +71,12 @@
       line-height: 1.5; 
     }
     
-    /* Main container */
+    /* Main container - 970px iframe with 10px padding each side for 950px card */
     .container {
       width: 100%;
-      max-width: 800px;
+      max-width: 970px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 10px;
       box-sizing: border-box;
       background: transparent;
     }
@@ -444,7 +444,7 @@
     
     /* Responsive design */
     @media (max-width: 768px) {
-      .container { padding: 15px; }
+      .container { padding: 10px; }
       .section { padding: 15px; }
       .row-grid-20-80 { 
         grid-template-columns: 25% 1fr; 
@@ -457,7 +457,7 @@
     }
     
     @media (max-width: 480px) {
-      .container { padding: 10px; }
+      .container { padding: 8px; }
       .section { padding: 12px; }
       h2 { font-size: 1.2rem; }
       input, select { padding: 8px; font-size: 0.85rem; }
