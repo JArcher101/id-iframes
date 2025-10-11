@@ -2183,11 +2183,7 @@
         businessData.officers.forEach(officer => {
           allPeople.push({
             name: officer.name,
-            role: officer.officer_role,
             type: officer.officer_role === 'director' ? 'director' : 'officer',
-            appointed: officer.appointed_on,
-            nationality: officer.nationality,
-            country: officer.country_of_residence,
             share: null
           });
         });
@@ -2208,12 +2204,8 @@
           
           allPeople.push({
             name: psc.name,
-            role: 'Person with Significant Control',
             type: 'psc',
-            nationality: psc.nationality,
-            country: psc.country_of_residence,
-            share: shareInfo,
-            notified: psc.notified_on
+            share: shareInfo
           });
         });
       }
@@ -2238,25 +2230,10 @@
             <div class="people-card-name">${person.name}</div>
             <span class="people-card-badge ${badgeClass}">${badgeText}</span>
           </div>
-          <div class="people-card-details">
         `;
         
-        if (person.role && person.role !== 'director') {
-          html += `<div>${person.role}</div>`;
-        }
-        
-        if (person.nationality) {
-          html += `<div>🌍 ${person.nationality}</div>`;
-        }
-        
-        if (person.appointed) {
-          html += `<div>📅 Appointed: ${person.appointed}</div>`;
-        }
-        
-        html += `</div>`;
-        
         if (person.share) {
-          html += `<div class="people-card-share">📊 Ownership: ${person.share}</div>`;
+          html += `<div class="people-card-share">📊 ${person.share}</div>`;
         }
         
         card.innerHTML = html;
