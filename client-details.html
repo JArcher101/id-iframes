@@ -2061,35 +2061,31 @@
     Display company suggestions in dropdown
     */
     function displayCompanySuggestions(suggestions, searchBy) {
-      // Show results in BOTH dropdowns for consistency
-      const dropdowns = [businessNameDropdown, entityNumberDropdown];
+      // Only show results in the dropdown for the field being searched
+      const dropdownElement = searchBy === 'name' ? businessNameDropdown : entityNumberDropdown;
       
       if (!suggestions || suggestions.length === 0) {
-        dropdowns.forEach(dropdown => {
-          dropdown.innerHTML = '<div class="address-no-results">No companies found</div>';
-          dropdown.classList.remove('hidden');
-        });
+        dropdownElement.innerHTML = '<div class="address-no-results">No companies found</div>';
+        dropdownElement.classList.remove('hidden');
         return;
       }
       
-      dropdowns.forEach(dropdown => {
-        dropdown.innerHTML = '';
+      dropdownElement.innerHTML = '';
+      
+      suggestions.forEach((company) => {
+        const item = document.createElement('div');
+        item.className = 'address-dropdown-item';
+        // Format: "Company Name (Number)"
+        item.textContent = `${company.title} (${company.company_number})`;
         
-        suggestions.forEach((company) => {
-          const item = document.createElement('div');
-          item.className = 'address-dropdown-item';
-          // Format: "Company Name (Number)"
-          item.textContent = `${company.title} (${company.company_number})`;
-          
-          item.addEventListener('click', () => {
-            selectCompany(company);
-          });
-          
-          dropdown.appendChild(item);
+        item.addEventListener('click', () => {
+          selectCompany(company);
         });
         
-        dropdown.classList.remove('hidden');
+        dropdownElement.appendChild(item);
       });
+      
+      dropdownElement.classList.remove('hidden');
     }
     
     /*
