@@ -2410,8 +2410,15 @@
             const documentData = images[index];
             
             if (documentData && documentData.liveUrl) {
-                // Open document in new tab for viewing
-                window.open(documentData.liveUrl, '_blank');
+                // Open document in centered popup window
+                const width = 1000;
+                const height = 800;
+                const left = (screen.width - width) / 2;
+                const top = (screen.height - height) / 2;
+                const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+                
+                window.open(documentData.liveUrl, 'documentViewer', features);
+                console.log('Opening document in popup window:', documentData.liveUrl);
             } else {
                 console.error('No liveUrl available for document:', documentData);
             }

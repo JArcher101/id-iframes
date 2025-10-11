@@ -2028,11 +2028,15 @@
                 console.log('Generated viewer URL with hash:', viewerUrl);
                 console.log('Hash data:', dataHash);
                 
-                // Send message to parent to open the viewer iframe in modal
-                window.parent.postMessage({
-                    type: 'open-image',
-                    viewerUrl: viewerUrl
-                }, '*');
+                // Open in centered popup window
+                const width = 1000;
+                const height = 800;
+                const left = (screen.width - width) / 2;
+                const top = (screen.height - height) / 2;
+                const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+                
+                window.open(viewerUrl, 'imageViewer', features);
+                console.log('Opening image in popup window:', viewerUrl);
                 
             } catch (error) {
                 console.error('Error opening image:', error);
