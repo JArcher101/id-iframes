@@ -154,6 +154,103 @@
       gap: var(--gap); 
     }
     
+    /* Entity mode split layout: Left (forms) + Right (people cards) */
+    .entity-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap);
+    }
+    
+    .entity-left {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .entity-right {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    
+    /* People cards */
+    .people-card {
+      background: #f9f9f9;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    
+    .people-card:hover {
+      background: #f0f0f0;
+      border-color: var(--primary);
+      box-shadow: 0 2px 4px rgba(0,60,113,0.1);
+    }
+    
+    .people-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    
+    .people-card-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 0.9rem;
+    }
+    
+    .people-card-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .badge-director {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    
+    .badge-officer {
+      background: #f3e5f5;
+      color: #7b1fa2;
+    }
+    
+    .badge-psc {
+      background: #e8f5e9;
+      color: #388e3c;
+    }
+    
+    .people-card-details {
+      color: #666;
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+    
+    .people-card-share {
+      margin-top: 4px;
+      padding-top: 4px;
+      border-top: 1px solid #ddd;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+    
+    .no-people-message {
+      text-align: center;
+      color: #999;
+      padding: 20px;
+      font-size: 0.85rem;
+      font-style: italic;
+    }
+    
     /* Name row layout: Title (narrow), First Name (smaller), Middle Name (equal), Last Name (equal) */
     .name-row {
       display: grid;
@@ -539,51 +636,59 @@
       <form id="clientForm">
         <!-- Entity Mode Fields (hidden by default) -->
         <div id="entityFields" class="hidden">
-          <!-- Row 1: Business Name with buttons -->
-          <div class="row">
-            <div style="position: relative;">
-              <label for="businessName">Business Name</label>
-              <div class="address-autocomplete-container">
-                <input type="text" id="businessName" name="businessName" autocomplete="off" placeholder="Search by company name..." />
-                <div id="businessNameDropdown" class="address-dropdown hidden"></div>
+          <div class="entity-grid">
+            <!-- Left Column: Form Fields -->
+            <div class="entity-left">
+              <!-- Row 1: Business Name with buttons -->
+              <div style="position: relative;">
+                <label for="businessName">Business Name</label>
+                <div class="address-autocomplete-container">
+                  <input type="text" id="businessName" name="businessName" autocomplete="off" placeholder="Search by company name..." />
+                  <div id="businessNameDropdown" class="address-dropdown hidden"></div>
+                </div>
+                <!-- Companies House Link Button (shows when company data linked) -->
+                <button type="button" id="companyLinkBtn" class="company-link-btn hidden" title="View on Companies House">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M14 9v5a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1h5M10 2h4v4M6 10l8-8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <!-- Refresh Company Data Button (shows when company data linked) -->
+                <button type="button" id="companyRefreshBtn" class="company-refresh-btn hidden" title="Refresh company data from Companies House">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M14 8c0-3.31-2.69-6-6-6-1.77 0-3.36.77-4.46 2M2 8c0 3.31 2.69 6 6 6 1.77 0 3.36-.77 4.46-2M2 4v4h4M14 8v4h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
               </div>
-              <!-- Companies House Link Button (shows when company data linked) -->
-              <button type="button" id="companyLinkBtn" class="company-link-btn hidden" title="View on Companies House">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M14 9v5a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1h5M10 2h4v4M6 10l8-8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-              <!-- Refresh Company Data Button (shows when company data linked) -->
-              <button type="button" id="companyRefreshBtn" class="company-refresh-btn hidden" title="Refresh company data from Companies House">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M14 8c0-3.31-2.69-6-6-6-1.77 0-3.36.77-4.46 2M2 8c0 3.31 2.69 6 6 6 1.77 0 3.36-.77 4.46-2M2 4v4h4M14 8v4h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <!-- Row 2: Registration Country + Company Number -->
-          <div class="row name-change-row">
-            <div>
-              <label for="registrationCountry">Registration Country</label>
-              <select id="registrationCountry" name="registrationCountry" class="country-dropdown">
-                <option value="GB">United Kingdom</option>
-                <option value="US">United States</option>
-                <option value="IE">Ireland</option>
-                <option value="AU">Australia</option>
-                <option value="CA">Canada</option>
-                <option value="NZ">New Zealand</option>
-                <option value="SG">Singapore</option>
-                <option value="HK">Hong Kong</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </div>
-            <div>
-              <label for="entityNumber">Company Number</label>
-              <div class="address-autocomplete-container">
-                <input type="text" id="entityNumber" name="entityNumber" autocomplete="off" placeholder="Search by company number..." />
-                <div id="entityNumberDropdown" class="address-dropdown hidden"></div>
+              
+              <!-- Row 2: Registration Country -->
+              <div>
+                <label for="registrationCountry">Registration Country</label>
+                <select id="registrationCountry" name="registrationCountry" class="country-dropdown">
+                  <option value="GB">United Kingdom</option>
+                  <option value="US">United States</option>
+                  <option value="IE">Ireland</option>
+                  <option value="AU">Australia</option>
+                  <option value="CA">Canada</option>
+                  <option value="NZ">New Zealand</option>
+                  <option value="SG">Singapore</option>
+                  <option value="HK">Hong Kong</option>
+                  <option value="OTHER">Other</option>
+                </select>
               </div>
+              
+              <!-- Row 3: Company Number -->
+              <div>
+                <label for="entityNumber">Company Number</label>
+                <div class="address-autocomplete-container">
+                  <input type="text" id="entityNumber" name="entityNumber" autocomplete="off" placeholder="Search by company number..." />
+                  <div id="entityNumberDropdown" class="address-dropdown hidden"></div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right Column: People Cards (Officers, Directors, PSCs) -->
+            <div class="entity-right" id="peopleRepeater">
+              <div class="no-people-message">Link a company to view officers, directors, and PSCs</div>
             </div>
           </div>
         </div>
@@ -1123,6 +1228,7 @@
     const entityNumberDropdown = document.getElementById('entityNumberDropdown');
     const companyLinkBtn = document.getElementById('companyLinkBtn');
     const companyRefreshBtn = document.getElementById('companyRefreshBtn');
+    const peopleRepeater = document.getElementById('peopleRepeater');
     
     // Form inputs
     const titlePrefix = document.getElementById('titlePrefix');
@@ -2054,9 +2160,118 @@
       if (businessData && entityNumber?.value?.trim()) {
         companyLinkBtn.classList.remove('hidden');
         companyRefreshBtn.classList.remove('hidden');
+        populatePeopleCards();
       } else {
         companyLinkBtn.classList.add('hidden');
         companyRefreshBtn.classList.add('hidden');
+        clearPeopleCards();
+      }
+    }
+    
+    /*
+    Populate people cards (Officers, Directors, PSCs)
+    */
+    function populatePeopleCards() {
+      if (!businessData || !peopleRepeater) return;
+      
+      peopleRepeater.innerHTML = '';
+      
+      const allPeople = [];
+      
+      // Extract Officers and Directors
+      if (businessData.officers && businessData.officers.length > 0) {
+        businessData.officers.forEach(officer => {
+          allPeople.push({
+            name: officer.name,
+            role: officer.officer_role,
+            type: officer.officer_role === 'director' ? 'director' : 'officer',
+            appointed: officer.appointed_on,
+            nationality: officer.nationality,
+            country: officer.country_of_residence,
+            share: null
+          });
+        });
+      }
+      
+      // Extract PSCs (with ownership info)
+      if (businessData.pscs && businessData.pscs.length > 0) {
+        businessData.pscs.forEach(psc => {
+          // Extract ownership percentage from natures_of_control
+          let shareInfo = null;
+          if (psc.natures_of_control && psc.natures_of_control.length > 0) {
+            const control = psc.natures_of_control[0];
+            if (control.includes('25-to-50')) shareInfo = '25-50%';
+            else if (control.includes('50-to-75')) shareInfo = '50-75%';
+            else if (control.includes('75-to-100')) shareInfo = '75-100%';
+            else if (control.includes('ownership-of-shares')) shareInfo = 'Significant';
+          }
+          
+          allPeople.push({
+            name: psc.name,
+            role: 'Person with Significant Control',
+            type: 'psc',
+            nationality: psc.nationality,
+            country: psc.country_of_residence,
+            share: shareInfo,
+            notified: psc.notified_on
+          });
+        });
+      }
+      
+      // Create cards
+      if (allPeople.length === 0) {
+        peopleRepeater.innerHTML = '<div class="no-people-message">No officers, directors, or PSCs found</div>';
+        return;
+      }
+      
+      allPeople.forEach(person => {
+        const card = document.createElement('div');
+        card.className = 'people-card';
+        
+        const badgeClass = person.type === 'director' ? 'badge-director' : 
+                          person.type === 'psc' ? 'badge-psc' : 'badge-officer';
+        const badgeText = person.type === 'director' ? 'Director' : 
+                         person.type === 'psc' ? 'PSC' : 'Officer';
+        
+        let html = `
+          <div class="people-card-header">
+            <div class="people-card-name">${person.name}</div>
+            <span class="people-card-badge ${badgeClass}">${badgeText}</span>
+          </div>
+          <div class="people-card-details">
+        `;
+        
+        if (person.role && person.role !== 'director') {
+          html += `<div>${person.role}</div>`;
+        }
+        
+        if (person.nationality) {
+          html += `<div>🌍 ${person.nationality}</div>`;
+        }
+        
+        if (person.appointed) {
+          html += `<div>📅 Appointed: ${person.appointed}</div>`;
+        }
+        
+        html += `</div>`;
+        
+        if (person.share) {
+          html += `<div class="people-card-share">📊 Ownership: ${person.share}</div>`;
+        }
+        
+        card.innerHTML = html;
+        peopleRepeater.appendChild(card);
+      });
+      
+      console.log(`✅ Displayed ${allPeople.length} people cards`);
+    }
+    
+    /*
+    Clear people cards
+    */
+    function clearPeopleCards() {
+      if (peopleRepeater) {
+        peopleRepeater.innerHTML = '<div class="no-people-message">Link a company to view officers, directors, and PSCs</div>';
       }
     }
     
