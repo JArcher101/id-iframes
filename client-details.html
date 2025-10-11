@@ -480,17 +480,38 @@
       <form id="clientForm">
         <!-- Entity Mode Fields (hidden by default) -->
         <div id="entityFields" class="hidden">
-          <div class="row">
-            <label for="businessName">Business Name</label>
-            <input type="text" id="businessName" name="businessName" placeholder="Enter company or organisation name" />
+          <div class="row name-change-row">
+            <div>
+              <label for="registrationCountry">Registration Country</label>
+              <select id="registrationCountry" name="registrationCountry" class="country-dropdown">
+                <option value="GB">United Kingdom</option>
+                <option value="US">United States</option>
+                <option value="IE">Ireland</option>
+                <option value="AU">Australia</option>
+                <option value="CA">Canada</option>
+                <option value="NZ">New Zealand</option>
+                <option value="SG">Singapore</option>
+                <option value="HK">Hong Kong</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="businessName">Business Name</label>
+              <div class="address-autocomplete-container">
+                <input type="text" id="businessName" name="businessName" autocomplete="off" placeholder="Search by company name..." />
+                <div id="businessNameDropdown" class="address-dropdown hidden"></div>
+              </div>
+            </div>
           </div>
           
-          <div class="row phone-email-row">
-            <div></div>
+          <div class="row name-change-row">
             <div></div>
             <div>
-              <label for="entityNumber">Entity Number</label>
-              <input type="text" id="entityNumber" name="entityNumber" placeholder="Company registration number" />
+              <label for="entityNumber">Company Number</label>
+              <div class="address-autocomplete-container">
+                <input type="text" id="entityNumber" name="entityNumber" autocomplete="off" placeholder="Search by company number..." />
+                <div id="entityNumberDropdown" class="address-dropdown hidden"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -982,10 +1003,12 @@
            rM: true/false,        // clientRecentHomeMove
            nC: true/false,        // clientRecentNameChange
            pN: 'Previous Name',   // previousName
-           rC: 'Reason',          // reasonForNameChange
+           rNC: 'Reason',         // reasonForNameChange
            m: '+447700000000',    // mobileNumber (international format)
            e: 'email@test.com',   // email
-           eN: 'EN123456'         // entityNumber
+           eN: 'EN123456',        // entityNumber
+           rC: 'GB',              // registrationCountry
+           cD: {...}              // companyData (directors, officers, PSCs)
          }
        }
     2. 'entity-true' / 'entity-false' - Toggle entity mode
@@ -993,13 +1016,17 @@
     4. 'request-data' - Parent requests form data (validate and return)
     5. 'address-results' - Autocomplete suggestions from getaddress.io
     6. 'address-data' - Full address object after selection
+    7. 'company-results' - Company search results from Companies House API
+    8. 'company-data' - Full company data (directors, officers, PSCs, registered office)
     
     OUTGOING MESSAGES:
     1. 'address-search' - Request autocomplete suggestions
     2. 'address-lookup' - Request full address by ID
-    3. 'new-data' - Send updated client data
-    4. 'validation-error' - Send validation errors
-    5. 'disable-close' - Notify parent of unsaved changes
+    3. 'company-search' - Request Companies House company search (by name or number)
+    4. 'company-lookup' - Request full company data (directors, officers, PSCs)
+    5. 'new-data' - Send updated client data
+    6. 'validation-error' - Send validation errors
+    7. 'disable-close' - Notify parent of unsaved changes
     =====================================================================
     */
     
@@ -1017,8 +1044,11 @@
     const nameChangeDobRow = document.getElementById('nameChangeDobRow');
     
     // Entity mode inputs
+    const registrationCountry = document.getElementById('registrationCountry');
     const businessName = document.getElementById('businessName');
+    const businessNameDropdown = document.getElementById('businessNameDropdown');
     const entityNumber = document.getElementById('entityNumber');
+    const entityNumberDropdown = document.getElementById('entityNumberDropdown');
     
     // Form inputs
     const titlePrefix = document.getElementById('titlePrefix');
@@ -1075,10 +1105,13 @@
     let previousAddressObject = null;
     let addressDebounceTimer = null;
     let previousAddressDebounceTimer = null;
+    let companyNameDebounceTimer = null;
+    let companyNumberDebounceTimer = null;
     let isEntityMode = false;
     let isLoadingData = false; // Flag to prevent disable-close during initial load
     let hasUnsavedChanges = false;
     let allowEdits = true; // Flag to control if user can edit inputs
+    let companyData = null; // Stores full company data (directors, officers, PSCs)
     
     // ===== UTILITY FUNCTIONS =====
     
@@ -1105,7 +1138,7 @@
       
       // Get all form inputs
       const allFormInputs = [
-        businessName, entityNumber,
+        registrationCountry, businessName, entityNumber,
         titlePrefix, firstName, middleName, lastName,
         phoneCountryCode, phoneNumber, email,
         previousName, reasonForNameChange,
@@ -1665,6 +1698,220 @@
       }
     }
     
+    // ===== COMPANY SEARCH (Companies House) =====
+    
+    /*
+    Setup company search autocomplete for business name
+    */
+    function setupCompanyNameAutocomplete() {
+      let selectedIndex = -1;
+      
+      businessName.addEventListener('input', (e) => {
+        // Don't trigger API search during data loading
+        if (isLoadingData) {
+          return;
+        }
+        
+        const searchTerm = e.target.value.trim();
+        
+        // Clear timer
+        if (companyNameDebounceTimer) clearTimeout(companyNameDebounceTimer);
+        
+        // Clear stored company data when user types
+        companyData = null;
+        
+        // Hide dropdown if too short or not UK
+        if (searchTerm.length < 2 || registrationCountry.value !== 'GB') {
+          businessNameDropdown.classList.add('hidden');
+          businessNameDropdown.innerHTML = '';
+          return;
+        }
+        
+        // Show loading
+        businessNameDropdown.classList.remove('hidden');
+        businessNameDropdown.innerHTML = '<div class="address-loading">Searching companies...</div>';
+        
+        // Debounce 300ms
+        companyNameDebounceTimer = setTimeout(() => {
+          console.log('📡 API call for company name search:', searchTerm);
+          window.parent.postMessage({
+            type: 'company-search',
+            searchTerm: searchTerm,
+            searchBy: 'name'
+          }, '*');
+        }, 300);
+      });
+      
+      // Keyboard navigation
+      businessName.addEventListener('keydown', (e) => {
+        const items = businessNameDropdown.querySelectorAll('.address-dropdown-item');
+        if (items.length === 0) return;
+        
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+          updateSelectedCompanyItem(items, selectedIndex);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, -1);
+          updateSelectedCompanyItem(items, selectedIndex);
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+          e.preventDefault();
+          items[selectedIndex].click();
+        } else if (e.key === 'Escape') {
+          businessNameDropdown.classList.add('hidden');
+          selectedIndex = -1;
+        }
+      });
+      
+      // Click outside to close
+      document.addEventListener('click', (e) => {
+        if (!businessName.contains(e.target) && !businessNameDropdown.contains(e.target)) {
+          businessNameDropdown.classList.add('hidden');
+          selectedIndex = -1;
+        }
+      });
+    }
+    
+    /*
+    Setup company search autocomplete for entity number
+    */
+    function setupCompanyNumberAutocomplete() {
+      let selectedIndex = -1;
+      
+      entityNumber.addEventListener('input', (e) => {
+        // Don't trigger API search during data loading
+        if (isLoadingData) {
+          return;
+        }
+        
+        const searchTerm = e.target.value.trim();
+        
+        // Clear timer
+        if (companyNumberDebounceTimer) clearTimeout(companyNumberDebounceTimer);
+        
+        // Clear stored company data when user types
+        companyData = null;
+        
+        // Hide dropdown if too short or not UK
+        if (searchTerm.length < 2 || registrationCountry.value !== 'GB') {
+          entityNumberDropdown.classList.add('hidden');
+          entityNumberDropdown.innerHTML = '';
+          return;
+        }
+        
+        // Show loading
+        entityNumberDropdown.classList.remove('hidden');
+        entityNumberDropdown.innerHTML = '<div class="address-loading">Searching companies...</div>';
+        
+        // Debounce 300ms
+        companyNumberDebounceTimer = setTimeout(() => {
+          console.log('📡 API call for company number search:', searchTerm);
+          window.parent.postMessage({
+            type: 'company-search',
+            searchTerm: searchTerm,
+            searchBy: 'number'
+          }, '*');
+        }, 300);
+      });
+      
+      // Keyboard navigation
+      entityNumber.addEventListener('keydown', (e) => {
+        const items = entityNumberDropdown.querySelectorAll('.address-dropdown-item');
+        if (items.length === 0) return;
+        
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+          updateSelectedCompanyItem(items, selectedIndex);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, -1);
+          updateSelectedCompanyItem(items, selectedIndex);
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+          e.preventDefault();
+          items[selectedIndex].click();
+        } else if (e.key === 'Escape') {
+          entityNumberDropdown.classList.add('hidden');
+          selectedIndex = -1;
+        }
+      });
+      
+      // Click outside to close
+      document.addEventListener('click', (e) => {
+        if (!entityNumber.contains(e.target) && !entityNumberDropdown.contains(e.target)) {
+          entityNumberDropdown.classList.add('hidden');
+          selectedIndex = -1;
+        }
+      });
+    }
+    
+    function updateSelectedCompanyItem(items, index) {
+      items.forEach((item, i) => {
+        if (i === index) {
+          item.classList.add('selected');
+        } else {
+          item.classList.remove('selected');
+        }
+      });
+    }
+    
+    /*
+    Display company suggestions in dropdown
+    */
+    function displayCompanySuggestions(suggestions, searchBy) {
+      const dropdownElement = searchBy === 'name' ? businessNameDropdown : entityNumberDropdown;
+      
+      if (!suggestions || suggestions.length === 0) {
+        dropdownElement.innerHTML = '<div class="address-no-results">No companies found</div>';
+        return;
+      }
+      
+      dropdownElement.innerHTML = '';
+      
+      suggestions.forEach((company) => {
+        const item = document.createElement('div');
+        item.className = 'address-dropdown-item';
+        // Format: "Company Name - 12345678"
+        item.textContent = `${company.title} - ${company.company_number}`;
+        
+        item.addEventListener('click', () => {
+          selectCompany(company);
+        });
+        
+        dropdownElement.appendChild(item);
+      });
+    }
+    
+    /*
+    Handle company selection from dropdown
+    */
+    function selectCompany(company) {
+      // Populate form fields
+      businessName.value = company.title;
+      entityNumber.value = company.company_number;
+      
+      // Hide dropdowns
+      businessNameDropdown.classList.add('hidden');
+      entityNumberDropdown.classList.add('hidden');
+      
+      // Request full company data from parent (directors, officers, PSCs)
+      console.log('📡 Requesting full company data for:', company.company_number);
+      window.parent.postMessage({
+        type: 'company-lookup',
+        companyNumber: company.company_number
+      }, '*');
+    }
+    
+    /*
+    Handle full company data from parent
+    */
+    function handleCompanyData(data) {
+      companyData = data;
+      console.log('✅ Received full company data:', companyData);
+      // Company data now includes: directors, officers, PSCs, registered_office_address, etc.
+    }
+    
     // ===== FORM VALIDATION =====
     
     function validateDOB() {
@@ -1875,10 +2122,12 @@
         rM: recentMove?.checked || false,                    // clientRecentHomeMove
         nC: recentNameChange?.checked || false,              // clientRecentNameChange
         pN: previousName?.value || undefined,                // previousName
-        rC: reasonForNameChange?.value || undefined,         // reasonForNameChange
+        rNC: reasonForNameChange?.value || undefined,        // reasonForNameChange
         m: formattedPhone || undefined,                      // mobileNumber
         e: email?.value?.trim() || undefined,                // email
-        eN: entityNumber?.value?.trim() || undefined         // entityNumber
+        eN: entityNumber?.value?.trim() || undefined,        // entityNumber
+        rC: registrationCountry?.value || undefined,         // registrationCountry
+        cD: companyData || undefined                          // companyData (directors, officers, PSCs, registered office)
       };
       
       return compiled;
@@ -2154,6 +2403,12 @@
         }
         
         handleAddressData(event.data.address, event.data.field);
+      } else if (event.data && event.data.type === 'company-results') {
+        // Display company search results
+        displayCompanySuggestions(event.data.companies, event.data.searchBy);
+      } else if (event.data && event.data.type === 'company-data') {
+        // Store full company data (directors, officers, PSCs, etc.)
+        handleCompanyData(event.data.companyData);
       }
     });
     
@@ -2166,17 +2421,22 @@
       
       formData = data || {};
       
-      // Clear address objects on new data load
+      // Clear address objects and company data on new data load
       currentAddressObject = null;
       previousAddressObject = null;
+      companyData = null;
       
       // Note: Entity mode is set by the message handler based on event.data.entity flag
       
       // Clear timers
       if (addressDebounceTimer) clearTimeout(addressDebounceTimer);
       if (previousAddressDebounceTimer) clearTimeout(previousAddressDebounceTimer);
+      if (companyNameDebounceTimer) clearTimeout(companyNameDebounceTimer);
+      if (companyNumberDebounceTimer) clearTimeout(companyNumberDebounceTimer);
       addressDebounceTimer = null;
       previousAddressDebounceTimer = null;
+      companyNameDebounceTimer = null;
+      companyNumberDebounceTimer = null;
       
       // Reset ALL form fields and UI state before loading new data
       // This ensures a clean slate regardless of previous state
@@ -2237,8 +2497,14 @@
       
       // Populate entity or individual fields
       if (isEntityMode) {
+        registrationCountry.value = formData.rC || 'GB';
         businessName.value = formData.n?.b || '';
         entityNumber.value = formData.eN || '';
+        companyData = formData.cD || null;
+        
+        if (companyData) {
+          console.log('✅ Loaded company data:', companyData);
+        }
       } else {
         titlePrefix.value = formData.n?.t || '';
         firstName.value = formData.n?.f || '';
@@ -2308,7 +2574,7 @@
           recentNameChange.checked = true;
           nameChangeFields.classList.remove('hidden');
           previousName.value = formData.pN || '';
-          reasonForNameChange.value = formData.rC || '';
+          reasonForNameChange.value = formData.rNC || ''; // Updated key
         } else {
           recentNameChange.checked = false;
           nameChangeFields.classList.add('hidden');
@@ -2460,7 +2726,7 @@
     
     // Add change listeners to all form inputs
     const allInputs = [
-      businessName, entityNumber,
+      registrationCountry, businessName, entityNumber,
       titlePrefix, firstName, middleName, lastName,
       phoneCountryCode, phoneNumber, email,
       previousName, reasonForNameChange,
@@ -2497,6 +2763,8 @@
     // ===== INITIALIZE =====
     setupAddressAutocomplete(currentAddress, currentAddressDropdown, 'current', true);
     setupAddressAutocomplete(previousAddress, previousAddressDropdown, 'previous', false);
+    setupCompanyNameAutocomplete();
+    setupCompanyNumberAutocomplete();
   </script>
 </body>
 </html>
