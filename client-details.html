@@ -171,8 +171,14 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      max-height: 500px;
+    }
+    
+    .people-scrollable {
+      max-height: 250px;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
     
     /* People cards */
@@ -532,6 +538,30 @@
       transform: scale(0.95);
     }
     
+    /* Sanctions check button */
+    .sanctions-btn {
+      padding: 10px 16px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    .sanctions-btn:hover {
+      background: #c82333;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+    }
+    
+    .sanctions-btn:active {
+      transform: translateY(0);
+    }
+    
     .company-link-btn:disabled,
     .company-refresh-btn:disabled {
       opacity: 0.5;
@@ -672,6 +702,18 @@
                   <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
                 </svg>
               </button>
+              <!-- Download Company Summary Button (shows when company data linked) -->
+              <button type="button" id="downloadSummaryBtn" class="hidden" title="Download company summary as PDF" style="flex-shrink: 0; width: 36px; height: 36px; background: white; border: 2px solid var(--primary); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); transition: all 0.2s;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </button>
+              <!-- Sanctions Check Button -->
+              <button type="button" id="sanctionsBtn" class="sanctions-btn" title="Search UK Sanctions List">
+                🔍 Sanctions Check
+              </button>
             </div>
           </div>
           
@@ -706,11 +748,13 @@
             <!-- Right Column: People Cards (Officers, Directors, PSCs) -->
             <div class="entity-right">
               <h3 style="margin: 0 0 4px 0; font-size: 0.9rem; color: #666;">People</h3>
-              <div id="peopleRepeater" style="display: flex; flex-direction: column; gap: 8px;">
-                <div class="no-people-message">Link a company to view officers, directors, and PSCs</div>
-              </div>
-              <div style="margin-top: 8px; margin-bottom: 20px; padding: 8px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; font-size: 0.75rem; color: #856404; line-height: 1.3;">
+              <div style="margin-top: 4px; margin-bottom: 8px; padding: 8px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; font-size: 0.75rem; color: #856404; line-height: 1.3;">
                 ⚠️ Ensure all directors and people with &gt; 25% share have undergone appropriate AML &amp; ID checks
+              </div>
+              <div class="people-scrollable">
+                <div id="peopleRepeater">
+                  <div class="no-people-message">Link a company to view officers, directors, and PSCs</div>
+                </div>
               </div>
             </div>
           </div>
@@ -748,6 +792,13 @@
             <label for="lastName">Surname</label>
             <input type="text" id="lastName" name="lastName" />
           </div>
+        </div>
+
+        <!-- Sanctions Check Button Row -->
+        <div class="row" style="justify-content: flex-end; margin-top: -10px;">
+          <button type="button" id="sanctionsBtnIndividual" class="sanctions-btn" title="Search UK Sanctions List">
+            🔍 Sanctions Check
+          </button>
         </div>
 
         <!-- Entity Number Row (shown only in entity mode, replaces DOB row) -->
@@ -1258,6 +1309,7 @@
     const entityNumberDropdown = document.getElementById('entityNumberDropdown');
     const companyLinkBtn = document.getElementById('companyLinkBtn');
     const companyRefreshBtn = document.getElementById('companyRefreshBtn');
+    const downloadSummaryBtn = document.getElementById('downloadSummaryBtn');
     const peopleRepeater = document.getElementById('peopleRepeater');
     
     // Form inputs
@@ -1358,7 +1410,8 @@
         previousCountry, previousAddress,
         prevFlatNumber, prevBuildingNumber, prevBuildingName, prevStreet, prevSubStreet, prevTown, prevPostcode,
         recentNameChange, recentMove, addressNotListed, previousAddressNotListed,
-        companyLinkBtn, companyRefreshBtn
+        companyLinkBtn, companyRefreshBtn, downloadSummaryBtn,
+        document.getElementById('sanctionsBtn'), document.getElementById('sanctionsBtnIndividual')
       ];
       
       // Add DOB inputs
@@ -2217,10 +2270,12 @@
       if (businessData && entityNumber?.value?.trim()) {
         companyLinkBtn.classList.remove('hidden');
         companyRefreshBtn.classList.remove('hidden');
+        downloadSummaryBtn.classList.remove('hidden');
         populatePeopleCards();
       } else {
         companyLinkBtn.classList.add('hidden');
         companyRefreshBtn.classList.add('hidden');
+        downloadSummaryBtn.classList.add('hidden');
         clearPeopleCards();
       }
     }
@@ -2380,8 +2435,30 @@
           url = `https://find-and-update.company-information.service.gov.uk/company/${entityNum}`;
         }
         
-        window.open(url, '_blank');
+        // Open in centered popup window
+        const width = 1000;
+        const height = 800;
+        const left = (screen.width - width) / 2;
+        const top = (screen.height - height) / 2;
+        const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+        
+        window.open(url, `${entityType}Register`, features);
       }
+    }
+    
+    /*
+    Open UK Sanctions List search in popup window
+    */
+    function openSanctionsCheck() {
+      const url = 'https://search-uk-sanctions-list.service.gov.uk/';
+      const width = 1000;
+      const height = 800;
+      const left = (screen.width - width) / 2;
+      const top = (screen.height - height) / 2;
+      const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+      
+      window.open(url, 'sanctionsCheck', features);
+      console.log('🔍 Opening UK Sanctions List search');
     }
     
     /*
@@ -2398,6 +2475,417 @@
           entityType: entityType
         }, '*');
       }
+    }
+    
+    /*
+    Generate and download company/charity summary as PDF
+    */
+    function downloadCompanySummary() {
+      if (!businessData || !window.jspdf) {
+        console.error('Cannot generate PDF: missing data or jsPDF library');
+        return;
+      }
+      
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'pt', 'a4');
+      
+      // Get current user email from parent (or use placeholder)
+      const userEmail = 'user@thurstanhoskin.co.uk'; // Will be populated from parent
+      const generatedDate = new Date().toLocaleString('en-GB', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      
+      // A4 dimensions: 595pt wide, 842pt tall
+      const pageWidth = 595;
+      const pageHeight = 842;
+      const margin = 40;
+      let yPosition = margin;
+      
+      // Set font
+      doc.setFont('helvetica');
+      
+      // Header - Add logos (Note: SVGs need to be converted or we use text)
+      // For now, we'll use text headers - you can add logo images later
+      doc.setFontSize(24);
+      doc.setTextColor(0, 60, 113);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Thurstan Hoskin', margin, yPosition);
+      
+      doc.setFontSize(18);
+      doc.text("Val'ID'ate", pageWidth - margin - 120, yPosition);
+      
+      yPosition += 10;
+      
+      // Header border
+      doc.setDrawColor(0, 60, 113);
+      doc.setLineWidth(3);
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      
+      yPosition += 25;
+      
+      // Document title
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      const title = entityType === 'charity' ? 'Charity Summary' : 'Company Summary';
+      const titleWidth = doc.getTextWidth(title);
+      doc.text(title, (pageWidth - titleWidth) / 2, yPosition);
+      
+      yPosition += 20;
+      
+      // Company/Charity name subtitle
+      doc.setFontSize(14);
+      doc.setTextColor(102, 102, 102);
+      doc.setFont('helvetica', 'normal');
+      const companyName = businessData.company_name || businessName?.value || 'Unknown';
+      const subtitleWidth = doc.getTextWidth(companyName);
+      doc.text(companyName, (pageWidth - subtitleWidth) / 2, yPosition);
+      
+      yPosition += 30;
+      
+      // Registration Details Section
+      doc.setFontSize(14);
+      doc.setTextColor(0, 60, 113);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Registration Details', margin, yPosition);
+      
+      yPosition += 5;
+      doc.setDrawColor(221, 221, 221);
+      doc.setLineWidth(1);
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      
+      yPosition += 15;
+      
+      // Company info
+      doc.setFontSize(11);
+      doc.setTextColor(51, 51, 51);
+      const labelX = margin;
+      const valueX = margin + 200;
+      
+      const companyInfo = [
+        ['Company Name:', companyName],
+        ['Company Number:', businessData.company_number || entityNumber?.value || 'N/A'],
+        ['Registration Country:', registrationCountry?.value === 'GB' ? 'United Kingdom' : registrationCountry?.value || 'N/A'],
+        ['Company Status:', businessData.company_status || 'N/A'],
+        ['Date of Incorporation:', businessData.date_of_creation || 'N/A'],
+        ['Company Type:', businessData.type || 'N/A']
+      ];
+      
+      companyInfo.forEach(([label, value]) => {
+        doc.setFont('helvetica', 'bold');
+        doc.text(label, labelX, yPosition);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(85, 85, 85);
+        doc.text(String(value), valueX, yPosition);
+        doc.setTextColor(51, 51, 51);
+        yPosition += 18;
+      });
+      
+      yPosition += 10;
+      
+      // Registered Office Address
+      doc.setFontSize(14);
+      doc.setTextColor(0, 60, 113);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Registered Office Address', margin, yPosition);
+      
+      yPosition += 5;
+      doc.setDrawColor(221, 221, 221);
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      
+      yPosition += 15;
+      
+      doc.setFontSize(11);
+      doc.setTextColor(85, 85, 85);
+      doc.setFont('helvetica', 'normal');
+      
+      if (businessData.registered_office_address) {
+        const address = businessData.registered_office_address;
+        const addressLines = [
+          address.premises,
+          address.address_line_1,
+          address.address_line_2,
+          address.locality,
+          address.postal_code,
+          'United Kingdom'
+        ].filter(line => line && line.trim());
+        
+        addressLines.forEach(line => {
+          doc.text(line, margin, yPosition);
+          yPosition += 16;
+        });
+      } else {
+        doc.text('Address not available', margin, yPosition);
+        yPosition += 16;
+      }
+      
+      yPosition += 15;
+      
+      // Accounts/Financial Information
+      if (entityType === 'business' && businessData.accounts) {
+        doc.setFontSize(14);
+        doc.setTextColor(0, 60, 113);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Accounts Information', margin, yPosition);
+        
+        yPosition += 5;
+        doc.setDrawColor(221, 221, 221);
+        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+        
+        yPosition += 15;
+        
+        doc.setFontSize(11);
+        doc.setTextColor(51, 51, 51);
+        
+        const accountsInfo = [
+          ['Last Accounts Date:', businessData.accounts?.last_accounts?.made_up_to || 'N/A'],
+          ['Next Accounts Due:', businessData.accounts?.next_due || businessData.accounts?.next_made_up_to || 'N/A'],
+          ['Filing Status:', businessData.accounts?.overdue ? 'Overdue' : 'Up to date']
+        ];
+        
+        accountsInfo.forEach(([label, value]) => {
+          doc.setFont('helvetica', 'bold');
+          doc.text(label, labelX, yPosition);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(85, 85, 85);
+          doc.text(String(value), valueX, yPosition);
+          doc.setTextColor(51, 51, 51);
+          yPosition += 18;
+        });
+        
+        yPosition += 10;
+      } else if (entityType === 'charity') {
+        doc.setFontSize(14);
+        doc.setTextColor(0, 60, 113);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Financial Information', margin, yPosition);
+        
+        yPosition += 5;
+        doc.setDrawColor(221, 221, 221);
+        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+        
+        yPosition += 15;
+        
+        doc.setFontSize(11);
+        doc.setTextColor(51, 51, 51);
+        
+        const financialInfo = [
+          ['Latest Income:', businessData.charity_income ? `£${businessData.charity_income.toLocaleString()}` : 'N/A'],
+          ['Latest Expenditure:', businessData.charity_expenditure ? `£${businessData.charity_expenditure.toLocaleString()}` : 'N/A']
+        ];
+        
+        financialInfo.forEach(([label, value]) => {
+          doc.setFont('helvetica', 'bold');
+          doc.text(label, labelX, yPosition);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(85, 85, 85);
+          doc.text(String(value), valueX, yPosition);
+          doc.setTextColor(51, 51, 51);
+          yPosition += 18;
+        });
+        
+        yPosition += 10;
+      }
+      
+      // People Table (Officers, Directors, PSCs, Trustees)
+      doc.setFontSize(14);
+      doc.setTextColor(0, 60, 113);
+      doc.setFont('helvetica', 'bold');
+      const peopleTitle = entityType === 'charity' 
+        ? 'Trustees & Directors' 
+        : 'Officers, Directors & Persons with Significant Control';
+      doc.text(peopleTitle, margin, yPosition);
+      
+      yPosition += 5;
+      doc.setDrawColor(221, 221, 221);
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      
+      yPosition += 10;
+      
+      // Build people data for table
+      const peopleMap = new Map();
+      
+      // Extract Officers, Directors, and Trustees
+      if (businessData.officers && businessData.officers.length > 0) {
+        businessData.officers.forEach(officer => {
+          const normalizedName = normalizeName(officer.name);
+          const existing = peopleMap.get(normalizedName);
+          
+          let roleType;
+          if (officer.officer_role === 'director') roleType = 'Director';
+          else if (officer.officer_role === 'trustee') roleType = 'Trustee';
+          else roleType = 'Officer';
+          
+          const appointedDate = officer.appointed_on ? formatDate(officer.appointed_on) : '—';
+          
+          if (existing) {
+            if (!existing.roles.includes(roleType)) {
+              existing.roles.push(roleType);
+            }
+          } else {
+            peopleMap.set(normalizedName, {
+              name: officer.name,
+              roles: [roleType],
+              share: null,
+              appointed: appointedDate
+            });
+          }
+        });
+      }
+      
+      // Extract PSCs
+      if (businessData.pscs && businessData.pscs.length > 0) {
+        businessData.pscs.forEach(psc => {
+          const normalizedName = normalizeName(psc.name);
+          const existing = peopleMap.get(normalizedName);
+          
+          let shareInfo = '—';
+          if (psc.natures_of_control && psc.natures_of_control.length > 0) {
+            const control = psc.natures_of_control[0];
+            if (control.includes('25-to-50')) shareInfo = '25-50%';
+            else if (control.includes('50-to-75')) shareInfo = '50-75%';
+            else if (control.includes('75-to-100')) shareInfo = '75-100%';
+            else if (control.includes('ownership-of-shares')) shareInfo = 'Significant';
+          }
+          
+          if (existing) {
+            if (!existing.roles.includes('PSC')) {
+              existing.roles.push('PSC');
+            }
+            existing.share = shareInfo;
+          } else {
+            peopleMap.set(normalizedName, {
+              name: psc.name,
+              roles: ['PSC'],
+              share: shareInfo,
+              appointed: '—'
+            });
+          }
+        });
+      }
+      
+      const allPeople = Array.from(peopleMap.values());
+      
+      // Helper function for normalizeName (same as populatePeopleCards)
+      function normalizeName(name) {
+        if (!name) return '';
+        return name
+          .toLowerCase()
+          .replace(/^(mr|mrs|ms|miss|dr|rev|sir|lord|dame|prof|professor)\s+/i, '')
+          .replace(/[,\.]/g, '')
+          .split(/\s+/)
+          .filter(w => w)
+          .sort()
+          .join(' ')
+          .trim();
+      }
+      
+      // Helper function to format date
+      function formatDate(dateString) {
+        if (!dateString) return '—';
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        } catch {
+          return dateString;
+        }
+      }
+      
+      // Create table data
+      const tableData = allPeople.map(person => [
+        person.name,
+        person.roles.join(', '),
+        person.share || '—',
+        person.appointed
+      ]);
+      
+      // Use autoTable plugin
+      doc.autoTable({
+        startY: yPosition,
+        head: [['Name', 'Role(s)', 'Share', 'Appointed']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: {
+          fillColor: [0, 60, 113],
+          textColor: 255,
+          fontSize: 11,
+          fontStyle: 'bold'
+        },
+        bodyStyles: {
+          fontSize: 11,
+          textColor: [51, 51, 51]
+        },
+        alternateRowStyles: {
+          fillColor: [248, 249, 250]
+        },
+        margin: { left: margin, right: margin }
+      });
+      
+      yPosition = doc.lastAutoTable.finalY + 20;
+      
+      // Warning box
+      doc.setFillColor(255, 243, 205);
+      doc.setDrawColor(255, 193, 7);
+      doc.roundedRect(margin, yPosition, pageWidth - (margin * 2), 50, 4, 4, 'FD');
+      
+      doc.setFontSize(11);
+      doc.setTextColor(133, 100, 4);
+      doc.setFont('helvetica', 'bold');
+      doc.text('⚠️ AML & ID Verification Required', margin + 10, yPosition + 15);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const warningText = 'Ensure all directors and persons with significant control (> 25% share) have undergone';
+      const warningText2 = 'appropriate Anti-Money Laundering checks and identity verification in accordance with MLR 2017.';
+      doc.text(warningText, margin + 10, yPosition + 30);
+      doc.text(warningText2, margin + 10, yPosition + 42);
+      
+      yPosition += 70;
+      
+      // Footer
+      doc.setFontSize(10);
+      doc.setTextColor(102, 102, 102);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Generated:', margin, yPosition);
+      doc.setFont('helvetica', 'normal');
+      doc.text(generatedDate, margin + 70, yPosition);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text('Downloaded by:', pageWidth - margin - 200, yPosition);
+      doc.setFont('helvetica', 'normal');
+      doc.text(userEmail, pageWidth - margin - 120, yPosition);
+      
+      yPosition += 15;
+      
+      // Data attribution
+      doc.setFontSize(9);
+      doc.setTextColor(153, 153, 153);
+      doc.setFont('helvetica', 'italic');
+      const dataSource = entityType === 'charity' ? 'Charity Commission' : 'Companies House';
+      const disclaimer = `This summary is sourced from ${dataSource} public records and should be verified independently.`;
+      doc.text(disclaimer, margin, yPosition);
+      
+      yPosition += 12;
+      
+      const attribution = entityType === 'charity'
+        ? 'Contains information from the Charity Commission which is made available under the Open Government Licence v3.0.'
+        : 'Contains information from Companies House which is made available under the Open Government Licence v3.0.';
+      
+      const splitAttribution = doc.splitTextToSize(attribution, pageWidth - (margin * 2));
+      doc.text(splitAttribution, margin, yPosition);
+      
+      // Generate filename
+      const entityNum = entityNumber?.value?.trim() || 'Unknown';
+      const filename = `${entityType === 'charity' ? 'Charity' : 'Company'}_Summary_${entityNum}_${Date.now()}.pdf`;
+      
+      // Download
+      doc.save(filename);
+      console.log('📄 PDF downloaded:', filename);
     }
     
     // ===== FORM VALIDATION =====
@@ -3284,12 +3772,40 @@
       refreshCompanyData();
     });
     
+    // Download summary button - generate PDF
+    downloadSummaryBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      downloadCompanySummary();
+    });
+    
+    // Sanctions check buttons (entity and individual modes)
+    const sanctionsBtn = document.getElementById('sanctionsBtn');
+    const sanctionsBtnIndividual = document.getElementById('sanctionsBtnIndividual');
+    
+    if (sanctionsBtn) {
+      sanctionsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSanctionsCheck();
+      });
+    }
+    
+    if (sanctionsBtnIndividual) {
+      sanctionsBtnIndividual.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSanctionsCheck();
+      });
+    }
+    
     // ===== INITIALIZE =====
     setupAddressAutocomplete(currentAddress, currentAddressDropdown, 'current', true);
     setupAddressAutocomplete(previousAddress, previousAddressDropdown, 'previous', false);
     setupCompanyNameAutocomplete();
     setupCompanyNumberAutocomplete();
   </script>
+  
+  <!-- jsPDF library for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </body>
 </html>
 
