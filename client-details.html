@@ -638,11 +638,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- Test Button (remove in production) -->
-    <button type="button" id="mockBusinessBtn" style="position: fixed; top: 10px; right: 10px; padding: 8px 12px; background: #10a37f; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-      Load Mock Business
-    </button>
-    
     <!-- Client Details Section -->
     <div class="section" id="detailsSection">
       <form id="clientForm">
@@ -3210,89 +3205,6 @@
       if (input) {
         input.addEventListener('input', notifyUnsavedChanges);
       }
-    });
-    
-    // ===== MOCK DATA (FOR TESTING) =====
-    
-    document.getElementById('mockBusinessBtn').addEventListener('click', () => {
-      // Switch to entity mode
-      switchToEntityMode();
-      
-      // Populate mock business data
-      registrationCountry.value = 'GB';
-      businessName.value = 'THIRDFORT LIMITED';
-      entityNumber.value = '10542519';
-      
-      // Mock Companies House data
-      businessData = {
-        company_name: 'THIRDFORT LIMITED',
-        company_number: '10542519',
-        company_status: 'active',
-        company_type: 'ltd',
-        date_of_creation: '2016-12-23',
-        registered_office_address: {
-          address_line_1: 'Aldgate Tower',
-          address_line_2: '2 Leman Street',
-          locality: 'London',
-          postal_code: 'E1 8FA',
-          country: 'United Kingdom'
-        },
-        sic_codes: ['62012', '82990'],
-        officers: [
-          {
-            name: 'HODIVALA, Olly',
-            officer_role: 'director',
-            appointed_on: '2016-12-23',
-            nationality: 'British',
-            country_of_residence: 'United Kingdom'
-          },
-          {
-            name: 'RICHARDSON, Tom',
-            officer_role: 'director',
-            appointed_on: '2016-12-23',
-            nationality: 'British',
-            country_of_residence: 'United Kingdom'
-          }
-        ],
-        pscs: [
-          {
-            name: 'Mr Olly Hodivala',
-            kind: 'individual-person-with-significant-control',
-            natures_of_control: [
-              'ownership-of-shares-25-to-50-percent',
-              'voting-rights-25-to-50-percent'
-            ],
-            nationality: 'British',
-            country_of_residence: 'United Kingdom'
-          }
-        ],
-        has_been_liquidated: false,
-        has_insolvency_history: false
-      };
-      
-      // Update button visibility
-      updateCompanyButtons();
-      
-      // Populate contact info
-      phoneCountryCode.value = '+44';
-      phoneNumber.value = '2070180754';
-      email.value = 'hello@thirdfort.com';
-      
-      // Auto-populate registered office address
-      const regOffice = businessData.registered_office_address;
-      const addressParts = [
-        regOffice.premises,
-        regOffice.address_line_1,
-        regOffice.address_line_2,
-        regOffice.locality,
-        regOffice.postal_code
-      ].filter(p => p && p.trim());
-      
-      const addressString = addressParts.join(', ');
-      currentCountry.value = 'GBR';
-      currentAddress.value = addressString;
-      
-      console.log('✅ Mock business data loaded! Address:', addressString);
     });
     
     // Company link button - open Companies House page
