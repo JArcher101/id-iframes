@@ -538,45 +538,6 @@
       transform: scale(0.95);
     }
     
-    /* Sanctions check button */
-    .sanctions-btn {
-      padding: 8px 14px;
-      background: white;
-      color: var(--primary);
-      border: 2px solid var(--primary);
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      font-weight: 600;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-    
-    .sanctions-btn:hover {
-      background: var(--primary);
-      color: white;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 6px rgba(0, 60, 113, 0.2);
-    }
-    
-    .sanctions-btn:active {
-      transform: translateY(0);
-    }
-    
-    .sanctions-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      border-color: #ddd;
-      color: #999;
-      background: white;
-    }
-    
-    .sanctions-btn:disabled:hover {
-      background: white;
-      color: #999;
-      transform: none;
-    }
-    
     .company-link-btn:disabled,
     .company-refresh-btn:disabled {
       opacity: 0.5;
@@ -725,10 +686,6 @@
                   <line x1="12" y1="15" x2="12" y2="3"/>
                 </svg>
               </button>
-              <!-- Sanctions Check Button -->
-              <button type="button" id="sanctionsBtn" class="sanctions-btn" title="Search UK Sanctions List">
-                Sanctions check
-              </button>
             </div>
           </div>
           
@@ -807,13 +764,6 @@
             <label for="lastName">Surname</label>
             <input type="text" id="lastName" name="lastName" />
           </div>
-        </div>
-
-        <!-- Sanctions Check Button Row -->
-        <div class="row" style="justify-content: flex-end; margin-top: -10px;">
-          <button type="button" id="sanctionsBtnIndividual" class="sanctions-btn" title="Search UK Sanctions List">
-            Sanctions check
-          </button>
         </div>
 
         <!-- Entity Number Row (shown only in entity mode, replaces DOB row) -->
@@ -1425,8 +1375,7 @@
         previousCountry, previousAddress,
         prevFlatNumber, prevBuildingNumber, prevBuildingName, prevStreet, prevSubStreet, prevTown, prevPostcode,
         recentNameChange, recentMove, addressNotListed, previousAddressNotListed,
-        companyLinkBtn, companyRefreshBtn, downloadSummaryBtn,
-        document.getElementById('sanctionsBtn'), document.getElementById('sanctionsBtnIndividual')
+        companyLinkBtn, companyRefreshBtn, downloadSummaryBtn
       ];
       
       // Add DOB inputs
@@ -3417,6 +3366,9 @@
       } else if (event.data && (event.data.type === 'company-data' || event.data.type === 'charity-data')) {
         // Store full company/charity data (directors/trustees, officers, PSCs, etc.)
         handleCompanyData(event.data.companyData || event.data.charityData);
+      } else if (event.data && event.data.type === 'sanctions-check') {
+        // Open sanctions check popup when Wix button sends message
+        openSanctionsCheck();
       }
     });
     
@@ -3792,24 +3744,6 @@
       e.preventDefault();
       downloadCompanySummary();
     });
-    
-    // Sanctions check buttons (entity and individual modes)
-    const sanctionsBtn = document.getElementById('sanctionsBtn');
-    const sanctionsBtnIndividual = document.getElementById('sanctionsBtnIndividual');
-    
-    if (sanctionsBtn) {
-      sanctionsBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        openSanctionsCheck();
-      });
-    }
-    
-    if (sanctionsBtnIndividual) {
-      sanctionsBtnIndividual.addEventListener('click', (e) => {
-        e.preventDefault();
-        openSanctionsCheck();
-      });
-    }
     
     // ===== INITIALIZE =====
     setupAddressAutocomplete(currentAddress, currentAddressDropdown, 'current', true);
