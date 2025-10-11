@@ -2946,6 +2946,7 @@
             // Hide all sections
             imageDisplaySection.classList.add('hidden');
             idUploaderSection.classList.add('hidden');
+            addMoreContainer.classList.add('hidden');
             
             // Show awaiting data section
             awaitingState.classList.remove('hidden');
@@ -2954,7 +2955,16 @@
             images = [];
             currentImageIndex = 0;
             
-            console.log('Showing awaiting state');
+            // Enable the awaiting state "Add more" button if uploads are allowed
+            const awaitingAddMoreBtn = awaitingState.querySelector('.add-more-btn');
+            if (awaitingAddMoreBtn) {
+                awaitingAddMoreBtn.disabled = !allowUploads;
+                awaitingAddMoreBtn.onclick = () => {
+                    showUploader();
+                };
+            }
+            
+            console.log('Showing awaiting state, allowUploads:', allowUploads);
         }
 
         // Return to awaiting data section
@@ -3672,8 +3682,14 @@
             if (imagesToDisplay && Array.isArray(imagesToDisplay) && imagesToDisplay.length > 0) {
                 displayImages(imagesToDisplay, data.allowUploads, data.clientData, data.userEmail);
             } else {
-                // No images to display, show awaiting state
+                // No images to display, show awaiting state with upload button enabled if allowed
                 showAwaitingState();
+                
+                // Also update the client heading in awaiting state
+                const awaitingHeading = awaitingState.querySelector('.client-heading');
+                if (awaitingHeading && clientData.fe && clientData.clientNumber && clientData.matterNumber && clientData.name) {
+                    awaitingHeading.textContent = `ID Photos for ${clientData.fe}/${clientData.clientNumber}/${clientData.matterNumber} - ${clientData.name}`;
+                }
             }
         }
 
