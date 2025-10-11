@@ -480,9 +480,10 @@
     .company-link-btn,
     .company-refresh-btn {
       position: absolute;
-      top: 32px;
-      width: 32px;
-      height: 32px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
       background: white;
       border: 2px solid var(--primary);
       border-radius: 6px;
@@ -496,11 +497,22 @@
     }
     
     .company-link-btn {
-      right: 42px;
+      right: 46px;
     }
     
     .company-refresh-btn {
       right: 4px;
+    }
+    
+    .company-buttons-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .company-buttons-container .address-autocomplete-container {
+      flex: 1;
     }
     
     .company-link-btn:hover,
@@ -636,31 +648,37 @@
       <form id="clientForm">
         <!-- Entity Mode Fields (hidden by default) -->
         <div id="entityFields" class="hidden">
-          <div class="entity-grid">
-            <!-- Left Column: Form Fields -->
-            <div class="entity-left">
-              <!-- Row 1: Business Name with buttons -->
-              <div style="position: relative;">
-                <label for="businessName">Business Name</label>
-                <div class="address-autocomplete-container">
-                  <input type="text" id="businessName" name="businessName" autocomplete="off" placeholder="Search by company name..." />
-                  <div id="businessNameDropdown" class="address-dropdown hidden"></div>
-                </div>
-                <!-- Companies House Link Button (shows when company data linked) -->
-                <button type="button" id="companyLinkBtn" class="company-link-btn hidden" title="View on Companies House">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M14 9v5a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1h5M10 2h4v4M6 10l8-8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
-                <!-- Refresh Company Data Button (shows when company data linked) -->
-                <button type="button" id="companyRefreshBtn" class="company-refresh-btn hidden" title="Refresh company data from Companies House">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M14 8c0-3.31-2.69-6-6-6-1.77 0-3.36.77-4.46 2M2 8c0 3.31 2.69 6 6 6 1.77 0 3.36-.77 4.46-2M2 4v4h4M14 8v4h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
+          <!-- Row 1: Business Name (Full Width) with buttons -->
+          <div class="row">
+            <label for="businessName">Business Name</label>
+            <div class="company-buttons-container">
+              <div class="address-autocomplete-container">
+                <input type="text" id="businessName" name="businessName" autocomplete="off" placeholder="Search by company name..." />
+                <div id="businessNameDropdown" class="address-dropdown hidden"></div>
               </div>
-              
-              <!-- Row 2: Registration Country -->
+              <!-- Companies House Link Button (shows when company data linked) -->
+              <button type="button" id="companyLinkBtn" class="hidden" title="View on Companies House" style="flex-shrink: 0; width: 36px; height: 36px; background: white; border: 2px solid var(--primary); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); transition: all 0.2s;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+              </button>
+              <!-- Refresh Company Data Button (shows when company data linked) -->
+              <button type="button" id="companyRefreshBtn" class="hidden" title="Refresh company data from Companies House" style="flex-shrink: 0; width: 36px; height: 36px; background: white; border: 2px solid var(--primary); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--primary); transition: all 0.2s;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Row 2: Split Grid - Left (Country + Number) | Right (People Cards) -->
+          <div class="entity-grid">
+            <!-- Left Column: Registration Country + Company Number -->
+            <div class="entity-left">
               <div>
                 <label for="registrationCountry">Registration Country</label>
                 <select id="registrationCountry" name="registrationCountry" class="country-dropdown">
@@ -676,7 +694,6 @@
                 </select>
               </div>
               
-              <!-- Row 3: Company Number -->
               <div>
                 <label for="entityNumber">Company Number</label>
                 <div class="address-autocomplete-container">
@@ -687,8 +704,14 @@
             </div>
             
             <!-- Right Column: People Cards (Officers, Directors, PSCs) -->
-            <div class="entity-right" id="peopleRepeater">
-              <div class="no-people-message">Link a company to view officers, directors, and PSCs</div>
+            <div class="entity-right">
+              <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #666;">People</h3>
+              <div id="peopleRepeater" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="no-people-message">Link a company to view officers, directors, and PSCs</div>
+              </div>
+              <div style="margin-top: 10px; padding: 8px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; font-size: 0.75rem; color: #856404; line-height: 1.3;">
+                ⚠️ Ensure all directors and people with &gt; 25% share have undergone appropriate AML &amp; ID checks
+              </div>
             </div>
           </div>
         </div>
@@ -2176,22 +2199,37 @@
       
       peopleRepeater.innerHTML = '';
       
-      const allPeople = [];
+      // Use a map to merge duplicates by normalized name
+      const peopleMap = new Map();
       
       // Extract Officers and Directors
       if (businessData.officers && businessData.officers.length > 0) {
         businessData.officers.forEach(officer => {
-          allPeople.push({
-            name: officer.name,
-            type: officer.officer_role === 'director' ? 'director' : 'officer',
-            share: null
-          });
+          const normalizedName = normalizeName(officer.name);
+          const existing = peopleMap.get(normalizedName);
+          
+          if (existing) {
+            // Add role if not already present
+            const roleType = officer.officer_role === 'director' ? 'director' : 'officer';
+            if (!existing.types.includes(roleType)) {
+              existing.types.push(roleType);
+            }
+          } else {
+            peopleMap.set(normalizedName, {
+              displayName: officer.name,
+              types: [officer.officer_role === 'director' ? 'director' : 'officer'],
+              share: null
+            });
+          }
         });
       }
       
       // Extract PSCs (with ownership info)
       if (businessData.pscs && businessData.pscs.length > 0) {
         businessData.pscs.forEach(psc => {
+          const normalizedName = normalizeName(psc.name);
+          const existing = peopleMap.get(normalizedName);
+          
           // Extract ownership percentage from natures_of_control
           let shareInfo = null;
           if (psc.natures_of_control && psc.natures_of_control.length > 0) {
@@ -2202,12 +2240,39 @@
             else if (control.includes('ownership-of-shares')) shareInfo = 'Significant';
           }
           
-          allPeople.push({
-            name: psc.name,
-            type: 'psc',
-            share: shareInfo
-          });
+          if (existing) {
+            // Add PSC role and share info
+            if (!existing.types.includes('psc')) {
+              existing.types.push('psc');
+            }
+            existing.share = shareInfo;
+          } else {
+            peopleMap.set(normalizedName, {
+              displayName: psc.name,
+              types: ['psc'],
+              share: shareInfo
+            });
+          }
         });
+      }
+      
+      const allPeople = Array.from(peopleMap.values());
+    
+      /*
+      Normalize name for matching (remove titles, punctuation, sort words alphabetically)
+      Handles variations like "HODIVALA, Olly" vs "Mr Olly Hodivala"
+      */
+      function normalizeName(name) {
+        if (!name) return '';
+        return name
+          .toLowerCase()
+          .replace(/^(mr|mrs|ms|miss|dr|rev|sir|lord|dame|prof|professor)\s+/i, '') // Remove titles
+          .replace(/[,\.]/g, '') // Remove punctuation
+          .split(/\s+/) // Split into words
+          .filter(w => w) // Remove empty strings
+          .sort() // Sort alphabetically
+          .join(' ') // Join back
+          .trim();
       }
       
       // Create cards
@@ -2220,15 +2285,20 @@
         const card = document.createElement('div');
         card.className = 'people-card';
         
-        const badgeClass = person.type === 'director' ? 'badge-director' : 
-                          person.type === 'psc' ? 'badge-psc' : 'badge-officer';
-        const badgeText = person.type === 'director' ? 'Director' : 
-                         person.type === 'psc' ? 'PSC' : 'Officer';
+        // Create badges for all roles
+        let badgesHtml = '';
+        person.types.forEach(type => {
+          const badgeClass = type === 'director' ? 'badge-director' : 
+                            type === 'psc' ? 'badge-psc' : 'badge-officer';
+          const badgeText = type === 'director' ? 'Director' : 
+                           type === 'psc' ? 'PSC' : 'Officer';
+          badgesHtml += `<span class="people-card-badge ${badgeClass}">${badgeText}</span>`;
+        });
         
         let html = `
           <div class="people-card-header">
-            <div class="people-card-name">${person.name}</div>
-            <span class="people-card-badge ${badgeClass}">${badgeText}</span>
+            <div class="people-card-name">${person.displayName}</div>
+            <div style="display: flex; gap: 4px;">${badgesHtml}</div>
           </div>
         `;
         
