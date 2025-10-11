@@ -3644,14 +3644,24 @@
             } else if (event.data && event.data.type === 'put-error') {
                 handlePutError(event.data);
             } else if (event.data && event.data.type === 'button-enable') {
-                // Enable the "Add more ID images" button
+                // Enable the "Add more ID images" button (both in awaiting state and main display)
+                allowUploads = true;
                 if (addMoreBtn) {
                     addMoreBtn.disabled = false;
                 }
+                const awaitingAddMoreBtn = awaitingState.querySelector('.add-more-btn');
+                if (awaitingAddMoreBtn) {
+                    awaitingAddMoreBtn.disabled = false;
+                }
             } else if (event.data && event.data.type === 'button-disable') {
-                // Disable the "Add more ID images" button
+                // Disable the "Add more ID images" button (both in awaiting state and main display)
+                allowUploads = false;
                 if (addMoreBtn) {
                     addMoreBtn.disabled = true;
+                }
+                const awaitingAddMoreBtn = awaitingState.querySelector('.add-more-btn');
+                if (awaitingAddMoreBtn) {
+                    awaitingAddMoreBtn.disabled = true;
                 }
             }
         });
