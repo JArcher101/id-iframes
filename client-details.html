@@ -379,6 +379,60 @@
       user-select: none;
     }
     
+    /* Company Link and Refresh Buttons */
+    .company-link-btn,
+    .company-refresh-btn {
+      position: absolute;
+      top: 32px;
+      width: 32px;
+      height: 32px;
+      background: white;
+      border: 2px solid var(--primary);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      transition: all 0.2s;
+      padding: 0;
+    }
+    
+    .company-link-btn {
+      right: 42px;
+    }
+    
+    .company-refresh-btn {
+      right: 4px;
+    }
+    
+    .company-link-btn:hover,
+    .company-refresh-btn:hover {
+      background: var(--primary);
+      color: white;
+      transform: scale(1.05);
+    }
+    
+    .company-link-btn:active,
+    .company-refresh-btn:active {
+      transform: scale(0.95);
+    }
+    
+    .company-link-btn:disabled,
+    .company-refresh-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: #ddd;
+      color: #999;
+    }
+    
+    .company-link-btn:disabled:hover,
+    .company-refresh-btn:disabled:hover {
+      background: white;
+      color: #999;
+      transform: none;
+    }
+    
     /* Country dropdown styling */
     .country-dropdown {
       width: 100%;
@@ -475,6 +529,11 @@
 </head>
 <body>
   <div class="container">
+    <!-- Test Button (remove in production) -->
+    <button type="button" id="mockBusinessBtn" style="position: fixed; top: 10px; right: 10px; padding: 8px 12px; background: #10a37f; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+      Load Mock Business
+    </button>
+    
     <!-- Client Details Section -->
     <div class="section" id="detailsSection">
       <form id="clientForm">
@@ -495,12 +554,24 @@
                 <option value="OTHER">Other</option>
               </select>
             </div>
-            <div>
+            <div style="position: relative;">
               <label for="businessName">Business Name</label>
               <div class="address-autocomplete-container">
                 <input type="text" id="businessName" name="businessName" autocomplete="off" placeholder="Search by company name..." />
                 <div id="businessNameDropdown" class="address-dropdown hidden"></div>
               </div>
+              <!-- Companies House Link Button (shows when company data linked) -->
+              <button type="button" id="companyLinkBtn" class="company-link-btn hidden" title="View on Companies House">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M14 9v5a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1h5M10 2h4v4M6 10l8-8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <!-- Refresh Company Data Button (shows when company data linked) -->
+              <button type="button" id="companyRefreshBtn" class="company-refresh-btn hidden" title="Refresh company data from Companies House">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M14 8c0-3.31-2.69-6-6-6-1.77 0-3.36.77-4.46 2M2 8c0 3.31 2.69 6 6 6 1.77 0 3.36-.77 4.46-2M2 4v4h4M14 8v4h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
             </div>
           </div>
           
@@ -1008,7 +1079,7 @@
            e: 'email@test.com',   // email
            eN: 'EN123456',        // entityNumber
            rC: 'GB',              // registrationCountry
-           cD: {...}              // companyData (directors, officers, PSCs)
+           bD: {...}              // businessData (directors, officers, PSCs)
          }
        }
     2. 'entity-true' / 'entity-false' - Toggle entity mode
@@ -1049,6 +1120,8 @@
     const businessNameDropdown = document.getElementById('businessNameDropdown');
     const entityNumber = document.getElementById('entityNumber');
     const entityNumberDropdown = document.getElementById('entityNumberDropdown');
+    const companyLinkBtn = document.getElementById('companyLinkBtn');
+    const companyRefreshBtn = document.getElementById('companyRefreshBtn');
     
     // Form inputs
     const titlePrefix = document.getElementById('titlePrefix');
@@ -1111,7 +1184,7 @@
     let isLoadingData = false; // Flag to prevent disable-close during initial load
     let hasUnsavedChanges = false;
     let allowEdits = true; // Flag to control if user can edit inputs
-    let companyData = null; // Stores full company data (directors, officers, PSCs)
+    let businessData = null; // Stores full company data (directors, officers, PSCs)
     
     // ===== UTILITY FUNCTIONS =====
     
@@ -1146,7 +1219,8 @@
         flatNumber, buildingNumber, buildingName, street, subStreet, town, postcode,
         previousCountry, previousAddress,
         prevFlatNumber, prevBuildingNumber, prevBuildingName, prevStreet, prevSubStreet, prevTown, prevPostcode,
-        recentNameChange, recentMove, addressNotListed, previousAddressNotListed
+        recentNameChange, recentMove, addressNotListed, previousAddressNotListed,
+        companyLinkBtn, companyRefreshBtn
       ];
       
       // Add DOB inputs
@@ -1718,7 +1792,8 @@
         if (companyNameDebounceTimer) clearTimeout(companyNameDebounceTimer);
         
         // Clear stored company data when user types
-        companyData = null;
+        businessData = null;
+        updateCompanyButtons();
         
         // Hide dropdown if too short or not UK
         if (searchTerm.length < 2 || registrationCountry.value !== 'GB') {
@@ -1791,7 +1866,8 @@
         if (companyNumberDebounceTimer) clearTimeout(companyNumberDebounceTimer);
         
         // Clear stored company data when user types
-        companyData = null;
+        businessData = null;
+        updateCompanyButtons();
         
         // Hide dropdown if too short or not UK
         if (searchTerm.length < 2 || registrationCountry.value !== 'GB') {
@@ -1860,26 +1936,34 @@
     Display company suggestions in dropdown
     */
     function displayCompanySuggestions(suggestions, searchBy) {
-      const dropdownElement = searchBy === 'name' ? businessNameDropdown : entityNumberDropdown;
+      // Show results in BOTH dropdowns for consistency
+      const dropdowns = [businessNameDropdown, entityNumberDropdown];
       
       if (!suggestions || suggestions.length === 0) {
-        dropdownElement.innerHTML = '<div class="address-no-results">No companies found</div>';
+        dropdowns.forEach(dropdown => {
+          dropdown.innerHTML = '<div class="address-no-results">No companies found</div>';
+          dropdown.classList.remove('hidden');
+        });
         return;
       }
       
-      dropdownElement.innerHTML = '';
-      
-      suggestions.forEach((company) => {
-        const item = document.createElement('div');
-        item.className = 'address-dropdown-item';
-        // Format: "Company Name - 12345678"
-        item.textContent = `${company.title} - ${company.company_number}`;
+      dropdowns.forEach(dropdown => {
+        dropdown.innerHTML = '';
         
-        item.addEventListener('click', () => {
-          selectCompany(company);
+        suggestions.forEach((company) => {
+          const item = document.createElement('div');
+          item.className = 'address-dropdown-item';
+          // Format: "Company Name (Number)"
+          item.textContent = `${company.title} (${company.company_number})`;
+          
+          item.addEventListener('click', () => {
+            selectCompany(company);
+          });
+          
+          dropdown.appendChild(item);
         });
         
-        dropdownElement.appendChild(item);
+        dropdown.classList.remove('hidden');
       });
     }
     
@@ -1887,11 +1971,11 @@
     Handle company selection from dropdown
     */
     function selectCompany(company) {
-      // Populate form fields
+      // Populate BOTH form fields
       businessName.value = company.title;
       entityNumber.value = company.company_number;
       
-      // Hide dropdowns
+      // Hide both dropdowns
       businessNameDropdown.classList.add('hidden');
       entityNumberDropdown.classList.add('hidden');
       
@@ -1901,15 +1985,62 @@
         type: 'company-lookup',
         companyNumber: company.company_number
       }, '*');
+      
+      // Trigger unsaved changes
+      notifyUnsavedChanges();
     }
     
     /*
     Handle full company data from parent
     */
     function handleCompanyData(data) {
-      companyData = data;
-      console.log('✅ Received full company data:', companyData);
+      businessData = data;
+      console.log('✅ Received full company data:', businessData);
       // Company data now includes: directors, officers, PSCs, registered_office_address, etc.
+      
+      // Show the link and refresh buttons
+      updateCompanyButtons();
+      
+      // Trigger unsaved changes
+      notifyUnsavedChanges();
+    }
+    
+    /*
+    Update visibility of company link and refresh buttons
+    */
+    function updateCompanyButtons() {
+      if (businessData && entityNumber?.value?.trim()) {
+        companyLinkBtn.classList.remove('hidden');
+        companyRefreshBtn.classList.remove('hidden');
+      } else {
+        companyLinkBtn.classList.add('hidden');
+        companyRefreshBtn.classList.add('hidden');
+      }
+    }
+    
+    /*
+    Open Companies House page for the linked company
+    */
+    function openCompaniesHousePage() {
+      if (entityNumber?.value?.trim()) {
+        const companyNumber = entityNumber.value.trim();
+        const url = `https://find-and-update.company-information.service.gov.uk/company/${companyNumber}`;
+        window.open(url, '_blank');
+      }
+    }
+    
+    /*
+    Refresh company data from Companies House
+    */
+    function refreshCompanyData() {
+      if (entityNumber?.value?.trim()) {
+        const companyNumber = entityNumber.value.trim();
+        console.log('🔄 Refreshing company data for:', companyNumber);
+        window.parent.postMessage({
+          type: 'company-lookup',
+          companyNumber: companyNumber
+        }, '*');
+      }
     }
     
     // ===== FORM VALIDATION =====
@@ -2127,7 +2258,7 @@
         e: email?.value?.trim() || undefined,                // email
         eN: entityNumber?.value?.trim() || undefined,        // entityNumber
         rC: registrationCountry?.value || undefined,         // registrationCountry
-        cD: companyData || undefined                          // companyData (directors, officers, PSCs, registered office)
+        bD: businessData || undefined                        // businessData (directors, officers, PSCs, registered office)
       };
       
       return compiled;
@@ -2138,6 +2269,20 @@
     }
     
     // ===== EVENT LISTENERS =====
+    
+    // Registration country change - clear autocomplete when switching from UK
+    registrationCountry.addEventListener('change', () => {
+      const isUK = registrationCountry.value === 'GB';
+      
+      if (!isUK) {
+        // Hide dropdowns and clear company data for non-UK
+        businessNameDropdown.classList.add('hidden');
+        entityNumberDropdown.classList.add('hidden');
+        businessData = null;
+        updateCompanyButtons();
+        console.log('⚠️ Company search only available for UK companies');
+      }
+    });
     
     // Country change for current address - show autocomplete for UK, manual for others
     currentCountry.addEventListener('change', () => {
@@ -2424,7 +2569,7 @@
       // Clear address objects and company data on new data load
       currentAddressObject = null;
       previousAddressObject = null;
-      companyData = null;
+      businessData = null;
       
       // Note: Entity mode is set by the message handler based on event.data.entity flag
       
@@ -2500,11 +2645,14 @@
         registrationCountry.value = formData.rC || 'GB';
         businessName.value = formData.n?.b || '';
         entityNumber.value = formData.eN || '';
-        companyData = formData.cD || null;
+        businessData = formData.bD || null;
         
-        if (companyData) {
-          console.log('✅ Loaded company data:', companyData);
+        if (businessData) {
+          console.log('✅ Loaded company data:', businessData);
         }
+        
+        // Update button visibility
+        updateCompanyButtons();
       } else {
         titlePrefix.value = formData.n?.t || '';
         firstName.value = formData.n?.f || '';
@@ -2758,6 +2906,89 @@
       if (input) {
         input.addEventListener('input', notifyUnsavedChanges);
       }
+    });
+    
+    // ===== MOCK DATA (FOR TESTING) =====
+    
+    document.getElementById('mockBusinessBtn').addEventListener('click', () => {
+      // Switch to entity mode
+      switchToEntityMode();
+      
+      // Populate mock business data
+      registrationCountry.value = 'GB';
+      businessName.value = 'THIRDFORT LIMITED';
+      entityNumber.value = '10542519';
+      
+      // Mock Companies House data
+      businessData = {
+        company_name: 'THIRDFORT LIMITED',
+        company_number: '10542519',
+        company_status: 'active',
+        company_type: 'ltd',
+        date_of_creation: '2016-12-23',
+        registered_office_address: {
+          address_line_1: 'Aldgate Tower',
+          address_line_2: '2 Leman Street',
+          locality: 'London',
+          postal_code: 'E1 8FA',
+          country: 'United Kingdom'
+        },
+        sic_codes: ['62012', '82990'],
+        officers: [
+          {
+            name: 'HODIVALA, Olly',
+            officer_role: 'director',
+            appointed_on: '2016-12-23',
+            nationality: 'British',
+            country_of_residence: 'United Kingdom'
+          },
+          {
+            name: 'RICHARDSON, Tom',
+            officer_role: 'director',
+            appointed_on: '2016-12-23',
+            nationality: 'British',
+            country_of_residence: 'United Kingdom'
+          }
+        ],
+        pscs: [
+          {
+            name: 'Mr Olly Hodivala',
+            kind: 'individual-person-with-significant-control',
+            natures_of_control: [
+              'ownership-of-shares-25-to-50-percent',
+              'voting-rights-25-to-50-percent'
+            ],
+            nationality: 'British',
+            country_of_residence: 'United Kingdom'
+          }
+        ],
+        has_been_liquidated: false,
+        has_insolvency_history: false
+      };
+      
+      console.log('🧪 Loaded mock business data:', businessData);
+      
+      // Update button visibility
+      updateCompanyButtons();
+      
+      // Populate contact info
+      phoneCountryCode.value = '+44';
+      phoneNumber.value = '2070180754';
+      email.value = 'hello@thirdfort.com';
+      
+      console.log('✅ Mock business data loaded!');
+    });
+    
+    // Company link button - open Companies House page
+    companyLinkBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openCompaniesHousePage();
+    });
+    
+    // Company refresh button - fetch latest data
+    companyRefreshBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      refreshCompanyData();
     });
     
     // ===== INITIALIZE =====
