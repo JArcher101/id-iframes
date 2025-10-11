@@ -539,21 +539,8 @@
       <form id="clientForm">
         <!-- Entity Mode Fields (hidden by default) -->
         <div id="entityFields" class="hidden">
-          <div class="row name-change-row">
-            <div>
-              <label for="registrationCountry">Registration Country</label>
-              <select id="registrationCountry" name="registrationCountry" class="country-dropdown">
-                <option value="GB">United Kingdom</option>
-                <option value="US">United States</option>
-                <option value="IE">Ireland</option>
-                <option value="AU">Australia</option>
-                <option value="CA">Canada</option>
-                <option value="NZ">New Zealand</option>
-                <option value="SG">Singapore</option>
-                <option value="HK">Hong Kong</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </div>
+          <!-- Row 1: Business Name with buttons -->
+          <div class="row">
             <div style="position: relative;">
               <label for="businessName">Business Name</label>
               <div class="address-autocomplete-container">
@@ -575,8 +562,22 @@
             </div>
           </div>
           
+          <!-- Row 2: Registration Country + Company Number -->
           <div class="row name-change-row">
-            <div></div>
+            <div>
+              <label for="registrationCountry">Registration Country</label>
+              <select id="registrationCountry" name="registrationCountry" class="country-dropdown">
+                <option value="GB">United Kingdom</option>
+                <option value="US">United States</option>
+                <option value="IE">Ireland</option>
+                <option value="AU">Australia</option>
+                <option value="CA">Canada</option>
+                <option value="NZ">New Zealand</option>
+                <option value="SG">Singapore</option>
+                <option value="HK">Hong Kong</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
             <div>
               <label for="entityNumber">Company Number</label>
               <div class="address-autocomplete-container">
@@ -2001,6 +2002,47 @@
       // Show the link and refresh buttons
       updateCompanyButtons();
       
+      // Auto-populate registered office address if no current address exists
+      if (businessData.registered_office_address) {
+        const regOffice = businessData.registered_office_address;
+        
+        // Build address string for search
+        const addressParts = [
+          regOffice.premises,
+          regOffice.address_line_1,
+          regOffice.address_line_2,
+          regOffice.locality,
+          regOffice.postal_code
+        ].filter(p => p && p.trim());
+        
+        const addressString = addressParts.join(', ');
+        
+        // Check if we already have a current address
+        const hasExistingAddress = currentAddress?.value?.trim() || currentAddressObject;
+        
+        if (!hasExistingAddress && addressString) {
+          console.log('📍 Auto-populating registered office address:', addressString);
+          
+          // Set UK as country
+          currentCountry.value = 'GBR';
+          
+          // Populate the autocomplete field
+          currentAddress.value = addressString;
+          
+          // Trigger address search to find exact match
+          if (addressString.length >= 7) {
+            console.log('📡 Searching for registered office address in getaddress.io');
+            window.parent.postMessage({
+              type: 'address-search',
+              searchTerm: addressString,
+              field: 'current'
+            }, '*');
+          }
+        } else if (hasExistingAddress) {
+          console.log('ℹ️ Current address already exists, not overwriting');
+        }
+      }
+      
       // Trigger unsaved changes
       notifyUnsavedChanges();
     }
@@ -2966,8 +3008,6 @@
         has_insolvency_history: false
       };
       
-      console.log('🧪 Loaded mock business data:', businessData);
-      
       // Update button visibility
       updateCompanyButtons();
       
@@ -2976,7 +3016,21 @@
       phoneNumber.value = '2070180754';
       email.value = 'hello@thirdfort.com';
       
-      console.log('✅ Mock business data loaded!');
+      // Auto-populate registered office address
+      const regOffice = businessData.registered_office_address;
+      const addressParts = [
+        regOffice.premises,
+        regOffice.address_line_1,
+        regOffice.address_line_2,
+        regOffice.locality,
+        regOffice.postal_code
+      ].filter(p => p && p.trim());
+      
+      const addressString = addressParts.join(', ');
+      currentCountry.value = 'GBR';
+      currentAddress.value = addressString;
+      
+      console.log('✅ Mock business data loaded! Address:', addressString);
     });
     
     // Company link button - open Companies House page
