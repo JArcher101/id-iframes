@@ -1189,9 +1189,10 @@
        {
          type: 'client-data',
          entity: true/false,     // Controls entity vs individual mode
+         entityType: 'business'/'charity', // Type of entity (when entity=true)
          allowEdits: true/false, // Controls if user can edit inputs (default: true)
          clientData: {
-           n: { t, f, m, l, b },  // name: titlePrefix, firstName, middleNames, surname, businessName
+           n: { t, f, m, l, b },  // name: titlePrefix, firstName, middleNames, surname, businessName/charityName
            b: '01-01-2000',       // dateOfBirth
            a: {...},              // currentAddressNEW (Thirdfort object)
            pA: {...},             // previousAddressNEW (Thirdfort object)
@@ -1201,27 +1202,33 @@
            rNC: 'Reason',         // reasonForNameChange
            m: '+447700000000',    // mobileNumber (international format)
            e: 'email@test.com',   // email
-           eN: 'EN123456',        // entityNumber
+           eN: 'EN123456',        // entityNumber (company OR charity number)
            rC: 'GB',              // registrationCountry
-           bD: {...}              // businessData (directors, officers, PSCs)
+           eT: 'business'/'charity', // entityType
+           bD: {...}              // businessData (company: directors/officers/PSCs, charity: trustees)
          }
        }
-    2. 'entity-true' / 'entity-false' - Toggle entity mode
-    3. 'allowEdits-true' / 'allowEdits-false' - Enable/disable user input
-    4. 'request-data' - Parent requests form data (validate and return)
-    5. 'address-results' - Autocomplete suggestions from getaddress.io
-    6. 'address-data' - Full address object after selection
-    7. 'company-results' - Company search results from Companies House API
-    8. 'company-data' - Full company data (directors, officers, PSCs, registered office)
+    2. 'entity-true' - Toggle entity mode { type: 'entity-true', entityType: 'business'/'charity' }
+    3. 'entity-false' - Toggle individual mode
+    4. 'allowEdits-true' / 'allowEdits-false' - Enable/disable user input
+    5. 'request-data' - Parent requests form data (validate and return)
+    6. 'address-results' - Autocomplete suggestions from getaddress.io
+    7. 'address-data' - Full address object after selection
+    8. 'company-results' - Company search results from Companies House API
+    9. 'company-data' - Full company data (directors, officers, PSCs, registered office)
+    10. 'charity-results' - Charity search results from Charity Commission API
+    11. 'charity-data' - Full charity data (trustees, income, expenditure)
     
     OUTGOING MESSAGES:
     1. 'address-search' - Request autocomplete suggestions
     2. 'address-lookup' - Request full address by ID
-    3. 'company-search' - Request Companies House company search (by name or number)
-    4. 'company-lookup' - Request full company data (directors, officers, PSCs)
-    5. 'new-data' - Send updated client data
-    6. 'validation-error' - Send validation errors
-    7. 'disable-close' - Notify parent of unsaved changes
+    3. 'company-search' - Request Companies House search { type, searchTerm, searchBy, entityType: 'business' }
+    4. 'company-lookup' - Request full company data { type, companyNumber, entityType: 'business' }
+    5. 'charity-search' - Request Charity Commission search { type, searchTerm, searchBy, entityType: 'charity' }
+    6. 'charity-lookup' - Request full charity data { type, companyNumber, entityType: 'charity' }
+    7. 'new-data' - Send updated client data (includes eT: entityType)
+    8. 'validation-error' - Send validation errors
+    9. 'disable-close' - Notify parent of unsaved changes
     =====================================================================
     */
     
@@ -1306,10 +1313,11 @@
     let companyNameDebounceTimer = null;
     let companyNumberDebounceTimer = null;
     let isEntityMode = false;
+    let entityType = 'business'; // 'business' or 'charity'
     let isLoadingData = false; // Flag to prevent disable-close during initial load
     let hasUnsavedChanges = false;
     let allowEdits = true; // Flag to control if user can edit inputs
-    let businessData = null; // Stores full company data (directors, officers, PSCs)
+    let businessData = null; // Stores full company/charity data (directors/trustees, officers, PSCs)
     
     // ===== UTILITY FUNCTIONS =====
     
@@ -1375,11 +1383,13 @@
     
     // ===== ENTITY MODE TOGGLE =====
     
-    function switchToEntityMode() {
+    function switchToEntityMode(type = 'business') {
       isEntityMode = true;
+      entityType = type;
       entityFields.classList.remove('hidden');
       individualFields.classList.add('hidden');
-      console.log('Switched to entity mode');
+      updateEntityLabels();
+      console.log(`Switched to entity mode: ${type}`);
     }
     
     function switchToIndividualMode() {
@@ -1387,6 +1397,26 @@
       entityFields.classList.add('hidden');
       individualFields.classList.remove('hidden');
       console.log('Switched to individual mode');
+    }
+    
+    /*
+    Update labels based on entity type (business vs charity)
+    */
+    function updateEntityLabels() {
+      const isCharity = entityType === 'charity';
+      
+      // Update labels
+      document.querySelector('label[for="businessName"]').textContent = isCharity ? 'Charity Name' : 'Business Name';
+      document.querySelector('label[for="entityNumber"]').textContent = isCharity ? 'Charity Number' : 'Company Number';
+      
+      // Update placeholders
+      businessName.placeholder = isCharity ? 'Search by charity name...' : 'Search by company name...';
+      entityNumber.placeholder = isCharity ? 'Search by charity number...' : 'Search by company number...';
+      
+      // Update registration country label
+      document.querySelector('label[for="registrationCountry"]').textContent = 'Registration Country';
+      
+      console.log(`✏️ Labels updated for ${entityType} mode`);
     }
     
     // ===== CACHE MANAGEMENT =====
@@ -1929,15 +1959,18 @@
         
         // Show loading
         businessNameDropdown.classList.remove('hidden');
-        businessNameDropdown.innerHTML = '<div class="address-loading">Searching companies...</div>';
+        const searchingText = entityType === 'charity' ? 'Searching charities...' : 'Searching companies...';
+        businessNameDropdown.innerHTML = `<div class="address-loading">${searchingText}</div>`;
         
         // Debounce 300ms
         companyNameDebounceTimer = setTimeout(() => {
-          console.log('📡 API call for company name search:', searchTerm);
+          const apiType = entityType === 'charity' ? 'charity-search' : 'company-search';
+          console.log(`📡 API call for ${entityType} name search:`, searchTerm);
           window.parent.postMessage({
-            type: 'company-search',
+            type: apiType,
             searchTerm: searchTerm,
-            searchBy: 'name'
+            searchBy: 'name',
+            entityType: entityType
           }, '*');
         }, 300);
       });
@@ -2003,15 +2036,18 @@
         
         // Show loading
         entityNumberDropdown.classList.remove('hidden');
-        entityNumberDropdown.innerHTML = '<div class="address-loading">Searching companies...</div>';
+        const searchingText = entityType === 'charity' ? 'Searching charities...' : 'Searching companies...';
+        entityNumberDropdown.innerHTML = `<div class="address-loading">${searchingText}</div>`;
         
         // Debounce 300ms
         companyNumberDebounceTimer = setTimeout(() => {
-          console.log('📡 API call for company number search:', searchTerm);
+          const apiType = entityType === 'charity' ? 'charity-search' : 'company-search';
+          console.log(`📡 API call for ${entityType} number search:`, searchTerm);
           window.parent.postMessage({
-            type: 'company-search',
+            type: apiType,
             searchTerm: searchTerm,
-            searchBy: 'number'
+            searchBy: 'number',
+            entityType: entityType
           }, '*');
         }, 300);
       });
@@ -2100,11 +2136,13 @@
       businessNameDropdown.classList.add('hidden');
       entityNumberDropdown.classList.add('hidden');
       
-      // Request full company data from parent (directors, officers, PSCs)
-      console.log('📡 Requesting full company data for:', company.company_number);
+      // Request full company/charity data from parent (directors/trustees, officers, PSCs)
+      const apiType = entityType === 'charity' ? 'charity-lookup' : 'company-lookup';
+      console.log(`📡 Requesting full ${entityType} data for:`, company.company_number);
       window.parent.postMessage({
-        type: 'company-lookup',
-        companyNumber: company.company_number
+        type: apiType,
+        companyNumber: company.company_number,
+        entityType: entityType
       }, '*');
       
       // Trigger unsaved changes
@@ -2314,12 +2352,19 @@
     }
     
     /*
-    Open Companies House page for the linked company
+    Open Companies House or Charity Commission page for the linked entity
     */
     function openCompaniesHousePage() {
       if (entityNumber?.value?.trim()) {
-        const companyNumber = entityNumber.value.trim();
-        const url = `https://find-and-update.company-information.service.gov.uk/company/${companyNumber}`;
+        const entityNum = entityNumber.value.trim();
+        let url;
+        
+        if (entityType === 'charity') {
+          url = `https://register-of-charities.charitycommission.gov.uk/charity-search/-/charity-details/${entityNum}`;
+        } else {
+          url = `https://find-and-update.company-information.service.gov.uk/company/${entityNum}`;
+        }
+        
         window.open(url, '_blank');
       }
     }
@@ -2330,10 +2375,12 @@
     function refreshCompanyData() {
       if (entityNumber?.value?.trim()) {
         const companyNumber = entityNumber.value.trim();
-        console.log('🔄 Refreshing company data for:', companyNumber);
+        const apiType = entityType === 'charity' ? 'charity-lookup' : 'company-lookup';
+        console.log(`🔄 Refreshing ${entityType} data for:`, companyNumber);
         window.parent.postMessage({
-          type: 'company-lookup',
-          companyNumber: companyNumber
+          type: apiType,
+          companyNumber: companyNumber,
+          entityType: entityType
         }, '*');
       }
     }
@@ -2553,6 +2600,7 @@
         e: email?.value?.trim() || undefined,                // email
         eN: entityNumber?.value?.trim() || undefined,        // entityNumber
         rC: registrationCountry?.value || undefined,         // registrationCountry
+        eT: isEntityMode ? entityType : undefined,           // entityType ('business' or 'charity')
         bD: businessData || undefined                        // businessData (directors, officers, PSCs, registered office)
       };
       
@@ -2757,7 +2805,8 @@
     
     window.addEventListener('message', (event) => {
       if (event.data && event.data.type === 'entity-true') {
-        switchToEntityMode();
+        const type = event.data.entityType || 'business'; // 'business' or 'charity'
+        switchToEntityMode(type);
       } else if (event.data && event.data.type === 'entity-false') {
         switchToIndividualMode();
       } else if (event.data && event.data.type === 'allowEdits-true') {
@@ -2769,7 +2818,8 @@
         
         // Handle entity flag from message
         if (event.data.entity === true) {
-          switchToEntityMode();
+          const type = event.data.entityType || 'business'; // 'business' or 'charity'
+          switchToEntityMode(type);
         } else {
           switchToIndividualMode();
         }
@@ -2843,12 +2893,12 @@
         }
         
         handleAddressData(event.data.address, event.data.field);
-      } else if (event.data && event.data.type === 'company-results') {
-        // Display company search results
+      } else if (event.data && (event.data.type === 'company-results' || event.data.type === 'charity-results')) {
+        // Display company/charity search results
         displayCompanySuggestions(event.data.companies, event.data.searchBy);
-      } else if (event.data && event.data.type === 'company-data') {
-        // Store full company data (directors, officers, PSCs, etc.)
-        handleCompanyData(event.data.companyData);
+      } else if (event.data && (event.data.type === 'company-data' || event.data.type === 'charity-data')) {
+        // Store full company/charity data (directors/trustees, officers, PSCs, etc.)
+        handleCompanyData(event.data.companyData || event.data.charityData);
       }
     });
     
@@ -2937,13 +2987,17 @@
       
       // Populate entity or individual fields
       if (isEntityMode) {
+        entityType = formData.eT || 'business'; // Load entity type
         registrationCountry.value = formData.rC || 'GB';
         businessName.value = formData.n?.b || '';
         entityNumber.value = formData.eN || '';
         businessData = formData.bD || null;
         
+        // Update labels based on entity type
+        updateEntityLabels();
+        
         if (businessData) {
-          console.log('✅ Loaded company data:', businessData);
+          console.log(`✅ Loaded ${entityType} data:`, businessData);
         }
         
         // Update button visibility
