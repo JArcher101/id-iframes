@@ -223,6 +223,11 @@
       color: #7b1fa2;
     }
     
+    .badge-trustee {
+      background: #fff3e0;
+      color: #e65100;
+    }
+    
     .badge-psc {
       background: #e8f5e9;
       color: #388e3c;
@@ -2231,22 +2236,27 @@
       // Use a map to merge duplicates by normalized name
       const peopleMap = new Map();
       
-      // Extract Officers and Directors
+      // Extract Officers, Directors, and Trustees
       if (businessData.officers && businessData.officers.length > 0) {
         businessData.officers.forEach(officer => {
           const normalizedName = normalizeName(officer.name);
           const existing = peopleMap.get(normalizedName);
           
+          // Determine role type
+          let roleType;
+          if (officer.officer_role === 'director') roleType = 'director';
+          else if (officer.officer_role === 'trustee') roleType = 'trustee';
+          else roleType = 'officer';
+          
           if (existing) {
             // Add role if not already present
-            const roleType = officer.officer_role === 'director' ? 'director' : 'officer';
             if (!existing.types.includes(roleType)) {
               existing.types.push(roleType);
             }
           } else {
             peopleMap.set(normalizedName, {
               displayName: officer.name,
-              types: [officer.officer_role === 'director' ? 'director' : 'officer'],
+              types: [roleType],
               share: null
             });
           }
@@ -2318,8 +2328,10 @@
         let badgesHtml = '';
         person.types.forEach(type => {
           const badgeClass = type === 'director' ? 'badge-director' : 
+                            type === 'trustee' ? 'badge-trustee' :
                             type === 'psc' ? 'badge-psc' : 'badge-officer';
           const badgeText = type === 'director' ? 'Director' : 
+                           type === 'trustee' ? 'Trustee' :
                            type === 'psc' ? 'PSC' : 'Officer';
           badgesHtml += `<span class="people-card-badge ${badgeClass}">${badgeText}</span>`;
         });
@@ -2347,7 +2359,10 @@
     */
     function clearPeopleCards() {
       if (peopleRepeater) {
-        peopleRepeater.innerHTML = '<div class="no-people-message">Link a company to view officers, directors, and PSCs</div>';
+        const message = entityType === 'charity' 
+          ? 'Link a charity to view trustees and directors'
+          : 'Link a company to view officers, directors, and PSCs';
+        peopleRepeater.innerHTML = `<div class="no-people-message">${message}</div>`;
       }
     }
     
