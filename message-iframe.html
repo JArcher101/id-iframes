@@ -691,12 +691,12 @@
         /* 
         =====================================================================
         RESPONSIVE LAYOUT - Mobile/Small Screen Adjustments
-        - Breakpoint: 500px (handles 330px iframe width)
+        - Breakpoint: 400px (handles 370px iframe width)
         - Stacks send button below text input and upload button
         - Adjusts heights and spacing for compact layout
         =====================================================================
         */
-        @media (max-width: 500px) {
+        @media (max-width: 400px) {
             .chat-header {
                 padding: 8px;
                 gap: 6px;
@@ -731,8 +731,9 @@
             .text-input {
                 width: 100%; /* Full width on first row */
                 order: 1;
-                height: 40px; /* Shorter to save space */
+                height: 50px; /* Taller for better usability */
                 font-size: 14px;
+                padding: 12px; /* More padding for easier typing */
             }
 
             .upload-area {
