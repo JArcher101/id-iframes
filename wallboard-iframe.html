@@ -1759,8 +1759,10 @@
         // Intercept analytics requests and respond with mock data
         const originalPostMessage = window.parent.postMessage;
         window.parent.postMessage = function(message, targetOrigin) {
+            console.log('🔍 postMessage interceptor called with:', message);
+            
             // Check if it's an analytics request
-            if (message.type === 'fe-analytics') {
+            if (message && message.type === 'fe-analytics') {
                 console.log('🎭 Mock: Intercepted analytics request for:', message.fe);
                 
                 // Simulate delay
@@ -1768,10 +1770,13 @@
                     let analyticsData;
                     
                     if (message.fe === 'ALL') {
+                        console.log('📊 Returning ALL analytics data');
                         analyticsData = mockAnalyticsDataAll;
                     } else if (message.fe === 'SJM') {
+                        console.log('📊 Returning SJM analytics data');
                         analyticsData = mockAnalyticsDataSJM;
                     } else {
+                        console.log('📊 Returning generic analytics data for:', message.fe);
                         // For other fee earners, return a simplified version
                         analyticsData = {
                             totalAwaiting: 20,
@@ -1779,15 +1784,31 @@
                             totalRequests: "0",
                             totalPending: 5,
                             added7: 2,
+                            added830: 8,
+                            over30: 10,
                             pass90: 50,
+                            ePass90: 30,
+                            idHeld90: 20,
                             totalPasses90: 100,
                             totalPasses7: 15,
                             totalPasses30: 30,
                             totalIssues: 0,
+                            totalIssues7: 0,
                             totalBio: 2,
+                            totalBio7: 1,
+                            totalPpep: 0,
+                            totalCpep: 0,
+                            totalNpep: 20,
+                            formJ: 0,
+                            formE: 0,
+                            formK: 0,
+                            eSoF: 0,
+                            formEsoF: [],
                             messages: 30
                         };
                     }
+                    
+                    console.log('✅ Dispatching analytics-data response');
                     
                     // Send mock analytics response
                     window.dispatchEvent(new MessageEvent('message', {
@@ -1798,13 +1819,13 @@
                         },
                         origin: window.location.origin
                     }));
-                }, 500); // Simulate network delay
+                }, 300); // Simulate network delay (reduced to 300ms for better UX)
                 
                 return; // Don't call original postMessage
             }
             
             // For other message types, call original (or ignore in standalone mode)
-            console.log('📤 Message to parent:', message.type);
+            console.log('📤 Message to parent (not intercepted):', message.type);
         };
         
         function loadMockData() {
