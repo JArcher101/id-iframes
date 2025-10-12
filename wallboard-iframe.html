@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallboard</title>
+    
+    <!-- Google Fonts - Quicksand as fallback -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        /*
+        =====================================================================
+        CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
+        =====================================================================
+        Transport Medium → fallback to Quicksand Bold (700)
+        Rotis fonts → fallback to Quicksand Regular (400) or Italic
+        =====================================================================
+        */
+        
+        /* Transport Medium - for headings and buttons */
+        @font-face {
+            font-family: 'Transport';
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+            unicode-range: U+0000-003F, U+0041-FFFF;
+            src: url(data:font/truetype;charset=utf-8;base64,) format('truetype');
+        }
+        
+        /* Rotis Sans Serif Regular - for body text */
+        @font-face {
+            font-family: 'RotisRegular';
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,) format('opentype');
+        }
+        
+        /* Rotis Sans Serif Italic - for timestamps */
+        @font-face {
+            font-family: 'RotisItalic';
+            font-weight: 400;
+            font-style: italic;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,) format('opentype');
+        }
+        
+        /* Rotis Sans Serif Extra Bold - for table headers */
+        @font-face {
+            font-family: 'RotisBold';
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,) format('truetype');
+        }
+        
+        /*
+        =====================================================================
+        WALLBOARD IFRAME - STYLE SECTION
+        =====================================================================
+        This iframe displays ID system metrics in a table format with
+        controls for refreshing data, viewing analytics, and downloading PDF reports.
+        
+        COMMUNICATION ARCHITECTURE:
+        - Parent sends: 'wallboard-data' with metrics and dropdown options
+        - Child sends: 'refresh-request'
+        - Child downloads: PDF report (no parent communication needed)
+        
+        VIEWS:
+        1. WALLBOARD VIEW - Table of metrics by fee earner
+        2. ANALYTICS VIEW - Charts breakdown for selected fee earner
+        =====================================================================
+        */
+        
+        /* Global reset */
+        * { 
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: white;
+            width: 100%;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        /* 
+        =====================================================================
+        CONTAINER & LAYOUT
+        =====================================================================
+        */
+        .wallboard-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 900px;
+            max-width: 100%;
+            background: white;
+            margin: 0 auto;
+        }
+
+        /* 
+        =====================================================================
+        HEADER SECTION - Controls and countdown
+        =====================================================================
+        */
+        .header {
+            background: #f5f5f5;
+            border-bottom: 2px solid #D4A574; /* Pantone 451C */
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-title {
+            font-family: 'Transport', 'Quicksand', sans-serif;
+            font-size: 24px;
+            font-weight: 500;
+            color: rgb(0, 60, 113); /* Brand navy blue */
+            margin: 0;
+        }
+
+        .countdown-text {
+            font-family: 'RotisItalic', 'Quicksand', sans-serif;
+            font-size: 14px;
+            font-style: italic;
+            color: #666;
+            margin-left: auto;
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Button styles */
+        .btn {
+            font-family: 'Transport', 'Quicksand', sans-serif;
+            background: rgb(0, 60, 113);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: rgb(0, 40, 80);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #D4A574; /* Pantone 451C */
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #b88e5d;
+        }
+
+        .btn-mock {
+            background: #28a745 !important;
+            margin-left: auto;
+        }
+
+        .btn-mock:hover:not(:disabled) {
+            background: #218838 !important;
+        }
+
+        /* Dropdown styles */
+        .dropdown {
+            font-family: 'RotisRegular', 'Quicksand', sans-serif;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            color: rgb(0, 60, 113);
+            background: white;
+            cursor: pointer;
+            min-width: 150px;
+        }
+
+        .dropdown:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+            color: #999;
+        }
+
+        .dropdown:focus {
+            outline: none;
+            border-color: rgb(0, 60, 113);
+            box-shadow: 0 0 0 2px rgba(0, 60, 113, 0.2);
+        }
+
+        /* 
+        =====================================================================
+        WALLBOARD VIEW - Metrics table
+        =====================================================================
+        */
+        .view-container {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        .wallboard-view {
+            display: block;
+        }
+
+        .analytics-view {
+            display: none;
+        }
+
+        /* Table styles */
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .metrics-table thead {
+            background: rgb(0, 60, 113); /* Brand navy blue */
+            color: white;
+        }
+
+        .metrics-table th {
+            font-family: 'RotisBold', 'Quicksand', sans-serif;
+            font-weight: 700;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .metrics-table th:first-child {
+            text-align: left;
+            min-width: 200px;
+        }
+
+        .metrics-table th:not(:first-child) {
+            text-align: center;
+        }
+
+        .metrics-table tbody tr {
+            border-bottom: 1px solid #eee;
+            transition: all 0.2s ease;
+        }
+
+        .metrics-table tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        .metrics-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .metrics-table td {
+            font-family: 'RotisRegular', 'Quicksand', sans-serif;
+            padding: 12px 16px;
+            font-size: 14px;
+            color: #333;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .metrics-table td:first-child {
+            font-weight: 600;
+            color: rgb(0, 60, 113);
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .metrics-table th:first-child {
+            cursor: default;
+        }
+
+        .metrics-table td:not(:first-child) {
+            text-align: center;
+            font-weight: 400;
+        }
+
+        /* Alternate row coloring */
+        .metrics-table tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        .metrics-table tbody tr:nth-child(even):hover {
+            background: #f5f5f5;
+        }
+
+        /* Hover highlighting effects */
+        .metrics-table th.column-highlight {
+            background: #003a71 !important; /* Darker navy for column header highlight */
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0, 60, 113, 0.3);
+        }
+
+        .metrics-table td.column-highlight {
+            background: rgba(0, 60, 113, 0.1) !important;
+            font-weight: 600;
+        }
+
+        .metrics-table tr.row-highlight td {
+            background: rgba(212, 165, 116, 0.15) !important; /* Tan highlight */
+            font-weight: 600;
+        }
+
+        .metrics-table td.cell-highlight {
+            background: rgba(0, 60, 113, 0.25) !important;
+            font-weight: 700;
+            color: rgb(0, 60, 113);
+            transform: scale(1.05);
+            box-shadow: 0 0 8px rgba(0, 60, 113, 0.4);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 
+        =====================================================================
+        ANALYTICS VIEW - Charts display
+        =====================================================================
+        */
+        .analytics-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .analytics-title {
+            font-family: 'Transport', 'Quicksand', sans-serif;
+            font-size: 22px;
+            font-weight: 500;
+            color: rgb(0, 60, 113);
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            font-family: 'RotisBold', 'Quicksand', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: rgb(0, 60, 113);
+            margin-bottom: 15px;
+        }
+
+        .chart-placeholder {
+            font-family: 'RotisItalic', 'Quicksand', sans-serif;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            border-radius: 6px;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* 
+        =====================================================================
+        LOADING STATE
+        =====================================================================
+        */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid rgb(0, 60, 113);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 
+        =====================================================================
+        RESPONSIVE DESIGN
+        =====================================================================
+        */
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 15px;
+            }
+
+            .header-title {
+                font-size: 20px;
+            }
+
+            .controls-row {
+                width: 100%;
+            }
+
+            .btn, .dropdown {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .view-container {
+                padding: 15px;
+            }
+
+            .metrics-table {
+                font-size: 12px;
+            }
+
+            .metrics-table th,
+            .metrics-table td {
+                padding: 8px 10px;
+            }
+
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                font-size: 18px;
+            }
+
+            .btn, .dropdown {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+
+            .countdown-text {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="wallboard-container">
+        <!-- Header with controls -->
+        <div class="header">
+            <div class="header-row">
+                <h1 class="header-title">ID System Wallboard</h1>
+                <span class="countdown-text" id="countdownText">Refreshing in: 5:00</span>
+            </div>
+            <div class="controls-row">
+                <button class="btn" id="refreshBtn" disabled onclick="refreshWallboard()">Refresh</button>
+                <select class="dropdown" id="feeEarnerDropdown" disabled onchange="handleFeeEarnerChange()">
+                    <option value="">Select Fee Earner...</option>
+                </select>
+                <button class="btn btn-secondary" id="analyticsBtn" disabled onclick="showAnalytics()">Analytics</button>
+                <button class="btn" id="downloadBtn" disabled onclick="downloadWallboardPDF()">Download PDF</button>
+                <button class="btn btn-mock" onclick="loadMockData()">Load Mock Data</button>
+            </div>
+        </div>
+
+        <!-- Main content area -->
+        <div class="view-container">
+            <!-- Wallboard View -->
+            <div class="wallboard-view" id="wallboardView">
+                <table class="metrics-table" id="metricsTable">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>SJM</th>
+                            <th>MB</th>
+                            <th>SKN</th>
+                            <th>EL</th>
+                            <th>EJL</th>
+                            <th>LJD</th>
+                            <th>MLP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="metricsBody">
+                        <!-- Rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Analytics View -->
+            <div class="analytics-view" id="analyticsView">
+                <div class="analytics-header">
+                    <h2 class="analytics-title" id="analyticsTitle">Analytics: All Fee Earners</h2>
+                    <button class="btn" onclick="backToWallboard()">Back to Wallboard</button>
+                </div>
+                <div class="charts-container" id="chartsContainer">
+                    <!-- Charts will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /*
+        =====================================================================
+        WALLBOARD IFRAME - JAVASCRIPT SECTION
+        =====================================================================
+        
+        GLOBAL STATE VARIABLES:
+        - wallboardData: Complete metrics array from parent
+        - feeEarnerOptions: Dropdown options for fee earner selection
+        - countdownInterval: Timer for 5-minute countdown
+        - remainingTime: Seconds remaining until auto-refresh
+        - selectedFeeEarner: Currently selected fee earner for analytics
+        
+        PARENT-CHILD COMMUNICATION:
+        
+        INCOMING MESSAGES (from parent):
+        1. 'wallboard-data' - Complete metrics data and dropdown options
+           Structure: {
+               type: 'wallboard-data',
+               wallboard: [
+                   { title: 'Outstanding total', sjm: 5, mb: 3, ... },
+                   { title: 'Outstanding With Photo ID', sjm: 2, mb: 1, ... },
+                   ...
+               ],
+               feeEarnerOptions: [
+                   { label: 'All', value: 'all' },
+                   { label: 'Sarah Morgan (SJM)', value: 'sjm' },
+                   ...
+               ]
+           }
+        
+        OUTGOING MESSAGES (to parent):
+        1. 'refresh-request' - Request fresh wallboard data
+        
+        PDF DOWNLOADS (no parent communication):
+        - Download button generates PDF locally using jsPDF library
+        - Includes all wallboard metrics in formatted table
+        - Auto-downloads with timestamp filename
+        
+        COUNTDOWN TIMER:
+        - Starts at 5:00 (300 seconds) when data received
+        - Updates display every second
+        - Sends 'refresh-request' when reaches 0:00
+        - Resets to 5:00 after refresh
+        
+        =====================================================================
+        */
+        
+        // Global state
+        let wallboardData = null;
+        let feeEarnerOptions = [];
+        let countdownInterval = null;
+        let remainingTime = 300; // 5 minutes in seconds
+        let selectedFeeEarner = '';
+
+        /*
+        =====================================================================
+        INITIALIZATION - Ready to receive data
+        =====================================================================
+        */
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ready and waiting for wallboard-data from parent
+            // Or user can click "Load Mock Data" button to test
+            console.log('Wallboard iframe ready');
+        });
+
+        /*
+        =====================================================================
+        MESSAGE LISTENER - Handle parent communication
+        =====================================================================
+        */
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'wallboard-data') {
+                const data = event.data;
+                
+                // Store data
+                wallboardData = data.wallboard || [];
+                feeEarnerOptions = data.feeEarnerOptions || [];
+                
+                // Populate table
+                populateMetricsTable(wallboardData);
+                
+                // Populate dropdown
+                populateFeeEarnerDropdown(feeEarnerOptions);
+                
+                // Enable controls
+                enableControls();
+                
+                // Start countdown
+                startCountdown();
+                
+                // Hide loading
+                hideLoading();
+                
+                console.log('Wallboard data received and displayed');
+            }
+        });
+
+        /*
+        =====================================================================
+        POPULATE METRICS TABLE
+        =====================================================================
+        */
+        function populateMetricsTable(data) {
+            const tbody = document.getElementById('metricsBody');
+            tbody.innerHTML = ''; // Clear existing rows
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #666;">No data available</td></tr>';
+                return;
+            }
+            
+            // Fee earner keys in order
+            const feeEarners = ['sjm', 'mb', 'skn', 'el', 'ejl', 'ljd', 'mlp'];
+            
+            // Create a row for each metric
+            data.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                tr.dataset.rowIndex = rowIndex;
+                
+                // Title cell (metric name)
+                const titleCell = document.createElement('td');
+                titleCell.textContent = row.title || 'Unknown Metric';
+                titleCell.dataset.isTitle = 'true';
+                tr.appendChild(titleCell);
+                
+                // Data cells for each fee earner
+                feeEarners.forEach((fe, colIndex) => {
+                    const dataCell = document.createElement('td');
+                    dataCell.textContent = row[fe] !== undefined ? row[fe] : '-';
+                    dataCell.dataset.colIndex = colIndex;
+                    dataCell.dataset.rowIndex = rowIndex;
+                    tr.appendChild(dataCell);
+                });
+                
+                tbody.appendChild(tr);
+            });
+            
+            // Add hover event listeners
+            addTableHoverEffects();
+        }
+
+        /*
+        =====================================================================
+        ADD TABLE HOVER EFFECTS - Interactive highlighting
+        =====================================================================
+        */
+        function addTableHoverEffects() {
+            const table = document.getElementById('metricsTable');
+            const thead = table.querySelector('thead');
+            const tbody = table.querySelector('tbody');
+            
+            // 1. Column header hover - highlight entire column
+            const headers = thead.querySelectorAll('th');
+            headers.forEach((th, index) => {
+                if (index === 0) return; // Skip first header (Metric column)
+                
+                th.addEventListener('mouseenter', function() {
+                    highlightColumn(index);
+                });
+                
+                th.addEventListener('mouseleave', function() {
+                    clearAllHighlights();
+                });
+            });
+            
+            // 2. Metric name (first cell in row) hover - highlight entire row
+            const titleCells = tbody.querySelectorAll('td[data-is-title="true"]');
+            titleCells.forEach(titleCell => {
+                titleCell.addEventListener('mouseenter', function() {
+                    const row = this.parentElement;
+                    row.classList.add('row-highlight');
+                });
+                
+                titleCell.addEventListener('mouseleave', function() {
+                    clearAllHighlights();
+                });
+            });
+            
+            // 3. Data cell hover - highlight both row and column
+            const dataCells = tbody.querySelectorAll('td[data-col-index]');
+            dataCells.forEach(dataCell => {
+                dataCell.addEventListener('mouseenter', function() {
+                    const colIndex = parseInt(this.dataset.colIndex);
+                    const row = this.parentElement;
+                    
+                    // Highlight the row
+                    row.classList.add('row-highlight');
+                    
+                    // Highlight the column
+                    highlightColumn(colIndex + 1); // +1 because column 0 is the title column
+                    
+                    // Extra highlight for the specific cell
+                    this.classList.add('cell-highlight');
+                });
+                
+                dataCell.addEventListener('mouseleave', function() {
+                    clearAllHighlights();
+                });
+            });
+        }
+
+        /*
+        =====================================================================
+        HIGHLIGHT COLUMN - Add highlight class to all cells in column
+        =====================================================================
+        */
+        function highlightColumn(colIndex) {
+            const table = document.getElementById('metricsTable');
+            
+            // Highlight header
+            const headers = table.querySelectorAll('thead th');
+            if (headers[colIndex]) {
+                headers[colIndex].classList.add('column-highlight');
+            }
+            
+            // Highlight all data cells in this column
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells[colIndex]) {
+                    cells[colIndex].classList.add('column-highlight');
+                }
+            });
+        }
+
+        /*
+        =====================================================================
+        CLEAR ALL HIGHLIGHTS - Remove all highlight classes
+        =====================================================================
+        */
+        function clearAllHighlights() {
+            const table = document.getElementById('metricsTable');
+            
+            // Clear column highlights
+            table.querySelectorAll('.column-highlight').forEach(el => {
+                el.classList.remove('column-highlight');
+            });
+            
+            // Clear row highlights
+            table.querySelectorAll('.row-highlight').forEach(el => {
+                el.classList.remove('row-highlight');
+            });
+            
+            // Clear cell highlights
+            table.querySelectorAll('.cell-highlight').forEach(el => {
+                el.classList.remove('cell-highlight');
+            });
+        }
+
+        /*
+        =====================================================================
+        POPULATE FEE EARNER DROPDOWN
+        =====================================================================
+        */
+        function populateFeeEarnerDropdown(options) {
+            const dropdown = document.getElementById('feeEarnerDropdown');
+            
+            // Clear existing options except the first placeholder
+            dropdown.innerHTML = '<option value="">Select Fee Earner...</option>';
+            
+            if (!options || options.length === 0) {
+                return;
+            }
+            
+            // Add options
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.label;
+                dropdown.appendChild(option);
+            });
+        }
+
+        /*
+        =====================================================================
+        ENABLE CONTROLS - After data loaded
+        =====================================================================
+        */
+        function enableControls() {
+            document.getElementById('refreshBtn').disabled = false;
+            document.getElementById('feeEarnerDropdown').disabled = false;
+            document.getElementById('downloadBtn').disabled = false;
+        }
+
+        /*
+        =====================================================================
+        COUNTDOWN TIMER FUNCTIONS
+        =====================================================================
+        */
+        function startCountdown() {
+            // Stop any existing countdown
+            stopCountdown();
+            
+            // Reset to 5 minutes
+            remainingTime = 300;
+            
+            // Update display immediately
+            updateCountdownDisplay();
+            
+            // Start interval
+            countdownInterval = setInterval(() => {
+                remainingTime--;
+                updateCountdownDisplay();
+                
+                if (remainingTime <= 0) {
+                    // Time expired - refresh
+                    refreshWallboard();
+                }
+            }, 1000);
+        }
+
+        function stopCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        function updateCountdownDisplay() {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            const formatted = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            
+            document.getElementById('countdownText').textContent = `Refreshing in: ${formatted}`;
+        }
+
+        /*
+        =====================================================================
+        REFRESH WALLBOARD - Request fresh data from parent
+        =====================================================================
+        */
+        function refreshWallboard() {
+            console.log('Refresh requested');
+            
+            // Show loading
+            showLoading();
+            
+            // Stop countdown
+            stopCountdown();
+            
+            // Disable controls during refresh
+            document.getElementById('refreshBtn').disabled = true;
+            document.getElementById('analyticsBtn').disabled = true;
+            document.getElementById('downloadBtn').disabled = true;
+            document.getElementById('feeEarnerDropdown').disabled = true;
+            
+            // Request fresh data from parent
+            window.parent.postMessage({
+                type: 'refresh-request'
+            }, '*');
+            
+            // Note: Parent will respond with new 'wallboard-data' message
+            // which will re-enable controls and restart countdown
+        }
+
+        /*
+        =====================================================================
+        DOWNLOAD WALLBOARD PDF - Generate and download metrics table as PDF
+        =====================================================================
+        */
+        function downloadWallboardPDF() {
+            if (!wallboardData || wallboardData.length === 0 || !window.jspdf) {
+                console.error('Cannot generate PDF: missing data or jsPDF library');
+                return;
+            }
+            
+            console.log('📄 Generating wallboard PDF...');
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'pt', 'a4'); // Landscape orientation for wide table
+            
+            const generatedDate = new Date().toLocaleString('en-GB', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            // A4 Landscape: 842pt wide, 595pt tall
+            const pageWidth = 842;
+            const pageHeight = 595;
+            const margin = 40;
+            let yPosition = margin;
+            
+            // Set font
+            doc.setFont('helvetica');
+            
+            // Header - Thurstan Hoskin branding
+            doc.setFontSize(24);
+            doc.setTextColor(0, 60, 113);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Thurstan Hoskin', margin, yPosition);
+            
+            doc.setFontSize(18);
+            doc.text("Val'ID'ate Wallboard", pageWidth - margin - 180, yPosition);
+            
+            yPosition += 10;
+            
+            // Header border
+            doc.setDrawColor(0, 60, 113);
+            doc.setLineWidth(3);
+            doc.line(margin, yPosition, pageWidth - margin, yPosition);
+            
+            yPosition += 25;
+            
+            // Document title
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            const title = 'ID System Metrics - Wallboard Report';
+            const titleWidth = doc.getTextWidth(title);
+            doc.text(title, (pageWidth - titleWidth) / 2, yPosition);
+            
+            yPosition += 20;
+            
+            // Generation timestamp
+            doc.setFontSize(12);
+            doc.setTextColor(102, 102, 102);
+            doc.setFont('helvetica', 'normal');
+            const timestamp = `Generated: ${generatedDate}`;
+            const timestampWidth = doc.getTextWidth(timestamp);
+            doc.text(timestamp, (pageWidth - timestampWidth) / 2, yPosition);
+            
+            yPosition += 25;
+            
+            // Build table data
+            const feeEarners = ['sjm', 'mb', 'skn', 'el', 'ejl', 'ljd', 'mlp'];
+            const tableData = wallboardData.map(row => {
+                return [
+                    row.title || 'Unknown',
+                    row.sjm !== undefined ? row.sjm : '-',
+                    row.mb !== undefined ? row.mb : '-',
+                    row.skn !== undefined ? row.skn : '-',
+                    row.el !== undefined ? row.el : '-',
+                    row.ejl !== undefined ? row.ejl : '-',
+                    row.ljd !== undefined ? row.ljd : '-',
+                    row.mlp !== undefined ? row.mlp : '-'
+                ];
+            });
+            
+            // Create table using autoTable
+            doc.autoTable({
+                startY: yPosition,
+                head: [['Metric', 'SJM', 'MB', 'SKN', 'EL', 'EJL', 'LJD', 'MLP']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: {
+                    fillColor: [0, 60, 113],
+                    textColor: 255,
+                    fontSize: 11,
+                    fontStyle: 'bold',
+                    halign: 'center'
+                },
+                bodyStyles: {
+                    fontSize: 10,
+                    textColor: [51, 51, 51]
+                },
+                columnStyles: {
+                    0: { halign: 'left', fontStyle: 'bold', cellWidth: 200 }, // Metric column
+                    1: { halign: 'center' },
+                    2: { halign: 'center' },
+                    3: { halign: 'center' },
+                    4: { halign: 'center' },
+                    5: { halign: 'center' },
+                    6: { halign: 'center' },
+                    7: { halign: 'center' }
+                },
+                alternateRowStyles: {
+                    fillColor: [248, 249, 250]
+                },
+                margin: { left: margin, right: margin }
+            });
+            
+            yPosition = doc.lastAutoTable.finalY + 20;
+            
+            // Footer
+            doc.setFontSize(10);
+            doc.setTextColor(102, 102, 102);
+            doc.setFont('helvetica', 'italic');
+            const footer = 'This report contains ID system metrics for all active fee earners at the time of generation.';
+            const footerWidth = doc.getTextWidth(footer);
+            doc.text(footer, (pageWidth - footerWidth) / 2, yPosition);
+            
+            // Generate filename with timestamp
+            const timestamp_file = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+            const filename = `Wallboard_Report_${timestamp_file}.pdf`;
+            
+            // Download
+            doc.save(filename);
+            console.log('📄 PDF downloaded:', filename);
+        }
+
+        /*
+        =====================================================================
+        FEE EARNER SELECTION - Enable analytics button when selected
+        =====================================================================
+        */
+        function handleFeeEarnerChange() {
+            const dropdown = document.getElementById('feeEarnerDropdown');
+            selectedFeeEarner = dropdown.value;
+            
+            // Enable analytics button if fee earner selected
+            const analyticsBtn = document.getElementById('analyticsBtn');
+            analyticsBtn.disabled = !selectedFeeEarner;
+            
+            console.log('Fee earner selected:', selectedFeeEarner);
+        }
+
+        /*
+        =====================================================================
+        SHOW ANALYTICS - Switch to analytics view
+        =====================================================================
+        */
+        function showAnalytics() {
+            if (!selectedFeeEarner) return;
+            
+            console.log('Showing analytics for:', selectedFeeEarner);
+            
+            // Hide wallboard, show analytics
+            document.getElementById('wallboardView').style.display = 'none';
+            document.getElementById('analyticsView').style.display = 'block';
+            
+            // Update analytics title
+            const title = document.getElementById('analyticsTitle');
+            if (selectedFeeEarner === 'all') {
+                title.textContent = 'Analytics: All Fee Earners';
+            } else {
+                const option = feeEarnerOptions.find(opt => opt.value === selectedFeeEarner);
+                title.textContent = option ? `Analytics: ${option.label}` : 'Analytics';
+            }
+            
+            // Generate charts
+            generateCharts(selectedFeeEarner);
+        }
+
+        /*
+        =====================================================================
+        BACK TO WALLBOARD - Switch back to table view
+        =====================================================================
+        */
+        function backToWallboard() {
+            console.log('Returning to wallboard view');
+            
+            // Show wallboard, hide analytics
+            document.getElementById('wallboardView').style.display = 'block';
+            document.getElementById('analyticsView').style.display = 'none';
+        }
+
+        /*
+        =====================================================================
+        GENERATE CHARTS - Create chart placeholders for analytics view
+        =====================================================================
+        */
+        function generateCharts(feeEarner) {
+            const container = document.getElementById('chartsContainer');
+            container.innerHTML = ''; // Clear existing charts
+            
+            if (feeEarner === 'all') {
+                // Charts for all fee earners (comparison charts)
+                const allCharts = [
+                    'Outstanding by Fee Earner',
+                    'Passes (7/30/90 days) Comparison',
+                    'E-ID in Progress by Fee Earner',
+                    'Issues by Fee Earner',
+                    'Pending by Fee Earner',
+                    'Requests by Fee Earner'
+                ];
+                
+                allCharts.forEach(chartTitle => {
+                    createChartCard(chartTitle, container);
+                });
+            } else {
+                // Charts for individual fee earner (time series, breakdowns)
+                const individualCharts = [
+                    'Outstanding Breakdown',
+                    'Pass Trend (7/30/90 days)',
+                    'E-ID Status',
+                    'Issues Timeline',
+                    'Request Status',
+                    'Activity Summary'
+                ];
+                
+                individualCharts.forEach(chartTitle => {
+                    createChartCard(chartTitle, container);
+                });
+            }
+        }
+
+        /*
+        =====================================================================
+        CREATE CHART CARD - Helper to create chart placeholder
+        =====================================================================
+        */
+        function createChartCard(title, container) {
+            const card = document.createElement('div');
+            card.className = 'chart-card';
+            
+            const chartTitle = document.createElement('div');
+            chartTitle.className = 'chart-title';
+            chartTitle.textContent = title;
+            
+            const chartPlaceholder = document.createElement('div');
+            chartPlaceholder.className = 'chart-placeholder';
+            chartPlaceholder.textContent = 'Chart: ' + title;
+            
+            card.appendChild(chartTitle);
+            card.appendChild(chartPlaceholder);
+            container.appendChild(card);
+        }
+
+        /*
+        =====================================================================
+        LOADING STATE FUNCTIONS
+        =====================================================================
+        */
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('show');
+        }
+
+        /*
+        =====================================================================
+        MOCK DATA - For testing purposes
+        =====================================================================
+        */
+        function loadMockData() {
+            console.log('Loading mock data for testing...');
+            
+            const mockData = {
+                type: 'wallboard-data',
+                wallboard: [
+                    {
+                        "title": "Outstanding total",
+                        "sjm": 156,
+                        "mb": 15,
+                        "skn": 20,
+                        "el": 0,
+                        "ejl": 2,
+                        "ljd": 24,
+                        "mlp": 6
+                    },
+                    {
+                        "title": "Outstanding With Photo ID",
+                        "sjm": 16,
+                        "mb": 1,
+                        "skn": 1,
+                        "el": 0,
+                        "ejl": 0,
+                        "ljd": 8,
+                        "mlp": 1
+                    },
+                    {
+                        "title": "Added in last 7 days",
+                        "sjm": 3,
+                        "mb": 2,
+                        "skn": 3,
+                        "el": 0,
+                        "ejl": 1,
+                        "ljd": 6,
+                        "mlp": 0
+                    },
+                    {
+                        "title": "Outstanding over 30 days",
+                        "sjm": 51,
+                        "mb": 0,
+                        "skn": 0,
+                        "el": 0,
+                        "ejl": 0,
+                        "ljd": 6,
+                        "mlp": 0
+                    },
+                    {
+                        "title": "Requests",
+                        "sjm": 0,
+                        "mb": 0,
+                        "skn": 0,
+                        "el": 0,
+                        "ejl": 0,
+                        "ljd": 0,
+                        "mlp": 0
+                    },
+                    {
+                        "title": "Messages",
+                        "sjm": 94,
+                        "mb": 83,
+                        "skn": 2,
+                        "el": 50,
+                        "ejl": 7,
+                        "ljd": 136,
+                        "mlp": 17
+                    },
+                    {
+                        "title": "Unassigned Clients",
+                        "sjm": 0,
+                        "mb": 0,
+                        "skn": 0,
+                        "el": 0,
+                        "ejl": 0,
+                        "ljd": 1,
+                        "mlp": 0
+                    },
+                    {
+                        "title": "E-ID in progress",
+                        "sjm": 5,
+                        "mb": 3,
+                        "skn": 2,
+                        "el": 0,
+                        "ejl": 0,
+                        "ljd": 2,
+                        "mlp": 0
+                    },
+                    {
+                        "title": "E-ID over 1 week old",
+                        "sjm": 2,
+                        "mb": 1,
+                        "skn": 1,
+                        "el": 0,
+                        "ejl": 0,
+                        "ljd": 0,
+                        "mlp": 0
+                    },
+                    {
+                        "title": "Issues",
+                        "sjm": 0,
+                        "mb": 0,
+                        "skn": 1,
+                        "el": 0,
+                        "ejl": 0,
+                        "ljd": 0,
+                        "mlp": 0
+                    },
+                    {
+                        "title": "Passes in last 7 days",
+                        "sjm": 21,
+                        "mb": 13,
+                        "skn": 91,
+                        "el": 8,
+                        "ejl": 6,
+                        "ljd": 11,
+                        "mlp": 1
+                    },
+                    {
+                        "title": "Passes in last 30 days",
+                        "sjm": 40,
+                        "mb": 40,
+                        "skn": 106,
+                        "el": 12,
+                        "ejl": 11,
+                        "ljd": 43,
+                        "mlp": 5
+                    },
+                    {
+                        "title": "Passes in last 90 days",
+                        "sjm": 115,
+                        "mb": 127,
+                        "skn": 131,
+                        "el": 69,
+                        "ejl": 29,
+                        "ljd": 111,
+                        "mlp": 16
+                    },
+                    {
+                        "title": "Pending",
+                        "sjm": 21,
+                        "mb": 7,
+                        "skn": 1,
+                        "el": 0,
+                        "ejl": 0,
+                        "ljd": 0,
+                        "mlp": 0
+                    }
+                ],
+                feeEarnerOptions: [
+                    { label: 'ALL', value: 'ALL' },
+                    { label: 'Stephen Morrison', value: 'SJM' },
+                    { label: 'Mollie Pellowe', value: 'MLP' },
+                    { label: 'Martin Biscombe', value: 'MB' },
+                    { label: 'Samantha Newton', value: 'SKN' },
+                    { label: 'Emma Lilley', value: 'EL' },
+                    { label: 'Emma Lockie', value: 'EJL' },
+                    { label: 'Louise Deere', value: 'LJD' },
+                    { label: 'Barbara Archer', value: 'BA' }
+                ]
+            };
+            
+            // Simulate receiving message from parent
+            window.dispatchEvent(new MessageEvent('message', {
+                data: mockData,
+                origin: window.location.origin
+            }));
+        }
+
+    </script>
+    
+    <!-- jsPDF library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</body>
+</html>
+
