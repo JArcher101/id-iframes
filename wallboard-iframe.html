@@ -402,6 +402,11 @@
             font-style: italic;
         }
 
+        .chart-canvas {
+            width: 100%;
+            height: 300px;
+        }
+
         /* 
         =====================================================================
         LOADING STATE
@@ -1282,9 +1287,7 @@
 
         /*
         =====================================================================
-        CREATE CHART CARD - Helper to create chart placeholder or chart
-        =====================================================================
-        TODO: Replace placeholders with actual Chart.js charts
+        CREATE CHART CARD - Helper to create chart with Chart.js
         =====================================================================
         */
         function createChartCard(title, container, feeEarner = null, analyticsData = null) {
@@ -1295,37 +1298,503 @@
             chartTitle.className = 'chart-title';
             chartTitle.textContent = title;
             
-            const chartPlaceholder = document.createElement('div');
-            chartPlaceholder.className = 'chart-placeholder';
-            
-            // Determine data source for display
-            if (feeEarner === 'ALL') {
-                // ALL mode: Uses aggregated analytics + wallboard breakdowns
-                chartPlaceholder.innerHTML = `
-                    <div style="text-align: center;">
-                        <div style="font-weight: 600; margin-bottom: 8px;">${title}</div>
-                        <div style="font-size: 12px; color: #999;">
-                            Aggregate totals + breakdown by fee earner
-                        </div>
-                    </div>
-                `;
-            } else if (analyticsData) {
-                // Individual FE mode: Uses wallboard row + detailed analytics
-                chartPlaceholder.innerHTML = `
-                    <div style="text-align: center;">
-                        <div style="font-weight: 600; margin-bottom: 8px;">${title}</div>
-                        <div style="font-size: 12px; color: #999;">
-                            ${feeEarner.toUpperCase()} metrics (wallboard + detailed analytics)
-                        </div>
-                    </div>
-                `;
-            } else {
-                chartPlaceholder.textContent = `Chart: ${title}`;
-            }
+            // Create canvas for Chart.js
+            const canvas = document.createElement('canvas');
+            canvas.className = 'chart-canvas';
+            const canvasId = 'chart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            canvas.id = canvasId;
             
             card.appendChild(chartTitle);
-            card.appendChild(chartPlaceholder);
+            card.appendChild(canvas);
             container.appendChild(card);
+            
+            // Generate appropriate chart based on mode and title
+            if (feeEarner === 'ALL') {
+                createAllModeChart(canvas, title, analyticsData);
+            } else {
+                createIndividualModeChart(canvas, title, feeEarner, analyticsData);
+            }
+        }
+
+        /*
+        =====================================================================
+        CREATE ALL MODE CHART - Charts for aggregate view
+        =====================================================================
+        */
+        function createAllModeChart(canvas, title, analyticsData) {
+            const ctx = canvas.getContext('2d');
+            const feeEarners = ['SJM', 'MB', 'SKN', 'EL', 'EJL', 'LJD', 'MLP'];
+            const colors = [
+                'rgba(0, 60, 113, 0.8)',    // Navy
+                'rgba(212, 165, 116, 0.8)', // Tan
+                'rgba(74, 144, 226, 0.8)',  // Blue
+                'rgba(255, 107, 53, 0.8)',  // Orange
+                'rgba(46, 204, 113, 0.8)',  // Green
+                'rgba(155, 89, 182, 0.8)',  // Purple
+                'rgba(241, 196, 15, 0.8)'   // Yellow
+            ];
+            
+            switch(title) {
+                case 'Total Outstanding (Breakdown by FE)':
+                    createBarChartByFE(ctx, 'Outstanding total', feeEarners, colors);
+                    break;
+                    
+                case 'Total Requests (Breakdown by Type & FE)':
+                    createRequestsChart(ctx, analyticsData, feeEarners, colors);
+                    break;
+                    
+                case 'Passes - 7/30/90 Days (Comparison by FE)':
+                    createPassesComparisonChart(ctx, feeEarners, colors);
+                    break;
+                    
+                case 'E-ID in Progress (Breakdown by FE)':
+                    createBarChartByFE(ctx, 'E-ID in progress', feeEarners, colors);
+                    break;
+                    
+                case 'Issues & Pending (Breakdown by FE)':
+                    createIssuesPendingChart(ctx, feeEarners, colors);
+                    break;
+                    
+                case 'Messages & Activity (Breakdown by FE)':
+                    createBarChartByFE(ctx, 'Messages', feeEarners, colors);
+                    break;
+                    
+                default:
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels: feeEarners, datasets: [{ label: title, data: [] }] }
+                    });
+            }
+        }
+
+        /*
+        =====================================================================
+        CREATE INDIVIDUAL MODE CHART - Charts for specific fee earner
+        =====================================================================
+        */
+        function createIndividualModeChart(canvas, title, feeEarner, analyticsData) {
+            const ctx = canvas.getContext('2d');
+            
+            switch(title) {
+                case 'Outstanding Breakdown':
+                    createOutstandingBreakdownChart(ctx, analyticsData);
+                    break;
+                    
+                case 'Pass Trend (7/30/90 days)':
+                    createPassTrendChart(ctx, analyticsData);
+                    break;
+                    
+                case 'E-ID Status':
+                    createEidStatusChart(ctx, analyticsData);
+                    break;
+                    
+                case 'Issues & Requests':
+                    createIssuesRequestsChart(ctx, analyticsData);
+                    break;
+                    
+                case 'PEP Status':
+                    createPepStatusChart(ctx, analyticsData);
+                    break;
+                    
+                case 'Activity Summary':
+                    createActivitySummaryChart(ctx, analyticsData);
+                    break;
+                    
+                default:
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels: ['Data'], datasets: [{ label: title, data: [0] }] }
+                    });
+            }
+        }
+
+        /*
+        =====================================================================
+        CHART BUILDERS - ALL MODE
+        =====================================================================
+        */
+        
+        function createBarChartByFE(ctx, metric, feeEarners, colors) {
+            // Find the metric row in wallboard data
+            const metricRow = wallboardData.find(row => row.title === metric);
+            if (!metricRow) return;
+            
+            const data = feeEarners.map(fe => metricRow[fe.toLowerCase()] || 0);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: feeEarners,
+                    datasets: [{
+                        label: metric,
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: colors.map(c => c.replace('0.8', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function createRequestsChart(ctx, analyticsData, feeEarners, colors) {
+            // Get requests data from wallboard for each FE
+            const requestsRow = wallboardData.find(row => row.title === 'Requests');
+            if (!requestsRow) return;
+            
+            const data = feeEarners.map(fe => requestsRow[fe.toLowerCase()] || 0);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: feeEarners,
+                    datasets: [{
+                        label: 'Total Requests',
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: colors.map(c => c.replace('0.8', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function createPassesComparisonChart(ctx, feeEarners, colors) {
+            // Get passes data for 7, 30, 90 days
+            const passes7Row = wallboardData.find(row => row.title === 'Passes in last 7 days');
+            const passes30Row = wallboardData.find(row => row.title === 'Passes in last 30 days');
+            const passes90Row = wallboardData.find(row => row.title === 'Passes in last 90 days');
+            
+            if (!passes7Row || !passes30Row || !passes90Row) return;
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: feeEarners,
+                    datasets: [
+                        {
+                            label: '7 Days',
+                            data: feeEarners.map(fe => passes7Row[fe.toLowerCase()] || 0),
+                            backgroundColor: 'rgba(46, 204, 113, 0.8)',
+                            borderColor: 'rgba(46, 204, 113, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '30 Days',
+                            data: feeEarners.map(fe => passes30Row[fe.toLowerCase()] || 0),
+                            backgroundColor: 'rgba(74, 144, 226, 0.8)',
+                            borderColor: 'rgba(74, 144, 226, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '90 Days',
+                            data: feeEarners.map(fe => passes90Row[fe.toLowerCase()] || 0),
+                            backgroundColor: 'rgba(0, 60, 113, 0.8)',
+                            borderColor: 'rgba(0, 60, 113, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function createIssuesPendingChart(ctx, feeEarners, colors) {
+            const issuesRow = wallboardData.find(row => row.title === 'Issues');
+            const pendingRow = wallboardData.find(row => row.title === 'Pending');
+            
+            if (!issuesRow || !pendingRow) return;
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: feeEarners,
+                    datasets: [
+                        {
+                            label: 'Issues',
+                            data: feeEarners.map(fe => issuesRow[fe.toLowerCase()] || 0),
+                            backgroundColor: 'rgba(220, 53, 69, 0.8)',
+                            borderColor: 'rgba(220, 53, 69, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Pending',
+                            data: feeEarners.map(fe => pendingRow[fe.toLowerCase()] || 0),
+                            backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                            borderColor: 'rgba(255, 193, 7, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        /*
+        =====================================================================
+        CHART BUILDERS - INDIVIDUAL FE MODE
+        =====================================================================
+        */
+        
+        function createOutstandingBreakdownChart(ctx, analyticsData) {
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: [
+                        'With Photo ID',
+                        'Added Last 7 Days',
+                        'Over 30 Days',
+                        'Other Outstanding'
+                    ],
+                    datasets: [{
+                        data: [
+                            analyticsData.totalAwaitingWID || 0,
+                            analyticsData.added7 || 0,
+                            analyticsData.over30 || 0,
+                            (analyticsData.totalAwaiting || 0) - (analyticsData.totalAwaitingWID || 0) - (analyticsData.added7 || 0) - (analyticsData.over30 || 0)
+                        ],
+                        backgroundColor: [
+                            'rgba(0, 60, 113, 0.8)',
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(220, 53, 69, 0.8)',
+                            'rgba(212, 165, 116, 0.8)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'right' }
+                    }
+                }
+            });
+        }
+
+        function createPassTrendChart(ctx, analyticsData) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Last 7 Days', 'Last 30 Days', 'Last 90 Days'],
+                    datasets: [
+                        {
+                            label: 'PASS',
+                            data: [
+                                analyticsData.totalPasses7 || 0,
+                                analyticsData.totalPasses30 || 0,
+                                analyticsData.pass90 || 0
+                            ],
+                            backgroundColor: 'rgba(46, 204, 113, 0.8)',
+                            borderColor: 'rgba(46, 204, 113, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'E-PASS',
+                            data: [
+                                Math.round((analyticsData.ePass90 || 0) * (analyticsData.totalPasses7 || 0) / (analyticsData.totalPasses90 || 1)),
+                                Math.round((analyticsData.ePass90 || 0) * (analyticsData.totalPasses30 || 0) / (analyticsData.totalPasses90 || 1)),
+                                analyticsData.ePass90 || 0
+                            ],
+                            backgroundColor: 'rgba(74, 144, 226, 0.8)',
+                            borderColor: 'rgba(74, 144, 226, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'ID Held',
+                            data: [
+                                Math.round((analyticsData.idHeld90 || 0) * (analyticsData.totalPasses7 || 0) / (analyticsData.totalPasses90 || 1)),
+                                Math.round((analyticsData.idHeld90 || 0) * (analyticsData.totalPasses30 || 0) / (analyticsData.totalPasses90 || 1)),
+                                analyticsData.idHeld90 || 0
+                            ],
+                            backgroundColor: 'rgba(0, 60, 113, 0.8)',
+                            borderColor: 'rgba(0, 60, 113, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, stacked: true },
+                        x: { stacked: true }
+                    }
+                }
+            });
+        }
+
+        function createEidStatusChart(ctx, analyticsData) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['E-ID in Progress', 'E-ID > 1 Week Old'],
+                    datasets: [{
+                        data: [
+                            analyticsData.totalBio || 0,
+                            analyticsData.totalBio7 || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(74, 144, 226, 0.8)',
+                            'rgba(220, 53, 69, 0.8)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'right' }
+                    }
+                }
+            });
+        }
+
+        function createIssuesRequestsChart(ctx, analyticsData) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Issues', 'Issues (Last 7d)', 'Requests', 'Form J', 'Form K', 'Form E'],
+                    datasets: [{
+                        label: 'Count',
+                        data: [
+                            analyticsData.totalIssues || 0,
+                            analyticsData.totalIssues7 || 0,
+                            parseInt(analyticsData.totalRequests) || 0,
+                            analyticsData.formJ || 0,
+                            analyticsData.formK || 0,
+                            analyticsData.formE || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(220, 53, 69, 0.8)',
+                            'rgba(255, 107, 53, 0.8)',
+                            'rgba(74, 144, 226, 0.8)',
+                            'rgba(212, 165, 116, 0.8)',
+                            'rgba(155, 89, 182, 0.8)',
+                            'rgba(46, 204, 113, 0.8)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function createPepStatusChart(ctx, analyticsData) {
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Politically Exposed Person', 'Close to PEP', 'Non-PEP'],
+                    datasets: [{
+                        data: [
+                            analyticsData.totalPpep || 0,
+                            analyticsData.totalCpep || 0,
+                            analyticsData.totalNpep || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(220, 53, 69, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(46, 204, 113, 0.8)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'right' }
+                    }
+                }
+            });
+        }
+
+        function createActivitySummaryChart(ctx, analyticsData) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Messages', 'Pending', 'Unassigned', 'Total Outstanding', 'With Photo ID'],
+                    datasets: [{
+                        label: 'Count',
+                        data: [
+                            analyticsData.messages || 0,
+                            analyticsData.totalPending || 0,
+                            analyticsData.totalUnassigned || 0,
+                            analyticsData.totalAwaiting || 0,
+                            analyticsData.totalAwaitingWID || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(74, 144, 226, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(220, 53, 69, 0.8)',
+                            'rgba(0, 60, 113, 0.8)',
+                            'rgba(46, 204, 113, 0.8)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
         }
 
         /*
@@ -1346,6 +1815,120 @@
         MOCK DATA - For testing purposes
         =====================================================================
         */
+        
+        // Mock analytics data for ALL fee earners
+        const mockAnalyticsDataAll = {
+            totalAwaiting: 226,
+            totalAwaitingWID: 28,
+            totalRequests: "0",
+            formJ: 0,
+            formE: 0,
+            formEsoF: [],
+            formK: 0,
+            eSoF: 0,
+            totalPending: 29,
+            added7: 18,
+            added830: 46,
+            over30: 162,
+            pass90: 291,
+            ePass90: 178,
+            idHeld90: 129,
+            totalPasses90: 598,
+            totalPasses7: 151,
+            totalPasses30: 257,
+            totalIssues: 1,
+            totalIssues7: 0,
+            totalBio: 12,
+            totalBio7: 4,
+            totalPpep: 1,
+            totalCpep: 0,
+            totalNpep: 347,
+            totalUnassigned: 1,
+            messages: 389
+        };
+        
+        // Mock analytics data for individual fee earner (SJM example)
+        const mockAnalyticsDataSJM = {
+            totalAwaiting: 156,
+            totalAwaitingWID: 16,
+            totalRequests: "0",
+            formJ: 0,
+            formE: 0,
+            formEsoF: [],
+            formK: 0,
+            eSoF: 0,
+            totalPending: 21,
+            added7: 4,
+            added830: 19,
+            over30: 133,
+            pass90: 58,
+            ePass90: 38,
+            idHeld90: 19,
+            totalPasses90: 115,
+            totalPasses7: 21,
+            totalPasses30: 40,
+            totalIssues: 0,
+            totalIssues7: 0,
+            totalBio: 5,
+            totalBio7: 2,
+            totalPpep: 0,
+            totalCpep: 0,
+            totalNpep: 82,
+            totalUnassigned: 0,
+            messages: 94
+        };
+        
+        // Intercept analytics requests and respond with mock data
+        const originalPostMessage = window.parent.postMessage;
+        window.parent.postMessage = function(message, targetOrigin) {
+            // Check if it's an analytics request
+            if (message.type === 'fe-analytics') {
+                console.log('🎭 Mock: Intercepted analytics request for:', message.fe);
+                
+                // Simulate delay
+                setTimeout(() => {
+                    let analyticsData;
+                    
+                    if (message.fe === 'ALL') {
+                        analyticsData = mockAnalyticsDataAll;
+                    } else if (message.fe === 'SJM') {
+                        analyticsData = mockAnalyticsDataSJM;
+                    } else {
+                        // For other fee earners, return a simplified version
+                        analyticsData = {
+                            totalAwaiting: 20,
+                            totalAwaitingWID: 2,
+                            totalRequests: "0",
+                            totalPending: 5,
+                            added7: 2,
+                            pass90: 50,
+                            totalPasses90: 100,
+                            totalPasses7: 15,
+                            totalPasses30: 30,
+                            totalIssues: 0,
+                            totalBio: 2,
+                            messages: 30
+                        };
+                    }
+                    
+                    // Send mock analytics response
+                    window.dispatchEvent(new MessageEvent('message', {
+                        data: {
+                            type: 'analytics-data',
+                            fe: message.fe,
+                            analyticsData: analyticsData
+                        },
+                        origin: window.location.origin
+                    }));
+                }, 500); // Simulate network delay
+                
+                return; // Don't call original postMessage
+            }
+            
+            // For other message types, call original (or ignore in standalone mode)
+            console.log('📤 Message to parent:', message.type);
+        };
+        
         function loadMockData() {
             console.log('Loading mock data for testing...');
             
@@ -1514,6 +2097,9 @@
         }
 
     </script>
+    
+    <!-- Chart.js library for charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <!-- jsPDF library for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
