@@ -697,13 +697,16 @@
                 // Received detailed analytics for specific fee earner
                 const data = event.data;
                 
-                // Store data
-                feeEarnerAnalyticsData = data.analyticsData || null;
+                // Store data (handle both 'data' and 'analyticsData' keys for compatibility)
+                feeEarnerAnalyticsData = data.analyticsData || data.data || null;
                 
                 // Generate charts with detailed data
                 if (feeEarnerAnalyticsData) {
                     console.log('Analytics data received for fee earner:', selectedFeeEarner);
+                    console.log('Analytics data:', feeEarnerAnalyticsData);
                     generateChartsWithData(selectedFeeEarner, feeEarnerAnalyticsData);
+                } else {
+                    console.error('No analytics data found in message:', data);
                 }
                 
                 // Hide loading
