@@ -55,8 +55,13 @@
             justify-content: center;
             align-items: flex-start;
             min-height: 100vh;
+            height: 100%;
             padding: 0;
             margin: 0;
+        }
+
+        html {
+            height: 100%;
         }
 
         .container {
@@ -64,6 +69,9 @@
             max-width: 1200px;
             background: transparent;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
         }
 
         .header-row {
@@ -105,20 +113,23 @@
         .chart-wrapper {
             position: relative;
             width: 100%;
+            flex: 1;
             min-height: 300px;
-            height: auto;
             display: none; /* Hidden until chart is created */
+            align-self: stretch;
         }
 
         .chart-wrapper.active {
-            display: block;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Dynamic height for canvas */
         #chartCanvas {
             width: 100% !important;
-            height: auto !important;
+            height: 100% !important;
             min-height: 300px;
+            flex: 1;
         }
 
         .expand-btn {
@@ -155,7 +166,7 @@
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .container {
-                padding: 20px;
+                padding: 15px;
             }
 
             .chart-header {
@@ -178,7 +189,7 @@
 
         @media (max-width: 480px) {
             .container {
-                padding: 15px;
+                padding: 10px;
             }
 
             .chart-header {
@@ -192,6 +203,13 @@
             .expand-btn {
                 font-size: 10px;
                 padding: 4px 8px;
+            }
+        }
+
+        /* Tall layout - stack legend below chart */
+        @media (min-aspect-ratio: 1/1) and (min-height: 500px) {
+            .container {
+                padding: 15px;
             }
         }
     </style>
@@ -348,22 +366,26 @@
                 chartDescription.style.display = 'none';
             }
 
-            // Calculate appropriate height based on chart type and data
-            const calculatedHeight = calculateChartHeight(data);
-            chartWrapper.style.height = calculatedHeight + 'px';
-            canvas.style.height = calculatedHeight + 'px';
-
+            // Detect if we should stack vertically (tall iframe) or horizontally (wide iframe)
+            const isTallLayout = window.innerHeight > window.innerWidth * 0.8;
+            
+            // For circular charts, adjust legend position based on layout
+            const isCircularChart = data.chartType === 'pie' || data.chartType === 'doughnut' || data.chartType === 'polarArea';
+            
             // Default chart options with custom fonts
             const defaultOptions = {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
+                        position: isCircularChart && isTallLayout ? 'bottom' : undefined, // Stack if tall
                         labels: {
                             font: {
                                 family: "'Transport', 'Quicksand', sans-serif",
                                 size: 12
-                            }
+                            },
+                            padding: isTallLayout ? 10 : undefined,
+                            boxWidth: isTallLayout ? 15 : undefined
                         }
                     },
                     tooltip: {
@@ -377,7 +399,7 @@
                         }
                     }
                 },
-                scales: data.chartType === 'pie' || data.chartType === 'doughnut' || data.chartType === 'polarArea' ? undefined : {
+                scales: isCircularChart ? undefined : {
                     x: {
                         ticks: {
                             font: {
@@ -398,9 +420,15 @@
             };
 
             // Merge custom options with defaults
-            const chartOptions = data.options ? 
+            let chartOptions = data.options ? 
                 mergeDeep(defaultOptions, data.options) : 
                 defaultOptions;
+            
+            // Override legend position if tall layout and no custom position specified
+            if (isCircularChart && isTallLayout && 
+                (!data.options || !data.options.plugins || !data.options.plugins.legend || !data.options.plugins.legend.position)) {
+                chartOptions.plugins.legend.position = 'bottom';
+            }
 
             // Create new chart
             const ctx = canvas.getContext('2d');
@@ -416,40 +444,17 @@
             }, 100);
         }
 
-        // Calculate appropriate height based on chart type and data
-        function calculateChartHeight(data) {
-            const chartType = data.chartType || 'bar';
-            const isHorizontal = data.options?.indexAxis === 'y';
-            
-            // Base heights by chart type
-            if (chartType === 'pie' || chartType === 'doughnut' || chartType === 'polarArea') {
-                return 400; // Fixed height for circular charts
-            }
-            
-            if (isHorizontal) {
-                // Horizontal bar charts: height based on number of labels
-                const labelCount = data.chartData.labels?.length || 1;
-                const baseHeight = 60; // Height per bar
-                const minHeight = 300;
-                const maxHeight = 800;
-                return Math.min(Math.max(labelCount * baseHeight, minHeight), maxHeight);
-            }
-            
-            // Vertical charts: check if stacked
-            const isStacked = data.options?.scales?.x?.stacked || data.options?.scales?.y?.stacked;
-            const datasetCount = data.chartData.datasets?.length || 1;
-            
-            if (isStacked && datasetCount > 3) {
-                return 500; // Taller for stacked charts with many datasets
-            }
-            
-            return 400; // Default height
-        }
-
-        // Notify parent window of content height
+        // Notify parent window of content height (for iframe auto-resize)
         function notifyParentOfHeight() {
             if (window.parent && window.parent !== window) {
-                const height = document.body.scrollHeight;
+                // Get the actual content height
+                const height = Math.max(
+                    document.body.scrollHeight,
+                    document.documentElement.scrollHeight,
+                    document.body.offsetHeight,
+                    document.documentElement.offsetHeight
+                );
+                
                 window.parent.postMessage({
                     type: 'iframe-height',
                     height: height
