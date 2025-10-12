@@ -105,12 +105,20 @@
         .chart-wrapper {
             position: relative;
             width: 100%;
-            height: 500px;
+            min-height: 300px;
+            height: auto;
             display: none; /* Hidden until chart is created */
         }
 
         .chart-wrapper.active {
             display: block;
+        }
+
+        /* Dynamic height for canvas */
+        #chartCanvas {
+            width: 100% !important;
+            height: auto !important;
+            min-height: 300px;
         }
 
         .expand-btn {
@@ -155,7 +163,7 @@
             }
 
             .chart-wrapper {
-                height: 350px;
+                min-height: 250px;
             }
 
             .header-row {
@@ -178,7 +186,7 @@
             }
 
             .chart-wrapper {
-                height: 300px;
+                min-height: 200px;
             }
 
             .expand-btn {
@@ -254,6 +262,39 @@
             }
         });
 
+        // Common formatter functions that can be reconstructed
+        const formatterFunctions = {
+            percentageLabel: function(context) {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return `${label}: ${value} (${percentage}%)`;
+            }
+        };
+
+        // Reconstruct functions from string templates
+        function reconstructFunctions(obj) {
+            if (obj === null || typeof obj !== 'object') {
+                // Check if it's a function template string
+                if (typeof obj === 'string' && obj.startsWith('__FUNCTION__:')) {
+                    const funcName = obj.replace('__FUNCTION__:', '');
+                    return formatterFunctions[funcName] || null;
+                }
+                return obj;
+            }
+            
+            if (Array.isArray(obj)) {
+                return obj.map(reconstructFunctions);
+            }
+            
+            const reconstructed = {};
+            for (const key in obj) {
+                reconstructed[key] = reconstructFunctions(obj[key]);
+            }
+            return reconstructed;
+        }
+
         function createChart(data) {
             // Check if all data values are 0
             const hasData = data.chartData.datasets.some(dataset => 
@@ -263,6 +304,11 @@
             if (!hasData) {
                 // Keep empty state visible if no data
                 return;
+            }
+
+            // Reconstruct any function templates in options
+            if (data.options) {
+                data.options = reconstructFunctions(data.options);
             }
 
             // Store current chart data for expansion
@@ -301,6 +347,11 @@
             } else {
                 chartDescription.style.display = 'none';
             }
+
+            // Calculate appropriate height based on chart type and data
+            const calculatedHeight = calculateChartHeight(data);
+            chartWrapper.style.height = calculatedHeight + 'px';
+            canvas.style.height = calculatedHeight + 'px';
 
             // Default chart options with custom fonts
             const defaultOptions = {
@@ -358,6 +409,52 @@
                 data: data.chartData,
                 options: chartOptions
             });
+
+            // Notify parent window of height change after chart renders
+            setTimeout(() => {
+                notifyParentOfHeight();
+            }, 100);
+        }
+
+        // Calculate appropriate height based on chart type and data
+        function calculateChartHeight(data) {
+            const chartType = data.chartType || 'bar';
+            const isHorizontal = data.options?.indexAxis === 'y';
+            
+            // Base heights by chart type
+            if (chartType === 'pie' || chartType === 'doughnut' || chartType === 'polarArea') {
+                return 400; // Fixed height for circular charts
+            }
+            
+            if (isHorizontal) {
+                // Horizontal bar charts: height based on number of labels
+                const labelCount = data.chartData.labels?.length || 1;
+                const baseHeight = 60; // Height per bar
+                const minHeight = 300;
+                const maxHeight = 800;
+                return Math.min(Math.max(labelCount * baseHeight, minHeight), maxHeight);
+            }
+            
+            // Vertical charts: check if stacked
+            const isStacked = data.options?.scales?.x?.stacked || data.options?.scales?.y?.stacked;
+            const datasetCount = data.chartData.datasets?.length || 1;
+            
+            if (isStacked && datasetCount > 3) {
+                return 500; // Taller for stacked charts with many datasets
+            }
+            
+            return 400; // Default height
+        }
+
+        // Notify parent window of content height
+        function notifyParentOfHeight() {
+            if (window.parent && window.parent !== window) {
+                const height = document.body.scrollHeight;
+                window.parent.postMessage({
+                    type: 'iframe-height',
+                    height: height
+                }, '*');
+            }
         }
 
         // Deep merge helper function
