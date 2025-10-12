@@ -186,15 +186,6 @@
             background: #b88e5d;
         }
 
-        .btn-mock {
-            background: #28a745 !important;
-            margin-left: auto;
-        }
-
-        .btn-mock:hover:not(:disabled) {
-            background: #218838 !important;
-        }
-
         /* Dropdown styles */
         .dropdown {
             font-family: 'RotisRegular', 'Quicksand', sans-serif;
@@ -531,7 +522,6 @@
                 </select>
                 <button class="btn btn-secondary" id="analyticsBtn" disabled onclick="showAnalytics()">Analytics</button>
                 <button class="btn" id="downloadBtn" disabled onclick="downloadWallboardPDF()">Download PDF</button>
-                <button class="btn btn-mock" onclick="loadMockData()">Load Mock Data</button>
             </div>
         </div>
 
@@ -669,9 +659,8 @@
         =====================================================================
         */
         document.addEventListener('DOMContentLoaded', function() {
-            // Ready and waiting for wallboard-data from parent
-            // Or user can click "Load Mock Data" button to test
-            console.log('Wallboard iframe ready');
+            // Ready and waiting for wallboard-data from parent via postMessage
+            console.log('Wallboard iframe ready - waiting for data from parent');
         });
 
         /*
@@ -708,23 +697,17 @@
                 // Received detailed analytics for specific fee earner
                 const data = event.data;
                 
-                console.log('✅ Received analytics-data message');
-                
                 // Store data
                 feeEarnerAnalyticsData = data.analyticsData || null;
                 
                 // Generate charts with detailed data
                 if (feeEarnerAnalyticsData) {
-                    console.log('📊 Analytics data received for fee earner:', selectedFeeEarner);
+                    console.log('Analytics data received for fee earner:', selectedFeeEarner);
                     generateChartsWithData(selectedFeeEarner, feeEarnerAnalyticsData);
-                } else {
-                    console.warn('⚠️ No analytics data in message');
                 }
                 
                 // Hide loading
-                console.log('🔄 Calling hideLoading()');
                 hideLoading();
-                console.log('✅ hideLoading() completed');
             }
             else if (event.data.type === 'analytics-error') {
                 // Parent encountered error fetching analytics
@@ -2134,319 +2117,9 @@
         }
 
         function hideLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            console.log('💡 hideLoading() called, overlay element:', overlay);
-            console.log('💡 Overlay current classes:', overlay?.className);
-            overlay.classList.remove('show');
-            console.log('💡 Overlay classes after remove:', overlay?.className);
+            document.getElementById('loadingOverlay').classList.remove('show');
         }
 
-        /*
-        =====================================================================
-        MOCK DATA - For testing purposes
-        =====================================================================
-        */
-        
-        // Mock analytics data for ALL fee earners
-        const mockAnalyticsDataAll = {
-            totalAwaiting: 226,
-            totalAwaitingWID: 28,
-            totalRequests: "0",
-            formJ: 0,
-            formE: 0,
-            formEsoF: [],
-            formK: 0,
-            eSoF: 0,
-            totalPending: 29,
-            added7: 18,
-            added830: 46,
-            over30: 162,
-            pass90: 291,
-            ePass90: 178,
-            idHeld90: 129,
-            totalPasses90: 598,
-            totalPasses7: 151,
-            totalPasses30: 257,
-            totalIssues: 1,
-            totalIssues7: 0,
-            totalBio: 12,
-            totalBio7: 4,
-            totalPpep: 1,
-            totalCpep: 0,
-            totalNpep: 347,
-            totalUnassigned: 1,
-            messages: 389
-        };
-        
-        // Mock analytics data for individual fee earner (SJM example)
-        const mockAnalyticsDataSJM = {
-            totalAwaiting: 156,
-            totalAwaitingWID: 16,
-            totalRequests: "0",
-            formJ: 0,
-            formE: 0,
-            formEsoF: [],
-            formK: 0,
-            eSoF: 0,
-            totalPending: 21,
-            added7: 4,
-            added830: 19,
-            over30: 133,
-            pass90: 58,
-            ePass90: 38,
-            idHeld90: 19,
-            totalPasses90: 115,
-            totalPasses7: 21,
-            totalPasses30: 40,
-            totalIssues: 0,
-            totalIssues7: 0,
-            totalBio: 5,
-            totalBio7: 2,
-            totalPpep: 0,
-            totalCpep: 0,
-            totalNpep: 82,
-            totalUnassigned: 0,
-            messages: 94
-        };
-        
-        // Intercept analytics requests and respond with mock data
-        const originalPostMessage = window.parent.postMessage;
-        window.parent.postMessage = function(message, targetOrigin) {
-            console.log('🔍 postMessage interceptor called with:', message);
-            
-            // Check if it's an analytics request
-            if (message && message.type === 'fe-analytics') {
-                console.log('🎭 Mock: Intercepted analytics request for:', message.fe);
-                
-                // Simulate delay
-                setTimeout(() => {
-                    let analyticsData;
-                    
-                    if (message.fe === 'ALL') {
-                        console.log('📊 Returning ALL analytics data');
-                        analyticsData = mockAnalyticsDataAll;
-                    } else if (message.fe === 'SJM') {
-                        console.log('📊 Returning SJM analytics data');
-                        analyticsData = mockAnalyticsDataSJM;
-                    } else {
-                        console.log('📊 Returning generic analytics data for:', message.fe);
-                        // For other fee earners, return a simplified version
-                        analyticsData = {
-                            totalAwaiting: 20,
-                            totalAwaitingWID: 2,
-                            totalRequests: "0",
-                            totalPending: 5,
-                            added7: 2,
-                            added830: 8,
-                            over30: 10,
-                            pass90: 50,
-                            ePass90: 30,
-                            idHeld90: 20,
-                            totalPasses90: 100,
-                            totalPasses7: 15,
-                            totalPasses30: 30,
-                            totalIssues: 0,
-                            totalIssues7: 0,
-                            totalBio: 2,
-                            totalBio7: 1,
-                            totalPpep: 0,
-                            totalCpep: 0,
-                            totalNpep: 20,
-                            formJ: 0,
-                            formE: 0,
-                            formK: 0,
-                            eSoF: 0,
-                            formEsoF: [],
-                            messages: 30
-                        };
-                    }
-                    
-                    console.log('✅ Dispatching analytics-data response');
-                    
-                    // Send mock analytics response
-                    window.dispatchEvent(new MessageEvent('message', {
-                        data: {
-                            type: 'analytics-data',
-                            fe: message.fe,
-                            analyticsData: analyticsData
-                        },
-                        origin: window.location.origin
-                    }));
-                }, 300); // Simulate network delay (reduced to 300ms for better UX)
-                
-                return; // Don't call original postMessage
-            }
-            
-            // For other message types, call original (or ignore in standalone mode)
-            console.log('📤 Message to parent (not intercepted):', message.type);
-        };
-        
-        function loadMockData() {
-            console.log('Loading mock data for testing...');
-            
-            const mockData = {
-                type: 'wallboard-data',
-                wallboard: [
-                    {
-                        "title": "Outstanding total",
-                        "sjm": 156,
-                        "mb": 15,
-                        "skn": 20,
-                        "el": 0,
-                        "ejl": 2,
-                        "ljd": 24,
-                        "mlp": 6
-                    },
-                    {
-                        "title": "Outstanding With Photo ID",
-                        "sjm": 16,
-                        "mb": 1,
-                        "skn": 1,
-                        "el": 0,
-                        "ejl": 0,
-                        "ljd": 8,
-                        "mlp": 1
-                    },
-                    {
-                        "title": "Added in last 7 days",
-                        "sjm": 3,
-                        "mb": 2,
-                        "skn": 3,
-                        "el": 0,
-                        "ejl": 1,
-                        "ljd": 6,
-                        "mlp": 0
-                    },
-                    {
-                        "title": "Outstanding over 30 days",
-                        "sjm": 51,
-                        "mb": 0,
-                        "skn": 0,
-                        "el": 0,
-                        "ejl": 0,
-                        "ljd": 6,
-                        "mlp": 0
-                    },
-                    {
-                        "title": "Requests",
-                        "sjm": 0,
-                        "mb": 0,
-                        "skn": 0,
-                        "el": 0,
-                        "ejl": 0,
-                        "ljd": 0,
-                        "mlp": 0
-                    },
-                    {
-                        "title": "Messages",
-                        "sjm": 94,
-                        "mb": 83,
-                        "skn": 2,
-                        "el": 50,
-                        "ejl": 7,
-                        "ljd": 136,
-                        "mlp": 17
-                    },
-                    {
-                        "title": "Unassigned Clients",
-                        "sjm": 0,
-                        "mb": 0,
-                        "skn": 0,
-                        "el": 0,
-                        "ejl": 0,
-                        "ljd": 1,
-                        "mlp": 0
-                    },
-                    {
-                        "title": "E-ID in progress",
-                        "sjm": 5,
-                        "mb": 3,
-                        "skn": 2,
-                        "el": 0,
-                        "ejl": 0,
-                        "ljd": 2,
-                        "mlp": 0
-                    },
-                    {
-                        "title": "E-ID over 1 week old",
-                        "sjm": 2,
-                        "mb": 1,
-                        "skn": 1,
-                        "el": 0,
-                        "ejl": 0,
-                        "ljd": 0,
-                        "mlp": 0
-                    },
-                    {
-                        "title": "Issues",
-                        "sjm": 0,
-                        "mb": 0,
-                        "skn": 1,
-                        "el": 0,
-                        "ejl": 0,
-                        "ljd": 0,
-                        "mlp": 0
-                    },
-                    {
-                        "title": "Passes in last 7 days",
-                        "sjm": 21,
-                        "mb": 13,
-                        "skn": 91,
-                        "el": 8,
-                        "ejl": 6,
-                        "ljd": 11,
-                        "mlp": 1
-                    },
-                    {
-                        "title": "Passes in last 30 days",
-                        "sjm": 40,
-                        "mb": 40,
-                        "skn": 106,
-                        "el": 12,
-                        "ejl": 11,
-                        "ljd": 43,
-                        "mlp": 5
-                    },
-                    {
-                        "title": "Passes in last 90 days",
-                        "sjm": 115,
-                        "mb": 127,
-                        "skn": 131,
-                        "el": 69,
-                        "ejl": 29,
-                        "ljd": 111,
-                        "mlp": 16
-                    },
-                    {
-                        "title": "Pending",
-                        "sjm": 21,
-                        "mb": 7,
-                        "skn": 1,
-                        "el": 0,
-                        "ejl": 0,
-                        "ljd": 0,
-                        "mlp": 0
-                    }
-                ],
-                feeEarnerOptions: [
-                    { label: 'ALL', value: 'ALL' },
-                    { label: 'Stephen Morrison', value: 'SJM' },
-                    { label: 'Mollie Pellowe', value: 'MLP' },
-                    { label: 'Martin Biscombe', value: 'MB' },
-                    { label: 'Samantha Newton', value: 'SKN' },
-                    { label: 'Emma Lilley', value: 'EL' },
-                    { label: 'Emma Lockie', value: 'EJL' },
-                    { label: 'Louise Deere', value: 'LJD' },
-                    { label: 'Barbara Archer', value: 'BA' }
-                ]
-            };
-            
-            // Simulate receiving message from parent
-            window.dispatchEvent(new MessageEvent('message', {
-                data: mockData,
-                origin: window.location.origin
-            }));
-        }
 
     </script>
     
