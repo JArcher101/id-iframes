@@ -708,17 +708,23 @@
                 // Received detailed analytics for specific fee earner
                 const data = event.data;
                 
+                console.log('✅ Received analytics-data message');
+                
                 // Store data
                 feeEarnerAnalyticsData = data.analyticsData || null;
                 
                 // Generate charts with detailed data
                 if (feeEarnerAnalyticsData) {
-                    console.log('Analytics data received for fee earner:', selectedFeeEarner);
+                    console.log('📊 Analytics data received for fee earner:', selectedFeeEarner);
                     generateChartsWithData(selectedFeeEarner, feeEarnerAnalyticsData);
+                } else {
+                    console.warn('⚠️ No analytics data in message');
                 }
                 
                 // Hide loading
+                console.log('🔄 Calling hideLoading()');
                 hideLoading();
+                console.log('✅ hideLoading() completed');
             }
             else if (event.data.type === 'analytics-error') {
                 // Parent encountered error fetching analytics
@@ -1884,7 +1890,11 @@
         }
 
         function hideLoading() {
-            document.getElementById('loadingOverlay').classList.remove('show');
+            const overlay = document.getElementById('loadingOverlay');
+            console.log('💡 hideLoading() called, overlay element:', overlay);
+            console.log('💡 Overlay current classes:', overlay?.className);
+            overlay.classList.remove('show');
+            console.log('💡 Overlay classes after remove:', overlay?.className);
         }
 
         /*
