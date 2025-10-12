@@ -1674,6 +1674,205 @@
                 }
             });
         }
+        
+        // 3. E-ID Breakdown - Bar
+        function createEidBreakdownChart(ctx, analyticsData) {
+            const totalEID = analyticsData.totalBio || 0;
+            const over7Days = analyticsData.totalBio7 || 0;
+            const under7Days = totalEID - over7Days;
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [
+                        `Less than 1 week old [${under7Days}]`,
+                        `Over 1 week old [${over7Days}]`
+                    ],
+                    datasets: [
+                        {
+                            label: 'Less than 1 week old',
+                            data: [under7Days, 0],
+                            backgroundColor: 'rgba(255, 206, 86, 0.6)', // Yellow
+                            barPercentage: 1
+                        },
+                        {
+                            label: 'Over 1 week old',
+                            data: [0, over7Days],
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)', // Red
+                            barPercentage: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        title: {
+                            display: true,
+                            text: `E-ID in Progress Breakdown [${totalEID}]`,
+                            font: { size: 12 }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: 'Number in Progress' }
+                        },
+                        x: { title: { display: true, text: ' ' } }
+                    }
+                }
+            });
+        }
+        
+        // 4. PEP Breakdown - Doughnut
+        function createPepBreakdownChart(ctx, analyticsData) {
+            const totalPEPs = (analyticsData.totalPpep || 0) + (analyticsData.totalCpep || 0) + (analyticsData.totalNpep || 0);
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        `Potential PEP - ${(((analyticsData.totalPpep || 0) / totalPEPs * 100) || 0).toFixed(1)}%`,
+                        `Confirmed PEP - ${(((analyticsData.totalCpep || 0) / totalPEPs * 100) || 0).toFixed(1)}%`,
+                        `Outruled PEP - ${(((analyticsData.totalNpep || 0) / totalPEPs * 100) || 0).toFixed(1)}%`
+                    ],
+                    datasets: [{
+                        data: [
+                            analyticsData.totalPpep || 0,
+                            analyticsData.totalCpep || 0,
+                            analyticsData.totalNpep || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(255, 159, 64, 0.6)', // Orange (Potential PEP)
+                            'rgba(255, 99, 132, 0.6)', // Red (Confirmed PEP)
+                            'rgba(0, 204, 102, 0.6)' // Green (Outruled PEP)
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'right' },
+                        title: {
+                            display: true,
+                            text: `PEP Breakdown [${totalPEPs}]`,
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 5. Open Requests Breakdown - Doughnut
+        function createOpenRequestsChart(ctx, analyticsData) {
+            const totalRequests = (analyticsData.formJ || 0) + (analyticsData.formE || 0) + (analyticsData.formK || 0) + 
+                                 (analyticsData.eSoF || 0) + (analyticsData.formEsoF?.length || 0);
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        `Form J - ${(((analyticsData.formJ || 0) / totalRequests * 100) || 0).toFixed(1)}%`,
+                        `Form K - ${(((analyticsData.formK || 0) / totalRequests * 100) || 0).toFixed(1)}%`,
+                        `Form E - ${(((analyticsData.formE || 0) / totalRequests * 100) || 0).toFixed(1)}%`,
+                        `eSoF - ${(((analyticsData.eSoF || 0) / totalRequests * 100) || 0).toFixed(1)}%`,
+                        `Form E + eSoF Combined - ${(((analyticsData.formEsoF?.length || 0) / totalRequests * 100) || 0).toFixed(1)}%`
+                    ],
+                    datasets: [{
+                        data: [
+                            analyticsData.formJ || 0,
+                            analyticsData.formK || 0,
+                            analyticsData.formE || 0,
+                            analyticsData.eSoF || 0,
+                            analyticsData.formEsoF?.length || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(0, 204, 102, 0.6)', // Green for Form J
+                            'rgba(211, 211, 211, 0.6)', // Grey for Form K
+                            'rgba(54, 162, 235, 0.6)', // Blue for Form E
+                            'rgba(255, 206, 86, 0.6)', // Yellow for eSoF
+                            'rgba(255, 159, 64, 0.6)' // Orange for Combined
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'right' },
+                        title: {
+                            display: true,
+                            text: `Requests Breakdown [${totalRequests}]`,
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 6. Pass Breakdown (90 Days) - Bar
+        function createPassBreakdownChart(ctx, analyticsData) {
+            const totalPassSeven = analyticsData.totalPasses7 || 0;
+            const totalPassThirty = analyticsData.totalPasses30 || 0;
+            const totalPassNinety = analyticsData.totalPasses90 || 0;
+            
+            const pass830 = totalPassThirty - totalPassSeven;
+            const pass3190 = totalPassNinety - totalPassThirty;
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [
+                        `Passes in last 7 Days [${totalPassSeven}]`,
+                        `Passes 8-30 Days ago [${pass830}]`,
+                        `Passes 31-90 Days ago [${pass3190}]`
+                    ],
+                    datasets: [
+                        {
+                            label: 'Passes in last 7 Days',
+                            data: [totalPassSeven, 0, 0],
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)', // Teal
+                            barPercentage: 1
+                        },
+                        {
+                            label: 'Passes 8-30 Days ago',
+                            data: [0, pass830, 0],
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)', // Blue
+                            barPercentage: 1
+                        },
+                        {
+                            label: 'Passes 31-90 Days ago',
+                            data: [0, 0, pass3190],
+                            backgroundColor: 'rgba(255, 206, 86, 0.6)', // Yellow
+                            barPercentage: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        title: {
+                            display: true,
+                            text: `Pass Breakdown (Last 90 Days) [${totalPassNinety}]`,
+                            font: { size: 12 }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: 'Number of Passes' }
+                        },
+                        x: { title: { display: true, text: ' ' } }
+                    }
+                }
+            });
+        }
 
         /*
         =====================================================================
