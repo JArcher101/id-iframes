@@ -380,6 +380,9 @@
             border-radius: 8px;
             padding: 20px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            height: 380px; /* Fixed height to prevent expansion */
+            display: flex;
+            flex-direction: column;
         }
 
         .chart-title {
@@ -402,9 +405,17 @@
             font-style: italic;
         }
 
+        .chart-canvas-wrapper {
+            flex: 1;
+            position: relative;
+            min-height: 0; /* Important for flexbox */
+            overflow: hidden;
+        }
+
         .chart-canvas {
-            width: 100%;
-            height: 300px;
+            width: 100% !important;
+            height: 100% !important;
+            max-height: 320px;
         }
 
         /* 
@@ -1250,15 +1261,15 @@
                 console.log('Analytics data:', analyticsData);
                 console.log('Wallboard row:', getWallboardRowForFE(feeEarner.toLowerCase()));
                 
-                // Charts for individual fee earner (combining wallboard + analytics data)
-                const individualCharts = [
-                    'Outstanding Breakdown',
-                    'Pass Trend (7/30/90 days)',
-                    'E-ID Status',
-                    'Issues & Requests',
-                    'PEP Status',
-                    'Activity Summary'
-                ];
+            // Charts for individual fee earner (combining wallboard + analytics data)
+            const individualCharts = [
+                'Passes by Type (Last 90 Days)',
+                'Outstanding & Requests Breakdown',
+                'E-ID Breakdown',
+                'PEP Breakdown',
+                'Open Requests Breakdown',
+                'Pass Breakdown (90 Days)'
+            ];
                 
                 individualCharts.forEach(chartTitle => {
                     createChartCard(chartTitle, container, feeEarner, analyticsData);
@@ -1298,14 +1309,19 @@
             chartTitle.className = 'chart-title';
             chartTitle.textContent = title;
             
+            // Create wrapper for canvas to control height
+            const canvasWrapper = document.createElement('div');
+            canvasWrapper.className = 'chart-canvas-wrapper';
+            
             // Create canvas for Chart.js
             const canvas = document.createElement('canvas');
             canvas.className = 'chart-canvas';
             const canvasId = 'chart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             canvas.id = canvasId;
             
+            canvasWrapper.appendChild(canvas);
             card.appendChild(chartTitle);
-            card.appendChild(canvas);
+            card.appendChild(canvasWrapper);
             container.appendChild(card);
             
             // Generate appropriate chart based on mode and title
@@ -1376,28 +1392,28 @@
             const ctx = canvas.getContext('2d');
             
             switch(title) {
-                case 'Outstanding Breakdown':
+                case 'Passes by Type (Last 90 Days)':
+                    createPassesByTypeChart(ctx, analyticsData);
+                    break;
+                    
+                case 'Outstanding & Requests Breakdown':
                     createOutstandingBreakdownChart(ctx, analyticsData);
                     break;
                     
-                case 'Pass Trend (7/30/90 days)':
-                    createPassTrendChart(ctx, analyticsData);
+                case 'E-ID Breakdown':
+                    createEidBreakdownChart(ctx, analyticsData);
                     break;
                     
-                case 'E-ID Status':
-                    createEidStatusChart(ctx, analyticsData);
+                case 'PEP Breakdown':
+                    createPepBreakdownChart(ctx, analyticsData);
                     break;
                     
-                case 'Issues & Requests':
-                    createIssuesRequestsChart(ctx, analyticsData);
+                case 'Open Requests Breakdown':
+                    createOpenRequestsChart(ctx, analyticsData);
                     break;
                     
-                case 'PEP Status':
-                    createPepStatusChart(ctx, analyticsData);
-                    break;
-                    
-                case 'Activity Summary':
-                    createActivitySummaryChart(ctx, analyticsData);
+                case 'Pass Breakdown (90 Days)':
+                    createPassBreakdownChart(ctx, analyticsData);
                     break;
                     
                 default:
@@ -1574,110 +1590,77 @@
         =====================================================================
         */
         
-        function createOutstandingBreakdownChart(ctx, analyticsData) {
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: [
-                        'With Photo ID',
-                        'Added Last 7 Days',
-                        'Over 30 Days',
-                        'Other Outstanding'
-                    ],
-                    datasets: [{
-                        data: [
-                            analyticsData.totalAwaitingWID || 0,
-                            analyticsData.added7 || 0,
-                            analyticsData.over30 || 0,
-                            (analyticsData.totalAwaiting || 0) - (analyticsData.totalAwaitingWID || 0) - (analyticsData.added7 || 0) - (analyticsData.over30 || 0)
-                        ],
-                        backgroundColor: [
-                            'rgba(0, 60, 113, 0.8)',
-                            'rgba(46, 204, 113, 0.8)',
-                            'rgba(220, 53, 69, 0.8)',
-                            'rgba(212, 165, 116, 0.8)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'right' }
-                    }
-                }
-            });
-        }
-
-        function createPassTrendChart(ctx, analyticsData) {
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Last 7 Days', 'Last 30 Days', 'Last 90 Days'],
-                    datasets: [
-                        {
-                            label: 'PASS',
-                            data: [
-                                analyticsData.totalPasses7 || 0,
-                                analyticsData.totalPasses30 || 0,
-                                analyticsData.pass90 || 0
-                            ],
-                            backgroundColor: 'rgba(46, 204, 113, 0.8)',
-                            borderColor: 'rgba(46, 204, 113, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'E-PASS',
-                            data: [
-                                Math.round((analyticsData.ePass90 || 0) * (analyticsData.totalPasses7 || 0) / (analyticsData.totalPasses90 || 1)),
-                                Math.round((analyticsData.ePass90 || 0) * (analyticsData.totalPasses30 || 0) / (analyticsData.totalPasses90 || 1)),
-                                analyticsData.ePass90 || 0
-                            ],
-                            backgroundColor: 'rgba(74, 144, 226, 0.8)',
-                            borderColor: 'rgba(74, 144, 226, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'ID Held',
-                            data: [
-                                Math.round((analyticsData.idHeld90 || 0) * (analyticsData.totalPasses7 || 0) / (analyticsData.totalPasses90 || 1)),
-                                Math.round((analyticsData.idHeld90 || 0) * (analyticsData.totalPasses30 || 0) / (analyticsData.totalPasses90 || 1)),
-                                analyticsData.idHeld90 || 0
-                            ],
-                            backgroundColor: 'rgba(0, 60, 113, 0.8)',
-                            borderColor: 'rgba(0, 60, 113, 1)',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'top' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, stacked: true },
-                        x: { stacked: true }
-                    }
-                }
-            });
-        }
-
-        function createEidStatusChart(ctx, analyticsData) {
+        // 1. Passes by Type (Last 90 Days) - Doughnut
+        function createPassesByTypeChart(ctx, analyticsData) {
+            const pass90 = analyticsData.pass90 || 0;
+            const ePass90 = analyticsData.ePass90 || 0;
+            const idHeld90 = analyticsData.idHeld90 || 0;
+            const totalPasses = pass90 + ePass90 + idHeld90;
+            
             new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['E-ID in Progress', 'E-ID > 1 Week Old'],
+                    labels: [
+                        `Pass - ${((pass90 / totalPasses * 100) || 0).toFixed(1)}%`,
+                        `ePass - ${((ePass90 / totalPasses * 100) || 0).toFixed(1)}%`,
+                        `ID Held - ${((idHeld90 / totalPasses * 100) || 0).toFixed(1)}%`
+                    ],
                     datasets: [{
-                        data: [
-                            analyticsData.totalBio || 0,
-                            analyticsData.totalBio7 || 0
-                        ],
+                        data: [pass90, ePass90, idHeld90],
                         backgroundColor: [
-                            'rgba(74, 144, 226, 0.8)',
-                            'rgba(220, 53, 69, 0.8)'
+                            'rgba(166, 157, 108, 0.6)', // Pantone 451C
+                            'rgba(0, 57, 96, 0.6)', // Pantone 541C
+                            'rgba(0, 255, 128, 0.6)' // Green
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'right' },
+                        title: {
+                            display: true,
+                            text: `Passes by Type (Last 90 Days) [${totalPasses}]`,
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 2. Outstanding & Requests Breakdown - Doughnut
+        function createOutstandingBreakdownChart(ctx, analyticsData) {
+            const added7 = analyticsData.added7 || 0;
+            const added830 = analyticsData.added830 || 0;
+            const over30 = analyticsData.over30 || 0;
+            const withPhotoID = analyticsData.totalAwaitingWID || 0;
+            const totalRequests = parseInt(analyticsData.totalRequests) || 0;
+            const totalPending = analyticsData.totalPending || 0;
+            
+            const totalValues = added7 + added830 + over30 + withPhotoID + totalRequests + totalPending;
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        `Added in last 7 days - ${(added7 / totalValues * 100).toFixed(1)}%`,
+                        `8-30 Days - ${(added830 / totalValues * 100).toFixed(1)}%`,
+                        `Over 30 Days Old - ${(over30 / totalValues * 100).toFixed(1)}%`,
+                        `With Photo ID - ${(withPhotoID / totalValues * 100).toFixed(1)}%`,
+                        `Requests - ${(totalRequests / totalValues * 100).toFixed(1)}%`,
+                        `Pending - ${(totalPending / totalValues * 100).toFixed(1)}%`
+                    ],
+                    datasets: [{
+                        data: [added7, added830, over30, withPhotoID, totalRequests, totalPending],
+                        backgroundColor: [
+                            'rgba(0, 204, 102, 0.6)', // Green
+                            'rgba(255, 206, 86, 0.6)', // Amber
+                            'rgba(255, 99, 132, 0.6)', // Red
+                            'rgba(255, 255, 102, 0.6)', // Yellow
+                            'rgba(211, 211, 211, 0.6)', // Light Grey
+                            'rgba(173, 216, 230, 0.6)' // Light Blue
                         ],
                         borderWidth: 1
                     }]
@@ -1687,111 +1670,6 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { display: true, position: 'right' }
-                    }
-                }
-            });
-        }
-
-        function createIssuesRequestsChart(ctx, analyticsData) {
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Issues', 'Issues (Last 7d)', 'Requests', 'Form J', 'Form K', 'Form E'],
-                    datasets: [{
-                        label: 'Count',
-                        data: [
-                            analyticsData.totalIssues || 0,
-                            analyticsData.totalIssues7 || 0,
-                            parseInt(analyticsData.totalRequests) || 0,
-                            analyticsData.formJ || 0,
-                            analyticsData.formK || 0,
-                            analyticsData.formE || 0
-                        ],
-                        backgroundColor: [
-                            'rgba(220, 53, 69, 0.8)',
-                            'rgba(255, 107, 53, 0.8)',
-                            'rgba(74, 144, 226, 0.8)',
-                            'rgba(212, 165, 116, 0.8)',
-                            'rgba(155, 89, 182, 0.8)',
-                            'rgba(46, 204, 113, 0.8)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        }
-
-        function createPepStatusChart(ctx, analyticsData) {
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['Politically Exposed Person', 'Close to PEP', 'Non-PEP'],
-                    datasets: [{
-                        data: [
-                            analyticsData.totalPpep || 0,
-                            analyticsData.totalCpep || 0,
-                            analyticsData.totalNpep || 0
-                        ],
-                        backgroundColor: [
-                            'rgba(220, 53, 69, 0.8)',
-                            'rgba(255, 193, 7, 0.8)',
-                            'rgba(46, 204, 113, 0.8)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'right' }
-                    }
-                }
-            });
-        }
-
-        function createActivitySummaryChart(ctx, analyticsData) {
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Messages', 'Pending', 'Unassigned', 'Total Outstanding', 'With Photo ID'],
-                    datasets: [{
-                        label: 'Count',
-                        data: [
-                            analyticsData.messages || 0,
-                            analyticsData.totalPending || 0,
-                            analyticsData.totalUnassigned || 0,
-                            analyticsData.totalAwaiting || 0,
-                            analyticsData.totalAwaitingWID || 0
-                        ],
-                        backgroundColor: [
-                            'rgba(74, 144, 226, 0.8)',
-                            'rgba(255, 193, 7, 0.8)',
-                            'rgba(220, 53, 69, 0.8)',
-                            'rgba(0, 60, 113, 0.8)',
-                            'rgba(46, 204, 113, 0.8)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
                     }
                 }
             });
