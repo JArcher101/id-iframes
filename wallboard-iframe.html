@@ -623,10 +623,18 @@
         ANALYTICS FLOW:
         1. User selects fee earner from dropdown (enables Analytics button)
         2. User clicks Analytics button
-        3a. If 'ALL' selected: Generate comparison charts using wallboard data (no parent request)
-        3b. If specific fee earner: Send 'fe-analytics' to parent → wait for 'analytics-data' response
-        4. Display charts in analytics view
-        5. Back to Wallboard button returns to table view
+        3. Send 'fe-analytics' to parent with fe: 'ALL' or fe: 'SJM', etc.
+        4. Wait for 'analytics-data' response with detailed breakdown
+        5a. If ALL: Show aggregate totals + breakdowns by FE (using wallboard data + analytics data)
+        5b. If specific FE: Show individual metrics (combining wallboard row + analytics data)
+        6. Display charts in analytics view
+        7. Back to Wallboard button returns to table view
+        
+        ANALYTICS DATA EXAMPLES:
+        - ALL: { totalAwaiting: 226, totalRequests: 0, pass90: 598, ... } (aggregated across all FE)
+        - SJM: { totalAwaiting: 156, totalRequests: 0, pass90: 115, ... } (SJM-specific data)
+        
+        Charts combine wallboard metrics with analytics detail for rich visualizations
         
         =====================================================================
         */
@@ -1163,30 +1171,25 @@
                 title.textContent = option ? `Analytics: ${option.label}` : 'Analytics';
             }
             
-            // Check if ALL or specific fee earner
-            if (selectedFeeEarner === 'ALL') {
-                // Use wallboard data to generate comparison charts
-                console.log('📊 Generating charts from wallboard data (ALL fee earners)');
-                generateCharts(selectedFeeEarner);
-            } else {
-                // Request detailed analytics from parent for specific fee earner
-                console.log('📡 Requesting detailed analytics for:', selectedFeeEarner);
-                
-                // Show loading while waiting for data
-                showLoading();
-                
-                // Clear previous analytics data
-                feeEarnerAnalyticsData = null;
-                
-                // Request from parent
-                window.parent.postMessage({
-                    type: 'fe-analytics',
-                    fe: selectedFeeEarner
-                }, '*');
-                
-                // Note: Parent will respond with 'analytics-data' message
-                // which will trigger generateChartsWithData()
-            }
+            // Request detailed analytics from parent (for both ALL and individual FE)
+            console.log('📡 Requesting detailed analytics for:', selectedFeeEarner);
+            
+            // Show loading while waiting for data
+            showLoading();
+            
+            // Clear previous analytics data
+            feeEarnerAnalyticsData = null;
+            
+            // Request from parent (fe can be 'ALL' or specific like 'SJM')
+            window.parent.postMessage({
+                type: 'fe-analytics',
+                fe: selectedFeeEarner
+            }, '*');
+            
+            // Note: Parent will respond with 'analytics-data' message
+            // - For ALL: returns aggregated totals for all fee earners combined
+            // - For specific FE: returns detailed data for that fee earner only
+            // Then generateChartsWithData() will create appropriate charts
         }
 
         /*
@@ -1204,61 +1207,84 @@
 
         /*
         =====================================================================
-        GENERATE CHARTS - Create charts using wallboard data (for ALL)
+        GENERATE CHARTS WITH DATA - Create charts based on FE selection
         =====================================================================
-        */
-        function generateCharts(feeEarner) {
-            const container = document.getElementById('chartsContainer');
-            container.innerHTML = ''; // Clear existing charts
-            
-            if (feeEarner === 'ALL') {
-                // Charts for all fee earners (comparison charts using wallboard data)
-                console.log('📊 Creating comparison charts from wallboard data');
-                
-                const allCharts = [
-                    'Outstanding by Fee Earner',
-                    'Passes (7/30/90 days) Comparison',
-                    'E-ID in Progress by Fee Earner',
-                    'Issues by Fee Earner',
-                    'Pending by Fee Earner',
-                    'Requests by Fee Earner'
-                ];
-                
-                allCharts.forEach(chartTitle => {
-                    createChartCard(chartTitle, container, 'all');
-                });
-            }
-        }
-
-        /*
-        =====================================================================
-        GENERATE CHARTS WITH DATA - Create charts using detailed analytics
+        Uses wallboard data + detailed analytics data from parent
+        
+        ALL mode: Shows aggregate totals + breakdowns by fee earner
+        Individual FE mode: Shows specific FE metrics with detailed breakdowns
         =====================================================================
         */
         function generateChartsWithData(feeEarner, analyticsData) {
             const container = document.getElementById('chartsContainer');
             container.innerHTML = ''; // Clear existing charts
             
-            console.log('📊 Creating individual fee earner charts from analytics data');
+            if (feeEarner === 'ALL') {
+                // ALL ANALYTICS: Show totals and breakdowns by fee earner
+                console.log('📊 Creating ALL fee earner charts (totals + breakdowns)');
+                console.log('Analytics data:', analyticsData);
+                console.log('Wallboard data:', wallboardData);
+                
+                // Charts that show aggregate totals + breakdowns by fee earner
+                const allCharts = [
+                    'Total Outstanding (Breakdown by FE)',
+                    'Total Requests (Breakdown by Type & FE)',
+                    'Passes - 7/30/90 Days (Comparison by FE)',
+                    'E-ID in Progress (Breakdown by FE)',
+                    'Issues & Pending (Breakdown by FE)',
+                    'Messages & Activity (Breakdown by FE)'
+                ];
+                
+                allCharts.forEach(chartTitle => {
+                    createChartCard(chartTitle, container, 'ALL', analyticsData);
+                });
+            } else {
+                // INDIVIDUAL FE ANALYTICS: Show specific FE metrics with detailed breakdowns
+                console.log('📊 Creating individual fee earner charts');
+                console.log('Fee Earner:', feeEarner);
+                console.log('Analytics data:', analyticsData);
+                console.log('Wallboard row:', getWallboardRowForFE(feeEarner.toLowerCase()));
+                
+                // Charts for individual fee earner (combining wallboard + analytics data)
+                const individualCharts = [
+                    'Outstanding Breakdown',
+                    'Pass Trend (7/30/90 days)',
+                    'E-ID Status',
+                    'Issues & Requests',
+                    'PEP Status',
+                    'Activity Summary'
+                ];
+                
+                individualCharts.forEach(chartTitle => {
+                    createChartCard(chartTitle, container, feeEarner, analyticsData);
+                });
+            }
+        }
+
+        /*
+        =====================================================================
+        GET WALLBOARD ROW FOR FE - Extract specific fee earner's data
+        =====================================================================
+        */
+        function getWallboardRowForFE(feKey) {
+            if (!wallboardData || wallboardData.length === 0) return null;
             
-            // Charts for individual fee earner (time series, breakdowns from detailed data)
-            const individualCharts = [
-                'Outstanding Breakdown',
-                'Pass Trend (7/30/90 days)',
-                'E-ID Status',
-                'Issues Timeline',
-                'Request Status',
-                'Activity Summary'
-            ];
-            
-            individualCharts.forEach(chartTitle => {
-                createChartCard(chartTitle, container, feeEarner, analyticsData);
+            // Extract all metrics for this fee earner from wallboard data
+            const feData = {};
+            wallboardData.forEach(row => {
+                if (row[feKey] !== undefined) {
+                    feData[row.title] = row[feKey];
+                }
             });
+            
+            return feData;
         }
 
         /*
         =====================================================================
         CREATE CHART CARD - Helper to create chart placeholder or chart
+        =====================================================================
+        TODO: Replace placeholders with actual Chart.js charts
         =====================================================================
         */
         function createChartCard(title, container, feeEarner = null, analyticsData = null) {
@@ -1273,10 +1299,26 @@
             chartPlaceholder.className = 'chart-placeholder';
             
             // Determine data source for display
-            if (feeEarner === 'all' || feeEarner === 'ALL') {
-                chartPlaceholder.textContent = `Chart: ${title} (using wallboard data)`;
+            if (feeEarner === 'ALL') {
+                // ALL mode: Uses aggregated analytics + wallboard breakdowns
+                chartPlaceholder.innerHTML = `
+                    <div style="text-align: center;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">${title}</div>
+                        <div style="font-size: 12px; color: #999;">
+                            Aggregate totals + breakdown by fee earner
+                        </div>
+                    </div>
+                `;
             } else if (analyticsData) {
-                chartPlaceholder.textContent = `Chart: ${title} (using detailed analytics for ${feeEarner.toUpperCase()})`;
+                // Individual FE mode: Uses wallboard row + detailed analytics
+                chartPlaceholder.innerHTML = `
+                    <div style="text-align: center;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">${title}</div>
+                        <div style="font-size: 12px; color: #999;">
+                            ${feeEarner.toUpperCase()} metrics (wallboard + detailed analytics)
+                        </div>
+                    </div>
+                `;
             } else {
                 chartPlaceholder.textContent = `Chart: ${title}`;
             }
