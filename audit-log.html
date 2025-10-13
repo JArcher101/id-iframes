@@ -93,8 +93,6 @@
             display: flex;
             justify-content: flex-end;
             padding: 0 20px 20px 20px;
-            max-width: 1200px;
-            margin: 0 auto;
         }
         
         .btn-download {
@@ -133,8 +131,6 @@
         
         .timeline {
             position: relative;
-            max-width: 1200px;
-            margin: 0 auto;
         }
         
         .timeline::before {
@@ -235,47 +231,37 @@
         */
         
         .entry-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
             margin-bottom: 15px;
             padding-bottom: 15px;
             border-bottom: 2px solid #ecf0f1;
         }
         
-        .entry-title {
-            flex: 1;
+        .entry-badges-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
         }
         
-        .entry-name {
-            font-family: 'RotisBold', 'Quicksand', sans-serif;
-            font-size: 18px;
-            color: #2c3e50;
-            margin-bottom: 5px;
+        .entry-meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
-        .entry-matter {
-            font-family: 'Transport', 'Quicksand', sans-serif;
-            font-size: 13px;
-            color: #7f8c8d;
-            margin-bottom: 3px;
-        }
-        
-        .entry-description {
-            font-size: 12px;
-            color: #95a5a6;
-            font-style: italic;
-        }
-        
-        .entry-meta {
-            text-align: right;
+        .entry-meta-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
         }
         
         .entry-timestamp {
             font-family: 'Transport', 'Quicksand', sans-serif;
             font-size: 12px;
             color: #7f8c8d;
-            margin-bottom: 5px;
         }
         
         .entry-user {
@@ -291,21 +277,13 @@
             padding: 4px 8px;
             border-radius: 4px;
             display: inline-block;
-            margin-top: 5px;
         }
         
         /*
         =====================================================================
-        STATUS BADGES
+        STATUS BADGES (now in header)
         =====================================================================
         */
-        
-        .status-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
         
         .badge {
             font-family: 'Transport', 'Quicksand', sans-serif;
@@ -453,6 +431,10 @@
         
         .detail-section.archive {
             border-left-color: #95a5a6;
+        }
+        
+        .detail-section.matter {
+            border-left-color: #3498db;
         }
         
         .detail-title {
@@ -637,13 +619,9 @@
                 border-width: 3px;
             }
             
-            .entry-header {
+            .entry-meta-row {
                 flex-direction: column;
-            }
-            
-            .entry-meta {
-                text-align: left;
-                margin-top: 10px;
+                align-items: flex-start;
             }
             
             .entry-details {
@@ -731,17 +709,21 @@
             else if (diffMins < 60) timeAgo = `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
             else if (diffHours < 24) timeAgo = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
             else if (diffDays < 7) timeAgo = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-            else timeAgo = date.toLocaleDateString();
+            else timeAgo = date.toLocaleDateString('en-GB');
             
             const formattedDate = date.toLocaleString('en-GB', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
+                second: '2-digit'
             });
             
-            return { formattedDate, timeAgo };
+            // Combined format: "x days ago - dd/mm/yyyy hh:mm:ss"
+            const combinedTimestamp = `${timeAgo} - ${formattedDate}`;
+            
+            return { formattedDate, timeAgo, combinedTimestamp };
         }
         
         function formatAddress(address) {
@@ -777,7 +759,7 @@
             if (downloadBtn) downloadBtn.disabled = false;
             
             timeline.innerHTML = auditLog.map((entry, index) => {
-                const { formattedDate, timeAgo } = formatTimestamp(entry.timestamp);
+                const { formattedDate, timeAgo, combinedTimestamp } = formatTimestamp(entry.timestamp);
                 
                 // Determine primary status
                 const primaryStatus = entry.status && entry.status.length > 0 ? entry.status[0] : 'Pending';
@@ -825,6 +807,31 @@
                 
                 // Build details sections
                 let detailsSections = '';
+                
+                // Matter section (new - parse matterDetails)
+                if (entry.matterDetails) {
+                    const matterParts = entry.matterDetails.split('/');
+                    let matterItems = '';
+                    
+                    if (matterParts.length >= 3) {
+                        matterItems += `<div class="detail-item"><span class="detail-label">FE Reference:</span> <span class="detail-value">${matterParts[0] || 'N/A'}</span></div>`;
+                        matterItems += `<div class="detail-item"><span class="detail-label">Client Number:</span> <span class="detail-value">${matterParts[1] || 'N/A'}</span></div>`;
+                        matterItems += `<div class="detail-item"><span class="detail-label">Matter Number:</span> <span class="detail-value">${matterParts[2] || 'N/A'}</span></div>`;
+                    } else {
+                        matterItems += `<div class="detail-item"><span class="detail-label">Reference:</span> <span class="detail-value">${entry.matterDetails}</span></div>`;
+                    }
+                    
+                    if (entry.matterDescription) {
+                        matterItems += `<div class="detail-item"><span class="detail-label">Description:</span> <span class="detail-value">${entry.matterDescription}</span></div>`;
+                    }
+                    
+                    detailsSections += `
+                        <div class="detail-section matter">
+                            <div class="detail-title">Matter</div>
+                            ${matterItems}
+                        </div>
+                    `;
+                }
                 
                 // Identity section
                 if (entry.fullName || entry.doB || entry.relation || entry.entityNumber) {
@@ -1003,20 +1010,17 @@
                         <div class="timeline-marker status-${statusInfo.class}"></div>
                         
                         <div class="entry-header">
-                            <div class="entry-title">
-                                <div class="entry-name">${entry.name || 'Unknown Client'}</div>
-                                <div class="entry-matter">${entry.matterDetails || 'N/A'}</div>
-                                ${entry.matterDescription ? `<div class="entry-description">${entry.matterDescription}</div>` : ''}
+                            <div class="entry-badges-row">
+                                ${statusBadges}
                             </div>
-                            <div class="entry-meta">
-                                <div class="entry-timestamp" title="${formattedDate}">${timeAgo}</div>
-                                <div class="entry-user">${entry.userEmail || 'Unknown User'}</div>
+                            
+                            <div class="entry-meta-row">
+                                <div class="entry-meta-left">
+                                    <div class="entry-timestamp">${combinedTimestamp}</div>
+                                    <div class="entry-user">${entry.userEmail || 'Unknown User'}</div>
+                                </div>
                                 <div class="entry-trigger">${entry.triggerPage || 'Unknown Action'}</div>
                             </div>
-                        </div>
-                        
-                        <div class="status-badges">
-                            ${statusBadges}
                         </div>
                         
                         <div class="entry-collapsible">
