@@ -339,6 +339,7 @@
         // Pagination state
         let allLogs = []; // Store all logs from parent
         let displayedCount = 0; // Track how many logs are currently shown
+        let initialBatchSize = 0; // Track how many logs fit initially (for "Load more")
 
         /*
         =====================================================================
@@ -483,6 +484,7 @@
             // Store all logs and reset pagination
             allLogs = logs || [];
             displayedCount = 0;
+            initialBatchSize = 0; // Reset initial batch size
             
             // Clear existing messages to start fresh
             messagesContainer.innerHTML = '';
@@ -505,6 +507,9 @@
                         break;
                     }
                 }
+                
+                // Store the initial batch size for use in loadMore()
+                initialBatchSize = displayedCount;
                 
                 // Show/hide load more button and adjust container height
                 if (displayedCount < allLogs.length) {
@@ -557,8 +562,8 @@
         =====================================================================
         LOAD MORE - Loads next batch of logs when button is clicked
         =====================================================================
-        Loads additional logs (up to 4 more) and appends them to the
-        bottom of the current list.
+        Loads additional logs (same number as initially fit without scrolling)
+        and appends them to the bottom of the current list.
         
         Hides the "Load more" button when all logs have been displayed.
         =====================================================================
@@ -567,8 +572,8 @@
             const messagesContainer = document.getElementById('messagesContainer');
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             
-            // Load next batch (up to 4 more logs)
-            const logsToLoad = Math.min(4, allLogs.length - displayedCount);
+            // Load next batch (same size as initial batch, or remaining logs if fewer)
+            const logsToLoad = Math.min(initialBatchSize || 4, allLogs.length - displayedCount);
             
             for (let i = 0; i < logsToLoad; i++) {
                 appendLogEntry(allLogs[displayedCount]);
