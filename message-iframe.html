@@ -729,7 +729,7 @@
             }
 
             .text-input {
-                width: 100%; /* Full width on first row */
+                flex: 1 1 calc(80% - 6px); /* 80% width minus half the gap */
                 order: 1;
                 height: 50px; /* Taller for better usability */
                 font-size: 14px;
@@ -738,10 +738,10 @@
 
             .upload-area {
                 order: 2;
-                flex: 1; /* Share second row with send button */
-                min-width: 0;
+                flex: 0 0 calc(20% - 6px); /* 20% width minus half the gap */
+                min-width: 60px;
                 width: auto;
-                height: 45px; /* Slightly shorter */
+                height: 50px; /* Match text input height */
             }
 
             .upload-icon svg {
@@ -755,9 +755,10 @@
 
             .send-btn {
                 order: 3;
-                flex: 1; /* Share second row with upload button */
+                flex: 1 1 100%; /* 100% width on second row */
+                width: 100%;
                 min-width: 0;
-                height: 45px; /* Match upload area height */
+                height: 45px;
                 font-size: 10px;
                 padding: 6px 12px;
             }
