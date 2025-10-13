@@ -178,7 +178,7 @@
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
     
     /* People cards */
@@ -1364,7 +1364,7 @@
     function setEditMode(enabled) {
       allowEdits = enabled;
       
-      // Get all form inputs
+      // Get all form inputs (excluding company buttons - handled separately)
       const allFormInputs = [
         registrationCountry, businessName, entityNumber,
         titlePrefix, firstName, middleName, lastName,
@@ -1374,8 +1374,7 @@
         flatNumber, buildingNumber, buildingName, street, subStreet, town, postcode,
         previousCountry, previousAddress,
         prevFlatNumber, prevBuildingNumber, prevBuildingName, prevStreet, prevSubStreet, prevTown, prevPostcode,
-        recentNameChange, recentMove, addressNotListed, previousAddressNotListed,
-        companyLinkBtn, companyRefreshBtn, downloadSummaryBtn
+        recentNameChange, recentMove, addressNotListed, previousAddressNotListed
       ];
       
       // Add DOB inputs
@@ -1387,6 +1386,12 @@
           input.disabled = !enabled;
         }
       });
+      
+      // Company buttons: Only disable refresh button, keep link and download enabled
+      if (companyRefreshBtn) {
+        companyRefreshBtn.disabled = !enabled;
+      }
+      // companyLinkBtn and downloadSummaryBtn stay enabled (always allow viewing and downloading)
       
       console.log(enabled ? '✏️ Edit mode enabled' : '🔒 Edit mode disabled (read-only)');
     }
