@@ -954,14 +954,15 @@
                 userEmail: 'user@example.com',
                 _id: 'item-database-id',
                 notification: true/false,
-                white: 'Staff',  // Determines which message type is white/sent
+                white: 'Staff',  // Determines which viewer we're in and message type for sent messages
+                                 // Can be 'Staff', 'Cashier', or 'Reception'
                 tags: ['note', 'pepUpdate', 'formJ', ...],
                 chat: [
                     {
                         user: 'email@example.com',
                         message: 'Message text',
                         time: '1/1/2024, 12:00:00 PM',
-                        type: 'Staff' or other,
+                        type: 'Staff' | 'Cashier' | 'Reception',
                         liveUrl: 'https://s3-url...' (optional - only present for file attachments),
                         file: {
                             name: 'filename.pdf',
@@ -1097,13 +1098,14 @@
         Parameters:
         - chatData: Array of message objects from parent's message-data
         - whiteType: String determining which message type appears as "sent" (white)
+                     Can be 'Staff', 'Cashier', or 'Reception' depending on viewer
         
         Message object structure (from parent):
         {
             user: 'email@example.com',
             message: 'Text content',
             time: '1/1/2024, 12:00:00 PM',
-            type: 'Staff' or other,
+            type: 'Staff' | 'Cashier' | 'Reception',
             liveUrl: 'https://s3-url...' (optional - only for file attachments),
             file: {
                 name: 'filename.pdf',
@@ -1710,7 +1712,7 @@
                 }),
                 user: userEmail,
                 message: message,
-                type: 'Staff'
+                type: currentWhiteType || 'Staff' // Use viewer type (Staff/Cashier/Reception)
             };
             
             console.log('Sending text-only message to parent:', messageObject);
@@ -1926,7 +1928,7 @@
                         }),
                         user: userEmail,
                         message: currentMessage,
-                        type: 'Staff',
+                        type: currentWhiteType || 'Staff', // Use viewer type (Staff/Cashier/Reception)
                         file: {
                             name: currentFile.name,
                             size: currentFile.size,
