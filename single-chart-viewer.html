@@ -246,17 +246,34 @@
         
         if (popupId && window.opener) {
             document.body.classList.add('popup-mode');
+            console.log('Popup mode activated with ID:', popupId);
             
             // Request chart data from opener (iframe or parent window)
             window.addEventListener('message', function(event) {
+                console.log('Popup received message:', event.data);
                 if (event.data.type === 'chart-data' && event.data.popupId === popupId) {
+                    console.log('Creating chart in popup with data:', event.data);
                     createChart(event.data);
                 }
             });
             
             // Signal to opener that we're ready for data
+            // Send multiple times with delays to ensure it's received
             if (window.opener) {
-                window.opener.postMessage({ type: 'popup-ready', popupId: popupId }, '*');
+                console.log('Sending popup-ready signal');
+                const sendReady = () => {
+                    if (window.opener && !window.opener.closed) {
+                        window.opener.postMessage({ type: 'popup-ready', popupId: popupId }, '*');
+                    }
+                };
+                
+                // Send immediately
+                sendReady();
+                
+                // Send again after small delays (in case iframe wasn't ready)
+                setTimeout(sendReady, 100);
+                setTimeout(sendReady, 300);
+                setTimeout(sendReady, 500);
             }
         }
 
@@ -314,15 +331,28 @@
         }
 
         function createChart(data) {
+            console.log('createChart called with data:', data);
+            console.log('Chart type:', data.chartType);
+            console.log('Chart data:', data.chartData);
+            
+            // Validate data structure
+            if (!data || !data.chartData || !data.chartData.datasets) {
+                console.error('Invalid chart data structure:', data);
+                return;
+            }
+            
             // Check if all data values are 0
             const hasData = data.chartData.datasets.some(dataset => 
                 dataset.data.some(value => value > 0)
             );
 
             if (!hasData) {
+                console.log('No data to display (all zeros)');
                 // Keep empty state visible if no data
                 return;
             }
+            
+            console.log('Has valid data, proceeding with chart creation');
 
             // Reconstruct any function templates in options
             if (data.options) {
@@ -431,12 +461,22 @@
             }
 
             // Create new chart
-            const ctx = canvas.getContext('2d');
-            currentChart = new Chart(ctx, {
-                type: data.chartType || 'bar',
-                data: data.chartData,
-                options: chartOptions
-            });
+            try {
+                const ctx = canvas.getContext('2d');
+                console.log('Creating Chart.js instance with type:', data.chartType || 'bar');
+                currentChart = new Chart(ctx, {
+                    type: data.chartType || 'bar',
+                    data: data.chartData,
+                    options: chartOptions
+                });
+                console.log('Chart created successfully:', currentChart);
+            } catch (error) {
+                console.error('Error creating chart:', error);
+                console.error('Chart type:', data.chartType);
+                console.error('Chart data:', data.chartData);
+                console.error('Chart options:', chartOptions);
+                return;
+            }
 
             // Notify parent window of height change after chart renders
             setTimeout(() => {
@@ -511,9 +551,12 @@
             
             // Listen for popup ready signal and send chart data
             const popupReadyHandler = function(event) {
+                console.log('Iframe received message:', event.data);
                 if (event.data.type === 'popup-ready' && event.data.popupId === uniqueId) {
+                    console.log('Popup ready signal received, sending chart data:', currentChartData);
                     // Send chart data to popup with specific origin for security
                     const dataToSend = Object.assign({}, currentChartData, { popupId: uniqueId });
+                    console.log('Data being sent to popup:', dataToSend);
                     popup.postMessage(dataToSend, window.location.origin);
                     
                     // Remove listener after sending
