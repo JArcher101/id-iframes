@@ -4,14 +4,430 @@ This document describes the communication interface for each iframe component. A
 
 ## Table of Contents
 
-1. [Image Viewer](#image-viewer)
-2. [Image Uploader](#image-uploader)
-3. [Document Viewer](#document-viewer)
-4. [Message iframe](#message-iframe)
-5. [Report Uploader](#report-uploader)
-6. [Cashiers Log](#cashiers-log)
-7. [Chart Viewer](#chart-viewer)
-8. [General Integration Guide](#general-integration-guide)
+1. [Audit Log Viewer](#audit-log-viewer)
+2. [Wallboard Dashboard](#wallboard-dashboard)
+3. [Single Image Viewer](#single-image-viewer)
+4. [Image Viewer](#image-viewer)
+5. [Image Uploader](#image-uploader)
+6. [Document Viewer](#document-viewer)
+7. [Message iframe](#message-iframe)
+8. [Report Uploader](#report-uploader)
+9. [Cashiers Log](#cashiers-log)
+10. [Chart Viewer](#chart-viewer)
+11. [Client Details Form](#client-details-form)
+12. [General Integration Guide](#general-integration-guide)
+
+---
+
+## Audit Log Viewer
+
+**File:** `audit-log.html`
+
+### Description
+Timeline-based audit trail viewer that displays case activity, status changes, and matter details. Features visual badges for status tracking, risk indicators, PEP status, and PDF export capability.
+
+### Parent → iframe (Incoming Messages)
+
+#### `log-data`
+Sends audit log entries to display in timeline format.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'log-data',
+  data: [
+    {
+      timestamp: '2025-10-14T10:30:00Z',
+      action: 'Status Change',
+      user: 'staff@example.com',
+      status: ['InProgress', 'Verified'],
+      riskIndicator: false,
+      pepStatus: 'NPEP',  // CPEP (Confirmed), PPEP (Potential), NPEP (Not PEP)
+      pepMonitoring: false,
+      safeHarbour: true,
+      matterClient: 'John Doe',
+      matterNumber: '12345',
+      matterFE: 'TL',
+      matterDescription: 'Property Purchase',
+      addresses: [
+        {
+          flat_number: '10',
+          building_number: '123',
+          building_name: 'Oak House',
+          street: 'Main Street',
+          sub_street: '',
+          town: 'London',
+          postcode: 'SW1A 1AA',
+          country: 'GBR'
+        }
+      ],
+      documents: [
+        {
+          documentType: 'Passport',
+          url: 'https://example.com/doc.jpg'
+        }
+      ]
+    }
+  ]
+}, '*');
+```
+
+#### `clear-data`
+Clears all audit log entries and returns to empty state.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'clear-data'
+}, '*');
+```
+
+#### `audit-download`
+Triggers PDF download of the audit log.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'audit-download'
+}, '*');
+```
+
+### iframe → Parent (Outgoing Messages)
+
+The Audit Log Viewer is a display-only component and does not send messages back to the parent.
+
+### Log Entry Structure
+
+#### Status Values
+- `Pending` - Initial state
+- `InProgress` - Work in progress
+- `Pass` - Checks passed
+- `Fail` - Checks failed
+- `Completed` - Fully completed
+
+#### PEP Status Values
+- `CPEP` - Confirmed PEP (displays as "PEP")
+- `PPEP` - Potential PEP (displays as "Potential PEP")
+- `NPEP` - Not PEP (displays as "Outruled PEP")
+
+#### Risk & Flags
+- `riskIndicator: true` - Shows "High Risk" badge
+- `pepMonitoring: true` - Shows "PEP Monitoring Active" badge
+- `safeHarbour: true` - Shows "Safe Harbour" badge
+
+### PDF Export
+The iframe includes jsPDF integration for exporting audit logs to PDF format. The download includes:
+- Complete timeline with all entries
+- Status badges and flags
+- Matter details and addresses
+- Document lists
+- Formatted timestamps
+
+### Example Integration
+
+```javascript
+const auditFrame = document.getElementById('auditLog').contentWindow;
+
+// Display audit log
+auditFrame.postMessage({
+  type: 'log-data',
+  data: [
+    {
+      timestamp: new Date().toISOString(),
+      action: 'EID Check Completed',
+      user: 'system@example.com',
+      status: ['Pass'],
+      riskIndicator: false,
+      pepStatus: 'NPEP',
+      matterClient: 'Jane Smith',
+      matterNumber: 'M67890',
+      matterFE: 'JS',
+      addresses: [{
+        building_number: '42',
+        street: 'Baker Street',
+        town: 'London',
+        postcode: 'NW1 6XE',
+        country: 'GBR'
+      }]
+    }
+  ]
+}, '*');
+
+// Clear log
+auditFrame.postMessage({ type: 'clear-data' }, '*');
+
+// Download PDF
+auditFrame.postMessage({ type: 'audit-download' }, '*');
+```
+
+---
+
+## Wallboard Dashboard
+
+**File:** `wallboard-iframe.html`
+
+### Description
+Real-time metrics dashboard displaying case statistics across fee earners. Features auto-refresh countdown timer, interactive analytics with charts, and PDF export. Supports both aggregate (ALL) and individual fee earner views.
+
+### Parent → iframe (Incoming Messages)
+
+#### `wallboard-data`
+Sends complete metrics data and fee earner dropdown options.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'wallboard-data',
+  wallboard: [
+    {
+      title: 'Outstanding total',
+      sjm: 5,
+      mb: 3,
+      tl: 8,
+      total: 16
+    },
+    {
+      title: 'Outstanding With Photo ID',
+      sjm: 2,
+      mb: 1,
+      tl: 4,
+      total: 7
+    },
+    {
+      title: 'Requests',
+      sjm: 0,
+      mb: 1,
+      tl: 2,
+      total: 3
+    }
+  ],
+  feeEarnerOptions: [
+    { label: 'ALL', value: 'ALL' },
+    { label: 'Stephen Morrison', value: 'SJM' },
+    { label: 'Mark Brown', value: 'MB' },
+    { label: 'Tony Lawrence', value: 'TL' }
+  ]
+}, '*');
+```
+
+#### `analytics-data`
+Provides detailed analytics for a specific fee earner (in response to `fe-analytics` request).
+
+```javascript
+window.frames[0].postMessage({
+  type: 'analytics-data',
+  fe: 'SJM',  // or 'ALL' for aggregate
+  analyticsData: {
+    totalAwaiting: 156,
+    totalRequests: 0,
+    pass90: 115,
+    fail90: 8,
+    // Additional analytics metrics...
+  }
+}, '*');
+```
+
+#### `analytics-error`
+Error response when analytics data cannot be fetched.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'analytics-error',
+  fe: 'SJM',
+  error: {...},
+  message: 'Failed to fetch analytics data'
+}, '*');
+```
+
+### iframe → Parent (Outgoing Messages)
+
+#### `refresh-request`
+Requests fresh wallboard data (sent automatically when countdown reaches 0:00).
+
+```javascript
+{
+  type: 'refresh-request'
+}
+```
+
+#### `fe-analytics`
+Requests detailed analytics for a specific fee earner.
+
+```javascript
+{
+  type: 'fe-analytics',
+  fe: 'SJM'  // or 'ALL' for aggregate analytics
+}
+```
+
+### Features
+
+#### Auto-Refresh Countdown
+- Starts at 5:00 (300 seconds) when data is received
+- Updates every second
+- Sends `refresh-request` when it reaches 0:00
+- Resets to 5:00 after refresh
+
+#### Analytics View
+- Select fee earner from dropdown
+- Click "Analytics" button to request detailed data
+- Displays charts combining wallboard metrics with analytics detail
+- "Back to Wallboard" button returns to main dashboard
+- Supports both aggregate (ALL) and individual fee earner views
+
+#### PDF Export
+- Downloads current wallboard as PDF
+- Includes formatted metrics table
+- Filename with timestamp
+- Uses jsPDF library
+
+### Example Integration
+
+```javascript
+const wallboardFrame = document.getElementById('wallboard').contentWindow;
+
+// Send initial wallboard data
+wallboardFrame.postMessage({
+  type: 'wallboard-data',
+  wallboard: [
+    { title: 'Outstanding total', sjm: 5, mb: 3, tl: 8, total: 16 },
+    { title: 'Requests', sjm: 0, mb: 1, tl: 2, total: 3 }
+  ],
+  feeEarnerOptions: [
+    { label: 'ALL', value: 'ALL' },
+    { label: 'Stephen Morrison', value: 'SJM' }
+  ]
+}, '*');
+
+// Listen for refresh requests
+window.addEventListener('message', (event) => {
+  if (event.data.type === 'refresh-request') {
+    // Fetch fresh data and send updated wallboard-data
+    fetchWallboardData().then(data => {
+      wallboardFrame.postMessage({
+        type: 'wallboard-data',
+        wallboard: data.wallboard,
+        feeEarnerOptions: data.feeEarnerOptions
+      }, '*');
+    });
+  }
+  
+  if (event.data.type === 'fe-analytics') {
+    // Fetch analytics for specific FE
+    fetchAnalytics(event.data.fe).then(analytics => {
+      wallboardFrame.postMessage({
+        type: 'analytics-data',
+        fe: event.data.fe,
+        analyticsData: analytics
+      }, '*');
+    }).catch(error => {
+      wallboardFrame.postMessage({
+        type: 'analytics-error',
+        fe: event.data.fe,
+        message: error.message
+      }, '*');
+    });
+  }
+});
+```
+
+---
+
+## Single Image Viewer
+
+**File:** `single-image-viewer.html`
+
+### Description
+Standalone fullscreen image viewer with advanced zoom and pan controls. Unlike other iframes, this component does NOT use postMessage API. Instead, it receives data via URL hash parameter (base64 encoded JSON).
+
+### Integration Method
+
+This viewer uses a different integration pattern - data is passed via URL hash:
+
+```javascript
+// Prepare image data
+const imageData = {
+  url: 'https://example.com/passport-front.jpg',
+  documentType: 'Passport',
+  side: 'Front',
+  uploader: 'staff@example.com',
+  date: '2025-10-14 12:30:45'
+};
+
+// Encode data as base64 JSON
+const jsonString = JSON.stringify(imageData);
+const base64Data = btoa(jsonString);
+
+// Open viewer with data in hash
+const viewerUrl = `single-image-viewer.html#${base64Data}`;
+window.open(viewerUrl, '_blank');
+
+// Or use in iframe
+document.getElementById('viewer').src = viewerUrl;
+```
+
+### Data Structure
+
+```javascript
+{
+  url: 'https://example.com/image.jpg',  // Image URL (required)
+  documentType: 'Passport',               // Document type (optional)
+  side: 'Front',                          // Front/Back/Single (optional)
+  uploader: 'user@example.com',          // Who uploaded (optional)
+  date: '2025-10-14 12:30:45'            // Upload date (optional)
+}
+```
+
+### Features
+
+#### Zoom Controls
+- **Zoom In/Out buttons** - Increment/decrement zoom by 25%
+- **Mouse wheel** - Scroll to zoom
+- **Pinch gesture** - Two-finger pinch on touch devices
+- **Double-click** - Reset to 100% zoom
+
+#### Pan Controls
+- **Mouse drag** - Click and drag to pan
+- **Touch drag** - Single finger drag on touch devices
+- **Auto-center** - Image centers when zoomed
+
+#### Display
+- Fullscreen image display
+- Details banner showing document type, side, uploader, date
+- Loading spinner during image fetch
+- Error handling for failed loads or invalid URLs
+
+### Example Usage
+
+```javascript
+// Open image in new window
+function openImageViewer(imageUrl, docType, side) {
+  const data = {
+    url: imageUrl,
+    documentType: docType,
+    side: side,
+    uploader: 'current-user@example.com',
+    date: new Date().toLocaleString('en-GB')
+  };
+  
+  const encoded = btoa(JSON.stringify(data));
+  const viewerUrl = `single-image-viewer.html#${encoded}`;
+  
+  window.open(viewerUrl, '_blank', 'width=1200,height=800');
+}
+
+// Use in iframe
+function loadImageInIframe(imageUrl, docType) {
+  const data = {
+    url: imageUrl,
+    documentType: docType,
+    side: 'Single'
+  };
+  
+  const encoded = btoa(JSON.stringify(data));
+  document.getElementById('imageIframe').src = `single-image-viewer.html#${encoded}`;
+}
+```
+
+### No postMessage Communication
+
+⚠️ **Important:** This viewer does not use postMessage API. All data must be provided via URL hash at initialization. The viewer does not send messages back to parent and cannot be updated dynamically after load (requires reload with new hash).
 
 ---
 
@@ -96,6 +512,24 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
+#### `button-enable`
+Enables the "Add more ID images" button.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'button-enable'
+}, '*');
+```
+
+#### `button-disable`
+Disables the "Add more ID images" button.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'button-disable'
+}, '*');
+```
+
 ### iframe → Parent (Outgoing Messages)
 
 #### `image-data`
@@ -155,12 +589,262 @@ Requests parent to refresh the image display.
 
 ---
 
+## Client Details Form
+
+**File:** `client-details.html`
+
+### Description
+Lightweight client details and address collection form. Unlike `image-uploader.html`, this form does NOT handle file uploads. It focuses solely on collecting client personal information and addresses with Thirdfort API format support.
+
+### Parent → iframe (Incoming Messages)
+
+#### `client-data`
+Loads existing client data into the form.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'client-data',
+  entity: false,  // true for business/charity, false for individual
+  entityType: 'business',  // 'business' or 'charity' (when entity=true)
+  allowEdits: true,  // Controls if form fields are editable
+  clientData: {
+    n: {  // name object
+      t: 'Mr',              // titlePrefix
+      f: 'John',            // firstName
+      m: 'William',         // middleNames
+      l: 'Doe',             // surname
+      b: 'Acme Corp'        // businessName (entity mode only)
+    },
+    b: '01-01-1990',        // dateOfBirth (DD-MM-YYYY)
+    a: {  // currentAddressNEW (Thirdfort format)
+      building_number: '42',
+      street: 'Baker Street',
+      town: 'London',
+      postcode: 'NW1 6XE',
+      country: 'GBR'
+    },
+    pA: {...},              // previousAddressNEW (optional)
+    rM: false,              // clientRecentHomeMove
+    nC: false,              // clientRecentNameChange
+    pN: '',                 // previousName
+    rNC: '',                // reasonForNameChange
+    m: '+447700900000',     // mobileNumber
+    e: 'john@example.com',  // email
+    eN: '12345678',         // entityNumber (company/charity number)
+    rC: 'GB',               // registrationCountry
+    eT: 'business',         // entityType
+    bD: {...}               // businessData (directors/trustees)
+  }
+}, '*');
+```
+
+#### `entity-true`
+Switches form to entity mode (business/charity).
+
+```javascript
+window.frames[0].postMessage({
+  type: 'entity-true',
+  entityType: 'business'  // or 'charity'
+}, '*');
+```
+
+#### `entity-false`
+Switches form to individual mode.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'entity-false'
+}, '*');
+```
+
+#### `allowEdits-true` / `allowEdits-false`
+Enables or disables form editing.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'allowEdits-true'  // or 'allowEdits-false'
+}, '*');
+```
+
+#### `request-data`
+Requests form data (triggers validation and submission).
+
+```javascript
+window.frames[0].postMessage({
+  type: 'request-data'
+}, '*');
+```
+
+#### `address-results`
+Autocomplete suggestions from address lookup.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'address-results',
+  results: [
+    {
+      id: 'address-id-123',
+      address: '42 Baker Street, London, NW1 6XE'
+    }
+  ],
+  field: 'current'  // or 'previous'
+}, '*');
+```
+
+#### `address-data`
+Full address object after selection.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'address-data',
+  address: {
+    building_number: '42',
+    street: 'Baker Street',
+    town: 'London',
+    postcode: 'NW1 6XE',
+    country: 'GBR'
+  },
+  field: 'current'  // or 'previous'
+}, '*');
+```
+
+#### `company-results` / `company-data`
+Company search results and details from Companies House API.
+
+#### `charity-results` / `charity-data`
+Charity search results and details from Charity Commission API.
+
+### iframe → Parent (Outgoing Messages)
+
+#### `new-data`
+Sends complete form data (after validation).
+
+```javascript
+{
+  type: 'new-data',
+  clientData: {
+    n: {t: 'Mr', f: 'John', m: 'William', l: 'Doe'},
+    b: '01-01-1990',
+    a: {...},  // Thirdfort formatted current address
+    pA: {...}, // Thirdfort formatted previous address
+    rM: false,
+    nC: false,
+    m: '+447700900000',
+    e: 'john@example.com',
+    eT: 'individual'  // or 'business'/'charity'
+  }
+}
+```
+
+#### `address-search`
+Requests address autocomplete suggestions.
+
+```javascript
+{
+  type: 'address-search',
+  searchTerm: 'Baker Street',
+  field: 'current',  // or 'previous'
+  country: 'GBR'
+}
+```
+
+#### `address-lookup`
+Requests full address by ID.
+
+```javascript
+{
+  type: 'address-lookup',
+  addressId: 'address-id-123',
+  field: 'current',  // or 'previous'
+  country: 'GBR'
+}
+```
+
+#### `company-search` / `company-lookup`
+Requests company search and full company data.
+
+#### `charity-search` / `charity-lookup`
+Requests charity search and full charity data.
+
+#### `validation-error`
+Notifies parent of validation failures.
+
+```javascript
+{
+  type: 'validation-error',
+  message: 'Please complete all required fields'
+}
+```
+
+#### `disable-close`
+Notifies parent of unsaved changes (prevents accidental close).
+
+```javascript
+{
+  type: 'disable-close'
+}
+```
+
+### Thirdfort Address Format
+
+Addresses are automatically converted to Thirdfort API format:
+
+**UK (GBR):**
+```javascript
+{
+  building_name: 'Oak House',
+  building_number: '42',
+  flat_number: '10',
+  street: 'Baker Street',
+  sub_street: '',
+  town: 'London',
+  postcode: 'NW1 6XE',
+  country: 'GBR'
+  // Note: UK addresses do NOT include address_1/address_2
+}
+```
+
+**USA/Canada:**
+```javascript
+{
+  address_1: '123 Main Street',
+  address_2: 'Apt 4B',
+  street: 'Main Street',
+  town: 'New York',
+  state: 'NY',
+  postcode: '10001',
+  country: 'USA'
+}
+```
+
+**Other Countries:**
+```javascript
+{
+  address_1: 'Rue de la Paix',
+  address_2: 'Apartment 5',
+  town: 'Paris',
+  postcode: '75001',
+  country: 'FRA'
+}
+```
+
+### Features
+
+- **Entity Mode Support** - Toggle between individual and business/charity modes
+- **Address Autocomplete** - getaddress.io integration via parent proxy
+- **Smart Caching** - LRU cache with 30-day expiry for addresses
+- **Thirdfort Formatting** - Automatic conversion to Thirdfort API spec
+- **Validation** - Real-time field validation with error messages
+- **Unsaved Changes Protection** - Sends `disable-close` to prevent data loss
+
+---
+
 ## Image Uploader
 
 **File:** `image-uploader.html`
 
 ### Description
-Client onboarding form for collecting personal details and ID documents.
+Complete client onboarding form for collecting personal details AND uploading ID documents. This is the full-featured version that includes everything from `client-details.html` plus file upload capabilities.
 
 ### Parent → iframe (Incoming Messages)
 
@@ -295,6 +979,24 @@ S3 upload URLs for document upload.
 #### `put-error`
 Upload error notification.
 
+#### `button-enable`
+Enables the "Add more documents" button.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'button-enable'
+}, '*');
+```
+
+#### `button-disable`
+Disables the "Add more documents" button.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'button-disable'
+}, '*');
+```
+
 ### iframe → Parent (Outgoing Messages)
 
 #### `file-data`
@@ -397,6 +1099,24 @@ window.frames[0].postMessage({
 
 #### `put-error`
 Attachment upload error.
+
+#### `button-enable`
+Enables the send message button.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'button-enable'
+}, '*');
+```
+
+#### `button-disable`
+Disables the send message button.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'button-disable'
+}, '*');
+```
 
 ### iframe → Parent (Outgoing Messages)
 
@@ -528,10 +1248,79 @@ Report upload completion.
 **File:** `cashiers-log.html`
 
 ### Description
-Activity log display for cashier operations.
+Activity log display for cashier operations with dynamic pagination. Shows user activities, messages, and timestamps with "Load more" functionality for infinite scroll-free viewing.
 
-### Communication
-Currently operates independently without postMessage communication (standalone display).
+### Parent → iframe (Incoming Messages)
+
+#### `log-data`
+Sends complete array of log entries to display.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'log-data',
+  logs: [
+    {
+      user: 'cashier@example.com',
+      message: 'Client ID checked and approved',
+      time: '10/14/2025, 2:30:00 PM'
+    },
+    {
+      user: 'staff@example.com',
+      message: 'Documents uploaded to system',
+      time: '10/14/2025, 2:25:15 PM'
+    }
+  ]
+}, '*');
+```
+
+### iframe → Parent (Outgoing Messages)
+
+The Cashiers Log is a display-only component and does not send messages back to the parent.
+
+### Features
+
+#### Responsive Height with Dynamic Card Loading
+- Container height is fully responsive using calc()
+- Automatically calculates how many log entries fit without scrolling
+- Dynamically loads initial batch based on available height
+- "Load more" button for pagination (loads next batch)
+- Recent commit: "Make cashiers-log container height fully responsive with dynamic card loading"
+
+#### Log Display
+- Newest logs appear at top
+- User email displayed with custom Transport font
+- Message text with Rotis Regular font
+- Timestamps with Rotis Italic font
+- Clean card-based layout
+
+#### Pagination
+- Shows as many logs as fit without scrolling initially
+- "Load more" button appears if more logs exist
+- Button hidden when all logs displayed
+- New log array resets to dynamic initial count
+
+### Example Integration
+
+```javascript
+const cashiersFrame = document.getElementById('cashiersLog').contentWindow;
+
+// Send log data
+cashiersFrame.postMessage({
+  type: 'log-data',
+  logs: [
+    {
+      user: 'cashier1@example.com',
+      message: 'Pass issued to client',
+      time: new Date().toLocaleString('en-US')
+    },
+    {
+      user: 'cashier2@example.com',
+      message: 'ID verification completed',
+      time: new Date().toLocaleString('en-US')
+    }
+  ]
+}, '*');
+```
 
 ---
 
@@ -609,10 +1398,12 @@ If all data values in the datasets are `0`, the iframe:
 Charts can be expanded to a larger popup window:
 - Click the **"⤢ Expand"** button (top-right when chart is displayed)
 - Opens the chart in a 1400x900px popup window
-- Uses unique ID handshake via sessionStorage for secure data transfer
+- Uses unique ID handshake via postMessage for secure data transfer
+- Functions are serialized before sending (postMessage can't clone functions)
+- Supported formatter functions: `percentageLabel` and other predefined formatters
 - Popup stays synchronized - updates when iframe receives new data
 - Multiple popups supported simultaneously (each with unique ID)
-- Data auto-deleted after popup loads (prevents reload issues)
+- Recent fix: "Fix doughnut chart expansion - serialize functions for postMessage"
 
 #### Bullet Point Lists
 When the `description` field contains bullet points (`•`), they are automatically:

@@ -4,16 +4,54 @@ A collection of standalone HTML iframe utilities for image viewing, document man
 
 ## Components
 
+### Audit & Logging
+- **`audit-log.html`** - Audit Log Viewer
+  - Timeline-based audit trail display
+  - Status badges (Pending, In Progress, Pass, Fail, Completed)
+  - Risk indicators and PEP status tracking (CPEP, PPEP, NPEP)
+  - Safe Harbour and PEP Monitoring flags
+  - Matter details with expandable addresses
+  - PDF export functionality with jsPDF
+  - Relative timestamps with full date/time display
+
+- **`cashiers-log.html`** - Cashiers Log
+  - Track cashier activities and events
+  - Custom fonts for user emails, log messages, and timestamps
+  - Responsive design with dynamic card loading
+
+- **`wallboard-iframe.html`** - Metrics Dashboard
+  - Real-time metrics dashboard with fee earner breakdown
+  - Auto-refresh every 5 minutes with countdown timer
+  - Interactive analytics view with charts
+  - PDF export functionality
+  - Aggregate and individual fee earner analytics
+
 ### Image Management
 - **`image-viewer.html`** - ID Images Display
   - View and display identification images
   - Modern, responsive interface
   - Custom typography with Transport and Rotis fonts
 
-- **`image-uploader.html`** - Client Details Form
-  - Upload client identification images
-  - Form-based interface for client data entry
-  - Embedded font support with Google Fonts fallback
+- **`single-image-viewer.html`** - Single Image Viewer
+  - Standalone fullscreen image viewer
+  - URL hash-based data loading (base64 JSON)
+  - Zoom and pan controls with mouse/touch support
+  - Document details banner display
+  - No postMessage - uses URL parameters
+
+- **`image-uploader.html`** - Full Client Onboarding Form
+  - Complete onboarding with 4 sections (Details, Photo ID, Address, Address ID)
+  - Upload client identification images and documents
+  - Form-based interface with S3 direct upload
+  - Address lookup via getaddress.io integration
+  - Thirdfort API format support
+  
+- **`client-details.html`** - Lightweight Client Details & Address Form
+  - Streamlined client details collection (NO uploads)
+  - Personal information and address history only
+  - Address autocomplete with getaddress.io
+  - Automatic Thirdfort address formatting
+  - Entity mode for business/charity clients
 
 - **`document-viewer.html`** - Document Display
   - View and display document images
@@ -25,12 +63,6 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Supports multiple chart types (pie, doughnut, bar, line, etc.)
   - Responsive charts with custom fonts
   - Handles empty data states gracefully
-
-### Utilities
-- **`cashiers-log.html`** - Cashiers Log
-  - Track cashier activities and events
-  - Custom fonts for user emails, log messages, and timestamps
-  - Responsive design
 
 ### Additional Files
 - **`message-iframe.html`** - Message display interface

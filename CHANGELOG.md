@@ -7,11 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Chart Viewer: Fixed doughnut chart expansion - serialize functions for postMessage
+- Cashiers Log: Container height fully responsive with dynamic card loading
+
+### Enhanced
+- Image Viewer: Added button-enable/button-disable messages for upload button control
+- Document Viewer: Added button-enable/button-disable messages for upload button control  
+- Message iframe: Added button-enable/button-disable messages for send button control
+- All viewers now support dynamic button state management from parent
+
 ### Added
 - README.md with project overview and component descriptions
 - API.md with comprehensive postMessage API documentation
 - Interactive API documentation page (api-docs.html)
 - CHANGELOG.md for tracking project changes
+- `audit-log.html` - Audit Log Viewer iframe
+  - Timeline-based display of case activity and status changes
+  - Visual badges for status (Pending, In Progress, Pass, Fail, Completed)
+  - Risk indicators and PEP status badges (CPEP, PPEP, NPEP)
+  - Safe Harbour and PEP Monitoring flags
+  - Matter details display (client info, addresses, documents)
+  - Expandable matter details with formatted addresses
+  - PDF export functionality with jsPDF integration
+  - Relative timestamps ("2 hours ago") with full date/time
+  - Custom Transport and Rotis fonts for professional appearance
+  - Empty state handling when no log entries exist
+- `wallboard-iframe.html` - Metrics Dashboard & Analytics
+  - Real-time metrics dashboard with fee earner breakdown
+  - Auto-refresh with 5-minute countdown timer
+  - Interactive fee earner dropdown selection
+  - Detailed analytics view with chart visualizations
+  - Aggregate (ALL) and individual fee earner analytics
+  - PDF export with formatted metrics table
+  - Parent communication: wallboard-data, analytics-data, analytics-error, refresh-request, fe-analytics
+  - Responsive design with custom fonts
+  - Seamless view switching between dashboard and analytics
+- `single-image-viewer.html` - Single Image Viewer
+  - Standalone image viewer with zoom and pan controls
+  - URL hash-based data loading (base64 encoded JSON)
+  - Pan with mouse drag or touch gestures
+  - Zoom with mouse wheel, buttons, or pinch gestures
+  - Double-click to reset zoom and pan
+  - Fullscreen image display
+  - Document details banner (type, side, uploader, date)
+  - No postMessage API - uses URL parameters
+  - Responsive controls with touch support
+- `client-details.html` - Lightweight Client Details & Address Form
+  - Streamlined client details collection (NO file uploads)
+  - Personal information form with DOB, name changes, entity selection
+  - Address lookup integration with getaddress.io via parent proxy
+  - Automatic Thirdfort API format conversion for UK/USA/CAN/Other addresses
+  - Current and previous address support
+  - LRU cache with 30-day expiry for addresses
+  - Parent communication: new-data, address-search, address-lookup, disable-close
+  - Validation messages and error handling
+  - Entity mode support (business/charity vs individual)
 - `single-chart-viewer.html` - Dynamic Chart.js visualization iframe
   - Supports multiple chart types (bar, line, pie, doughnut, radar, polarArea, bubble, scatter)
   - Responsive design with custom Transport and Rotis fonts
@@ -30,11 +81,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Components
 - `image-viewer.html` - ID Images Display with upload functionality
-- `image-uploader.html` - Client Details Form for onboarding
+- `image-uploader.html` - Full Client Onboarding Form (with uploads)
+- `client-details.html` - Lightweight Client Details & Address Form (no uploads)
 - `document-viewer.html` - Document Display and management
 - `message-iframe.html` - Staff-Cashier chat interface
 - `report-uploader.html` - Standard report upload system
-- `cashiers-log.html` - Cashier activity logging
+- `cashiers-log.html` - Cashier activity logging with responsive height
+- `wallboard-iframe.html` - Metrics Dashboard with analytics
+- `audit-log.html` - Audit trail viewer with timeline display
+- `single-image-viewer.html` - Standalone fullscreen image viewer
 - `test-responsive.html` - Testing utility for iframes
 
 #### Features

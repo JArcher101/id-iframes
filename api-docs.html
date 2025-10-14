@@ -442,6 +442,10 @@
 
             <div class="nav-section">
                 <div class="nav-section-title">Components</div>
+                <a href="#audit-log" class="nav-link">Audit Log Viewer</a>
+                <a href="#wallboard" class="nav-link">Wallboard Dashboard</a>
+                <a href="#client-details" class="nav-link">Client Details Form</a>
+                <a href="#single-image-viewer" class="nav-link">Single Image Viewer</a>
                 <a href="#image-viewer" class="nav-link">Image Viewer</a>
                 <a href="#image-uploader" class="nav-link">Image Uploader</a>
                 <a href="#document-viewer" class="nav-link">Document Viewer</a>
@@ -550,6 +554,354 @@
                 </div>
             </section>
 
+            <!-- Audit Log Viewer -->
+            <section id="audit-log" class="section">
+                <h2>Audit Log Viewer</h2>
+                <p><strong>File:</strong> <code>audit-log.html</code></p>
+                <p>Timeline-based audit trail viewer that displays case activity, status changes, and matter details. Features visual badges for status tracking, risk indicators, PEP status, and PDF export capability.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> log-data, clear-data, audit-download<br>
+                    <strong>Sends:</strong> None (display-only component)</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="auditLogDemo" 
+                        src="audit-log.html" 
+                        class="demo-iframe" 
+                        height="600"
+                        title="Audit Log Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendAuditLogData()">Load Sample Audit Log</button>
+                        <button class="btn btn-secondary" onclick="sendClearAuditLog()">Clear Log</button>
+                        <button class="btn btn-secondary" onclick="sendDownloadAudit()">Download PDF</button>
+                    </div>
+                    <div class="demo-output" id="auditLogConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>log-data</code>
+                </div>
+                <p>Sends audit log entries to display in timeline format.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"log-data"</span>,
+  <span class="property">"data"</span>: [
+    {
+      <span class="property">"timestamp"</span>: <span class="string">"2025-10-14T10:30:00Z"</span>,
+      <span class="property">"action"</span>: <span class="string">"Status Change"</span>,
+      <span class="property">"user"</span>: <span class="string">"staff@example.com"</span>,
+      <span class="property">"status"</span>: [<span class="string">"InProgress"</span>, <span class="string">"Verified"</span>],
+      <span class="property">"riskIndicator"</span>: <span class="keyword">false</span>,
+      <span class="property">"pepStatus"</span>: <span class="string">"NPEP"</span>,
+      <span class="property">"pepMonitoring"</span>: <span class="keyword">false</span>,
+      <span class="property">"safeHarbour"</span>: <span class="keyword">true</span>,
+      <span class="property">"matterClient"</span>: <span class="string">"John Doe"</span>,
+      <span class="property">"matterNumber"</span>: <span class="string">"12345"</span>,
+      <span class="property">"matterFE"</span>: <span class="string">"TL"</span>,
+      <span class="property">"matterDescription"</span>: <span class="string">"Property Purchase"</span>
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>clear-data</code>
+                </div>
+                <p>Clears all audit log entries and returns to empty state.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"clear-data"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>audit-download</code>
+                </div>
+                <p>Triggers PDF download of the audit log.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"audit-download"</span>
+}</code></pre>
+                </div>
+
+                <h3>Status & Badges</h3>
+                <div class="info-box">
+                    <div class="info-box-title">Status Values</div>
+                    <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
+                        <li><code>Pending</code> - Initial state</li>
+                        <li><code>InProgress</code> - Work in progress</li>
+                        <li><code>Pass</code> - Checks passed</li>
+                        <li><code>Fail</code> - Checks failed</li>
+                        <li><code>Completed</code> - Fully completed</li>
+                    </ul>
+                </div>
+
+                <div class="info-box" style="margin-top: 1rem;">
+                    <div class="info-box-title">PEP Status Values</div>
+                    <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
+                        <li><code>CPEP</code> - Confirmed PEP (displays as "PEP")</li>
+                        <li><code>PPEP</code> - Potential PEP (displays as "Potential PEP")</li>
+                        <li><code>NPEP</code> - Not PEP (displays as "Outruled PEP")</li>
+                    </ul>
+                </div>
+
+                <h3>Example Usage</h3>
+                <div class="code-block">
+                    <pre><code><span class="comment">// Display audit log with multiple entries</span>
+<span class="keyword">const</span> auditFrame = document.getElementById(<span class="string">'auditLog'</span>).contentWindow;
+
+auditFrame.postMessage({
+  <span class="property">type</span>: <span class="string">'log-data'</span>,
+  <span class="property">data</span>: [
+    {
+      <span class="property">timestamp</span>: <span class="keyword">new</span> Date().toISOString(),
+      <span class="property">action</span>: <span class="string">'EID Check Completed'</span>,
+      <span class="property">user</span>: <span class="string">'system@example.com'</span>,
+      <span class="property">status</span>: [<span class="string">'Pass'</span>],
+      <span class="property">riskIndicator</span>: <span class="keyword">false</span>,
+      <span class="property">pepStatus</span>: <span class="string">'NPEP'</span>,
+      <span class="property">matterClient</span>: <span class="string">'Jane Smith'</span>,
+      <span class="property">matterNumber</span>: <span class="string">'M67890'</span>,
+      <span class="property">matterFE</span>: <span class="string">'JS'</span>
+    }
+  ]
+}, <span class="string">'*'</span>);
+
+<span class="comment">// Clear the log</span>
+auditFrame.postMessage({ <span class="property">type</span>: <span class="string">'clear-data'</span> }, <span class="string">'*'</span>);
+
+<span class="comment">// Download PDF</span>
+auditFrame.postMessage({ <span class="property">type</span>: <span class="string">'audit-download'</span> }, <span class="string">'*'</span>);</code></pre>
+                </div>
+            </section>
+
+            <!-- Wallboard Dashboard -->
+            <section id="wallboard" class="section">
+                <h2>Wallboard Dashboard</h2>
+                <p><strong>File:</strong> <code>wallboard-iframe.html</code></p>
+                <p>Real-time metrics dashboard displaying case statistics across fee earners. Features auto-refresh countdown timer, interactive analytics with charts, and PDF export.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> wallboard-data, analytics-data, analytics-error<br>
+                    <strong>Sends:</strong> refresh-request, fe-analytics</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="wallboardDemo" 
+                        src="wallboard-iframe.html" 
+                        class="demo-iframe" 
+                        height="800"
+                        title="Wallboard Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendWallboardData()">Load Wallboard Data</button>
+                        <button class="btn btn-secondary" onclick="sendWallboardAnalytics()">Send Analytics (SJM)</button>
+                        <button class="btn btn-secondary" onclick="clearWallboardConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="wallboardConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>wallboard-data</code>
+                </div>
+                <p>Sends metrics data and fee earner options.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"wallboard-data"</span>,
+  <span class="property">"wallboard"</span>: [
+    {
+      <span class="property">"title"</span>: <span class="string">"Outstanding total"</span>,
+      <span class="property">"sjm"</span>: <span class="number">5</span>,
+      <span class="property">"mb"</span>: <span class="number">3</span>,
+      <span class="property">"tl"</span>: <span class="number">8</span>,
+      <span class="property">"total"</span>: <span class="number">16</span>
+    }
+  ],
+  <span class="property">"feeEarnerOptions"</span>: [
+    { <span class="property">"label"</span>: <span class="string">"ALL"</span>, <span class="property">"value"</span>: <span class="string">"ALL"</span> },
+    { <span class="property">"label"</span>: <span class="string">"Stephen Morrison"</span>, <span class="property">"value"</span>: <span class="string">"SJM"</span> }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>refresh-request</code>
+                </div>
+                <p>Requests fresh wallboard data (auto-sent every 5 minutes).</p>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>fe-analytics</code>
+                </div>
+                <p>Requests detailed analytics for a fee earner.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"fe-analytics"</span>,
+  <span class="property">"fe"</span>: <span class="string">"SJM"</span>
+}</code></pre>
+                </div>
+
+                <h3>Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>5-minute auto-refresh countdown timer</li>
+                    <li>Interactive fee earner dropdown</li>
+                    <li>Analytics view with chart visualizations</li>
+                    <li>PDF export functionality</li>
+                    <li>Supports aggregate (ALL) and individual views</li>
+                </ul>
+            </section>
+
+            <!-- Client Details Form -->
+            <section id="client-details" class="section">
+                <h2>Client Details Form</h2>
+                <p><strong>File:</strong> <code>client-details.html</code></p>
+                <p>Lightweight client details and address form (NO file uploads). Focuses on personal information and Thirdfort-formatted addresses.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> client-data, entity-true, entity-false, allowEdits-true/false, request-data, address-results, address-data<br>
+                    <strong>Sends:</strong> new-data, address-search, address-lookup, validation-error, disable-close</p>
+                </div>
+
+                <h3>Key Difference</h3>
+                <div class="info-box warning">
+                    <div class="info-box-title">⚠️ No File Uploads</div>
+                    <p style="margin: 0; color: var(--text-secondary);">Unlike <code>image-uploader.html</code>, this form does NOT handle file uploads. Use this for lightweight client data collection only.</p>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>client-data</code>
+                </div>
+                <p>Loads client data into form.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"client-data"</span>,
+  <span class="property">"entity"</span>: <span class="keyword">false</span>,
+  <span class="property">"allowEdits"</span>: <span class="keyword">true</span>,
+  <span class="property">"clientData"</span>: {
+    <span class="property">"n"</span>: {<span class="property">"t"</span>: <span class="string">"Mr"</span>, <span class="property">"f"</span>: <span class="string">"John"</span>, <span class="property">"l"</span>: <span class="string">"Doe"</span>},
+    <span class="property">"b"</span>: <span class="string">"01-01-1990"</span>,
+    <span class="property">"a"</span>: {<span class="property">"street"</span>: <span class="string">"Baker St"</span>, <span class="property">"town"</span>: <span class="string">"London"</span>, <span class="property">"postcode"</span>: <span class="string">"NW1 6XE"</span>}
+  }
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>new-data</code>
+                </div>
+                <p>Sends validated form data.</p>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>address-search</code>
+                </div>
+                <p>Requests address autocomplete.</p>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>disable-close</code>
+                </div>
+                <p>Prevents parent from closing due to unsaved changes.</p>
+
+                <h3>Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>Entity mode (individual vs business/charity)</li>
+                    <li>Address autocomplete via getaddress.io</li>
+                    <li>Automatic Thirdfort API formatting</li>
+                    <li>30-day LRU cache for addresses</li>
+                    <li>Real-time validation</li>
+                </ul>
+            </section>
+
+            <!-- Single Image Viewer -->
+            <section id="single-image-viewer" class="section">
+                <h2>Single Image Viewer</h2>
+                <p><strong>File:</strong> <code>single-image-viewer.html</code></p>
+                <p>Standalone fullscreen image viewer with zoom and pan controls. <strong>Note:</strong> This component uses URL hash for data (not postMessage API).</p>
+
+                <div class="info-box warning">
+                    <div class="info-box-title">⚠️ Different Integration Pattern</div>
+                    <p style="margin: 0; color: var(--text-secondary);">This viewer does NOT use postMessage. Data is passed via URL hash parameter (base64 JSON).</p>
+                </div>
+
+                <h3>Integration</h3>
+                <div class="code-block">
+                    <pre><code><span class="comment">// Prepare image data</span>
+<span class="keyword">const</span> imageData = {
+  <span class="property">url</span>: <span class="string">'https://example.com/passport.jpg'</span>,
+  <span class="property">documentType</span>: <span class="string">'Passport'</span>,
+  <span class="property">side</span>: <span class="string">'Front'</span>,
+  <span class="property">uploader</span>: <span class="string">'staff@example.com'</span>,
+  <span class="property">date</span>: <span class="string">'2025-10-14 12:30:45'</span>
+};
+
+<span class="comment">// Encode as base64 JSON</span>
+<span class="keyword">const</span> encoded = <span class="function">btoa</span>(<span class="function">JSON.stringify</span>(imageData));
+
+<span class="comment">// Open in new window</span>
+window.<span class="function">open</span>(<span class="string">`single-image-viewer.html#${encoded}`</span>, <span class="string">'_blank'</span>);
+
+<span class="comment">// Or load in iframe</span>
+document.<span class="function">getElementById</span>(<span class="string">'viewer'</span>).src = <span class="string">`single-image-viewer.html#${encoded}`</span>;</code></pre>
+                </div>
+
+                <h3>Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>Zoom controls (In/Out buttons, mouse wheel, pinch)</li>
+                    <li>Pan with mouse drag or touch</li>
+                    <li>Double-click to reset zoom</li>
+                    <li>Document details banner</li>
+                    <li>Fullscreen display</li>
+                    <li>Touch gesture support</li>
+                </ul>
+
+                <h3>Data Fields</h3>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"url"</span>: <span class="string">"string"</span>,          <span class="comment">// Required - Image URL</span>
+  <span class="property">"documentType"</span>: <span class="string">"string"</span>,  <span class="comment">// Optional - e.g., "Passport"</span>
+  <span class="property">"side"</span>: <span class="string">"string"</span>,          <span class="comment">// Optional - "Front"/"Back"/"Single"</span>
+  <span class="property">"uploader"</span>: <span class="string">"string"</span>,      <span class="comment">// Optional - Email or name</span>
+  <span class="property">"date"</span>: <span class="string">"string"</span>           <span class="comment">// Optional - Any date format</span>
+}</code></pre>
+                </div>
+            </section>
+
             <!-- Image Viewer -->
             <section id="image-viewer" class="section">
                 <h2>Image Viewer</h2>
@@ -558,7 +910,7 @@
 
                 <div class="info-box">
                     <div class="info-box-title">📋 Quick Reference</div>
-                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-images, put-links, put-error<br>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-images, image-display, put-links, put-error, button-enable, button-disable<br>
                     <strong>Sends:</strong> image-data, upload-success, refresh-images</p>
                 </div>
 
@@ -855,8 +1207,8 @@
 
                 <div class="info-box">
                     <div class="info-box-title">📋 Quick Reference</div>
-                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-documents, put-links, put-error<br>
-                    <strong>Sends:</strong> file-data, upload-success, refresh-documents</p>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-documents, display-images, put-links, put-error, button-enable, button-disable<br>
+                    <strong>Sends:</strong> file-data, upload-success, refresh-images</p>
                 </div>
 
                 <h3>Live Demo</h3>
@@ -897,7 +1249,7 @@
 
                 <div class="info-box">
                     <div class="info-box-title">📋 Quick Reference</div>
-                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> message-data, put-links, put-error<br>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> message-data, put-links, put-error, button-enable, button-disable<br>
                     <strong>Sends:</strong> message-sent, dismiss-notification, file-data (for attachments)</p>
                 </div>
 
@@ -1116,7 +1468,13 @@
             <section id="cashiers-log" class="section">
                 <h2>Cashiers Log</h2>
                 <p><strong>File:</strong> <code>cashiers-log.html</code></p>
-                <p>Activity log display for cashier operations and audit trails.</p>
+                <p>Activity log display for cashier operations with dynamic pagination and responsive height.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> log-data<br>
+                    <strong>Sends:</strong> None (display-only component)</p>
+                </div>
 
                 <h3>Live Demo</h3>
                 <div class="demo-container">
@@ -1130,12 +1488,42 @@
                         height="500"
                         title="Cashiers Log Demo">
                     </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendCashiersLogData()">Load Sample Logs</button>
+                        <button class="btn btn-secondary" onclick="clearCashiersConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="cashiersConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
                 </div>
 
-                <div class="info-box">
-                    <div class="info-box-title">ℹ️ Standalone Component</div>
-                    <p style="margin: 0; color: var(--text-secondary);">This component currently operates independently without postMessage communication. It displays pre-configured log data.</p>
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>log-data</code>
                 </div>
+                <p>Sends complete array of log entries to display.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"log-data"</span>,
+  <span class="property">"logs"</span>: [
+    {
+      <span class="property">"user"</span>: <span class="string">"cashier@example.com"</span>,
+      <span class="property">"message"</span>: <span class="string">"Client ID checked and approved"</span>,
+      <span class="property">"time"</span>: <span class="string">"10/14/2025, 2:30:00 PM"</span>
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>Responsive height with dynamic card loading</li>
+                    <li>"Load more" pagination (no infinite scroll)</li>
+                    <li>Automatically fits logs to container height</li>
+                    <li>Custom fonts for user emails, messages, timestamps</li>
+                </ul>
             </section>
 
             <!-- Chart Viewer -->
@@ -1481,6 +1869,138 @@
             document.getElementById('chartConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
         }
 
+        // Audit Log Viewer Demo Functions
+        function sendAuditLogData() {
+            const iframe = document.getElementById('auditLogDemo').contentWindow;
+            const message = {
+                type: 'log-data',
+                data: [
+                    {
+                        timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+                        action: 'EID Check Completed',
+                        user: 'system@example.com',
+                        status: ['Pass', 'Verified'],
+                        riskIndicator: false,
+                        pepStatus: 'NPEP',
+                        pepMonitoring: false,
+                        safeHarbour: true,
+                        matterClient: 'John Doe',
+                        matterNumber: '12345',
+                        matterFE: 'TL',
+                        matterDescription: 'Property Purchase - 42 Baker Street',
+                        addresses: [
+                            {
+                                building_number: '42',
+                                street: 'Baker Street',
+                                town: 'London',
+                                postcode: 'NW1 6XE',
+                                country: 'GBR'
+                            }
+                        ],
+                        documents: [
+                            { documentType: 'Passport', url: '#' },
+                            { documentType: 'Bank Statement', url: '#' }
+                        ]
+                    },
+                    {
+                        timestamp: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+                        action: 'PEP Check Started',
+                        user: 'compliance@example.com',
+                        status: ['InProgress'],
+                        riskIndicator: false,
+                        pepStatus: 'PPEP',
+                        pepMonitoring: true,
+                        safeHarbour: false,
+                        matterClient: 'John Doe',
+                        matterNumber: '12345',
+                        matterFE: 'TL',
+                        matterDescription: 'Property Purchase - 42 Baker Street'
+                    },
+                    {
+                        timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+                        action: 'Case Initiated',
+                        user: 'staff@example.com',
+                        status: ['Pending'],
+                        riskIndicator: false,
+                        pepStatus: null,
+                        pepMonitoring: false,
+                        safeHarbour: false,
+                        matterClient: 'John Doe',
+                        matterNumber: '12345',
+                        matterFE: 'TL',
+                        matterDescription: 'Property Purchase - 42 Baker Street'
+                    }
+                ]
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('auditLogConsole', `Sent: log-data with ${message.data.length} audit entries`, 'success');
+        }
+
+        function sendClearAuditLog() {
+            const iframe = document.getElementById('auditLogDemo').contentWindow;
+            const message = { type: 'clear-data' };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('auditLogConsole', 'Sent: clear-data (log cleared)', 'success');
+        }
+
+        function sendDownloadAudit() {
+            const iframe = document.getElementById('auditLogDemo').contentWindow;
+            const message = { type: 'audit-download' };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('auditLogConsole', 'Sent: audit-download (PDF download triggered)', 'success');
+        }
+
+        // Wallboard Dashboard Demo Functions
+        function sendWallboardData() {
+            const iframe = document.getElementById('wallboardDemo').contentWindow;
+            const message = {
+                type: 'wallboard-data',
+                wallboard: [
+                    { title: 'Outstanding total', sjm: 5, mb: 3, tl: 8, total: 16 },
+                    { title: 'Outstanding With Photo ID', sjm: 2, mb: 1, tl: 4, total: 7 },
+                    { title: 'Outstanding With Address ID', sjm: 1, mb: 1, tl: 2, total: 4 },
+                    { title: 'Requests', sjm: 0, mb: 1, tl: 2, total: 3 },
+                    { title: 'Pass 90 days', sjm: 115, mb: 87, tl: 203, total: 405 },
+                    { title: 'Fail 90 days', sjm: 8, mb: 5, tl: 12, total: 25 }
+                ],
+                feeEarnerOptions: [
+                    { label: 'ALL', value: 'ALL' },
+                    { label: 'Stephen Morrison', value: 'SJM' },
+                    { label: 'Mark Brown', value: 'MB' },
+                    { label: 'Tony Lawrence', value: 'TL' }
+                ]
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('wallboardConsole', 'Sent: wallboard-data with metrics and options', 'success');
+        }
+
+        function sendWallboardAnalytics() {
+            const iframe = document.getElementById('wallboardDemo').contentWindow;
+            const message = {
+                type: 'analytics-data',
+                fe: 'SJM',
+                analyticsData: {
+                    totalAwaiting: 156,
+                    totalRequests: 0,
+                    pass90: 115,
+                    fail90: 8,
+                    passRate: 93.5,
+                    avgProcessingDays: 12
+                }
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('wallboardConsole', 'Sent: analytics-data for SJM', 'success');
+        }
+
+        function clearWallboardConsole() {
+            document.getElementById('wallboardConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
         // Image Viewer Demo Functions
         function sendDisplayImages() {
             const iframe = document.getElementById('imageViewerDemo').contentWindow;
@@ -1637,6 +2157,48 @@
             
             iframe.postMessage(message, '*');
             logToConsole('reportConsole', 'Sent: display-data to initialize uploader', 'success');
+        }
+
+        // Cashiers Log Demo Functions
+        function sendCashiersLogData() {
+            const iframe = document.getElementById('cashiersLogDemo').contentWindow;
+            const message = {
+                type: 'log-data',
+                logs: [
+                    {
+                        user: 'cashier1@example.com',
+                        message: 'Pass issued to John Doe',
+                        time: new Date(Date.now() - 600000).toLocaleString('en-US')
+                    },
+                    {
+                        user: 'reception@example.com',
+                        message: 'ID documents verified',
+                        time: new Date(Date.now() - 1800000).toLocaleString('en-US')
+                    },
+                    {
+                        user: 'cashier2@example.com',
+                        message: 'Client collected pass',
+                        time: new Date(Date.now() - 3600000).toLocaleString('en-US')
+                    },
+                    {
+                        user: 'staff@example.com',
+                        message: 'Documents uploaded to system',
+                        time: new Date(Date.now() - 7200000).toLocaleString('en-US')
+                    },
+                    {
+                        user: 'cashier1@example.com',
+                        message: 'New client registration started',
+                        time: new Date(Date.now() - 86400000).toLocaleString('en-US')
+                    }
+                ]
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('cashiersConsole', `Sent: log-data with ${message.logs.length} log entries`, 'success');
+        }
+
+        function clearCashiersConsole() {
+            document.getElementById('cashiersConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
         }
 
         // Chart Viewer Demo Functions
