@@ -168,7 +168,7 @@
         =====================================================================
         MESSAGES DISPLAY AREA - Main log container
         - Responsive width: 100% with max-width of 640px
-        - Responsive height: Uses min-height and max-height for flexibility
+        - Responsive height: calc() accounts for button space (27px)
         - Height dynamically adjusts based on "Load more" button visibility
         - Scrollable container for all log entries
         - Auto-scrolls to top when new logs added (newest first)
@@ -178,9 +178,9 @@
         .messages-container {
             width: 100%;
             max-width: 640px;
-            min-height: 300px;
-            max-height: 70vh;
-            height: 420px; /* Fallback for browsers that don't support vh */
+            min-height: 200px;
+            max-height: calc(100vh - 20px); /* Full viewport minus small margin */
+            height: calc(100vh - 20px);
             background: white;
             border-radius: 5px;
             overflow-y: auto;
@@ -190,9 +190,8 @@
         }
 
         .messages-container.with-button {
-            min-height: 270px;
-            max-height: 65vh;
-            height: 393px; /* Fallback */
+            max-height: calc(100vh - 47px); /* Account for button space (27px + margins) */
+            height: calc(100vh - 47px);
         }
 
         /* Header within each log entry showing email and timestamp */
@@ -471,8 +470,9 @@
         2. Resets displayedCount to 0
         3. Clears all existing log entries from container
         4. Renders logs until container would need to scroll
-        5. Shows/hides "Load more" button based on whether more logs exist
-        6. Scrolls to top to show newest entries
+        5. Always shows at least 1 card (even if scrolling is required)
+        6. Shows/hides "Load more" button based on whether more logs exist
+        7. Scrolls to top to show newest entries
         
         Note: This function resets pagination when new logs are received.
         =====================================================================
@@ -491,15 +491,28 @@
             
             // Validate logs array
             if (allLogs && Array.isArray(allLogs) && allLogs.length > 0) {
-                const containerHeight = messagesContainer.clientHeight;
+                // Show button first to get accurate container height
+                const hasMoreLogs = allLogs.length > 1;
+                if (hasMoreLogs) {
+                    loadMoreBtn.style.display = 'block';
+                    messagesContainer.classList.add('with-button');
+                }
                 
-                // Add logs one by one until we would cause scrolling
-                for (let i = 0; i < allLogs.length; i++) {
+                // Get container height after button adjustment
+                const containerHeight = messagesContainer.clientHeight;
+                const scrollBuffer = 2; // Small buffer to avoid edge cases
+                
+                // Always add at least the first log entry
+                appendLogEntry(allLogs[0]);
+                displayedCount = 1;
+                
+                // Add more logs until we would cause scrolling
+                for (let i = 1; i < allLogs.length; i++) {
                     appendLogEntry(allLogs[i]);
                     displayedCount++;
                     
                     // Check if we've exceeded container height (would cause scrolling)
-                    if (messagesContainer.scrollHeight > containerHeight) {
+                    if (messagesContainer.scrollHeight > containerHeight + scrollBuffer) {
                         // Remove the last log that caused overflow
                         const lastLog = messagesContainer.lastChild;
                         if (lastLog) messagesContainer.removeChild(lastLog);
@@ -511,7 +524,7 @@
                 // Store the initial batch size for use in loadMore()
                 initialBatchSize = displayedCount;
                 
-                // Show/hide load more button and adjust container height
+                // Update button visibility based on actual displayed count
                 if (displayedCount < allLogs.length) {
                     loadMoreBtn.style.display = 'block';
                     messagesContainer.classList.add('with-button');
@@ -525,6 +538,7 @@
             } else {
                 // No logs to display, hide button
                 loadMoreBtn.style.display = 'none';
+                messagesContainer.classList.remove('with-button');
             }
         }
 
@@ -566,18 +580,26 @@
         and appends them to the bottom of the current list.
         
         Hides the "Load more" button when all logs have been displayed.
+        Ensures at least 1 log is loaded per click.
         =====================================================================
         */
         function loadMore() {
             const messagesContainer = document.getElementById('messagesContainer');
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             
-            // Load next batch (same size as initial batch, or remaining logs if fewer)
-            const logsToLoad = Math.min(initialBatchSize || 4, allLogs.length - displayedCount);
+            // Calculate how many logs to load (same as initial batch, minimum 1)
+            const remainingLogs = allLogs.length - displayedCount;
+            const logsToLoad = Math.min(
+                Math.max(initialBatchSize, 1), // At least 1, prefer initial batch size
+                remainingLogs
+            );
             
+            // Append the next batch of logs
             for (let i = 0; i < logsToLoad; i++) {
-                appendLogEntry(allLogs[displayedCount]);
-                displayedCount++;
+                if (displayedCount < allLogs.length) {
+                    appendLogEntry(allLogs[displayedCount]);
+                    displayedCount++;
+                }
             }
             
             // Hide button and expand container if all logs are now displayed
