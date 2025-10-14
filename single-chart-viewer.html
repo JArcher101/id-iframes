@@ -287,7 +287,9 @@
                 // Update ALL open popup windows with new data
                 openPopups.forEach((popup, popupId) => {
                     if (popup && !popup.closed) {
-                        const dataToSend = Object.assign({}, data, { popupId: popupId });
+                        // Serialize functions before sending to popup
+                        const serializedData = serializeFunctions(data);
+                        const dataToSend = Object.assign({}, serializedData, { popupId: popupId });
                         popup.postMessage(dataToSend, window.location.origin);
                     } else {
                         // Remove closed popups from tracking
@@ -307,6 +309,36 @@
                 return `${label}: ${value} (${percentage}%)`;
             }
         };
+
+        // Serialize functions to string templates for postMessage
+        function serializeFunctions(obj) {
+            if (obj === null || typeof obj !== 'object') {
+                // Convert function to string template
+                if (typeof obj === 'function') {
+                    // Check if it matches a known formatter
+                    const funcString = obj.toString();
+                    for (const [name, func] of Object.entries(formatterFunctions)) {
+                        if (func.toString() === funcString) {
+                            return `__FUNCTION__:${name}`;
+                        }
+                    }
+                    // If not a known function, return null (can't serialize)
+                    console.warn('Unknown function found, cannot serialize:', funcString.substring(0, 100));
+                    return null;
+                }
+                return obj;
+            }
+            
+            if (Array.isArray(obj)) {
+                return obj.map(serializeFunctions);
+            }
+            
+            const serialized = {};
+            for (const key in obj) {
+                serialized[key] = serializeFunctions(obj[key]);
+            }
+            return serialized;
+        }
 
         // Reconstruct functions from string templates
         function reconstructFunctions(obj) {
@@ -354,10 +386,10 @@
             
             console.log('Has valid data, proceeding with chart creation');
 
-            // Reconstruct any function templates in options
-            if (data.options) {
-                data.options = reconstructFunctions(data.options);
-            }
+            // Reconstruct any function templates in the entire data object
+            // This handles functions in options, chartData, and any other properties
+            data = reconstructFunctions(data);
+            console.log('Data after function reconstruction:', data);
 
             // Store current chart data for expansion
             currentChartData = data;
@@ -554,9 +586,10 @@
                 console.log('Iframe received message:', event.data);
                 if (event.data.type === 'popup-ready' && event.data.popupId === uniqueId) {
                     console.log('Popup ready signal received, sending chart data:', currentChartData);
-                    // Send chart data to popup with specific origin for security
-                    const dataToSend = Object.assign({}, currentChartData, { popupId: uniqueId });
-                    console.log('Data being sent to popup:', dataToSend);
+                    // Serialize functions before sending (postMessage can't clone functions)
+                    const serializedData = serializeFunctions(currentChartData);
+                    const dataToSend = Object.assign({}, serializedData, { popupId: uniqueId });
+                    console.log('Serialized data being sent to popup:', dataToSend);
                     popup.postMessage(dataToSend, window.location.origin);
                     
                     // Remove listener after sending
