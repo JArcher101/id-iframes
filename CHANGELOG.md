@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Document Viewer: Added button-enable/button-disable messages for upload button control  
 - Message iframe: Added button-enable/button-disable messages for send button control
 - All viewers now support dynamic button state management from parent
+- Client Details Form: Integrated Google libphonenumber library for mobile phone validation
+  - Phone numbers are validated before sending new-data message
+  - Numbers are formatted in E.164 international format
+  - Validation errors are sent via validation-error message
 
 ### Added
 - README.md with project overview and component descriptions

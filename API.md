@@ -594,7 +594,7 @@ Requests parent to refresh the image display.
 **File:** `client-details.html`
 
 ### Description
-Lightweight client details and address collection form. Unlike `image-uploader.html`, this form does NOT handle file uploads. It focuses solely on collecting client personal information and addresses with Thirdfort API format support.
+Lightweight client details and address collection form. Unlike `image-uploader.html`, this form does NOT handle file uploads. It focuses solely on collecting client personal information and addresses with Thirdfort API format support. Mobile phone numbers are validated using Google's libphonenumber library before submission.
 
 ### Parent → iframe (Incoming Messages)
 
@@ -717,7 +717,7 @@ Charity search results and details from Charity Commission API.
 ### iframe → Parent (Outgoing Messages)
 
 #### `new-data`
-Sends complete form data (after validation).
+Sends complete form data (after validation). Phone numbers are validated using Google's libphonenumber library and formatted in E.164 international format.
 
 ```javascript
 {
@@ -729,7 +729,7 @@ Sends complete form data (after validation).
     pA: {...}, // Thirdfort formatted previous address
     rM: false,
     nC: false,
-    m: '+447700900000',
+    m: '+447700900000',  // Validated and formatted in E.164 international format
     e: 'john@example.com',
     eT: 'individual'  // or 'business'/'charity'
   }
@@ -767,12 +767,12 @@ Requests company search and full company data.
 Requests charity search and full charity data.
 
 #### `validation-error`
-Notifies parent of validation failures.
+Notifies parent of validation failures. Includes phone number validation using Google's libphonenumber library.
 
 ```javascript
 {
   type: 'validation-error',
-  message: 'Please complete all required fields'
+  errors: ['Please enter a valid mobile phone number.', 'Please complete all required fields']
 }
 ```
 

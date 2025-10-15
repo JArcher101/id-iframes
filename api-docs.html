@@ -784,7 +784,7 @@ auditFrame.postMessage({ <span class="property">type</span>: <span class="string
             <section id="client-details" class="section">
                 <h2>Client Details Form</h2>
                 <p><strong>File:</strong> <code>client-details.html</code></p>
-                <p>Lightweight client details and address form (NO file uploads). Focuses on personal information and Thirdfort-formatted addresses.</p>
+                <p>Lightweight client details and address form (NO file uploads). Focuses on personal information and Thirdfort-formatted addresses. Mobile phone numbers are validated using Google's libphonenumber library.</p>
 
                 <div class="info-box">
                     <div class="info-box-title">📋 Quick Reference</div>
@@ -824,13 +824,19 @@ auditFrame.postMessage({ <span class="property">type</span>: <span class="string
                     <span class="arrow">←</span>
                     <code>new-data</code>
                 </div>
-                <p>Sends validated form data.</p>
+                <p>Sends validated form data. Phone numbers are validated using Google's libphonenumber library and formatted in E.164 international format.</p>
 
                 <div class="message-type outgoing">
                     <span class="arrow">←</span>
                     <code>address-search</code>
                 </div>
                 <p>Requests address autocomplete.</p>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>validation-error</code>
+                </div>
+                <p>Notifies parent of validation failures, including phone number validation using Google's libphonenumber library.</p>
 
                 <div class="message-type outgoing">
                     <span class="arrow">←</span>
@@ -845,6 +851,8 @@ auditFrame.postMessage({ <span class="property">type</span>: <span class="string
                     <li>Automatic Thirdfort API formatting</li>
                     <li>30-day LRU cache for addresses</li>
                     <li>Real-time validation</li>
+                    <li>Phone number validation using Google libphonenumber</li>
+                    <li>E.164 international phone format output</li>
                 </ul>
             </section>
 
