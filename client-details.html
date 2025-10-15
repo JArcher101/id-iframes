@@ -2874,6 +2874,104 @@
       }
     }
     
+    // Phone validation using Google libphonenumber
+    function validatePhoneNumber() {
+      try {
+        // Check if phone number is provided
+        if (!phoneNumber?.value?.trim()) {
+          return { isValid: true, error: null }; // Phone is optional, so empty is valid
+        }
+        
+        const countryCode = phoneCountryCode?.value || '+44';
+        const phoneNum = phoneNumber.value.trim();
+        
+        // Combine country code with phone number
+        const fullPhoneNumber = countryCode + phoneNum.replace(/^0+/, '');
+        
+        // Use libphonenumber to validate
+        const phoneUtil = libphonenumber.PhoneNumberUtil.getInstance();
+        const number = phoneUtil.parseAndKeepRawInput(fullPhoneNumber, null);
+        
+        // Check if the number is valid
+        const isValid = phoneUtil.isValidNumber(number);
+        
+        if (!isValid) {
+          return {
+            isValid: false,
+            error: 'Please enter a valid mobile phone number.'
+          };
+        }
+        
+        // Additional check for mobile number type (optional)
+        const numberType = phoneUtil.getNumberType(number);
+        const mobileTypes = [
+          libphonenumber.PhoneNumberUtil.PhoneNumberType.MOBILE,
+          libphonenumber.PhoneNumberUtil.PhoneNumberType.FIXED_LINE_OR_MOBILE
+        ];
+        
+        if (!mobileTypes.includes(numberType)) {
+          return {
+            isValid: false,
+            error: 'Please enter a valid mobile phone number.'
+          };
+        }
+        
+        return { isValid: true, error: null, formattedNumber: phoneUtil.format(number, libphonenumber.PhoneNumberUtil.PhoneNumberFormat.E164) };
+        
+      } catch (error) {
+        console.error('Phone validation error:', error);
+        return {
+          isValid: false,
+          error: 'Please enter a valid mobile phone number.'
+        };
+      }
+    }
+    
+    // Helper function to format an existing phone number string to E.164 format
+    function formatExistingPhoneNumber(phoneString) {
+      try {
+        if (!phoneString || !phoneString.trim()) {
+          return null;
+        }
+        
+        const cleanPhone = phoneString.trim();
+        
+        // Try to parse as international number first
+        if (cleanPhone.startsWith('+')) {
+          const phoneUtil = libphonenumber.PhoneNumberUtil.getInstance();
+          const number = phoneUtil.parseAndKeepRawInput(cleanPhone, null);
+          
+          if (phoneUtil.isValidNumber(number)) {
+            return phoneUtil.format(number, libphonenumber.PhoneNumberUtil.PhoneNumberFormat.E164);
+          }
+        }
+        
+        // Try common country codes
+        const commonCodes = ['+44', '+1', '+33', '+49', '+39', '+34', '+61', '+86', '+91', '+81'];
+        for (const code of commonCodes) {
+          try {
+            const fullNumber = code + cleanPhone.replace(/^0+/, '');
+            const phoneUtil = libphonenumber.PhoneNumberUtil.getInstance();
+            const number = phoneUtil.parseAndKeepRawInput(fullNumber, null);
+            
+            if (phoneUtil.isValidNumber(number)) {
+              return phoneUtil.format(number, libphonenumber.PhoneNumberUtil.PhoneNumberFormat.E164);
+            }
+          } catch (error) {
+            // Try next code
+            continue;
+          }
+        }
+        
+        // If all else fails, return null (will be handled by original logic)
+        return null;
+        
+      } catch (error) {
+        console.error('Error formatting existing phone number:', error);
+        return null;
+      }
+    }
+    
     function validateForm() {
       const errors = [];
       
@@ -2896,7 +2994,11 @@
           }
         }
         
-        // Phone and email are NOT required - no validation
+        // Phone validation - optional but must be valid if provided
+        const phoneValidation = validatePhoneNumber();
+        if (!phoneValidation.isValid) {
+          errors.push(phoneValidation.error);
+        }
       
       // Current address is NOT required
       // Manual address fields only required if "Address not listed" is checked
@@ -3029,15 +3131,17 @@
         }
       }
       
-      // Format phone number in international format (undefined if no number entered)
+      // Format phone number in E.164 international format using validated number
       let formattedPhone = undefined;
       if (phoneNumber?.value?.trim()) {
-        const countryCode = phoneCountryCode?.value || '+44';
-        // Strip only leading zeros, but keep the number if it's all zeros or becomes empty
-        let phoneNum = phoneNumber.value.trim().replace(/^0+/, '');
-        // If stripping zeros left us with nothing, use original (edge case)
-        if (!phoneNum) phoneNum = phoneNumber.value.trim();
-        formattedPhone = countryCode + phoneNum;
+        const phoneValidation = validatePhoneNumber();
+        if (phoneValidation.isValid && phoneValidation.formattedNumber) {
+          formattedPhone = phoneValidation.formattedNumber;
+        } else {
+          // If validation fails, don't send the phone number (shouldn't happen due to validation checks)
+          console.warn('Phone validation failed during data compilation, excluding phone from response');
+          formattedPhone = undefined;
+        }
       }
       
       // Compile DOB from individual inputs (only for individual mode)
@@ -3326,6 +3430,17 @@
           return;
         }
         
+        // Additional phone validation before sending data
+        const phoneValidation = validatePhoneNumber();
+        if (!phoneValidation.isValid) {
+          console.log('❌ Phone validation failed before sending data:', phoneValidation.error);
+          window.parent.postMessage({
+            type: 'validation-error',
+            errors: [phoneValidation.error]
+          }, '*');
+          return;
+        }
+        
         const data = compileFormData();
         
         // Check if data compilation failed
@@ -3484,53 +3599,81 @@
         lastName.value = formData.n?.l || '';
       }
       
-      // Parse phone number (handle both international and UK formats)
+      // Parse phone number using libphonenumber for proper formatting
       if (formData.m && typeof formData.m === 'string') {
         const cleanPhone = formData.m.trim();
         
-        // Check if it already has international format (starts with +)
-        if (cleanPhone.startsWith('+')) {
-          // Try to match against known country codes (longest first to avoid +1 matching +1X)
-          const knownCodes = ['+993', '+992', '+971', '+967', '+966', '+960', '+886', '+880', '+856', '+853', '+852', '+973', '+998', '+996', '+995', '+977', '+968', '+964', '+963', '+962', '+961', '+974', '+594', '+593', '+598', '+595', '+591', '+590', '+507', '+506', '+505', '+504', '+503', '+502', '+501', '+389', '+387', '+386', '+385', '+381', '+380', '+376', '+375', '+374', '+373', '+372', '+371', '+370', '+359', '+358', '+357', '+356', '+355', '+354', '+353', '+352', '+351', '+421', '+420', '+264', '+263', '+262', '+261', '+260', '+258', '+257', '+256', '+255', '+254', '+253', '+252', '+251', '+250', '+249', '+248', '+244', '+243', '+242', '+241', '+240', '+239', '+238', '+237', '+236', '+235', '+234', '+233', '+232', '+231', '+230', '+229', '+228', '+227', '+226', '+225', '+224', '+223', '+222', '+221', '+220', '+218', '+216', '+213', '+212', '+98', '+95', '+94', '+93', '+92', '+91', '+90', '+86', '+84', '+82', '+81', '+66', '+65', '+64', '+63', '+62', '+61', '+60', '+58', '+57', '+56', '+55', '+54', '+52', '+51', '+49', '+48', '+47', '+46', '+45', '+44', '+43', '+41', '+40', '+39', '+36', '+34', '+33', '+32', '+31', '+30', '+27', '+20', '+7', '+1'];
-          
-          let matched = false;
-          for (const code of knownCodes) {
-            if (cleanPhone.startsWith(code)) {
-              phoneCountryCode.value = code;
-              phoneNumber.value = cleanPhone.substring(code.length);
-              console.log(`📞 Loaded international phone: ${code} + ${cleanPhone.substring(code.length)}`);
-              matched = true;
-              break;
-            }
+        // First, try to format using libphonenumber to get proper E.164 format
+        const formattedPhone = formatExistingPhoneNumber(cleanPhone);
+        
+        if (formattedPhone) {
+          // Successfully formatted - extract country code and number for form fields
+          try {
+            const phoneUtil = libphonenumber.PhoneNumberUtil.getInstance();
+            const number = phoneUtil.parseAndKeepRawInput(formattedPhone, null);
+            const countryCode = '+' + number.getCountryCode();
+            
+            // Extract national number more reliably
+            const nationalNumberString = number.getNationalNumber().toString();
+            const nationalNumber = nationalNumberString.replace(/^0+/, ''); // Remove leading zeros
+            
+            phoneCountryCode.value = countryCode;
+            phoneNumber.value = nationalNumber;
+            console.log(`📞 Formatted phone using libphonenumber: ${cleanPhone} → ${formattedPhone} (${countryCode} + ${nationalNumber})`);
+          } catch (error) {
+            console.warn('Error parsing formatted phone number:', error);
+            // Fall back to original logic
+            phoneCountryCode.value = '+44';
+            phoneNumber.value = cleanPhone;
           }
+        } else {
+          // Couldn't format with libphonenumber - use original logic
+          console.log('📞 Could not format phone with libphonenumber, using original logic for:', cleanPhone);
           
-          // If no known code matched, try generic pattern (shouldn't happen)
-          if (!matched) {
-            const genericMatch = cleanPhone.match(/^(\+\d{1,4})(.+)$/);
-            if (genericMatch) {
-              phoneCountryCode.value = genericMatch[1];
-              phoneNumber.value = genericMatch[2];
-              console.log(`📞 Loaded phone with unrecognized code: ${genericMatch[1]} + ${genericMatch[2]}`);
+          // Check if it already has international format (starts with +)
+          if (cleanPhone.startsWith('+')) {
+            // Try to match against known country codes (longest first to avoid +1 matching +1X)
+            const knownCodes = ['+993', '+992', '+971', '+967', '+966', '+960', '+886', '+880', '+856', '+853', '+852', '+973', '+998', '+996', '+995', '+977', '+968', '+964', '+963', '+962', '+961', '+974', '+594', '+593', '+598', '+595', '+591', '+590', '+507', '+506', '+505', '+504', '+503', '+502', '+501', '+389', '+387', '+386', '+385', '+381', '+380', '+376', '+375', '+374', '+373', '+372', '+371', '+370', '+359', '+358', '+357', '+356', '+355', '+354', '+353', '+352', '+351', '+421', '+420', '+264', '+263', '+262', '+261', '+260', '+258', '+257', '+256', '+255', '+254', '+253', '+252', '+251', '+250', '+249', '+248', '+244', '+243', '+242', '+241', '+240', '+239', '+238', '+237', '+236', '+235', '+234', '+233', '+232', '+231', '+230', '+229', '+228', '+227', '+226', '+225', '+224', '+223', '+222', '+221', '+220', '+218', '+216', '+213', '+212', '+98', '+95', '+94', '+93', '+92', '+91', '+90', '+86', '+84', '+82', '+81', '+66', '+65', '+64', '+63', '+62', '+61', '+60', '+58', '+57', '+56', '+55', '+54', '+52', '+51', '+49', '+48', '+47', '+46', '+45', '+44', '+43', '+41', '+40', '+39', '+36', '+34', '+33', '+32', '+31', '+30', '+27', '+20', '+7', '+1'];
+            
+            let matched = false;
+            for (const code of knownCodes) {
+              if (cleanPhone.startsWith(code)) {
+                phoneCountryCode.value = code;
+                phoneNumber.value = cleanPhone.substring(code.length);
+                console.log(`📞 Loaded international phone: ${code} + ${cleanPhone.substring(code.length)}`);
+                matched = true;
+                break;
+              }
             }
+            
+            // If no known code matched, try generic pattern
+            if (!matched) {
+              const genericMatch = cleanPhone.match(/^(\+\d{1,4})(.+)$/);
+              if (genericMatch) {
+                phoneCountryCode.value = genericMatch[1];
+                phoneNumber.value = genericMatch[2];
+                console.log(`📞 Loaded phone with unrecognized code: ${genericMatch[1]} + ${genericMatch[2]}`);
+              }
+            }
+          } 
+          // Check if it's UK mobile starting with 07, 08, or 09
+          else if (cleanPhone.match(/^0[7-9]\d{9}$/)) {
+            phoneCountryCode.value = '+44';
+            phoneNumber.value = cleanPhone.substring(1); // Remove leading 0: 07700000000 → 7700000000
+            console.log(`📞 Converted UK mobile ${cleanPhone} → +44${cleanPhone.substring(1)}`);
           }
-        } 
-        // Check if it's UK mobile starting with 07, 08, or 09
-        else if (cleanPhone.match(/^0[7-9]\d{9}$/)) {
-          phoneCountryCode.value = '+44';
-          phoneNumber.value = cleanPhone.substring(1); // Remove leading 0: 07700000000 → 7700000000
-          console.log(`📞 Converted UK mobile ${cleanPhone} → +44${cleanPhone.substring(1)}`);
-        }
-        // Other UK format (starts with 0) - landlines or other
-        else if (cleanPhone.startsWith('0')) {
-          phoneCountryCode.value = '+44';
-          phoneNumber.value = cleanPhone.substring(1); // Remove leading 0
-          console.log(`📞 Converted UK number ${cleanPhone} → +44${cleanPhone.substring(1)}`);
-        }
-        // No recognized format, store as-is with default country code
-        else {
-          phoneCountryCode.value = '+44';
-          phoneNumber.value = cleanPhone;
-          console.log('📞 Loaded phone (no prefix):', cleanPhone, '→ assuming +44');
+          // Other UK format (starts with 0) - landlines or other
+          else if (cleanPhone.startsWith('0')) {
+            phoneCountryCode.value = '+44';
+            phoneNumber.value = cleanPhone.substring(1); // Remove leading 0
+            console.log(`📞 Converted UK number ${cleanPhone} → +44${cleanPhone.substring(1)}`);
+          }
+          // No recognized format, store as-is with default country code
+          else {
+            phoneCountryCode.value = '+44';
+            phoneNumber.value = cleanPhone;
+            console.log('📞 Loaded phone (no prefix):', cleanPhone, '→ assuming +44');
+          }
         }
       } else {
         phoneCountryCode.value = '+44';
@@ -3756,6 +3899,9 @@
     setupCompanyNameAutocomplete();
     setupCompanyNumberAutocomplete();
   </script>
+  
+  <!-- Google libphonenumber library for phone validation -->
+  <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
   <!-- jsPDF library for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
