@@ -7,9 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`request-form.html`** - Comprehensive Request Management Form ⭐ MAJOR NEW FEATURE
+  - Dynamic multi-request type form system supporting 7 distinct request types
+  - Modular JavaScript architecture with core + request type modules (2,800+ lines)
+  - Request types: Form J, Form K (11 rules), Form E, eSoF Request, Note, Issue Update, PEP Update
+  - Smart section visibility based on client type (individual/business/charity) and selected request
+  - Form K conditional rule filtering (Rules 1-3, 10-11 for individuals; all 11 for entities)
+  - Form K Rule 1/2 disabled for "Sale" worktypes with validation
+  - Form K Rule 3 limited to Will/LPA/Deeds worktypes with Form J ID requirements
+  - Automatic Form E + eSoF combination for "Purchase" worktypes
+  - Dynamic hint system (k3Hint, ejHint, eSoFHint, eSoFSkipHint, eSoFOnlyHint, nameVerificationHint)
+  - CDF and OFSI document upload with dropdown type selection
+  - ID Images carousel with side tags (FRONT/BACK) in brand tan/brown color
+  - ID Documents section with entity-aware hints (people vs entity)
+  - Business/Charity details with people cards (directors, officers, PSCs, trustees)
+  - Smart people card merging (deduplicates same person with multiple roles)
+  - Companies House and Charity Register popup integration
+  - Google libphonenumber for robust mobile number validation
+  - Smart address handling with Thirdfort format validation
+  - Global file upload system with S3 integration and progress tracking
+  - Comprehensive validation with detailed multi-line error messages
+  - Global DOB validator (validates real dates, rejects future dates, formats DD-MM-YYYY)
+  - Form state management with message input preservation
+  - Parent communication: client-data, request-data, company-lookup, charity-lookup, file-data, put-links
+  - Deleted old request-iframe.html files (replaced by modular system)
+
 ### Fixed
 - Chart Viewer: Fixed doughnut chart expansion - serialize functions for postMessage
 - Cashiers Log: Container height fully responsive with dynamic card loading
+- Form K: Fixed "sale" worktype detection bug (was matching "Purchase" due to substring "se")
 
 ### Enhanced
 - Image Viewer: Added button-enable/button-disable messages for upload button control
@@ -20,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Phone numbers are validated before sending new-data message
   - Numbers are formatted in E.164 international format
   - Validation errors are sent via validation-error message
+
+### Removed
+- Deleted old request-iframe.html, request-iframe-clean.html, request-iframe-temp.html
+- Deleted old request-iframe.js and request-iframe-styles.css
+- Replaced monolithic iframe with modular request-form.html system
 
 ### Added
 - README.md with project overview and component descriptions

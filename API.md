@@ -14,8 +14,9 @@ This document describes the communication interface for each iframe component. A
 8. [Report Uploader](#report-uploader)
 9. [Cashiers Log](#cashiers-log)
 10. [Chart Viewer](#chart-viewer)
-11. [Client Details Form](#client-details-form)
-12. [General Integration Guide](#general-integration-guide)
+11. [Request Form](#request-form) ⭐ NEW
+12. [Client Details Form](#client-details-form)
+13. [General Integration Guide](#general-integration-guide)
 
 ---
 
@@ -586,6 +587,468 @@ Requests parent to refresh the image display.
   type: 'refresh-images'
 }
 ```
+
+---
+
+## Request Form
+
+**File:** `request-form.html`
+
+### Description
+Comprehensive request management form supporting 7 distinct request types with dynamic section visibility, conditional validation, and modular JavaScript architecture. This form handles everything from simple notes to complex Form J/K ID verification requests with CDF/OFSI document uploads.
+
+### Architecture
+- **Core:** `js/request-form-core.js` (~4,400 lines) - Global state management, UI control, parent communication
+- **Modules:** `js/request-types/*.js` - Individual request type handlers (formJ, formK, formE, esof, note, update, updatePep)
+- **Styles:** `css/request-form.css` (~1,500 lines) - Responsive design, custom components
+
+### Request Types
+
+#### 1. **Form J Request** - Full Electronic ID Check
+- Requires 2 Address IDs + 1 Photo ID (Front/Back or Single)
+- Requires likeness confirmed
+- Shows ID Images and ID Documents sections
+- Pre-populates message with Form J text
+- Validates all client details (name, DOB, address, mobile)
+- Shows nameVerificationHint
+- Shows eSoFSkipHint if worktype includes "purchase"
+
+#### 2. **Form K Request** - 11 Conditional Rules
+- **Rules 1-3, 10-11:** Available for individuals
+- **All 11 rules:** Available for entities (business/charity)
+- **Rule 1 & 2:** NOT valid for "Sale" worktypes
+- **Rule 3:** ONLY valid for Will/LPA/Deeds worktypes, requires Form J ID, shows ID Images section
+- **Rules 4-9:** Entity-only (Company, Partnership, Charity, PLC, Government, Regulated Institution)
+- **Rules 10-11:** Valid for all (Regulated referral, Thirdfort Secure Share)
+- Shows ID Documents section
+- Dropdown dynamically filters rules based on client type and worktype
+
+#### 3. **Form E Request** - Electronic Check
+- Requires name, DOB, address, mobile
+- Requires CDF OR OFSI document
+- Shows ID Documents section
+- Auto-selects eSoF if worktype includes "purchase"
+- Shows ejHint if Form J requirements met
+- Pre-populates message with Form E text
+
+#### 4. **eSoF Request** - Electronic Source of Funds
+- Can be standalone or combined with Form E
+- ONLY valid for "Purchase" worktypes
+- Requires name, DOB, address, mobile, CDF/OFSI
+- Shows eSoFOnlyHint when standalone
+- Shows eSoFHint when combined with Form E
+- Shows ID Documents section
+
+#### 5. **Note** - Simple Note/Message
+- Requires standard 3 fields (worktype, relation, matter description)
+- Requires message input (optional file attachment)
+- No ID requirements
+
+#### 6. **Issue Update** - Matter Update Message
+- Same requirements as Note
+- Tagged differently for backend processing
+
+#### 7. **PEP Update** - PEP Status Update
+- Same requirements as Note
+- Tagged differently for backend processing
+
+### Parent → iframe (Incoming Messages)
+
+#### `client-data`
+Loads complete client data into the form, including existing documents and images.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'client-data',
+  user: 'staff@example.com',  // Current user email
+  data: {
+    // Client Details (cD)
+    cD: {
+      fe: 'BA',            // Fee earner initials
+      n: 'Mr J R Archer',  // Full client name
+      cN: '50',            // Client number
+      mN: '52'             // Matter number
+    },
+    
+    // Icons (i)
+    i: {
+      a: true,   // hasAddressID
+      p: true,   // hasPhotoID
+      l: false   // likenessConfirmed (false = not confirmed, true = confirmed)
+    },
+    
+    // Matter Details
+    wT: 'Purchase of',  // workType
+    r: 'Our Client',    // relation
+    mD: 'Property purchase transaction',  // matterDescription
+    c: false,  // charity checkbox
+    b: false,  // business checkbox
+    
+    // Client Information (cI)
+    cI: {
+      n: {  // name
+        t: 'Mr',          // title
+        f: 'Jacob',       // firstName
+        m: 'Robert',      // middleNames
+        l: 'Archer-Moran' // lastName
+      },
+      b: '11-01-2001',    // birthdate (DD-MM-YYYY)
+      nC: false,          // nameChange
+      pN: '',             // previousName
+      rNC: '',            // reasonNameChange
+      m: '+447700900123', // mobile
+      e: 'client@example.com',  // email
+      a: {  // current address (Thirdfort format)
+        building_number: '42',
+        street: 'Baker Street',
+        town: 'London',
+        postcode: 'NW1 6XE',
+        country: 'GBR'
+      },
+      rM: false,  // recentMove
+      pA: null,   // previousAddress (Thirdfort format if recent move)
+      
+      // Business/Charity fields (when b or c is true)
+      n: { b: 'Acme Ltd' },  // businessName
+      eN: '12345678',        // entityNumber
+      bD: {  // businessData (from Companies House/Charity Register)
+        officers: [...],
+        pscs: [...],
+        // Full company/charity data
+      }
+    },
+    
+    // ID Images (idI)
+    idI: [
+      {
+        type: 'PhotoID',
+        document: 'Driving Licence',
+        side: 'Front',  // 'Front', 'Back', or 'Single'
+        s3Key: 'protected/image-key.jpg',
+        liveUrl: 'https://s3.amazonaws.com/...',
+        date: '12/20/2023, 10:30:45',
+        uploader: 'reception@example.com'
+      }
+    ],
+    
+    // ID Documents (idD)
+    idD: [
+      {
+        type: 'Details form',  // or 'PEP & Sanctions Check'
+        document: 'CDF - Individuals',  // Document dropdown type
+        data: 'Form data as string or object',
+        date: '12/20/2023',
+        uploader: 'staff@example.com',
+        s3Key: 'protected/cdf-key.pdf',
+        liveUrl: 'https://s3.amazonaws.com/...'
+      }
+    ]
+  }
+}, '*');
+```
+
+#### `put-links`
+S3 upload URLs for files (CDF, OFSI, message attachments).
+
+```javascript
+window.frames[0].postMessage({
+  type: 'put-links',
+  links: ['https://s3.amazonaws.com/presigned-put-url-1', ...],
+  s3Keys: [
+    {
+      s3Key: 'protected/file-key.pdf',
+      liveUrl: 'https://s3.amazonaws.com/file-key.pdf',
+      // ... other file metadata
+    }
+  ]
+}, '*');
+```
+
+#### `put-error`
+Error response when file upload link generation fails.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'put-error',
+  error: 'Failed to generate upload links'
+}, '*');
+```
+
+#### `company-data` / `charity-data`
+Company or charity details from Companies House/Charity Register API.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'company-data',  // or 'charity-data'
+  data: {
+    officers: [
+      {
+        name: 'JOHN DOE',
+        officer_role: 'director',
+        appointed_on: '2020-01-15',
+        resigned_on: null
+      }
+    ],
+    pscs: [
+      {
+        name: 'Jane Smith',
+        natures_of_control: ['ownership-of-shares-25-to-50-percent'],
+        notified_on: '2020-02-01',
+        ceased_on: null
+      }
+    ],
+    // ... full company/charity data
+  }
+}, '*');
+```
+
+### iframe → Parent (Outgoing Messages)
+
+#### `request-data`
+Sends complete request data after successful validation and file uploads.
+
+```javascript
+{
+  type: 'request-data',
+  requestType: 'formJ',  // or 'formK', 'formE', 'esof', 'note', 'update', 'updatePep'
+  data: {
+    // Updated client data in same shorthand format as client-data
+    // Does NOT include idI or idD arrays
+    wT: 'Purchase of',
+    r: 'Our Client',
+    mD: 'Property purchase',
+    cI: {
+      n: {t: 'Mr', f: 'Jacob', m: 'Robert', l: 'Archer-Moran'},
+      b: '11-01-2001',
+      m: '+447700900123',
+      // ... all updated fields
+    },
+    // ... all other updated fields from form
+  },
+  message: {
+    time: '14/10/2025, 14:30:00',
+    user: 'staff@example.com',
+    message: 'Request message text',
+    type: 'Staff',
+    file: {  // Optional - if message attachment present
+      s3Key: 'protected/message-file.pdf',
+      liveUrl: 'https://s3.amazonaws.com/...',
+      name: 'attachment.pdf',
+      size: 123456
+    }
+  },
+  newFiles: [  // Optional - if new CDF/OFSI uploaded
+    {
+      type: 'Details form',
+      document: 'CDF - Individuals',
+      s3Key: 'protected/cdf-key.pdf',
+      liveUrl: 'https://s3.amazonaws.com/...',
+      date: '14/10/2025',
+      uploader: 'staff@example.com'
+    }
+  ]
+}
+```
+
+#### `company-lookup` / `charity-lookup`
+Requests company or charity data from parent.
+
+```javascript
+{
+  type: 'company-lookup',  // or 'charity-lookup'
+  entityNumber: '12345678',
+  country: 'GB'
+}
+```
+
+#### `file-data`
+Requests S3 PUT links for file uploads (before sending request-data).
+
+```javascript
+{
+  type: 'file-data',
+  files: [
+    {
+      name: 'cdf-document.pdf',
+      type: 'application/pdf',
+      size: 123456,
+      lastModified: 1697123456789,
+      isMessageFile: false  // true for message attachments, false for CDF/OFSI
+    }
+  ]
+}
+```
+
+### Dynamic Section Visibility
+
+Sections show/hide based on client type and selected request:
+
+| Section | Individual | Entity | Form J | Form K | Form E | eSoF | Note/Update |
+|---------|------------|--------|--------|--------|--------|------|-------------|
+| Client Details | ✓ | - | ✓ | ✓ | ✓ | ✓ | - |
+| Business/Charity | - | ✓ | - | ✓ | - | - | - |
+| ID Documents | - | - | ✓ | ✓ | ✓ | ✓ | - |
+| ID Images | - | - | ✓ | ✓(Rule3) | - | - | - |
+
+### Validation Requirements
+
+#### All Request Types
+- Work Type (dropdown or input)
+- Relation (dropdown or input)
+- Matter Description
+- If name change toggle: Previous name + Reason
+- If recent move toggle: Previous address
+
+#### Form J Additional
+- First Name, Last Name, DOB
+- Current Address
+- ID Images checkbox
+- ID Documents checkbox
+- CDF AND OFSI (both required)
+- 2 Address IDs + 1 Photo ID
+- Likeness confirmed
+
+#### Form K Additional
+- Rule selection required
+- **Individuals:** Name, DOB, CDF OR OFSI
+- **Entities:** OFSI + (Company link OR CDF), Business Name + Entity Number (if no link)
+- **Rule 3:** Same as Form J ID requirements
+
+#### Form E / eSoF Additional
+- First Name, Last Name, DOB
+- Current Address, Mobile Number
+- ID Documents checkbox
+- CDF OR OFSI
+
+#### Note / Update / PEP Update
+- Message input required
+- Optional file attachment
+
+### Form K Rules
+
+| Rule | Label | Valid For | Worktype Restriction |
+|------|-------|-----------|---------------------|
+| 1 | Pass/ePass already held | All | NOT "Sale" |
+| 2 | ID already Held | All | NOT "Sale" |
+| 3 | Out of scope | All | Only Will/LPA/Deeds |
+| 4 | Company | Entity only | Any |
+| 5 | Partnership | Entity only | Any |
+| 6 | Charity | Entity only | Any |
+| 7 | PLC | Entity only | Any |
+| 8 | Government/Council | Entity only | Any |
+| 9 | Regulated Institution | Entity only | Any |
+| 10 | Regulated referral | All | Any |
+| 11 | Thirdfort Secure Share | All | Any |
+
+### Example Integration
+
+```javascript
+const requestForm = document.getElementById('requestForm').contentWindow;
+
+// Send client data
+requestForm.postMessage({
+  type: 'client-data',
+  user: 'staff@example.com',
+  data: {
+    cD: {fe: 'BA', n: 'Mr J Archer', cN: '50', mN: '52'},
+    i: {a: true, p: true, l: false},
+    wT: 'Purchase of',
+    r: 'Our Client',
+    mD: 'Property purchase',
+    cI: {
+      n: {t: 'Mr', f: 'Jacob', m: 'Robert', l: 'Archer-Moran'},
+      b: '11-01-2001',
+      m: '+447700900123',
+      e: 'client@example.com',
+      a: {
+        building_number: '42',
+        street: 'Baker Street',
+        town: 'London',
+        postcode: 'NW1 6XE',
+        country: 'GBR'
+      },
+      rM: false,
+      nC: false
+    },
+    idI: [...],  // Existing ID images
+    idD: [...]   // Existing CDF/OFSI documents
+  }
+}, '*');
+
+// Listen for request submission
+window.addEventListener('message', (event) => {
+  if (event.data.type === 'request-data') {
+    const {requestType, data, message, newFiles} = event.data;
+    
+    // Save request to database
+    saveRequest(requestType, data, message, newFiles);
+  }
+  
+  if (event.data.type === 'company-lookup') {
+    // Fetch company data from Companies House
+    fetchCompanyData(event.data.entityNumber, event.data.country)
+      .then(companyData => {
+        requestForm.postMessage({
+          type: 'company-data',
+          data: companyData
+        }, '*');
+      });
+  }
+  
+  if (event.data.type === 'file-data') {
+    // Generate S3 PUT links
+    generateS3Links(event.data.files)
+      .then(({links, s3Keys}) => {
+        requestForm.postMessage({
+          type: 'put-links',
+          links: links,
+          s3Keys: s3Keys
+        }, '*');
+      })
+      .catch(error => {
+        requestForm.postMessage({
+          type: 'put-error',
+          error: error.message
+        }, '*');
+      });
+  }
+});
+```
+
+### Data Structures
+
+#### Client Data Object (Shorthand Format)
+```javascript
+{
+  cD: {fe, n, cN, mN},     // Client display
+  i: {a, p, l},             // Icons
+  wT, r, mD, c, b,          // Matter details
+  cI: {n, b, m, e, a, ...}, // Client info
+  idI: [...],               // ID images array
+  idD: [...]                // ID documents array
+}
+```
+
+#### Message Object
+```javascript
+{
+  time: '14/10/2025, 14:30:00',
+  user: 'staff@example.com',
+  message: 'Message text',
+  type: 'Staff',
+  file: {...}  // Optional attachment
+}
+```
+
+### Features
+- **Dynamic Hints:** Contextual hints based on request type and client data
+- **Smart Validation:** Detailed multi-line error messages with specific field requirements
+- **File Upload:** Global upload system with progress tracking and S3 integration
+- **People Cards:** Automatic deduplication and role merging for company officers
+- **Mobile Validation:** Google libphonenumber integration with country code handling
+- **Address Validation:** Thirdfort format validation with API fallback
+- **State Management:** Form state preserved when switching between request types
+- **Responsive Design:** Mobile-optimized with touch-friendly controls
 
 ---
 

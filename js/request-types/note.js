@@ -2,8 +2,21 @@
 =====================================================================
 NOTE REQUEST TYPE MODULE
 =====================================================================
-Simple note request that only requires a message input.
-This demonstrates the flexibility of the modular system for different request types.
+Note request requires:
+- Standard 3 fields (work type, relation, matter description)
+- Message input
+- Optional file attachment
+
+Sends request-data message to parent with:
+- request: 'note'
+- data: updated client-data object
+- message: message object (same format as message-iframe.html)
+
+If file present, follows message-iframe.html upload flow:
+1. Send file-data to parent
+2. Wait for put-links/put-error
+3. Upload to S3
+4. Send request-data with message + file metadata
 =====================================================================
 */
 
@@ -11,181 +24,211 @@ This demonstrates the flexibility of the modular system for different request ty
   'use strict';
   
   const Note = {
-    data: {
-      message: '',
-      priority: 'normal',
-      category: ''
-    },
-    
-    categories: [
-      { value: '', label: 'Select category...' },
-      { value: 'general', label: 'General Note' },
-      { value: 'client', label: 'Client Information' },
-      { value: 'matter', label: 'Matter Update' },
-      { value: 'documentation', label: 'Documentation' },
-      { value: 'followup', label: 'Follow-up Required' },
-      { value: 'other', label: 'Other' }
-    ],
+    // File upload state
+    pendingFile: null,
+    pendingMessage: null,
+    uploadingFile: false,
     
     init: function(requestData) {
-      this.data = {
-        message: '',
-        priority: 'normal',
-        category: ''
+      console.log('📝 Initializing Note request');
+      
+      // Enable submit button (validation happens on submit)
+      this.enableSubmitButton();
+      
+      // Setup file upload listener
+      this.setupFileUploadListener();
+      
+      console.log('✅ Note request initialized');
+    },
+    
+    enableSubmitButton: function() {
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        console.log('✅ Submit button enabled for Note');
+      }
+    },
+    
+    setupFileUploadListener: function() {
+      window.addEventListener('message', (event) => {
+        if (event.data.type === 'put-links' && this.uploadingFile) {
+          this.handlePutLinks(event.data);
+        } else if (event.data.type === 'put-error' && this.uploadingFile) {
+          this.handlePutError(event.data);
+        }
+      });
+    },
+    
+    handlePutLinks: function(data) {
+      const links = data.links;
+      const s3Keys = data.s3Keys;
+      
+      if (links && links.length > 0 && s3Keys && s3Keys.length > 0) {
+        this.uploadFileToS3(links[0], s3Keys[0].s3Key);
+      }
+    },
+    
+    handlePutError: function(data) {
+      console.error('PUT link generation failed:', data.message);
+      alert('File upload failed. Please try again.');
+      this.uploadingFile = false;
+      this.pendingFile = null;
+      this.pendingMessage = null;
+      document.getElementById('submitBtn').disabled = false;
+    },
+    
+    uploadFileToS3: function(putLink, s3Key) {
+      if (!this.pendingFile || !this.pendingMessage) {
+        console.error('No file or message to upload');
+        this.uploadingFile = false;
+        return;
+      }
+
+      fetch(putLink, {
+        method: 'PUT',
+        body: this.pendingFile,
+        headers: {
+          'Content-Type': this.pendingFile.type
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          console.log('File uploaded successfully to S3');
+          this.sendRequestData(s3Key);
+        } else {
+          throw new Error(`Upload failed: ${response.status}`);
+        }
+      })
+      .catch(error => {
+        console.error('File upload failed:', error);
+        alert('File upload failed. Please try again.');
+        this.uploadingFile = false;
+        this.pendingFile = null;
+        this.pendingMessage = null;
+        document.getElementById('submitBtn').disabled = false;
+      });
+    },
+    
+    sendRequestData: function(s3Key = null) {
+      const messageObj = this.pendingMessage || this.createMessageObject();
+      
+      if (s3Key && this.pendingFile) {
+        messageObj.file = {
+          name: this.pendingFile.name,
+          size: this.pendingFile.size,
+          type: this.pendingFile.type,
+          s3Key: s3Key
+        };
+      }
+      
+      const requestData = window.RequestFormCore.requestData;
+      
+      window.parent.postMessage({
+        type: 'request-data',
+        request: 'note',
+        data: requestData,
+        message: messageObj
+      }, '*');
+      
+      this.uploadingFile = false;
+      this.pendingFile = null;
+      this.pendingMessage = null;
+    },
+    
+    createMessageObject: function() {
+      const messageInput = document.getElementById('messageInput');
+      const userEmail = window.RequestFormCore.requestData.user || '';
+      
+      return {
+        time: new Date().toLocaleString('en-GB', { 
+          year: 'numeric', 
+          month: '2-digit', 
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }),
+        user: userEmail,
+        message: messageInput?.value.trim() || '',
+        type: 'Staff'
       };
-    },
-    
-    render: function() {
-      return `
-        <div class="request-section">
-          <h4>Add Note</h4>
-          <p class="section-description">Add a note or comment to this client/matter.</p>
-          
-          <!-- Category Selection -->
-          <div class="row">
-            <label for="categorySelect">Category</label>
-            <select id="categorySelect" name="category">
-              ${this.categories.map(cat => `
-                <option value="${cat.value}">${cat.label}</option>
-              `).join('')}
-            </select>
-          </div>
-          
-          <!-- Priority Selection -->
-          <div class="row">
-            <label for="prioritySelect">Priority</label>
-            <select id="prioritySelect" name="priority">
-              <option value="low">Low</option>
-              <option value="normal" selected>Normal</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
-          </div>
-          
-          <!-- Note Message -->
-          <div class="message-section">
-            <label for="noteMessage" class="required">Note</label>
-            <textarea id="noteMessage" name="message" placeholder="Enter your note here..." required></textarea>
-          </div>
-        </div>
-        
-        <div class="action-buttons">
-          <button type="button" class="btn btn-secondary" id="cancelNote">Cancel</button>
-          <button type="button" class="btn btn-primary" id="submitNote">Add Note</button>
-        </div>
-      `;
-    },
-    
-    setupEventListeners: function() {
-      const categorySelect = document.getElementById('categorySelect');
-      const prioritySelect = document.getElementById('prioritySelect');
-      const messageInput = document.getElementById('noteMessage');
-      const submitBtn = document.getElementById('submitNote');
-      const cancelBtn = document.getElementById('cancelNote');
-      
-      if (categorySelect) {
-        categorySelect.addEventListener('change', (e) => {
-          this.data.category = e.target.value;
-        });
-      }
-      
-      if (prioritySelect) {
-        prioritySelect.addEventListener('change', (e) => {
-          this.data.priority = e.target.value;
-        });
-      }
-      
-      if (messageInput) {
-        messageInput.addEventListener('input', (e) => {
-          this.data.message = e.target.value;
-          this.updateValidationState();
-        });
-      }
-      
-      if (submitBtn) {
-        submitBtn.addEventListener('click', () => {
-          this.submitNote();
-        });
-      }
-      
-      if (cancelBtn) {
-        cancelBtn.addEventListener('click', () => {
-          this.cancelNote();
-        });
-      }
-    },
-    
-    updateValidationState: function() {
-      const submitBtn = document.getElementById('submitNote');
-      if (submitBtn) {
-        submitBtn.disabled = !this.data.message.trim();
-      }
     },
     
     getData: function() {
-      return {
-        type: 'note',
-        category: this.data.category,
-        priority: this.data.priority,
-        message: this.data.message,
-        timestamp: new Date().toISOString()
-      };
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput?.files[0];
+      
+      if (file) {
+        this.uploadingFile = true;
+        this.pendingFile = file;
+        this.pendingMessage = this.createMessageObject();
+        
+        const fileName = `note-attachment-${Date.now()}-${file.name}`;
+        const fileData = {
+          type: 'Document',
+          document: 'Note Attachment',
+          uploader: window.RequestFormCore.requestData.user || '',
+          data: {
+            type: file.type,
+            size: file.size,
+            name: fileName,
+            lastModified: file.lastModified
+          },
+          file: file
+        };
+        
+        window.parent.postMessage({
+          type: 'file-data',
+          files: [fileData],
+          _id: window.RequestFormCore.requestData._id || ''
+        }, '*');
+        
+        return null;
+      }
+      
+      this.sendRequestData();
+      return null;
     },
     
     validate: function() {
       const errors = [];
       
-      if (!this.data.message.trim()) {
-        errors.push('Note message is required');
+      // Work Type (check both dropdown and input)
+      const worktypeDropdown = document.getElementById('worktypeDropdown');
+      const worktypeInput = document.getElementById('worktype');
+      const workTypeValue = worktypeDropdown?.value || worktypeInput?.value?.trim();
+      if (!workTypeValue) {
+        errors.push('You must select or enter a Work Type');
       }
       
-      if (this.data.message.trim().length < 10) {
-        errors.push('Note message must be at least 10 characters long');
+      // Relation (check both dropdown and input)
+      const relationDropdown = document.getElementById('relationDropdown');
+      const relationInput = document.getElementById('relation');
+      const relationValue = relationDropdown?.value || relationInput?.value?.trim();
+      if (!relationValue) {
+        errors.push('You must select or enter a Relation');
+      }
+      
+      // Matter Description
+      const matterDescInput = document.getElementById('matterDescription');
+      if (!matterDescInput?.value?.trim()) {
+        errors.push('You must enter a Matter Description');
+      }
+      
+      // Message
+      const messageInput = document.getElementById('messageInput');
+      if (!messageInput?.value?.trim()) {
+        errors.push('You must enter a note message');
       }
       
       return {
         valid: errors.length === 0,
         errors: errors
       };
-    },
-    
-    submitNote: function() {
-      const validation = this.validate();
-      
-      if (!validation.valid) {
-        validation.errors.forEach(error => {
-          window.RequestFormCore.showError(error);
-        });
-        return;
-      }
-      
-      const data = this.getData();
-      
-      window.RequestFormCore.sendMessageToParent({
-        type: 'submit-request',
-        requestType: 'note',
-        data: data
-      });
-    },
-    
-    cancelNote: function() {
-      window.RequestFormCore.sendMessageToParent({
-        type: 'cancel-request',
-        requestType: 'note'
-      });
-    },
-    
-    handleMessage: function(message) {
-      // Handle any specific messages for Note type
-      switch (message.type) {
-        case 'note-saved':
-          // Handle note saved confirmation
-          break;
-      }
     }
   };
   
-  // Register the module
   if (window.RequestFormCore) {
     window.RequestFormCore.registerRequestType('note', Note);
   } else {

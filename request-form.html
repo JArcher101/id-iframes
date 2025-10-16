@@ -14,21 +14,31 @@
 </head>
 <body>
   <div class="container">
+    <!-- TEMPORARY: Mock Data Testing Buttons -->
+    <div id="mockDataSection" class="section" style="background: #fff3cd; border: 2px solid #ffc107;">
+      <h3 style="color: #856404; margin: 0 0 10px 0;">🧪 Testing: Mock Client Data</h3>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="mock-btn" id="mockClientBtn" style="flex: 1; padding: 10px; background: #4A90E2; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Load Individual</button>
+        <button type="button" class="mock-btn" id="mockBusinessBtn" style="flex: 1; padding: 10px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Load Business</button>
+        <button type="button" class="mock-btn" id="mockCharityBtn" style="flex: 1; padding: 10px; background: #e67e22; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Load Charity</button>
+      </div>
+    </div>
+    
     <!-- Header Section -->
     <div id="headerSection" class="section">
       <!-- Client info display (FE initials, client number, name) -->
       <div id="headerInfo">
         <div class="header-left">
           <div class="header-badge client-number" id="clientNumberBadge">
-            <div class="header-badge" id="titleBadge"><span>BA</span></div>
-            <span id="clientMatterNumber">12345-67</span>
+            <div class="header-badge" id="titleBadge"><span></span></div>
+            <span id="clientMatterNumber"></span>
               </div>
-          <div class="header-name" id="clientName">Mr A N Other</div>
+          <div class="header-name" id="clientName"></div>
             </div>
         <div class="header-right">
-          <img src="https://static.wixstatic.com/media/a86acc_e7a12ea3b5b84594bb3768ccf1271339~mv2.png" alt="Address ID" class="header-icon" id="addressIcon" title="Address ID Uploaded" />
-          <img src="https://static.wixstatic.com/shapes/a86acc_a27d29e447fd40d58f51ddc48752cc5f.svg" alt="Photo ID" class="header-icon" id="photoIcon" title="Photo ID Uploaded" />
-          <img src="https://static.wixstatic.com/shapes/a86acc_c0791819480d4257976efb1136cf67a5.svg" alt="Likeness Confirmed" class="header-icon" id="liknessIcon" title="Likeness Confirmed" />
+          <img src="https://static.wixstatic.com/media/a86acc_e7a12ea3b5b84594bb3768ccf1271339~mv2.png" alt="Address ID" class="header-icon hidden" id="addressIcon" title="Address ID Uploaded" />
+          <img src="https://static.wixstatic.com/shapes/a86acc_a27d29e447fd40d58f51ddc48752cc5f.svg" alt="Photo ID" class="header-icon hidden" id="photoIcon" title="Photo ID Uploaded" />
+          <img src="https://static.wixstatic.com/shapes/a86acc_c0791819480d4257976efb1136cf67a5.svg" alt="Likeness Confirmed" class="header-icon hidden" id="liknessIcon" title="Likeness Confirmed" />
           </div>
               </div>
             </div>
@@ -53,6 +63,9 @@
             <option value="Lasting Power of Attorney">Lasting Power of Attorney</option>
             <option value="Change of Name Deed">Change of Name Deed</option>
             <option value="Estates">Estates</option>
+            <option value="Deeds & Declarations">Deeds & Declarations</option>
+            <option value="Assent">Assent</option>
+            <option value="Adverse Possesion">Adverse Possesion</option>
           </select>
         </div>
         
@@ -109,22 +122,22 @@
         <button type="button" class="request-tag" data-type="update">Issue Update</button>
         <button type="button" class="request-tag" data-type="updatePep">PEP Update</button>
               </div>
-      <div id="k3Hint" class="request-hint">
+      <div id="k3Hint" class="request-hint hidden">
         ⚠️ If there is any financial transaction or aspect, i.e. Property & Financial LPA or Beneficiary receiving a legacy, this route is not sufficient and a Form J or E must be used
                 </div>
-      <div id="ejHint" class="request-hint">
+      <div id="ejHint" class="request-hint hidden">
         ⚠️ This entry appears to meet Form J requirements, please double check the client's chosen ID route
               </div>
-      <div id="eSoFHint" class="request-hint request-hint-info">
+      <div id="eSoFHint" class="request-hint request-hint-info hidden">
         ℹ️ This ID check will include an electronic source of funds questionnaire and source of wealth bank linking task
             </div>
-      <div id="eSoFSkipHint" class="request-hint request-hint-error">
+      <div id="eSoFSkipHint" class="request-hint request-hint-error hidden">
         ⚠️ This client will not undergo eSoF and you MUST collect evidence and complete investigations using the manual route
           </div>
-      <div id="eSoFOnlyHint" class="request-hint request-hint-info">
+      <div id="eSoFOnlyHint" class="request-hint request-hint-info hidden">
         ℹ️ This is just the source of funds questionnaire and source of wealth bank linking task, to include address and photo ID checks please select Form E
         </div>
-      <select id="formKruleSelector" class="form-select">
+      <select id="formKruleSelector" class="form-select hidden">
         <option value="" disabled selected>Select a rule</option>
             </select>
       <div class="input-row">
@@ -144,7 +157,7 @@
     </div>
 
     <!-- ID Images Section -->
-    <div class="section" id="idImagesSection">
+    <div class="section hidden" id="idImagesSection">
       <h3>ID Images</h3>
       <div class="id-images-carousel">
         <div class="carousel-container">
@@ -157,7 +170,7 @@
               <div class="image-details">
                 <div class="details-row">
                   <span class="document-type-title">Driving License</span>
-                  <span class="side-tag">[FRONT]</span>
+                  <span class="side-tag">FRONT</span>
                   <button class="open-image-btn" onclick="openIDImage(this)" title="Open image" data-image-id="1">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -194,7 +207,7 @@
     </div>
 
     <!-- Client Details Section -->
-    <div class="section" id="clientDetailsSection">
+    <div class="section hidden" id="clientDetailsSection">
       <h3>Client Details</h3>
       <div class="client-details-grid">
         <!-- Title, First, Middle, Last Name Row -->
@@ -231,7 +244,7 @@
         </div>
 
         <!-- Name Verification Hint -->
-        <div class="cdf-hint" id="nameVerificationHint">
+        <div class="cdf-hint hidden" id="nameVerificationHint">
           ⚠️ Ensure the name matches the above Photo ID Exactly, If they are known by a different name please indicate this below.
         </div>
 
@@ -280,7 +293,7 @@
     </div>
 
     <!-- Business/Charity Details Section -->
-    <div class="section" id="businessCharitySection">
+    <div class="section hidden" id="businessCharitySection">
       <h3>Business/Charity Details</h3>
       <div class="business-charity-grid">
         <!-- Business Name Row -->
@@ -730,7 +743,7 @@
   </div>
 
     <!-- ID Documents Section -->
-    <div class="section" id="idDocumentsSection">
+    <div class="section hidden" id="idDocumentsSection">
       <h3>ID Documents</h3>
       <div class="id-documents-grid">
         <!-- Left Column: Client Details Form -->
@@ -738,7 +751,7 @@
           <div class="column-header">
             <h4>Client Details Form</h4>
     </div>
-          <div class="document-card">
+          <div class="document-card hidden" id="cdfDocumentCard">
             <div class="document-content">
               <div class="document-title">Client Details Form</div>
               <div class="document-upload-info">Uploaded by email@domain.com 15/12/2023, 14:30:45</div>
@@ -750,17 +763,17 @@
               </svg>
             </button>
           </div>
-          <div class="cdf-hint" id="cdfPeopleHint">
+          <div class="cdf-hint hidden" id="cdfPeopleHint">
             ⚠️ Please supply the client basic details form (CDF) or beneficiary details form
           </div>
-          <div class="cdf-hint" id="cdfEntityHint">
+          <div class="cdf-hint hidden" id="cdfEntityHint">
             ⚠️ Please Link the charity/company using the entity number or name input or supply:<br>
             • Print out from companies house or charity register<br>
             • Proof of address for partnerships<br>
             • Proof of registration for SRA/FCA regulated entities<br>
             • Proof of authority for all other commercial work
           </div>
-          <div class="entity-linked-hint" id="entityLinkedHint">
+          <div class="entity-linked-hint hidden" id="entityLinkedHint">
             ✓ Entity data linked
   </div>
 
@@ -804,7 +817,7 @@
               </svg>
             </button>
           </div>
-          <div class="document-card">
+          <div class="document-card hidden" id="ofsiDocumentCard">
             <div class="document-content">
               <div class="document-title">OFSI Screening</div>
               <div class="document-upload-info">Uploaded by email@domain.com 15/12/2023, 14:30:45</div>
@@ -816,7 +829,7 @@
               </svg>
             </button>
           </div>
-          <div class="ofsi-hint">
+          <div class="ofsi-hint hidden" id="ofsiHint">
             ⚠️ Please supply a recent OFSI search report
           </div>
           
@@ -848,7 +861,7 @@
 
     <!-- Submit Button -->
     <div class="form-actions">
-      <button type="submit" id="submitBtn" class="submit-btn">Submit Request</button>
+      <button type="submit" id="submitBtn" class="submit-btn" disabled>Submit Request</button>
     </div>
 
     <!-- Dynamic Content Container -->
@@ -866,6 +879,9 @@
 
   <!-- Core JavaScript -->
   <script src="js/request-form-core.js"></script>
+  
+  <!-- Google libphonenumber for phone validation -->
+  <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
   <!-- Request Type Modules -->
   <script src="js/request-types/formJ.js"></script>

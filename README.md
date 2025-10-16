@@ -53,6 +53,22 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Automatic Thirdfort address formatting
   - Entity mode for business/charity clients
 
+- **`request-form.html`** - Comprehensive Request Management Form ⭐ NEW
+  - Dynamic multi-request type form system (7 request types)
+  - Modular architecture with separate request type handlers
+  - Request types: Form J, Form K, Form E, eSoF, Note, Issue Update, PEP Update
+  - Form K includes 11 conditional rules with dynamic filtering
+  - Smart section visibility based on client type and selected request
+  - Automatic Form E + eSoF combination for purchase worktypes
+  - Comprehensive validation with detailed error messages
+  - CDF and OFSI document upload and management
+  - ID Images carousel display with side tags
+  - Business/Charity people cards (directors, officers, trustees, PSCs)
+  - Companies House and Charity Register integration
+  - Google libphonenumber integration for mobile validation
+  - Global file upload system with progress tracking
+  - Parent communication for client-data, request-data, file uploads
+
 - **`document-viewer.html`** - Document Display
   - View and display document images
   - Similar styling to image viewer
