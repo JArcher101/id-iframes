@@ -228,8 +228,8 @@ Sends request-data message to parent with:
           hour12: false
         }),
         user: userEmail,
-        message: messageInput?.value.trim() || '',
-        type: 'Staff'
+        type: 'Staff',
+        message: messageInput?.value.trim() || ''
       };
     },
     

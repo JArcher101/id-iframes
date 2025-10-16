@@ -452,6 +452,7 @@
                 <a href="#message-iframe" class="nav-link">Message iframe</a>
                 <a href="#report-uploader" class="nav-link">Report Uploader</a>
                 <a href="#cashiers-log" class="nav-link">Cashiers Log</a>
+                <a href="#request-form" class="nav-link">Request Form</a>
                 <a href="#chart-viewer" class="nav-link">Chart Viewer</a>
             </div>
 
@@ -1531,6 +1532,576 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                     <li>"Load more" pagination (no infinite scroll)</li>
                     <li>Automatically fits logs to container height</li>
                     <li>Custom fonts for user emails, messages, timestamps</li>
+                </ul>
+            </section>
+
+            <!-- Request Form -->
+            <section id="request-form" class="section">
+                <h2>Request Form</h2>
+                <p><strong>File:</strong> <code>request-form.html</code></p>
+                <p>Comprehensive request management form supporting 7 request types with dynamic validation, ID image management, client details collection, and business/charity entity handling.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> client-data, entity-data, address-results, put-links, put-error<br>
+                    <strong>Sends:</strong> request-data, address-search, file-data, upload-success<br>
+                    <strong>Request Types:</strong> Form J, Form K, Form E, eSoF, Note, Issue Update, PEP Update</p>
+                </div>
+
+                <h3>Architecture</h3>
+                <p>Modular design with a core file (<code>request-form-core.js</code>) and separate modules for each request type:</p>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><code>formJ.js</code> - Full ID checks with electronic verification</li>
+                    <li><code>formK.js</code> - ID on file (11 conditional rules)</li>
+                    <li><code>formE.js</code> - Enhanced checks with Source of Funds</li>
+                    <li><code>esof.js</code> - Standalone Source of Funds questionnaire</li>
+                    <li><code>note.js</code> - Internal notes</li>
+                    <li><code>update.js</code> - Issue updates</li>
+                    <li><code>updatePep.js</code> - PEP status updates</li>
+                </ul>
+
+                <h3>Request Types</h3>
+
+                <h4>Form J - Full ID Check</h4>
+                <p>Complete identity verification with electronic checks. Requires:</p>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>2 forms of Address ID</li>
+                    <li>1 form of Photo ID (Front/Back or Single)</li>
+                    <li>Likeness confirmation</li>
+                    <li>Client details (name, DOB, address)</li>
+                    <li>CDF (Client Details Form) or entity linking</li>
+                    <li>OFSI screening report</li>
+                </ul>
+
+                <h4>Form K - ID on File</h4>
+                <p>Uses existing ID held on file. Features 11 conditional rules based on client type and worktype:</p>
+                <table class="api-table" style="margin-top: 1rem;">
+                    <thead>
+                        <tr>
+                            <th>Rule</th>
+                            <th>Description</th>
+                            <th>Availability</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Rule 1</code></td>
+                            <td>ID on file < 3 months (same matter type)</td>
+                            <td>Not for Sale worktypes</td>
+                        </tr>
+                        <tr>
+                            <td><code>Rule 2</code></td>
+                            <td>ID on file < 3 months (different matter type)</td>
+                            <td>Not for Sale worktypes</td>
+                        </tr>
+                        <tr>
+                            <td><code>Rule 3</code></td>
+                            <td>Out of scope - collect ID for future use</td>
+                            <td>Wills/LPA/Deeds only (requires Form J ID)</td>
+                        </tr>
+                        <tr>
+                            <td><code>Rule 4-6</code></td>
+                            <td>Existing client rules</td>
+                            <td>Entities only</td>
+                        </tr>
+                        <tr>
+                            <td><code>Rule 7-9</code></td>
+                            <td>Professional client rules</td>
+                            <td>Entities only</td>
+                        </tr>
+                        <tr>
+                            <td><code>Rule 10-11</code></td>
+                            <td>Residual and special cases</td>
+                            <td>All client types</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Form E - Enhanced Check</h4>
+                <p>Full ID check + Source of Funds. Combines Form J requirements with eSoF questionnaire.</p>
+
+                <h4>eSoF - Source of Funds Only</h4>
+                <p>Standalone source of funds questionnaire without ID collection. Used when ID checks are already complete.</p>
+
+                <h4>Note</h4>
+                <p>Internal note submission with optional file attachments. No ID or client details required.</p>
+
+                <h4>Issue Update</h4>
+                <p>Updates for items in the "ISSUE" section. Message only, no additional requirements.</p>
+
+                <h4>PEP Update</h4>
+                <p>PEP (Politically Exposed Person) status updates. Message only.</p>
+
+                <h3>Dynamic Sections</h3>
+                <p>The form intelligently shows/hides sections based on selected request type:</p>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Shown For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ID Images</td>
+                            <td>Form J, Form E, Form K Rule 3</td>
+                        </tr>
+                        <tr>
+                            <td>Client Details</td>
+                            <td>Form J, Form K Rule 3, Form E</td>
+                        </tr>
+                        <tr>
+                            <td>Business/Charity Details</td>
+                            <td>When Business or Charity checkbox is checked</td>
+                        </tr>
+                        <tr>
+                            <td>ID Documents (CDF/OFSI)</td>
+                            <td>Form J, Form K Rule 3, Form E</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>client-data</code>
+                </div>
+                <p>Pre-populates form with client information and existing ID images/documents.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"client-data"</span>,
+  <span class="property">"user"</span>: <span class="string">"user@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"bd8bee6a-465b-4d43-9a8a-396f9081b649"</span>,
+  <span class="property">"data"</span>: {
+    <span class="property">"cD"</span>: {
+      <span class="property">"cN"</span>: <span class="number">50</span>,           <span class="comment">// Client Number</span>
+      <span class="property">"mN"</span>: <span class="string">"52"</span>,         <span class="comment">// Matter Number</span>
+      <span class="property">"fe"</span>: <span class="string">"BA"</span>,         <span class="comment">// Fee Earner</span>
+      <span class="property">"n"</span>: <span class="string">"John Doe"</span>     <span class="comment">// Full Name</span>
+    },
+    <span class="property">"r"</span>: <span class="string">"Our Client"</span>,   <span class="comment">// Relation</span>
+    <span class="property">"wT"</span>: <span class="string">"Purchase of"</span>,  <span class="comment">// Work Type</span>
+    <span class="property">"i"</span>: {
+      <span class="property">"a"</span>: <span class="keyword">true</span>,         <span class="comment">// Has Address ID</span>
+      <span class="property">"p"</span>: <span class="keyword">true</span>,         <span class="comment">// Has Photo ID</span>
+      <span class="property">"l"</span>: <span class="keyword">false</span>         <span class="comment">// Likeness Confirmed</span>
+    },
+    <span class="property">"cI"</span>: {
+      <span class="property">"n"</span>: {
+        <span class="property">"t"</span>: <span class="string">"Mr"</span>,       <span class="comment">// Title</span>
+        <span class="property">"f"</span>: <span class="string">"John"</span>,     <span class="comment">// First Name</span>
+        <span class="property">"m"</span>: <span class="string">"William"</span>,  <span class="comment">// Middle Name</span>
+        <span class="property">"l"</span>: <span class="string">"Doe"</span>       <span class="comment">// Last Name</span>
+      },
+      <span class="property">"b"</span>: <span class="string">"01-01-1990"</span>, <span class="comment">// Birthdate (DD-MM-YYYY)</span>
+      <span class="property">"a"</span>: {
+        <span class="property">"building_number"</span>: <span class="string">"42"</span>,
+        <span class="property">"street"</span>: <span class="string">"Baker Street"</span>,
+        <span class="property">"town"</span>: <span class="string">"London"</span>,
+        <span class="property">"postcode"</span>: <span class="string">"NW1 6XE"</span>,
+        <span class="property">"country"</span>: <span class="string">"GBR"</span>
+      },
+      <span class="property">"m"</span>: <span class="string">"+447506430094"</span>, <span class="comment">// Mobile</span>
+      <span class="property">"e"</span>: <span class="string">"john@example.com"</span> <span class="comment">// Email</span>
+    },
+    <span class="property">"idI"</span>: [
+      {
+        <span class="property">"url"</span>: <span class="string">"https://s3.amazonaws.com/..."</span>,
+        <span class="property">"document"</span>: <span class="string">"Passport"</span>,
+        <span class="property">"side"</span>: <span class="string">"Front"</span>,
+        <span class="property">"type"</span>: <span class="string">"PhotoID"</span>,
+        <span class="property">"uploader"</span>: <span class="string">"user@example.com"</span>,
+        <span class="property">"date"</span>: <span class="string">"10/10/2025, 11:41:42"</span>
+      }
+    ],
+    <span class="property">"idD"</span>: [
+      {
+        <span class="property">"liveUrl"</span>: <span class="string">"https://s3.amazonaws.com/..."</span>,
+        <span class="property">"document"</span>: <span class="string">"Client Details form"</span>,
+        <span class="property">"type"</span>: <span class="string">"Details form"</span>,
+        <span class="property">"uploader"</span>: <span class="string">"user@example.com"</span>,
+        <span class="property">"date"</span>: <span class="string">"08/10/2025, 12:05:22"</span>
+      }
+    ]
+  }
+}</code></pre>
+                </div>
+
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>address-results</code>
+                </div>
+                <p>Returns address autocomplete results from getaddress.io API.</p>
+
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>put-links</code>
+                </div>
+                <p>Provides S3 presigned URLs for document uploads (CDF/OFSI).</p>
+
+                <h3>Outgoing Messages</h3>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>request-data</code>
+                </div>
+                <p>Submits complete request with all collected data using the same shortened field format.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"request-data"</span>,
+  <span class="property">"requestType"</span>: <span class="string">"formJ"</span>,
+  <span class="property">"message"</span>: <span class="string">"Please process this Form J request"</span>,
+  <span class="property">"user"</span>: <span class="string">"user@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>,
+  <span class="property">"data"</span>: {
+    <span class="property">"cD"</span>: {
+      <span class="property">"cN"</span>: <span class="number">50</span>,
+      <span class="property">"mN"</span>: <span class="string">"52"</span>,
+      <span class="property">"fe"</span>: <span class="string">"BA"</span>,
+      <span class="property">"n"</span>: <span class="string">"John Doe"</span>
+    },
+    <span class="property">"mD"</span>: <span class="string">"Property purchase at 42 Baker St"</span>,
+    <span class="property">"r"</span>: <span class="string">"Our Client"</span>,
+    <span class="property">"wT"</span>: <span class="string">"Purchase of"</span>,
+    <span class="property">"b"</span>: <span class="keyword">false</span>,
+    <span class="property">"c"</span>: <span class="keyword">false</span>,
+    <span class="property">"i"</span>: {
+      <span class="property">"a"</span>: <span class="keyword">true</span>,
+      <span class="property">"p"</span>: <span class="keyword">true</span>,
+      <span class="property">"l"</span>: <span class="keyword">true</span>
+    },
+    <span class="property">"cI"</span>: {
+      <span class="property">"n"</span>: {
+        <span class="property">"t"</span>: <span class="string">"Mr"</span>,
+        <span class="property">"f"</span>: <span class="string">"John"</span>,
+        <span class="property">"m"</span>: <span class="string">"William"</span>,
+        <span class="property">"l"</span>: <span class="string">"Doe"</span>
+      },
+      <span class="property">"b"</span>: <span class="string">"01-01-1990"</span>,
+      <span class="property">"a"</span>: {
+        <span class="property">"building_number"</span>: <span class="string">"42"</span>,
+        <span class="property">"street"</span>: <span class="string">"Baker Street"</span>,
+        <span class="property">"town"</span>: <span class="string">"London"</span>,
+        <span class="property">"postcode"</span>: <span class="string">"NW1 6XE"</span>,
+        <span class="property">"country"</span>: <span class="string">"GBR"</span>
+      },
+      <span class="property">"m"</span>: <span class="string">"+447506430094"</span>,
+      <span class="property">"e"</span>: <span class="string">"john@example.com"</span>
+    },
+    <span class="property">"idI"</span>: [...],
+    <span class="property">"idD"</span>: [...]
+  },
+  <span class="property">"attachedFiles"</span>: [...]
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>address-search</code>
+                </div>
+                <p>Requests address autocomplete from getaddress.io.</p>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>file-data</code>
+                </div>
+                <p>Requests PUT links for CDF/OFSI document uploads.</p>
+
+                <h3>Validation</h3>
+                <p>Each request type has specific validation requirements:</p>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><strong>Form J:</strong> ID images (2 Address + 1 Photo), likeness, client details, CDF/entity, OFSI, confirmation checkbox</li>
+                    <li><strong>Form K:</strong> Rule selection, rule-specific requirements (e.g., Rule 3 requires Form J ID)</li>
+                    <li><strong>Form E:</strong> Same as Form J (includes eSoF automatically)</li>
+                    <li><strong>eSoF:</strong> Message only</li>
+                    <li><strong>Note/Updates:</strong> Message only</li>
+                </ul>
+
+                <h3>Smart Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><strong>Auto-detection:</strong> Worktype dropdown syncs with manual input</li>
+                    <li><strong>Companies House Integration:</strong> Auto-populate entity data from company number</li>
+                    <li><strong>Charity Register Integration:</strong> Search and link charity data</li>
+                    <li><strong>People Management:</strong> Displays directors, officers, PSCs with role merging</li>
+                    <li><strong>Address Autocomplete:</strong> UK address lookup with 30-day LRU cache</li>
+                    <li><strong>Phone Validation:</strong> Google libphonenumber for international numbers</li>
+                    <li><strong>ID Image Carousel:</strong> Side tags (Front/Back/Single), open-in-viewer</li>
+                    <li><strong>Conditional Hints:</strong> Dynamic warnings based on selections</li>
+                </ul>
+
+                <h3>Example Integration</h3>
+                <div class="code-block">
+                    <pre><code><span class="comment">// Initialize Request Form with client data</span>
+<span class="keyword">const</span> requestFrame = document.getElementById(<span class="string">'requestForm'</span>).contentWindow;
+
+<span class="comment">// Send client data on load</span>
+document.getElementById(<span class="string">'requestForm'</span>).addEventListener(<span class="string">'load'</span>, <span class="keyword">function</span>() {
+  requestFrame.postMessage({
+    <span class="property">type</span>: <span class="string">'client-data'</span>,
+    <span class="property">user</span>: <span class="string">'user@example.com'</span>,
+    <span class="property">_id</span>: <span class="string">'item-database-id'</span>,
+    <span class="property">data</span>: {
+      <span class="property">cD</span>: {
+        <span class="property">cN</span>: <span class="number">50</span>,
+        <span class="property">mN</span>: <span class="string">'52'</span>,
+        <span class="property">fe</span>: <span class="string">'TL'</span>,
+        <span class="property">n</span>: <span class="string">'John Doe'</span>
+      },
+      <span class="property">r</span>: <span class="string">'Our Client'</span>,
+      <span class="property">wT</span>: <span class="string">'Purchase of'</span>,
+      <span class="property">i</span>: { <span class="property">a</span>: <span class="keyword">false</span>, <span class="property">p</span>: <span class="keyword">false</span>, <span class="property">l</span>: <span class="keyword">false</span> },
+      <span class="property">idI</span>: [],
+      <span class="property">idD</span>: []
+    }
+  }, <span class="string">'*'</span>);
+});
+
+<span class="comment">// Listen for submitted requests</span>
+window.addEventListener(<span class="string">'message'</span>, <span class="keyword">function</span>(event) {
+  <span class="keyword">if</span> (event.data.type === <span class="string">'request-data'</span>) {
+    <span class="function">console.log</span>(<span class="string">'Request submitted:'</span>, event.data);
+    <span class="comment">// Process the request...</span>
+  }
+  
+  <span class="keyword">if</span> (event.data.type === <span class="string">'address-search'</span>) {
+    <span class="comment">// Fetch address results from getaddress.io</span>
+    <span class="function">fetchAddresses</span>(event.data.postcode).then(<span class="property">results</span> => {
+      requestFrame.postMessage({
+        <span class="property">type</span>: <span class="string">'address-results'</span>,
+        <span class="property">results</span>: results
+      }, <span class="string">'*'</span>);
+    });
+  }
+});</code></pre>
+                </div>
+
+                <h3>Data Structure Reference</h3>
+                
+                <h4>Individual vs Entity Data</h4>
+                <p>The form supports both individual clients and business/charity entities. The <code>data</code> object structure varies based on the <code>b</code> (business) or <code>c</code> (charity) flags.</p>
+                
+                <div class="info-box">
+                    <div class="info-box-title">🔍 Detecting Entity Type</div>
+                    <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
+                        <li><code>b: true</code> - Business entity</li>
+                        <li><code>c: true</code> - Charity entity</li>
+                        <li>Neither flag present - Individual client</li>
+                    </ul>
+                </div>
+
+                <h4>Common Field Names</h4>
+                <p>These fields use shortened names for efficiency:</p>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Full Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>cD</code></td>
+                            <td>Client Details</td>
+                            <td>Object</td>
+                            <td>Basic client/matter information</td>
+                        </tr>
+                        <tr>
+                            <td><code>cD.cN</code></td>
+                            <td>Client Number</td>
+                            <td>Number</td>
+                            <td>Unique client identifier</td>
+                        </tr>
+                        <tr>
+                            <td><code>cD.mN</code></td>
+                            <td>Matter Number</td>
+                            <td>String</td>
+                            <td>Matter/case reference</td>
+                        </tr>
+                        <tr>
+                            <td><code>cD.fe</code></td>
+                            <td>Fee Earner</td>
+                            <td>String</td>
+                            <td>Fee earner initials</td>
+                        </tr>
+                        <tr>
+                            <td><code>cD.n</code></td>
+                            <td>Name</td>
+                            <td>String</td>
+                            <td>Client full name</td>
+                        </tr>
+                        <tr>
+                            <td><code>r</code></td>
+                            <td>Relation</td>
+                            <td>String</td>
+                            <td>Client relationship (e.g., "Our Client")</td>
+                        </tr>
+                        <tr>
+                            <td><code>wT</code></td>
+                            <td>Work Type</td>
+                            <td>String</td>
+                            <td>Type of legal work (e.g., "Purchase of")</td>
+                        </tr>
+                        <tr>
+                            <td><code>mD</code></td>
+                            <td>Matter Description</td>
+                            <td>String</td>
+                            <td>Brief description of the matter</td>
+                        </tr>
+                        <tr>
+                            <td><code>b</code></td>
+                            <td>Business</td>
+                            <td>Boolean</td>
+                            <td>True if business entity</td>
+                        </tr>
+                        <tr>
+                            <td><code>c</code></td>
+                            <td>Charity</td>
+                            <td>Boolean</td>
+                            <td>True if charity entity</td>
+                        </tr>
+                        <tr>
+                            <td><code>s</code></td>
+                            <td>Status</td>
+                            <td>Array</td>
+                            <td>Status tags (e.g., ["Pending", "AWF"])</td>
+                        </tr>
+                        <tr>
+                            <td><code>i</code></td>
+                            <td>Indicators</td>
+                            <td>Object</td>
+                            <td>ID status flags</td>
+                        </tr>
+                        <tr>
+                            <td><code>i.a</code></td>
+                            <td>Address ID</td>
+                            <td>Boolean</td>
+                            <td>Has address ID uploaded</td>
+                        </tr>
+                        <tr>
+                            <td><code>i.p</code></td>
+                            <td>Photo ID</td>
+                            <td>Boolean</td>
+                            <td>Has photo ID uploaded</td>
+                        </tr>
+                        <tr>
+                            <td><code>i.l</code></td>
+                            <td>Likeness</td>
+                            <td>Boolean</td>
+                            <td>Likeness confirmed</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI</code></td>
+                            <td>Client Info</td>
+                            <td>Object</td>
+                            <td>Detailed client information</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.n</code></td>
+                            <td>Name</td>
+                            <td>Object</td>
+                            <td>Name components (t, f, m, l)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.b</code></td>
+                            <td>Birthdate</td>
+                            <td>String</td>
+                            <td>Date of birth (DD-MM-YYYY)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.a</code></td>
+                            <td>Address</td>
+                            <td>Object</td>
+                            <td>Current address (Thirdfort format)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.m</code></td>
+                            <td>Mobile</td>
+                            <td>String</td>
+                            <td>Mobile phone number (E.164)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.e</code></td>
+                            <td>Email</td>
+                            <td>String</td>
+                            <td>Email address</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.eN</code></td>
+                            <td>Entity Number</td>
+                            <td>String</td>
+                            <td>Company/charity registration number (entities only)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.bD</code></td>
+                            <td>Business Data</td>
+                            <td>Object</td>
+                            <td>Companies House/Charity Register data (entities only)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.n.b</code></td>
+                            <td>Business Name</td>
+                            <td>String</td>
+                            <td>Entity name (entities only)</td>
+                        </tr>
+                        <tr>
+                            <td><code>idI</code></td>
+                            <td>ID Images</td>
+                            <td>Array</td>
+                            <td>Photo ID and Address ID images</td>
+                        </tr>
+                        <tr>
+                            <td><code>idD</code></td>
+                            <td>ID Documents</td>
+                            <td>Array</td>
+                            <td>CDF, OFSI, and other documents</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Business Data Structure</h4>
+                <p>When <code>b: true</code> or <code>c: true</code>, the <code>cI.bD</code> object contains full Companies House or Charity Register data:</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"company_name"</span>: <span class="string">"EXAMPLE LTD"</span>,
+  <span class="property">"company_number"</span>: <span class="string">"12345678"</span>,
+  <span class="property">"company_type"</span>: <span class="string">"ltd"</span>,
+  <span class="property">"company_status"</span>: <span class="string">"active"</span>,
+  <span class="property">"date_of_creation"</span>: <span class="string">"2020-01-01"</span>,
+  <span class="property">"registered_office_address"</span>: {...},
+  <span class="property">"officers"</span>: [
+    {
+      <span class="property">"name"</span>: <span class="string">"SMITH, John"</span>,
+      <span class="property">"officer_role"</span>: <span class="string">"director"</span>,
+      <span class="property">"appointed_on"</span>: <span class="string">"2020-01-01"</span>,
+      <span class="property">"date_of_birth"</span>: {<span class="property">"month"</span>: <span class="number">7</span>, <span class="property">"year"</span>: <span class="number">1980</span>}
+    }
+  ],
+  <span class="property">"pscs"</span>: [
+    {
+      <span class="property">"name"</span>: <span class="string">"Mr John Smith"</span>,
+      <span class="property">"kind"</span>: <span class="string">"individual-person-with-significant-control"</span>,
+      <span class="property">"natures_of_control"</span>: [<span class="string">"ownership-of-shares-25-to-50-percent"</span>]
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Key Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>7 request types with individual validation logic</li>
+                    <li>11 Form K conditional rules with dynamic filtering</li>
+                    <li>Entity support (Business/Charity) with Companies House/Register integration</li>
+                    <li>ID image carousel with side tags</li>
+                    <li>Real-time validation with detailed error messages</li>
+                    <li>Dynamic section visibility based on selections</li>
+                    <li>Address autocomplete with caching</li>
+                    <li>Phone number validation (Google libphonenumber)</li>
+                    <li>CDF and OFSI document upload with S3 integration</li>
+                    <li>Previous name/address toggle fields</li>
+                    <li>People cards for directors and PSCs</li>
                 </ul>
             </section>
 

@@ -1647,12 +1647,14 @@ function setupBusinessCharityHandlers() {
       
       // Debounce 300ms
       companyNameDebounceTimer = setTimeout(() => {
-        console.log('📡 API call for company search:', searchTerm);
+        const isCharity = document.getElementById('charityCheckbox')?.checked || false;
+        const searchType = isCharity ? 'charity-search' : 'company-search';
+        console.log(`📡 API call for ${isCharity ? 'charity' : 'company'} search:`, searchTerm);
+        
         window.parent.postMessage({
-          type: 'company-search',
+          type: searchType,
           searchTerm: searchTerm,
-          searchBy: 'name',
-          entityType: 'business'
+          searchBy: 'name'
         }, '*');
       }, 300);
     });
@@ -1686,12 +1688,14 @@ function setupBusinessCharityHandlers() {
       
       // Debounce 300ms
       companyNumberDebounceTimer = setTimeout(() => {
-        console.log('📡 API call for company number search:', searchTerm);
+        const isCharity = document.getElementById('charityCheckbox')?.checked || false;
+        const searchType = isCharity ? 'charity-search' : 'company-search';
+        console.log(`📡 API call for ${isCharity ? 'charity' : 'company'} number search:`, searchTerm);
+        
         window.parent.postMessage({
-          type: 'company-search',
+          type: searchType,
           searchTerm: searchTerm,
-          searchBy: 'number',
-          entityType: 'business'
+          searchBy: 'number'
         }, '*');
       }, 300);
     });
@@ -3214,7 +3218,8 @@ function uploadFormFiles(files) {
     
     console.log('📤 Requesting PUT links for files:', fileMetadata);
     
-    sendMessageToParent('file-data', {
+    sendMessageToParent({
+      type: 'file-data',
       files: fileMetadata,
       _id: requestData._id
     });
@@ -3669,11 +3674,22 @@ async function prepareAndSubmitRequest(requestType, messageObj = null) {
  */
 function buildAndSendRequestData(requestType, messageObj, messageFile, documentFiles) {
   // Build base request-data
+  const updatedData = buildUpdatedClientData(); // Builds data in shorthand format (cD, r, wT, mD, cI, etc.)
+  
   const requestDataMessage = {
     type: 'request-data',
     requestType: requestType,
-    data: buildUpdatedClientData() // Remove idI and idD arrays
+    user: requestData.user || '',
+    _id: requestData._id || requestData.data?._id || '',
+    data: updatedData
   };
+  
+  // Set eSoF flag at top level: only for Form E, check if eSoF tag is also selected
+  if (requestType === 'formE') {
+    const esofTag = Array.from(document.querySelectorAll('.request-tag'))
+      .find(tag => tag.dataset.type === 'esof');
+    requestDataMessage.eSoF = esofTag?.classList.contains('selected') || false;
+  }
   
   // Add message object if provided
   if (messageObj) {
@@ -3698,7 +3714,7 @@ function buildAndSendRequestData(requestType, messageObj, messageFile, documentF
   console.log('📤 Sending request-data to parent:', requestDataMessage);
   
   // Send to parent
-  sendMessageToParent('request-data', requestDataMessage);
+  sendMessageToParent(requestDataMessage);
   
   // Re-enable submit button
   const submitBtn = document.getElementById('submitBtn');
@@ -3713,15 +3729,146 @@ function buildAndSendRequestData(requestType, messageObj, messageFile, documentF
  * @returns {Object} - Updated client data
  */
 function buildUpdatedClientData() {
-  // Get all form values and build updated data object
-  // This will read from all inputs and build the shorthand format
-  // TODO: Implement full data collection from all form inputs
+  // Get all form values and build updated data object in shorthand format
   
+  // Start with existing requestData as base
   const updatedData = {
-    _id: requestData._id,
-    // TODO: Add all other fields from form inputs
-    // b, c, cD, wT, r, mD, s, i, cI, etc.
+    _id: requestData._id || requestData.data?._id,
+    
+    // Client Details (cD)
+    cD: {
+      cN: requestData.cD?.cN || requestData.data?.cD?.cN,
+      mN: requestData.cD?.mN || requestData.data?.cD?.mN,
+      fe: requestData.cD?.fe || requestData.data?.cD?.fe,
+      n: requestData.cD?.n || requestData.data?.cD?.n
+    },
+    
+    // Relation (r)
+    r: document.getElementById('relation')?.value || requestData.r || requestData.data?.r || '',
+    
+    // Work Type (wT)
+    wT: document.getElementById('worktype')?.value || requestData.wT || requestData.data?.wT || '',
+    
+    // Matter Description (mD)
+    mD: document.getElementById('matterDescription')?.value || requestData.mD || requestData.data?.mD || '',
+    
+    // Business flag (b)
+    b: document.getElementById('businessCheckbox')?.checked || false,
+    
+    // Charity flag (c)
+    c: document.getElementById('charityCheckbox')?.checked || false,
+    
+    // Status array (s) - preserve from requestData
+    s: requestData.s || requestData.data?.s || [],
+    
+    // Indicators (i)
+    i: {
+      a: requestData.i?.a || requestData.data?.i?.a || false,
+      p: requestData.i?.p || requestData.data?.i?.p || false,
+      l: requestData.i?.l || requestData.data?.i?.l || false
+    }
   };
+  
+  // Client Info (cI) - Build from form inputs
+  const cI = {};
+  
+  // Check if individual or entity
+  const isEntity = updatedData.b || updatedData.c;
+  
+  // Name object (n) - contains both individual and entity name fields
+  cI.n = {};
+  
+  if (!isEntity) {
+    // Individual client name fields
+    cI.n.t = document.getElementById('titlePrefix')?.value || requestData.cI?.n?.t || requestData.data?.cI?.n?.t || '';
+    cI.n.f = document.getElementById('firstName')?.value || requestData.cI?.n?.f || requestData.data?.cI?.n?.f || '';
+    cI.n.m = document.getElementById('middleName')?.value || requestData.cI?.n?.m || requestData.data?.cI?.n?.m || '';
+    cI.n.l = document.getElementById('lastName')?.value || requestData.cI?.n?.l || requestData.data?.cI?.n?.l || '';
+    
+    // Date of birth (b)
+    const dobFields = [
+      document.getElementById('dob1')?.value || '',
+      document.getElementById('dob2')?.value || '',
+      document.getElementById('dob3')?.value || '',
+      document.getElementById('dob4')?.value || '',
+      document.getElementById('dob5')?.value || '',
+      document.getElementById('dob6')?.value || '',
+      document.getElementById('dob7')?.value || '',
+      document.getElementById('dob8')?.value || ''
+    ].join('');
+    
+    if (dobFields.length === 8) {
+      cI.b = `${dobFields.slice(0,2)}-${dobFields.slice(2,4)}-${dobFields.slice(4,8)}`;
+    } else {
+      cI.b = requestData.cI?.b || requestData.data?.cI?.b || '';
+    }
+    
+    // Recent name change flag (nC)
+    cI.nC = document.getElementById('recentNameChange')?.checked || false;
+    
+    // Previous name fields (only if nC is true)
+    if (cI.nC) {
+      cI.pN = document.getElementById('previousName')?.value || requestData.cI?.pN || requestData.data?.cI?.pN || '';
+      cI.rNC = document.getElementById('reasonForNameChange')?.value || requestData.cI?.rNC || requestData.data?.cI?.rNC || '';
+    }
+  } else {
+    // Entity client - business name
+    cI.n.b = document.getElementById('businessName')?.value || requestData.cI?.n?.b || requestData.data?.cI?.n?.b || '';
+    
+    // Entity number (eN)
+    cI.eN = document.getElementById('entityNumber')?.value || requestData.cI?.eN || requestData.data?.cI?.eN || '';
+    
+    // Business data from Companies House/Charity Register (bD) - preserve from requestData
+    if (businessData && Object.keys(businessData).length > 0) {
+      cI.bD = businessData;
+    } else if (requestData.cI?.bD || requestData.data?.cI?.bD) {
+      cI.bD = requestData.cI?.bD || requestData.data?.cI?.bD;
+    }
+  }
+  
+  // Current address (a) - use global currentAddressObject
+  if (currentAddressObject && Object.keys(currentAddressObject).length > 0) {
+    cI.a = currentAddressObject;
+  } else {
+    cI.a = requestData.cI?.a || requestData.data?.cI?.a || {};
+  }
+  
+  // Recent move flag (rM)
+  cI.rM = document.getElementById('recentMove')?.checked || false;
+  
+  // Previous address (pA) - only if rM is true
+  if (cI.rM) {
+    if (previousAddressObject && Object.keys(previousAddressObject).length > 0) {
+      cI.pA = previousAddressObject;
+    } else {
+      cI.pA = requestData.cI?.pA || requestData.data?.cI?.pA || {};
+    }
+  }
+  
+  // Phone number (m) - Format using libphonenumber
+  const phoneCode = document.getElementById('phoneCountryCode')?.value || '+44';
+  const phoneNumber = document.getElementById('phoneNumber')?.value || '';
+  if (phoneNumber) {
+    // Combine country code and number
+    const fullPhoneNumber = phoneCode + phoneNumber.replace(/^0/, ''); // Remove leading 0 if present
+    
+    // Parse and format using libphonenumber
+    const parsedPhone = parseAndFormatPhoneNumber(fullPhoneNumber);
+    if (parsedPhone && parsedPhone.e164) {
+      cI.m = parsedPhone.e164; // Use E.164 format (e.g., "+447506430094")
+    } else {
+      // Fallback to basic format if parsing fails
+      cI.m = fullPhoneNumber;
+    }
+  } else {
+    cI.m = requestData.cI?.m || requestData.data?.cI?.m || '';
+  }
+  
+  // Email (e)
+  cI.e = document.getElementById('email')?.value || requestData.cI?.e || requestData.data?.cI?.e || '';
+  
+  // Add cI to updatedData
+  updatedData.cI = cI;
   
   return updatedData;
 }

@@ -892,6 +892,50 @@
                     `;
                 }
                 
+                // Last Cashiers Log section
+                if (entry.lastLog) {
+                    let logItems = `<div class="detail-item"><span class="detail-value">${entry.lastLog.message || 'No message'}</span></div>`;
+                    
+                    if (entry.lastLog.file) {
+                        logItems += `
+                            <div class="detail-item" style="margin-top: 8px;">
+                                <span class="badge badge-flag" style="background: #e3f2fd; color: #1565c0; border-color: #90caf9;">
+                                    📎 ${entry.lastLog.file.name || 'Attachment'}
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    detailsSections += `
+                        <div class="detail-section" style="grid-column: 1 / -1; border-left-color: #16a085;">
+                            <div class="detail-title">Latest Cashiers Log</div>
+                            ${logItems}
+                        </div>
+                    `;
+                }
+                
+                // Last Chat Message section
+                if (entry.lastMessage) {
+                    let messageItems = `<div class="detail-item"><span class="detail-value">${entry.lastMessage.message || 'No message'}</span></div>`;
+                    
+                    if (entry.lastMessage.file) {
+                        messageItems += `
+                            <div class="detail-item" style="margin-top: 8px;">
+                                <span class="badge badge-flag" style="background: #e3f2fd; color: #1565c0; border-color: #90caf9;">
+                                    📎 ${entry.lastMessage.file.name || 'Attachment'}
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    detailsSections += `
+                        <div class="detail-section" style="grid-column: 1 / -1; border-left-color: #9b59b6;">
+                            <div class="detail-title">Latest Chat Message</div>
+                            ${messageItems}
+                        </div>
+                    `;
+                }
+                
                 // Issue location tag
                 let issueTag = '';
                 if (entry.issueLocation && primaryStatus === 'Issue') {

@@ -150,8 +150,8 @@ If file present, follows message-iframe.html upload flow:
           hour12: false
         }),
         user: userEmail,
-        message: messageInput?.value.trim() || '',
-        type: 'Staff'
+        type: 'Staff',
+        message: messageInput?.value.trim() || ''
       };
     },
     
