@@ -30,7 +30,7 @@ Timeline-based audit trail viewer that displays case activity, status changes, a
 ### Parent → iframe (Incoming Messages)
 
 #### `log-data`
-Sends audit log entries to display in timeline format.
+Sends audit log entries to display in timeline format. Each entry can optionally include `lastLog` (most recent cashiers log entry) and `lastMessage` (most recent chat message) for additional context.
 
 ```javascript
 window.frames[0].postMessage({
@@ -66,7 +66,26 @@ window.frames[0].postMessage({
           documentType: 'Passport',
           url: 'https://example.com/doc.jpg'
         }
-      ]
+      ],
+      lastLog: {  // Optional - most recent cashiers log entry
+        message: 'Client ID verified in person',
+        user: 'cashier@example.com',
+        time: '10/14/2025, 2:15:00 PM',
+        _id: 'log-entry-id',
+        file: {  // Optional - if log has attachment
+          name: 'scan.pdf'
+        }
+      },
+      lastMessage: {  // Optional - most recent chat message
+        message: 'Documents uploaded to system',
+        user: 'staff@example.com',
+        time: '10/14/2025, 2:20:00 PM',
+        type: 'Staff',
+        _id: 'message-id',
+        file: {  // Optional - if message has attachment
+          name: 'report.pdf'
+        }
+      }
     }
   ]
 }, '*');
@@ -805,74 +824,177 @@ window.frames[0].postMessage({
 ### iframe → Parent (Outgoing Messages)
 
 #### `request-data`
-Sends complete request data after successful validation and file uploads.
+Sends complete request data after successful validation and file uploads. The data structure uses shortened field names matching the incoming format.
 
 ```javascript
 {
   type: 'request-data',
-  requestType: 'formJ',  // or 'formK', 'formE', 'esof', 'note', 'update', 'updatePep'
+  requestType: 'formE',  // 'formJ', 'formK', 'formE', 'esof', 'note', 'update', 'updatePep'
+  user: 'user@example.com',
+  _id: 'bd8bee6a-465b-4d43-9a8a-396f9081b649',
+  eSoF: true,  // Only present when requestType is 'formE' (true/false based on eSoF tag selection)
   data: {
-    // Updated client data in same shorthand format as client-data
-    // Does NOT include idI or idD arrays
-    wT: 'Purchase of',
-    r: 'Our Client',
-    mD: 'Property purchase',
-    cI: {
-      n: {t: 'Mr', f: 'Jacob', m: 'Robert', l: 'Archer-Moran'},
-      b: '11-01-2001',
-      m: '+447700900123',
-      // ... all updated fields
+    // Updated client data in shorthand format (does NOT include idI or idD arrays)
+    _id: 'bd8bee6a-465b-4d43-9a8a-396f9081b649',
+    cD: {
+      cN: 50,           // Client Number
+      mN: '52',         // Matter Number
+      fe: 'BA',         // Fee Earner
+      n: 'John Doe'     // Full Name
     },
-    // ... all other updated fields from form
-  },
-  message: {
-    time: '14/10/2025, 14:30:00',
-    user: 'staff@example.com',
-    message: 'Request message text',
-    type: 'Staff',
-    file: {  // Optional - if message attachment present
-      s3Key: 'protected/message-file.pdf',
-      liveUrl: 'https://s3.amazonaws.com/...',
-      name: 'attachment.pdf',
-      size: 123456
+    r: 'Our Client',    // Relation
+    wT: 'Purchase of',  // Work Type
+    mD: 'Property purchase at 42 Baker St',  // Matter Description
+    b: false,           // Business flag
+    c: false,           // Charity flag
+    s: ['Pending', 'AWF'],  // Status tags
+    i: {
+      a: true,   // Has Address ID
+      p: true,   // Has Photo ID
+      l: false   // Likeness confirmed
+    },
+    cI: {
+      n: {
+        t: 'Mr',          // Title
+        f: 'John',        // First Name
+        m: 'William',     // Middle Name
+        l: 'Doe'          // Last Name
+      },
+      b: '01-01-1990',    // Birthdate (DD-MM-YYYY)
+      a: {                // Current Address (Thirdfort format)
+        building_number: '42',
+        street: 'Baker Street',
+        town: 'London',
+        postcode: 'NW1 6XE',
+        country: 'GBR'
+      },
+      pA: {...},          // Previous Address (if rM is true)
+      rM: false,          // Recent Move flag
+      nC: false,          // Name Change flag
+      pN: '',             // Previous Name (if nC is true)
+      rNC: '',            // Reason for Name Change (if nC is true)
+      m: '+447506430094', // Mobile (E.164 format)
+      e: 'john@example.com',  // Email
+      eN: 'OC421980',     // Entity Number (entities only)
+      bD: {...}           // Business Data from Companies House/Charity Register (entities only)
     }
   },
-  newFiles: [  // Optional - if new CDF/OFSI uploaded
+  message: {  // Optional - if user typed a message
+    time: '16/10/2025, 17:33:45',
+    user: 'user@example.com',
+    type: 'Staff',
+    message: 'Please process this Form E request',
+    file: {  // Optional - if message attachment uploaded
+      name: 'attachment.pdf',
+      size: 512000,
+      type: 'application/pdf',
+      s3Key: 'protected/abc123'
+    }
+  },
+  newFiles: [  // Optional - if CDF/OFSI uploaded
     {
-      type: 'Details form',
-      document: 'CDF - Individuals',
-      s3Key: 'protected/cdf-key.pdf',
-      liveUrl: 'https://s3.amazonaws.com/...',
-      date: '14/10/2025',
-      uploader: 'staff@example.com'
+      type: 'Details form',  // or 'PEP & Sanctions Check'
+      document: 'Client Details Form',
+      s3Key: 'protected/def456',
+      uploader: 'user@example.com',
+      date: '16/10/2025, 17:33:45',
+      data: {
+        type: 'application/pdf',
+        size: 117237,
+        name: 'cdf-form.pdf',
+        lastModified: 1643802796878
+      },
+      isMessageFile: false
     }
   ]
 }
 ```
 
-#### `company-lookup` / `charity-lookup`
-Requests company or charity data from parent.
+#### `address-search`
+Requests address autocomplete suggestions from getaddress.io.
 
 ```javascript
 {
-  type: 'company-lookup',  // or 'charity-lookup'
-  entityNumber: '12345678',
-  country: 'GB'
+  type: 'address-search',
+  searchTerm: 'TR15',
+  field: 'current'  // or 'previous'
+}
+```
+
+#### `address-lookup`
+Requests full address data by ID from getaddress.io.
+
+```javascript
+{
+  type: 'address-lookup',
+  addressId: 'abc123xyz',
+  field: 'current'  // or 'previous'
+}
+```
+
+#### `company-search`
+Requests company search results from Companies House API.
+
+```javascript
+{
+  type: 'company-search',
+  searchTerm: 'THURSTAN HOSKIN',
+  searchBy: 'name'  // or 'number'
+}
+```
+
+#### `charity-search`
+Requests charity search results from Charity Commission API.
+
+```javascript
+{
+  type: 'charity-search',
+  searchTerm: 'British Red Cross',
+  searchBy: 'name'  // or 'number'
+}
+```
+
+#### `company-lookup`
+Requests full company data from Companies House API.
+
+```javascript
+{
+  type: 'company-lookup',
+  companyNumber: 'OC421980',
+  entityType: 'business'
+}
+```
+
+#### `charity-lookup`
+Requests full charity data from Charity Commission API.
+
+```javascript
+{
+  type: 'charity-lookup',
+  companyNumber: '220949',
+  entityType: 'charity'
 }
 ```
 
 #### `file-data`
-Requests S3 PUT links for file uploads (before sending request-data).
+Requests S3 PUT links for file uploads (CDF, OFSI, message attachments).
 
 ```javascript
 {
   type: 'file-data',
+  _id: 'item-database-id',
   files: [
     {
-      name: 'cdf-document.pdf',
-      type: 'application/pdf',
-      size: 123456,
-      lastModified: 1697123456789,
+      type: 'Details form',      // or 'PEP & Sanctions Check'
+      document: 'Client Details Form',  // Document dropdown value
+      uploader: 'user@example.com',
+      date: '16/10/2025, 17:33:45',
+      data: {
+        type: 'application/pdf',
+        size: 117237,
+        name: 'cdf-form.pdf',
+        lastModified: 1643802796878
+      },
       isMessageFile: false  // true for message attachments, false for CDF/OFSI
     }
   ]

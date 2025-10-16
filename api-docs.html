@@ -612,7 +612,24 @@
       <span class="property">"matterClient"</span>: <span class="string">"John Doe"</span>,
       <span class="property">"matterNumber"</span>: <span class="string">"12345"</span>,
       <span class="property">"matterFE"</span>: <span class="string">"TL"</span>,
-      <span class="property">"matterDescription"</span>: <span class="string">"Property Purchase"</span>
+      <span class="property">"matterDescription"</span>: <span class="string">"Property Purchase"</span>,
+      <span class="property">"lastLog"</span>: {
+        <span class="property">"message"</span>: <span class="string">"Client ID verified in person"</span>,
+        <span class="property">"user"</span>: <span class="string">"cashier@example.com"</span>,
+        <span class="property">"time"</span>: <span class="string">"10/14/2025, 2:15:00 PM"</span>,
+        <span class="property">"file"</span>: {
+          <span class="property">"name"</span>: <span class="string">"scan.pdf"</span>
+        }
+      },
+      <span class="property">"lastMessage"</span>: {
+        <span class="property">"message"</span>: <span class="string">"Documents uploaded to system"</span>,
+        <span class="property">"user"</span>: <span class="string">"staff@example.com"</span>,
+        <span class="property">"time"</span>: <span class="string">"10/14/2025, 2:20:00 PM"</span>,
+        <span class="property">"type"</span>: <span class="string">"Staff"</span>,
+        <span class="property">"file"</span>: {
+          <span class="property">"name"</span>: <span class="string">"report.pdf"</span>
+        }
+      }
     }
   ]
 }</code></pre>
@@ -1750,11 +1767,12 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 <div class="code-block">
                     <pre><code>{
   <span class="property">"type"</span>: <span class="string">"request-data"</span>,
-  <span class="property">"requestType"</span>: <span class="string">"formJ"</span>,
-  <span class="property">"message"</span>: <span class="string">"Please process this Form J request"</span>,
+  <span class="property">"requestType"</span>: <span class="string">"formE"</span>,
   <span class="property">"user"</span>: <span class="string">"user@example.com"</span>,
-  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>,
+  <span class="property">"_id"</span>: <span class="string">"bd8bee6a-465b-4d43-9a8a-396f9081b649"</span>,
+  <span class="property">"eSoF"</span>: <span class="keyword">true</span>,  <span class="comment">// Only present when requestType is 'formE'</span>
   <span class="property">"data"</span>: {
+    <span class="property">"_id"</span>: <span class="string">"bd8bee6a-465b-4d43-9a8a-396f9081b649"</span>,
     <span class="property">"cD"</span>: {
       <span class="property">"cN"</span>: <span class="number">50</span>,
       <span class="property">"mN"</span>: <span class="string">"52"</span>,
@@ -1766,10 +1784,11 @@ document.<span class="function">getElementById</span>(<span class="string">'view
     <span class="property">"wT"</span>: <span class="string">"Purchase of"</span>,
     <span class="property">"b"</span>: <span class="keyword">false</span>,
     <span class="property">"c"</span>: <span class="keyword">false</span>,
+    <span class="property">"s"</span>: [<span class="string">"Pending"</span>, <span class="string">"AWF"</span>],
     <span class="property">"i"</span>: {
       <span class="property">"a"</span>: <span class="keyword">true</span>,
       <span class="property">"p"</span>: <span class="keyword">true</span>,
-      <span class="property">"l"</span>: <span class="keyword">true</span>
+      <span class="property">"l"</span>: <span class="keyword">false</span>
     },
     <span class="property">"cI"</span>: {
       <span class="property">"n"</span>: {
@@ -1786,13 +1805,36 @@ document.<span class="function">getElementById</span>(<span class="string">'view
         <span class="property">"postcode"</span>: <span class="string">"NW1 6XE"</span>,
         <span class="property">"country"</span>: <span class="string">"GBR"</span>
       },
-      <span class="property">"m"</span>: <span class="string">"+447506430094"</span>,
+      <span class="property">"pA"</span>: {...},  <span class="comment">// Previous address if rM is true</span>
+      <span class="property">"rM"</span>: <span class="keyword">false</span>,  <span class="comment">// Recent move flag</span>
+      <span class="property">"nC"</span>: <span class="keyword">false</span>,  <span class="comment">// Name change flag</span>
+      <span class="property">"pN"</span>: <span class="string">""</span>,  <span class="comment">// Previous name (if nC is true)</span>
+      <span class="property">"rNC"</span>: <span class="string">""</span>,  <span class="comment">// Reason for name change</span>
+      <span class="property">"m"</span>: <span class="string">"+447506430094"</span>,  <span class="comment">// Mobile (E.164)</span>
       <span class="property">"e"</span>: <span class="string">"john@example.com"</span>
-    },
-    <span class="property">"idI"</span>: [...],
-    <span class="property">"idD"</span>: [...]
+    }
   },
-  <span class="property">"attachedFiles"</span>: [...]
+  <span class="property">"message"</span>: {
+    <span class="property">"time"</span>: <span class="string">"16/10/2025, 17:33:45"</span>,
+    <span class="property">"user"</span>: <span class="string">"user@example.com"</span>,
+    <span class="property">"type"</span>: <span class="string">"Staff"</span>,
+    <span class="property">"message"</span>: <span class="string">"Please process this Form E request"</span>,
+    <span class="property">"file"</span>: {
+      <span class="property">"name"</span>: <span class="string">"attachment.pdf"</span>,
+      <span class="property">"size"</span>: <span class="number">512000</span>,
+      <span class="property">"type"</span>: <span class="string">"application/pdf"</span>,
+      <span class="property">"s3Key"</span>: <span class="string">"protected/abc123"</span>
+    }
+  },
+  <span class="property">"newFiles"</span>: [
+    {
+      <span class="property">"type"</span>: <span class="string">"Details form"</span>,
+      <span class="property">"document"</span>: <span class="string">"Client Details Form"</span>,
+      <span class="property">"s3Key"</span>: <span class="string">"protected/def456"</span>,
+      <span class="property">"uploader"</span>: <span class="string">"user@example.com"</span>,
+      <span class="property">"date"</span>: <span class="string">"16/10/2025, 17:33:45"</span>
+    }
+  ]
 }</code></pre>
                 </div>
 
@@ -1800,13 +1842,106 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                     <span class="arrow">←</span>
                     <code>address-search</code>
                 </div>
-                <p>Requests address autocomplete from getaddress.io.</p>
+                <p>Requests address autocomplete suggestions.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"address-search"</span>,
+  <span class="property">"searchTerm"</span>: <span class="string">"TR15"</span>,
+  <span class="property">"field"</span>: <span class="string">"current"</span>  <span class="comment">// or "previous"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>address-lookup</code>
+                </div>
+                <p>Requests full address data by ID.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"address-lookup"</span>,
+  <span class="property">"addressId"</span>: <span class="string">"abc123xyz"</span>,
+  <span class="property">"field"</span>: <span class="string">"current"</span>  <span class="comment">// or "previous"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>company-search</code>
+                </div>
+                <p>Requests company search from Companies House.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"company-search"</span>,
+  <span class="property">"searchTerm"</span>: <span class="string">"THURSTAN HOSKIN"</span>,
+  <span class="property">"searchBy"</span>: <span class="string">"name"</span>  <span class="comment">// or "number"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>charity-search</code>
+                </div>
+                <p>Requests charity search from Charity Commission.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"charity-search"</span>,
+  <span class="property">"searchTerm"</span>: <span class="string">"British Red Cross"</span>,
+  <span class="property">"searchBy"</span>: <span class="string">"name"</span>  <span class="comment">// or "number"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>company-lookup</code>
+                </div>
+                <p>Requests full company data from Companies House.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"company-lookup"</span>,
+  <span class="property">"companyNumber"</span>: <span class="string">"OC421980"</span>,
+  <span class="property">"entityType"</span>: <span class="string">"business"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>charity-lookup</code>
+                </div>
+                <p>Requests full charity data from Charity Commission.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"charity-lookup"</span>,
+  <span class="property">"companyNumber"</span>: <span class="string">"220949"</span>,
+  <span class="property">"entityType"</span>: <span class="string">"charity"</span>
+}</code></pre>
+                </div>
 
                 <div class="message-type outgoing">
                     <span class="arrow">←</span>
                     <code>file-data</code>
                 </div>
-                <p>Requests PUT links for CDF/OFSI document uploads.</p>
+                <p>Requests PUT links for CDF/OFSI document uploads and message attachments.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"file-data"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>,
+  <span class="property">"files"</span>: [
+    {
+      <span class="property">"type"</span>: <span class="string">"Details form"</span>,
+      <span class="property">"document"</span>: <span class="string">"Client Details Form"</span>,
+      <span class="property">"uploader"</span>: <span class="string">"user@example.com"</span>,
+      <span class="property">"date"</span>: <span class="string">"16/10/2025, 17:33:45"</span>,
+      <span class="property">"data"</span>: {
+        <span class="property">"type"</span>: <span class="string">"application/pdf"</span>,
+        <span class="property">"size"</span>: <span class="number">117237</span>,
+        <span class="property">"name"</span>: <span class="string">"cdf-form.pdf"</span>,
+        <span class="property">"lastModified"</span>: <span class="number">1643802796878</span>
+      },
+      <span class="property">"isMessageFile"</span>: <span class="keyword">false</span>
+    }
+  ]
+}</code></pre>
+                </div>
 
                 <h3>Validation</h3>
                 <p>Each request type has specific validation requirements:</p>
@@ -2021,6 +2156,42 @@ window.addEventListener(<span class="string">'message'</span>, <span class="keyw
                             <td>Mobile</td>
                             <td>String</td>
                             <td>Mobile phone number (E.164)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.pA</code></td>
+                            <td>Previous Address</td>
+                            <td>Object</td>
+                            <td>Previous address (Thirdfort format, if rM is true)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.rM</code></td>
+                            <td>Recent Move</td>
+                            <td>Boolean</td>
+                            <td>Recent move flag (within last year)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.nC</code></td>
+                            <td>Name Change</td>
+                            <td>Boolean</td>
+                            <td>Recent name change flag</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.pN</code></td>
+                            <td>Previous Name</td>
+                            <td>String</td>
+                            <td>Previous name (if nC is true)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.rNC</code></td>
+                            <td>Reason Name Change</td>
+                            <td>String</td>
+                            <td>Reason for name change (if nC is true)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.m</code></td>
+                            <td>Mobile</td>
+                            <td>String</td>
+                            <td>Mobile phone number (E.164 format)</td>
                         </tr>
                         <tr>
                             <td><code>cI.e</code></td>

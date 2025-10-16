@@ -11,6 +11,8 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Risk indicators and PEP status tracking (CPEP, PPEP, NPEP)
   - Safe Harbour and PEP Monitoring flags
   - Matter details with expandable addresses
+  - Latest cashiers log entry (`lastLog`) display with attachments
+  - Latest chat message (`lastMessage`) display with attachments
   - PDF export functionality with jsPDF
   - Relative timestamps with full date/time display
 
@@ -67,7 +69,10 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Companies House and Charity Register integration
   - Google libphonenumber integration for mobile validation
   - Global file upload system with progress tracking
-  - Parent communication for client-data, request-data, file uploads
+  - Full Velo frontend integration with shorthand field names
+  - Message object with `type: 'Staff'` flag
+  - eSoF flag at top level for Form E requests
+  - Parent communication: client-data, request-data, address-search, company-search, charity-search, file-data, put-links
 
 - **`document-viewer.html`** - Document Display
   - View and display document images

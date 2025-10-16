@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **`request-form.html`** - Comprehensive Request Management Form ⭐ MAJOR NEW FEATURE
   - Dynamic multi-request type form system supporting 7 distinct request types
-  - Modular JavaScript architecture with core + request type modules (2,800+ lines)
+  - Modular JavaScript architecture with core + request type modules (~4,500 lines)
   - Request types: Form J, Form K (11 rules), Form E, eSoF Request, Note, Issue Update, PEP Update
   - Smart section visibility based on client type (individual/business/charity) and selected request
   - Form K conditional rule filtering (Rules 1-3, 10-11 for individuals; all 11 for entities)
@@ -30,8 +30,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Comprehensive validation with detailed multi-line error messages
   - Global DOB validator (validates real dates, rejects future dates, formats DD-MM-YYYY)
   - Form state management with message input preservation
-  - Parent communication: client-data, request-data, company-lookup, charity-lookup, file-data, put-links
+  - Full Velo frontend integration with shorthand field names (`cD`, `cI`, `r`, `wT`, `mD`, etc.)
+  - Message object includes `type: 'Staff'` flag for all request types
+  - `eSoF` flag at top level of request-data (only for Form E, based on eSoF Request tag selection)
+  - Parent communication: client-data, request-data, address-search, address-lookup, company-search, charity-search, company-lookup, charity-lookup, file-data, put-links
   - Deleted old request-iframe.html files (replaced by modular system)
+- **`audit-log.html`** - Enhanced with Latest Activity Display
+  - Added `lastLog` support - displays most recent cashiers log entry in expanded view
+  - Added `lastMessage` support - displays most recent chat message in expanded view
+  - Both include optional file attachments with badge display
+  - Helps provide immediate context without navigating to separate sections
 
 ### Fixed
 - Chart Viewer: Fixed doughnut chart expansion - serialize functions for postMessage
