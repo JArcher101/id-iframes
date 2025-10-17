@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`thirdfort-check.html`** - Thirdfort Check Manager ⭐ MAJOR NEW FEATURE
+  - Comprehensive check creation and management interface for Thirdfort API integration
+  - Four check types: IDV (Identity Verification), Lite Screen, Electronic ID, KYB (Know Your Business)
+  - Matter category routing: Conveyancing, Property Other, Private Client, Other
+  - Intelligent auto-selection based on work type, relation, and client tags (Form E, eSoF Requested)
+  - Electronic ID types: Standard ID (KYC + IDV) and Additional Tasks Only
+  - Dynamic checkbox configuration for Proof of Ownership, eSoF Questionnaire, eSoW Bank Linking, PEP Monitoring, International Address Verification
+  - IDV image selection with exact document type matching and front/back side handling
+  - Popup window image viewer integration with `single-image-viewer.html`
+  - Matter details display card (work type, matter description, relation)
+  - Latest message display from staff/cashier chat
+  - Google libphonenumber integration for mobile validation (country-aware, mobile-specific)
+  - Searchable autocomplete dropdowns for phone codes, countries, and jurisdictions with blue code badges
+  - Address autocomplete with getaddress.io integration via parent proxy
+  - Full Thirdfort API compliance with validation functions
+  - Request construction for multiple endpoints (Lite Screen/Electronic ID, IDV check, IDV documents, KYB)
+  - Core JavaScript module: `js/thirdfort-check-core.js` (~3,000 lines)
+  - Mock data buttons for testing different client scenarios
+  - Parent communication: client-data, request-thirdfort-check, address-search, address-lookup
 - **`request-form.html`** - Comprehensive Request Management Form ⭐ MAJOR NEW FEATURE
   - Dynamic multi-request type form system supporting 7 distinct request types
   - Modular JavaScript architecture with core + request type modules (~4,500 lines)
@@ -47,14 +66,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Form K: Fixed "sale" worktype detection bug (was matching "Purchase" due to substring "se")
 
 ### Enhanced
+- **All Forms: Autocomplete Dropdown System** 🎯 MAJOR UX IMPROVEMENT
+  - Replaced all static dropdowns with searchable autocomplete inputs
+  - **Phone Country Codes**: Flag emoji + code + country name (e.g., "🇬🇧 +44 UK")
+  - **Address Countries**: Country name with blue code badge (e.g., "United Kingdom [GBR]")
+  - **Business Jurisdictions**: Jurisdiction name with blue code badge (e.g., "United Kingdom [GB]")
+  - Blue code badge styling: `#e8f4f8` background, `rgb(0,60,113)` text, Transport font
+  - Shared infrastructure: `js/jurisdiction-autocomplete.js` powers all dropdowns
+  - Data handling via dataset attributes: `data-country-code`, `data-phone-code`, `data-jurisdiction-code`
+  - Helper functions: `setCountry()`, `setPhoneCode()`, `setJurisdiction()` for proper data loading
+  - Applied to: `thirdfort-check.html`, `client-details.html`, `request-form.html`, `image-uploader.html`
+- **Manual Address Fields Layout**: 25/25/50 grid for flat number, building number, building name
+  - Applied to current and previous address fields in all forms
+  - Responsive breakpoints for tablet (20/20/1fr) and mobile (stacked)
+  - Improves data entry UX for manual address input
 - Image Viewer: Added button-enable/button-disable messages for upload button control
 - Document Viewer: Added button-enable/button-disable messages for upload button control  
 - Message iframe: Added button-enable/button-disable messages for send button control
 - All viewers now support dynamic button state management from parent
-- Client Details Form: Integrated Google libphonenumber library for mobile phone validation
-  - Phone numbers are validated before sending new-data message
-  - Numbers are formatted in E.164 international format
-  - Validation errors are sent via validation-error message
+- Client Details Form: Enhanced with autocomplete dropdowns and improved address handling
+  - Google libphonenumber library for mobile phone validation
+  - Phone numbers validated and formatted in E.164 international format
+  - Business data returns basic info (name, number, country) even without API link
+  - Validation errors sent via validation-error message
+- Image Uploader Form: Enhanced with autocomplete country dropdowns
+  - Consistent autocomplete UX with other forms
+  - Proper country code handling for address objects
+  - Blue code badge styling matching repository standard
+- Request Form: Enhanced with autocomplete dropdowns for all country/phone/jurisdiction fields
+  - People cards now have 10px vertical spacing between items
+  - Consistent data handling with dataset attributes across all fields
 
 ### Removed
 - Deleted old request-iframe.html, request-iframe-clean.html, request-iframe-temp.html

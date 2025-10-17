@@ -4,6 +4,18 @@ A collection of standalone HTML iframe utilities for image viewing, document man
 
 ## Components
 
+### Check Management
+- **`thirdfort-check.html`** - Thirdfort Check Manager ⭐ NEW
+  - Comprehensive check creation interface for Thirdfort API
+  - Four check types: IDV, Lite Screen, Electronic ID, KYB
+  - Matter category routing with intelligent auto-selection
+  - Electronic ID with dynamic task configuration
+  - IDV image selection with popup viewer
+  - Google libphonenumber mobile validation
+  - Searchable autocomplete for phone/country/jurisdiction
+  - Full Thirdfort API compliance and validation
+  - Parent communication: client-data, request-thirdfort-check
+
 ### Audit & Logging
 - **`audit-log.html`** - Audit Log Viewer
   - Timeline-based audit trail display
@@ -44,6 +56,7 @@ A collection of standalone HTML iframe utilities for image viewing, document man
 - **`image-uploader.html`** - Full Client Onboarding Form
   - Complete onboarding with 4 sections (Details, Photo ID, Address, Address ID)
   - Upload client identification images and documents
+  - Searchable autocomplete for country selection with blue code badges
   - Form-based interface with S3 direct upload
   - Address lookup via getaddress.io integration
   - Thirdfort API format support
@@ -51,23 +64,28 @@ A collection of standalone HTML iframe utilities for image viewing, document man
 - **`client-details.html`** - Lightweight Client Details & Address Form
   - Streamlined client details collection (NO uploads)
   - Personal information and address history only
+  - Searchable autocomplete for phone codes, countries, jurisdictions
   - Address autocomplete with getaddress.io
   - Automatic Thirdfort address formatting
+  - Google libphonenumber phone validation
   - Entity mode for business/charity clients
+  - Blue code badge styling for country/jurisdiction codes
 
-- **`request-form.html`** - Comprehensive Request Management Form ⭐ NEW
+- **`request-form.html`** - Comprehensive Request Management Form
   - Dynamic multi-request type form system (7 request types)
   - Modular architecture with separate request type handlers
   - Request types: Form J, Form K, Form E, eSoF, Note, Issue Update, PEP Update
   - Form K includes 11 conditional rules with dynamic filtering
   - Smart section visibility based on client type and selected request
   - Automatic Form E + eSoF combination for purchase worktypes
+  - Searchable autocomplete for phone codes, countries, jurisdictions with blue code badges
   - Comprehensive validation with detailed error messages
   - CDF and OFSI document upload and management
   - ID Images carousel display with side tags
-  - Business/Charity people cards (directors, officers, trustees, PSCs)
+  - Business/Charity people cards with 10px spacing (directors, officers, trustees, PSCs)
   - Companies House and Charity Register integration
   - Google libphonenumber integration for mobile validation
+  - 25/25/50 grid layout for manual address fields
   - Global file upload system with progress tracking
   - Full Velo frontend integration with shorthand field names
   - Message object with `type: 'Staff'` flag
@@ -93,9 +111,13 @@ A collection of standalone HTML iframe utilities for image viewing, document man
 ## Features
 
 - **Standalone HTML files** - No build process required
+- **Searchable autocomplete dropdowns** - Phone codes, countries, jurisdictions across all forms
+- **Blue code badge styling** - Consistent visual design for country/jurisdiction codes
 - **Custom typography** - Uses Transport and Rotis font families with base64 embedding
 - **Fallback fonts** - Automatically falls back to Google Fonts (Quicksand)
 - **Responsive design** - Works across different screen sizes
+- **Google libphonenumber** - International phone validation and formatting
+- **Thirdfort API compliance** - Proper address formatting and validation
 - **iframe-ready** - Designed to be embedded in parent applications
 
 ## Usage

@@ -154,6 +154,12 @@
       gap: var(--gap); 
     }
     
+    .row-grid-25-25-50 { 
+      display: grid; 
+      grid-template-columns: 25% 25% 1fr; 
+      gap: var(--gap); 
+    }
+    
     /* Entity mode split layout: Left (forms) + Right (people cards) */
     .entity-grid {
       display: grid;
@@ -447,6 +453,51 @@
       font-size: 0.85rem;
     }
     
+    /* Jurisdiction/Country/Phone Autocomplete Dropdown Items */
+    .dropdown-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background-color 0.2s;
+    }
+    
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+    
+    .dropdown-item:hover {
+      background: #f8f8f8;
+    }
+    
+    .jurisdiction-name,
+    .phone-display {
+      font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.9rem;
+      color: #333;
+    }
+    
+    .jurisdiction-code {
+      font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: rgb(0, 60, 113);
+      background: #e8f4f8;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+    
+    .dropdown-item-empty {
+      padding: 12px;
+      text-align: center;
+      color: #999;
+      font-size: 0.85rem;
+      font-style: italic;
+      font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    
     /* Checkbox styling for "Address not listed" */
     .checkbox-container {
       display: flex;
@@ -585,6 +636,10 @@
         grid-template-columns: 1fr 1fr; 
         gap: 15px; 
       }
+      .row-grid-25-25-50 { 
+        grid-template-columns: 20% 20% 1fr; 
+        gap: 15px; 
+      }
       .name-row {
         grid-template-columns: 80px 120px 1fr 1fr;
         gap: 15px;
@@ -615,6 +670,11 @@
       }
       
       .row-grid-50-50 { 
+        grid-template-columns: 1fr; 
+        gap: 10px; 
+      }
+      
+      .row-grid-25-25-50 { 
         grid-template-columns: 1fr; 
         gap: 10px; 
       }
@@ -693,20 +753,13 @@
           <div class="entity-grid">
             <!-- Left Column: Registration Country + Company Number -->
             <div class="entity-left">
-              <div>
-                <label for="registrationCountry">Registration Country</label>
-                <select id="registrationCountry" name="registrationCountry" class="country-dropdown">
-                  <option value="GB">United Kingdom</option>
-                  <option value="US">United States</option>
-                  <option value="IE">Ireland</option>
-                  <option value="AU">Australia</option>
-                  <option value="CA">Canada</option>
-                  <option value="NZ">New Zealand</option>
-                  <option value="SG">Singapore</option>
-                  <option value="HK">Hong Kong</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
+          <div>
+            <label for="registrationCountry">Registration Country</label>
+            <div class="address-autocomplete-container">
+              <input type="text" id="registrationCountry" name="registrationCountry" autocomplete="off" placeholder="Search country..." value="United Kingdom" data-jurisdiction-code="GB" class="country-dropdown" />
+              <div id="registrationCountryDropdown" class="address-dropdown hidden"></div>
+            </div>
+          </div>
               
               <div>
                 <label for="entityNumber">Company Number</label>
@@ -777,145 +830,10 @@
         <div class="row phone-email-row">
           <div>
             <label for="phoneCountryCode">Code</label>
-            <select id="phoneCountryCode" name="phoneCountryCode">
-              <!-- UK Default -->
-              <option value="+44">🇬🇧 +44 UK</option>
-              
-              <!-- EU Countries -->
-              <option value="+43">🇦🇹 +43 Austria</option>
-              <option value="+32">🇧🇪 +32 Belgium</option>
-              <option value="+359">🇧🇬 +359 Bulgaria</option>
-              <option value="+385">🇭🇷 +385 Croatia</option>
-              <option value="+357">🇨🇾 +357 Cyprus</option>
-              <option value="+420">🇨🇿 +420 Czech Republic</option>
-              <option value="+45">🇩🇰 +45 Denmark</option>
-              <option value="+372">🇪🇪 +372 Estonia</option>
-              <option value="+358">🇫🇮 +358 Finland</option>
-              <option value="+33">🇫🇷 +33 France</option>
-              <option value="+49">🇩🇪 +49 Germany</option>
-              <option value="+30">🇬🇷 +30 Greece</option>
-              <option value="+36">🇭🇺 +36 Hungary</option>
-              <option value="+353">🇮🇪 +353 Ireland</option>
-              <option value="+39">🇮🇹 +39 Italy</option>
-              <option value="+371">🇱🇻 +371 Latvia</option>
-              <option value="+370">🇱🇹 +370 Lithuania</option>
-              <option value="+352">🇱🇺 +352 Luxembourg</option>
-              <option value="+356">🇲🇹 +356 Malta</option>
-              <option value="+31">🇳🇱 +31 Netherlands</option>
-              <option value="+48">🇵🇱 +48 Poland</option>
-              <option value="+351">🇵🇹 +351 Portugal</option>
-              <option value="+40">🇷🇴 +40 Romania</option>
-              <option value="+421">🇸🇰 +421 Slovakia</option>
-              <option value="+386">🇸🇮 +386 Slovenia</option>
-              <option value="+34">🇪🇸 +34 Spain</option>
-              <option value="+46">🇸🇪 +46 Sweden</option>
-              
-              <!-- IAV Supported Countries (from api.v2.yaml) -->
-              <option value="+54">🇦🇷 +54 Argentina</option>
-              <option value="+61">🇦🇺 +61 Australia</option>
-              <option value="+55">🇧🇷 +55 Brazil</option>
-              <option value="+1">🇨🇦 +1 Canada</option>
-              <option value="+86">🇨🇳 +86 China</option>
-              <option value="+52">🇲🇽 +52 Mexico</option>
-              <option value="+64">🇳🇿 +64 New Zealand</option>
-              <option value="+47">🇳🇴 +47 Norway</option>
-              <option value="+65">🇸🇬 +65 Singapore</option>
-              <option value="+27">🇿🇦 +27 South Africa</option>
-              <option value="+41">🇨🇭 +41 Switzerland</option>
-              <option value="+90">🇹🇷 +90 Turkey</option>
-              <option value="+1">🇺🇸 +1 USA</option>
-              
-              <!-- Other Countries (Alphabetical) -->
-              <option value="+93">🇦🇫 +93 Afghanistan</option>
-              <option value="+355">🇦🇱 +355 Albania</option>
-              <option value="+213">🇩🇿 +213 Algeria</option>
-              <option value="+376">🇦🇩 +376 Andorra</option>
-              <option value="+244">🇦🇴 +244 Angola</option>
-              <option value="+374">🇦🇲 +374 Armenia</option>
-              <option value="+994">🇦🇿 +994 Azerbaijan</option>
-              <option value="+973">🇧🇭 +973 Bahrain</option>
-              <option value="+880">🇧🇩 +880 Bangladesh</option>
-              <option value="+375">🇧🇾 +375 Belarus</option>
-              <option value="+501">🇧🇿 +501 Belize</option>
-              <option value="+975">🇧🇹 +975 Bhutan</option>
-              <option value="+591">🇧🇴 +591 Bolivia</option>
-              <option value="+387">🇧🇦 +387 Bosnia</option>
-              <option value="+267">🇧🇼 +267 Botswana</option>
-              <option value="+673">🇧🇳 +673 Brunei</option>
-              <option value="+855">🇰🇭 +855 Cambodia</option>
-              <option value="+237">🇨🇲 +237 Cameroon</option>
-              <option value="+56">🇨🇱 +56 Chile</option>
-              <option value="+57">🇨🇴 +57 Colombia</option>
-              <option value="+506">🇨🇷 +506 Costa Rica</option>
-              <option value="+225">🇨🇮 +225 Côte d'Ivoire</option>
-              <option value="+593">🇪🇨 +593 Ecuador</option>
-              <option value="+20">🇪🇬 +20 Egypt</option>
-              <option value="+503">🇸🇻 +503 El Salvador</option>
-              <option value="+251">🇪🇹 +251 Ethiopia</option>
-              <option value="+995">🇬🇪 +995 Georgia</option>
-              <option value="+233">🇬🇭 +233 Ghana</option>
-              <option value="+502">🇬🇹 +502 Guatemala</option>
-              <option value="+504">🇭🇳 +504 Honduras</option>
-              <option value="+852">🇭🇰 +852 Hong Kong</option>
-              <option value="+354">🇮🇸 +354 Iceland</option>
-              <option value="+91">🇮🇳 +91 India</option>
-              <option value="+62">🇮🇩 +62 Indonesia</option>
-              <option value="+98">🇮🇷 +98 Iran</option>
-              <option value="+964">🇮🇶 +964 Iraq</option>
-              <option value="+972">🇮🇱 +972 Israel</option>
-              <option value="+81">🇯🇵 +81 Japan</option>
-              <option value="+962">🇯🇴 +962 Jordan</option>
-              <option value="+7">🇰🇿 +7 Kazakhstan</option>
-              <option value="+254">🇰🇪 +254 Kenya</option>
-              <option value="+965">🇰🇼 +965 Kuwait</option>
-              <option value="+996">🇰🇬 +996 Kyrgyzstan</option>
-              <option value="+856">🇱🇦 +856 Laos</option>
-              <option value="+961">🇱🇧 +961 Lebanon</option>
-              <option value="+218">🇱🇾 +218 Libya</option>
-              <option value="+853">🇲🇴 +853 Macau</option>
-              <option value="+389">🇲🇰 +389 Macedonia</option>
-              <option value="+261">🇲🇬 +261 Madagascar</option>
-              <option value="+60">🇲🇾 +60 Malaysia</option>
-              <option value="+960">🇲🇻 +960 Maldives</option>
-              <option value="+223">🇲🇱 +223 Mali</option>
-              <option value="+212">🇲🇦 +212 Morocco</option>
-              <option value="+258">🇲🇿 +258 Mozambique</option>
-              <option value="+95">🇲🇲 +95 Myanmar</option>
-              <option value="+264">🇳🇦 +264 Namibia</option>
-              <option value="+977">🇳🇵 +977 Nepal</option>
-              <option value="+505">🇳🇮 +505 Nicaragua</option>
-              <option value="+234">🇳🇬 +234 Nigeria</option>
-              <option value="+968">🇴🇲 +968 Oman</option>
-              <option value="+92">🇵🇰 +92 Pakistan</option>
-              <option value="+507">🇵🇦 +507 Panama</option>
-              <option value="+595">🇵🇾 +595 Paraguay</option>
-              <option value="+51">🇵🇪 +51 Peru</option>
-              <option value="+63">🇵🇭 +63 Philippines</option>
-              <option value="+974">🇶🇦 +974 Qatar</option>
-              <option value="+7">🇷🇺 +7 Russia</option>
-              <option value="+966">🇸🇦 +966 Saudi Arabia</option>
-              <option value="+381">🇷🇸 +381 Serbia</option>
-              <option value="+82">🇰🇷 +82 South Korea</option>
-              <option value="+94">🇱🇰 +94 Sri Lanka</option>
-              <option value="+249">🇸🇩 +249 Sudan</option>
-              <option value="+963">🇸🇾 +963 Syria</option>
-              <option value="+886">🇹🇼 +886 Taiwan</option>
-              <option value="+992">🇹🇯 +992 Tajikistan</option>
-              <option value="+255">🇹🇿 +255 Tanzania</option>
-              <option value="+66">🇹🇭 +66 Thailand</option>
-              <option value="+216">🇹🇳 +216 Tunisia</option>
-              <option value="+993">🇹🇲 +993 Turkmenistan</option>
-              <option value="+256">🇺🇬 +256 Uganda</option>
-              <option value="+380">🇺🇦 +380 Ukraine</option>
-              <option value="+971">🇦🇪 +971 UAE</option>
-              <option value="+598">🇺🇾 +598 Uruguay</option>
-              <option value="+998">🇺🇿 +998 Uzbekistan</option>
-              <option value="+58">🇻🇪 +58 Venezuela</option>
-              <option value="+84">🇻🇳 +84 Vietnam</option>
-              <option value="+967">🇾🇪 +967 Yemen</option>
-              <option value="+260">🇿🇲 +260 Zambia</option>
-              <option value="+263">🇿🇼 +263 Zimbabwe</option>
-            </select>
+            <div class="address-autocomplete-container">
+              <input type="text" id="phoneCountryCode" name="phoneCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
+              <div id="phoneCountryCodeDropdown" class="address-dropdown hidden"></div>
+            </div>
           </div>
           <div>
             <label for="phoneNumber">Mobile Number</label>
@@ -969,43 +887,10 @@
         <div class="row name-change-row">
           <div>
             <label for="currentCountry">Country</label>
-            <select id="currentCountry" name="currentCountry" class="country-dropdown">
-              <option value="GBR">United Kingdom</option>
-              <option value="USA">United States</option>
-              <option value="CAN">Canada</option>
-              <option value="AUS">Australia</option>
-              <option value="NZL">New Zealand</option>
-              <option value="IRL">Ireland</option>
-              <option value="FRA">France</option>
-              <option value="DEU">Germany</option>
-              <option value="ESP">Spain</option>
-              <option value="ITA">Italy</option>
-              <option value="PRT">Portugal</option>
-              <option value="NLD">Netherlands</option>
-              <option value="BEL">Belgium</option>
-              <option value="CHE">Switzerland</option>
-              <option value="AUT">Austria</option>
-              <option value="DNK">Denmark</option>
-              <option value="SWE">Sweden</option>
-              <option value="NOR">Norway</option>
-              <option value="FIN">Finland</option>
-              <option value="POL">Poland</option>
-              <option value="GRC">Greece</option>
-              <option value="TUR">Turkey</option>
-              <option value="RUS">Russia</option>
-              <option value="CHN">China</option>
-              <option value="JPN">Japan</option>
-              <option value="IND">India</option>
-              <option value="BRA">Brazil</option>
-              <option value="MEX">Mexico</option>
-              <option value="ZAF">South Africa</option>
-              <option value="ARE">United Arab Emirates</option>
-              <option value="SAU">Saudi Arabia</option>
-              <option value="SGP">Singapore</option>
-              <option value="HKG">Hong Kong</option>
-              <option value="KOR">South Korea</option>
-              <option value="OTHER">Other</option>
-            </select>
+            <div class="address-autocomplete-container">
+              <input type="text" id="currentCountry" name="currentCountry" autocomplete="off" placeholder="Search country..." value="United Kingdom" data-country-code="GBR" class="country-dropdown" />
+              <div id="currentCountryDropdown" class="address-dropdown hidden"></div>
+            </div>
           </div>
           <div id="currentAddressAutocompleteRow">
             <label for="currentAddress" id="currentAddressLabel">Search Address</label>
@@ -1034,7 +919,7 @@
 
         <!-- Manual address entry fields -->
         <div id="manualAddressFields" class="hidden">
-        <div class="row row-grid-50-50">
+        <div class="row row-grid-25-25-50">
           <div>
             <label for="flatNumber">Flat Number</label>
             <input type="text" id="flatNumber" name="flatNumber" />
@@ -1043,11 +928,10 @@
             <label for="buildingNumber">Building Number</label>
             <input type="text" id="buildingNumber" name="buildingNumber" />
           </div>
-        </div>
-        
-        <div class="row">
-          <label for="buildingName">Building Name</label>
-          <input type="text" id="buildingName" name="buildingName" />
+          <div>
+            <label for="buildingName">Building Name</label>
+            <input type="text" id="buildingName" name="buildingName" />
+          </div>
         </div>
         
         <div class="row row-grid-50-50">
@@ -1077,43 +961,10 @@
           <div class="row name-change-row">
             <div>
               <label for="previousCountry">Country</label>
-              <select id="previousCountry" name="previousCountry" class="country-dropdown">
-                <option value="GBR">United Kingdom</option>
-                <option value="USA">United States</option>
-                <option value="CAN">Canada</option>
-                <option value="AUS">Australia</option>
-                <option value="NZL">New Zealand</option>
-                <option value="IRL">Ireland</option>
-                <option value="FRA">France</option>
-                <option value="DEU">Germany</option>
-                <option value="ESP">Spain</option>
-                <option value="ITA">Italy</option>
-                <option value="PRT">Portugal</option>
-                <option value="NLD">Netherlands</option>
-                <option value="BEL">Belgium</option>
-                <option value="CHE">Switzerland</option>
-                <option value="AUT">Austria</option>
-                <option value="DNK">Denmark</option>
-                <option value="SWE">Sweden</option>
-                <option value="NOR">Norway</option>
-                <option value="FIN">Finland</option>
-                <option value="POL">Poland</option>
-                <option value="GRC">Greece</option>
-                <option value="TUR">Turkey</option>
-                <option value="RUS">Russia</option>
-                <option value="CHN">China</option>
-                <option value="JPN">Japan</option>
-                <option value="IND">India</option>
-                <option value="BRA">Brazil</option>
-                <option value="MEX">Mexico</option>
-                <option value="ZAF">South Africa</option>
-                <option value="ARE">United Arab Emirates</option>
-                <option value="SAU">Saudi Arabia</option>
-                <option value="SGP">Singapore</option>
-                <option value="HKG">Hong Kong</option>
-                <option value="KOR">South Korea</option>
-                <option value="OTHER">Other</option>
-              </select>
+              <div class="address-autocomplete-container">
+                <input type="text" id="previousCountry" name="previousCountry" autocomplete="off" placeholder="Search country..." value="United Kingdom" data-country-code="GBR" class="country-dropdown" />
+                <div id="previousCountryDropdown" class="address-dropdown hidden"></div>
+              </div>
             </div>
             <div id="previousAddressAutocompleteRow">
               <label for="previousAddress" id="previousAddressLabel">Search Address</label>
@@ -1136,7 +987,7 @@
         
         <!-- Manual previous address entry fields -->
         <div id="manualPreviousAddressFields" class="hidden">
-          <div class="row row-grid-50-50">
+          <div class="row row-grid-25-25-50">
             <div>
               <label for="prevFlatNumber">Flat Number</label>
               <input type="text" id="prevFlatNumber" name="prevFlatNumber" />
@@ -1145,11 +996,10 @@
               <label for="prevBuildingNumber">Building Number</label>
               <input type="text" id="prevBuildingNumber" name="prevBuildingNumber" />
             </div>
-          </div>
-          
-          <div class="row">
-            <label for="prevBuildingName">Building Name</label>
-            <input type="text" id="prevBuildingName" name="prevBuildingName" />
+            <div>
+              <label for="prevBuildingName">Building Name</label>
+              <input type="text" id="prevBuildingName" name="prevBuildingName" />
+            </div>
           </div>
           
           <div class="row row-grid-50-50">
@@ -1944,7 +1794,7 @@
     Handle full address data from parent
     */
     function handleAddressData(addressData, field) {
-      const country = field === 'current' ? currentCountry.value : previousCountry.value;
+      const country = field === 'current' ? (currentCountry.dataset.countryCode || 'GBR') : (previousCountry.dataset.countryCode || 'GBR');
       const thirdfortAddress = formatToThirdfort(addressData, country);
       
       if (field === 'current') {
@@ -2209,7 +2059,7 @@
           console.log('📍 Auto-populating registered office address:', addressString);
           
           // Set UK as country
-          currentCountry.value = 'GBR';
+          setCountry('currentCountry', 'GBR');
           
           // Populate the autocomplete field
           currentAddress.value = addressString;
@@ -2882,7 +2732,7 @@
           return { isValid: true, error: null }; // Phone is optional, so empty is valid
         }
         
-        const countryCode = phoneCountryCode?.value || '+44';
+        const countryCode = phoneCountryCode?.dataset.phoneCode || '+44';
         const phoneNum = phoneNumber.value.trim();
         
         // Combine country code with phone number
@@ -3003,7 +2853,7 @@
       // Current address is NOT required
       // Manual address fields only required if "Address not listed" is checked
       if (addressNotListed?.checked) {
-        const isCurrentUK = currentCountry?.value === 'GBR';
+        const isCurrentUK = currentCountry?.dataset.countryCode === 'GBR';
         
         if (!town?.value?.trim()) {
           errors.push('You have indicated current address not listed, please enter the Town/City.');
@@ -3019,7 +2869,7 @@
         
         // Previous address validation - only if recent move toggle is on
         if (recentMove?.checked) {
-          const isPreviousUK = previousCountry?.value === 'GBR';
+          const isPreviousUK = previousCountry?.dataset.countryCode === 'GBR';
           
           // Previous address autocomplete only required if UK and "not listed" is NOT checked
           if (isPreviousUK && !previousAddressNotListed?.checked) {
@@ -3055,7 +2905,7 @@
     function compileFormData() {
       try {
       // Build current address object
-      const isCurrentUK = currentCountry.value === 'GBR';
+      const isCurrentUK = currentCountry.dataset.countryCode === 'GBR';
       
       if (!isCurrentUK || addressNotListed?.checked) {
         // Build from manual fields
@@ -3081,22 +2931,22 @@
             sub_street: subStreet?.value?.trim() || '',
             town: town?.value?.trim() || '',
             state: '',
-            country: currentCountry?.value || 'GBR'
+            country: currentCountry?.dataset.countryCode || 'GBR'
           };
         }
       } else if (!currentAddressObject && currentAddress?.value?.trim()) {
         // Parse from autocomplete text if no object stored
-        currentAddressObject = parseManualAddress(currentAddress.value, currentCountry.value);
+        currentAddressObject = parseManualAddress(currentAddress.value, currentCountry.dataset.countryCode || 'GBR');
       }
       
       // Ensure country is set even if object was from API
       if (currentAddressObject) {
-        currentAddressObject.country = currentCountry.value;
+        currentAddressObject.country = currentCountry.dataset.countryCode || 'GBR';
       }
       
       // Build previous address object
       if (recentMove?.checked) {
-        const isPreviousUK = previousCountry?.value === 'GBR';
+        const isPreviousUK = previousCountry?.dataset.countryCode === 'GBR';
         
         if (!isPreviousUK || previousAddressNotListed?.checked) {
           // Build from manual fields
@@ -3120,14 +2970,14 @@
               postcode: prevPostcode?.value?.trim() || '',
               street: prevStreet?.value?.trim() || '',
               sub_street: prevSubStreet?.value?.trim() || '',
-              town: prevTown?.value?.trim() || '',
-              state: '',
-              country: previousCountry?.value || 'GBR'
+            town: prevTown?.value?.trim() || '',
+            state: '',
+            country: previousCountry?.dataset.countryCode || 'GBR'
             };
           }
         } else if (!previousAddressObject && previousAddress?.value?.trim()) {
           // Parse from autocomplete text if no object stored
-          previousAddressObject = parseManualAddress(previousAddress.value, previousCountry?.value || 'GBR');
+          previousAddressObject = parseManualAddress(previousAddress.value, previousCountry?.dataset.countryCode || 'GBR');
         }
       }
       
@@ -3154,6 +3004,22 @@
         }
       }
       
+      // Build business data object
+      let businessDataObject = undefined;
+      if (isEntityMode) {
+        if (businessData) {
+          // Full API data (directors, officers, PSCs, registered office)
+          businessDataObject = businessData;
+        } else if (businessName?.value?.trim() || entityNumber?.value?.trim()) {
+          // Manual entry without API link - return basic info
+          businessDataObject = {
+            company_name: businessName?.value?.trim() || undefined,
+            company_number: entityNumber?.value?.trim() || undefined,
+            registration_country: registrationCountry?.dataset.jurisdictionCode || undefined
+          };
+        }
+      }
+      
       // Return data in same format as received (short keys)
       const compiled = {
         _id: formData._id || undefined,
@@ -3175,9 +3041,9 @@
         m: formattedPhone || undefined,                      // mobileNumber
         e: email?.value?.trim() || undefined,                // email
         eN: entityNumber?.value?.trim() || undefined,        // entityNumber
-        rC: registrationCountry?.value || undefined,         // registrationCountry
+        rC: registrationCountry?.dataset.jurisdictionCode || undefined,  // registrationCountry
         eT: isEntityMode ? entityType : undefined,           // entityType ('business' or 'charity')
-        bD: businessData || undefined                        // businessData (directors, officers, PSCs, registered office)
+        bD: businessDataObject                               // businessData (full API data OR basic manual entry)
       };
       
       return compiled;
@@ -3191,7 +3057,8 @@
     
     // Registration country change - clear autocomplete when switching from UK
     registrationCountry.addEventListener('change', () => {
-      const isUK = registrationCountry.value === 'GB';
+      const jurisdictionCode = registrationCountry.dataset.jurisdictionCode || 'GB';
+      const isUK = jurisdictionCode === 'GB';
       
       if (!isUK) {
         // Hide dropdowns and clear company data for non-UK
@@ -3203,53 +3070,7 @@
       }
     });
     
-    // Country change for current address - show autocomplete for UK, manual for others
-    currentCountry.addEventListener('change', () => {
-      const isUK = currentCountry.value === 'GBR';
-      
-      if (isUK) {
-        // Show autocomplete and "address not listed" checkbox
-        currentAddressAutocompleteRow.classList.remove('hidden');
-        addressNotListedRow.classList.remove('hidden');
-        
-        // Hide manual fields unless checkbox is checked
-        if (!addressNotListed.checked) {
-          manualAddressFields.classList.add('hidden');
-        }
-      } else {
-        // Hide autocomplete and checkbox, show manual fields
-        currentAddressAutocompleteRow.classList.add('hidden');
-        addressNotListedRow.classList.add('hidden');
-        manualAddressFields.classList.remove('hidden');
-        
-        // Uncheck "address not listed" since we're forcing manual
-        addressNotListed.checked = false;
-      }
-    });
-    
-    // Country change for previous address
-    previousCountry.addEventListener('change', () => {
-      const isUK = previousCountry.value === 'GBR';
-      
-      if (isUK) {
-        // Show autocomplete and "address not listed" checkbox
-        previousAddressAutocompleteRow.classList.remove('hidden');
-        previousAddressNotListedRow.classList.remove('hidden');
-        
-        // Hide manual fields unless checkbox is checked
-        if (!previousAddressNotListed.checked) {
-          manualPreviousAddressFields.classList.add('hidden');
-        }
-      } else {
-        // Hide autocomplete and checkbox, show manual fields
-        previousAddressAutocompleteRow.classList.add('hidden');
-        previousAddressNotListedRow.classList.add('hidden');
-        manualPreviousAddressFields.classList.remove('hidden');
-        
-        // Uncheck "address not listed" since we're forcing manual
-        previousAddressNotListed.checked = false;
-      }
-    });
+    // Country change handlers are now in the autocomplete initialization section below
     
     // Toggle name change fields
     recentNameChange.addEventListener('change', () => {
@@ -3572,13 +3393,13 @@
       prevPostcode.value = '';
       
       // Reset country dropdowns to UK
-      currentCountry.value = 'GBR';
-      previousCountry.value = 'GBR';
+      setCountry('currentCountry', 'GBR');
+      setCountry('previousCountry', 'GBR');
       
       // Populate entity or individual fields
       if (isEntityMode) {
         entityType = formData.eT || 'business'; // Load entity type
-        registrationCountry.value = formData.rC || 'GB';
+        setJurisdiction('registrationCountry', formData.rC || 'GB');
         businessName.value = formData.n?.b || '';
         entityNumber.value = formData.eN || '';
         businessData = formData.bD || null;
@@ -3617,13 +3438,13 @@
             const nationalNumberString = number.getNationalNumber().toString();
             const nationalNumber = nationalNumberString.replace(/^0+/, ''); // Remove leading zeros
             
-            phoneCountryCode.value = countryCode;
+            setPhoneCode('phoneCountryCode', countryCode);
             phoneNumber.value = nationalNumber;
             console.log(`📞 Formatted phone using libphonenumber: ${cleanPhone} → ${formattedPhone} (${countryCode} + ${nationalNumber})`);
           } catch (error) {
             console.warn('Error parsing formatted phone number:', error);
             // Fall back to original logic
-            phoneCountryCode.value = '+44';
+            setPhoneCode('phoneCountryCode', '+44');
             phoneNumber.value = cleanPhone;
           }
         } else {
@@ -3638,7 +3459,7 @@
             let matched = false;
             for (const code of knownCodes) {
               if (cleanPhone.startsWith(code)) {
-                phoneCountryCode.value = code;
+                setPhoneCode('phoneCountryCode', code);
                 phoneNumber.value = cleanPhone.substring(code.length);
                 console.log(`📞 Loaded international phone: ${code} + ${cleanPhone.substring(code.length)}`);
                 matched = true;
@@ -3650,7 +3471,7 @@
             if (!matched) {
               const genericMatch = cleanPhone.match(/^(\+\d{1,4})(.+)$/);
               if (genericMatch) {
-                phoneCountryCode.value = genericMatch[1];
+                setPhoneCode('phoneCountryCode', genericMatch[1]);
                 phoneNumber.value = genericMatch[2];
                 console.log(`📞 Loaded phone with unrecognized code: ${genericMatch[1]} + ${genericMatch[2]}`);
               }
@@ -3658,25 +3479,25 @@
           } 
           // Check if it's UK mobile starting with 07, 08, or 09
           else if (cleanPhone.match(/^0[7-9]\d{9}$/)) {
-            phoneCountryCode.value = '+44';
+            setPhoneCode('phoneCountryCode', '+44');
             phoneNumber.value = cleanPhone.substring(1); // Remove leading 0: 07700000000 → 7700000000
             console.log(`📞 Converted UK mobile ${cleanPhone} → +44${cleanPhone.substring(1)}`);
           }
           // Other UK format (starts with 0) - landlines or other
           else if (cleanPhone.startsWith('0')) {
-            phoneCountryCode.value = '+44';
+            setPhoneCode('phoneCountryCode', '+44');
             phoneNumber.value = cleanPhone.substring(1); // Remove leading 0
             console.log(`📞 Converted UK number ${cleanPhone} → +44${cleanPhone.substring(1)}`);
           }
           // No recognized format, store as-is with default country code
           else {
-            phoneCountryCode.value = '+44';
+            setPhoneCode('phoneCountryCode', '+44');
             phoneNumber.value = cleanPhone;
             console.log('📞 Loaded phone (no prefix):', cleanPhone, '→ assuming +44');
           }
         }
       } else {
-        phoneCountryCode.value = '+44';
+        setPhoneCode('phoneCountryCode', '+44');
         phoneNumber.value = '';
       }
       
@@ -3713,9 +3534,9 @@
       // Show/hide fields based on country in data
       if (formData.a && typeof formData.a === 'object') {
         currentAddressObject = formData.a;
-        currentCountry.value = formData.a?.country || 'GBR';
+        setCountry('currentCountry', formData.a?.country || 'GBR');
         
-        const isCurrentUK = currentCountry.value === 'GBR';
+        const isCurrentUK = currentCountry.dataset.countryCode === 'GBR';
         
         if (!isCurrentUK) {
           // Non-UK address - show manual fields, hide autocomplete and checkbox
@@ -3745,7 +3566,7 @@
         }
       } else {
         // No address data - show UK autocomplete by default
-        currentCountry.value = 'GBR';
+        setCountry('currentCountry', 'GBR');
         currentAddressAutocompleteRow.classList.remove('hidden');
         addressNotListedRow.classList.remove('hidden');
         manualAddressFields.classList.add('hidden');
@@ -3761,9 +3582,9 @@
         
         if (formData.pA && typeof formData.pA === 'object') {
           previousAddressObject = formData.pA;
-          previousCountry.value = formData.pA?.country || 'GBR';
+          setCountry('previousCountry', formData.pA?.country || 'GBR');
           
-          const isPreviousUK = previousCountry.value === 'GBR';
+          const isPreviousUK = previousCountry.dataset.countryCode === 'GBR';
           
           if (!isPreviousUK) {
             // Non-UK address - show manual fields, hide autocomplete
@@ -3788,7 +3609,7 @@
           }
         } else {
           // Recent move checked but no address data - show UK autocomplete by default
-          previousCountry.value = 'GBR';
+          setCountry('previousCountry', 'GBR');
           previousAddressAutocompleteRow.classList.remove('hidden');
           previousAddressNotListedRow.classList.remove('hidden');
           manualPreviousAddressFields.classList.add('hidden');
@@ -3811,7 +3632,7 @@
         previousAddressObject = null;
         
         // Clear and reset all previous address fields
-        previousCountry.value = 'GBR';
+        setCountry('previousCountry', 'GBR');
         previousAddress.value = '';
         previousAddressNotListed.checked = false;
         manualPreviousAddressFields.classList.add('hidden');
@@ -3906,6 +3727,93 @@
   <!-- jsPDF library for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  
+  <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
+  <script src="js/jurisdiction-autocomplete.js"></script>
+  <script>
+    // Initialize all autocomplete fields immediately (DOM already loaded since scripts are at bottom)
+    console.log('🔧 Initializing autocomplete fields...');
+    initializeCountryAutocomplete('currentCountry', 'currentCountryDropdown');
+    initializeCountryAutocomplete('previousCountry', 'previousCountryDropdown');
+    initializePhoneCodeAutocomplete('phoneCountryCode', 'phoneCountryCodeDropdown');
+    initializeJurisdictionAutocomplete('registrationCountry', 'registrationCountryDropdown');
+    console.log('✅ Autocomplete initialization calls complete');
+    
+    // Patch elements to have .value getter/setter that work with data attributes
+    const currentCountryEl = document.getElementById('currentCountry');
+    const previousCountryEl = document.getElementById('previousCountry');
+    const phoneCountryCodeEl = document.getElementById('phoneCountryCode');
+    const registrationCountryEl = document.getElementById('registrationCountry');
+    
+    // DON'T patch .value - let autocomplete functions work directly
+    // The autocomplete functions already set input.value and dataset attributes correctly
+    
+    // Update country change handlers to use data-country-code attribute
+    const currentCountryInput = document.getElementById('currentCountry');
+    const previousCountryInput = document.getElementById('previousCountry');
+    
+    if (currentCountryInput) {
+      currentCountryInput.addEventListener('change', () => {
+        const countryCode = currentCountryInput.dataset.countryCode || 'GBR';
+        const isUK = countryCode === 'GBR';
+        
+        const currentAddressAutocompleteRow = document.getElementById('currentAddressAutocompleteRow');
+        const addressNotListedRow = document.getElementById('addressNotListedRow');
+        const manualAddressFields = document.getElementById('manualAddressFields');
+        const addressNotListed = document.getElementById('addressNotListed');
+        
+        if (isUK) {
+          // Show autocomplete and "address not listed" checkbox
+          if (currentAddressAutocompleteRow) currentAddressAutocompleteRow.classList.remove('hidden');
+          if (addressNotListedRow) addressNotListedRow.classList.remove('hidden');
+          
+          // Hide manual fields unless checkbox is checked
+          if (addressNotListed && !addressNotListed.checked && manualAddressFields) {
+            manualAddressFields.classList.add('hidden');
+          }
+        } else {
+          // Hide autocomplete and checkbox, show manual fields
+          if (currentAddressAutocompleteRow) currentAddressAutocompleteRow.classList.add('hidden');
+          if (addressNotListedRow) addressNotListedRow.classList.add('hidden');
+          if (manualAddressFields) manualAddressFields.classList.remove('hidden');
+          
+          // Uncheck "address not listed" since we're forcing manual
+          if (addressNotListed) addressNotListed.checked = false;
+        }
+      });
+    }
+    
+    if (previousCountryInput) {
+      previousCountryInput.addEventListener('change', () => {
+        const countryCode = previousCountryInput.dataset.countryCode || 'GBR';
+        const isUK = countryCode === 'GBR';
+        
+        const previousAddressAutocompleteRow = document.getElementById('previousAddressAutocompleteRow');
+        const previousAddressNotListedRow = document.getElementById('previousAddressNotListedRow');
+        const manualPreviousAddressFields = document.getElementById('manualPreviousAddressFields');
+        const previousAddressNotListed = document.getElementById('previousAddressNotListed');
+        
+        if (isUK) {
+          // Show autocomplete and "address not listed" checkbox
+          if (previousAddressAutocompleteRow) previousAddressAutocompleteRow.classList.remove('hidden');
+          if (previousAddressNotListedRow) previousAddressNotListedRow.classList.remove('hidden');
+          
+          // Hide manual fields unless checkbox is checked
+          if (previousAddressNotListed && !previousAddressNotListed.checked && manualPreviousAddressFields) {
+            manualPreviousAddressFields.classList.add('hidden');
+          }
+        } else {
+          // Hide autocomplete and checkbox, show manual fields
+          if (previousAddressAutocompleteRow) previousAddressAutocompleteRow.classList.add('hidden');
+          if (previousAddressNotListedRow) previousAddressNotListedRow.classList.add('hidden');
+          if (manualPreviousAddressFields) manualPreviousAddressFields.classList.remove('hidden');
+          
+          // Uncheck "address not listed" since we're forcing manual
+          if (previousAddressNotListed) previousAddressNotListed.checked = false;
+        }
+      });
+    }
+  </script>
 </body>
 </html>
 

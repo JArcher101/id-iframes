@@ -786,7 +786,7 @@ function handleClientData(message) {
       const phoneCountryCode = document.getElementById('phoneCountryCode');
       const phoneNumber = document.getElementById('phoneNumber');
       
-      if (phoneCountryCode) phoneCountryCode.value = formattedPhone.countryCode;
+      if (phoneCountryCode) setPhoneCode('phoneCountryCode', formattedPhone.countryCode);
       if (phoneNumber) phoneNumber.value = formattedPhone.nationalNumber;
       
       console.log(`📞 Formatted phone: ${mobileStr} → ${formattedPhone.countryCode} ${formattedPhone.nationalNumber}`);
@@ -812,7 +812,7 @@ function handleClientData(message) {
     if (currentAddress && currentAddressObject) {
       // Set country
       if (currentCountry && currentAddressObject.country) {
-        currentCountry.value = currentAddressObject.country;
+        setCountry('currentCountry', currentAddressObject.country);
       }
       
       // Check if address object is properly formatted
@@ -858,7 +858,7 @@ function handleClientData(message) {
       if (previousAddress && previousAddressObject) {
         // Set country
         if (previousCountry && previousAddressObject.country) {
-          previousCountry.value = previousAddressObject.country;
+          setCountry('previousCountry', previousAddressObject.country);
         }
         
         // Check if address object is properly formatted
@@ -1635,7 +1635,7 @@ function setupBusinessCharityHandlers() {
       updateCompanyButtons();
       
       // Hide dropdown if too short or not UK
-      if (searchTerm.length < 2 || (registrationCountry && registrationCountry.value !== 'GB')) {
+      if (searchTerm.length < 2 || (registrationCountry && registrationCountry.dataset.jurisdictionCode !== 'GB')) {
         businessNameDropdown.classList.add('hidden');
         businessNameDropdown.innerHTML = '';
         return;
@@ -1676,7 +1676,7 @@ function setupBusinessCharityHandlers() {
       updateCompanyButtons();
       
       // Hide dropdown if too short or not UK
-      if (searchTerm.length < 2 || (registrationCountry && registrationCountry.value !== 'GB')) {
+      if (searchTerm.length < 2 || (registrationCountry && registrationCountry.dataset.jurisdictionCode !== 'GB')) {
         entityNumberDropdown.classList.add('hidden');
         entityNumberDropdown.innerHTML = '';
         return;
@@ -2039,7 +2039,7 @@ Handle full address data from parent (address-data message)
 function handleAddressData(addressData, field) {
   const currentCountry = document.getElementById('currentCountry');
   const previousCountry = document.getElementById('previousCountry');
-  const country = field === 'current' ? (currentCountry?.value || 'GBR') : (previousCountry?.value || 'GBR');
+  const country = field === 'current' ? (currentCountry?.dataset.countryCode || 'GBR') : (previousCountry?.dataset.countryCode || 'GBR');
   const thirdfortAddress = formatToThirdfort(addressData, country);
   
   if (field === 'current') {
@@ -2330,7 +2330,7 @@ function autoPopulateRegisteredAddress() {
       
       // Set UK as country if not set
       if (currentCountry) {
-        currentCountry.value = 'GBR';
+        setCountry('currentCountry', 'GBR');
       }
       
       // Populate the autocomplete field
@@ -3846,7 +3846,8 @@ function buildUpdatedClientData() {
   }
   
   // Phone number (m) - Format using libphonenumber
-  const phoneCode = document.getElementById('phoneCountryCode')?.value || '+44';
+  const phoneCodeElement = document.getElementById('phoneCountryCode');
+  const phoneCode = phoneCodeElement?.dataset.phoneCode || '+44';
   const phoneNumber = document.getElementById('phoneNumber')?.value || '';
   if (phoneNumber) {
     // Combine country code and number

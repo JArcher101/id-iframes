@@ -1302,6 +1302,51 @@
       color: #999;
       font-size: 0.85rem;
     }
+    
+    /* Country/Jurisdiction Autocomplete Dropdown Items */
+    .dropdown-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background-color 0.2s;
+    }
+    
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+    
+    .dropdown-item:hover {
+      background: #f8f8f8;
+    }
+    
+    .jurisdiction-name,
+    .phone-display {
+      font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.9rem;
+      color: #333;
+    }
+    
+    .jurisdiction-code {
+      font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: rgb(0, 60, 113);
+      background: #e8f4f8;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+    
+    .dropdown-item-empty {
+      padding: 12px;
+      text-align: center;
+      color: #999;
+      font-size: 0.85rem;
+      font-style: italic;
+      font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
   </style>
 </head>
 <body>
@@ -1520,90 +1565,10 @@
       
       <div class="row">
         <label for="currentCountry" class="required">Country</label>
-        <select id="currentCountry" name="currentCountry" required>
-          <option value="GBR">United Kingdom</option>
-          <option value="USA">United States</option>
-          <option value="CAN">Canada</option>
-          <option value="AUS">Australia</option>
-          <option value="NZL">New Zealand</option>
-          <option value="IRL">Ireland</option>
-          <option value="FRA">France</option>
-          <option value="DEU">Germany</option>
-          <option value="ESP">Spain</option>
-          <option value="ITA">Italy</option>
-          <option value="NLD">Netherlands</option>
-          <option value="BEL">Belgium</option>
-          <option value="CHE">Switzerland</option>
-          <option value="SWE">Sweden</option>
-          <option value="NOR">Norway</option>
-          <option value="DNK">Denmark</option>
-          <option value="FIN">Finland</option>
-          <option value="POL">Poland</option>
-          <option value="PRT">Portugal</option>
-          <option value="GRC">Greece</option>
-          <option value="AUT">Austria</option>
-          <option value="CZE">Czech Republic</option>
-          <option value="HUN">Hungary</option>
-          <option value="ROU">Romania</option>
-          <option value="BGR">Bulgaria</option>
-          <option value="HRV">Croatia</option>
-          <option value="SVK">Slovakia</option>
-          <option value="SVN">Slovenia</option>
-          <option value="LTU">Lithuania</option>
-          <option value="LVA">Latvia</option>
-          <option value="EST">Estonia</option>
-          <option value="CYP">Cyprus</option>
-          <option value="MLT">Malta</option>
-          <option value="LUX">Luxembourg</option>
-          <option value="ISL">Iceland</option>
-          <option value="ZAF">South Africa</option>
-          <option value="IND">India</option>
-          <option value="CHN">China</option>
-          <option value="JPN">Japan</option>
-          <option value="KOR">South Korea</option>
-          <option value="SGP">Singapore</option>
-          <option value="HKG">Hong Kong</option>
-          <option value="MYS">Malaysia</option>
-          <option value="THA">Thailand</option>
-          <option value="IDN">Indonesia</option>
-          <option value="PHL">Philippines</option>
-          <option value="VNM">Vietnam</option>
-          <option value="PAK">Pakistan</option>
-          <option value="BGD">Bangladesh</option>
-          <option value="LKA">Sri Lanka</option>
-          <option value="NPL">Nepal</option>
-          <option value="ARE">United Arab Emirates</option>
-          <option value="SAU">Saudi Arabia</option>
-          <option value="QAT">Qatar</option>
-          <option value="KWT">Kuwait</option>
-          <option value="BHR">Bahrain</option>
-          <option value="OMN">Oman</option>
-          <option value="EGY">Egypt</option>
-          <option value="NGA">Nigeria</option>
-          <option value="KEN">Kenya</option>
-          <option value="GHA">Ghana</option>
-          <option value="TZA">Tanzania</option>
-          <option value="UGA">Uganda</option>
-          <option value="ZWE">Zimbabwe</option>
-          <option value="BRA">Brazil</option>
-          <option value="MEX">Mexico</option>
-          <option value="ARG">Argentina</option>
-          <option value="CHL">Chile</option>
-          <option value="COL">Colombia</option>
-          <option value="PER">Peru</option>
-          <option value="VEN">Venezuela</option>
-          <option value="TUR">Turkey</option>
-          <option value="RUS">Russia</option>
-          <option value="UKR">Ukraine</option>
-          <option value="ISR">Israel</option>
-          <option value="JOR">Jordan</option>
-          <option value="LBN">Lebanon</option>
-          <option value="SYR">Syria</option>
-          <option value="IRQ">Iraq</option>
-          <option value="IRN">Iran</option>
-          <option value="AFG">Afghanistan</option>
-          <option value="OTHER">Other</option>
-        </select>
+        <div class="address-autocomplete-container">
+          <input type="text" id="currentCountry" name="currentCountry" autocomplete="off" placeholder="Search country..." value="United Kingdom" data-country-code="GBR" class="country-dropdown" />
+          <div id="currentCountryDropdown" class="address-dropdown hidden"></div>
+        </div>
       </div>
       
       <div class="row" id="currentAddressAutocompleteRow">
@@ -1673,90 +1638,10 @@
         
         <div class="row">
           <label for="previousCountry" class="required">Country</label>
-          <select id="previousCountry" name="previousCountry" required>
-            <option value="GBR">United Kingdom</option>
-            <option value="USA">United States</option>
-            <option value="CAN">Canada</option>
-            <option value="AUS">Australia</option>
-            <option value="NZL">New Zealand</option>
-            <option value="IRL">Ireland</option>
-            <option value="FRA">France</option>
-            <option value="DEU">Germany</option>
-            <option value="ESP">Spain</option>
-            <option value="ITA">Italy</option>
-            <option value="NLD">Netherlands</option>
-            <option value="BEL">Belgium</option>
-            <option value="CHE">Switzerland</option>
-            <option value="SWE">Sweden</option>
-            <option value="NOR">Norway</option>
-            <option value="DNK">Denmark</option>
-            <option value="FIN">Finland</option>
-            <option value="POL">Poland</option>
-            <option value="PRT">Portugal</option>
-            <option value="GRC">Greece</option>
-            <option value="AUT">Austria</option>
-            <option value="CZE">Czech Republic</option>
-            <option value="HUN">Hungary</option>
-            <option value="ROU">Romania</option>
-            <option value="BGR">Bulgaria</option>
-            <option value="HRV">Croatia</option>
-            <option value="SVK">Slovakia</option>
-            <option value="SVN">Slovenia</option>
-            <option value="LTU">Lithuania</option>
-            <option value="LVA">Latvia</option>
-            <option value="EST">Estonia</option>
-            <option value="CYP">Cyprus</option>
-            <option value="MLT">Malta</option>
-            <option value="LUX">Luxembourg</option>
-            <option value="ISL">Iceland</option>
-            <option value="ZAF">South Africa</option>
-            <option value="IND">India</option>
-            <option value="CHN">China</option>
-            <option value="JPN">Japan</option>
-            <option value="KOR">South Korea</option>
-            <option value="SGP">Singapore</option>
-            <option value="HKG">Hong Kong</option>
-            <option value="MYS">Malaysia</option>
-            <option value="THA">Thailand</option>
-            <option value="IDN">Indonesia</option>
-            <option value="PHL">Philippines</option>
-            <option value="VNM">Vietnam</option>
-            <option value="PAK">Pakistan</option>
-            <option value="BGD">Bangladesh</option>
-            <option value="LKA">Sri Lanka</option>
-            <option value="NPL">Nepal</option>
-            <option value="ARE">United Arab Emirates</option>
-            <option value="SAU">Saudi Arabia</option>
-            <option value="QAT">Qatar</option>
-            <option value="KWT">Kuwait</option>
-            <option value="BHR">Bahrain</option>
-            <option value="OMN">Oman</option>
-            <option value="EGY">Egypt</option>
-            <option value="NGA">Nigeria</option>
-            <option value="KEN">Kenya</option>
-            <option value="GHA">Ghana</option>
-            <option value="TZA">Tanzania</option>
-            <option value="UGA">Uganda</option>
-            <option value="ZWE">Zimbabwe</option>
-            <option value="BRA">Brazil</option>
-            <option value="MEX">Mexico</option>
-            <option value="ARG">Argentina</option>
-            <option value="CHL">Chile</option>
-            <option value="COL">Colombia</option>
-            <option value="PER">Peru</option>
-            <option value="VEN">Venezuela</option>
-            <option value="TUR">Turkey</option>
-            <option value="RUS">Russia</option>
-            <option value="UKR">Ukraine</option>
-            <option value="ISR">Israel</option>
-            <option value="JOR">Jordan</option>
-            <option value="LBN">Lebanon</option>
-            <option value="SYR">Syria</option>
-            <option value="IRQ">Iraq</option>
-            <option value="IRN">Iran</option>
-            <option value="AFG">Afghanistan</option>
-            <option value="OTHER">Other</option>
-          </select>
+          <div class="address-autocomplete-container">
+            <input type="text" id="previousCountry" name="previousCountry" autocomplete="off" placeholder="Search country..." value="United Kingdom" data-country-code="GBR" class="country-dropdown" />
+            <div id="previousCountryDropdown" class="address-dropdown hidden"></div>
+          </div>
         </div>
         
         <div class="row" id="previousAddressAutocompleteRow">
@@ -2090,6 +1975,9 @@
     </div>
   </div>
 
+  <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
+  <script src="js/jurisdiction-autocomplete.js"></script>
+  
   <script>
     /*
     =====================================================================
@@ -2862,7 +2750,11 @@
     - Stores in currentAddressObject or previousAddressObject
     */
     function handleAddressData(addressData, field) {
-      const thirdfortAddress = formatToThirdfort(addressData);
+      const country = field === 'current' 
+        ? (currentCountry?.dataset.countryCode || 'GBR') 
+        : (previousCountry?.dataset.countryCode || 'GBR');
+      
+      const thirdfortAddress = formatToThirdfort(addressData, country);
       
       if (field === 'current') {
         currentAddressObject = thirdfortAddress;
@@ -3381,9 +3273,32 @@
 
     // ===== SECTION 3: ADDRESS HISTORY =====
     
+    // Helper function to set country by code or name
+    function setCountry(elementId, value) {
+      const el = document.getElementById(elementId);
+      if (!el || !ADDRESS_COUNTRIES) return;
+      
+      // Find country by code or name
+      const byCode = ADDRESS_COUNTRIES.find(c => c.code === value);
+      const byName = ADDRESS_COUNTRIES.find(c => c.name === value);
+      
+      if (byCode) {
+        el.value = byCode.name;
+        el.dataset.countryCode = byCode.code;
+      } else if (byName) {
+        el.value = byName.name;
+        el.dataset.countryCode = byName.code;
+      }
+    }
+    
     // Handle country change for current address
     currentCountry.addEventListener('change', () => {
-      const isUK = currentCountry.value === 'GBR';
+      const isUK = currentCountry.dataset.countryCode === 'GBR';
+      
+      // Update country in address object if it exists
+      if (currentAddressObject) {
+        currentAddressObject.country = currentCountry.dataset.countryCode || 'GBR';
+      }
       
       if (isUK) {
         // UK address - show autocomplete row, hide manual checkbox initially
@@ -3450,7 +3365,12 @@
     
     // Handle country change for previous address
     previousCountry.addEventListener('change', () => {
-      const isUK = previousCountry.value === 'GBR';
+      const isUK = previousCountry.dataset.countryCode === 'GBR';
+      
+      // Update country in address object if it exists
+      if (previousAddressObject) {
+        previousAddressObject.country = previousCountry.dataset.countryCode || 'GBR';
+      }
       
       if (isUK) {
         // UK address - show autocomplete row
@@ -3541,7 +3461,7 @@
     function validateSection3() {
       const errors = [];
       
-      const isCurrentUK = currentCountry.value === 'GBR';
+      const isCurrentUK = currentCountry.dataset.countryCode === 'GBR';
       
       // Validate current address
       if (!isCurrentUK || addressNotListed.checked) {
@@ -3565,7 +3485,7 @@
       
       // Validate previous address if recent move is checked
       if (recentMove.checked) {
-        const isPreviousUK = previousCountry.value === 'GBR';
+        const isPreviousUK = previousCountry.dataset.countryCode === 'GBR';
         
         if (!isPreviousUK || previousAddressNotListed.checked) {
           // Manual entry mode (non-UK or UK manual)
@@ -3874,7 +3794,7 @@
     // Compile all form data into structured object
     function compileFormData() {
       // Build current address object
-      const isCurrentUK = currentCountry.value === 'GBR';
+      const isCurrentUK = currentCountry.dataset.countryCode === 'GBR';
       
       if (!isCurrentUK || addressNotListed.checked) {
         // Build from manual fields
@@ -3900,17 +3820,17 @@
             sub_street: subStreet.value.trim(),
             town: town.value.trim(),
             state: '',
-            country: currentCountry.value || 'GBR'
+            country: currentCountry.dataset.countryCode || 'GBR'
           };
         }
       } else if (!currentAddressObject && currentAddress.value.trim()) {
         // Parse from autocomplete text if no object stored
-        currentAddressObject = parseManualAddress(currentAddress.value, currentCountry.value);
+        currentAddressObject = parseManualAddress(currentAddress.value, currentCountry.dataset.countryCode || 'GBR');
       }
       
       // Build previous address object
       if (recentMove.checked) {
-        const isPreviousUK = previousCountry.value === 'GBR';
+        const isPreviousUK = previousCountry.dataset.countryCode === 'GBR';
         
         if (!isPreviousUK || previousAddressNotListed.checked) {
           // Build from manual fields
@@ -3936,12 +3856,12 @@
               sub_street: prevSubStreet.value.trim(),
               town: prevTown.value.trim(),
               state: '',
-              country: previousCountry.value || 'GBR'
+              country: previousCountry.dataset.countryCode || 'GBR'
             };
           }
         } else if (!previousAddressObject && previousAddress.value.trim()) {
           // Parse from autocomplete text if no object stored
-          previousAddressObject = parseManualAddress(previousAddress.value, previousCountry.value);
+          previousAddressObject = parseManualAddress(previousAddress.value, previousCountry.dataset.countryCode || 'GBR');
         }
       }
       
@@ -4381,8 +4301,8 @@
       relationDropdown.value = '';
       
       // Reset country dropdowns to UK
-      currentCountry.value = 'GBR';
-      previousCountry.value = 'GBR';
+      setCountry('currentCountry', 'GBR');
+      setCountry('previousCountry', 'GBR');
       
       // Reset address not listed checkboxes and manual fields
       addressNotListed.checked = false;
@@ -4948,9 +4868,9 @@
       if(formData.address && typeof formData.address === 'object') {
         // New format: address is already an object
         currentAddressObject = formData.address;
-        currentCountry.value = formData.address.country || 'GBR';
+        setCountry('currentCountry', formData.address.country || 'GBR');
         
-        const isCurrentUK = currentCountry.value === 'GBR';
+        const isCurrentUK = currentCountry.dataset.countryCode === 'GBR';
         
         // Set up UI based on country
         if (!isCurrentUK) {
@@ -4972,14 +4892,14 @@
         }
       } else if(formData.address && typeof formData.address === 'string') {
         // Legacy format: address is plain text
-        currentCountry.value = 'GBR';
+        setCountry('currentCountry', 'GBR');
         currentAddressAutocompleteRow.classList.remove('hidden');
         addressNotListed.parentElement.classList.remove('hidden');
         currentAddress.value = formData.address;
         currentAddressObject = null; // Will be parsed from text on save
       } else {
         // No address data - default to UK
-        currentCountry.value = 'GBR';
+        setCountry('currentCountry', 'GBR');
         currentAddressAutocompleteRow.classList.remove('hidden');
         addressNotListed.parentElement.classList.remove('hidden');
       }
@@ -4992,9 +4912,9 @@
         if(formData.previousAddress && typeof formData.previousAddress === 'object') {
           // New format: previousAddress is already an object
           previousAddressObject = formData.previousAddress;
-          previousCountry.value = formData.previousAddress.country || 'GBR';
+          setCountry('previousCountry', formData.previousAddress.country || 'GBR');
           
-          const isPreviousUK = previousCountry.value === 'GBR';
+          const isPreviousUK = previousCountry.dataset.countryCode === 'GBR';
           
           // Set up UI based on country
           if (!isPreviousUK) {
@@ -5016,14 +4936,14 @@
           }
         } else if(formData.previousAddress && typeof formData.previousAddress === 'string') {
           // Legacy format: previousAddress is plain text
-          previousCountry.value = 'GBR';
+          setCountry('previousCountry', 'GBR');
           previousAddressAutocompleteRow.classList.remove('hidden');
           previousAddressNotListed.parentElement.classList.remove('hidden');
           previousAddress.value = formData.previousAddress;
           previousAddressObject = null; // Will be parsed from text on save
         } else {
           // No previous address data - default to UK
-          previousCountry.value = 'GBR';
+          setCountry('previousCountry', 'GBR');
           previousAddressAutocompleteRow.classList.remove('hidden');
           previousAddressNotListed.parentElement.classList.remove('hidden');
         }
@@ -5099,6 +5019,13 @@
     // Setup autocomplete for both address fields
     setupAddressAutocomplete(currentAddress, currentAddressDropdown, 'current', true);
     setupAddressAutocomplete(previousAddress, previousAddressDropdown, 'previous', false);
+    
+    // ===== INITIALIZE COUNTRY AUTOCOMPLETE =====
+    // Initialize country autocomplete fields immediately
+    console.log('🔧 Initializing country autocomplete fields...');
+    initializeCountryAutocomplete('currentCountry', 'currentCountryDropdown');
+    initializeCountryAutocomplete('previousCountry', 'previousCountryDropdown');
+    console.log('✅ Country autocomplete initialization complete');
   </script>
   </div>
 </body>

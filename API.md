@@ -4,19 +4,519 @@ This document describes the communication interface for each iframe component. A
 
 ## Table of Contents
 
-1. [Audit Log Viewer](#audit-log-viewer)
-2. [Wallboard Dashboard](#wallboard-dashboard)
-3. [Single Image Viewer](#single-image-viewer)
-4. [Image Viewer](#image-viewer)
-5. [Image Uploader](#image-uploader)
-6. [Document Viewer](#document-viewer)
-7. [Message iframe](#message-iframe)
-8. [Report Uploader](#report-uploader)
-9. [Cashiers Log](#cashiers-log)
-10. [Chart Viewer](#chart-viewer)
-11. [Request Form](#request-form) ⭐ NEW
-12. [Client Details Form](#client-details-form)
-13. [General Integration Guide](#general-integration-guide)
+1. [Thirdfort Check Manager](#thirdfort-check-manager) ⭐ NEW
+2. [Audit Log Viewer](#audit-log-viewer)
+3. [Wallboard Dashboard](#wallboard-dashboard)
+4. [Single Image Viewer](#single-image-viewer)
+5. [Image Viewer](#image-viewer)
+6. [Image Uploader](#image-uploader)
+7. [Document Viewer](#document-viewer)
+8. [Message iframe](#message-iframe)
+9. [Report Uploader](#report-uploader)
+10. [Cashiers Log](#cashiers-log)
+11. [Chart Viewer](#chart-viewer)
+12. [Request Form](#request-form)
+13. [Client Details Form](#client-details-form)
+14. [General Integration Guide](#general-integration-guide)
+
+---
+
+## Thirdfort Check Manager
+
+**File:** `thirdfort-check.html`
+
+### Description
+Comprehensive check creation and management interface for Thirdfort API integration. Supports four check types (IDV, Lite Screen, Electronic ID, KYB) with intelligent routing, dynamic task configuration, and full validation. Features searchable autocomplete dropdowns, Google libphonenumber validation, and address lookup integration.
+
+### Architecture
+- **Core:** `js/thirdfort-check-core.js` (~3,000 lines) - State management, UI control, validation, request construction
+- **Styles:** `css/thirdfort-check.css` - Custom components, responsive design, autocomplete styling
+- **Dependencies:** `js/jurisdiction-autocomplete.js`, Google libphonenumber CDN
+
+### Check Types
+
+#### 1. **IDV (Identity Verification)**
+- Requires selection of ID document type
+- Front/Back image selection from existing Photo IDs
+- Exact document type matching (Passport, Driving Licence, National ID Card, etc.)
+- Images without side tags show in both front/back columns
+- Auto-selects images when exact matches found
+- Opens images in popup window using `single-image-viewer.html`
+
+#### 2. **Lite Screen**
+- Basic identity verification
+- Shows PEP Monitoring checkbox when Lite Screen = YES
+- Auto-checks PEP monitoring first time shown (preserves user choice thereafter)
+- International Address Verification for non-GBR addresses
+- Can be combined with IDV check
+
+#### 3. **Electronic ID**
+- **Standard ID**: Includes KYC (Know Your Client) + IDV
+- **Additional Tasks Only**: eSoF/eSoW tasks without full ID check
+- Matter category selection: Conveyancing, Property Other, Private Client, Other
+- Sub-categories for Conveyancing and Property Other
+- Dynamic task configuration:
+  - **Proof of Address**: Always auto-selected
+  - **Proof of Ownership**: Sellers, Landlords, specific scenarios
+  - **eSoF Questionnaire**: Purchase scenarios (unless Form E without eSoF tag)
+  - **eSoW Bank Linking**: Purchase scenarios (unless Form E without eSoF tag)
+  - **PEP Monitoring**: Standard ID check type only
+  - **International Address Verification**: Non-GBR addresses
+- Electronic ID reference auto-populated from matter description
+
+#### 4. **KYB (Know Your Business)**
+- Business entity verification
+- Requires business details and entity linking
+
+### Parent → iframe (Incoming Messages)
+
+#### `client-data`
+Loads complete client data with ID images, matter details, and tags.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'client-data',
+  data: {
+    _id: 'bd8bee6a-465b-4d43-9a8a-396f9081b649',
+    
+    // Client Display (cD)
+    cD: {
+      fe: 'BA',           // Fee earner initials
+      n: 'Mr J Archer',   // Full name
+      cN: 50,             // Client number
+      mN: '52'            // Matter number
+    },
+    
+    // Matter Details
+    wT: 'Purchase of',         // Work type
+    r: 'Our Client',           // Relation
+    mD: '21 Green Lane',       // Matter description
+    
+    // Tags (determines auto-selection)
+    tags: ['formE', 'eSoF Requested'],  // Optional: triggers Electronic ID auto-select
+    
+    // Icons (i)
+    i: {
+      a: true,   // hasAddressID
+      p: true,   // hasPhotoID
+      l: false   // likenessConfirmed
+    },
+    
+    // Client Information (cI)
+    cI: {
+      n: {
+        t: 'Mr',              // title
+        f: 'Jacob',           // firstName
+        m: 'Robert',          // middleNames
+        l: 'Archer-Moran'     // lastName
+      },
+      b: '11-01-2001',        // birthdate (DD-MM-YYYY)
+      m: '+447506430094',     // mobile (E.164 format)
+      e: 'jacob@example.com', // email
+      a: {  // current address (Thirdfort format)
+        building_number: '94',
+        street: 'Southgate Street',
+        town: 'Redruth',
+        postcode: 'TR15 2ND',
+        country: 'GBR'
+      }
+    },
+    
+    // ID Images (idI) - Existing Photo IDs for IDV selection
+    idI: [
+      {
+        type: 'PhotoID',
+        document: 'Passport',
+        side: 'Single',  // or 'Front', 'Back'
+        s3Key: 'protected/passport-key.jpg',
+        liveUrl: 'https://s3.amazonaws.com/...',
+        date: '12/20/2023, 10:30:45',
+        uploader: 'staff@example.com'
+      }
+    ],
+    
+    // Latest Message (optional)
+    latestMessage: {
+      message: 'Please proceed with Electronic ID check',
+      user: 'staff@example.com',
+      time: '10/14/2025, 2:30:00 PM',
+      type: 'Staff'
+    }
+  }
+}, '*');
+```
+
+#### `address-results`
+Autocomplete suggestions from getaddress.io (for Lite Screen/Electronic ID).
+
+```javascript
+window.frames[0].postMessage({
+  type: 'address-results',
+  field: 'lite',  // or 'electronic'
+  suggestions: [
+    { id: 'abc123', address: '94 Southgate Street, Redruth, TR15 2ND' }
+  ]
+}, '*');
+```
+
+#### `address-data`
+Full address object after selection.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'address-data',
+  field: 'lite',  // or 'electronic'
+  address: {
+    building_number: '94',
+    street: 'Southgate Street',
+    town: 'Redruth',
+    postcode: 'TR15 2ND',
+    country: 'GBR'
+  }
+}, '*');
+```
+
+### iframe → Parent (Outgoing Messages)
+
+#### `request-thirdfort-check`
+Submits complete check request with validation. Returns 1-3 request objects for different Thirdfort API endpoints.
+
+```javascript
+{
+  type: 'request-thirdfort-check',
+  checkData: {
+    // Updated client data in shorthand format
+    _id: 'bd8bee6a-465b-4d43-9a8a-396f9081b649',
+    cD: {cN: 50, mN: '52', fe: 'BA', n: 'Mr J Archer'},
+    cI: {
+      n: {t: 'Mr', f: 'Jacob', m: 'Robert', l: 'Archer-Moran'},
+      b: '11-01-2001',
+      m: '+447506430094',  // Validated with libphonenumber
+      e: 'jacob@example.com',
+      a: {...}  // Thirdfort formatted address
+    },
+    
+    // Check Configuration
+    checkType: 'electronic-id',  // 'idv', 'lite', 'electronic-id', 'kyb', 'idv-lite'
+    
+    // Electronic ID specific
+    matterCategory: 'conveyancing',  // 'conveyancing', 'property-other', 'private-client', 'other'
+    matterSubCategory: 'purchaser',  // Sub-category if applicable
+    electronicIdType: 'standard',    // 'standard' or 'additional-only'
+    
+    // IDV specific (if checkType includes IDV)
+    idvDocuments: [
+      {
+        side: 'front',  // or 'back'
+        s3Key: 'protected/passport-front-key.jpg'
+      }
+    ]
+  },
+  
+  // API Request Objects (1-3 objects for different endpoints)
+  apiRequests: [
+    {
+      endpoint: 'electronic-id',  // or 'lite-screen', 'idv-check', 'idv-documents', 'kyb'
+      requestData: {
+        // Thirdfort API compliant object
+        actor: {
+          full_name: 'Jacob Robert Archer-Moran',
+          phone: '+447506430094',  // Formatted by libphonenumber
+          email: 'jacob@example.com',
+          address: {...},
+          country: 'GBR'
+        },
+        check_reference: '21 Green Lane',
+        // ... other Thirdfort API fields
+      }
+    }
+  ]
+}
+```
+
+#### `address-search`
+Requests address autocomplete (Lite Screen or Electronic ID fields).
+
+```javascript
+{
+  type: 'address-search',
+  searchTerm: 'TR15 2ND',
+  field: 'lite'  // or 'electronic'
+}
+```
+
+#### `address-lookup`
+Requests full address by ID.
+
+```javascript
+{
+  type: 'address-lookup',
+  addressId: 'abc123xyz',
+  field: 'lite'  // or 'electronic'
+}
+```
+
+### Intelligent Auto-Selection
+
+The form automatically selects check types and configurations based on client data:
+
+#### Check Type Auto-Selection
+- **Form E tag**: Auto-selects Electronic ID (Standard)
+- **eSoF Requested tag (no Form E)**: Auto-selects Electronic ID (Additional Tasks Only)
+- **Photo IDs available**: Auto-selects IDV & Lite Screen combined check
+
+#### Matter Category Auto-Selection
+Based on `wT` (work type) and `r` (relation):
+- **Conveyancing**: Sale, Purchase, Transfer, Lease
+- **Property Other**: Equity Release, Re-mortgaging, Auction, 1st Registration, Assent
+- **Private Client**: Wills, LPA, Probate, Estates, Deeds & Declarations
+- **Relation Override**: Tenant, Occupier, Leaseholder, Freeholder, Landlord → forces Property Other
+
+#### Sub-Category Auto-Selection
+- **Conveyancing**: Purchaser, Gifter, Seller, Other
+- **Property Other**: Purchaser, Seller, Landlord, Tenant/Occupier
+
+#### Task Auto-Selection
+- **Proof of Address**: Always checked
+- **Proof of Ownership**: Sellers, Landlords (specific scenarios)
+- **eSoF Questionnaire**: Purchasers, Gifters (unless Form E without eSoF tag)
+- **eSoW Bank Linking**: Purchasers, Gifters (unless Form E without eSoF tag)
+- **PEP Monitoring**: Standard ID only, Lite Screen YES only
+- **International Address Verification**: Non-GBR addresses only
+
+### IDV Image Selection
+
+- **Exact Matching**: Only shows images matching selected document type
+- **Auto-Selection**: Automatically selects front/back when exact matches found
+- **Fallback**: Shows all images if no exact matches (user must manually select)
+- **Preference**: Passport > Driving Licence for auto-selection
+- **Side Handling**: Images without side tag show in both columns
+- **Popup Viewer**: Click images to open in `single-image-viewer.html` popup
+
+### Phone Number Validation
+
+Uses Google's libphonenumber library:
+- Country-specific validation rules
+- Mobile number type verification
+- E.164 format output
+- Returns `{ valid: boolean, error: string|null, formatted: string|null }`
+
+### Features
+
+- **Searchable Autocomplete Dropdowns** - Phone codes, countries, jurisdictions with blue code badges
+- **Matter Category Intelligence** - Auto-routing based on work type and relation
+- **Dynamic Task Configuration** - Context-aware checkbox visibility and auto-selection
+- **IDV Image Management** - Exact matching, side handling, popup viewer integration
+- **PEP Monitoring State** - Preserves user choice across Lite Screen toggle
+- **Validation Framework** - Required field validation for all check types
+- **Multi-Endpoint Support** - Constructs separate request objects for different Thirdfort APIs
+- **Mock Data Testing** - Built-in test scenarios for development
+
+### Example Integration
+
+```javascript
+const thirdfortFrame = document.getElementById('thirdfortCheck').contentWindow;
+
+// Send client data
+thirdfortFrame.postMessage({
+  type: 'client-data',
+  data: {
+    _id: 'client-id-123',
+    cD: {fe: 'BA', n: 'Mr J Archer', cN: 50, mN: '52'},
+    wT: 'Purchase of',
+    r: 'Our Client',
+    mD: '21 Green Lane',
+    tags: ['formE', 'eSoF Requested'],
+    i: {a: true, p: true, l: false},
+    cI: {
+      n: {t: 'Mr', f: 'Jacob', m: 'Robert', l: 'Archer-Moran'},
+      b: '11-01-2001',
+      m: '+447506430094',
+      e: 'jacob@example.com',
+      a: {
+        building_number: '94',
+        street: 'Southgate Street',
+        town: 'Redruth',
+        postcode: 'TR15 2ND',
+        country: 'GBR'
+      }
+    },
+    idI: [
+      {
+        type: 'PhotoID',
+        document: 'Passport',
+        side: 'Single',
+        s3Key: 'protected/passport.jpg',
+        liveUrl: 'https://s3.amazonaws.com/...'
+      }
+    ]
+  }
+}, '*');
+
+// Listen for check submission
+window.addEventListener('message', (event) => {
+  if (event.data.type === 'request-thirdfort-check') {
+    const {checkData, apiRequests} = event.data;
+    
+    // Process each API request object
+    apiRequests.forEach(req => {
+      if (req.endpoint === 'electronic-id') {
+        submitToThirdfortElectronicID(req.requestData);
+      } else if (req.endpoint === 'idv-check') {
+        submitToThirdfortIDV(req.requestData);
+      } else if (req.endpoint === 'idv-documents') {
+        submitIDVDocuments(req.requestData);
+      }
+      // ... handle other endpoints
+    });
+  }
+  
+  if (event.data.type === 'address-search') {
+    // Fetch address results from getaddress.io
+    fetchAddresses(event.data.searchTerm)
+      .then(results => {
+        thirdfortFrame.postMessage({
+          type: 'address-results',
+          field: event.data.field,
+          suggestions: results
+        }, '*');
+      });
+  }
+  
+  if (event.data.type === 'address-lookup') {
+    // Fetch full address by ID
+    fetchFullAddress(event.data.addressId)
+      .then(address => {
+        thirdfortFrame.postMessage({
+          type: 'address-data',
+          field: event.data.field,
+          address: address
+        }, '*');
+      });
+  }
+});
+```
+
+### Matter Category Rules
+
+#### Conveyancing
+- **Purchaser**: Shows all tasks, auto-selects eSoF/eSoW (unless Form E without eSoF tag)
+- **Gifter**: Shows all tasks, auto-selects eSoF/eSoW (unless Form E without eSoF tag)
+- **Seller**: Hides eSoF Questionnaire, auto-selects Proof of Ownership
+- **Other**: Shows all tasks, no auto-selection
+
+#### Property Other
+- **Purchaser**: Hides Proof of Ownership, auto-selects eSoF/eSoW (unless Form E without eSoF tag)
+- **Seller**: Hides eSoF Questionnaire, auto-selects Proof of Ownership
+- **Landlord**: Hides eSoF Questionnaire, auto-selects Proof of Ownership
+- **Tenant/Occupier**: Shows all tasks, auto-selects Proof of Ownership for Equity Release/Re-mortgaging
+
+#### Private Client
+- Hides eSoF Questionnaire and Proof of Ownership
+- Shows other tasks
+
+#### Other
+- Hides eSoF Questionnaire only
+- Shows all other tasks
+
+### IDV Document Type Mapping
+
+```javascript
+{
+  'Passport': 'passport',
+  'Driving Licence': 'driving_licence',
+  'National ID Card': 'national_identity_card',
+  'Passport Card': 'national_identity_card',
+  'Residence Permit': 'residence_permit'
+}
+```
+
+### Autocomplete Features
+
+All dropdowns use the shared autocomplete system:
+
+#### Phone Country Code
+- Displays: Flag emoji + code + country name (e.g., "🇬🇧 +44 UK")
+- Stores: `data-phone-code="+44"` and `data-country-code="GB"`
+- Search filters by code, country name, or flag
+
+#### Address Country (Lite Screen, Electronic ID)
+- Displays: Country name with blue code badge (e.g., "United Kingdom [GBR]")
+- Stores: `data-country-code="GBR"`
+- Blue badge: `#e8f4f8` background, `rgb(0,60,113)` text
+
+#### Business Jurisdiction (KYB)
+- Displays: Jurisdiction name with blue code badge (e.g., "United Kingdom [GB]")
+- Stores: `data-jurisdiction-code="GB"`
+- Note: Uses 2-letter codes for business registration
+
+### Validation Requirements
+
+#### IDV Check
+- At least one IDV document type selected
+- Front and/or back images selected for that document type
+- Valid if combined with Lite Screen
+
+#### Lite Screen Check
+- Country selected
+- Address entered (if country is GBR, can use autocomplete or manual)
+- Valid standalone or combined with IDV
+
+#### Electronic ID Check
+- Matter category selected (or sub-category for Conveyancing/Property Other)
+- Full name, mobile, email, country, address
+- Electronic ID reference
+- Mobile validated with libphonenumber (country-aware, mobile-specific)
+
+#### KYB Check
+- Business name
+- Business details or entity linking
+
+### Data Structures
+
+#### Check State Object
+```javascript
+checkState = {
+  checkType: 'electronic-id',  // Selected check type
+  includeLiteScreen: true,
+  liteScreenType: 'yes',
+  matterCategory: 'conveyancing',
+  matterSubCategory: 'purchaser',
+  electronicIdType: 'standard',
+  availableIDVImages: [...],
+  frontImage: null,
+  backImage: null,
+  idvDocumentType: null,
+  pepMonitoringInitialized: false
+}
+```
+
+#### IDV Document Request
+```javascript
+{
+  endpoint: 'idv-documents',
+  requestData: [
+    {
+      side: 'front',
+      s3Key: 'protected/passport-front.jpg'
+    },
+    {
+      side: 'back',
+      s3Key: 'protected/passport-back.jpg'
+    }
+  ]
+}
+```
+
+### Features
+
+- **Smart Routing**: Automatically determines matter category from work type and relation
+- **Tag-Based Logic**: Form E and eSoF Requested tags control check type and task selection
+- **State Preservation**: PEP monitoring choice preserved across Lite Screen toggles
+- **Popup Integration**: IDV images open in `single-image-viewer.html` popup windows
+- **Mock Data**: Testing buttons for various client scenarios (Form E, eSoF, LPA, etc.)
+- **Real-Time Validation**: All fields validated before submission
+- **Multi-Endpoint Construction**: Separate request objects for each Thirdfort API endpoint
 
 ---
 
@@ -1062,6 +1562,24 @@ Sections show/hide based on client type and selected request:
 | 10 | Regulated referral | All | Any |
 | 11 | Thirdfort Secure Share | All | Any |
 
+### Features
+
+- **Searchable Autocomplete Dropdowns** - Phone codes, countries, jurisdictions with blue code badges
+- **7 Request Types** - Individual validation logic for each type (Form J, K, E, eSoF, Note, Update, PEP Update)
+- **11 Form K Conditional Rules** - Dynamic filtering based on client type and worktype
+- **Entity Support** - Business/Charity with Companies House/Register integration
+- **ID Image Carousel** - Side tags (Front/Back) with document details
+- **Real-Time Validation** - Detailed error messages with specific field requirements
+- **Dynamic Section Visibility** - Based on client type and selected request
+- **Address Autocomplete** - getaddress.io integration with 30-day LRU cache
+- **Google libphonenumber** - International phone validation and E.164 formatting
+- **CDF and OFSI Document Upload** - S3 integration with progress tracking
+- **25/25/50 Manual Address Layout** - Flat number, building number, building name on one row
+- **People Cards** - Directors, officers, PSCs with 10px vertical spacing between cards
+- **Dataset Attribute Management** - Proper country code handling via data attributes
+- **Previous Name/Address Toggles** - Conditional field display
+- **Smart Auto-Detection** - Worktype dropdown syncs with manual input
+
 ### Example Integration
 
 ```javascript
@@ -1179,7 +1697,7 @@ window.addEventListener('message', (event) => {
 **File:** `client-details.html`
 
 ### Description
-Lightweight client details and address collection form. Unlike `image-uploader.html`, this form does NOT handle file uploads. It focuses solely on collecting client personal information and addresses with Thirdfort API format support. Mobile phone numbers are validated using Google's libphonenumber library before submission.
+Lightweight client details and address collection form. Unlike `image-uploader.html`, this form does NOT handle file uploads. It focuses solely on collecting client personal information and addresses with Thirdfort API format support. Features searchable autocomplete dropdowns for phone codes, countries, and jurisdictions with blue code badges. Mobile phone numbers are validated using Google's libphonenumber library before submission.
 
 ### Parent → iframe (Incoming Messages)
 
@@ -1415,10 +1933,16 @@ Addresses are automatically converted to Thirdfort API format:
 
 ### Features
 
+- **Searchable Autocomplete Dropdowns** - Phone codes, countries, jurisdictions with blue code badges
 - **Entity Mode Support** - Toggle between individual and business/charity modes
 - **Address Autocomplete** - getaddress.io integration via parent proxy
 - **Smart Caching** - LRU cache with 30-day expiry for addresses
 - **Thirdfort Formatting** - Automatic conversion to Thirdfort API spec
+- **Google libphonenumber** - International phone validation and E.164 formatting
+- **25/25/50 Manual Address Layout** - Flat number, building number, building name on one row
+- **Blue Code Badge Styling** - Consistent visual design across all forms
+- **Business Data Handling** - Returns basic info (name, number, country) even without API link
+- **Dataset Attribute Management** - Proper handling of country codes via data attributes
 - **Validation** - Real-time field validation with error messages
 - **Unsaved Changes Protection** - Sends `disable-close` to prevent data loss
 
@@ -1429,7 +1953,7 @@ Addresses are automatically converted to Thirdfort API format:
 **File:** `image-uploader.html`
 
 ### Description
-Complete client onboarding form for collecting personal details AND uploading ID documents. This is the full-featured version that includes everything from `client-details.html` plus file upload capabilities.
+Complete client onboarding form for collecting personal details AND uploading ID documents. This is the full-featured version that includes everything from `client-details.html` plus file upload capabilities. Features searchable autocomplete country dropdowns with blue code badges and proper Thirdfort API format handling.
 
 ### Parent → iframe (Incoming Messages)
 
@@ -1513,6 +2037,13 @@ Final submission with all form data and uploaded images.
   images: [...]  // Images with s3Keys
 }
 ```
+
+### Features
+
+- **Searchable Country Autocomplete** - Current and previous address country selection with blue code badges
+- **Dataset Attribute Handling** - Proper country code management via `data-country-code` attributes
+- **Address Autocomplete** - getaddress.io integration for UK/international addresses
+- **Helper Functions** - `setCountry()` for proper data loading and display
 
 ---
 
