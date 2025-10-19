@@ -279,12 +279,24 @@
             opacity: 0.7;
         }
 
+        /* Spinner animation for loading state */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
     </style>
 </head>
 <body>
     <div class="chat-wrapper">
         <div class="messages-container" id="messagesContainer">
+            <!-- Loading state shown on initial page load -->
+            <div id="loadingState" style="display: flex; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div>
+                    <div style="width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid rgb(0, 60, 113); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
+                    <div style="color: #666; font-size: 0.85rem;">Loading activity log...</div>
+                </div>
+            </div>
             <!-- Messages will be added here dynamically -->
         </div>
         <button id="loadMoreBtn" class="load-more-btn" onclick="loadMore()">Load more</button>
@@ -480,6 +492,12 @@
         function displayLogs(logs) {
             const messagesContainer = document.getElementById('messagesContainer');
             const loadMoreBtn = document.getElementById('loadMoreBtn');
+            const loadingState = document.getElementById('loadingState');
+            
+            // Hide loading state once logs arrive
+            if (loadingState) {
+                loadingState.style.display = 'none';
+            }
             
             // Store all logs and reset pagination
             allLogs = logs || [];

@@ -826,6 +826,13 @@
         </div>
         <div class="messages-container" id="messagesContainer">
             <button id="loadEarlierBtn" class="load-earlier-btn" onclick="loadEarlierMessages()">Load Earlier messages</button>
+            <!-- Loading state shown on initial page load -->
+            <div id="loadingState" style="display: flex; align-items: center; justify-content: center; height: 100%; text-align: center;">
+                <div>
+                    <div class="uploading-spinner"></div>
+                    <div style="color: #666; font-size: 0.85rem; margin-top: 10px;">Loading messages...</div>
+                </div>
+            </div>
             <!-- Messages will be added here dynamically -->
         </div>
         <div class="container">
@@ -1130,6 +1137,12 @@
         function displayMessages(chatData, whiteType) {
             const messagesContainer = document.getElementById('messagesContainer');
             const loadEarlierBtn = document.getElementById('loadEarlierBtn');
+            const loadingState = document.getElementById('loadingState');
+            
+            // Hide loading state once messages arrive
+            if (loadingState) {
+                loadingState.style.display = 'none';
+            }
             
             // Store all messages and reset pagination
             allMessages = chatData || [];
