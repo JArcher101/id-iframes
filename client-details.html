@@ -2139,6 +2139,9 @@
       // Extract Officers, Directors, and Trustees
       if (businessData.officers && businessData.officers.length > 0) {
         businessData.officers.forEach(officer => {
+          // Skip resigned officers
+          if (officer.resigned_on) return;
+          
           const normalizedName = normalizeName(officer.name);
           const existing = peopleMap.get(normalizedName);
           
@@ -2171,6 +2174,9 @@
       // Extract PSCs (with ownership info)
       if (businessData.pscs && businessData.pscs.length > 0) {
         businessData.pscs.forEach(psc => {
+          // Skip ceased PSCs
+          if (psc.ceased) return;
+          
           const normalizedName = normalizeName(psc.name);
           const existing = peopleMap.get(normalizedName);
           
