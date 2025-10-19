@@ -1,2 +1,33 @@
 fonts/
 plan.md
+
+# AWS Setup Files (contains sensitive infrastructure details)
+aws-setup/
+AWS-CLOUDFRONT-SIGNED-URLS-SUMMARY.md
+AWS-SETUP-SUMMARY.md
+
+# Velo Backend Updates (contains backend code with AWS credentials usage)
+velo-backend-updates/
+
+# Documentation and planning files (internal use only)
+*-SUMMARY.md
+*-PLAN.md
+*-TODO.md
+*-NOTES.md
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.log

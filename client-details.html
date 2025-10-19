@@ -6,6 +6,14 @@
   <title>Client Details Form</title>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
   
+  <!-- Load external libraries FIRST before main script -->
+  <!-- Google libphonenumber library for phone validation -->
+  <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
+  
+  <!-- jsPDF library for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  
   <style>
     /*
     =====================================================================
@@ -1828,7 +1836,8 @@
         updateCompanyButtons();
         
         // Hide dropdown if too short or not UK
-        if (searchTerm.length < 2 || registrationCountry.value !== 'GB') {
+        const isUK = registrationCountry.dataset.jurisdictionCode === 'GB';
+        if (searchTerm.length < 2 || !isUK) {
           businessNameDropdown.classList.add('hidden');
           businessNameDropdown.innerHTML = '';
           return;
@@ -1905,7 +1914,8 @@
         updateCompanyButtons();
         
         // Hide dropdown if too short or not UK
-        if (searchTerm.length < 2 || registrationCountry.value !== 'GB') {
+        const isUK = registrationCountry.dataset.jurisdictionCode === 'GB';
+        if (searchTerm.length < 2 || !isUK) {
           entityNumberDropdown.classList.add('hidden');
           entityNumberDropdown.innerHTML = '';
           return;
@@ -2732,6 +2742,13 @@
           return { isValid: true, error: null }; // Phone is optional, so empty is valid
         }
         
+        // Check if libphonenumber library is loaded
+        if (typeof libphonenumber === 'undefined' || !libphonenumber.PhoneNumberUtil) {
+          console.warn('libphonenumber library not loaded yet, skipping validation');
+          // Return valid for now - validation will occur on save when library is loaded
+          return { isValid: true, error: null };
+        }
+        
         const countryCode = phoneCountryCode?.dataset.phoneCode || '+44';
         const phoneNum = phoneNumber.value.trim();
         
@@ -2752,21 +2769,30 @@
           };
         }
         
-        // Additional check for mobile number type (optional)
-        const numberType = phoneUtil.getNumberType(number);
-        const mobileTypes = [
-          libphonenumber.PhoneNumberUtil.PhoneNumberType.MOBILE,
-          libphonenumber.PhoneNumberUtil.PhoneNumberType.FIXED_LINE_OR_MOBILE
-        ];
-        
-        if (!mobileTypes.includes(numberType)) {
-          return {
-            isValid: false,
-            error: 'Please enter a valid mobile phone number.'
-          };
+        // Additional check for mobile number type (REQUIRED for Thirdfort)
+        // PhoneNumberType enum values: MOBILE = 1, FIXED_LINE_OR_MOBILE = 2
+        try {
+          const numberType = phoneUtil.getNumberType(number);
+          
+          // Check against integer values (CDN doesn't expose enum, but values are standard)
+          // 0 = FIXED_LINE, 1 = MOBILE, 2 = FIXED_LINE_OR_MOBILE
+          const isMobile = (numberType === 1 || numberType === 2);
+          
+          if (!isMobile) {
+            return {
+              isValid: false,
+              error: 'Please enter a valid mobile phone number (not a landline). Thirdfort electronic ID checks require a mobile number.'
+            };
+          }
+        } catch (typeError) {
+          // If getNumberType fails, log but don't fail validation
+          console.warn('Could not determine phone number type:', typeError);
+          // Continue - the number is still format-valid even if we can't determine type
         }
         
-        return { isValid: true, error: null, formattedNumber: phoneUtil.format(number, libphonenumber.PhoneNumberUtil.PhoneNumberFormat.E164) };
+        // Format as E164 using integer 0 (CDN doesn't expose enum)
+        // PhoneNumberFormat values: 0 = E164, 1 = INTERNATIONAL, 2 = NATIONAL, 3 = RFC3966
+        return { isValid: true, error: null, formattedNumber: phoneUtil.format(number, 0) };
         
       } catch (error) {
         console.error('Phone validation error:', error);
@@ -2784,6 +2810,12 @@
           return null;
         }
         
+        // Check if libphonenumber library is loaded
+        if (typeof libphonenumber === 'undefined' || !libphonenumber.PhoneNumberUtil) {
+          console.warn('libphonenumber library not loaded yet, falling back to original logic');
+          return null;
+        }
+        
         const cleanPhone = phoneString.trim();
         
         // Try to parse as international number first
@@ -2792,7 +2824,8 @@
           const number = phoneUtil.parseAndKeepRawInput(cleanPhone, null);
           
           if (phoneUtil.isValidNumber(number)) {
-            return phoneUtil.format(number, libphonenumber.PhoneNumberUtil.PhoneNumberFormat.E164);
+            // Use integer 0 for E164 format (CDN doesn't expose enum)
+            return phoneUtil.format(number, 0);
           }
         }
         
@@ -2805,7 +2838,8 @@
             const number = phoneUtil.parseAndKeepRawInput(fullNumber, null);
             
             if (phoneUtil.isValidNumber(number)) {
-              return phoneUtil.format(number, libphonenumber.PhoneNumberUtil.PhoneNumberFormat.E164);
+              // Use integer 0 for E164 format
+              return phoneUtil.format(number, 0);
             }
           } catch (error) {
             // Try next code
@@ -3720,13 +3754,6 @@
     setupCompanyNameAutocomplete();
     setupCompanyNumberAutocomplete();
   </script>
-  
-  <!-- Google libphonenumber library for phone validation -->
-  <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
-  
-  <!-- jsPDF library for PDF generation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
   <script src="js/jurisdiction-autocomplete.js"></script>

@@ -4197,11 +4197,9 @@ function validatePhoneWithLibphonenumber(countryCode, nationalNumber) {
     }
     
     // Check if it's a mobile or mobile-capable number
+    // PhoneNumberType values: 0 = FIXED_LINE, 1 = MOBILE, 2 = FIXED_LINE_OR_MOBILE
     const numberType = phoneUtil.getNumberType(number);
-    const isMobileType = [
-      libphonenumber.PhoneNumberType.MOBILE,
-      libphonenumber.PhoneNumberType.FIXED_LINE_OR_MOBILE
-    ].includes(numberType);
+    const isMobileType = (numberType === 1 || numberType === 2);
     
     if (!isMobileType) {
       return {
@@ -4211,8 +4209,8 @@ function validatePhoneWithLibphonenumber(countryCode, nationalNumber) {
       };
     }
     
-    // Format in E.164 format
-    const formatted = phoneUtil.format(number, libphonenumber.PhoneNumberFormat.E164);
+    // Format in E.164 format (use integer 0, CDN doesn't expose enum)
+    const formatted = phoneUtil.format(number, 0);
     
     return {
       valid: true,

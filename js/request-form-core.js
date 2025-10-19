@@ -2875,7 +2875,8 @@ function parseAndFormatPhoneNumber(phoneString) {
     if (parsedNumber && phoneUtil.isValidNumber(parsedNumber)) {
       const countryCode = '+' + parsedNumber.getCountryCode();
       const nationalNumber = parsedNumber.getNationalNumber().toString();
-      const e164 = phoneUtil.format(parsedNumber, libphonenumber.PhoneNumberFormat.E164);
+      // Use integer 0 for E164 format (CDN doesn't expose enum)
+      const e164 = phoneUtil.format(parsedNumber, 0);
       
       return {
         countryCode: countryCode,
