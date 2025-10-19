@@ -3241,7 +3241,7 @@ function handleFormSubmit(event) {
       // Re-enable submit button after successful submission
       if (submitBtn) submitBtn.disabled = false;
       
-      alert('Request submitted successfully!');
+      // Send to parent (parent will handle success notification)
       sendMessageToParent('form-submitted', formData);
     }, 1000);
     
