@@ -2197,10 +2197,16 @@ function populatePeopleCards(companyData) {
     const card = document.createElement('div');
     card.className = 'people-card';
     
-    // Make card clickable if we have an appointments URL
-    if (person.appointmentsUrl) {
+    // Make card clickable
+    // Companies: Click opens individual officer appointments page
+    // Charities: Click opens charity page (trustees don't have individual pages)
+    const isCharity = document.getElementById('charityCheckbox')?.checked || false;
+    
+    if (person.appointmentsUrl || isCharity) {
       card.style.cursor = 'pointer';
-      card.title = 'Click to view all appointments';
+      card.title = isCharity 
+        ? 'Click to view charity details' 
+        : 'Click to view all appointments';
       
       card.addEventListener('click', () => {
         openOfficerAppointments(person.appointmentsUrl);
@@ -2238,10 +2244,29 @@ function populatePeopleCards(companyData) {
 }
 
 /*
-Open officer appointments page in Companies House
+Open officer appointments page in Companies House (or charity page for trustees)
 */
 function openOfficerAppointments(appointmentsPath) {
-  if (!appointmentsPath) return;
+  if (!appointmentsPath) {
+    // Charity trustees don't have individual pages, open charity page instead
+    const entityNumberEl = document.getElementById('entityNumber');
+    const isCharity = document.getElementById('charityCheckbox')?.checked || false;
+    
+    if (isCharity && entityNumberEl?.value?.trim()) {
+      const charityNum = entityNumberEl.value.trim();
+      const url = `https://register-of-charities.charitycommission.gov.uk/charity-search/-/charity-details/${charityNum}`;
+      
+      const width = 1000;
+      const height = 800;
+      const left = (screen.width - width) / 2;
+      const top = (screen.height - height) / 2;
+      const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+      
+      window.open(url, 'charityDetails', features);
+      console.log('👤 Opening charity details (trustees page):', url);
+    }
+    return;
+  }
   
   const url = `https://find-and-update.company-information.service.gov.uk${appointmentsPath}`;
   

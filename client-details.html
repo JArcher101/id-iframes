@@ -2219,10 +2219,14 @@
         const card = document.createElement('div');
         card.className = 'people-card';
         
-        // Make card clickable if we have an appointments URL
-        if (person.appointmentsUrl) {
+        // Make card clickable
+        // Companies: Click opens individual officer appointments page
+        // Charities: Click opens charity page (trustees don't have individual pages)
+        if (person.appointmentsUrl || entityType === 'charity') {
           card.style.cursor = 'pointer';
-          card.title = 'Click to view all appointments';
+          card.title = entityType === 'charity' 
+            ? 'Click to view charity details' 
+            : 'Click to view all appointments';
           
           card.addEventListener('click', () => {
             openOfficerAppointments(person.appointmentsUrl);
@@ -2272,10 +2276,16 @@
     }
     
     /*
-    Open officer appointments page in Companies House
+    Open officer appointments page in Companies House (or charity page for trustees)
     */
     function openOfficerAppointments(appointmentsPath) {
-      if (!appointmentsPath) return;
+      if (!appointmentsPath) {
+        // Charity trustees don't have individual pages, open charity page instead
+        if (entityType === 'charity' && entityNumber?.value?.trim()) {
+          openCompaniesHousePage();
+        }
+        return;
+      }
       
       const url = `https://find-and-update.company-information.service.gov.uk${appointmentsPath}`;
       
