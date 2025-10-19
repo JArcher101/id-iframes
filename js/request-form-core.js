@@ -2342,12 +2342,12 @@ function openCompanyRegisterPage() {
     url = `https://find-and-update.company-information.service.gov.uk/company/${entityNum}`;
   }
   
-  // Open in popup window
-  const width = 1200;
+  // Open in centered popup window
+  const width = 1000;
   const height = 800;
   const left = (screen.width - width) / 2;
   const top = (screen.height - height) / 2;
-  const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes,menubar=yes,toolbar=yes,location=yes`;
+  const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
   
   const popup = window.open(url, isCharity ? 'charityRegister' : 'companiesHouse', features);
   
