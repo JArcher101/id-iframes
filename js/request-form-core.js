@@ -2335,6 +2335,16 @@ function autoPopulateRegisteredAddress() {
       
       // Populate the autocomplete field
       currentAddress.value = addressString;
+      
+      // Trigger address search to find exact match in getaddress.io
+      if (addressString.length >= 7) {
+        console.log('📡 Searching for registered office address in getaddress.io');
+        window.parent.postMessage({
+          type: 'address-search',
+          searchTerm: addressString,
+          field: 'current'
+        }, '*');
+      }
     }
   }
 }
