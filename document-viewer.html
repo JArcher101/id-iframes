@@ -1969,11 +1969,14 @@
 <body>
     <div class="responsive-container">
         <div class="image-display-container">
-        <!-- Awaiting data state - looks like empty document list -->
+        <!-- Awaiting data state - shows loading spinner -->
         <div class="awaiting-state" id="awaitingState">
             <h2 class="client-heading">ID Documents</h2>
-            <div class="documents-grid">
-                <!-- Empty document list - no cards shown -->
+            <div class="documents-grid" style="display: flex; align-items: center; justify-content: center; min-height: 200px;">
+                <div style="text-align: center;">
+                    <div class="loading-spinner"></div>
+                    <div style="color: #666; font-size: 0.85rem; margin-top: 10px;">Loading documents...</div>
+                </div>
             </div>
             <!-- Disabled add button -->
             <div class="add-more-container" style="margin-top: 10px;">
