@@ -1988,7 +1988,8 @@
       const dropdownElement = searchBy === 'name' ? businessNameDropdown : entityNumberDropdown;
       
       if (!suggestions || suggestions.length === 0) {
-        dropdownElement.innerHTML = '<div class="address-no-results">No companies found</div>';
+        const noResultsText = entityType === 'charity' ? 'No charities found' : 'No companies found';
+        dropdownElement.innerHTML = `<div class="address-no-results">${noResultsText}</div>`;
         dropdownElement.classList.remove('hidden');
         return;
       }
