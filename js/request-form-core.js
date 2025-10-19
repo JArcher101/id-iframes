@@ -2130,11 +2130,16 @@ function populatePeopleCards(companyData) {
         if (!existing.types.includes(roleType)) {
           existing.types.push(roleType);
         }
+        // Store officer link if not already set
+        if (!existing.appointmentsUrl && officer.links?.officer?.appointments) {
+          existing.appointmentsUrl = officer.links.officer.appointments;
+        }
       } else {
         peopleMap.set(normalizedName, {
           displayName: officer.name,
           types: [roleType],
-          share: null
+          share: null,
+          appointmentsUrl: officer.links?.officer?.appointments || null
         });
       }
     });
@@ -2165,11 +2170,16 @@ function populatePeopleCards(companyData) {
           existing.types.push('psc');
         }
         existing.share = shareInfo;
+        // Store PSC link if not already set
+        if (!existing.appointmentsUrl && psc.links?.officer?.appointments) {
+          existing.appointmentsUrl = psc.links.officer.appointments;
+        }
       } else {
         peopleMap.set(normalizedName, {
           displayName: psc.name,
           types: ['psc'],
-          share: shareInfo
+          share: shareInfo,
+          appointmentsUrl: psc.links?.officer?.appointments || null
         });
       }
     });
@@ -2186,6 +2196,16 @@ function populatePeopleCards(companyData) {
   allPeople.forEach(person => {
     const card = document.createElement('div');
     card.className = 'people-card';
+    
+    // Make card clickable if we have an appointments URL
+    if (person.appointmentsUrl) {
+      card.style.cursor = 'pointer';
+      card.title = 'Click to view all appointments';
+      
+      card.addEventListener('click', () => {
+        openOfficerAppointments(person.appointmentsUrl);
+      });
+    }
     
     // Create badges for all roles
     let badgesHtml = '';
@@ -2215,6 +2235,25 @@ function populatePeopleCards(companyData) {
   });
   
   console.log(`✅ Populated ${allPeople.length} people cards (merged duplicates)`);
+}
+
+/*
+Open officer appointments page in Companies House
+*/
+function openOfficerAppointments(appointmentsPath) {
+  if (!appointmentsPath) return;
+  
+  const url = `https://find-and-update.company-information.service.gov.uk${appointmentsPath}`;
+  
+  // Open in centered popup window
+  const width = 1000;
+  const height = 800;
+  const left = (screen.width - width) / 2;
+  const top = (screen.height - height) / 2;
+  const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+  
+  window.open(url, 'officerAppointments', features);
+  console.log('👤 Opening officer appointments:', url);
 }
 
 /*
