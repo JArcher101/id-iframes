@@ -3700,18 +3700,9 @@
             
             // Process and display images (check both 'data' and 'images' for backwards compatibility)
             const imagesToDisplay = data.data || data.images;
-            if (imagesToDisplay && Array.isArray(imagesToDisplay) && imagesToDisplay.length > 0) {
-                displayImages(imagesToDisplay, data.allowUploads, data.clientData, data.userEmail);
-            } else {
-                // No images to display, show awaiting state with upload button enabled if allowed
-                showAwaitingState();
-                
-                // Also update the client heading in awaiting state
-                const awaitingHeading = awaitingState.querySelector('.client-heading');
-                if (awaitingHeading && clientData.fe && clientData.clientNumber && clientData.matterNumber && clientData.name) {
-                    awaitingHeading.textContent = `ID Photos for ${clientData.fe}/${clientData.clientNumber}/${clientData.matterNumber} - ${clientData.name}`;
-                }
-            }
+            
+            // Always call displayImages - it handles the empty array case by showing "No images uploaded"
+            displayImages(imagesToDisplay || [], data.allowUploads, data.clientData, data.userEmail);
         }
 
         // Handle PUT links for uploading files to S3
