@@ -4206,7 +4206,11 @@
         =====================================================================
         */
         window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'display-documents') {
+            if (event.data && event.data.type === 'reset') {
+                // Reset iframe to initial loading state (called when switching entries)
+                console.log('Received reset message - returning to awaiting state');
+                returnToAwaitingData();
+            } else if (event.data && event.data.type === 'display-documents') {
                 console.log('Received document display data:', event.data);
                 
                 // Store the item ID for later use

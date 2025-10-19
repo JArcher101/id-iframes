@@ -3631,7 +3631,11 @@
            Action: Disables the "Add more ID images" button
         */
         window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'image-display') {
+            if (event.data && event.data.type === 'reset') {
+                // Reset iframe to initial loading state (called when switching entries)
+                console.log('Received reset message - returning to awaiting state');
+                returnToAwaitingData();
+            } else if (event.data && event.data.type === 'image-display') {
                 console.log('Received image display data:', event.data);
                 
                 // If we're currently in uploader mode, reset everything first
