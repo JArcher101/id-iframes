@@ -2310,42 +2310,47 @@ function autoPopulateRegisteredAddress() {
   const currentAddress = document.getElementById('currentAddress');
   const currentCountry = document.getElementById('currentCountry');
   
-  // Only auto-populate if current address field is empty
-  if (!currentAddress?.value?.trim()) {
-    const regOffice = businessData.registered_office_address;
+  if (!currentAddress) return;
+  
+  const regOffice = businessData.registered_office_address;
+  
+  // Build address string for search
+  const addressParts = [
+    regOffice.premises,
+    regOffice.address_line_1,
+    regOffice.address_line_2,
+    regOffice.locality,
+    regOffice.postal_code
+  ].filter(p => p && p.trim());
+  
+  const addressString = addressParts.join(', ');
+  
+  // Check if new address is different from current (skip if identical)
+  const currentAddressText = currentAddress?.value?.trim() || '';
+  const isDifferentAddress = currentAddressText !== addressString;
+  
+  if (addressString && isDifferentAddress) {
+    console.log('📍 Auto-populating registered office address:', addressString);
     
-    // Build address string for search
-    const addressParts = [
-      regOffice.premises,
-      regOffice.address_line_1,
-      regOffice.address_line_2,
-      regOffice.locality,
-      regOffice.postal_code
-    ].filter(p => p && p.trim());
-    
-    const addressString = addressParts.join(', ');
-    
-    if (addressString) {
-      console.log('📍 Auto-populating registered office address:', addressString);
-      
-      // Set UK as country if not set
-      if (currentCountry) {
-        setCountry('currentCountry', 'GBR');
-      }
-      
-      // Populate the autocomplete field
-      currentAddress.value = addressString;
-      
-      // Trigger address search to find exact match in getaddress.io
-      if (addressString.length >= 7) {
-        console.log('📡 Searching for registered office address in getaddress.io');
-        window.parent.postMessage({
-          type: 'address-search',
-          searchTerm: addressString,
-          field: 'current'
-        }, '*');
-      }
+    // Set UK as country
+    if (currentCountry) {
+      setCountry('currentCountry', 'GBR');
     }
+    
+    // Populate the autocomplete field
+    currentAddress.value = addressString;
+    
+    // Trigger address search to find exact match in getaddress.io
+    if (addressString.length >= 7) {
+      console.log('📡 Searching for registered office address in getaddress.io');
+      window.parent.postMessage({
+        type: 'address-search',
+        searchTerm: addressString,
+        field: 'current'
+      }, '*');
+    }
+  } else if (!isDifferentAddress && addressString) {
+    console.log('ℹ️ Registered office address is identical to current address, keeping existing');
   }
 }
 

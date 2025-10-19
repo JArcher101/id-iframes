@@ -2047,7 +2047,7 @@
       // Show the link and refresh buttons
       updateCompanyButtons();
       
-      // Auto-populate registered office address if no current address exists
+      // Auto-populate registered office address when linking company/charity
       if (businessData.registered_office_address) {
         const regOffice = businessData.registered_office_address;
         
@@ -2062,10 +2062,11 @@
         
         const addressString = addressParts.join(', ');
         
-        // Check if we already have a current address
-        const hasExistingAddress = currentAddress?.value?.trim() || currentAddressObject;
+        // Check if new address is different from current (skip if identical)
+        const currentAddressText = currentAddress?.value?.trim() || '';
+        const isDifferentAddress = currentAddressText !== addressString;
         
-        if (!hasExistingAddress && addressString) {
+        if (addressString && isDifferentAddress) {
           console.log('📍 Auto-populating registered office address:', addressString);
           
           // Set UK as country
@@ -2083,8 +2084,8 @@
               field: 'current'
             }, '*');
           }
-        } else if (hasExistingAddress) {
-          console.log('ℹ️ Current address already exists, not overwriting');
+        } else if (!isDifferentAddress && addressString) {
+          console.log('ℹ️ Registered office address is identical to current address, keeping existing');
         }
       }
       
