@@ -772,7 +772,7 @@
               <div>
                 <label for="entityNumber">Company Number</label>
                 <div class="address-autocomplete-container">
-                  <input type="text" id="entityNumber" name="entityNumber" autocomplete="off" placeholder="Search by company number..." />
+                  <input type="text" id="entityNumber" name="entityNumber" autocomplete="off" placeholder="Search by company number..." data-organisation-number="" />
                   <div id="entityNumberDropdown" class="address-dropdown hidden"></div>
                 </div>
               </div>
@@ -2020,6 +2020,14 @@
       businessName.value = company.title;
       entityNumber.value = company.company_number;
       
+      // For charities, store organisation_number in data attribute (for URL construction)
+      if (entityType === 'charity' && company.organisation_number) {
+        entityNumber.dataset.organisationNumber = company.organisation_number;
+        console.log(`🏷️ Stored organisation_number: ${company.organisation_number} (display: ${company.company_number})`);
+      } else {
+        entityNumber.dataset.organisationNumber = '';
+      }
+      
       // Hide both dropdowns
       businessNameDropdown.classList.add('hidden');
       entityNumberDropdown.classList.add('hidden');
@@ -2044,6 +2052,12 @@
       businessData = data;
       console.log('✅ Received full company data:', businessData);
       // Company data now includes: directors, officers, PSCs, registered_office_address, etc.
+      
+      // For charities, extract and store organisation_number in dataset (for URL construction)
+      if (entityType === 'charity' && data.organisation_number) {
+        entityNumber.dataset.organisationNumber = data.organisation_number;
+        console.log(`🏷️ Stored organisation_number from charity data: ${data.organisation_number}`);
+      }
       
       // Show the link and refresh buttons
       updateCompanyButtons();
@@ -2222,11 +2236,11 @@
         
         // Make card clickable
         // Companies: Click opens individual officer appointments page
-        // Charities: Click opens charity page (trustees don't have individual pages)
+        // Charities: Click opens charity trustees tab
         if (person.appointmentsUrl || entityType === 'charity') {
           card.style.cursor = 'pointer';
           card.title = entityType === 'charity' 
-            ? 'Click to view charity details' 
+            ? 'Click to view all trustees' 
             : 'Click to view all appointments';
           
           card.addEventListener('click', () => {
@@ -2277,13 +2291,25 @@
     }
     
     /*
-    Open officer appointments page in Companies House (or charity page for trustees)
+    Open officer appointments page in Companies House (or charity trustees page)
     */
     function openOfficerAppointments(appointmentsPath) {
       if (!appointmentsPath) {
-        // Charity trustees don't have individual pages, open charity page instead
+        // Charity trustees don't have individual pages, open charity trustees tab instead
         if (entityType === 'charity' && entityNumber?.value?.trim()) {
-          openCompaniesHousePage();
+          // Use organisation_number for URL (not reg_charity_number)
+          const orgNum = entityNumber.dataset.organisationNumber || entityNumber.value.trim();
+          const url = `https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/${orgNum}/trustees`;
+          
+          // Open in centered popup window
+          const width = 1000;
+          const height = 800;
+          const left = (screen.width - width) / 2;
+          const top = (screen.height - height) / 2;
+          const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+          
+          window.open(url, 'charityTrustees', features);
+          console.log('👤 Opening charity trustees tab:', url);
         }
         return;
       }
@@ -2306,12 +2332,14 @@
     */
     function openCompaniesHousePage() {
       if (entityNumber?.value?.trim()) {
-        const entityNum = entityNumber.value.trim();
         let url;
         
         if (entityType === 'charity') {
-          url = `https://register-of-charities.charitycommission.gov.uk/charity-search/-/charity-details/${entityNum}`;
+          // Use organisation_number for URL (not reg_charity_number)
+          const orgNum = entityNumber.dataset.organisationNumber || entityNumber.value.trim();
+          url = `https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/${orgNum}/charity-overview`;
         } else {
+          const entityNum = entityNumber.value.trim();
           url = `https://find-and-update.company-information.service.gov.uk/company/${entityNum}`;
         }
         
@@ -3125,10 +3153,10 @@
         rNC: reasonForNameChange?.value || undefined,        // reasonForNameChange
         m: formattedPhone || undefined,                      // mobileNumber
         e: email?.value?.trim() || undefined,                // email
-        eN: entityNumber?.value?.trim() || undefined,        // entityNumber
+        eN: entityNumber?.value?.trim() || undefined,        // entityNumber (company number OR charity number)
         rC: registrationCountry?.dataset.jurisdictionCode || undefined,  // registrationCountry
         eT: isEntityMode ? entityType : undefined,           // entityType ('business' or 'charity')
-        bD: businessDataObject                               // businessData (full API data OR basic manual entry)
+        bD: businessDataObject                               // businessData (full API data OR basic manual entry, includes organisation_number for charities)
       };
       
       return compiled;
@@ -3483,11 +3511,24 @@
       
       // Populate entity or individual fields
       if (isEntityMode) {
-        entityType = formData.eT || 'business'; // Load entity type
+        // Entity type already set by switchToEntityMode() before loadData() is called
+        // Only use formData.eT if entityType wasn't explicitly set
+        if (formData.eT && formData.eT !== entityType) {
+          console.log(`ℹ️ Preserving entityType from message: '${entityType}' (formData has: '${formData.eT}')`);
+        }
+        
         setJurisdiction('registrationCountry', formData.rC || 'GB');
         businessName.value = formData.n?.b || '';
         entityNumber.value = formData.eN || '';
         businessData = formData.bD || null;
+        
+        // For charities, extract organisation_number from businessData (used only for URLs, not saved to DB)
+        if (entityType === 'charity' && businessData?.organisation_number) {
+          entityNumber.dataset.organisationNumber = businessData.organisation_number;
+          console.log(`🏷️ Extracted organisation_number from businessData for URLs: ${businessData.organisation_number}`);
+        } else {
+          entityNumber.dataset.organisationNumber = '';
+        }
         
         // Update labels based on entity type
         updateEntityLabels();

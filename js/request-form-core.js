@@ -764,13 +764,23 @@ function handleClientData(message) {
   
   if (data.cI?.eN) {
     const entityNumber = document.getElementById('entityNumber');
-    if (entityNumber) entityNumber.value = data.cI.eN;
+    if (entityNumber) {
+      entityNumber.value = data.cI.eN;
+    }
   }
   
   if (data.cI?.bD) {
     // Store business data globally
     businessData = data.cI.bD;
     updateCompanyButtons();
+    
+    // For charities, extract organisation_number from businessData (used only for URLs, not saved to DB)
+    const entityNumber = document.getElementById('entityNumber');
+    const isCharity = document.getElementById('charityCheckbox')?.checked || false;
+    if (isCharity && businessData?.organisation_number && entityNumber) {
+      entityNumber.dataset.organisationNumber = businessData.organisation_number;
+      console.log(`🏷️ Extracted organisation_number from businessData for URLs: ${businessData.organisation_number}`);
+    }
     
     // Populate people cards with officers and PSCs
     populatePeopleCards(data.cI.bD);
@@ -2062,6 +2072,15 @@ function handleCompanyData(data) {
   if (!requestData.cI) requestData.cI = {};
   requestData.cI.bD = data;
   
+  // For charities, extract organisation_number from data (used only for URLs, not saved to DB)
+  const entityNumberEl = document.getElementById('entityNumber');
+  const isCharity = document.getElementById('charityCheckbox')?.checked || false;
+  
+  if (isCharity && data.organisation_number && entityNumberEl) {
+    entityNumberEl.dataset.organisationNumber = data.organisation_number;
+    console.log(`🏷️ Stored organisation_number for URLs: ${data.organisation_number} (display: ${data.reg_charity_number || data.company_number})`);
+  }
+  
   // Update company buttons visibility if they exist
   updateCompanyButtons();
   
@@ -2199,13 +2218,13 @@ function populatePeopleCards(companyData) {
     
     // Make card clickable
     // Companies: Click opens individual officer appointments page
-    // Charities: Click opens charity page (trustees don't have individual pages)
+    // Charities: Click opens charity trustees tab
     const isCharity = document.getElementById('charityCheckbox')?.checked || false;
     
     if (person.appointmentsUrl || isCharity) {
       card.style.cursor = 'pointer';
-      card.title = isCharity 
-        ? 'Click to view charity details' 
+      card.title = isCharity
+        ? 'Click to view all trustees'
         : 'Click to view all appointments';
       
       card.addEventListener('click', () => {
@@ -2248,13 +2267,14 @@ Open officer appointments page in Companies House (or charity page for trustees)
 */
 function openOfficerAppointments(appointmentsPath) {
   if (!appointmentsPath) {
-    // Charity trustees don't have individual pages, open charity page instead
+    // Charity trustees don't have individual pages, open charity trustees tab instead
     const entityNumberEl = document.getElementById('entityNumber');
     const isCharity = document.getElementById('charityCheckbox')?.checked || false;
     
     if (isCharity && entityNumberEl?.value?.trim()) {
-      const charityNum = entityNumberEl.value.trim();
-      const url = `https://register-of-charities.charitycommission.gov.uk/charity-search/-/charity-details/${charityNum}`;
+      // Use organisation_number for URL (not reg_charity_number)
+      const orgNum = entityNumberEl.dataset.organisationNumber || entityNumberEl.value.trim();
+      const url = `https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/${orgNum}/trustees`;
       
       const width = 1000;
       const height = 800;
@@ -2262,8 +2282,8 @@ function openOfficerAppointments(appointmentsPath) {
       const top = (screen.height - height) / 2;
       const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
       
-      window.open(url, 'charityDetails', features);
-      console.log('👤 Opening charity details (trustees page):', url);
+      window.open(url, 'charityTrustees', features);
+      console.log('👤 Opening charity trustees tab:', url);
     }
     return;
   }
