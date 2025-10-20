@@ -471,6 +471,8 @@ function checkAndPopulateIDVImages(data) {
     'Passport': 'passport',
     'Driving Licence': 'driving_licence',
     'Passport Card': 'national_identity_card',
+    'National Identity Card': 'national_identity_card',
+    'Residence Permit': 'residence_permit',
     'Other Photo ID Card': 'other'
   };
   
@@ -504,10 +506,10 @@ function checkAndPopulateIDVImages(data) {
   if (idvNoBtn) idvNoBtn.disabled = false;
   if (idvPhotoIdError) idvPhotoIdError.classList.add('hidden');
   
-  // Auto-select document type (prioritize Passport > Driving Licence > Passport Card > Other)
+  // Auto-select document type (prioritize Passport > Driving Licence > Passport Card > National Identity Card > Residence Permit > Other)
   let selectedDocType = null;
   let shouldAutoSelectYes = false;
-  const priorityOrder = ['Passport', 'Driving Licence', 'Passport Card', 'Other Photo ID Card'];
+  const priorityOrder = ['Passport', 'Driving Licence', 'Passport Card', 'National Identity Card', 'Residence Permit', 'Other Photo ID Card'];
   
   for (const docType of priorityOrder) {
     const found = availableImages.find(img => img.document === docType);
@@ -550,7 +552,7 @@ function checkAndPopulateIDVImages(data) {
     }
   }
   
-  // Auto-select "YES" for IDV if we have Passport, Driving Licence, or Passport Card
+  // Auto-select "YES" for IDV if we have Passport, Driving Licence, Passport Card, National Identity Card, or Residence Permit
   if (shouldAutoSelectYes && idvYesBtn) {
     console.log('✅ Auto-selecting IDV YES button (suitable photo ID type found)');
     // Deselect all answer cards first
@@ -587,7 +589,7 @@ function populateIDVImageLists(images, selectedDocType) {
   const documentTypeMap = {
     'passport': 'Passport',
     'driving_licence': 'Driving Licence',
-    'national_identity_card': 'Passport Card',
+    'national_identity_card': ['Passport Card', 'National Identity Card'],
     'residence_permit': 'Residence Permit',
     'unknown': 'Other Photo ID Card'
   };
@@ -598,9 +600,15 @@ function populateIDVImageLists(images, selectedDocType) {
   
   if (selectedDocType && documentTypeMap[selectedDocType]) {
     const expectedDocName = documentTypeMap[selectedDocType];
-    filteredImages = images.filter(img => img.document === expectedDocName);
     
-    console.log(`🔍 Filtering images for ${selectedDocType} (${expectedDocName}):`, filteredImages.length);
+    // Handle both array and string document names
+    if (Array.isArray(expectedDocName)) {
+      filteredImages = images.filter(img => expectedDocName.includes(img.document));
+      console.log(`🔍 Filtering images for ${selectedDocType} (${expectedDocName.join(' or ')}):`, filteredImages.length);
+    } else {
+      filteredImages = images.filter(img => img.document === expectedDocName);
+      console.log(`🔍 Filtering images for ${selectedDocType} (${expectedDocName}):`, filteredImages.length);
+    }
     
     // If no exact matches, show all images but don't auto-select
     if (filteredImages.length === 0) {
@@ -2937,14 +2945,19 @@ function handleIDVDocumentTypeSelection(event) {
     const documentTypeMap = {
       'passport': 'Passport',
       'driving_licence': 'Driving Licence',
-      'national_identity_card': 'Passport Card',
+      'national_identity_card': ['Passport Card', 'National Identity Card'],
       'residence_permit': 'Residence Permit',
       'unknown': 'Other Photo ID Card'
     };
     
     // Check if we have exact matches for the selected type
     const expectedDocName = documentTypeMap[documentType];
-    const hasExactMatches = expectedDocName && checkState.availableIDVImages.some(img => img.document === expectedDocName);
+    const hasExactMatches = expectedDocName && checkState.availableIDVImages.some(img => {
+      if (Array.isArray(expectedDocName)) {
+        return expectedDocName.includes(img.document);
+      }
+      return img.document === expectedDocName;
+    });
     
     if (!hasExactMatches) {
       console.log(`⚠️ No exact matches for ${expectedDocName}, showing image lists for user to choose`);

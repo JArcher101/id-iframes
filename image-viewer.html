@@ -2438,6 +2438,8 @@
                         <option value="Passport">Passport</option>
                         <option value="Driving Licence">Driving Licence</option>
                         <option value="Passport Card">Passport Card</option>
+                        <option value="National Identity Card">National Identity Card</option>
+                        <option value="Residence Permit">Residence Permit</option>
                         <option value="Entry Visa">Entry Visa</option>
                         <option value="PASS card">PASS card</option>
                         <option value="Blue badge">Blue badge</option>
@@ -2618,7 +2620,7 @@
             const photoCards = document.querySelectorAll('.uploader-card');
             const hasPhotoID = Array.from(photoCards).some(card => {
                 const dropdown = card.querySelector('.document-dropdown');
-                return dropdown && dropdown.value && ['Passport', 'Driving Licence', 'Passport Card', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'].includes(dropdown.value);
+                return dropdown && dropdown.value && ['Passport', 'Driving Licence', 'Passport Card', 'National Identity Card', 'Residence Permit', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'].includes(dropdown.value);
             });
             
             if (hasPhotoID) {
@@ -2903,7 +2905,7 @@
             let addressIdUploaded = false;
             
             // Define document type arrays
-            const photoIdTypes = ['Passport', 'Driving Licence', 'Passport Card', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'];
+            const photoIdTypes = ['Passport', 'Driving Licence', 'Passport Card', 'National Identity Card', 'Residence Permit', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'];
             const addressIdTypes = ['Bank Statement', 'Utility Bill', 'GOV Letter', 'Official Letter', 'NHS Letter', 'Home Insurance', 'Council Tax Bill', 'Voter Registration', 'Tenancy Agreement', 'Other'];
             
             // Check existing images first
@@ -3318,7 +3320,7 @@
             const photoCards = document.querySelectorAll('.uploader-card');
             const hasPhotoID = Array.from(photoCards).some(card => {
                 const dropdown = card.querySelector('.document-dropdown');
-                return dropdown && dropdown.value && ['Passport', 'Driving Licence', 'Passport Card', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'].includes(dropdown.value);
+                return dropdown && dropdown.value && ['Passport', 'Driving Licence', 'Passport Card', 'National Identity Card', 'Residence Permit', 'Entry Visa', 'PASS card', 'Blue badge', 'Firearms Certificate', 'Other Photo ID Card'].includes(dropdown.value);
             });
             
             if (!hasPhotoID) {
