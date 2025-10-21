@@ -290,14 +290,16 @@ Sends request-data message to parent with:
     },
     
     sendRequestData: function(s3Key = null) {
-      const requestData = window.RequestFormCore.requestData();
+      const updatedData = window.RequestFormCore.buildUpdatedClientData();
       const messageInput = document.getElementById('messageInput');
       const hasMessage = messageInput && messageInput.value.trim();
       
       const payload = {
         type: 'request-data',
-        request: 'formJ',
-        data: requestData
+        requestType: 'formJ',
+        user: window.RequestFormCore.requestData().user || '',
+        _id: window.RequestFormCore.requestData()._id || '',
+        data: updatedData
       };
       
       // Only include message if there's text content or a file
@@ -314,7 +316,7 @@ Sends request-data message to parent with:
             };
           }
           
-          payload.message = messageObj;
+          payload.messageObj = messageObj;
         }
       }
       
@@ -327,7 +329,7 @@ Sends request-data message to parent with:
     
     createMessageObject: function() {
       const messageInput = document.getElementById('messageInput');
-      const userEmail = window.RequestFormCore.requestData.user || '';
+      const userEmail = window.RequestFormCore.requestData().user || '';
       
       return {
         time: new Date().toLocaleString('en-GB', { 
@@ -362,7 +364,7 @@ Sends request-data message to parent with:
         const fileData = {
           type: 'Document',
           document: 'Form J Attachment',
-          uploader: window.RequestFormCore.requestData.user || '',
+          uploader: window.RequestFormCore.requestData().user || '',
           data: {
             type: file.type,
             size: file.size,
@@ -375,7 +377,7 @@ Sends request-data message to parent with:
         window.parent.postMessage({
           type: 'file-data',
           files: [fileData],
-          _id: window.RequestFormCore.requestData._id || ''
+          _id: window.RequestFormCore.requestData()._id || ''
         }, '*');
         
         return null;

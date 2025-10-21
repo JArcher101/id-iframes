@@ -121,13 +121,15 @@ If file present, follows message-iframe.html upload flow:
         };
       }
       
-      const requestData = window.RequestFormCore.requestData();
+      const updatedData = window.RequestFormCore.buildUpdatedClientData();
       
       window.parent.postMessage({
         type: 'request-data',
-        request: 'note',
-        data: requestData,
-        message: messageObj
+        requestType: 'note',
+        user: window.RequestFormCore.requestData().user || '',
+        _id: window.RequestFormCore.requestData()._id || '',
+        data: updatedData,
+        messageObj: messageObj
       }, '*');
       
       this.uploadingFile = false;
@@ -137,7 +139,7 @@ If file present, follows message-iframe.html upload flow:
     
     createMessageObject: function() {
       const messageInput = document.getElementById('messageInput');
-      const userEmail = window.RequestFormCore.requestData.user || '';
+      const userEmail = window.RequestFormCore.requestData().user || '';
       
       return {
         time: new Date().toLocaleString('en-GB', { 
@@ -168,7 +170,7 @@ If file present, follows message-iframe.html upload flow:
         const fileData = {
           type: 'Document',
           document: 'Note Attachment',
-          uploader: window.RequestFormCore.requestData.user || '',
+          uploader: window.RequestFormCore.requestData().user || '',
           data: {
             type: file.type,
             size: file.size,
@@ -181,7 +183,7 @@ If file present, follows message-iframe.html upload flow:
         window.parent.postMessage({
           type: 'file-data',
           files: [fileData],
-          _id: window.RequestFormCore.requestData._id || ''
+          _id: window.RequestFormCore.requestData()._id || ''
         }, '*');
         
         return null;
