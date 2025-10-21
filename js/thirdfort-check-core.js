@@ -5196,6 +5196,7 @@ function buildCompleteRequest() {
 
 /**
  * Submit check request(s) to parent
+ * Routes to appropriate handler based on check type
  */
 function submitCheckRequest() {
   console.log('🚀 Submitting check request...');
@@ -5211,19 +5212,112 @@ function submitCheckRequest() {
   
   console.log('✅ Validation passed');
   
-  // Build request objects
-  const requests = buildCompleteRequest();
-  
-  console.log('📦 Request objects built:', requests);
-  
-  // Send to parent via postMessage
-  window.parent.postMessage({
-    type: 'request-data',
-    requests: requests,
-    clientId: checkState.clientData?._id
-  }, '*');
+  // Route to appropriate handler based on check type
+  if (checkState.checkType === 'kyb') {
+    submitKYBCheck();
+  } else if (checkState.checkType === 'electronic-id') {
+    submitElectronicIDCheck();
+  } else if (checkState.checkType === 'idv-lite') {
+    submitLiteIDVCheck();
+  }
   
   console.log('✅ Request sent to parent');
+}
+
+/**
+ * Submit KYB check
+ */
+function submitKYBCheck() {
+  const kybData = buildKYBRequest();
+  
+  console.log('📤 Submitting KYB check:', kybData);
+  
+  window.parent.postMessage({
+    type: 'kyb-check',
+    data: kybData,
+    clientId: checkState.clientData?._id,
+    timestamp: new Date().toISOString()
+  }, '*');
+}
+
+/**
+ * Submit Electronic ID check
+ */
+function submitElectronicIDCheck() {
+  const electronicData = buildElectronicIDRequest();
+  
+  console.log('📤 Submitting Electronic ID check:', electronicData);
+  
+  window.parent.postMessage({
+    type: 'electronic-check',
+    data: electronicData,
+    clientId: checkState.clientData?._id,
+    timestamp: new Date().toISOString()
+  }, '*');
+}
+
+/**
+ * Submit Lite Screen and/or IDV check
+ */
+function submitLiteIDVCheck() {
+  const payload = {
+    clientId: checkState.clientData?._id,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Build Lite Screen data (if selected)
+  if (checkState.includeLiteScreen) {
+    payload.liteScreen = buildLiteScreenRequest();
+  }
+  
+  // Build IDV data (if selected)
+  if (checkState.includeIDV) {
+    const firstName = document.getElementById('idvFirstName')?.value.trim();
+    const middleName = document.getElementById('idvMiddleName')?.value.trim();
+    const lastName = document.getElementById('idvLastName')?.value.trim();
+    const fullName = middleName ? `${firstName} ${middleName} ${lastName}` : `${firstName} ${lastName}`;
+    
+    const phone = checkState.clientData?.cI?.m?.m;
+    const countryCode = checkState.clientData?.cI?.m?.c || '+44';
+    const fullPhone = phone ? `${countryCode}${phone}` : null;
+    
+    if (fullPhone) {
+      payload.idv = {
+        type: 'document',
+        ref: checkState.checkReference || checkState.clientData?.mD || 'IDV Check',
+        name: `${fullName} - Document Verification`,
+        request: {
+          data: {
+            name: {
+              first: firstName,
+              last: lastName,
+              other: middleName || undefined
+            }
+          },
+          reports: [
+            { type: 'identity:lite' }
+          ]
+        }
+      };
+      
+      // Add document images
+      const documents = buildIDVDocumentsObject();
+      if (documents.length > 0) {
+        payload.idvDocuments = {
+          documentType: checkState.idvDocumentType,
+          documents: documents  // Array of {s3Key, side}
+        };
+      }
+    }
+  }
+  
+  console.log('📤 Submitting Lite/IDV check:', payload);
+  
+  window.parent.postMessage({
+    type: 'lite-idv-check',
+    data: payload,
+    timestamp: new Date().toISOString()
+  }, '*');
 }
 
 /**
