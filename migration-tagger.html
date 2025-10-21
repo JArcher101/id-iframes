@@ -1960,13 +1960,17 @@
         }
 
         beginBtn.addEventListener('click', () => {
+            console.log('Begin button clicked');
             // Update stored limit
             currentLimit = parseInt(limitInput.value, 10) || 10;
+            console.log('Current limit set to:', currentLimit);
             fetchDataFromParent();
         });
 
         // Initialize
         console.log('Migration tagger loaded and ready');
+        console.log('Begin button element:', beginBtn);
+        console.log('Limit input element:', limitInput);
     </script>
 </body>
 </html>
