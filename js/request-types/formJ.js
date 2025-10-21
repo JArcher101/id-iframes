@@ -290,7 +290,7 @@ Sends request-data message to parent with:
     },
     
     sendRequestData: function(s3Key = null) {
-      const requestData = window.RequestFormCore.requestData;
+      const requestData = window.RequestFormCore.requestData();
       const messageInput = document.getElementById('messageInput');
       const hasMessage = messageInput && messageInput.value.trim();
       

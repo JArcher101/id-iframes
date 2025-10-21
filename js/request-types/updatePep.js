@@ -121,7 +121,7 @@ If file present, follows message-iframe.html upload flow:
         };
       }
       
-      const requestData = window.RequestFormCore.requestData;
+      const requestData = window.RequestFormCore.requestData();
       
       window.parent.postMessage({
         type: 'request-data',
