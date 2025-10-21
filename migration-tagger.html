@@ -1613,102 +1613,77 @@
             const total = links.length;
             const uploadDataWithBlobs = window.uploadDataWithBlobs || [];
             
-            // Group uploads by entry for batch processing
-            const uploadsByEntry = new Map();
-            uploadDataWithBlobs.forEach((item, index) => {
-                if (!uploadsByEntry.has(item.entryId)) {
-                    uploadsByEntry.set(item.entryId, []);
+            console.log(`⚡ Uploading ALL ${total} files simultaneously with Promise.all()`);
+            
+            // Create upload promise for each file
+            const uploadPromises = uploadDataWithBlobs.map(async (uploadItem, index) => {
+                const link = links[index];
+                const blob = uploadItem.blob;
+                const fileItem = document.getElementById(`file-${index}`);
+                const badge = document.getElementById(`badge-${index}`);
+                
+                // Update to uploading state
+                if (fileItem && badge) {
+                    fileItem.classList.add('uploading');
+                    badge.textContent = 'Uploading';
+                    badge.className = 'file-upload-item-badge badge-uploading';
                 }
-                uploadsByEntry.get(item.entryId).push({
-                    index: index,
-                    link: links[index],
-                    s3Key: s3Keys[index],
-                    blob: item.blob
-                });
+                
+                try {
+                    if (!blob) {
+                        throw new Error('Image data not found. Please refresh and try again.');
+                    }
+                    
+                    // Upload to S3 using pre-fetched blob
+                    const uploadResponse = await fetch(link, {
+                        method: 'PUT',
+                        body: blob,
+                        headers: {
+                            'Content-Type': blob.type || 'image/jpeg'
+                        }
+                    });
+                    
+                    if (!uploadResponse.ok) {
+                        throw new Error(`Upload failed with status ${uploadResponse.status}`);
+                    }
+                    
+                    // Success
+                    if (fileItem && badge) {
+                        fileItem.classList.remove('uploading');
+                        fileItem.classList.add('success');
+                        badge.textContent = 'Success ✓';
+                        badge.className = 'file-upload-item-badge badge-success';
+                    }
+                    
+                    return { success: true, index };
+                    
+                } catch (error) {
+                    console.error(`Upload error for file ${index}:`, error);
+                    
+                    // Error
+                    if (fileItem && badge) {
+                        fileItem.classList.remove('uploading');
+                        fileItem.classList.add('error');
+                        badge.textContent = 'Failed ✗';
+                        badge.className = 'file-upload-item-badge badge-error';
+                    }
+                    
+                    return { success: false, index, error };
+                }
             });
             
-            let completed = 0;
-            let successCount = 0;
+            // Upload ALL files simultaneously and wait for all to complete
+            const results = await Promise.all(uploadPromises);
             
-            console.log(`⚡ Uploading ${total} files in ${uploadsByEntry.size} batches (by entry)`);
+            // Count successes
+            const successCount = results.filter(r => r.success).length;
+            const completed = results.length;
             
-            // Upload each entry's images in parallel
-            for (const [entryId, uploads] of uploadsByEntry) {
-                console.log(`🚀 Uploading ${uploads.length} images for entry ${entryId} in parallel`);
-                
-                // Create array of upload promises for this entry
-                const uploadPromises = uploads.map(async (uploadItem) => {
-                    const { index, link, s3Key, blob } = uploadItem;
-                    const fileItem = document.getElementById(`file-${index}`);
-                    const badge = document.getElementById(`badge-${index}`);
-                    
-                    // Update to uploading state
-                    if (fileItem && badge) {
-                        fileItem.classList.add('uploading');
-                        badge.textContent = 'Uploading';
-                        badge.className = 'file-upload-item-badge badge-uploading';
-                    }
-                    
-                    try {
-                        if (!blob) {
-                            throw new Error('Image data not found. Please refresh and try again.');
-                        }
-                        
-                        // Upload to S3 using pre-fetched blob
-                        const uploadResponse = await fetch(link, {
-                            method: 'PUT',
-                            body: blob,
-                            headers: {
-                                'Content-Type': blob.type || 'image/jpeg'
-                            }
-                        });
-                        
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Upload failed with status ${uploadResponse.status}`);
-                        }
-                        
-                        // Success
-                        if (fileItem && badge) {
-                            fileItem.classList.remove('uploading');
-                            fileItem.classList.add('success');
-                            badge.textContent = 'Success ✓';
-                            badge.className = 'file-upload-item-badge badge-success';
-                        }
-                        
-                        return { success: true, index };
-                        
-                    } catch (error) {
-                        console.error('Upload error:', error);
-                        
-                        // Error
-                        if (fileItem && badge) {
-                            fileItem.classList.remove('uploading');
-                            fileItem.classList.add('error');
-                            badge.textContent = 'Failed ✗';
-                            badge.className = 'file-upload-item-badge badge-error';
-                        }
-                        
-                        return { success: false, index, error };
-                    }
-                });
-                
-                // Wait for all uploads in this entry to complete
-                const results = await Promise.all(uploadPromises);
-                
-                // Count successes
-                results.forEach(result => {
-                    completed++;
-                    if (result.success) successCount++;
-                    
-                    // Update progress
-                    const percentage = Math.round((completed / total) * 100);
-                    progressFill.style.width = `${percentage}%`;
-                    progressFill.textContent = `${percentage}%`;
-                    uploadStatus.textContent = `Uploaded ${completed} of ${total} files (${successCount} successful)`;
-                });
-                
-                console.log(`✅ Entry complete: ${results.filter(r => r.success).length}/${results.length} successful`);
-            }
+            // Update final progress
+            progressFill.style.width = '100%';
+            progressFill.textContent = '100%';
+            
+            console.log(`✅ All uploads complete: ${successCount}/${total} successful`);
             
             // All uploads complete
             if (successCount === total) {
