@@ -910,11 +910,11 @@
         function handleBatchData(data) {
             console.log('Received migration batch:', data);
             
-            // Hide loading state and begin controls
+            // Hide loading state
             loadingState.classList.add('hidden');
-            beginControls.classList.add('hidden');
             
-            // Show progress info in header
+            // Show begin controls and progress info in header
+            beginControls.classList.remove('hidden');
             progressInfo.classList.remove('hidden');
             
             // Close upload modal if it's open (allows interaction with new data)
@@ -1925,7 +1925,7 @@
         Begin Button - Fetch Data from Parent
         =====================================================================
         */
-        beginBtn.addEventListener('click', () => {
+        function fetchDataFromParent() {
             const limit = parseInt(limitInput.value, 10) || 10;
             
             // Validate limit
@@ -1936,15 +1936,37 @@
             
             console.log('📤 Requesting data from parent with limit:', limit);
             
-            // Hide begin controls and show loading state
+            // Hide all sections and show loading state
+            mainInterface.classList.add('hidden');
+            noDataState.classList.add('hidden');
             beginControls.classList.add('hidden');
+            progressInfo.classList.add('hidden');
             loadingState.classList.remove('hidden');
+            
+            // Clear current data
+            batchData = null;
+            currentEntryIndex = 0;
+            currentImageIndex = 0;
+            imageCache.clear();
             
             // Send fetch-data message to parent
             window.parent.postMessage({
                 type: 'fetch-data',
                 limit: limit
             }, '*');
+        }
+
+        beginBtn.addEventListener('click', () => {
+            fetchDataFromParent();
+        });
+
+        // Re-fetch when limit changes while viewing data
+        limitInput.addEventListener('change', () => {
+            // Only re-fetch if we already have data loaded
+            if (batchData !== null) {
+                console.log('Limit changed - discarding current data and requesting new batch');
+                fetchDataFromParent();
+            }
         });
 
         // Initialize
