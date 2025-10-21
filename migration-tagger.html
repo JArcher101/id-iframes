@@ -808,6 +808,9 @@
         let currentImageIndex = 0;
         let uploader = '';
         let pendingHotkey = ''; // For two-character hotkeys (DF, DB, OS, OF, OB)
+        
+        // Image cache for background pre-fetching
+        const imageCache = new Map(); // Key: entryId-imageIndex, Value: {blob, metadata}
 
         // DOM elements
         const loadingState = document.getElementById('loadingState');
