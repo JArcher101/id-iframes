@@ -1211,10 +1211,6 @@
                         </div>
                     </div>
 
-                    <!-- Confirm Prompt (shown when entry complete) -->
-                    <div id="confirmPrompt" class="confirm-prompt hidden">
-                        ✅ Entry Complete! Press <strong>ENTER</strong> to continue or click next entry →
-                    </div>
                 </div>
             </div>
 
@@ -1293,7 +1289,6 @@
         const imageCounter = document.getElementById('imageCounter');
         const currentEntryName = document.getElementById('currentEntryName');
         const currentEntryDetails = document.getElementById('currentEntryDetails');
-        const confirmPrompt = document.getElementById('confirmPrompt');
         const entryProgress = document.getElementById('entryProgress');
         const imageProgress = document.getElementById('imageProgress');
         const confirmModal = document.getElementById('confirmModal');
@@ -1522,14 +1517,6 @@
             mainImage.src = image.src;
             imageCounter.textContent = `${currentImageIndex + 1} / ${entry.images.length}`;
             
-            // Check if entry is complete
-            const entryComplete = entry.images.every(img => img.tag !== null);
-            if (entryComplete && !entry.complete) {
-                confirmPrompt.classList.remove('hidden');
-            } else {
-                confirmPrompt.classList.add('hidden');
-            }
-            
             // Update stats
             updateStats();
             
@@ -1634,55 +1621,22 @@
                 return;
             }
             
-            // Handle Enter key to move to next entry
-            if (key === 'enter') {
-                e.preventDefault(); // Prevent any default form submission behavior
-                
-                const entry = batchData[currentEntryIndex];
-                const entryComplete = entry.images.every(img => img.tag !== null);
-                
-                console.log('Enter pressed:', {
-                    entryIndex: currentEntryIndex,
-                    entryName: entry.name,
-                    entryComplete: entryComplete,
-                    alreadyMarkedComplete: entry.complete,
-                    tags: entry.images.map(img => img.tag),
-                    isLastEntry: currentEntryIndex === batchData.length - 1
-                });
-                
-                if (entryComplete && !entry.complete) {
-                    entry.complete = true;
-                    confirmPrompt.classList.add('hidden');
-                    
-                    console.log('Marking entry complete');
-                    
-                    // Start background pre-fetching for this entry's images
-                    prefetchEntryImages(entry);
-                    
-                    // Move to next entry OR update UI if last entry
-                    if (currentEntryIndex < batchData.length - 1) {
-                        console.log('Moving to next entry');
-                        currentEntryIndex++;
-                        currentImageIndex = 0;
-                        renderLeftPanel();
-                        updateDisplay();
-                        updateProgressInfo();
-                        
-                        // Scroll to active entry in left panel
-                        scrollToActiveEntry();
-                    } else {
-                        console.log('Last entry in batch - updating UI only');
-                        // Last entry - update UI to show complete state and enable upload button
-                        renderLeftPanel(); // This will show entry as green
-                        confirmPrompt.classList.add('hidden'); // Hide confirm prompt
-                        updateDisplay(); // Refresh display
-                        updateProgressInfo(); // Update progress
-                        checkIfAllComplete(); // Enable upload button if all complete
-                    }
-                } else {
-                    console.log('Cannot mark complete: entry not complete or already marked complete');
+            // Handle ESC key to close confirmation modal
+            if (e.key === 'Escape') {
+                if (!confirmModal.classList.contains('hidden')) {
+                    e.preventDefault();
+                    hideConfirmModal();
+                    return;
                 }
-                return;
+            }
+            
+            // Handle Enter key in confirmation modal to start upload
+            if (key === 'enter') {
+                if (!confirmModal.classList.contains('hidden')) {
+                    e.preventDefault();
+                    confirmAndUpload();
+                    return;
+                }
             }
             
             // Handle two-character hotkeys (DF, DB, OS, OF, OB)
@@ -1757,6 +1711,35 @@
             const image = entry.images[currentImageIndex];
             
             image.tag = tag;
+            
+            // Check if this entry is now complete
+            const entryComplete = entry.images.every(img => img.tag !== null);
+            
+            if (entryComplete && !entry.complete) {
+                // Mark entry as complete
+                entry.complete = true;
+                
+                // Start background pre-fetching for this entry's images
+                prefetchEntryImages(entry);
+                
+                // Auto-advance to next entry if available
+                if (currentEntryIndex < batchData.length - 1) {
+                    currentEntryIndex++;
+                    currentImageIndex = 0;
+                    renderLeftPanel();
+                    updateDisplay();
+                    updateProgressInfo();
+                    scrollToActiveEntry();
+                    return;
+                } else {
+                    // Last entry - update UI and show confirmation modal
+                    renderLeftPanel();
+                    updateDisplay();
+                    updateProgressInfo();
+                    checkIfAllComplete();
+                    return;
+                }
+            }
             
             // Auto-advance to next untagged image in current entry
             let nextImageIndex = currentImageIndex + 1;
@@ -2316,8 +2299,8 @@
                 });
             });
             
-            // Update summary
-            confirmSummary.textContent = `${totalToUpload} images will be uploaded${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}`;
+            // Update summary with keyboard hint
+            confirmSummary.textContent = `${totalToUpload} images will be uploaded${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''} • Press ESC to cancel, ENTER to upload`;
             
             // Build confirmation cards
             confirmCardsContainer.innerHTML = '';
