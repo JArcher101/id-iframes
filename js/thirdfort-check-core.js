@@ -153,6 +153,13 @@ function initializeEventListeners() {
     liteCountry.addEventListener('change', handleLiteCountryChange);
   }
   
+  // Lite Screen Address Autocomplete
+  const liteAddress = document.getElementById('liteAddress');
+  const liteAddressDropdown = document.getElementById('liteAddressDropdown');
+  if (liteAddress && liteAddressDropdown) {
+    setupLiteAddressAutocomplete(liteAddress, liteAddressDropdown);
+  }
+  
   // Lite Screen Manual Address Validation and Change Detection
   const liteManualAddressInputs = [
     'liteFlatNumber', 'liteBuildingNumber', 'liteBuildingName',
@@ -393,6 +400,16 @@ function handlePostMessage(event) {
       `;
     }
   }
+  
+  if (data.type === 'address-results') {
+    console.log('Received address autocomplete results:', data.suggestions);
+    displayAddressSuggestions(data.suggestions, data.field);
+  }
+  
+  if (data.type === 'address-data') {
+    console.log('Received full address data:', data.address);
+    handleAddressData(data.address, data.field);
+  }
 }
 
 /**
@@ -434,6 +451,257 @@ function notifyParentReady() {
     type: 'check-ready',
     timestamp: new Date().toISOString()
   }, '*');
+}
+
+/**
+ * Format getaddress.io address object to Thirdfort API format
+ * - UK (GBR): Uses individual fields (building_name, building_number, flat_number, street, etc.)
+ * - USA/CAN: Uses address_1, address_2, state
+ * - Other: Uses address_1, address_2
+ * - Per Thirdfort API spec: UK addresses must NOT include address_1/address_2
+ */
+function formatToThirdfort(getAddressData, country = 'GBR') {
+  if (!getAddressData) return null;
+  
+  // UK addresses: Individual fields only (no address_1, address_2)
+  if (country === 'GBR') {
+    let buildingNumber = getAddressData.building_number || getAddressData.sub_building_number || '';
+    let buildingNameFromLine1 = '';
+    let flatNumber = getAddressData.flat_number || '';
+    
+    // Parse line_1 intelligently using thoroughfare as the key
+    if (getAddressData.line_1 && (!buildingNumber || !getAddressData.building_name)) {
+      let addressPrefix = getAddressData.line_1.trim();
+      
+      // Remove thoroughfare/street from line_1 if present
+      if (getAddressData.thoroughfare && addressPrefix.includes(getAddressData.thoroughfare)) {
+        addressPrefix = addressPrefix.replace(getAddressData.thoroughfare, '').replace(/,\s*$/, '').trim();
+      }
+      
+      // Now parse the remaining prefix (which has street already removed)
+      if (addressPrefix) {
+        // Check for flat number (e.g., "Flat 1A", "Flat 1A, Building Name")
+        const flatMatch = addressPrefix.match(/^(?:Flat|flat|Apartment|apartment|Unit|unit|Apt|apt)\s+(\d+[a-zA-Z]?)/i);
+        if (flatMatch && !flatNumber) {
+          flatNumber = flatMatch[1];
+          addressPrefix = addressPrefix.substring(flatMatch[0].length).replace(/^[,\s]+/, '').trim();
+        }
+        
+        // Check if remaining starts with a number (building number like "94", "1A", etc.)
+        if (!buildingNumber) {
+          const numberMatch = addressPrefix.match(/^(\d+[a-zA-Z]?)\b/);
+          if (numberMatch) {
+            buildingNumber = numberMatch[1];
+            addressPrefix = addressPrefix.substring(numberMatch[0].length).replace(/^[,\s]+/, '').trim();
+          }
+        }
+        
+        // Whatever remains is the building name
+        if (addressPrefix) {
+          buildingNameFromLine1 = addressPrefix;
+        }
+      }
+    }
+    
+    // Building name: Combine all available building name data
+    const buildingNameParts = [
+      getAddressData.sub_building_name,
+      getAddressData.building_name || buildingNameFromLine1,
+      getAddressData.line_2 && getAddressData.line_2 !== getAddressData.thoroughfare ? getAddressData.line_2 : ''
+    ].filter(p => p && p.trim());
+    
+    return {
+      building_name: buildingNameParts.join(', ') || '',
+      building_number: buildingNumber,
+      flat_number: flatNumber,
+      postcode: getAddressData.postcode || '',
+      street: getAddressData.thoroughfare || getAddressData.line_3 || getAddressData.street || '',
+      sub_street: getAddressData.sub_street || '',
+      town: getAddressData.town_or_city || getAddressData.town || '',
+      country: country
+    };
+  }
+  
+  // USA/Canada: address_1, address_2, state required
+  if (country === 'USA' || country === 'CAN') {
+    return {
+      address_1: getAddressData.line_1 || '',
+      address_2: getAddressData.line_2 || getAddressData.line_3 || getAddressData.line_4 || '',
+      postcode: getAddressData.postcode || '',
+      street: getAddressData.thoroughfare || getAddressData.street || '',
+      sub_street: getAddressData.sub_street || '',
+      town: getAddressData.town_or_city || getAddressData.town || '',
+      state: getAddressData.state || getAddressData.province || '',
+      country: country
+    };
+  }
+  
+  // Other countries: address_1, address_2 (no individual building fields)
+  return {
+    address_1: getAddressData.line_1 || '',
+    address_2: getAddressData.line_2 || getAddressData.line_3 || getAddressData.line_4 || '',
+    postcode: getAddressData.postcode || '',
+    street: getAddressData.thoroughfare || getAddressData.street || '',
+    sub_street: getAddressData.sub_street || '',
+    town: getAddressData.town_or_city || getAddressData.town || '',
+    state: '',
+    country: country
+  };
+}
+
+/**
+ * Display address autocomplete suggestions in dropdown
+ */
+function displayAddressSuggestions(suggestions, field) {
+  const liteAddressDropdown = document.getElementById('liteAddressDropdown');
+  
+  if (!liteAddressDropdown) return;
+  
+  if (!suggestions || suggestions.length === 0) {
+    liteAddressDropdown.innerHTML = '<div class="address-no-results">No addresses found</div>';
+    liteAddressDropdown.classList.remove('hidden');
+    return;
+  }
+  
+  liteAddressDropdown.innerHTML = '';
+  
+  suggestions.forEach((suggestion) => {
+    const item = document.createElement('div');
+    item.className = 'address-dropdown-item';
+    item.textContent = suggestion.address;
+    
+    item.addEventListener('click', () => {
+      selectAddressSuggestion(suggestion.id, suggestion.address);
+    });
+    
+    liteAddressDropdown.appendChild(item);
+  });
+  
+  liteAddressDropdown.classList.remove('hidden');
+}
+
+/**
+ * Handle address selection from dropdown
+ */
+function selectAddressSuggestion(addressId, displayText) {
+  const liteAddress = document.getElementById('liteAddress');
+  const liteAddressDropdown = document.getElementById('liteAddressDropdown');
+  
+  if (liteAddress) {
+    liteAddress.value = displayText;
+  }
+  
+  if (liteAddressDropdown) {
+    liteAddressDropdown.classList.add('hidden');
+  }
+  
+  // Request full address from parent
+  console.log('📡 Requesting full address for ID:', addressId);
+  window.parent.postMessage({
+    type: 'address-lookup',
+    addressId: addressId,
+    field: 'lite'
+  }, '*');
+}
+
+/**
+ * Handle full address data from parent
+ */
+function handleAddressData(addressData, field) {
+  const liteCountry = document.getElementById('liteCountry');
+  const country = liteCountry?.dataset.countryCode || 'GBR';
+  const thirdfortAddress = formatToThirdfort(addressData, country);
+  
+  // Store the Thirdfort-formatted address in the appropriate variable
+  if (field === 'lite' || field === 'current') {
+    liteCurrentAddressObject = thirdfortAddress;
+    console.log('✅ Lite Screen address stored:', liteCurrentAddressObject);
+  }
+  
+  // If it's a previous address (in case we add that later)
+  if (field === 'previous') {
+    litePreviousAddressObject = thirdfortAddress;
+    console.log('✅ Lite Screen previous address stored:', litePreviousAddressObject);
+  }
+}
+
+/**
+ * Setup address autocomplete with debouncing for Lite Screen
+ */
+function setupLiteAddressAutocomplete(inputElement, dropdownElement) {
+  let addressDebounceTimer = null;
+  let selectedIndex = -1;
+  
+  inputElement.addEventListener('input', (e) => {
+    const searchTerm = e.target.value.trim();
+    
+    // Clear timer
+    if (addressDebounceTimer) clearTimeout(addressDebounceTimer);
+    
+    // Clear stored object when user types
+    liteCurrentAddressObject = null;
+    
+    // Hide dropdown if too short
+    if (searchTerm.length < 7) {
+      dropdownElement.classList.add('hidden');
+      dropdownElement.innerHTML = '';
+      return;
+    }
+    
+    // Show loading
+    dropdownElement.classList.remove('hidden');
+    dropdownElement.innerHTML = '<div class="address-loading">Searching addresses...</div>';
+    
+    // Debounce 300ms
+    addressDebounceTimer = setTimeout(() => {
+      console.log('📡 API call for address autocomplete:', searchTerm);
+      window.parent.postMessage({
+        type: 'address-search',
+        searchTerm: searchTerm,
+        field: 'lite'
+      }, '*');
+    }, 300);
+  });
+  
+  // Keyboard navigation
+  inputElement.addEventListener('keydown', (e) => {
+    const items = dropdownElement.querySelectorAll('.address-dropdown-item');
+    if (items.length === 0) return;
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+      updateSelectedItem(items, selectedIndex);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIndex = Math.max(selectedIndex - 1, -1);
+      updateSelectedItem(items, selectedIndex);
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      items[selectedIndex].click();
+    } else if (e.key === 'Escape') {
+      dropdownElement.classList.add('hidden');
+      selectedIndex = -1;
+    }
+  });
+  
+  // Click outside to close
+  document.addEventListener('click', (e) => {
+    if (!inputElement.contains(e.target) && !dropdownElement.contains(e.target)) {
+      dropdownElement.classList.add('hidden');
+      selectedIndex = -1;
+    }
+  });
+  
+  function updateSelectedItem(items, index) {
+    items.forEach((item, i) => {
+      if (i === index) {
+        item.classList.add('selected');
+      } else {
+        item.classList.remove('selected');
+      }
+    });
+  }
 }
 
 /**
