@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID Migration Tagger</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: rgb(0, 60, 113);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .progress-info {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .main-layout {
+            display: flex;
+            height: calc(100vh - 160px);
+            min-height: 500px;
+        }
+
+        /* LEFT PANEL - Image List */
+        .left-panel {
+            width: 300px;
+            border-right: 2px solid #e0e0e0;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .entry-section {
+            border-bottom: 3px solid #e0e0e0;
+            padding: 12px;
+        }
+
+        .entry-section.complete {
+            background: #e8f5e9;
+        }
+
+        .entry-section.active {
+            background: #fff3cd;
+        }
+
+        .entry-header {
+            font-weight: 700;
+            color: rgb(0, 60, 113);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .entry-status {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        .entry-status.pending {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .entry-status.complete {
+            background: #28a745;
+            color: white;
+        }
+
+        .image-thumbnail {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 6px;
+            padding: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .image-thumbnail:hover {
+            background: rgba(0, 60, 113, 0.1);
+        }
+
+        .image-thumbnail.active {
+            background: rgba(74, 144, 226, 0.2);
+            border: 2px solid #4A90E2;
+        }
+
+        .image-thumbnail.tagged {
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .thumbnail-img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .thumbnail-info {
+            flex: 1;
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .thumbnail-tag {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #D4A574;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+
+        /* RIGHT PANEL - Main Tagging Area */
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .current-entry-info {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid rgb(0, 60, 113);
+        }
+
+        .current-entry-info h2 {
+            font-size: 1.1rem;
+            color: rgb(0, 60, 113);
+            margin-bottom: 4px;
+        }
+
+        .current-entry-info p {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .main-image-container {
+            flex: 1;
+            background: #000;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .image-counter-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .hotkey-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .hotkey-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .hotkey-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        .hotkey-item:active {
+            transform: scale(0.95);
+        }
+
+        .hotkey-key {
+            background: #4A90E2;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            min-width: 30px;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .hotkey-label {
+            font-size: 0.7rem;
+            opacity: 0.9;
+            pointer-events: none;
+        }
+
+        .confirm-prompt {
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            margin-top: 15px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .footer {
+            padding: 15px 20px;
+            border-top: 2px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafafa;
+        }
+
+        .upload-btn {
+            background: rgb(0, 60, 113);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .upload-btn:hover:not(:disabled) {
+            background: rgb(0, 40, 80);
+            transform: translateY(-1px);
+        }
+
+        .upload-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid rgb(0, 60, 113);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Upload progress modal */
+        .upload-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .upload-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .upload-modal h2 {
+            margin-bottom: 15px;
+            color: rgb(0, 60, 113);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4A90E2, #10a37f);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .file-upload-list {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .file-upload-item {
+            background: #f9f9f9;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .file-upload-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-upload-item-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .file-upload-item-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-pending {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .badge-uploading {
+            background: #4A90E2;
+            color: white;
+        }
+
+        .badge-success {
+            background: #10a37f;
+            color: white;
+        }
+
+        .badge-error {
+            background: #e02424;
+            color: white;
+        }
+
+        .file-upload-item-details {
+            color: #666;
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        .file-upload-item.uploading {
+            border-color: #4A90E2;
+            box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2);
+        }
+
+        .file-upload-item.success {
+            border-color: #10a37f;
+            background: #e8f5e9;
+        }
+
+        .file-upload-item.error {
+            border-color: #e02424;
+            background: #ffebee;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .mock-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            z-index: 9999;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .mock-btn:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏷️ ID Image Migration Tool</h1>
+            <div class="progress-info">
+                <span id="entryProgress">Entry 0/0</span> | 
+                <span id="imageProgress">Image 0/0</span>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading-state">
+            <div class="spinner"></div>
+            <p>Waiting for data from parent...</p>
+        </div>
+
+        <!-- No Data State -->
+        <div id="noDataState" class="no-data hidden">
+            <h2>📭 No Entries to Process</h2>
+            <p>No entries were provided for migration.</p>
+        </div>
+
+        <!-- Main Tagging Interface -->
+        <div id="mainInterface" class="hidden">
+            <div class="main-layout">
+                <!-- Left Panel: Image List -->
+                <div class="left-panel" id="leftPanel">
+                    <!-- Entry sections will be dynamically added here -->
+                </div>
+
+                <!-- Right Panel: Main Tagging Area -->
+                <div class="right-panel">
+                    <div class="current-entry-info">
+                        <h2 id="currentEntryName">Entry Name</h2>
+                        <p id="currentEntryDetails">Details</p>
+                    </div>
+
+                    <div class="main-image-container" id="mainImageContainer">
+                        <img id="mainImage" src="" alt="ID Document">
+                        <div class="image-counter-overlay" id="imageCounter">1 / 10</div>
+                        
+                        <!-- Hotkey Guide Overlay (clickable) -->
+                        <div class="hotkey-overlay">
+                            <div class="hotkey-item" onclick="tagCurrentImage('Passport')" title="Click to tag or press P">
+                                <div class="hotkey-key">P</div>
+                                <div class="hotkey-label">Passport</div>
+                            </div>
+                            <div class="hotkey-item" onclick="tagCurrentImage('Driving Licence Front')" title="Click to tag or press DF">
+                                <div class="hotkey-key">DF</div>
+                                <div class="hotkey-label">DL Front</div>
+                            </div>
+                            <div class="hotkey-item" onclick="tagCurrentImage('Driving Licence Back')" title="Click to tag or press DB">
+                                <div class="hotkey-key">DB</div>
+                                <div class="hotkey-label">DL Back</div>
+                            </div>
+                            <div class="hotkey-item" onclick="tagCurrentImage('Other Photo ID Single')" title="Click to tag or press OS">
+                                <div class="hotkey-key">OS</div>
+                                <div class="hotkey-label">Other ID</div>
+                            </div>
+                            <div class="hotkey-item" onclick="tagCurrentImage('Other Photo ID Front')" title="Click to tag or press OF">
+                                <div class="hotkey-key">OF</div>
+                                <div class="hotkey-label">Other Front</div>
+                            </div>
+                            <div class="hotkey-item" onclick="tagCurrentImage('Other Photo ID Back')" title="Click to tag or press OB">
+                                <div class="hotkey-key">OB</div>
+                                <div class="hotkey-label">Other Back</div>
+                            </div>
+                            <div class="hotkey-item" onclick="tagCurrentImage('Other')" title="Click to tag or press A">
+                                <div class="hotkey-key">A</div>
+                                <div class="hotkey-label">Address ID</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Prompt (shown when entry complete) -->
+                    <div id="confirmPrompt" class="confirm-prompt hidden">
+                        ✅ Entry Complete! Press <strong>ENTER</strong> to continue or click next entry →
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div class="stats">
+                    <strong id="taggedCount">0</strong> images tagged | 
+                    <strong id="remainingCount">0</strong> remaining
+                </div>
+                <button id="uploadBtn" class="upload-btn" disabled>Upload to S3</button>
+            </div>
+        </div>
+
+        <!-- Upload Progress Modal -->
+        <div id="uploadModal" class="upload-modal hidden">
+            <div class="upload-modal-content">
+                <h2>Uploading Images to S3</h2>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill">0%</div>
+                </div>
+                <p id="uploadStatus">Preparing upload...</p>
+                <div class="file-upload-list" id="fileUploadList"></div>
+            </div>
+        </div>
+
+        <!-- Error Popup (matching image-viewer.html styling) -->
+        <div id="errorPopup" class="upload-modal hidden">
+            <div class="upload-modal-content" style="background: #dc3545; padding: 20px; max-width: 400px;">
+                <button onclick="hideErrorPopup()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">×</button>
+                <h2 style="color: white; font-size: 1.1rem; margin-bottom: 10px; font-weight: 600;">Upload Error</h2>
+                <p id="errorMessage" style="color: white; margin: 0; line-height: 1.4; font-size: 0.9rem;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mock Data Button for Testing -->
+    <button id="mockBtn" class="mock-btn" onclick="loadMockData()">Load Test Data</button>
+
+    <script>
+        /*
+        =====================================================================
+        ID MIGRATION TAGGER - State Management
+        =====================================================================
+        */
+        let batchData = null; // Array of entries from parent
+        let currentBatchNumber = 0;
+        let totalBatches = 0;
+        let currentEntryIndex = 0;
+        let currentImageIndex = 0;
+        let uploader = '';
+        let pendingHotkey = ''; // For two-character hotkeys (DF, DB, OS, OF, OB)
+
+        // DOM elements
+        const loadingState = document.getElementById('loadingState');
+        const noDataState = document.getElementById('noDataState');
+        const mainInterface = document.getElementById('mainInterface');
+        const leftPanel = document.getElementById('leftPanel');
+        const mainImage = document.getElementById('mainImage');
+        const imageCounter = document.getElementById('imageCounter');
+        const currentEntryName = document.getElementById('currentEntryName');
+        const currentEntryDetails = document.getElementById('currentEntryDetails');
+        const confirmPrompt = document.getElementById('confirmPrompt');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const entryProgress = document.getElementById('entryProgress');
+        const imageProgress = document.getElementById('imageProgress');
+        const taggedCount = document.getElementById('taggedCount');
+        const remainingCount = document.getElementById('remainingCount');
+        const uploadModal = document.getElementById('uploadModal');
+        const progressFill = document.getElementById('progressFill');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const fileUploadList = document.getElementById('fileUploadList');
+
+        /*
+        =====================================================================
+        Message Handling from Parent
+        =====================================================================
+        */
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'migration-batch') {
+                handleBatchData(event.data);
+            } else if (event.data && event.data.type === 'put-links') {
+                handlePutLinks(event.data);
+            } else if (event.data && event.data.type === 'put-error') {
+                handlePutError(event.data);
+            } else if (event.data && event.data.type === 'backend-error') {
+                handleBackendError(event.data);
+            } else if (event.data && event.data.type === 'network-error') {
+                handleNetworkError(event.data);
+            }
+        });
+
+        function handleBatchData(data) {
+            console.log('Received migration batch:', data);
+            
+            batchData = data.entries || [];
+            currentBatchNumber = data.batchNumber || 1;
+            totalBatches = data.totalBatches || 1;
+            uploader = 'System transfer'; // Migration marker instead of user email
+            
+            if (batchData.length === 0) {
+                showNoData();
+                return;
+            }
+            
+            // Initialize tagging state for each entry
+            batchData.forEach(entry => {
+                entry.images = (entry.idPhotos || []).map((photo, index) => ({
+                    src: photo.src || photo,
+                    fileName: photo.fileName || `image-${index}.jpg`,
+                    tag: null, // Will be set by hotkeys
+                    uploaded: false
+                }));
+                entry.complete = false;
+            });
+            
+            currentEntryIndex = 0;
+            currentImageIndex = 0;
+            
+            renderInterface();
+            updateDisplay();
+        }
+
+        function showNoData() {
+            loadingState.classList.add('hidden');
+            noDataState.classList.remove('hidden');
+            mainInterface.classList.add('hidden');
+        }
+
+        /*
+        =====================================================================
+        Rendering Functions
+        =====================================================================
+        */
+        function renderInterface() {
+            loadingState.classList.add('hidden');
+            noDataState.classList.add('hidden');
+            mainInterface.classList.remove('hidden');
+            
+            // Render left panel entry list
+            renderLeftPanel();
+            
+            // Update progress info
+            updateProgressInfo();
+        }
+
+        function renderLeftPanel() {
+            leftPanel.innerHTML = '';
+            
+            batchData.forEach((entry, entryIdx) => {
+                const section = document.createElement('div');
+                section.className = 'entry-section';
+                if (entry.complete) section.classList.add('complete');
+                if (entryIdx === currentEntryIndex) section.classList.add('active');
+                
+                const statusClass = entry.complete ? 'complete' : 'pending';
+                const statusText = entry.complete ? 'Complete' : 'Pending';
+                
+                section.innerHTML = `
+                    <div class="entry-header">
+                        <span>${entry.fe}/${entry.clientNumber}/${entry.matterNumber}</span>
+                        <span class="entry-status ${statusClass}">${statusText}</span>
+                    </div>
+                    <div id="entry-${entryIdx}-images"></div>
+                `;
+                
+                leftPanel.appendChild(section);
+                
+                // Render image thumbnails for this entry
+                const imagesContainer = section.querySelector(`#entry-${entryIdx}-images`);
+                entry.images.forEach((img, imgIdx) => {
+                    const thumb = document.createElement('div');
+                    thumb.className = 'image-thumbnail';
+                    if (img.tag) thumb.classList.add('tagged');
+                    if (entryIdx === currentEntryIndex && imgIdx === currentImageIndex) {
+                        thumb.classList.add('active');
+                    }
+                    
+                    thumb.innerHTML = `
+                        <img class="thumbnail-img" src="${img.src}" alt="Image ${imgIdx + 1}">
+                        <div class="thumbnail-info">
+                            ${img.fileName}<br>
+                            ${img.tag ? `<strong>${img.tag}</strong>` : '<em>Not tagged</em>'}
+                        </div>
+                        ${img.tag ? `<div class="thumbnail-tag">${getTagShorthand(img.tag)}</div>` : ''}
+                    `;
+                    
+                    thumb.onclick = () => jumpToImage(entryIdx, imgIdx);
+                    imagesContainer.appendChild(thumb);
+                });
+            });
+        }
+
+        function getTagShorthand(tag) {
+            const map = {
+                'Passport': 'P',
+                'Driving Licence Front': 'DF',
+                'Driving Licence Back': 'DB',
+                'Other Photo ID Single': 'OS',
+                'Other Photo ID Front': 'OF',
+                'Other Photo ID Back': 'OB',
+                'Other': 'A'
+            };
+            return map[tag] || tag;
+        }
+
+        function updateDisplay() {
+            const entry = batchData[currentEntryIndex];
+            const image = entry.images[currentImageIndex];
+            
+            // Update current entry info
+            currentEntryName.textContent = `${entry.fe}/${entry.clientNumber}/${entry.matterNumber} - ${entry.name}`;
+            currentEntryDetails.textContent = `Entry ${currentEntryIndex + 1} of ${batchData.length} | Image ${currentImageIndex + 1} of ${entry.images.length}`;
+            
+            // Update main image
+            mainImage.src = image.src;
+            imageCounter.textContent = `${currentImageIndex + 1} / ${entry.images.length}`;
+            
+            // Check if entry is complete
+            const entryComplete = entry.images.every(img => img.tag !== null);
+            if (entryComplete && !entry.complete) {
+                confirmPrompt.classList.remove('hidden');
+            } else {
+                confirmPrompt.classList.add('hidden');
+            }
+            
+            // Update stats
+            updateStats();
+            
+            // Check if all entries complete
+            checkIfAllComplete();
+        }
+
+        function updateProgressInfo() {
+            entryProgress.textContent = `Entry ${currentEntryIndex + 1}/${batchData.length}`;
+            imageProgress.textContent = `Image ${currentImageIndex + 1}/${batchData[currentEntryIndex].images.length}`;
+        }
+
+        function updateStats() {
+            let tagged = 0;
+            let remaining = 0;
+            
+            batchData.forEach(entry => {
+                entry.images.forEach(img => {
+                    if (img.tag) tagged++;
+                    else remaining++;
+                });
+            });
+            
+            taggedCount.textContent = tagged;
+            remainingCount.textContent = remaining;
+        }
+
+        function checkIfAllComplete() {
+            const allComplete = batchData.every(entry => entry.complete);
+            uploadBtn.disabled = !allComplete;
+        }
+
+        function jumpToImage(entryIdx, imgIdx) {
+            // Auto-mark current entry as complete if all images tagged before switching
+            const currentEntry = batchData[currentEntryIndex];
+            if (currentEntry) {
+                const allTagged = currentEntry.images.every(img => img.tag !== null);
+                if (allTagged) {
+                    currentEntry.complete = true;
+                }
+            }
+            
+            currentEntryIndex = entryIdx;
+            currentImageIndex = imgIdx;
+            renderLeftPanel();
+            updateDisplay();
+            updateProgressInfo();
+            
+            // Scroll to active entry in left panel
+            scrollToActiveEntry();
+        }
+
+        /*
+        =====================================================================
+        Hotkey Handling
+        =====================================================================
+        */
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            
+            // Handle Backspace to go to previous image (for re-tagging)
+            if (e.key === 'Backspace') {
+                e.preventDefault(); // Prevent browser back navigation
+                goToPreviousImage();
+                return;
+            }
+            
+            // Handle Enter key to move to next entry
+            if (key === 'enter') {
+                e.preventDefault(); // Prevent any default form submission behavior
+                
+                const entry = batchData[currentEntryIndex];
+                const entryComplete = entry.images.every(img => img.tag !== null);
+                
+                console.log('Enter pressed:', {
+                    entryIndex: currentEntryIndex,
+                    entryName: entry.name,
+                    entryComplete: entryComplete,
+                    alreadyMarkedComplete: entry.complete,
+                    tags: entry.images.map(img => img.tag),
+                    isLastEntry: currentEntryIndex === batchData.length - 1
+                });
+                
+                if (entryComplete && !entry.complete) {
+                    entry.complete = true;
+                    confirmPrompt.classList.add('hidden');
+                    
+                    console.log('Marking entry complete');
+                    
+                    // Move to next entry OR update UI if last entry
+                    if (currentEntryIndex < batchData.length - 1) {
+                        console.log('Moving to next entry');
+                        currentEntryIndex++;
+                        currentImageIndex = 0;
+                        renderLeftPanel();
+                        updateDisplay();
+                        updateProgressInfo();
+                        
+                        // Scroll to active entry in left panel
+                        scrollToActiveEntry();
+                    } else {
+                        console.log('Last entry in batch - updating UI only');
+                        // Last entry - update UI to show complete state and enable upload button
+                        renderLeftPanel();
+                        updateDisplay();
+                        updateProgressInfo();
+                    }
+                } else {
+                    console.log('Cannot mark complete: entry not complete or already marked complete');
+                }
+                return;
+            }
+            
+            // Handle two-character hotkeys (DF, DB, OS, OF, OB)
+            if (pendingHotkey) {
+                const fullKey = pendingHotkey + key;
+                pendingHotkey = '';
+                
+                const tagMap = {
+                    'df': 'Driving Licence Front',
+                    'db': 'Driving Licence Back',
+                    'os': 'Other Photo ID Single',
+                    'of': 'Other Photo ID Front',
+                    'ob': 'Other Photo ID Back'
+                };
+                
+                if (tagMap[fullKey]) {
+                    tagCurrentImage(tagMap[fullKey]);
+                }
+                return;
+            }
+            
+            // Start of two-character hotkey
+            if (key === 'd' || key === 'o') {
+                pendingHotkey = key;
+                return;
+            }
+            
+            // Single-character hotkeys
+            if (key === 'p') {
+                tagCurrentImage('Passport');
+            } else if (key === 'a') {
+                tagCurrentImage('Other');
+            }
+        });
+
+        function tagCurrentImage(tag) {
+            const entry = batchData[currentEntryIndex];
+            const image = entry.images[currentImageIndex];
+            
+            image.tag = tag;
+            
+            // Auto-advance to next untagged image in current entry
+            let nextImageIndex = currentImageIndex + 1;
+            while (nextImageIndex < entry.images.length && entry.images[nextImageIndex].tag !== null) {
+                nextImageIndex++;
+            }
+            
+            if (nextImageIndex < entry.images.length) {
+                currentImageIndex = nextImageIndex;
+            } else {
+                // Stay on last image, entry is complete
+                currentImageIndex = entry.images.length - 1;
+            }
+            
+            renderLeftPanel();
+            updateDisplay();
+            updateProgressInfo();
+        }
+
+        function goToPreviousImage() {
+            const entry = batchData[currentEntryIndex];
+            
+            if (currentImageIndex > 0) {
+                // Go to previous image in current entry
+                currentImageIndex--;
+            } else if (currentEntryIndex > 0) {
+                // Go to last image of previous entry
+                currentEntryIndex--;
+                const previousEntry = batchData[currentEntryIndex];
+                currentImageIndex = previousEntry.images.length - 1;
+            }
+            // If already at first image of first entry, do nothing
+            
+            renderLeftPanel();
+            updateDisplay();
+            updateProgressInfo();
+            
+            // Scroll to active entry in left panel
+            scrollToActiveEntry();
+        }
+
+        function scrollToActiveEntry() {
+            // Wait for render to complete
+            setTimeout(() => {
+                const activeSection = leftPanel.querySelector('.entry-section.active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest'
+                    });
+                }
+            }, 100);
+        }
+
+        /*
+        =====================================================================
+        Upload to S3
+        =====================================================================
+        */
+        uploadBtn.addEventListener('click', () => {
+            uploadToS3();
+        });
+
+        function uploadToS3() {
+            // Compile all tagged images into upload format
+            const uploadData = [];
+            
+            batchData.forEach(entry => {
+                entry.images.forEach(img => {
+                    if (img.tag) {
+                        // Map tags to document types and sides
+                        const { type, document, side } = mapTagToMetadata(img.tag);
+                        
+                        const uploadDate = new Date().toLocaleString('en-GB', { 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit', 
+                            hour: '2-digit', 
+                            minute: '2-digit', 
+                            second: '2-digit', 
+                            hour12: false 
+                        });
+                        
+                        uploadData.push({
+                            entryId: entry._id,
+                            type: type,
+                            document: document,
+                            side: side,
+                            name: generateFileName(entry, document, side),
+                            uploader: `System transfer - ${uploadDate}`, // Timestamp in uploader field
+                            date: uploadDate,
+                            url: img.src // Original Wix URL
+                        });
+                    }
+                });
+            });
+            
+            // Log message before posting
+            console.log('📤 Posting image-data to parent:', {
+                type: 'image-data',
+                images: uploadData,
+                totalImages: uploadData.length
+            });
+            
+            // Request PUT links from parent (same as image-viewer.html)
+            window.parent.postMessage({
+                type: 'image-data',
+                images: uploadData
+            }, '*');
+            
+            // Show upload modal with card-based file list
+            showUploadModal(uploadData);
+        }
+
+        function mapTagToMetadata(tag) {
+            const map = {
+                'Passport': { type: 'PhotoID', document: 'Passport', side: 'Single' },
+                'Driving Licence Front': { type: 'PhotoID', document: 'Driving Licence', side: 'Front' },
+                'Driving Licence Back': { type: 'PhotoID', document: 'Driving Licence', side: 'Back' },
+                'Other Photo ID Single': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Single' },
+                'Other Photo ID Front': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Front' },
+                'Other Photo ID Back': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Back' },
+                'Other': { type: 'AddressID', document: 'Other', side: 'Single' }
+            };
+            return map[tag] || { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Single' };
+        }
+
+        function generateFileName(entry, document, side) {
+            const fe = String(entry.fe || '').replace(/\//g, '-');
+            const clientNumber = String(entry.clientNumber || '').replace(/\//g, '-');
+            const matterNumber = String(entry.matterNumber || '').replace(/\//g, '-');
+            const name = String(entry.name || '').replace(/\//g, '-');
+            
+            const sideText = side !== 'Single' ? ` ${side}` : '';
+            return `${fe}-${clientNumber}-${matterNumber} - ${name} - ${document}${sideText}`;
+        }
+
+        function showUploadModal(uploadData) {
+            uploadModal.classList.remove('hidden');
+            uploadStatus.textContent = `Uploading ${uploadData.length} files...`;
+            progressFill.style.width = '0%';
+            progressFill.textContent = '0%';
+            
+            // Create file cards
+            fileUploadList.innerHTML = '';
+            uploadData.forEach((fileData, index) => {
+                const card = document.createElement('div');
+                card.className = 'file-upload-item';
+                card.id = `file-${index}`;
+                
+                const entry = batchData.find(e => e._id === fileData.entryId);
+                const entryName = entry ? `${entry.fe}/${entry.clientNumber}/${entry.matterNumber} - ${entry.name}` : 'Unknown Entry';
+                
+                card.innerHTML = `
+                    <div class="file-upload-item-header">
+                        <div class="file-upload-item-name">${fileData.name}</div>
+                        <div class="file-upload-item-badge badge-pending" id="badge-${index}">Pending</div>
+                    </div>
+                    <div class="file-upload-item-details">
+                        Entry: ${entryName}<br>
+                        Document: ${fileData.document} ${fileData.side !== 'Single' ? '(' + fileData.side + ')' : ''}
+                    </div>
+                `;
+                
+                fileUploadList.appendChild(card);
+            });
+        }
+
+        function handlePutLinks(data) {
+            console.log('Received PUT links:', data);
+            const links = data.links;
+            const s3Keys = data.s3Keys;
+            
+            // Upload files to S3
+            uploadFilesToS3(links, s3Keys);
+        }
+
+        function handlePutError(data) {
+            console.error('PUT error:', data);
+            uploadModal.classList.add('hidden');
+            alert(`Upload failed: ${data.message || 'Unknown error'}. Please try again.`);
+        }
+
+        async function uploadFilesToS3(links, s3Keys) {
+            let completed = 0;
+            let successCount = 0;
+            const total = links.length;
+            
+            for (let i = 0; i < total; i++) {
+                const link = links[i];
+                const s3Key = s3Keys[i];
+                const imageUrl = s3Key.url; // Original Wix URL
+                
+                const fileItem = document.getElementById(`file-${i}`);
+                const badge = document.getElementById(`badge-${i}`);
+                
+                // Update to uploading state
+                if (fileItem && badge) {
+                    fileItem.classList.add('uploading');
+                    badge.textContent = 'Uploading';
+                    badge.className = 'file-upload-item-badge badge-uploading';
+                }
+                
+                try {
+                    // Fetch image from Wix URL
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    
+                    // Upload to S3
+                    const uploadResponse = await fetch(link, {
+                        method: 'PUT',
+                        body: blob,
+                        headers: {
+                            'Content-Type': blob.type || 'image/jpeg'
+                        }
+                    });
+                    
+                    if (uploadResponse.ok) {
+                        completed++;
+                        successCount++;
+                        if (fileItem && badge) {
+                            fileItem.classList.remove('uploading');
+                            fileItem.classList.add('success');
+                            badge.textContent = 'Success ✓';
+                            badge.className = 'file-upload-item-badge badge-success';
+                        }
+                    } else {
+                        completed++;
+                        if (fileItem && badge) {
+                            fileItem.classList.remove('uploading');
+                            fileItem.classList.add('error');
+                            badge.textContent = 'Failed ✗';
+                            badge.className = 'file-upload-item-badge badge-error';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    completed++;
+                    if (fileItem && badge) {
+                        fileItem.classList.remove('uploading');
+                        fileItem.classList.add('error');
+                        badge.textContent = 'Error';
+                        badge.className = 'file-upload-item-badge badge-error';
+                    }
+                }
+                
+                // Update progress
+                const percentage = Math.round((completed / total) * 100);
+                progressFill.style.width = `${percentage}%`;
+                progressFill.textContent = `${percentage}%`;
+                uploadStatus.textContent = `Uploaded ${completed} of ${total} files (${successCount} successful)`;
+            }
+            
+            // All uploads complete
+            if (successCount === total) {
+                uploadStatus.textContent = '✅ All files uploaded successfully!';
+                
+                // Compile results for parent
+                const results = compileUploadResults(s3Keys);
+                
+                // Log message before posting
+                console.log('📤 Posting migration-complete to parent:', {
+                    type: 'migration-complete',
+                    updates: results,
+                    batchNumber: currentBatchNumber,
+                    totalUpdates: results.length
+                });
+                
+                // Send success message to parent
+                setTimeout(() => {
+                    window.parent.postMessage({
+                        type: 'migration-complete',
+                        updates: results,
+                        batchNumber: currentBatchNumber
+                    }, '*');
+                }, 1000);
+            } else {
+                uploadStatus.textContent = `⚠️ Upload completed with errors (${successCount}/${total} successful)`;
+            }
+        }
+
+        function compileUploadResults(s3Keys) {
+            const results = [];
+            
+            // Group s3Keys by entry ID
+            const entriesMap = {};
+            s3Keys.forEach(s3Key => {
+                if (!entriesMap[s3Key.entryId]) {
+                    entriesMap[s3Key.entryId] = [];
+                }
+                entriesMap[s3Key.entryId].push({
+                    type: s3Key.type,
+                    document: s3Key.document,
+                    side: s3Key.side,
+                    s3Key: s3Key.s3Key,
+                    name: s3Key.name,
+                    uploader: s3Key.uploader,
+                    date: s3Key.date
+                });
+            });
+            
+            // Create result objects for bulkSave
+            Object.keys(entriesMap).forEach(entryId => {
+                results.push({
+                    _id: entryId,
+                    idImages: entriesMap[entryId],
+                    imagesTransferred: true
+                });
+            });
+            
+            return results;
+        }
+
+        /*
+        =====================================================================
+        Error Handling from Parent
+        =====================================================================
+        */
+        function handleBackendError(data) {
+            console.error('Backend error:', data);
+            showErrorPopup(`Backend Error: ${data.message || 'Unknown error occurred'}`);
+            
+            // Hide upload modal if it's showing
+            uploadModal.classList.add('hidden');
+        }
+
+        function handleNetworkError(data) {
+            console.error('Network error:', data);
+            showErrorPopup(`Network Error: ${data.message || 'Connection failed'}. Please check your connection and try again.`);
+            
+            // Hide upload modal if it's showing
+            uploadModal.classList.add('hidden');
+        }
+
+        function showErrorPopup(message) {
+            const errorPopup = document.getElementById('errorPopup');
+            const errorMessageEl = document.getElementById('errorMessage');
+            
+            if (errorMessageEl) {
+                errorMessageEl.textContent = message;
+            }
+            if (errorPopup) {
+                errorPopup.classList.remove('hidden');
+            }
+        }
+
+        function hideErrorPopup() {
+            const errorPopup = document.getElementById('errorPopup');
+            if (errorPopup) {
+                errorPopup.classList.add('hidden');
+            }
+        }
+
+        /*
+        =====================================================================
+        Mock Data for Testing
+        =====================================================================
+        */
+        function loadMockData() {
+            const mockData = {
+                type: 'migration-batch',
+                entries: [
+                    {
+                        _id: "0f8eb4a8-a482-47a5-bc80-3b14258e3a86",
+                        fe: "LJD",
+                        clientNumber: 23361,
+                        matterNumber: "1",
+                        name: "Mr N W-T Carne",
+                        idPhotos: [
+                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                        ]
+                    },
+                    {
+                        _id: "019deda6-e246-4ee6-880c-726931e3a986",
+                        fe: "LJD",
+                        clientNumber: 23374,
+                        matterNumber: "1",
+                        name: "Mrs C M Treloar",
+                        idPhotos: [
+                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" }
+                        ]
+                    },
+                    {
+                        _id: "1f542425-33ae-4946-ad2d-7cd30e4fac37",
+                        fe: "SJM",
+                        clientNumber: 18451,
+                        matterNumber: "2",
+                        name: "Mr J R Willis",
+                        idPhotos: [
+                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                        ]
+                    },
+                    {
+                        _id: "f96cd72d-b26f-4399-8840-8e78f6a09bef",
+                        fe: "SJM",
+                        clientNumber: 18451,
+                        matterNumber: "2",
+                        name: "Mrs C K Willis",
+                        idPhotos: [
+                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                        ]
+                    },
+                    {
+                        _id: "d183a866-0ec2-4afa-8a0c-2c7b678de736",
+                        fe: "LJD",
+                        clientNumber: 21367,
+                        matterNumber: "4",
+                        name: "Mrs S Thompson",
+                        idPhotos: [
+                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                        ]
+                    },
+                    {
+                        _id: "5ca028b5-4353-4d98-8d2a-25080be38fff",
+                        fe: "LJD",
+                        clientNumber: 21367,
+                        matterNumber: "4",
+                        name: "Mr M P Thompson",
+                        idPhotos: [
+                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                        ]
+                    },
+                    {
+                        _id: "754acaae-05b5-496b-8b2a-a462e2718950",
+                        fe: "SJM",
+                        clientNumber: 23367,
+                        matterNumber: "1",
+                        name: "Ms A M Lightbound",
+                        idPhotos: [
+                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" }
+                        ]
+                    },
+                    {
+                        _id: "3c2aaf1a-8dac-4332-8526-296d63a3eccb",
+                        fe: "SJM",
+                        clientNumber: 23367,
+                        matterNumber: "1",
+                        name: "Mr H W Eadie",
+                        idPhotos: [
+                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                        ]
+                    },
+                    {
+                        _id: "09994171-d0b9-4e82-a216-13e7fd0d1e10",
+                        fe: "MB",
+                        clientNumber: 21000,
+                        matterNumber: "4",
+                        name: "Mrs E S Hooper",
+                        idPhotos: [
+                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                        ]
+                    },
+                    {
+                        _id: "fae8c402-0baf-4862-aad9-0af2e020eaec",
+                        fe: "MB",
+                        clientNumber: 21000,
+                        matterNumber: "4",
+                        name: "Mr G K Hooper",
+                        idPhotos: [
+                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
+                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" }
+                        ]
+                    }
+                ],
+                batchNumber: 1,
+                totalBatches: 185,
+                uploader: 'System transfer'
+            };
+            
+            // Simulate receiving message from parent
+            handleBatchData(mockData);
+        }
+
+        // Initialize
+        console.log('Migration tagger loaded and ready');
+    </script>
+</body>
+</html>
+
