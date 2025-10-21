@@ -1409,10 +1409,6 @@
         Upload to S3
         =====================================================================
         */
-        uploadBtn.addEventListener('click', () => {
-            showConfirmModal();
-        });
-
         async function uploadToS3() {
             // Build upload data with all tagged images - use cache if available
             const uploadData = [];
