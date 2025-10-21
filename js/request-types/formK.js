@@ -49,7 +49,7 @@ Sends request-data message to parent with:
       {
         id: 'rule4',
         label: 'Rule 4 - Company',
-        value: 'The client is a company and we enclose a print out from companies house of the register entry',
+        value: 'The client is a company and we enclose a print out from companies house of the register entry sufficient to process a form K [RULE 4]. I attach a recent OFSI for the client.',
         appliesTo: 'entity' // business/charity only
       },
       {
@@ -61,7 +61,7 @@ Sends request-data message to parent with:
       {
         id: 'rule6',
         label: 'Rule 6 - Charity',
-        value: 'The client is a charity and we enclose a print out from the charity register of the entry including a list of all registered officers',
+        value: 'The client is a charity and we enclose a print out from the charity register of the entry including a list of all registered officers sufficient to process a form K [RULE 6]. I attach a recent OFSI for the client.',
         appliesTo: 'entity'
       },
       {
