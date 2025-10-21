@@ -350,21 +350,21 @@ function handlePostMessage(event) {
   
   const data = event.data;
   
-  if (data.type === 'CLIENT_DATA') {
-    console.log('Received client data:', data.payload);
-    checkState.clientData = data.payload;
-    populateClientData(data.payload);
+  if (data.type === 'client-data') {
+    console.log('Received client data:', data.data);
+    checkState.clientData = data.data;
+    populateClientData(data.data);
     
-    // If payload includes address object, auto-populate lite screen address fields
+    // If data includes address object, auto-populate lite screen address fields
     // and show manual fields without needing autocomplete API calls
-    if (data.payload.address) {
-      populateLiteScreenAddress(data.payload.address);
+    if (data.data.address) {
+      populateLiteScreenAddress(data.data.address);
     }
   }
   
-  if (data.type === 'THIRDFORT_CHECK_RESPONSE') {
-    console.log('Received check response from parent:', data.payload);
-    handleCheckResponse(data.payload);
+  if (data.type === 'check-response') {
+    console.log('Received check response from parent:', data.data);
+    handleCheckResponse(data.data);
   }
   
   if (data.type === 'company-results') {
