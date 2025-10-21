@@ -362,6 +362,11 @@ function handlePostMessage(event) {
     }
   }
   
+  if (data.type === 'general-error') {
+    console.error('General error from parent:', data.message);
+    showError(data.message || 'An error occurred. Please try again.');
+  }
+  
   if (data.type === 'check-response') {
     console.log('Received check response from parent:', data.data);
     handleCheckResponse(data.data);
@@ -426,7 +431,7 @@ function handleCheckResponse(response) {
  */
 function notifyParentReady() {
   window.parent.postMessage({
-    type: 'THIRDFORT_CHECK_READY',
+    type: 'check-ready',
     timestamp: new Date().toISOString()
   }, '*');
 }
@@ -3130,8 +3135,8 @@ async function handleSubmit() {
     
     // Send to parent window for Thirdfort API call
     window.parent.postMessage({
-      type: 'THIRDFORT_CHECK_SUBMIT',
-      payload: formData,
+      type: 'check-submit',
+      data: formData,
       timestamp: new Date().toISOString()
     }, '*');
     
