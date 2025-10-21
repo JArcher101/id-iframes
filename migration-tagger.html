@@ -208,17 +208,26 @@
             font-weight: 600;
         }
 
-        .hotkey-overlay {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85);
-            color: white;
-            padding: 15px 20px;
+        .hotkey-card {
+            background: white;
             border-radius: 8px;
+            padding: 20px;
+            margin-top: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .hotkey-card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .hotkey-overlay {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             flex-wrap: wrap;
             justify-content: center;
         }
@@ -227,15 +236,18 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
             cursor: pointer;
-            padding: 8px;
-            border-radius: 6px;
+            padding: 10px 12px;
+            border-radius: 8px;
             transition: all 0.2s ease;
+            background: #f8f9fa;
+            border: 2px solid transparent;
         }
 
         .hotkey-item:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: #e9ecef;
+            border-color: #4A90E2;
             transform: scale(1.05);
         }
 
@@ -246,18 +258,20 @@
         .hotkey-key {
             background: #4A90E2;
             color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 6px;
             font-weight: 700;
-            font-size: 0.85rem;
-            min-width: 30px;
+            font-size: 0.9rem;
+            min-width: 36px;
             text-align: center;
             pointer-events: none;
+            box-shadow: 0 2px 4px rgba(74, 144, 226, 0.3);
         }
 
         .hotkey-label {
-            font-size: 0.7rem;
-            opacity: 0.9;
+            font-size: 0.75rem;
+            color: #666;
+            font-weight: 600;
             pointer-events: none;
         }
 
@@ -541,8 +555,11 @@
                     <div class="main-image-container" id="mainImageContainer">
                         <img id="mainImage" src="" alt="ID Document">
                         <div class="image-counter-overlay" id="imageCounter">1 / 10</div>
-                        
-                        <!-- Hotkey Guide Overlay (clickable) -->
+                    </div>
+
+                    <!-- Hotkey Guide Card (below image) -->
+                    <div class="hotkey-card">
+                        <div class="hotkey-card-title">🏷️ Tag Image (Click or Press Key)</div>
                         <div class="hotkey-overlay">
                             <div class="hotkey-item" onclick="tagCurrentImage('Passport')" title="Click to tag or press P">
                                 <div class="hotkey-key">P</div>
@@ -684,7 +701,15 @@
             
             // Initialize tagging state for each entry
             batchData.forEach(entry => {
-                entry.images = (entry.idPhotos || []).map((photo, index) => ({
+                // Flatten cD object for easier access
+                if (entry.cD) {
+                    entry.fe = entry.cD.f;
+                    entry.clientNumber = entry.cD.c;
+                    entry.matterNumber = entry.cD.m;
+                    entry.name = entry.cD.n;
+                }
+                
+                entry.images = (entry.idPhotos || entry.images || []).map((photo, index) => ({
                     src: photo.src || photo,
                     fileName: photo.fileName || `image-${index}.jpg`,
                     tag: null, // Will be set by hotkeys
@@ -737,7 +762,7 @@
                 
                 section.innerHTML = `
                     <div class="entry-header">
-                        <span>${entry.fe}/${entry.clientNumber}/${entry.matterNumber}</span>
+                        <span>${entry.fe}-${entry.clientNumber}-${entry.matterNumber}</span>
                         <span class="entry-status ${statusClass}">${statusText}</span>
                     </div>
                     <div id="entry-${entryIdx}-images"></div>
@@ -788,7 +813,7 @@
             const image = entry.images[currentImageIndex];
             
             // Update current entry info
-            currentEntryName.textContent = `${entry.fe}/${entry.clientNumber}/${entry.matterNumber} - ${entry.name}`;
+            currentEntryName.textContent = `${entry.fe}-${entry.clientNumber}-${entry.matterNumber} - ${entry.name}`;
             currentEntryDetails.textContent = `Entry ${currentEntryIndex + 1} of ${batchData.length} | Image ${currentImageIndex + 1} of ${entry.images.length}`;
             
             // Update main image
@@ -1132,7 +1157,7 @@
                 card.id = `file-${index}`;
                 
                 const entry = batchData.find(e => e._id === fileData.entryId);
-                const entryName = entry ? `${entry.fe}/${entry.clientNumber}/${entry.matterNumber} - ${entry.name}` : 'Unknown Entry';
+                const entryName = entry ? `${entry.fe}-${entry.clientNumber}-${entry.matterNumber} - ${entry.name}` : 'Unknown Entry';
                 
                 card.innerHTML = `
                     <div class="file-upload-item-header">
@@ -1345,11 +1370,13 @@
                 entries: [
                     {
                         _id: "0f8eb4a8-a482-47a5-bc80-3b14258e3a86",
-                        fe: "LJD",
-                        clientNumber: 23361,
-                        matterNumber: "1",
-                        name: "Mr N W-T Carne",
-                        idPhotos: [
+                        cD: {
+                            c: 23361,
+                            m: "1",
+                            f: "LJD",
+                            n: "Mr N W-T Carne"
+                        },
+                        images: [
                             { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
@@ -1357,22 +1384,26 @@
                     },
                     {
                         _id: "019deda6-e246-4ee6-880c-726931e3a986",
-                        fe: "LJD",
-                        clientNumber: 23374,
-                        matterNumber: "1",
-                        name: "Mrs C M Treloar",
-                        idPhotos: [
+                        cD: {
+                            c: 23374,
+                            m: "1",
+                            f: "LJD",
+                            n: "Mrs C M Treloar"
+                        },
+                        images: [
                             { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" }
                         ]
                     },
                     {
                         _id: "1f542425-33ae-4946-ad2d-7cd30e4fac37",
-                        fe: "SJM",
-                        clientNumber: 18451,
-                        matterNumber: "2",
-                        name: "Mr J R Willis",
-                        idPhotos: [
+                        cD: {
+                            c: 18451,
+                            m: "2",
+                            f: "SJM",
+                            n: "Mr J R Willis"
+                        },
+                        images: [
                             { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
@@ -1380,11 +1411,13 @@
                     },
                     {
                         _id: "f96cd72d-b26f-4399-8840-8e78f6a09bef",
-                        fe: "SJM",
-                        clientNumber: 18451,
-                        matterNumber: "2",
-                        name: "Mrs C K Willis",
-                        idPhotos: [
+                        cD: {
+                            c: 18451,
+                            m: "2",
+                            f: "SJM",
+                            n: "Mrs C K Willis"
+                        },
+                        images: [
                             { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
@@ -1392,22 +1425,26 @@
                     },
                     {
                         _id: "d183a866-0ec2-4afa-8a0c-2c7b678de736",
-                        fe: "LJD",
-                        clientNumber: 21367,
-                        matterNumber: "4",
-                        name: "Mrs S Thompson",
-                        idPhotos: [
+                        cD: {
+                            c: 21367,
+                            m: "4",
+                            f: "LJD",
+                            n: "Mrs S Thompson"
+                        },
+                        images: [
                             { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
                         ]
                     },
                     {
                         _id: "5ca028b5-4353-4d98-8d2a-25080be38fff",
-                        fe: "LJD",
-                        clientNumber: 21367,
-                        matterNumber: "4",
-                        name: "Mr M P Thompson",
-                        idPhotos: [
+                        cD: {
+                            c: 21367,
+                            m: "4",
+                            f: "LJD",
+                            n: "Mr M P Thompson"
+                        },
+                        images: [
                             { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
@@ -1415,11 +1452,13 @@
                     },
                     {
                         _id: "754acaae-05b5-496b-8b2a-a462e2718950",
-                        fe: "SJM",
-                        clientNumber: 23367,
-                        matterNumber: "1",
-                        name: "Ms A M Lightbound",
-                        idPhotos: [
+                        cD: {
+                            c: 23367,
+                            m: "1",
+                            f: "SJM",
+                            n: "Ms A M Lightbound"
+                        },
+                        images: [
                             { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
@@ -1428,11 +1467,13 @@
                     },
                     {
                         _id: "3c2aaf1a-8dac-4332-8526-296d63a3eccb",
-                        fe: "SJM",
-                        clientNumber: 23367,
-                        matterNumber: "1",
-                        name: "Mr H W Eadie",
-                        idPhotos: [
+                        cD: {
+                            c: 23367,
+                            m: "1",
+                            f: "SJM",
+                            n: "Mr H W Eadie"
+                        },
+                        images: [
                             { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
@@ -1442,11 +1483,13 @@
                     },
                     {
                         _id: "09994171-d0b9-4e82-a216-13e7fd0d1e10",
-                        fe: "MB",
-                        clientNumber: 21000,
-                        matterNumber: "4",
-                        name: "Mrs E S Hooper",
-                        idPhotos: [
+                        cD: {
+                            c: 21000,
+                            m: "4",
+                            f: "MB",
+                            n: "Mrs E S Hooper"
+                        },
+                        images: [
                             { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
@@ -1454,11 +1497,13 @@
                     },
                     {
                         _id: "fae8c402-0baf-4862-aad9-0af2e020eaec",
-                        fe: "MB",
-                        clientNumber: 21000,
-                        matterNumber: "4",
-                        name: "Mr G K Hooper",
-                        idPhotos: [
+                        cD: {
+                            c: 21000,
+                            m: "4",
+                            f: "MB",
+                            n: "Mr G K Hooper"
+                        },
+                        images: [
                             { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
                             { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" }
