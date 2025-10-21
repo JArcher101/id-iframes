@@ -2646,11 +2646,22 @@ function updateFormJFlags(images, iconData) {
   }
   
   // Count Address ID and Photo ID images
-  const addressIDs = images.filter(img => img.type === 'Address ID');
+  // Note: Accept both 'Address ID' (with space) and 'AddressID' (no space) for backwards compatibility
+  const addressIDs = images.filter(img => 
+    img.type === 'Address ID' || img.type === 'AddressID'
+  );
+  
   const photoIDs = images.filter(img => img.type === 'PhotoID');
   
+  // Count Driving Licence as BOTH Photo ID AND Address ID (dual purpose)
+  const drivingLicenceCount = images.filter(img => 
+    img.document === 'Driving Licence' && img.type === 'PhotoID'
+  ).length > 0 ? 1 : 0;
+  
   // Check if we have sufficient photos
-  const hasTwoAddressIDs = addressIDs.length >= 2;
+  // Address IDs = pure Address IDs + Driving Licence (if present)
+  const totalAddressIDs = addressIDs.length + drivingLicenceCount;
+  const hasTwoAddressIDs = totalAddressIDs >= 2;
   
   // Check Photo ID conditions:
   // Either: 1 Photo ID with side undefined/single
@@ -2676,8 +2687,8 @@ function updateFormJFlags(images, iconData) {
   
   console.log('📊 Form J Flags Updated:');
   console.log('  - Sufficient Photos:', formJSufficientPhotos);
-  console.log('    - Address IDs:', addressIDs.length, '(need 2)');
-  console.log('    - Photo IDs valid:', hasValidPhotoIDs);
+  console.log('    - Address IDs:', addressIDs.length, '+ Driving Licence:', drivingLicenceCount, '= Total:', totalAddressIDs, '(need 2)');
+  console.log('    - Photo IDs valid:', hasValidPhotoIDs, '(count:', photoIDs.length, ')');
   console.log('  - Conditions Met:', formJConditionsMet);
   console.log('    - Has Photo ID:', iconData?.p);
   console.log('    - Has Address ID:', iconData?.a);
