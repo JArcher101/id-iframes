@@ -1375,13 +1375,35 @@
                 });
             });
             
-            // Create result objects for bulkSave
+            // Create result objects for bulkUpdate (not bulkSave to prevent duplicates)
             Object.keys(entriesMap).forEach(entryId => {
-                results.push({
+                // Validate _id exists and is a valid UUID/GUID format
+                if (!entryId || entryId === 'undefined' || entryId === 'null') {
+                    console.error('⚠️ Invalid entry ID detected:', entryId);
+                    return;
+                }
+                
+                const updateObject = {
                     _id: entryId,
                     idImages: entriesMap[entryId],
                     imagesTransferred: true
+                };
+                
+                // Log each update object for debugging
+                console.log('📋 Update object for entry:', {
+                    _id: entryId,
+                    imageCount: entriesMap[entryId].length,
+                    images: entriesMap[entryId]
                 });
+                
+                results.push(updateObject);
+            });
+            
+            // Final validation log
+            console.log('✅ Compiled results for bulkUpdate:', {
+                totalEntries: results.length,
+                entryIds: results.map(r => r._id),
+                results: results
             });
             
             return results;
