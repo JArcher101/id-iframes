@@ -1724,10 +1724,26 @@
         =====================================================================
         */
         function rotateImage(degrees) {
-            currentRotation = (currentRotation + degrees) % 360;
-            if (currentRotation < 0) currentRotation += 360;
+            const nextRotation = (currentRotation + degrees) % 360;
+            const normalizedNext = nextRotation < 0 ? nextRotation + 360 : nextRotation;
             
-            mainImage.style.transform = `rotate(${currentRotation}deg)`;
+            // Check if we're crossing 0° boundary
+            // If at 270° and rotating right (+90), should unwind to 0° not continue to 360°
+            // If at 90° and rotating left (-90), should unwind to 0° not continue to -90°
+            if (currentRotation === 270 && degrees > 0) {
+                // At 270°, rotating right → unwind back to 0°
+                currentRotation = 0;
+                mainImage.style.transform = 'rotate(0deg)';
+            } else if (currentRotation === 90 && degrees < 0) {
+                // At 90°, rotating left → unwind back to 0°
+                currentRotation = 0;
+                mainImage.style.transform = 'rotate(0deg)';
+            } else {
+                // Normal rotation
+                currentRotation = normalizedNext;
+                mainImage.style.transform = `rotate(${currentRotation}deg)`;
+            }
+            
             console.log(`🔄 Image rotated to ${currentRotation}°`);
         }
 
