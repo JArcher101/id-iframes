@@ -238,11 +238,15 @@
             justify-content: center;
             position: relative;
             overflow: hidden;
+            min-height: 0; /* Allow flex item to shrink below content size */
+            max-height: calc(100vh - 250px); /* Ensure hotkeys/footer always visible */
         }
 
         .main-image-container img {
             max-width: 100%;
             max-height: 100%;
+            width: auto;
+            height: auto;
             object-fit: contain;
         }
 
