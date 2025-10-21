@@ -1538,17 +1538,69 @@
       
       // UK addresses: Individual fields only (no address_1, address_2)
       if (country === 'GBR') {
+        // Strategy: Use explicit fields when available, intelligently extract from line_* when not
+        // Complex parsing to handle all getaddress.io response variations
+        
+        let buildingNumber = getAddressData.building_number || getAddressData.sub_building_number || '';
+        let buildingNameFromLine1 = '';
+        let flatNumber = getAddressData.flat_number || '';
+        
+        // Parse line_1 intelligently using thoroughfare as the key
+        if (getAddressData.line_1 && (!buildingNumber || !getAddressData.building_name)) {
+          let addressPrefix = getAddressData.line_1.trim();
+          
+          // Remove thoroughfare/street from line_1 if present
+          // Example: "94 Southgate Street" → "94" | "Thurstan Hoskin Llp" → "Thurstan Hoskin Llp"
+          if (getAddressData.thoroughfare && addressPrefix.includes(getAddressData.thoroughfare)) {
+            addressPrefix = addressPrefix.replace(getAddressData.thoroughfare, '').replace(/,\s*$/, '').trim();
+          }
+          
+          // Now parse the remaining prefix (which has street already removed)
+          if (addressPrefix) {
+            // Check for flat number (e.g., "Flat 1A", "Flat 1A, Building Name")
+            const flatMatch = addressPrefix.match(/^(?:Flat|flat|Apartment|apartment|Unit|unit|Apt|apt)\s+(\d+[a-zA-Z]?)/i);
+            if (flatMatch && !flatNumber) {
+              flatNumber = flatMatch[1];
+              // Remove flat designation from prefix
+              addressPrefix = addressPrefix.substring(flatMatch[0].length).replace(/^[,\s]+/, '').trim();
+            }
+            
+            // Check if remaining starts with a number (building number like "94", "1A", etc.)
+            if (!buildingNumber) {
+              const numberMatch = addressPrefix.match(/^(\d+[a-zA-Z]?)\b/);
+              if (numberMatch) {
+                buildingNumber = numberMatch[1];
+                // Remove number from prefix
+                addressPrefix = addressPrefix.substring(numberMatch[0].length).replace(/^[,\s]+/, '').trim();
+              }
+            }
+            
+            // Whatever remains is the building name
+            if (addressPrefix) {
+              buildingNameFromLine1 = addressPrefix;
+            }
+          }
+        }
+        
+        // Building name: Combine all available building name data
+        // Priority: sub_building_name, building_name/extracted from line_1, line_2 (if not street)
+        const buildingNameParts = [
+          getAddressData.sub_building_name,
+          getAddressData.building_name || buildingNameFromLine1,
+          getAddressData.line_2 && getAddressData.line_2 !== getAddressData.thoroughfare ? getAddressData.line_2 : ''
+        ].filter(p => p && p.trim());
+        
         return {
-          building_name: getAddressData.building_name || '',
-          building_number: getAddressData.building_number || '',
-          flat_number: getAddressData.flat_number || '',
+          building_name: buildingNameParts.join(', ') || '',
+          building_number: buildingNumber,
+          flat_number: flatNumber,
           postcode: getAddressData.postcode || '',
-          street: getAddressData.thoroughfare || getAddressData.street || '',
+          street: getAddressData.thoroughfare || getAddressData.line_3 || getAddressData.street || '',
           sub_street: getAddressData.sub_street || '',
           town: getAddressData.town_or_city || getAddressData.town || '',
           country: country
         };
-      }
+  }
       
       // USA/Canada: address_1, address_2, state required
       if (country === 'USA' || country === 'CAN') {
