@@ -1070,16 +1070,26 @@
             uploadToS3();
         });
 
-        function uploadToS3() {
-            // Compile all tagged images into upload format
+        async function uploadToS3() {
+            // Build upload data with all tagged images - fetch metadata first
             const uploadData = [];
             
-            batchData.forEach(entry => {
-                entry.images.forEach(img => {
-                    if (img.tag) {
+            // Show upload modal early to indicate processing
+            uploadModal.classList.remove('hidden');
+            uploadStatus.textContent = 'Preparing images...';
+            progressFill.style.width = '0%';
+            fileUploadList.innerHTML = '';
+            
+            try {
+                // Fetch all images to get metadata (type, size) that backend requires
+                for (const entry of batchData) {
+                    for (const img of entry.images) {
+                        if (!img.tag) continue; // Skip untagged images
+                        
                         // Map tags to document types and sides
                         const { type, document, side } = mapTagToMetadata(img.tag);
                         
+                        // Generate filename
                         const uploadDate = new Date().toLocaleString('en-GB', { 
                             year: 'numeric', 
                             month: '2-digit', 
@@ -1090,35 +1100,86 @@
                             hour12: false 
                         });
                         
-                        uploadData.push({
-                            entryId: entry._id,
-                            type: type,
-                            document: document,
-                            side: side,
-                            name: generateFileName(entry, document, side),
-                            uploader: 'System transfer',
-                            date: uploadDate,
-                            url: convertWixUrlToPublic(img.src) // Convert to public URL
-                        });
+                        // Convert Wix URL to public URL
+                        const publicUrl = convertWixUrlToPublic(img.src);
+                        
+                        // Fetch image to get metadata (matching image-viewer.html structure)
+                        try {
+                            const response = await fetch(publicUrl);
+                            const blob = await response.blob();
+                            
+                            uploadData.push({
+                                entryId: entry._id,
+                                type: type,
+                                document: document,
+                                side: side,
+                                name: generateFileName(entry, document, side),
+                                uploader: 'System transfer',
+                                date: uploadDate,
+                                url: publicUrl,
+                                data: {
+                                    type: blob.type || 'image/jpeg', // MIME type from blob
+                                    size: blob.size, // Size in bytes from blob
+                                    lastModified: Date.now()
+                                },
+                                blob: blob // Store blob for later upload (avoid re-fetching)
+                            });
+                        } catch (fetchError) {
+                            console.error('Failed to fetch image:', publicUrl, fetchError);
+                            showErrorPopup(`Failed to fetch image from Wix: ${img.src.substring(0, 50)}...`);
+                            uploadModal.classList.add('hidden');
+                            return;
+                        }
                     }
+                }
+                
+                console.log('Compiled upload data with file metadata:', uploadData);
+                
+                // Log message before posting
+                console.log('📤 Posting image-data to parent:', {
+                    type: 'image-data',
+                    images: uploadData.map(item => ({
+                        entryId: item.entryId,
+                        type: item.type,
+                        document: item.document,
+                        side: item.side,
+                        name: item.name,
+                        uploader: item.uploader,
+                        date: item.date,
+                        url: item.url,
+                        data: item.data
+                    })),
+                    totalImages: uploadData.length
                 });
-            });
-            
-            // Log message before posting
-            console.log('📤 Posting image-data to parent:', {
-                type: 'image-data',
-                images: uploadData,
-                totalImages: uploadData.length
-            });
-            
-            // Request PUT links from parent (same as image-viewer.html)
-            window.parent.postMessage({
-                type: 'image-data',
-                images: uploadData
-            }, '*');
-            
-            // Show upload modal with card-based file list
-            showUploadModal(uploadData);
+                
+                // Request PUT links from parent (matching image-viewer.html structure)
+                window.parent.postMessage({
+                    type: 'image-data',
+                    images: uploadData.map(item => ({
+                        entryId: item.entryId,
+                        type: item.type,
+                        document: item.document,
+                        side: item.side,
+                        name: item.name,
+                        uploader: item.uploader,
+                        date: item.date,
+                        url: item.url,
+                        data: item.data // Include metadata for backend validation
+                        // blob is NOT sent (can't be serialized via postMessage)
+                    }))
+                }, '*');
+                
+                // Update upload modal with file list
+                showUploadModal(uploadData);
+                
+                // Store uploadData globally for use in uploadFilesToS3
+                window.uploadDataWithBlobs = uploadData;
+                
+            } catch (error) {
+                console.error('Error preparing upload data:', error);
+                showErrorPopup('Failed to prepare images for upload. Please try again.');
+                uploadModal.classList.add('hidden');
+            }
         }
 
         function mapTagToMetadata(tag) {
@@ -1195,10 +1256,13 @@
             let successCount = 0;
             const total = links.length;
             
+            // Get pre-fetched upload data with blobs
+            const uploadDataWithBlobs = window.uploadDataWithBlobs || [];
+            
             for (let i = 0; i < total; i++) {
                 const link = links[i];
                 const s3Key = s3Keys[i];
-                const imageUrl = s3Key.url; // Public Wix URL (converted from wix:image://)
+                const uploadItem = uploadDataWithBlobs[i]; // Get pre-fetched blob
                 
                 const fileItem = document.getElementById(`file-${i}`);
                 const badge = document.getElementById(`badge-${i}`);
@@ -1211,11 +1275,14 @@
                 }
                 
                 try {
-                    // Fetch image from Wix URL
-                    const response = await fetch(imageUrl);
-                    const blob = await response.blob();
+                    // Use pre-fetched blob instead of fetching again
+                    const blob = uploadItem?.blob;
                     
-                    // Upload to S3
+                    if (!blob) {
+                        throw new Error('Image data not found. Please refresh and try again.');
+                    }
+                    
+                    // Upload to S3 using pre-fetched blob
                     const uploadResponse = await fetch(link, {
                         method: 'PUT',
                         body: blob,
