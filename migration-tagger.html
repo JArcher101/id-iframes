@@ -1345,6 +1345,7 @@
             // Clear any stored upload data
             window.uploadDataWithBlobs = null;
             window.confirmModalWasOpen = false;
+            window.confirmModalShownOnce = false; // Reset for new batch
             
             // Clear image cache for new batch
             imageCache.clear();
@@ -1553,16 +1554,18 @@
         function checkIfAllComplete() {
             const allComplete = batchData.every(entry => entry.complete);
             
-            // Show confirmation modal when all entries are complete
+            // Show confirmation modal only on first completion or when jumping back from modal
             if (allComplete) {
-                // If we were already viewing it and came back after re-tagging, re-show
                 if (window.confirmModalWasOpen) {
+                    // User jumped back from modal to re-tag - re-show modal
                     window.confirmModalWasOpen = false;
                     showConfirmModal();
-                } else {
-                    // First time all complete - show modal
+                } else if (!window.confirmModalShownOnce) {
+                    // First time all complete - show modal automatically
+                    window.confirmModalShownOnce = true;
                     showConfirmModal();
                 }
+                // Otherwise: all complete but user pressed ESC - don't auto-show
             }
         }
 
@@ -1630,11 +1633,20 @@
                 }
             }
             
-            // Handle Enter key in confirmation modal to start upload
+            // Handle Enter key
             if (key === 'enter') {
+                // If confirmation modal is open, start upload
                 if (!confirmModal.classList.contains('hidden')) {
                     e.preventDefault();
                     confirmAndUpload();
+                    return;
+                }
+                
+                // If all entries complete, show confirmation modal
+                const allComplete = batchData && batchData.every(entry => entry.complete);
+                if (allComplete) {
+                    e.preventDefault();
+                    showConfirmModal();
                     return;
                 }
             }
