@@ -709,9 +709,10 @@
                     entry.name = entry.cD.n;
                 }
                 
-                entry.images = (entry.idPhotos || entry.images || []).map((photo, index) => ({
-                    src: photo.src || photo,
-                    fileName: photo.fileName || `image-${index}.jpg`,
+                // Handle both array of URLs (strings) or array of objects
+                entry.images = (entry.images || []).map((photo, index) => ({
+                    src: typeof photo === 'string' ? photo : (photo.src || photo),
+                    fileName: `image-${index}.jpg`,
                     tag: null, // Will be set by hotkeys
                     uploaded: false
                 }));
@@ -1377,9 +1378,9 @@
                             n: "Mr N W-T Carne"
                         },
                         images: [
-                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
                         ]
                     },
                     {
@@ -1391,8 +1392,8 @@
                             n: "Mrs C M Treloar"
                         },
                         images: [
-                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" }
+                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop"
                         ]
                     },
                     {
@@ -1404,9 +1405,9 @@
                             n: "Mr J R Willis"
                         },
                         images: [
-                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
                         ]
                     },
                     {
@@ -1418,9 +1419,9 @@
                             n: "Mrs C K Willis"
                         },
                         images: [
-                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
                         ]
                     },
                     {
@@ -1432,8 +1433,8 @@
                             n: "Mrs S Thompson"
                         },
                         images: [
-                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
                         ]
                     },
                     {
@@ -1445,9 +1446,9 @@
                             n: "Mr M P Thompson"
                         },
                         images: [
-                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
                         ]
                     },
                     {
@@ -1459,10 +1460,10 @@
                             n: "Ms A M Lightbound"
                         },
                         images: [
-                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" }
+                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop"
                         ]
                     },
                     {
@@ -1474,11 +1475,11 @@
                             n: "Mr H W Eadie"
                         },
                         images: [
-                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
                         ]
                     },
                     {
@@ -1490,9 +1491,9 @@
                             n: "Mrs E S Hooper"
                         },
                         images: [
-                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" }
+                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
                         ]
                     },
                     {
@@ -1504,9 +1505,9 @@
                             n: "Mr G K Hooper"
                         },
                         images: [
-                            { src: "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop", type: "image" },
-                            { src: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop", type: "image" }
+                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop",
+                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop"
                         ]
                     }
                 ],
