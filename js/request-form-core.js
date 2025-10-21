@@ -2751,6 +2751,59 @@ function getFormDataObjects() {
 }
 
 /*
+Open document in popup window using liveUrl from S3
+*/
+function openDocument(documentType) {
+  console.log('Opening document:', documentType);
+  
+  // Find the document in idDocuments array
+  let doc;
+  if (documentType === 'client-details') {
+    doc = idDocuments.find(d => d.type === 'Details form');
+  } else if (documentType === 'ofsi-screening') {
+    doc = idDocuments.find(d => d.type === 'PEP & Sanctions Check');
+  }
+  
+  if (!doc || !doc.liveUrl) {
+    console.warn('No liveUrl available for document:', documentType);
+    showError('Document URL not available');
+    return;
+  }
+  
+  // Open document in centered popup window
+  const width = 1000;
+  const height = 800;
+  const left = (screen.width - width) / 2;
+  const top = (screen.height - height) / 2;
+  const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+  
+  const popup = window.open(doc.liveUrl, 'documentViewer', features);
+  
+  if (!popup) {
+    showError('Please allow popups to view documents');
+  } else {
+    popup.focus();
+  }
+  
+  console.log('📄 Opened document:', doc.liveUrl);
+}
+
+// Set up click event listeners for document open buttons
+const cdfOpenBtn = document.getElementById('cdfOpenBtn');
+const ofsiOpenBtn = document.getElementById('ofsiOpenBtn');
+
+if (cdfOpenBtn) {
+  cdfOpenBtn.addEventListener('click', () => openDocument('client-details'));
+}
+
+if (ofsiOpenBtn) {
+  ofsiOpenBtn.addEventListener('click', () => openDocument('ofsi-screening'));
+}
+
+// Make openDocument globally available for onclick handlers (backup for inline handlers)
+window.openDocument = openDocument;
+
+/*
 Open OFSI Consolidated Sanctions Search in popup window
 */
 function openOFSISearch() {
@@ -2925,6 +2978,7 @@ function updateIDDocumentsUI(data) {
   
   // Look for OFSI document (type: "PEP & Sanctions Check")
   const ofsiDoc = idDocuments.find(doc => doc.type === 'PEP & Sanctions Check');
+  const ofsiOpenBtn = document.getElementById('ofsiOpenBtn');
   
   if (ofsiDoc && ofsiDocumentCard && ofsiHint) {
     // Populate and show OFSI card
@@ -2937,12 +2991,22 @@ function updateIDDocumentsUI(data) {
       uploadInfoEl.textContent = uploadText;
     }
     
+    // Show/hide open button based on liveUrl availability
+    if (ofsiOpenBtn) {
+      if (ofsiDoc.liveUrl) {
+        ofsiOpenBtn.classList.remove('hidden');
+      } else {
+        ofsiOpenBtn.classList.add('hidden');
+      }
+    }
+    
     ofsiDocumentCard.classList.remove('hidden');
     ofsiHint.classList.add('hidden');
   } else if (ofsiDocumentCard && ofsiHint) {
     // No OFSI document - show hint
     ofsiDocumentCard.classList.add('hidden');
     ofsiHint.classList.remove('hidden');
+    if (ofsiOpenBtn) ofsiOpenBtn.classList.add('hidden');
   }
   
   // === CDF COLUMN (Left) ===
@@ -2968,6 +3032,7 @@ function updateIDDocumentsUI(data) {
   ];
   
   const cdfDocumentName = cdfDoc?.document?.toLowerCase() || '';
+  const cdfOpenBtn = document.getElementById('cdfOpenBtn');
   
   if (cdfDoc && validCDFTypes.includes(cdfDocumentName) && cdfDocumentCard) {
     // Populate and show CDF card
@@ -2980,6 +3045,15 @@ function updateIDDocumentsUI(data) {
       uploadInfoEl.textContent = uploadText;
     }
     
+    // Show/hide open button based on liveUrl availability
+    if (cdfOpenBtn) {
+      if (cdfDoc.liveUrl) {
+        cdfOpenBtn.classList.remove('hidden');
+      } else {
+        cdfOpenBtn.classList.add('hidden');
+      }
+    }
+    
     cdfDocumentCard.classList.remove('hidden');
     cdfPeopleHint.classList.add('hidden');
     cdfEntityHint.classList.add('hidden');
@@ -2987,6 +3061,7 @@ function updateIDDocumentsUI(data) {
   } else {
     // No CDF document - show appropriate hint based on entity type
     if (cdfDocumentCard) cdfDocumentCard.classList.add('hidden');
+    if (cdfOpenBtn) cdfOpenBtn.classList.add('hidden');
     
     const isBusiness = data?.b === true;
     const isCharity = data?.c === true;
