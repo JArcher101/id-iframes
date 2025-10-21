@@ -699,6 +699,418 @@
         .confirm-submit-btn:hover {
             background: #0d8f6f;
         }
+
+        /* Responsive Design - Mobile First */
+        @media (max-width: 1200px) {
+            .container {
+                max-width: 100%;
+            }
+            
+            .left-panel {
+                width: 220px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            body {
+                padding: 10px;
+            }
+            
+            .left-panel {
+                width: 200px;
+            }
+            
+            .right-panel {
+                padding: 15px;
+            }
+            
+            .hotkey-overlay {
+                gap: 8px;
+            }
+            
+            .hotkey-item {
+                padding: 8px 10px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+                padding: 12px 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.1rem;
+                text-align: center;
+            }
+            
+            .begin-controls {
+                justify-content: center;
+            }
+            
+            .progress-info {
+                text-align: center;
+                font-size: 0.85rem;
+            }
+            
+            .main-layout {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .left-panel {
+                width: 100%;
+                max-height: 200px;
+                border-right: none;
+                border-bottom: 2px solid #e0e0e0;
+            }
+            
+            .right-panel {
+                padding: 15px;
+            }
+            
+            .main-image-container {
+                height: 300px;
+            }
+            
+            .hotkey-card {
+                padding: 15px;
+            }
+            
+            .hotkey-overlay {
+                gap: 6px;
+            }
+            
+            .hotkey-item {
+                padding: 6px 8px;
+                min-width: calc(33.33% - 4px);
+            }
+            
+            .hotkey-key {
+                font-size: 0.8rem;
+                padding: 4px 8px;
+                min-width: 30px;
+            }
+            
+            .hotkey-label {
+                font-size: 0.7rem;
+            }
+            
+            .footer {
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px 15px;
+            }
+            
+            .stats {
+                text-align: center;
+                font-size: 0.85rem;
+            }
+            
+            .upload-modal-content {
+                width: 95%;
+                padding: 20px;
+                max-height: 85vh;
+            }
+            
+            .confirm-modal-content {
+                width: 95%;
+                padding: 20px;
+                max-height: 85vh;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 3px;
+            }
+            
+            .container {
+                border-radius: 8px;
+            }
+            
+            .header {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1rem;
+            }
+            
+            .begin-controls {
+                flex-direction: column;
+                gap: 6px;
+            }
+            
+            .begin-controls label {
+                font-size: 0.85rem;
+            }
+            
+            .begin-controls input {
+                width: 100%;
+            }
+            
+            .begin-btn {
+                width: 100%;
+                padding: 6px 12px;
+                font-size: 0.85rem;
+            }
+            
+            .progress-info {
+                font-size: 0.8rem;
+            }
+            
+            .left-panel {
+                max-height: 150px;
+            }
+            
+            .entry-section {
+                padding: 8px;
+            }
+            
+            .entry-header {
+                font-size: 0.8rem;
+            }
+            
+            .entry-status {
+                font-size: 0.65rem;
+                padding: 1px 4px;
+            }
+            
+            .image-thumbnail {
+                gap: 6px;
+                padding: 4px;
+            }
+            
+            .thumbnail-img {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .thumbnail-info {
+                font-size: 0.7rem;
+            }
+            
+            .thumbnail-tag {
+                font-size: 0.6rem;
+                padding: 1px 3px;
+            }
+            
+            .right-panel {
+                padding: 10px;
+            }
+            
+            .current-entry-info {
+                padding: 8px;
+                margin-bottom: 10px;
+            }
+            
+            .current-entry-info h2 {
+                font-size: 0.95rem;
+            }
+            
+            .current-entry-info p {
+                font-size: 0.75rem;
+            }
+            
+            .main-image-container {
+                height: 250px;
+            }
+            
+            .image-counter-overlay {
+                font-size: 0.8rem;
+                padding: 4px 8px;
+            }
+            
+            .hotkey-card {
+                padding: 10px;
+                margin-top: 10px;
+            }
+            
+            .hotkey-card-title {
+                font-size: 0.8rem;
+                margin-bottom: 8px;
+            }
+            
+            .hotkey-overlay {
+                gap: 4px;
+            }
+            
+            .hotkey-item {
+                padding: 5px 6px;
+                min-width: calc(50% - 2px);
+                flex: 0 0 calc(50% - 2px);
+            }
+            
+            .hotkey-key {
+                font-size: 0.75rem;
+                padding: 4px 6px;
+                min-width: 28px;
+            }
+            
+            .hotkey-label {
+                font-size: 0.65rem;
+            }
+            
+            .confirm-prompt {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+                margin-top: 10px;
+            }
+            
+            .footer {
+                padding: 10px;
+            }
+            
+            .stats {
+                font-size: 0.8rem;
+            }
+            
+            .upload-modal-content,
+            .confirm-modal-content {
+                width: 98%;
+                padding: 15px;
+                max-height: 90vh;
+            }
+            
+            .upload-modal h2,
+            .confirm-modal-header h2 {
+                font-size: 1.1rem;
+            }
+            
+            .confirm-modal-header p {
+                font-size: 0.85rem;
+            }
+            
+            .file-upload-item {
+                padding: 8px;
+                font-size: 0.8rem;
+            }
+            
+            .file-upload-item-name {
+                font-size: 0.85rem;
+            }
+            
+            .file-upload-item-badge {
+                font-size: 0.65rem;
+                padding: 2px 6px;
+            }
+            
+            .file-upload-item-details {
+                font-size: 0.75rem;
+            }
+            
+            .confirm-card {
+                padding: 8px;
+            }
+            
+            .confirm-card-title {
+                font-size: 0.85rem;
+            }
+            
+            .confirm-card-count {
+                font-size: 0.7rem;
+                padding: 2px 6px;
+            }
+            
+            .confirm-image-thumb {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .confirm-image-info {
+                font-size: 0.75rem;
+            }
+            
+            .confirm-image-tag {
+                font-size: 0.65rem;
+                padding: 2px 5px;
+            }
+            
+            .confirm-modal-actions {
+                gap: 6px;
+            }
+            
+            .confirm-cancel-btn,
+            .confirm-submit-btn {
+                padding: 10px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .header h1 {
+                font-size: 0.9rem;
+            }
+            
+            .begin-controls label {
+                font-size: 0.75rem;
+            }
+            
+            .begin-btn {
+                font-size: 0.8rem;
+                padding: 5px 10px;
+            }
+            
+            .left-panel {
+                max-height: 120px;
+            }
+            
+            .current-entry-info h2 {
+                font-size: 0.85rem;
+            }
+            
+            .current-entry-info p {
+                font-size: 0.7rem;
+            }
+            
+            .main-image-container {
+                height: 200px;
+            }
+            
+            .hotkey-card-title {
+                font-size: 0.75rem;
+            }
+            
+            .hotkey-item {
+                padding: 4px 5px;
+            }
+            
+            .hotkey-key {
+                font-size: 0.7rem;
+                padding: 3px 5px;
+                min-width: 24px;
+            }
+            
+            .hotkey-label {
+                font-size: 0.6rem;
+            }
+        }
+
+        /* Landscape orientation on mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .main-layout {
+                flex-direction: row;
+            }
+            
+            .left-panel {
+                width: 180px;
+                max-height: none;
+                border-right: 2px solid #e0e0e0;
+                border-bottom: none;
+            }
+            
+            .main-image-container {
+                height: auto;
+                min-height: 250px;
+            }
+        }
     </style>
 </head>
 <body>
