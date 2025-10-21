@@ -1610,79 +1610,104 @@
         }
 
         async function uploadFilesToS3(links, s3Keys) {
-            let completed = 0;
-            let successCount = 0;
             const total = links.length;
-            
-            // Get pre-fetched upload data with blobs
             const uploadDataWithBlobs = window.uploadDataWithBlobs || [];
             
-            for (let i = 0; i < total; i++) {
-                const link = links[i];
-                const s3Key = s3Keys[i];
-                const uploadItem = uploadDataWithBlobs[i]; // Get pre-fetched blob
-                
-                const fileItem = document.getElementById(`file-${i}`);
-                const badge = document.getElementById(`badge-${i}`);
-                
-                // Update to uploading state
-                if (fileItem && badge) {
-                    fileItem.classList.add('uploading');
-                    badge.textContent = 'Uploading';
-                    badge.className = 'file-upload-item-badge badge-uploading';
+            // Group uploads by entry for batch processing
+            const uploadsByEntry = new Map();
+            uploadDataWithBlobs.forEach((item, index) => {
+                if (!uploadsByEntry.has(item.entryId)) {
+                    uploadsByEntry.set(item.entryId, []);
                 }
+                uploadsByEntry.get(item.entryId).push({
+                    index: index,
+                    link: links[index],
+                    s3Key: s3Keys[index],
+                    blob: item.blob
+                });
+            });
+            
+            let completed = 0;
+            let successCount = 0;
+            
+            console.log(`⚡ Uploading ${total} files in ${uploadsByEntry.size} batches (by entry)`);
+            
+            // Upload each entry's images in parallel
+            for (const [entryId, uploads] of uploadsByEntry) {
+                console.log(`🚀 Uploading ${uploads.length} images for entry ${entryId} in parallel`);
                 
-                try {
-                    // Use pre-fetched blob instead of fetching again
-                    const blob = uploadItem?.blob;
+                // Create array of upload promises for this entry
+                const uploadPromises = uploads.map(async (uploadItem) => {
+                    const { index, link, s3Key, blob } = uploadItem;
+                    const fileItem = document.getElementById(`file-${index}`);
+                    const badge = document.getElementById(`badge-${index}`);
                     
-                    if (!blob) {
-                        throw new Error('Image data not found. Please refresh and try again.');
+                    // Update to uploading state
+                    if (fileItem && badge) {
+                        fileItem.classList.add('uploading');
+                        badge.textContent = 'Uploading';
+                        badge.className = 'file-upload-item-badge badge-uploading';
                     }
                     
-                    // Upload to S3 using pre-fetched blob
-                    const uploadResponse = await fetch(link, {
-                        method: 'PUT',
-                        body: blob,
-                        headers: {
-                            'Content-Type': blob.type || 'image/jpeg'
+                    try {
+                        if (!blob) {
+                            throw new Error('Image data not found. Please refresh and try again.');
                         }
-                    });
-                    
-                    if (uploadResponse.ok) {
-                        completed++;
-                        successCount++;
+                        
+                        // Upload to S3 using pre-fetched blob
+                        const uploadResponse = await fetch(link, {
+                            method: 'PUT',
+                            body: blob,
+                            headers: {
+                                'Content-Type': blob.type || 'image/jpeg'
+                            }
+                        });
+                        
+                        if (!uploadResponse.ok) {
+                            throw new Error(`Upload failed with status ${uploadResponse.status}`);
+                        }
+                        
+                        // Success
                         if (fileItem && badge) {
                             fileItem.classList.remove('uploading');
                             fileItem.classList.add('success');
                             badge.textContent = 'Success ✓';
                             badge.className = 'file-upload-item-badge badge-success';
                         }
-                    } else {
-                        completed++;
+                        
+                        return { success: true, index };
+                        
+                    } catch (error) {
+                        console.error('Upload error:', error);
+                        
+                        // Error
                         if (fileItem && badge) {
                             fileItem.classList.remove('uploading');
                             fileItem.classList.add('error');
                             badge.textContent = 'Failed ✗';
                             badge.className = 'file-upload-item-badge badge-error';
                         }
+                        
+                        return { success: false, index, error };
                     }
-                } catch (error) {
-                    console.error('Upload error:', error);
-                    completed++;
-                    if (fileItem && badge) {
-                        fileItem.classList.remove('uploading');
-                        fileItem.classList.add('error');
-                        badge.textContent = 'Error';
-                        badge.className = 'file-upload-item-badge badge-error';
-                    }
-                }
+                });
                 
-                // Update progress
-                const percentage = Math.round((completed / total) * 100);
-                progressFill.style.width = `${percentage}%`;
-                progressFill.textContent = `${percentage}%`;
-                uploadStatus.textContent = `Uploaded ${completed} of ${total} files (${successCount} successful)`;
+                // Wait for all uploads in this entry to complete
+                const results = await Promise.all(uploadPromises);
+                
+                // Count successes
+                results.forEach(result => {
+                    completed++;
+                    if (result.success) successCount++;
+                    
+                    // Update progress
+                    const percentage = Math.round((completed / total) * 100);
+                    progressFill.style.width = `${percentage}%`;
+                    progressFill.textContent = `${percentage}%`;
+                    uploadStatus.textContent = `Uploaded ${completed} of ${total} files (${successCount} successful)`;
+                });
+                
+                console.log(`✅ Entry complete: ${results.filter(r => r.success).length}/${results.length} successful`);
             }
             
             // All uploads complete
