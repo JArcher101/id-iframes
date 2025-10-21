@@ -1187,7 +1187,7 @@
         function handlePutError(data) {
             console.error('PUT error:', data);
             uploadModal.classList.add('hidden');
-            alert(`Upload failed: ${data.message || 'Unknown error'}. Please try again.`);
+            showErrorPopup(`Upload failed: ${data.error || data.message || 'Unknown error'}. Please try again.`);
         }
 
         async function uploadFilesToS3(links, s3Keys) {
