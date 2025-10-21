@@ -55,7 +55,7 @@
 
         /* LEFT PANEL - Image List */
         .left-panel {
-            width: 300px;
+            width: 250px;
             border-right: 2px solid #e0e0e0;
             overflow-y: auto;
             background: #fafafa;
@@ -503,23 +503,159 @@
             color: #666;
         }
 
-        .mock-btn {
+        /* Confirmation Modal */
+        .confirm-modal {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+
+        .confirm-modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .confirm-modal-header {
+            margin-bottom: 15px;
+        }
+
+        .confirm-modal-header h2 {
+            margin: 0 0 5px 0;
+            color: #333;
+            font-size: 1.3rem;
+        }
+
+        .confirm-modal-header p {
+            margin: 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .confirm-cards-container {
+            overflow-y: auto;
+            flex: 1;
+            margin-bottom: 20px;
+        }
+
+        .confirm-card {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .confirm-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .confirm-card-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .confirm-card-count {
+            background: #4A90E2;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .confirm-image-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .confirm-image-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .confirm-image-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        .confirm-image-info {
+            flex: 1;
+            font-size: 0.8rem;
+        }
+
+        .confirm-image-tag {
+            background: #D4A574;
+            color: white;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .confirm-image-tag.skip {
+            background: #dc3545;
+        }
+
+        .confirm-modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .confirm-cancel-btn {
+            flex: 1;
             background: #6c757d;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            z-index: 9999;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            font-size: 0.9rem;
         }
 
-        .mock-btn:hover {
+        .confirm-cancel-btn:hover {
             background: #5a6268;
+        }
+
+        .confirm-submit-btn {
+            flex: 2;
+            background: #10a37f;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .confirm-submit-btn:hover {
+            background: #0d8f6f;
         }
     </style>
 </head>
@@ -640,10 +776,24 @@
                 <p id="errorMessage" style="color: white; margin: 0; line-height: 1.4; font-size: 0.9rem;"></p>
             </div>
         </div>
-    </div>
 
-    <!-- Mock Data Button for Testing -->
-    <button id="mockBtn" class="mock-btn" onclick="loadMockData()">Load Test Data</button>
+        <!-- Confirmation Modal -->
+        <div id="confirmModal" class="confirm-modal hidden">
+            <div class="confirm-modal-content">
+                <div class="confirm-modal-header">
+                    <h2>Confirm Upload</h2>
+                    <p id="confirmSummary">Review tagged images before uploading to S3</p>
+                </div>
+                <div class="confirm-cards-container" id="confirmCardsContainer">
+                    <!-- Cards will be populated here -->
+                </div>
+                <div class="confirm-modal-actions">
+                    <button class="confirm-cancel-btn" onclick="hideConfirmModal()">Cancel</button>
+                    <button class="confirm-submit-btn" onclick="confirmAndUpload()">Upload to S3</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         /*
@@ -672,6 +822,9 @@
         const uploadBtn = document.getElementById('uploadBtn');
         const entryProgress = document.getElementById('entryProgress');
         const imageProgress = document.getElementById('imageProgress');
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmCardsContainer = document.getElementById('confirmCardsContainer');
+        const confirmSummary = document.getElementById('confirmSummary');
         const taggedCount = document.getElementById('taggedCount');
         const remainingCount = document.getElementById('remainingCount');
         const uploadModal = document.getElementById('uploadModal');
@@ -704,8 +857,17 @@
             // Close upload modal if it's open (allows interaction with new data)
             uploadModal.classList.add('hidden');
             
+            // Close confirmation modal if it's open
+            if (confirmModal) {
+                confirmModal.classList.add('hidden');
+            }
+            
             // Clear any stored upload data
             window.uploadDataWithBlobs = null;
+            window.confirmModalWasOpen = false;
+            
+            // Clear image cache for new batch
+            imageCache.clear();
             
             batchData = data.entries || [];
             currentBatchNumber = data.batchNumber || 1;
@@ -716,6 +878,9 @@
                 showNoData();
                 return;
             }
+            
+            // Scroll left panel to top when new data loaded
+            leftPanel.scrollTop = 0;
             
             // Initialize tagging state for each entry
             batchData.forEach(entry => {
@@ -887,6 +1052,12 @@
         function checkIfAllComplete() {
             const allComplete = batchData.every(entry => entry.complete);
             uploadBtn.disabled = !allComplete;
+            
+            // If we were viewing the confirm modal and all entries are complete again, re-show it
+            if (allComplete && window.confirmModalWasOpen) {
+                window.confirmModalWasOpen = false;
+                showConfirmModal();
+            }
         }
 
         function jumpToImage(entryIdx, imgIdx) {
@@ -946,6 +1117,9 @@
                     
                     console.log('Marking entry complete');
                     
+                    // Start background pre-fetching for this entry's images
+                    prefetchEntryImages(entry);
+                    
                     // Move to next entry OR update UI if last entry
                     if (currentEntryIndex < batchData.length - 1) {
                         console.log('Moving to next entry');
@@ -960,9 +1134,11 @@
                     } else {
                         console.log('Last entry in batch - updating UI only');
                         // Last entry - update UI to show complete state and enable upload button
-                        renderLeftPanel();
-                        updateDisplay();
-                        updateProgressInfo();
+                        renderLeftPanel(); // This will show entry as green
+                        confirmPrompt.classList.add('hidden'); // Hide confirm prompt
+                        updateDisplay(); // Refresh display
+                        updateProgressInfo(); // Update progress
+                        checkIfAllComplete(); // Enable upload button if all complete
                     }
                 } else {
                     console.log('Cannot mark complete: entry not complete or already marked complete');
@@ -1093,15 +1269,57 @@
 
         /*
         =====================================================================
+        Background Image Pre-fetching
+        =====================================================================
+        */
+        async function prefetchEntryImages(entry) {
+            console.log('🔄 Background pre-fetching images for:', entry.name);
+            
+            for (let imgIdx = 0; imgIdx < entry.images.length; imgIdx++) {
+                const img = entry.images[imgIdx];
+                
+                // Skip untagged or skipped images
+                if (!img.tag || img.tag === 'Skip') continue;
+                
+                const cacheKey = `${entry._id}-${imgIdx}`;
+                
+                // Skip if already cached
+                if (imageCache.has(cacheKey)) continue;
+                
+                try {
+                    const publicUrl = convertWixUrlToPublic(img.src);
+                    const response = await fetch(publicUrl);
+                    const blob = await response.blob();
+                    
+                    // Store in cache
+                    imageCache.set(cacheKey, {
+                        blob: blob,
+                        metadata: {
+                            type: blob.type || 'image/jpeg',
+                            size: blob.size,
+                            lastModified: Date.now()
+                        }
+                    });
+                    
+                    console.log(`✅ Pre-fetched: ${entry.name} - Image ${imgIdx + 1}`);
+                } catch (error) {
+                    console.warn(`⚠️ Pre-fetch failed for ${entry.name} - Image ${imgIdx + 1}:`, error);
+                    // Don't block - will fetch during upload if needed
+                }
+            }
+        }
+
+        /*
+        =====================================================================
         Upload to S3
         =====================================================================
         */
         uploadBtn.addEventListener('click', () => {
-            uploadToS3();
+            showConfirmModal();
         });
 
         async function uploadToS3() {
-            // Build upload data with all tagged images - fetch metadata first
+            // Build upload data with all tagged images - use cache if available
             const uploadData = [];
             
             // Show upload modal early to indicate processing
@@ -1111,9 +1329,11 @@
             fileUploadList.innerHTML = '';
             
             try {
-                // Fetch all images to get metadata (type, size) that backend requires
+                // Compile all tagged images (using cache when available)
                 for (const entry of batchData) {
-                    for (const img of entry.images) {
+                    for (let imgIdx = 0; imgIdx < entry.images.length; imgIdx++) {
+                        const img = entry.images[imgIdx];
+                        
                         if (!img.tag || img.tag === 'Skip') continue; // Skip untagged and skipped images
                         
                         // Map tags to document types and sides
@@ -1132,38 +1352,50 @@
                         
                         // Convert Wix URL to public URL
                         const publicUrl = convertWixUrlToPublic(img.src);
+                        const cacheKey = `${entry._id}-${imgIdx}`;
                         
-                        // Fetch image to get metadata (matching image-viewer.html structure)
-                        try {
-                            const response = await fetch(publicUrl);
-                            const blob = await response.blob();
-                            
-                            uploadData.push({
-                                entryId: entry._id,
-                                type: type,
-                                document: document,
-                                side: side,
-                                name: generateFileName(entry, document, side),
-                                uploader: 'System transfer',
-                                date: uploadDate,
-                                url: publicUrl,
-                                data: {
-                                    type: blob.type || 'image/jpeg', // MIME type from blob
-                                    size: blob.size, // Size in bytes from blob
+                        // Check cache first
+                        let blob, metadata;
+                        if (imageCache.has(cacheKey)) {
+                            console.log(`📦 Using cached blob for: ${entry.name} - Image ${imgIdx + 1}`);
+                            const cached = imageCache.get(cacheKey);
+                            blob = cached.blob;
+                            metadata = cached.metadata;
+                        } else {
+                            // Fetch if not cached (fallback)
+                            console.log(`⏳ Fetching (not cached): ${entry.name} - Image ${imgIdx + 1}`);
+                            try {
+                                const response = await fetch(publicUrl);
+                                blob = await response.blob();
+                                metadata = {
+                                    type: blob.type || 'image/jpeg',
+                                    size: blob.size,
                                     lastModified: Date.now()
-                                },
-                                blob: blob // Store blob for later upload (avoid re-fetching)
-                            });
-                        } catch (fetchError) {
-                            console.error('Failed to fetch image:', publicUrl, fetchError);
-                            showErrorPopup(`Failed to fetch image from Wix: ${img.src.substring(0, 50)}...`);
-                            uploadModal.classList.add('hidden');
-                            return;
+                                };
+                            } catch (error) {
+                                console.error(`❌ Fetch failed for ${entry.name} - Image ${imgIdx + 1}:`, error);
+                                throw error;
+                            }
                         }
+                            
+                        uploadData.push({
+                            entryId: entry._id,
+                            type: type,
+                            document: document,
+                            side: side,
+                            name: generateFileName(entry, document, side),
+                            uploader: 'System transfer',
+                            date: uploadDate,
+                            url: publicUrl,
+                            data: metadata,
+                            blob: blob // Store blob for later upload (avoid re-fetching)
+                        });
                     }
                 }
-                
-                console.log('Compiled upload data with file metadata:', uploadData);
+            }
+            
+            console.log(`✅ Compiled upload data: ${uploadData.length} images (${imageCache.size} from cache)`);
+            console.log('Upload data details:', uploadData);
                 
                 // Log message before posting
                 console.log('📤 Posting image-data to parent:', {
@@ -1278,7 +1510,12 @@
         function handlePutError(data) {
             console.error('PUT error:', data);
             uploadModal.classList.add('hidden');
-            showErrorPopup(`Upload failed: ${data.error || data.message || 'Unknown error'}. Please try again.`);
+            showErrorPopup(`Upload failed: ${data.error || data.message || 'Unknown error'}. Please review and try again.`);
+            
+            // Return to confirmation modal after error is dismissed
+            setTimeout(() => {
+                showConfirmModal();
+            }, 3000);
         }
 
         async function uploadFilesToS3(links, s3Keys) {
@@ -1482,162 +1719,107 @@
 
         /*
         =====================================================================
-        Mock Data for Testing
+        Confirmation Modal Functions
         =====================================================================
         */
-        function loadMockData() {
-            const mockData = {
-                type: 'migration-batch',
-                entries: [
-                    {
-                        _id: "0f8eb4a8-a482-47a5-bc80-3b14258e3a86",
-                        cD: {
-                            c: 23361,
-                            m: "1",
-                            f: "LJD",
-                            n: "Mr N W-T Carne"
-                        },
-                        images: [
-                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
-                        ]
-                    },
-                    {
-                        _id: "019deda6-e246-4ee6-880c-726931e3a986",
-                        cD: {
-                            c: 23374,
-                            m: "1",
-                            f: "LJD",
-                            n: "Mrs C M Treloar"
-                        },
-                        images: [
-                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop"
-                        ]
-                    },
-                    {
-                        _id: "1f542425-33ae-4946-ad2d-7cd30e4fac37",
-                        cD: {
-                            c: 18451,
-                            m: "2",
-                            f: "SJM",
-                            n: "Mr J R Willis"
-                        },
-                        images: [
-                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
-                        ]
-                    },
-                    {
-                        _id: "f96cd72d-b26f-4399-8840-8e78f6a09bef",
-                        cD: {
-                            c: 18451,
-                            m: "2",
-                            f: "SJM",
-                            n: "Mrs C K Willis"
-                        },
-                        images: [
-                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
-                        ]
-                    },
-                    {
-                        _id: "d183a866-0ec2-4afa-8a0c-2c7b678de736",
-                        cD: {
-                            c: 21367,
-                            m: "4",
-                            f: "LJD",
-                            n: "Mrs S Thompson"
-                        },
-                        images: [
-                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
-                        ]
-                    },
-                    {
-                        _id: "5ca028b5-4353-4d98-8d2a-25080be38fff",
-                        cD: {
-                            c: 21367,
-                            m: "4",
-                            f: "LJD",
-                            n: "Mr M P Thompson"
-                        },
-                        images: [
-                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
-                        ]
-                    },
-                    {
-                        _id: "754acaae-05b5-496b-8b2a-a462e2718950",
-                        cD: {
-                            c: 23367,
-                            m: "1",
-                            f: "SJM",
-                            n: "Ms A M Lightbound"
-                        },
-                        images: [
-                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop"
-                        ]
-                    },
-                    {
-                        _id: "3c2aaf1a-8dac-4332-8526-296d63a3eccb",
-                        cD: {
-                            c: 23367,
-                            m: "1",
-                            f: "SJM",
-                            n: "Mr H W Eadie"
-                        },
-                        images: [
-                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
-                        ]
-                    },
-                    {
-                        _id: "09994171-d0b9-4e82-a216-13e7fd0d1e10",
-                        cD: {
-                            c: 21000,
-                            m: "4",
-                            f: "MB",
-                            n: "Mrs E S Hooper"
-                        },
-                        images: [
-                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop"
-                        ]
-                    },
-                    {
-                        _id: "fae8c402-0baf-4862-aad9-0af2e020eaec",
-                        cD: {
-                            c: 21000,
-                            m: "4",
-                            f: "MB",
-                            n: "Mr G K Hooper"
-                        },
-                        images: [
-                            "https://images.unsplash.com/photo-1554224155-8d04cb21e9c8?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-a1487473ffd9?w=400&h=300&fit=crop",
-                            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop"
-                        ]
-                    }
-                ],
-                batchNumber: 1,
-                totalBatches: 185,
-                uploader: 'System transfer'
-            };
+        function showConfirmModal() {
+            // Count tagged images (excluding skipped)
+            let totalToUpload = 0;
+            let skippedCount = 0;
             
-            // Simulate receiving message from parent
-            handleBatchData(mockData);
+            batchData.forEach(entry => {
+                entry.images.forEach(img => {
+                    if (img.tag === 'Skip') {
+                        skippedCount++;
+                    } else if (img.tag) {
+                        totalToUpload++;
+                    }
+                });
+            });
+            
+            // Update summary
+            confirmSummary.textContent = `${totalToUpload} images will be uploaded${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}`;
+            
+            // Build confirmation cards
+            confirmCardsContainer.innerHTML = '';
+            
+            batchData.forEach((entry, entryIdx) => {
+                // Only show entries with tagged images (excluding skipped)
+                const taggedImages = entry.images.filter(img => img.tag && img.tag !== 'Skip');
+                
+                if (taggedImages.length === 0) return;
+                
+                const card = document.createElement('div');
+                card.className = 'confirm-card';
+                
+                const imageCount = taggedImages.length;
+                const skippedInEntry = entry.images.filter(img => img.tag === 'Skip').length;
+                
+                card.innerHTML = `
+                    <div class="confirm-card-header">
+                        <div class="confirm-card-title">${entry.fe}-${entry.clientNumber}-${entry.matterNumber} - ${entry.name}</div>
+                        <div class="confirm-card-count">${imageCount} image${imageCount !== 1 ? 's' : ''}</div>
+                    </div>
+                    <div class="confirm-image-list" id="confirm-entry-${entryIdx}"></div>
+                `;
+                
+                confirmCardsContainer.appendChild(card);
+                
+                const imageList = card.querySelector(`#confirm-entry-${entryIdx}`);
+                
+                entry.images.forEach((img, imgIdx) => {
+                    if (!img.tag || img.tag === 'Skip') return; // Don't show untagged or skipped
+                    
+                    const imageItem = document.createElement('div');
+                    imageItem.className = 'confirm-image-item';
+                    imageItem.style.cursor = 'pointer';
+                    imageItem.onclick = () => jumpToImageFromConfirm(entryIdx, imgIdx);
+                    
+                    const tagClass = img.tag === 'Skip' ? 'skip' : '';
+                    
+                    imageItem.innerHTML = `
+                        <img class="confirm-image-thumb" src="${img.src}" alt="${img.fileName}">
+                        <div class="confirm-image-info">
+                            <div><strong>${img.fileName}</strong></div>
+                            <div style="color: #666; font-size: 0.75rem; margin-top: 2px;">Click to re-tag</div>
+                        </div>
+                        <div class="confirm-image-tag ${tagClass}">${img.tag}</div>
+                    `;
+                    
+                    imageList.appendChild(imageItem);
+                });
+            });
+            
+            // Show modal
+            confirmModal.classList.remove('hidden');
+        }
+
+        function hideConfirmModal() {
+            confirmModal.classList.add('hidden');
+        }
+
+        function jumpToImageFromConfirm(entryIdx, imgIdx) {
+            // Set flag to re-show modal when tagging is complete
+            window.confirmModalWasOpen = true;
+            
+            // Hide modal
+            hideConfirmModal();
+            
+            // Jump to the image
+            currentEntryIndex = entryIdx;
+            currentImageIndex = imgIdx;
+            renderLeftPanel();
+            updateDisplay();
+            updateProgressInfo();
+            scrollToActiveEntry();
+        }
+
+        function confirmAndUpload() {
+            // Hide confirmation modal
+            hideConfirmModal();
+            
+            // Proceed with upload
+            uploadToS3();
         }
 
         // Initialize
