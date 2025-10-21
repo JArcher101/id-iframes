@@ -3177,9 +3177,11 @@
         - Completes when all files finish (success or error)
         =====================================================================
         */
-        function uploadFiles(links) {
+        async function uploadFiles(links) {
             // Use locally stored files (with actual File objects) instead of collecting again
             const files = localFilesForUpload;
+            const total = files.length;
+            
             console.log('Using local files for upload:', files.length, 'files');
             
             // Validate we have files to upload
@@ -3190,55 +3192,66 @@
                 return;
             }
             
-            let completed = 0;
-            let hasErrors = false;
-            const total = files.length;
+            console.log(`⚡ Uploading ALL ${total} files simultaneously with Promise.all()`);
             
-            files.forEach((fileData, index) => {
+            // Create upload promise for each file
+            const uploadPromises = files.map(async (fileData, index) => {
                 const fileItem = document.getElementById(`file-${index}`);
                 const statusText = fileItem ? fileItem.querySelector('.status-text') : null;
                 
+                // Update to uploading state
                 if (fileItem && statusText) {
                     fileItem.classList.add('uploading');
                     statusText.textContent = 'Uploading...';
                 }
                 
-                // Upload to S3 using PUT links
-                uploadToS3(fileData.file, links[index])
-                    .then(() => {
-                        if (fileItem && statusText) {
-                            fileItem.classList.remove('uploading');
-                            fileItem.classList.add('success');
-                            statusText.textContent = 'Success';
-                        }
-                        completed++;
-                        updateUploadProgress(completed, total, hasErrors);
-                        
-                        if (completed === total) {
-                            // All uploads completed successfully
-                            setTimeout(() => {
-                                handleUploadSuccess();
-                            }, 1000);
-                        }
-                    })
-                    .catch((error) => {
-                        if (fileItem && statusText) {
-                            fileItem.classList.remove('uploading');
-                            fileItem.classList.add('error');
-                            statusText.textContent = `Error: ${error.message}`;
-                        }
-                        hasErrors = true;
-                        completed++;
-                        updateUploadProgress(completed, total, hasErrors);
-                        
-                        if (completed === total) {
-                            // All uploads completed with errors
-                            setTimeout(() => {
-                                handleUploadError();
-                            }, 1000);
-                        }
-                    });
+                try {
+                    // Upload to S3 using PUT link (note: PUT links are single-use)
+                    await uploadToS3(fileData.file, links[index]);
+                    
+                    // Success
+                    if (fileItem && statusText) {
+                        fileItem.classList.remove('uploading');
+                        fileItem.classList.add('success');
+                        statusText.textContent = 'Success';
+                    }
+                    
+                    return { success: true, index };
+                    
+                } catch (error) {
+                    console.error(`Upload error for file ${index}:`, error);
+                    
+                    // Error (note: retries require new PUT links from parent)
+                    if (fileItem && statusText) {
+                        fileItem.classList.remove('uploading');
+                        fileItem.classList.add('error');
+                        statusText.textContent = `Error: ${error.message}`;
+                    }
+                    
+                    return { success: false, index, error };
+                }
             });
+            
+            // Upload ALL files simultaneously and wait for all to complete
+            const results = await Promise.all(uploadPromises);
+            
+            // Count successes and errors
+            const successCount = results.filter(r => r.success).length;
+            const hasErrors = results.some(r => !r.success);
+            
+            // Update final progress
+            updateUploadProgress(total, total, hasErrors);
+            
+            console.log(`✅ All uploads complete: ${successCount}/${total} successful`);
+            
+            // Handle completion
+            setTimeout(() => {
+                if (hasErrors) {
+                    handleUploadError();
+                } else {
+                    handleUploadSuccess();
+                }
+            }, 1000);
         }
 
         // Upload single file to S3 using PUT URL
