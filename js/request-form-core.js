@@ -2646,16 +2646,18 @@ function updateFormJFlags(images, iconData) {
   }
   
   // Count Address ID and Photo ID images
-  // Note: Accept both 'Address ID' (with space) and 'AddressID' (no space) for backwards compatibility
+  // Note: Accept both formats (with/without spaces) for backwards compatibility
   const addressIDs = images.filter(img => 
     img.type === 'Address ID' || img.type === 'AddressID'
   );
   
-  const photoIDs = images.filter(img => img.type === 'PhotoID');
+  const photoIDs = images.filter(img => 
+    img.type === 'PhotoID' || img.type === 'Photo ID'
+  );
   
   // Count Driving Licence as BOTH Photo ID AND Address ID (dual purpose)
   const drivingLicenceCount = images.filter(img => 
-    img.document === 'Driving Licence' && img.type === 'PhotoID'
+    img.document === 'Driving Licence' && (img.type === 'PhotoID' || img.type === 'Photo ID')
   ).length > 0 ? 1 : 0;
   
   // Check if we have sufficient photos

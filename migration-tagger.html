@@ -1196,9 +1196,9 @@
                 'Other Photo ID Single': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Single' },
                 'Other Photo ID Front': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Front' },
                 'Other Photo ID Back': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Back' },
-                'Other': { type: 'Address ID', document: 'Utility Bill', side: 'Single' } // Fixed: 'Address ID' with space, 'Utility Bill' as recognized type
+                'Other': { type: 'AddressID', document: 'Other', side: 'Single' } // Migration: generic Address ID without specific type
             };
-            return map[tag] || { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Single' };
+            return map[tag] || { type: 'AddressID', document: 'Other', side: 'Single' };
         }
 
         function generateFileName(entry, document, side) {
