@@ -151,6 +151,14 @@
             font-weight: 700;
         }
 
+        .thumbnail-tag.skip {
+            background: #dc3545; /* Red for skipped images */
+        }
+
+        .image-thumbnail.skipped {
+            opacity: 0.5; /* Dim skipped images */
+        }
+
         /* RIGHT PANEL - Main Tagging Area */
         .right-panel {
             flex: 1;
@@ -589,6 +597,10 @@
                                 <div class="hotkey-key">A</div>
                                 <div class="hotkey-label">Address ID</div>
                             </div>
+                            <div class="hotkey-item" onclick="tagCurrentImage('Skip')" title="Click to tag or press N" style="background: rgba(220, 53, 69, 0.1); border: 1px solid #dc3545;">
+                                <div class="hotkey-key" style="background: #dc3545;">N</div>
+                                <div class="hotkey-label" style="color: #dc3545;">Skip</div>
+                            </div>
                         </div>
                     </div>
 
@@ -783,9 +795,12 @@
                     const thumb = document.createElement('div');
                     thumb.className = 'image-thumbnail';
                     if (img.tag) thumb.classList.add('tagged');
+                    if (img.tag === 'Skip') thumb.classList.add('skipped'); // Dim skipped images
                     if (entryIdx === currentEntryIndex && imgIdx === currentImageIndex) {
                         thumb.classList.add('active');
                     }
+                    
+                    const tagClass = img.tag === 'Skip' ? 'skip' : '';
                     
                     thumb.innerHTML = `
                         <img class="thumbnail-img" src="${img.src}" alt="Image ${imgIdx + 1}">
@@ -793,7 +808,7 @@
                             ${img.fileName}<br>
                             ${img.tag ? `<strong>${img.tag}</strong>` : '<em>Not tagged</em>'}
                         </div>
-                        ${img.tag ? `<div class="thumbnail-tag">${getTagShorthand(img.tag)}</div>` : ''}
+                        ${img.tag ? `<div class="thumbnail-tag ${tagClass}">${getTagShorthand(img.tag)}</div>` : ''}
                     `;
                     
                     thumb.onclick = () => jumpToImage(entryIdx, imgIdx);
@@ -810,7 +825,8 @@
                 'Other Photo ID Single': 'OS',
                 'Other Photo ID Front': 'OF',
                 'Other Photo ID Back': 'OB',
-                'Other': 'A'
+                'Other': 'A',
+                'Skip': 'N'
             };
             return map[tag] || tag;
         }
@@ -850,16 +866,22 @@
         function updateStats() {
             let tagged = 0;
             let remaining = 0;
+            let skipped = 0;
             
             batchData.forEach(entry => {
                 entry.images.forEach(img => {
-                    if (img.tag) tagged++;
-                    else remaining++;
+                    if (img.tag === 'Skip') {
+                        skipped++;
+                    } else if (img.tag) {
+                        tagged++;
+                    } else {
+                        remaining++;
+                    }
                 });
             });
             
             taggedCount.textContent = tagged;
-            remainingCount.textContent = remaining;
+            remainingCount.textContent = remaining + (skipped > 0 ? ` (${skipped} skipped)` : '');
         }
 
         function checkIfAllComplete() {
@@ -978,6 +1000,8 @@
                 tagCurrentImage('Passport');
             } else if (key === 'a') {
                 tagCurrentImage('Other');
+            } else if (key === 'n') {
+                tagCurrentImage('Skip'); // Skip this image - don't upload
             }
         });
 
@@ -1090,7 +1114,7 @@
                 // Fetch all images to get metadata (type, size) that backend requires
                 for (const entry of batchData) {
                     for (const img of entry.images) {
-                        if (!img.tag) continue; // Skip untagged images
+                        if (!img.tag || img.tag === 'Skip') continue; // Skip untagged and skipped images
                         
                         // Map tags to document types and sides
                         const { type, document, side } = mapTagToMetadata(img.tag);
@@ -1196,9 +1220,9 @@
                 'Other Photo ID Single': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Single' },
                 'Other Photo ID Front': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Front' },
                 'Other Photo ID Back': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Back' },
-                'Other': { type: 'AddressID', document: 'Other', side: 'Single' } // Migration: generic Address ID without specific type
+                'Other': { type: 'AddressID', document: 'Address ID', side: 'Single' } // Migration: generic Address ID without specific type
             };
-            return map[tag] || { type: 'AddressID', document: 'Other', side: 'Single' };
+            return map[tag] || { type: 'AddressID', document: 'Unknown Document', side: 'Single' };
         }
 
         function generateFileName(entry, document, side) {
