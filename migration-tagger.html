@@ -47,6 +47,48 @@
             opacity: 0.9;
         }
 
+        .begin-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .begin-controls label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .begin-controls input {
+            width: 60px;
+            padding: 6px;
+            border: 1px solid white;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .begin-btn {
+            background: #10a37f;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .begin-btn:hover {
+            background: #0d8f6f;
+        }
+
+        .begin-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
         .main-layout {
             display: flex;
             height: calc(100vh - 160px);
@@ -663,16 +705,25 @@
     <div class="container">
         <div class="header">
             <h1>🏷️ ID Image Migration Tool</h1>
-            <div class="progress-info">
+            
+            <!-- Begin Controls (shown initially) -->
+            <div class="begin-controls" id="beginControls">
+                <label for="limitInput">Entries to load:</label>
+                <input type="number" id="limitInput" min="1" max="10" value="10" />
+                <button class="begin-btn" id="beginBtn">Begin</button>
+            </div>
+            
+            <!-- Progress Info (shown after data loaded) -->
+            <div class="progress-info hidden" id="progressInfo">
                 <span id="entryProgress">Entry 0/0</span> | 
                 <span id="imageProgress">Image 0/0</span>
             </div>
         </div>
 
         <!-- Loading State -->
-        <div id="loadingState" class="loading-state">
+        <div id="loadingState" class="loading-state hidden">
             <div class="spinner"></div>
-            <p>Waiting for data from parent...</p>
+            <p>Loading entries...</p>
         </div>
 
         <!-- No Data State -->
@@ -832,6 +883,10 @@
         const progressFill = document.getElementById('progressFill');
         const uploadStatus = document.getElementById('uploadStatus');
         const fileUploadList = document.getElementById('fileUploadList');
+        const beginControls = document.getElementById('beginControls');
+        const progressInfo = document.getElementById('progressInfo');
+        const beginBtn = document.getElementById('beginBtn');
+        const limitInput = document.getElementById('limitInput');
 
         /*
         =====================================================================
@@ -854,6 +909,13 @@
 
         function handleBatchData(data) {
             console.log('Received migration batch:', data);
+            
+            // Hide loading state and begin controls
+            loadingState.classList.add('hidden');
+            beginControls.classList.add('hidden');
+            
+            // Show progress info in header
+            progressInfo.classList.remove('hidden');
             
             // Close upload modal if it's open (allows interaction with new data)
             uploadModal.classList.add('hidden');
@@ -1857,6 +1919,33 @@
             // Proceed with upload
             uploadToS3();
         }
+
+        /*
+        =====================================================================
+        Begin Button - Fetch Data from Parent
+        =====================================================================
+        */
+        beginBtn.addEventListener('click', () => {
+            const limit = parseInt(limitInput.value, 10) || 10;
+            
+            // Validate limit
+            if (limit < 1 || limit > 10) {
+                showErrorPopup('Please enter a number between 1 and 10.');
+                return;
+            }
+            
+            console.log('📤 Requesting data from parent with limit:', limit);
+            
+            // Hide begin controls and show loading state
+            beginControls.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            
+            // Send fetch-data message to parent
+            window.parent.postMessage({
+                type: 'fetch-data',
+                limit: limit
+            }, '*');
+        });
 
         // Initialize
         console.log('Migration tagger loaded and ready');
