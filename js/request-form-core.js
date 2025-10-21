@@ -1251,10 +1251,37 @@ function setupFileHandlers() {
       return;
     }
     
-    // Get document type from dropdown
+    // Show the document type dropdown and prompt user to select type
     const cdfDocumentType = document.getElementById('cdfDocumentType');
+    if (!cdfDocumentType) return;
+    
+    // Show dropdown
+    cdfDocumentType.classList.remove('hidden');
+    
+    // Check if a type is already selected
+    if (!cdfDocumentType.value) {
+      // Wait for user to select a type - set up a one-time listener
+      const handleTypeSelection = () => {
+        if (cdfDocumentType.value) {
+          // Type selected - process the file
+          processCDFFile(file, cdfDocumentType);
+          cdfDocumentType.removeEventListener('change', handleTypeSelection);
+        }
+      };
+      
+      cdfDocumentType.addEventListener('change', handleTypeSelection);
+      console.log('📋 Waiting for document type selection...');
+      return;
+    }
+    
+    // Type already selected - process immediately
+    processCDFFile(file, cdfDocumentType);
+  };
+  
+  // Helper function to process CDF file after type is selected
+  function processCDFFile(file, cdfDocumentType) {
     if (!cdfDocumentType || !cdfDocumentType.value) {
-      showError('Please select a document type before uploading');
+      showError('Please select a document type');
       resetCDFUploadArea();
       return;
     }
@@ -1511,6 +1538,7 @@ function resetCDFUploadArea() {
   const uploadIcon = document.getElementById('cdfUploadIcon');
   const uploadText = document.getElementById('cdfUploadText');
   const fileInput = document.getElementById('cdfFileInput');
+  const cdfDocumentType = document.getElementById('cdfDocumentType');
   
   if (!uploadIcon || !uploadText || !fileInput) return;
   
@@ -1529,6 +1557,12 @@ function resetCDFUploadArea() {
   
   // Clear file input
   fileInput.value = '';
+  
+  // Hide and reset dropdown
+  if (cdfDocumentType) {
+    cdfDocumentType.classList.add('hidden');
+    cdfDocumentType.value = '';
+  }
 }
 
 // OFSI upload area helper functions
