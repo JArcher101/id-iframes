@@ -268,7 +268,7 @@ Sends request-data message to parent with:
         errors.push('You must enter the client\'s Last Name');
       }
       
-      // Date of Birth validation (8 individual digit inputs)
+      // Date of Birth validation (8 individual digit inputs) - OPTIONAL for Form E
       const dob1 = document.getElementById('dob1');
       const dob2 = document.getElementById('dob2');
       const dob3 = document.getElementById('dob3');
@@ -282,13 +282,20 @@ Sends request-data message to parent with:
       const month = (dob3?.value || '') + (dob4?.value || '');
       const year = (dob5?.value || '') + (dob6?.value || '') + (dob7?.value || '') + (dob8?.value || '');
       
-      const dobValidation = window.RequestFormCore.validateAndFormatDOB(day, month, year);
+      // Only validate DOB if user has started filling it in
+      const dobEntered = day.length > 0 || month.length > 0 || year.length > 0;
       
-      if (!dobValidation.valid) {
-        errors.push(dobValidation.error || 'You must enter a valid Date of Birth');
+      if (dobEntered) {
+        const dobValidation = window.RequestFormCore.validateAndFormatDOB(day, month, year);
+        
+        if (!dobValidation.valid) {
+          errors.push(dobValidation.error || 'Please complete all 8 digits of the Date of Birth, or leave it blank');
+        }
+        
+        this.formattedDOB = dobValidation.formatted;
+      } else {
+        this.formattedDOB = null; // No DOB entered, set to null
       }
-      
-      this.formattedDOB = dobValidation.formatted;
       
       // Name Change validation
       const recentNameChange = document.getElementById('recentNameChange');
@@ -324,9 +331,14 @@ Sends request-data message to parent with:
       }
       
       // Mobile number validation
-      const mobileInput = document.getElementById('mobile');
-      if (!mobileInput?.value?.trim()) {
-        errors.push('You must enter a valid Mobile Number with country code');
+      const phoneCountryCode = document.getElementById('phoneCountryCode');
+      const phoneNumber = document.getElementById('phoneNumber');
+      const phoneCode = phoneCountryCode?.dataset.phoneCode || '';
+      
+      if (!phoneNumber?.value?.trim()) {
+        errors.push('You must enter a Mobile Number');
+      } else if (!phoneCode) {
+        errors.push('You must select a country code for the Mobile Number');
       }
       
       // ID Documents checkbox
