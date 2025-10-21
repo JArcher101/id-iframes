@@ -1369,7 +1369,7 @@
                         if (!img.tag || img.tag === 'Skip') continue; // Skip untagged and skipped images
                         
                         // Map tags to document types and sides
-                        const { type, document, side } = mapTagToMetadata(img.tag);
+                        const { type, documentType, side } = mapTagToMetadata(img.tag);
                         
                         // Generate filename
                         const uploadDate = new Date().toLocaleString('en-GB', { 
@@ -1413,9 +1413,9 @@
                         uploadData.push({
                             entryId: entry._id,
                             type: type,
-                            document: document,
+                            document: documentType,
                             side: side,
-                            name: generateFileName(entry, document, side),
+                            name: generateFileName(entry, documentType, side),
                             uploader: 'System transfer',
                             date: uploadDate,
                             url: publicUrl,
@@ -1477,15 +1477,15 @@
 
         function mapTagToMetadata(tag) {
             const map = {
-                'Passport': { type: 'PhotoID', document: 'Passport', side: 'Single' },
-                'Driving Licence Front': { type: 'PhotoID', document: 'Driving Licence', side: 'Front' },
-                'Driving Licence Back': { type: 'PhotoID', document: 'Driving Licence', side: 'Back' },
-                'Other Photo ID Single': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Single' },
-                'Other Photo ID Front': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Front' },
-                'Other Photo ID Back': { type: 'PhotoID', document: 'Other Photo ID Card', side: 'Back' },
-                'Other': { type: 'AddressID', document: 'Address ID', side: 'Single' } // Migration: generic Address ID without specific type
+                'Passport': { type: 'PhotoID', documentType: 'Passport', side: 'Single' },
+                'Driving Licence Front': { type: 'PhotoID', documentType: 'Driving Licence', side: 'Front' },
+                'Driving Licence Back': { type: 'PhotoID', documentType: 'Driving Licence', side: 'Back' },
+                'Other Photo ID Single': { type: 'PhotoID', documentType: 'Other Photo ID Card', side: 'Single' },
+                'Other Photo ID Front': { type: 'PhotoID', documentType: 'Other Photo ID Card', side: 'Front' },
+                'Other Photo ID Back': { type: 'PhotoID', documentType: 'Other Photo ID Card', side: 'Back' },
+                'Other': { type: 'AddressID', documentType: 'Address ID', side: 'Single' } // Migration: generic Address ID without specific type
             };
-            return map[tag] || { type: 'AddressID', document: 'Unknown Document', side: 'Single' };
+            return map[tag] || { type: 'AddressID', documentType: 'Unknown Document', side: 'Single' };
         }
 
         function generateFileName(entry, document, side) {
@@ -1807,8 +1807,8 @@
                     imageItem.onclick = () => jumpToImageFromConfirm(entryIdx, imgIdx);
                     
                     const tagClass = img.tag === 'Skip' ? 'skip' : '';
-                    const { type, document, side } = mapTagToMetadata(img.tag);
-                    const fileName = generateFileName(entry, document, side);
+                    const { type, documentType, side } = mapTagToMetadata(img.tag);
+                    const fileName = generateFileName(entry, documentType, side);
                     
                     // Tag text for confirmation: show Front/Back, or "Ignore" for skipped, hide "Single"
                     let tagText = img.tag === 'Skip' ? 'Ignore' : (side !== 'Single' ? side : '');
