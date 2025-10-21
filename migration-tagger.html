@@ -752,7 +752,6 @@
                     <strong id="taggedCount">0</strong> images tagged | 
                     <strong id="remainingCount">0</strong> remaining
                 </div>
-                <button id="uploadBtn" class="upload-btn" disabled>Upload to S3</button>
             </div>
         </div>
 
@@ -822,7 +821,6 @@
         const currentEntryName = document.getElementById('currentEntryName');
         const currentEntryDetails = document.getElementById('currentEntryDetails');
         const confirmPrompt = document.getElementById('confirmPrompt');
-        const uploadBtn = document.getElementById('uploadBtn');
         const entryProgress = document.getElementById('entryProgress');
         const imageProgress = document.getElementById('imageProgress');
         const confirmModal = document.getElementById('confirmModal');
@@ -970,13 +968,16 @@
                     
                     const tagClass = img.tag === 'Skip' ? 'skip' : '';
                     
+                    // Get display text for tag
+                    const tagDisplayText = img.tag ? getTagDisplayText(img.tag) : '<em>Not tagged</em>';
+                    const tagBadgeText = img.tag ? getTagBadgeText(img.tag) : '';
+                    
                     thumb.innerHTML = `
                         <img class="thumbnail-img" src="${img.src}" alt="Image ${imgIdx + 1}">
                         <div class="thumbnail-info">
-                            ${img.fileName}<br>
-                            ${img.tag ? `<strong>${img.tag}</strong>` : '<em>Not tagged</em>'}
+                            ${tagDisplayText}
                         </div>
-                        ${img.tag ? `<div class="thumbnail-tag ${tagClass}">${getTagShorthand(img.tag)}</div>` : ''}
+                        ${tagBadgeText ? `<div class="thumbnail-tag ${tagClass}">${tagBadgeText}</div>` : ''}
                     `;
                     
                     thumb.onclick = () => jumpToImage(entryIdx, imgIdx);
@@ -997,6 +998,29 @@
                 'Skip': 'N'
             };
             return map[tag] || tag;
+        }
+
+        function getTagDisplayText(tag) {
+            // Full text shown in left panel thumbnail info
+            const map = {
+                'Passport': 'Passport',
+                'Driving Licence Front': 'Driving Licence - Front',
+                'Driving Licence Back': 'Driving Licence - Back',
+                'Other Photo ID Single': 'Other Photo ID',
+                'Other Photo ID Front': 'Other Photo ID - Front',
+                'Other Photo ID Back': 'Other Photo ID - Back',
+                'Other': 'Address ID',
+                'Skip': 'Skip'
+            };
+            return map[tag] || tag;
+        }
+
+        function getTagBadgeText(tag) {
+            // Badge text shown in thumbnail - only show Front/Back, or Ignore
+            if (tag === 'Skip') return 'Ignore';
+            if (tag.includes('Front')) return 'Front';
+            if (tag.includes('Back')) return 'Back';
+            return ''; // No badge for Single
         }
 
         function updateDisplay() {
@@ -1054,12 +1078,17 @@
 
         function checkIfAllComplete() {
             const allComplete = batchData.every(entry => entry.complete);
-            uploadBtn.disabled = !allComplete;
             
-            // If we were viewing the confirm modal and all entries are complete again, re-show it
-            if (allComplete && window.confirmModalWasOpen) {
-                window.confirmModalWasOpen = false;
-                showConfirmModal();
+            // Show confirmation modal when all entries are complete
+            if (allComplete) {
+                // If we were already viewing it and came back after re-tagging, re-show
+                if (window.confirmModalWasOpen) {
+                    window.confirmModalWasOpen = false;
+                    showConfirmModal();
+                } else {
+                    // First time all complete - show modal
+                    showConfirmModal();
+                }
             }
         }
 
@@ -1778,14 +1807,19 @@
                     imageItem.onclick = () => jumpToImageFromConfirm(entryIdx, imgIdx);
                     
                     const tagClass = img.tag === 'Skip' ? 'skip' : '';
+                    const { type, document, side } = mapTagToMetadata(img.tag);
+                    const fileName = generateFileName(entry, document, side);
+                    
+                    // Tag text for confirmation: show Front/Back, or "Ignore" for skipped, hide "Single"
+                    let tagText = img.tag === 'Skip' ? 'Ignore' : (side !== 'Single' ? side : '');
                     
                     imageItem.innerHTML = `
-                        <img class="confirm-image-thumb" src="${img.src}" alt="${img.fileName}">
+                        <img class="confirm-image-thumb" src="${img.src}" alt="${fileName}">
                         <div class="confirm-image-info">
-                            <div><strong>${img.fileName}</strong></div>
+                            <div><strong>${fileName}</strong></div>
                             <div style="color: #666; font-size: 0.75rem; margin-top: 2px;">Click to re-tag</div>
                         </div>
-                        <div class="confirm-image-tag ${tagClass}">${img.tag}</div>
+                        ${tagText ? `<div class="confirm-image-tag ${tagClass}">${tagText}</div>` : ''}
                     `;
                     
                     imageList.appendChild(imageItem);
