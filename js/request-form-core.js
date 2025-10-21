@@ -615,8 +615,9 @@ function handleParentMessage(event) {
         
       case 'company-results':
       case 'charity-results':
-        // Handle company/charity search results (placeholder for now)
+        // Display company/charity search results in dropdown
         console.log('Received company/charity results:', message);
+        displayCompanySuggestions(message.companies, message.searchBy);
         break;
         
       case 'company-data':
@@ -2148,6 +2149,87 @@ function handleCompanyData(data) {
   if (businessData) {
     populatePeopleCards(businessData);
   }
+}
+
+/*
+Display company/charity suggestions in dropdown
+*/
+function displayCompanySuggestions(suggestions, searchBy) {
+  const businessNameDropdown = document.getElementById('businessNameDropdown');
+  const entityNumberDropdown = document.getElementById('entityNumberDropdown');
+  
+  // Determine which dropdown to show results in
+  const dropdownElement = searchBy === 'name' ? businessNameDropdown : entityNumberDropdown;
+  
+  if (!dropdownElement) {
+    console.warn('Company dropdown element not found');
+    return;
+  }
+  
+  // Check if charity mode
+  const isCharity = document.getElementById('charityCheckbox')?.checked || false;
+  
+  if (!suggestions || suggestions.length === 0) {
+    const noResultsText = isCharity ? 'No charities found' : 'No companies found';
+    dropdownElement.innerHTML = `<div class="address-no-results">${noResultsText}</div>`;
+    dropdownElement.classList.remove('hidden');
+    return;
+  }
+  
+  dropdownElement.innerHTML = '';
+  
+  suggestions.forEach((company) => {
+    const item = document.createElement('div');
+    item.className = 'address-dropdown-item';
+    // Format: "Company Name (Number)"
+    item.textContent = `${company.title} (${company.company_number})`;
+    
+    item.addEventListener('click', () => {
+      selectCompany(company);
+    });
+    
+    dropdownElement.appendChild(item);
+  });
+  
+  dropdownElement.classList.remove('hidden');
+  console.log(`✅ Displayed ${suggestions.length} ${isCharity ? 'charity' : 'company'} suggestions`);
+}
+
+/*
+Handle company/charity selection from dropdown
+*/
+function selectCompany(company) {
+  const businessNameEl = document.getElementById('businessName');
+  const entityNumberEl = document.getElementById('entityNumber');
+  const businessNameDropdown = document.getElementById('businessNameDropdown');
+  const entityNumberDropdown = document.getElementById('entityNumberDropdown');
+  const isCharity = document.getElementById('charityCheckbox')?.checked || false;
+  
+  // Populate BOTH form fields
+  if (businessNameEl) businessNameEl.value = company.title;
+  if (entityNumberEl) entityNumberEl.value = company.company_number;
+  
+  // For charities, store organisation_number in data attribute (for URL construction)
+  if (isCharity && company.organisation_number && entityNumberEl) {
+    entityNumberEl.dataset.organisationNumber = company.organisation_number;
+    console.log(`🏷️ Stored organisation_number: ${company.organisation_number} (display: ${company.company_number})`);
+  } else if (entityNumberEl) {
+    entityNumberEl.dataset.organisationNumber = '';
+  }
+  
+  // Hide both dropdowns
+  if (businessNameDropdown) businessNameDropdown.classList.add('hidden');
+  if (entityNumberDropdown) entityNumberDropdown.classList.add('hidden');
+  
+  // Request full company/charity data from parent (directors/trustees, officers, PSCs)
+  const apiType = isCharity ? 'charity-lookup' : 'company-lookup';
+  console.log(`📡 Requesting full ${isCharity ? 'charity' : 'company'} data for:`, company.company_number);
+  
+  window.parent.postMessage({
+    type: apiType,
+    companyNumber: company.company_number,
+    entityType: isCharity ? 'charity' : 'business'
+  }, '*');
 }
 
 /**
