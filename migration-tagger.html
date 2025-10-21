@@ -1613,6 +1613,8 @@
             const total = links.length;
             const uploadDataWithBlobs = window.uploadDataWithBlobs || [];
             
+            let completed = 0; // Track completions for progress bar
+            
             console.log(`⚡ Uploading ALL ${total} files simultaneously with Promise.all()`);
             
             // Create upload promise for each file
@@ -1655,6 +1657,13 @@
                         badge.className = 'file-upload-item-badge badge-success';
                     }
                     
+                    // Update progress bar as each file completes
+                    completed++;
+                    const percentage = Math.round((completed / total) * 100);
+                    progressFill.style.width = `${percentage}%`;
+                    progressFill.textContent = `${percentage}%`;
+                    uploadStatus.textContent = `Uploading: ${completed} of ${total} files`;
+                    
                     return { success: true, index };
                     
                 } catch (error) {
@@ -1668,6 +1677,13 @@
                         badge.className = 'file-upload-item-badge badge-error';
                     }
                     
+                    // Update progress bar even for errors
+                    completed++;
+                    const percentage = Math.round((completed / total) * 100);
+                    progressFill.style.width = `${percentage}%`;
+                    progressFill.textContent = `${percentage}%`;
+                    uploadStatus.textContent = `Uploading: ${completed} of ${total} files`;
+                    
                     return { success: false, index, error };
                 }
             });
@@ -1677,11 +1693,6 @@
             
             // Count successes
             const successCount = results.filter(r => r.success).length;
-            const completed = results.length;
-            
-            // Update final progress
-            progressFill.style.width = '100%';
-            progressFill.textContent = '100%';
             
             console.log(`✅ All uploads complete: ${successCount}/${total} successful`);
             

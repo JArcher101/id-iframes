@@ -3182,6 +3182,8 @@
             const files = localFilesForUpload;
             const total = files.length;
             
+            let completed = 0; // Track completions for progress bar
+            
             console.log('Using local files for upload:', files.length, 'files');
             
             // Validate we have files to upload
@@ -3216,6 +3218,10 @@
                         statusText.textContent = 'Success';
                     }
                     
+                    // Update progress bar as each file completes
+                    completed++;
+                    updateUploadProgress(completed, total, false);
+                    
                     return { success: true, index };
                     
                 } catch (error) {
@@ -3228,6 +3234,10 @@
                         statusText.textContent = `Error: ${error.message}`;
                     }
                     
+                    // Update progress bar even for errors
+                    completed++;
+                    updateUploadProgress(completed, total, true);
+                    
                     return { success: false, index, error };
                 }
             });
@@ -3238,9 +3248,6 @@
             // Count successes and errors
             const successCount = results.filter(r => r.success).length;
             const hasErrors = results.some(r => !r.success);
-            
-            // Update final progress
-            updateUploadProgress(total, total, hasErrors);
             
             console.log(`✅ All uploads complete: ${successCount}/${total} successful`);
             
