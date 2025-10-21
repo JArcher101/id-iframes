@@ -2436,6 +2436,22 @@ function openOfficerAppointments(appointmentsPath) {
 }
 
 /*
+Clear people cards (when company/charity is unlinked)
+*/
+function clearPeopleCards() {
+  const peopleRepeater = document.getElementById('peopleRepeater');
+  if (!peopleRepeater) return;
+  
+  const isCharity = document.getElementById('charityCheckbox')?.checked || false;
+  const message = isCharity 
+    ? 'Link a charity to view trustees and directors'
+    : 'Link a company to view officers, directors, and PSCs';
+  
+  peopleRepeater.innerHTML = `<div class="no-people-message">${message}</div>`;
+  console.log('🗑️ Cleared people cards');
+}
+
+/*
 Update company buttons visibility
 */
 function updateCompanyButtons() {
@@ -2450,6 +2466,8 @@ function updateCompanyButtons() {
     } else {
       companyLinkBtn.classList.add('hidden');
       companyRefreshBtn.classList.add('hidden');
+      // Clear people cards when company is unlinked
+      clearPeopleCards();
     }
   }
 }
