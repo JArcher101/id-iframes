@@ -858,6 +858,7 @@
         let currentImageIndex = 0;
         let uploader = '';
         let pendingHotkey = ''; // For two-character hotkeys (DF, DB, OS, OF, OB)
+        let currentLimit = 10; // Store current limit for all messages to parent
         
         // Image cache for background pre-fetching
         const imageCache = new Map(); // Key: entryId-imageIndex, Value: {blob, metadata}
@@ -1521,7 +1522,8 @@
                         url: item.url,
                         data: item.data // Include metadata for backend validation
                         // blob is NOT sent (can't be serialized via postMessage)
-                    }))
+                    })),
+                    limit: currentLimit // Include current limit setting
                 }, '*');
                 
                 // Update upload modal with file list
@@ -1708,7 +1710,8 @@
                     window.parent.postMessage({
                         type: 'migration-complete',
                         updates: results,
-                        batchNumber: currentBatchNumber
+                        batchNumber: currentBatchNumber,
+                        limit: currentLimit // Include current limit for next batch
                     }, '*');
                 }, 1000);
             } else {
@@ -1952,21 +1955,14 @@
             // Send fetch-data message to parent
             window.parent.postMessage({
                 type: 'fetch-data',
-                limit: limit
+                limit: currentLimit
             }, '*');
         }
 
         beginBtn.addEventListener('click', () => {
+            // Update stored limit
+            currentLimit = parseInt(limitInput.value, 10) || 10;
             fetchDataFromParent();
-        });
-
-        // Re-fetch when limit changes while viewing data
-        limitInput.addEventListener('change', () => {
-            // Only re-fetch if we already have data loaded
-            if (batchData !== null) {
-                console.log('Limit changed - discarding current data and requesting new batch');
-                fetchDataFromParent();
-            }
         });
 
         // Initialize
