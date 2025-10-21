@@ -689,6 +689,12 @@
         function handleBatchData(data) {
             console.log('Received migration batch:', data);
             
+            // Close upload modal if it's open (allows interaction with new data)
+            uploadModal.classList.add('hidden');
+            
+            // Clear any stored upload data
+            window.uploadDataWithBlobs = null;
+            
             batchData = data.entries || [];
             currentBatchNumber = data.batchNumber || 1;
             totalBatches = data.totalBatches || 1;
@@ -1343,6 +1349,7 @@
                 });
                 
                 // Send success message to parent
+                // Note: Upload modal will be closed when parent sends next migration-batch
                 setTimeout(() => {
                     window.parent.postMessage({
                         type: 'migration-complete',
