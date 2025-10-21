@@ -2751,23 +2751,6 @@ function getFormDataObjects() {
 }
 
 /*
-Open document in a new popup window
-This is a placeholder function that will be connected to data later
-*/
-function openDocument(documentType) {
-  console.log('Opening document:', documentType);
-  
-  // For now, just show an alert - will be replaced with actual document opening logic
-  alert(`Opening ${documentType} document...`);
-  
-  // TODO: Implement actual document opening in new popup window
-  // This will connect to document URLs and viewer functionality later
-}
-
-// Make openDocument globally available for onclick handlers
-window.openDocument = openDocument;
-
-/*
 Open OFSI Consolidated Sanctions Search in popup window
 */
 function openOFSISearch() {
