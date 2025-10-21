@@ -448,6 +448,7 @@
                 <a href="#client-details" class="nav-link">Client Details Form</a>
                 <a href="#single-image-viewer" class="nav-link">Single Image Viewer</a>
                 <a href="#image-viewer" class="nav-link">Image Viewer</a>
+                <a href="#migration-tagger" class="nav-link">Migration Tagger</a>
                 <a href="#image-uploader" class="nav-link">Image Uploader</a>
                 <a href="#document-viewer" class="nav-link">Document Viewer</a>
                 <a href="#message-iframe" class="nav-link">Message iframe</a>
@@ -1346,6 +1347,250 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                         </tr>
                     </tbody>
                 </table>
+            </section>
+
+            <!-- Migration Tagger -->
+            <section id="migration-tagger" class="section">
+                <h2>Migration Tagger</h2>
+                <p><strong>File:</strong> <code>migration-tagger.html</code></p>
+                <p>ID image migration tool for transferring existing Wix Media Gallery images to S3. Features hotkey-based tagging, batch processing (1-10 entries), and simplified document type classification.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> migration-batch, put-links, put-error, backend-error, network-error<br>
+                    <strong>Sends:</strong> image-data, migration-complete<br>
+                    <strong>Hotkeys:</strong> P, DF, DB, OS, OF, OB, A, Backspace, Enter</p>
+                </div>
+
+                <h3>Key Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li><strong>Batch Processing:</strong> 1-10 entries at a time for manageable migration</li>
+                    <li><strong>Split Layout:</strong> Image list (left) + Main tagging area (right)</li>
+                    <li><strong>Hotkey Tagging:</strong> P, DF, DB, OS, OF, OB, A for rapid classification</li>
+                    <li><strong>Clickable Hints:</strong> All hotkey badges are clickable for mouse/touch users</li>
+                    <li><strong>Auto-Progression:</strong> Automatically moves to next image after tagging</li>
+                    <li><strong>Entry Confirmation:</strong> Press Enter to confirm and move to next entry</li>
+                    <li><strong>Visual Feedback:</strong> Tagged images show badges, completed entries turn green</li>
+                    <li><strong>Backspace Navigation:</strong> Go back to re-tag previous images</li>
+                    <li><strong>Card-Based Upload:</strong> Each document shows upload status (Pending/Uploading/Success/Error)</li>
+                    <li><strong>System Transfer Marker:</strong> "System transfer" uploader for legacy migrations</li>
+                    <li><strong>Error Handling:</strong> Red popup for backend/network errors</li>
+                    <li><strong>wixData.bulkSave():</strong> Minimal update objects for efficient database updates</li>
+                </ul>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>migration-batch</code>
+                </div>
+                <p>Sends a batch of entries (1-10) with Wix Media Gallery images to tag and migrate.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"migration-batch"</span>,
+  <span class="property">"entries"</span>: [
+    {
+      <span class="property">"_id"</span>: <span class="string">"entry-id-123"</span>,
+      <span class="property">"cD"</span>: {
+        <span class="property">"c"</span>: <span class="number">23361</span>,
+        <span class="property">"m"</span>: <span class="string">"1"</span>,
+        <span class="property">"f"</span>: <span class="string">"LJD"</span>,
+        <span class="property">"n"</span>: <span class="string">"Mr N W-T Carne"</span>
+      },
+      <span class="property">"images"</span>: [
+        {
+          <span class="property">"src"</span>: <span class="string">"wix:image://v1/2b7d2d_65d4a6acd87f430cac26aae0f818300e~mv2.jpg/image.jpg"</span>,
+          <span class="property">"type"</span>: <span class="string">"image"</span>
+        }
+      ]
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+                
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>image-data</code>
+                </div>
+                <p>Requests PUT links for all tagged images (same format as image-viewer.html).</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"image-data"</span>,
+  <span class="property">"images"</span>: [
+    {
+      <span class="property">"type"</span>: <span class="string">"PhotoID"</span>,
+      <span class="property">"document"</span>: <span class="string">"Passport"</span>,
+      <span class="property">"side"</span>: <span class="string">"Single"</span>,
+      <span class="property">"name"</span>: <span class="string">"LJD-23361-1 - Mr N W-T Carne - Passport"</span>,
+      <span class="property">"uploader"</span>: <span class="string">"System transfer"</span>,
+      <span class="property">"date"</span>: <span class="string">"21/10/2025, 15:30:00"</span>,
+      <span class="property">"url"</span>: <span class="string">"wix:image://..."</span>,
+      <span class="property">"entryId"</span>: <span class="string">"entry-id-123"</span>
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">←</span>
+                    <code>migration-complete</code>
+                </div>
+                <p>Notifies parent that all images uploaded. Returns minimal objects for wixData.bulkSave().</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"migration-complete"</span>,
+  <span class="property">"updates"</span>: [
+    {
+      <span class="property">"_id"</span>: <span class="string">"entry-id-123"</span>,
+      <span class="property">"idImages"</span>: [
+        {
+          <span class="property">"type"</span>: <span class="string">"PhotoID"</span>,
+          <span class="property">"document"</span>: <span class="string">"Passport"</span>,
+          <span class="property">"side"</span>: <span class="string">"Single"</span>,
+          <span class="property">"s3Key"</span>: <span class="string">"protected/LJD-23361-1-passport-xyz"</span>,
+          <span class="property">"uploader"</span>: <span class="string">"System transfer"</span>
+        }
+      ],
+      <span class="property">"imagesTransferred"</span>: <span class="keyword">true</span>
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Hotkey Controls</h3>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Hotkey</th>
+                            <th>Action</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>P</code></td>
+                            <td>Passport</td>
+                            <td>Tag as Passport (Single) → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>DF</code></td>
+                            <td>Driving Licence Front</td>
+                            <td>Tag as DL Front → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>DB</code></td>
+                            <td>Driving Licence Back</td>
+                            <td>Tag as DL Back → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>OS</code></td>
+                            <td>Other Photo ID Single</td>
+                            <td>Tag as Other Single → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>OF</code></td>
+                            <td>Other Photo ID Front</td>
+                            <td>Tag as Other Front → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>OB</code></td>
+                            <td>Other Photo ID Back</td>
+                            <td>Tag as Other Back → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>A</code></td>
+                            <td>Address ID</td>
+                            <td>Tag as Address ID (Other) → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>Backspace</code></td>
+                            <td>Previous Image</td>
+                            <td>Go back to re-tag previous image (cross-entry)</td>
+                        </tr>
+                        <tr>
+                            <td><code>Enter</code></td>
+                            <td>Confirm Entry</td>
+                            <td>Mark entry complete → Move to next entry</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Workflow</h3>
+                <ol style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Parent sends <code>migration-batch</code> with 1-10 entries</li>
+                    <li>User tags images using hotkeys or clicks</li>
+                    <li>Auto-progression to next image after each tag</li>
+                    <li>Entry turns green when all images tagged</li>
+                    <li>Press <code>Enter</code> to confirm and move to next entry</li>
+                    <li>Once all entries tagged, "Upload to S3" button enables</li>
+                    <li>Click upload → iframe sends <code>image-data</code></li>
+                    <li>Parent generates PUT links → sends <code>put-links</code></li>
+                    <li>iframe uploads to S3 from Wix public URLs</li>
+                    <li>iframe sends <code>migration-complete</code> with minimal updates</li>
+                    <li>Parent calls <code>wixData.bulkSave()</code></li>
+                </ol>
+
+                <h3>wixData.bulkSave() Integration</h3>
+                <div class="info-box">
+                    <div class="info-box-title">💡 Minimal Updates</div>
+                    <p style="margin: 0; color: var(--text-secondary);">The <code>migration-complete</code> message returns minimal objects containing only <code>_id</code>, <code>idImages</code>, and <code>imagesTransferred</code>. When passed to <code>wixData.bulkSave()</code>, only these fields are updated - all other entry fields remain unchanged.</p>
+                </div>
+
+                <div class="code-block">
+                    <pre><code><span class="comment">// Minimal update objects</span>
+<span class="keyword">const</span> updates = [
+  {
+    <span class="property">_id</span>: <span class="string">'entry-id-123'</span>,
+    <span class="property">idImages</span>: [...],
+    <span class="property">imagesTransferred</span>: <span class="keyword">true</span>
+  }
+];
+
+<span class="comment">// wixData.bulkSave() ONLY updates these fields</span>
+<span class="keyword">await</span> wixData.<span class="function">bulkSave</span>(<span class="string">'OutstandingID'</span>, updates, { <span class="property">suppressAuth</span>: <span class="keyword">true</span> });
+
+<span class="comment">// All other fields remain unchanged:</span>
+<span class="comment">// - name, clientNumber, status, etc.</span>
+<span class="comment">// - Original photoId (Wix Media Gallery) intact</span></code></pre>
+                </div>
+
+                <h3>Example Integration</h3>
+                <div class="code-block">
+                    <pre><code><span class="keyword">const</span> migrationFrame = document.getElementById(<span class="string">'migrationTagger'</span>).contentWindow;
+
+<span class="comment">// Load next batch</span>
+<span class="keyword">async function</span> <span class="function">loadNextBatch</span>() {
+  <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="function">getIDPhotos</span>(<span class="number">10</span>);
+  
+  <span class="keyword">if</span> (!response.success) {
+    migrationFrame.<span class="function">postMessage</span>({
+      <span class="property">type</span>: <span class="string">'backend-error'</span>,
+      <span class="property">message</span>: response.result
+    }, <span class="string">'*'</span>);
+    <span class="keyword">return</span>;
+  }
+  
+  migrationFrame.<span class="function">postMessage</span>({
+    <span class="property">type</span>: <span class="string">'migration-batch'</span>,
+    <span class="property">entries</span>: response.items
+  }, <span class="string">'*'</span>);
+}
+
+<span class="comment">// Listen for messages</span>
+window.<span class="function">addEventListener</span>(<span class="string">'message'</span>, <span class="keyword">async</span> (event) => {
+  <span class="keyword">if</span> (event.data.type === <span class="string">'image-data'</span>) {
+    <span class="keyword">const</span> { links, s3Keys } = <span class="keyword">await</span> <span class="function">generatePUTsBackend</span>(event.data.images);
+    migrationFrame.<span class="function">postMessage</span>({ <span class="property">type</span>: <span class="string">'put-links'</span>, links, s3Keys }, <span class="string">'*'</span>);
+  }
+  
+  <span class="keyword">if</span> (event.data.type === <span class="string">'migration-complete'</span>) {
+    <span class="keyword">await</span> <span class="function">updateIDPhotos</span>(event.data.updates);
+    <span class="function">loadNextBatch</span>();  <span class="comment">// Load next batch automatically</span>
+  }
+});</code></pre>
+                </div>
             </section>
 
             <!-- Image Uploader -->

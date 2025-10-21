@@ -1010,6 +1010,33 @@
 
         /*
         =====================================================================
+        Wix URL Conversion
+        =====================================================================
+        */
+        function convertWixUrlToPublic(wixUrl) {
+            // Convert wix:image://v1/{MEDIA_ID}/{FILENAME}#... to https://static.wixstatic.com/media/{MEDIA_ID}
+            if (!wixUrl || !wixUrl.startsWith('wix:image://')) {
+                return wixUrl; // Already a public URL or invalid
+            }
+            
+            try {
+                // Extract media ID from wix:image://v1/{MEDIA_ID}/{FILENAME}#...
+                const match = wixUrl.match(/wix:image:\/\/v1\/([^\/]+)/);
+                if (match && match[1]) {
+                    const mediaId = match[1];
+                    return `https://static.wixstatic.com/media/${mediaId}`;
+                }
+                
+                console.warn('Could not parse Wix URL:', wixUrl);
+                return wixUrl;
+            } catch (error) {
+                console.error('Error converting Wix URL:', error);
+                return wixUrl;
+            }
+        }
+
+        /*
+        =====================================================================
         Upload to S3
         =====================================================================
         */
@@ -1043,9 +1070,9 @@
                             document: document,
                             side: side,
                             name: generateFileName(entry, document, side),
-                            uploader: `System transfer - ${uploadDate}`, // Timestamp in uploader field
+                            uploader: 'System transfer',
                             date: uploadDate,
-                            url: img.src // Original Wix URL
+                            url: convertWixUrlToPublic(img.src) // Convert to public URL
                         });
                     }
                 });
@@ -1145,7 +1172,7 @@
             for (let i = 0; i < total; i++) {
                 const link = links[i];
                 const s3Key = s3Keys[i];
-                const imageUrl = s3Key.url; // Original Wix URL
+                const imageUrl = s3Key.url; // Public Wix URL (converted from wix:image://)
                 
                 const fileItem = document.getElementById(`file-${i}`);
                 const badge = document.getElementById(`badge-${i}`);

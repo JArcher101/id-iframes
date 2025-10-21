@@ -9,15 +9,16 @@ This document describes the communication interface for each iframe component. A
 3. [Wallboard Dashboard](#wallboard-dashboard)
 4. [Single Image Viewer](#single-image-viewer)
 5. [Image Viewer](#image-viewer)
-6. [Image Uploader](#image-uploader)
-7. [Document Viewer](#document-viewer)
-8. [Message iframe](#message-iframe)
-9. [Report Uploader](#report-uploader)
-10. [Cashiers Log](#cashiers-log)
-11. [Chart Viewer](#chart-viewer)
-12. [Request Form](#request-form)
-13. [Client Details Form](#client-details-form)
-14. [General Integration Guide](#general-integration-guide)
+6. [Migration Tagger](#migration-tagger) ⭐ NEW
+7. [Image Uploader](#image-uploader)
+8. [Document Viewer](#document-viewer)
+9. [Message iframe](#message-iframe)
+10. [Report Uploader](#report-uploader)
+11. [Cashiers Log](#cashiers-log)
+12. [Chart Viewer](#chart-viewer)
+13. [Request Form](#request-form)
+14. [Client Details Form](#client-details-form)
+15. [General Integration Guide](#general-integration-guide)
 
 ---
 
@@ -1945,6 +1946,339 @@ Addresses are automatically converted to Thirdfort API format:
 - **Dataset Attribute Management** - Proper handling of country codes via data attributes
 - **Validation** - Real-time field validation with error messages
 - **Unsaved Changes Protection** - Sends `disable-close` to prevent data loss
+
+---
+
+## Migration Tagger
+
+**File:** `migration-tagger.html`
+
+### Description
+ID image migration tool for transferring existing Wix Media Gallery images to S3. Features hotkey-based tagging, batch processing (1-10 entries), and simplified document type classification. Designed for rapid migration of legacy ID photos with minimal user input.
+
+### Parent → iframe (Incoming Messages)
+
+#### `migration-batch`
+Sends a batch of entries (1-10) with Wix Media Gallery images to tag and migrate.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'migration-batch',
+  entries: [
+    {
+      _id: 'entry-id-123',
+      cD: {
+        c: 23361,       // Client Number
+        m: '1',         // Matter Number
+        f: 'LJD',       // Fee Earner
+        n: 'Mr N W-T Carne'  // Full Name
+      },
+      images: [
+        {
+          src: 'wix:image://v1/2b7d2d_65d4a6acd87f430cac26aae0f818300e~mv2.jpg/image.jpg',
+          type: 'image'
+        },
+        {
+          src: 'wix:image://v1/2b7d2d_27661927178b4fd5bfc10df6682e199e~mv2.jpg/image2.jpg',
+          type: 'image'
+        }
+      ]
+    },
+    // ... up to 10 entries
+  ]
+}, '*');
+```
+
+#### `put-links`
+S3 presigned PUT URLs for uploading tagged images (same as image-viewer.html).
+
+```javascript
+window.frames[0].postMessage({
+  type: 'put-links',
+  links: [
+    {
+      url: 'https://s3.amazonaws.com/bucket/presigned-put-url',
+      contentType: 'image/jpeg'
+    }
+  ],
+  s3Keys: [
+    {
+      s3Key: 'protected/LJD-23361-1-passport-xyz',
+      name: 'LJD-23361-1 - Mr N W-T Carne - Passport',
+      type: 'PhotoID',
+      document: 'Passport',
+      side: 'Single',
+      uploader: 'System transfer',
+      date: '21/10/2025, 15:30:00',
+      url: 'wix:image://...'
+    }
+  ]
+}, '*');
+```
+
+#### `put-error`
+Error response when PUT link generation fails.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'put-error',
+  error: 'Failed to generate upload URLs'
+}, '*');
+```
+
+#### `backend-error`
+Backend error from parent (e.g., database query failure).
+
+```javascript
+window.frames[0].postMessage({
+  type: 'backend-error',
+  message: 'Failed to fetch entries from database',
+  error: {...}
+}, '*');
+```
+
+#### `network-error`
+Network error from parent (e.g., connection timeout).
+
+```javascript
+window.frames[0].postMessage({
+  type: 'network-error',
+  message: 'Connection failed. Please check your network.',
+  error: {...}
+}, '*');
+```
+
+### iframe → Parent (Outgoing Messages)
+
+#### `image-data`
+Requests PUT links for all tagged images in the current batch (same format as image-viewer.html).
+
+```javascript
+{
+  type: 'image-data',
+  images: [
+    {
+      type: 'PhotoID',
+      document: 'Passport',
+      side: 'Single',
+      name: 'LJD-23361-1 - Mr N W-T Carne - Passport',
+      uploader: 'System transfer',
+      date: '21/10/2025, 15:30:00',
+      url: 'wix:image://v1/2b7d2d_65d4a6acd87f430cac26aae0f818300e~mv2.jpg/image.jpg',
+      entryId: 'entry-id-123',
+      fe: 'LJD',
+      clientNumber: 23361,
+      matterNumber: '1'
+    },
+    // ... all images from all entries in batch
+  ]
+}
+```
+
+#### `migration-complete`
+Notifies parent that all images have been uploaded. Returns minimal update objects for wixData.bulkSave().
+
+```javascript
+{
+  type: 'migration-complete',
+  updates: [
+    {
+      _id: 'entry-id-123',
+      idImages: [
+        {
+          type: 'PhotoID',
+          document: 'Passport',
+          side: 'Single',
+          s3Key: 'protected/LJD-23361-1-passport-xyz',
+          name: 'LJD-23361-1 - Mr N W-T Carne - Passport',
+          uploader: 'System transfer',
+          date: '21/10/2025, 15:30:00'
+        }
+      ],
+      imagesTransferred: true
+    },
+    // ... minimal objects for all entries in batch
+  ]
+}
+```
+
+### Hotkey Controls
+
+#### Tagging Hotkeys
+- **`P`** - Passport (Single) → Auto-advance to next image
+- **`DF`** - Driving Licence Front → Auto-advance
+- **`DB`** - Driving Licence Back → Auto-advance
+- **`OS`** - Other Photo ID Single → Auto-advance
+- **`OF`** - Other Photo ID Front → Auto-advance
+- **`OB`** - Other Photo ID Back → Auto-advance
+- **`A`** - Address ID (Other subtype) → Auto-advance
+
+#### Navigation Hotkeys
+- **`Backspace`** - Go to previous image (cross-entry support)
+- **`Enter`** - Confirm entry complete → Move to next entry
+
+#### Clickable Hotkey Hints
+All hotkey badges in the tagging area are clickable for mouse/touch users. Hovering shows "Click to tag or press [KEY]" tooltip.
+
+### Workflow
+
+1. Parent sends `migration-batch` with 1-10 entries
+2. User tags images using hotkeys or clicks
+3. Auto-progression to next image after each tag
+4. Entry turns green when all images tagged
+5. Press `Enter` to confirm and move to next entry
+6. Once all entries tagged, "Upload to S3" button enables
+7. Click upload → iframe sends `image-data` to parent
+8. Parent generates PUT links → sends `put-links` back
+9. iframe uploads to S3 directly from Wix public URLs
+10. iframe sends `migration-complete` with minimal update objects
+11. Parent calls `wixData.bulkSave()` to update entries
+
+### Features
+
+- **Split Layout**: Image list (left) shows all images with tags, main area (right) for active tagging
+- **Batch Processing**: Process 1-10 entries at a time for manageable migration
+- **Simplified Tagging**: Only 3 Photo ID types + Address ID for speed
+- **Auto-Progression**: Automatically moves to next untagged image
+- **Entry Confirmation**: Press Enter to confirm and move to next entry
+- **Visual Feedback**: Tagged images show badges, completed entries turn green
+- **Undo Support**: Backspace to go back and re-tag previous images
+- **Card-Based Upload Progress**: Shows each document upload status (Pending/Uploading/Success/Error)
+- **System Transfer Marker**: Uses "System transfer" as uploader to indicate legacy migration
+- **Error Handling**: Red popup for backend/network errors with retry capability
+
+### Data Structure
+
+#### Entry Object (Incoming)
+```javascript
+{
+  _id: 'entry-id-123',
+  cD: {
+    c: 23361,        // clientNumber
+    m: '1',          // matterNumber
+    f: 'LJD',        // feeEarner
+    n: 'Mr N W-T Carne'  // name
+  },
+  images: [
+    {
+      src: 'wix:image://v1/...',  // Wix Media Gallery URL
+      type: 'image'
+    }
+  ]
+}
+```
+
+#### Update Object (Outgoing)
+```javascript
+{
+  _id: 'entry-id-123',
+  idImages: [
+    {
+      type: 'PhotoID',
+      document: 'Passport',
+      side: 'Single',
+      s3Key: 'protected/fe-client-matter-doc-id',
+      name: 'FE-CLIENT-MATTER - Name - Document',
+      uploader: 'System transfer',
+      date: '21/10/2025, 15:30:00'
+    }
+  ],
+  imagesTransferred: true  // Flag to prevent re-processing
+}
+```
+
+### Example Integration
+
+```javascript
+const migrationFrame = document.getElementById('migrationTagger').contentWindow;
+
+// Send batch of entries
+async function loadNextBatch() {
+  const response = await getIDPhotos(10);  // Backend function
+  
+  if (!response.success) {
+    migrationFrame.postMessage({
+      type: 'backend-error',
+      message: response.result,
+      error: response.error
+    }, '*');
+    return;
+  }
+  
+  migrationFrame.postMessage({
+    type: 'migration-batch',
+    entries: response.items
+  }, '*');
+}
+
+// Listen for messages
+window.addEventListener('message', async (event) => {
+  if (event.data.type === 'image-data') {
+    // Generate PUT links
+    try {
+      const { links, s3Keys } = await generatePUTsBackend(event.data.images);
+      
+      migrationFrame.postMessage({
+        type: 'put-links',
+        links: links,
+        s3Keys: s3Keys
+      }, '*');
+    } catch (error) {
+      migrationFrame.postMessage({
+        type: 'put-error',
+        error: error.message
+      }, '*');
+    }
+  }
+  
+  if (event.data.type === 'migration-complete') {
+    // Save to database using bulkSave
+    try {
+      await updateIDPhotos(event.data.updates);
+      console.log('Migration batch complete!');
+      
+      // Load next batch
+      loadNextBatch();
+    } catch (error) {
+      console.error('Failed to save updates:', error);
+    }
+  }
+});
+
+// Initialize
+loadNextBatch();
+```
+
+### wixData.bulkSave() Integration
+
+The `migration-complete` message returns minimal objects that only update the fields you specify:
+
+```javascript
+// Received updates array
+const updates = [
+  {
+    _id: 'entry-id-123',
+    idImages: [...],
+    imagesTransferred: true
+  }
+];
+
+// wixData.bulkSave() ONLY updates these fields
+await wixData.bulkSave('OutstandingID', updates, { suppressAuth: true });
+
+// All other entry fields remain unchanged:
+// - name, clientNumber, matterNumber, status, etc.
+// - Original photoId (Wix Media Gallery) stays intact
+```
+
+### Migration Strategy
+
+- **Phase 1**: Process ~1,800 entries with existing ID photos
+- **Batch Size**: 1-10 entries per batch for manageable tagging
+- **Photo ID Priority**: Focus on Passport and Driving Licence (most common for Thirdfort IDV)
+- **Address ID**: Generic "Other" subtype (skip detailed classification for speed)
+- **System Marker**: "System transfer" uploader distinguishes from normal uploads
+- **Data Preservation**: Original Wix photos remain in `photoId` field, new S3 images in `idImages`
 
 ---
 

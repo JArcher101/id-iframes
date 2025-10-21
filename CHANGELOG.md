@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`migration-tagger.html`** - ID Image Migration Tool ⭐ NEW FEATURE
+  - Migrate existing Wix Media Gallery images to S3 storage
+  - Hotkey-based tagging system (P, DF, DB, OS, OF, OB, A)
+  - Batch processing (1-10 entries at a time)
+  - Split layout: Image list (left) + Main tagging area (right)
+  - Simplified tagging: Passport, Driving Licence, Other Photo ID, Address ID
+  - Auto-progression through images with automatic advancement
+  - Entry confirmation with Enter key to move to next entry
+  - Visual feedback: Tagged images show badges, completed entries turn green
+  - Backspace navigation to re-tag previous images
+  - Card-based upload progress with status badges (Pending/Uploading/Success/Error)
+  - "System transfer" uploader marker to distinguish legacy migrations
+  - Red error popup for backend/network errors with retry capability
+  - Clickable hotkey hints for mouse/touch users
+  - wixData.bulkSave() integration for efficient database updates
+  - Minimal update objects (only _id, idImages, imagesTransferred fields)
+  - Parent communication: migration-batch, image-data, migration-complete, backend-error, network-error
+  - Mock data button with 10 test entries for development testing
 - **`thirdfort-check.html`** - Thirdfort Check Manager ⭐ MAJOR NEW FEATURE
   - Comprehensive check creation and management interface for Thirdfort API integration
   - Four check types: IDV (Identity Verification), Lite Screen, Electronic ID, KYB (Know Your Business)

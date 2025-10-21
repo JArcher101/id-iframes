@@ -41,6 +41,16 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Aggregate and individual fee earner analytics
 
 ### Image Management
+- **`migration-tagger.html`** - ID Image Migration Tool ⭐ NEW
+  - Migrate existing Wix Media Gallery images to S3
+  - Hotkey-based tagging (P, DF, DB, OS, OF, OB, A)
+  - Batch processing (1-10 entries at a time)
+  - Split layout: Image list (left) + Main tagging area (right)
+  - Simplified tagging: Passport, Driving Licence, Other Photo ID, Address ID
+  - Auto-progression through images with Enter key confirmation
+  - S3 upload with wixData.bulkSave() integration
+  - Parent communication: migration-batch, image-data, migration-complete
+
 - **`image-viewer.html`** - ID Images Display
   - View and display identification images
   - Modern, responsive interface
