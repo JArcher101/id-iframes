@@ -415,31 +415,128 @@ function handlePostMessage(event) {
 /**
  * Handle response from parent after Thirdfort API call
  */
+/**
+ * Handle check response from parent (after backend creates check)
+ * Shows success popup with check-specific details or error message
+ */
 function handleCheckResponse(response) {
   const submitBtn = document.getElementById('submitBtn');
   
   if (response.success) {
-    // Success - show green confirmation
-    submitBtn.textContent = 'Check Initiated Successfully!';
-    submitBtn.style.background = '#28a745';
+    console.log('✅ Check initiated successfully:', response);
     
-    // Reset after 3 seconds
-    setTimeout(() => {
-      submitBtn.textContent = 'Initiate Check';
-      submitBtn.style.background = '';
-      submitBtn.disabled = false;
+    // Build success message based on check type
+    let successMessage = response.message || 'Check initiated successfully!';
+    let detailsHTML = '';
+    
+    // Add check-type-specific details
+    if (response.checkType === 'electronic-id' && response.transactionId) {
+      detailsHTML = `
+        <div style="margin-top: 10px; font-size: 0.9rem; color: #fff;">
+          <strong>Transaction ID:</strong> ${response.transactionId}<br>
+          <strong>Status:</strong> SMS sent to consumer<br>
+          Awaiting completion...
+        </div>
+      `;
+    } else if (response.checkType === 'kyb' && response.checkId) {
+      detailsHTML = `
+        <div style="margin-top: 10px; font-size: 0.9rem; color: #fff;">
+          <strong>Check ID:</strong> ${response.checkId}<br>
+          <strong>Status:</strong> Processing KYB check...
+        </div>
+      `;
+    } else if (response.checkType === 'lite-idv') {
+      let checks = [];
+      if (response.liteTransactionId) checks.push('Lite Screen');
+      if (response.idvCheckId) checks.push('IDV');
       
-      // Optionally reset form or close iframe
-      // You can add logic here based on parent's preference
-    }, 3000);
+      detailsHTML = `
+        <div style="margin-top: 10px; font-size: 0.9rem; color: #fff;">
+          <strong>Checks initiated:</strong> ${checks.join(' + ')}<br>
+          ${response.documentsUploaded ? '<strong>Documents:</strong> Uploaded ✓' : ''}
+        </div>
+      `;
+    }
+    
+    // Show success popup
+    showSuccessPopup(successMessage, detailsHTML);
+    
+    // Update button state
+    submitBtn.textContent = 'Check Initiated!';
+    submitBtn.style.background = '#28a745';
+    submitBtn.disabled = true;
+    
+    // Parent will close lightbox after 3 seconds (handled in Velo frontend)
     
   } else {
-    // Error from API
+    // Error from backend
+    console.error('❌ Check initiation failed:', response);
     const errorMsg = response.error || 'Failed to initiate check. Please try again.';
     showError(errorMsg);
+    
+    // Re-enable submit button
     submitBtn.disabled = false;
     submitBtn.textContent = 'Initiate Check';
     submitBtn.style.background = '';
+  }
+}
+
+/**
+ * Show success popup with green background
+ */
+function showSuccessPopup(message, detailsHTML = '') {
+  // Create or get existing popup
+  let popup = document.getElementById('successPopup');
+  
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'successPopup';
+    popup.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    `;
+    document.body.appendChild(popup);
+  }
+  
+  popup.innerHTML = `
+    <div style="
+      background: #28a745;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    ">
+      <div style="font-size: 3rem; margin-bottom: 15px;">✓</div>
+      <h3 style="color: white; margin: 0 0 10px 0; font-size: 1.3rem;">
+        ${message}
+      </h3>
+      ${detailsHTML}
+      <p style="color: rgba(255,255,255,0.9); margin: 15px 0 0 0; font-size: 0.85rem;">
+        Closing in 3 seconds...
+      </p>
+    </div>
+  `;
+  
+  popup.style.display = 'flex';
+}
+
+/**
+ * Hide success popup
+ */
+function hideSuccessPopup() {
+  const popup = document.getElementById('successPopup');
+  if (popup) {
+    popup.style.display = 'none';
   }
 }
 
