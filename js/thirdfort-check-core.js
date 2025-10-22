@@ -4105,8 +4105,8 @@ function initializeMockDataButtons() {
     mockIndBlank.addEventListener('click', () => {
       console.log('Mock Individual Blank clicked!');
       loadMockData({
-      type: 'CLIENT_DATA',
-      payload: {
+      type: 'client-data',
+      data: {
         _id: 'mock-ind-blank',
         idI: [],
         idD: [],
@@ -4137,8 +4137,8 @@ function initializeMockDataButtons() {
     mockIndFormJ.addEventListener('click', () => {
       console.log('Mock Individual Form J clicked!');
       loadMockData({
-      type: 'CLIENT_DATA',
-      payload: {
+      type: 'client-data',
+      data: {
         _id: 'bd8bee6a-465b-4d43-9a8a-396f9081b649',
         idI: [
           { side: 'Front', name: '50-52 - Master J R Archer-Moran - Driving Licence Front', document: 'Driving Licence', type: 'PhotoID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:41:42', url: 'https://...' },
@@ -4181,8 +4181,8 @@ function initializeMockDataButtons() {
     mockIndFormE.addEventListener('click', () => {
       console.log('Mock Individual Form E + eSoF clicked!');
       loadMockData({
-      type: 'CLIENT_DATA',
-      payload: {
+      type: 'client-data',
+      data: {
         _id: 'mock-ind-forme-esof',
         idI: [],
         idD: [],
@@ -4212,8 +4212,8 @@ function initializeMockDataButtons() {
     mockIndFormEOnly.addEventListener('click', () => {
       console.log('Mock Individual Form E only clicked!');
       loadMockData({
-      type: 'CLIENT_DATA',
-      payload: {
+      type: 'client-data',
+      data: {
         _id: 'mock-ind-forme-only',
         idI: [],
         idD: [],
@@ -4243,8 +4243,8 @@ function initializeMockDataButtons() {
     mockIndEsofOnly.addEventListener('click', () => {
       console.log('Mock Individual eSoF only clicked!');
       loadMockData({
-      type: 'CLIENT_DATA',
-      payload: {
+      type: 'client-data',
+      data: {
         _id: 'mock-ind-esof-only',
         idI: [],
         idD: [],
@@ -4274,8 +4274,8 @@ function initializeMockDataButtons() {
     mockIndFormELpa.addEventListener('click', () => {
       console.log('Mock Individual Form E (LPA) clicked!');
       loadMockData({
-      type: 'CLIENT_DATA',
-      payload: {
+      type: 'client-data',
+      data: {
         _id: 'mock-ind-forme-lpa',
         idI: [],
         idD: [],
@@ -4305,8 +4305,8 @@ function initializeMockDataButtons() {
     mockBusFormK.addEventListener('click', () => {
       console.log('Mock Business Form K clicked!');
       loadMockData({
-      type: 'CLIENT_DATA',
-      payload: {
+      type: 'client-data',
+      data: {
         _id: '04f255e4-36fc-40db-a5af-7a9ee3de2712',
         idI: [],
         idD: [],
@@ -4346,8 +4346,8 @@ function initializeMockDataButtons() {
     mockIndFormK.addEventListener('click', () => {
       console.log('Mock Individual Form K clicked!');
       loadMockData({
-      type: 'CLIENT_DATA',
-      payload: {
+      type: 'client-data',
+      data: {
         _id: 'mock-ind-formk',
         idI: [],
         idD: [],
@@ -4377,8 +4377,8 @@ function initializeMockDataButtons() {
     mockCharityFormK.addEventListener('click', () => {
       console.log('Mock Charity Form K clicked!');
       loadMockData({
-      type: 'CLIENT_DATA',
-      payload: {
+      type: 'client-data',
+      data: {
         _id: 'b836fd51-cd1f-4c19-9bde-1ab0b2d75e30',
         idI: [],
         idD: [],
