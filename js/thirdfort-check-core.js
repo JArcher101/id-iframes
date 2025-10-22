@@ -3496,17 +3496,9 @@ async function handleSubmit() {
   submitBtn.textContent = 'Initiating Check...';
   
   try {
-    // Collect all form data
-    const formData = collectFormData();
-    
-    console.log('Submitting check request:', formData);
-    
-    // Send to parent window for Thirdfort API call
-    window.parent.postMessage({
-      type: 'check-submit',
-      data: formData,
-      timestamp: new Date().toISOString()
-    }, '*');
+    // Route to appropriate check submission handler
+    // This will send the correct message format (kyb-check, electronic-check, or lite-idv-check)
+    submitCheckRequest();
     
     // Button will re-enable when parent responds with success/error
     
