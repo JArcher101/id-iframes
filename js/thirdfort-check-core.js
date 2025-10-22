@@ -4826,7 +4826,8 @@ function validateElectronicID() {
   const fullName = document.getElementById('electronicIdFullName')?.value;
   const mobile = document.getElementById('electronicIdMobile')?.value;
   const email = document.getElementById('electronicIdEmail')?.value;
-  const countryCode = document.getElementById('electronicIdCountryCode')?.value;
+  const countryCodeInput = document.getElementById('electronicIdCountryCode');
+  const countryCode = countryCodeInput?.dataset.phoneCode; // Extract from data-phone-code attribute
   const reference = document.getElementById('electronicIdReference')?.value;
   
   // Validate name
@@ -5058,7 +5059,8 @@ function buildElectronicIDRequest() {
   const fullName = document.getElementById('electronicIdFullName')?.value.trim();
   const mobile = document.getElementById('electronicIdMobile')?.value.trim();
   const email = document.getElementById('electronicIdEmail')?.value.trim();
-  const countryCode = document.getElementById('electronicIdCountryCode')?.value;
+  const countryCodeInput = document.getElementById('electronicIdCountryCode');
+  const countryCode = countryCodeInput?.dataset.phoneCode; // Extract from data-phone-code attribute
   const reference = document.getElementById('electronicIdReference')?.value.trim();
   const country = document.getElementById('electronicIdCountry')?.value;
   
