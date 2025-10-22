@@ -2098,10 +2098,22 @@ function autoSelectIDVLiteScreen() {
   });
   idvLiteBtn.classList.add('selected');
   
+  // Check if IDV was already auto-selected by image check
+  const idvYesBtn = document.querySelector('[data-idv-answer="yes"]');
+  const idvAlreadyAutoSelected = idvYesBtn && idvYesBtn.classList.contains('selected');
+  
   // Update state
   checkState.checkType = 'idv-lite';
   checkState.includeLiteScreen = true; // Default YES
-  checkState.includeIDV = null; // No default
+  
+  // Only reset includeIDV if it wasn't already auto-selected
+  if (!idvAlreadyAutoSelected) {
+    checkState.includeIDV = null; // No default - user must choose
+  } else {
+    // Preserve the auto-selected state
+    checkState.includeIDV = true;
+    console.log('ℹ️ IDV already auto-selected by image check, preserving includeIDV = true');
+  }
   
   // Show both lite screen and IDV sections
   if (liteScreenSection) {
@@ -2120,15 +2132,14 @@ function autoSelectIDVLiteScreen() {
     liteContent.classList.remove('hidden');
   }
   
-  // IDV content: Only hide if IDV YES wasn't already auto-selected by image check
+  // IDV content: Only hide if IDV YES wasn't already auto-selected
   const idvContent = document.getElementById('idvContent');
-  const idvYesBtn = document.querySelector('[data-idv-answer="yes"]');
-  const idvYesAlreadySelected = idvYesBtn && idvYesBtn.classList.contains('selected');
   
-  if (idvContent && !idvYesAlreadySelected) {
-    // Hide content only if YES wasn't already auto-selected
+  if (idvContent && !idvAlreadyAutoSelected) {
+    // Hide content if YES wasn't already auto-selected
     idvContent.classList.add('hidden');
-  } else if (idvYesAlreadySelected) {
+  } else if (idvAlreadyAutoSelected) {
+    // Keep content visible
     console.log('ℹ️ IDV YES already auto-selected by image check, keeping content visible');
   }
   
@@ -2595,10 +2606,19 @@ function handleCheckTypeSelection(event) {
     const liteContent = document.getElementById('liteScreenContent');
     if (liteContent) liteContent.classList.remove('hidden');
     
-    // IDV has no default (content hidden)
-    checkState.includeIDV = null;
+    // IDV: Only reset to null if not already auto-selected by image check
     const idvContent = document.getElementById('idvContent');
-    if (idvContent) idvContent.classList.add('hidden');
+    const idvYesBtn = document.querySelector('[data-idv-answer="yes"]');
+    const idvAlreadySelected = idvYesBtn && idvYesBtn.classList.contains('selected');
+    
+    if (!idvAlreadySelected) {
+      checkState.includeIDV = null;
+      if (idvContent) idvContent.classList.add('hidden');
+      console.log('ℹ️ IDV reset to null (not auto-selected)');
+    } else {
+      // Preserve the auto-selected state
+      console.log('ℹ️ IDV already auto-selected, preserving state:', checkState.includeIDV);
+    }
     
     // Show PEP Monitoring card (Lite Screen defaults to YES)
     const monitoringCard = document.getElementById('monitoringCard');
