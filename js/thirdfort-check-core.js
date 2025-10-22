@@ -4920,25 +4920,39 @@ function buildLiteScreenRequest() {
   const firstName = document.getElementById('liteFirstName')?.value.trim();
   const middleName = document.getElementById('liteMiddleName')?.value.trim();
   const lastName = document.getElementById('liteLastName')?.value.trim();
-  const dob = document.getElementById('liteDOB')?.value;
+  
+  // Get DOB from 8 separate inputs
+  const dobDigits = [
+    document.getElementById('liteDob1')?.value || '',
+    document.getElementById('liteDob2')?.value || '',
+    document.getElementById('liteDob3')?.value || '',
+    document.getElementById('liteDob4')?.value || '',
+    document.getElementById('liteDob5')?.value || '',
+    document.getElementById('liteDob6')?.value || '',
+    document.getElementById('liteDob7')?.value || '',
+    document.getElementById('liteDob8')?.value || ''
+  ].join('');
+  
   const countryCode = document.getElementById('liteCountry')?.value;
   
   // Get active address
   const address = liteActiveAddressType === 'current' ? liteCurrentAddressObject : litePreviousAddressObject;
   
   // Get monitoring checkbox states (only if visible)
-  const pepMonitoringCard = document.getElementById('pepMonitoringCard');
-  const pepMonitoringCheckbox = document.getElementById('pepMonitoring');
-  const pepMonitoringEnabled = !pepMonitoringCard.classList.contains('hidden') && pepMonitoringCheckbox?.checked;
+  const pepMonitoringCard = document.getElementById('monitoringCard');
+  const pepMonitoringCheckbox = document.getElementById('ongoingMonitoring');
+  const pepMonitoringEnabled = pepMonitoringCard && !pepMonitoringCard.classList.contains('hidden') && pepMonitoringCheckbox?.checked;
   
   const internationalAddressCard = document.getElementById('internationalAddressCard');
   const internationalAddressCheckbox = document.getElementById('internationalAddressVerification');
-  const internationalAddressEnabled = !internationalAddressCard.classList.contains('hidden') && internationalAddressCheckbox?.checked;
+  const internationalAddressEnabled = internationalAddressCard && !internationalAddressCard.classList.contains('hidden') && internationalAddressCheckbox?.checked;
   
-  // Convert DD-MM-YYYY to ISO 8601
+  // Convert DDMMYYYY to ISO 8601
   let isoDate = '';
-  if (dob) {
-    const [day, month, year] = dob.split('-');
+  if (dobDigits && dobDigits.length === 8) {
+    const day = dobDigits.substring(0, 2);
+    const month = dobDigits.substring(2, 4);
+    const year = dobDigits.substring(4, 8);
     isoDate = `${year}-${month}-${day}T00:00:00.000Z`;
   }
   
@@ -5059,9 +5073,9 @@ function buildElectronicIDRequest() {
   
   // Add PEPs screening (only for standard ID type)
   if (checkState.electronicIdType === 'standard') {
-    const pepMonitoringCard = document.getElementById('pepMonitoringCard');
-    const pepMonitoringCheckbox = document.getElementById('pepMonitoring');
-    const pepMonitoringEnabled = !pepMonitoringCard.classList.contains('hidden') && pepMonitoringCheckbox?.checked;
+    const pepMonitoringCard = document.getElementById('monitoringCard');
+    const pepMonitoringCheckbox = document.getElementById('ongoingMonitoring');
+    const pepMonitoringEnabled = pepMonitoringCard && !pepMonitoringCard.classList.contains('hidden') && pepMonitoringCheckbox?.checked;
     
     tasks.push({
       type: 'report:peps',
@@ -5073,7 +5087,7 @@ function buildElectronicIDRequest() {
   
   // Add proof of address (always included as option)
   const proofOfAddressCard = document.getElementById('proofOfAddressCard');
-  if (!proofOfAddressCard.classList.contains('hidden')) {
+  if (proofOfAddressCard && !proofOfAddressCard.classList.contains('hidden')) {
     tasks.push({
       type: 'documents:poa'
     });
@@ -5082,7 +5096,7 @@ function buildElectronicIDRequest() {
   // Add proof of ownership (only if visible and checked)
   const proofOfOwnershipCard = document.getElementById('proofOfOwnershipCard');
   const proofOfOwnershipCheckbox = document.getElementById('proofOfOwnership');
-  if (!proofOfOwnershipCard.classList.contains('hidden') && proofOfOwnershipCheckbox?.checked) {
+  if (proofOfOwnershipCard && !proofOfOwnershipCard.classList.contains('hidden') && proofOfOwnershipCheckbox?.checked) {
     tasks.push({
       type: 'documents:poo'
     });
