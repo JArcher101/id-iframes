@@ -3417,10 +3417,8 @@ function validateIDVLiteCheck() {
     errors.push('Check reference is required');
   }
   
-  // Matter category required
-  if (!checkState.matterCategory) {
-    errors.push('Please select a matter category');
-  }
+  // Matter category NOT required for Form J (IDV & Lite)
+  // Form J is for basic ID verification without property transaction context
   
   // TODO: Add more IDV/Lite specific validation
   
@@ -3469,6 +3467,9 @@ function validateKYBCheck() {
   if (!checkState.kybCompany) {
     errors.push('Please search and select a company');
   }
+  
+  // Matter category NOT required for Form K (KYB)
+  // Form K is for business verification without property transaction context
   
   return {
     valid: errors.length === 0,
