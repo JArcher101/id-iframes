@@ -4134,10 +4134,10 @@ function initializeMockDataButtons() {
       data: {
         _id: 'bd8bee6a-465b-4d43-9a8a-396f9081b649',
         idI: [
-          { side: 'Front', name: '50-52 - Master J R Archer-Moran - Driving Licence Front', document: 'Driving Licence', type: 'PhotoID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:41:42', url: 'https://...' },
-          { side: 'Back', name: '50-52 - Master J R Archer-Moran - Driving Licence Back', document: 'Driving Licence', type: 'PhotoID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:41:42', url: 'https://...' },
-          { side: 'Single', name: 'BA-50-52 - Master J R Archer-Moran - Passport', document: 'Passport', type: 'PhotoID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:34:14', url: 'https://...' },
-          { side: 'Single', name: 'BA-50-52 - Master J R Archer-Moran - Address ID 1 - Tenancy Agreement', document: 'Tenancy Agreement', type: 'Address ID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:40:28', url: 'https://...' }
+          { side: 'Front', name: '50-52 - Master J R Archer-Moran - Driving Licence Front', document: 'Driving Licence', type: 'PhotoID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:41:42', s3Key: 'protected/mockDLFront.jpg', url: 'https://d3example.cloudfront.net/protected/mockDLFront.jpg' },
+          { side: 'Back', name: '50-52 - Master J R Archer-Moran - Driving Licence Back', document: 'Driving Licence', type: 'PhotoID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:41:42', s3Key: 'protected/mockDLBack.jpg', url: 'https://d3example.cloudfront.net/protected/mockDLBack.jpg' },
+          { side: 'Single', name: 'BA-50-52 - Master J R Archer-Moran - Passport', document: 'Passport', type: 'PhotoID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:34:14', s3Key: 'protected/mockPassport.jpg', url: 'https://d3example.cloudfront.net/protected/mockPassport.jpg' },
+          { side: 'Single', name: 'BA-50-52 - Master J R Archer-Moran - Address ID 1 - Tenancy Agreement', document: 'Tenancy Agreement', type: 'Address ID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:40:28', s3Key: 'protected/mockTenancy.jpg', url: 'https://d3example.cloudfront.net/protected/mockTenancy.jpg' }
         ],
         idD: [],
         cD: { cN: 50, mN: '52', fe: 'BA', n: 'Master J R Archer-Moran' },
@@ -5150,20 +5150,72 @@ function buildIDVDocumentsObject() {
   const documents = [];
   
   if (checkState.frontImage) {
-    documents.push({
-      side: 'front',
-      s3Key: checkState.frontImage.s3Key
-    });
+    // Extract S3 key from image object
+    // Image may have: s3Key, src, url, or liveUrl
+    const s3Key = checkState.frontImage.s3Key || 
+                  extractS3KeyFromUrl(checkState.frontImage.src) || 
+                  extractS3KeyFromUrl(checkState.frontImage.url) || 
+                  extractS3KeyFromUrl(checkState.frontImage.liveUrl);
+    
+    if (s3Key) {
+      documents.push({
+        side: 'front',
+        s3Key: s3Key
+      });
+    } else {
+      console.error('❌ Front image has no valid S3 key:', checkState.frontImage);
+    }
   }
   
   if (checkState.backImage) {
-    documents.push({
-      side: 'back',
-      s3Key: checkState.backImage.s3Key
-    });
+    // Extract S3 key from image object
+    const s3Key = checkState.backImage.s3Key || 
+                  extractS3KeyFromUrl(checkState.backImage.src) || 
+                  extractS3KeyFromUrl(checkState.backImage.url) || 
+                  extractS3KeyFromUrl(checkState.backImage.liveUrl);
+    
+    if (s3Key) {
+      documents.push({
+        side: 'back',
+        s3Key: s3Key
+      });
+    } else {
+      console.error('❌ Back image has no valid S3 key:', checkState.backImage);
+    }
   }
   
+  console.log('📎 Built IDV documents array:', documents);
   return documents;
+}
+
+/**
+ * Extract S3 key from CloudFront or S3 URL
+ * Examples:
+ *  - https://d123abc.cloudfront.net/protected/abc123.jpg → protected/abc123.jpg
+ *  - https://bucket.s3.region.amazonaws.com/protected/abc123.jpg → protected/abc123.jpg
+ */
+function extractS3KeyFromUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  
+  // CloudFront URL pattern: https://d123abc.cloudfront.net/protected/abc123.jpg
+  const cloudfrontMatch = url.match(/cloudfront\.net\/(.+)$/);
+  if (cloudfrontMatch) {
+    return cloudfrontMatch[1];
+  }
+  
+  // S3 URL pattern: https://bucket.s3.region.amazonaws.com/protected/abc123.jpg
+  const s3Match = url.match(/\.amazonaws\.com\/(.+)$/);
+  if (s3Match) {
+    return s3Match[1];
+  }
+  
+  // If it's already just a key (no https://), return as-is
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return url;
+  }
+  
+  console.warn('⚠️ Could not extract S3 key from URL:', url);
+  return null;
 }
 
 /**
