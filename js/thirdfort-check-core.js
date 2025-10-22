@@ -1236,6 +1236,11 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
   
   // Get client data tags for conditional logic
   const clientData = checkState.clientData;
+  console.log('📊 Client data for tag detection:', { 
+    uT: clientData?.uT, 
+    eS: clientData?.eS, 
+    hasClientData: !!clientData 
+  });
   const hasFormE = clientData?.uT && Array.isArray(clientData.uT) && clientData.uT.includes('formE');
   const hasEsofRequested = clientData?.eS && Array.isArray(clientData.eS) && clientData.eS.includes('Requested');
   
@@ -2696,9 +2701,6 @@ function handleMatterCategorySelection(event) {
   });
   checkState.matterSubCategory = null;
   showSection('confirmationSection');
-  
-  // Pre-select tasks based on category
-  preselectTasksForCategory(category);
   
   // Update International Address Verification visibility
   updateInternationalAddressVerification();
