@@ -5442,7 +5442,13 @@ function submitCheckRequest() {
 function submitKYBCheck() {
   const kybData = buildKYBRequest();
   
-  console.log('📤 Submitting KYB check:', kybData);
+  const payload = {
+    clientId: checkState.clientData?._id,
+    timestamp: new Date().toISOString(),
+    data: kybData
+  };
+  
+  console.log('📤 Submitting KYB check:', payload);
   
   window.parent.postMessage({
     type: 'kyb-check',
@@ -5458,7 +5464,13 @@ function submitKYBCheck() {
 function submitElectronicIDCheck() {
   const electronicData = buildElectronicIDRequest();
   
-  console.log('📤 Submitting Electronic ID check:', electronicData);
+  const payload = {
+    clientId: checkState.clientData?._id,
+    timestamp: new Date().toISOString(),
+    data: electronicData
+  };
+  
+  console.log('📤 Submitting Electronic ID check:', payload);
   
   window.parent.postMessage({
     type: 'electronic-check',
