@@ -4685,7 +4685,18 @@ function validateLiteScreen() {
   // Get form values
   const firstName = document.getElementById('liteFirstName')?.value;
   const lastName = document.getElementById('liteLastName')?.value;
-  const dob = document.getElementById('liteDOB')?.value;
+  
+  // Get DOB from 8 separate inputs
+  const dobDigits = [
+    document.getElementById('liteDob1')?.value || '',
+    document.getElementById('liteDob2')?.value || '',
+    document.getElementById('liteDob3')?.value || '',
+    document.getElementById('liteDob4')?.value || '',
+    document.getElementById('liteDob5')?.value || '',
+    document.getElementById('liteDob6')?.value || '',
+    document.getElementById('liteDob7')?.value || '',
+    document.getElementById('liteDob8')?.value || ''
+  ].join('');
   
   // Get address from stored object
   const address = liteCurrentAddressObject || litePreviousAddressObject;
@@ -4698,9 +4709,9 @@ function validateLiteScreen() {
     errors.push('Last name is required for Lite Screen');
   }
   
-  // Validate date of birth
-  if (!validateTextField(dob)) {
-    errors.push('Date of birth is required for Lite Screen');
+  // Validate date of birth (must be exactly 8 digits)
+  if (dobDigits.length !== 8 || !/^\d{8}$/.test(dobDigits)) {
+    errors.push('Date of birth is required for Lite Screen (DDMMYYYY format)');
   }
   
   // Validate address
