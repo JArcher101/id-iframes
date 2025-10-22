@@ -2836,7 +2836,7 @@ function handleLiteScreenTypeSelection(event) {
 }
 
 /**
- * Handle IDV answer selection
+ * Handle IDV answer selection (YES/NO)
  */
 function handleIDVAnswerSelection(event) {
   const card = event.currentTarget;
@@ -2869,6 +2869,9 @@ function handleIDVAnswerSelection(event) {
       console.log('❌ IDV content hidden');
     }
   }
+  
+  // Update PEP monitoring visibility
+  updatePEPMonitoringVisibility();
   
   validateForm();
 }
@@ -4890,8 +4893,18 @@ function validateAllChecks() {
       }
     }
     
-    // At least one must be selected
-    if (!checkState.includeLiteScreen && !checkState.includeIDV) {
+    // At least one must be selected (explicit false check, not just falsy)
+    const hasLiteScreen = checkState.includeLiteScreen === true;
+    const hasIDV = checkState.includeIDV === true;
+    
+    console.log('🔍 Lite/IDV selection check:', { 
+      includeLiteScreen: checkState.includeLiteScreen, 
+      includeIDV: checkState.includeIDV,
+      hasLiteScreen,
+      hasIDV
+    });
+    
+    if (!hasLiteScreen && !hasIDV) {
       allErrors.push('Please select at least one check type (Lite Screen or IDV)');
     }
   } else if (checkState.checkType === 'electronic-id') {
@@ -5437,6 +5450,14 @@ function submitElectronicIDCheck() {
  * Submit Lite Screen and/or IDV check
  */
 function submitLiteIDVCheck() {
+  console.log('🔍 Lite/IDV check state:', {
+    includeLiteScreen: checkState.includeLiteScreen,
+    includeIDV: checkState.includeIDV,
+    idvDocumentType: checkState.idvDocumentType,
+    frontImage: !!checkState.frontImage,
+    backImage: !!checkState.backImage
+  });
+  
   const payload = {
     clientId: checkState.clientData?._id,
     timestamp: new Date().toISOString()
@@ -5445,10 +5466,12 @@ function submitLiteIDVCheck() {
   // Build Lite Screen data (if selected)
   if (checkState.includeLiteScreen) {
     payload.liteScreen = buildLiteScreenRequest();
+    console.log('✅ Lite Screen included in payload');
   }
   
   // Build IDV data (if selected)
   if (checkState.includeIDV) {
+    console.log('✅ Building IDV object...');
     const firstName = document.getElementById('idvFirstName')?.value.trim();
     const middleName = document.getElementById('idvMiddleName')?.value.trim();
     const lastName = document.getElementById('idvLastName')?.value.trim();
@@ -5480,9 +5503,14 @@ function submitLiteIDVCheck() {
         documentType: checkState.idvDocumentType,
         documents: documents  // Array of {s3Key, side}
       };
+      console.log('✅ IDV documents included:', payload.idvDocuments);
     } else {
       console.warn('⚠️ IDV selected but no documents found');
     }
+    
+    console.log('✅ IDV object added to payload');
+  } else {
+    console.log('ℹ️ IDV not included (includeIDV = false or null)');
   }
   
   console.log('📤 Submitting Lite/IDV check:', payload);
