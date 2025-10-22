@@ -5454,37 +5454,34 @@ function submitLiteIDVCheck() {
     const lastName = document.getElementById('idvLastName')?.value.trim();
     const fullName = middleName ? `${firstName} ${middleName} ${lastName}` : `${firstName} ${lastName}`;
     
-    const phone = checkState.clientData?.cI?.m?.m;
-    const countryCode = checkState.clientData?.cI?.m?.c || '+44';
-    const fullPhone = phone ? `${countryCode}${phone}` : null;
-    
-    if (fullPhone) {
-      payload.idv = {
-        type: 'document',
-        ref: checkState.checkReference || checkState.clientData?.mD || 'IDV Check',
-        name: `${fullName} - Document Verification`,
-        request: {
-          data: {
-            name: {
-              first: firstName,
-              last: lastName,
-              other: middleName || undefined
-            }
-          },
-          reports: [
-            { type: 'identity:lite' }
-          ]
-        }
-      };
-      
-      // Add document images
-      const documents = buildIDVDocumentsObject();
-      if (documents.length > 0) {
-        payload.idvDocuments = {
-          documentType: checkState.idvDocumentType,
-          documents: documents  // Array of {s3Key, side}
-        };
+    // Build IDV check request (document verification doesn't require phone)
+    payload.idv = {
+      type: 'document',
+      ref: checkState.checkReference || checkState.clientData?.mD || 'IDV Check',
+      name: `${fullName} - Document Verification`,
+      request: {
+        data: {
+          name: {
+            first: firstName,
+            last: lastName,
+            other: middleName || undefined
+          }
+        },
+        reports: [
+          { type: 'identity:lite' }
+        ]
       }
+    };
+    
+    // Add document images (S3 keys for backend to download and upload to Thirdfort)
+    const documents = buildIDVDocumentsObject();
+    if (documents.length > 0) {
+      payload.idvDocuments = {
+        documentType: checkState.idvDocumentType,
+        documents: documents  // Array of {s3Key, side}
+      };
+    } else {
+      console.warn('⚠️ IDV selected but no documents found');
     }
   }
   
