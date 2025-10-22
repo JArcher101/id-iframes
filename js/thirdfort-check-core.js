@@ -4714,11 +4714,14 @@ function validateLiteScreen() {
     errors.push('Date of birth is required for Lite Screen (DDMMYYYY format)');
   }
   
-  // Validate address
-  if (!address) {
-    errors.push('Address is required for Lite Screen');
-  } else if (!validateAddress(address)) {
-    errors.push('Valid address is required for Lite Screen (check required fields for country)');
+  // Validate address (ONLY for "AML & Address Screening")
+  // "AML Only" just screens name/DOB against watchlists, no address needed
+  if (checkState.liteScreenType === 'aml-address') {
+    if (!address) {
+      errors.push('Address is required for AML & Address Screening');
+    } else if (!validateAddress(address)) {
+      errors.push('Valid address is required for AML & Address Screening (check required fields for country)');
+    }
   }
   
   return {
@@ -4966,15 +4969,20 @@ function buildLiteScreenRequest() {
     },
     dob: {
       data: isoDate
-    },
-    address: {
-      data: address
     }
   };
   
   // Add middle name if provided
   if (middleName) {
     expectations.name.data.other = middleName;
+  }
+  
+  // Add address ONLY for "AML & Address Screening" type
+  // For "AML Only", we exclude address and Thirdfort only screens name/DOB against watchlists
+  if (checkState.liteScreenType === 'aml-address' && address) {
+    expectations.address = {
+      data: address
+    };
   }
   
   // Build tasks array
