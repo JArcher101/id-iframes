@@ -381,8 +381,16 @@ function handlePostMessage(event) {
   
   if (data.type === 'company-results') {
     console.log('Received company search results:', data);
-    // Handle both data.companies and data.data formats
-    const companies = data.companies || data.data || [];
+    // Handle different data structures: data.companies, data.data, or data itself
+    let companies = [];
+    if (data.companies && Array.isArray(data.companies)) {
+      companies = data.companies;
+    } else if (data.data && Array.isArray(data.data)) {
+      companies = data.data;
+    } else if (Array.isArray(data)) {
+      companies = data;
+    }
+    console.log('Extracted companies array:', companies);
     displayKYBSearchResults(companies);
   }
   
