@@ -380,8 +380,10 @@ function handlePostMessage(event) {
   }
   
   if (data.type === 'company-results') {
-    console.log('Received company search results:', data.companies);
-    displayKYBSearchResults(data.companies || []);
+    console.log('Received company search results:', data);
+    // Handle both data.companies and data.data formats
+    const companies = data.companies || data.data || [];
+    displayKYBSearchResults(companies);
   }
   
   if (data.type === 'company-error') {
