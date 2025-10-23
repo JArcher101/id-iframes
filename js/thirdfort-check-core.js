@@ -5515,9 +5515,9 @@ function buildKYBRequest() {
   const companyName = document.getElementById('kybCompanyName')?.value.trim();
   const companyNumber = document.getElementById('kybCompanyNumber')?.value.trim();
   
-  // Get monitoring checkbox state
-  const kybMonitoringCheckbox = document.getElementById('kybMonitoring');
-  const monitoringEnabled = kybMonitoringCheckbox?.checked || false;
+  // Get monitoring checkbox state (correct ID)
+  const monitoringCheckbox = document.getElementById('ongoingMonitoring');
+  const monitoringEnabled = monitoringCheckbox?.checked || false;
   
   // Get check reference from client data
   const checkRef = checkState.clientData?.mD || 'KYB Check';
@@ -5526,6 +5526,12 @@ function buildKYBRequest() {
   // Convert to Thirdfort jurisdiction code if needed
   const finalJurisdiction = checkState.kybCompany?.jurisdiction || jurisdiction;
   const thirdfortJurisdiction = convertJurisdictionForThirdfort(finalJurisdiction);
+  
+  console.log('🌍 Jurisdiction conversion:', {
+    original: finalJurisdiction,
+    converted: thirdfortJurisdiction,
+    fromSelectedCompany: !!checkState.kybCompany?.jurisdiction
+  });
   
   // Build company data object
   const companyData = {
@@ -5543,18 +5549,34 @@ function buildKYBRequest() {
     companyData.id = checkState.kybCompany.id;
   }
   
-  // Build reports array
-  const reports = [
-    {
-      type: 'company:summary'
-    },
-    {
-      type: 'company:sanctions',
-      opts: {
-        monitored: monitoringEnabled
-      }
+  // Build reports array based on checkbox selections
+  const reports = [];
+  
+  // Always include company summary
+  reports.push({
+    type: 'company:summary'
+  });
+  
+  // Always include sanctions report with monitoring option
+  reports.push({
+    type: 'company:sanctions',
+    opts: {
+      monitored: monitoringEnabled
     }
-  ];
+  });
+  
+  // Add selected KYB reports based on checkboxes
+  const kybReportCheckboxes = document.querySelectorAll('.kyb-reports-section input[type="checkbox"]:checked');
+  kybReportCheckboxes.forEach(checkbox => {
+    const reportTypes = checkbox.dataset.reportType.split(',');
+    reportTypes.forEach(reportType => {
+      reports.push({
+        type: reportType.trim()
+      });
+    });
+  });
+  
+  console.log('📋 KYB Reports selected:', reports);
   
   return {
     type: 'company',
