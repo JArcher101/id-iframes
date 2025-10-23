@@ -5522,9 +5522,14 @@ function buildKYBRequest() {
   // Get check reference from client data
   const checkRef = checkState.clientData?.mD || 'KYB Check';
   
+  // Use jurisdiction from selected company if available, otherwise use form value
+  // Convert to Thirdfort jurisdiction code if needed
+  const finalJurisdiction = checkState.kybCompany?.jurisdiction || jurisdiction;
+  const thirdfortJurisdiction = convertJurisdictionForThirdfort(finalJurisdiction);
+  
   // Build company data object
   const companyData = {
-    jurisdiction: jurisdiction,
+    jurisdiction: thirdfortJurisdiction,
     number: companyNumber
   };
   
