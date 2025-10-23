@@ -2531,6 +2531,211 @@ function updateElectronicIdInternationalAddressVisibility(countryCode) {
 }
 
 /**
+ * Convert jurisdiction codes from frontend format to Thirdfort API format
+ * Handles all known jurisdiction code differences between frontend and Thirdfort API
+ */
+function convertJurisdictionForThirdfort(frontendCode) {
+  // Known jurisdiction code mappings for Thirdfort API
+  const jurisdictionMappings = {
+    // UK & Crown Dependencies
+    'GB': 'UK',           // United Kingdom
+    'GG': 'GG',           // Guernsey (same)
+    'JE': 'JE',           // Jersey (same)
+    'IM': 'IM',           // Isle of Man (same)
+    'GI': 'GI',           // Gibraltar (same)
+    
+    // Europe - most are the same, but some may need conversion
+    'AL': 'AL',           // Albania (same)
+    'AD': 'AD',           // Andorra (same)
+    'AT': 'AT',           // Austria (same)
+    'BY': 'BY',           // Belarus (same)
+    'BE': 'BE',           // Belgium (same)
+    'BA': 'BA',           // Bosnia and Herzegovina (same)
+    'BG': 'BG',           // Bulgaria (same)
+    'HR': 'HR',           // Croatia (same)
+    'CY': 'CY',           // Cyprus (same)
+    'CZ': 'CZ',           // Czech Republic (same)
+    'DK': 'DK',           // Denmark (same)
+    'EE': 'EE',           // Estonia (same)
+    'FO': 'FO',           // Faroe Islands (same)
+    'FI': 'FI',           // Finland (same)
+    'FR': 'FR',           // France (same)
+    'DE': 'DE',           // Germany (same)
+    'GR': 'GR',           // Greece (same)
+    'HU': 'HU',           // Hungary (same)
+    'IS': 'IS',           // Iceland (same)
+    'IE': 'IE',           // Ireland (same)
+    'IT': 'IT',           // Italy (same)
+    'XK': 'XK',           // Kosovo (same)
+    'LV': 'LV',           // Latvia (same)
+    'LI': 'LI',           // Liechtenstein (same)
+    'LT': 'LT',           // Lithuania (same)
+    'LU': 'LU',           // Luxembourg (same)
+    'MK': 'MK',           // North Macedonia (same)
+    'MT': 'MT',           // Malta (same)
+    'MD': 'MD',           // Moldova (same)
+    'MC': 'MC',           // Monaco (same)
+    'ME': 'ME',           // Montenegro (same)
+    'NL': 'NL',           // Netherlands (same)
+    'NO': 'NO',           // Norway (same)
+    'PL': 'PL',           // Poland (same)
+    'PT': 'PT',           // Portugal (same)
+    'RO': 'RO',           // Romania (same)
+    'RU': 'RU',           // Russia (same)
+    'SM': 'SM',           // San Marino (same)
+    'RS': 'RS',           // Serbia (same)
+    'SK': 'SK',           // Slovakia (same)
+    'SI': 'SI',           // Slovenia (same)
+    'ES': 'ES',           // Spain (same)
+    'SE': 'SE',           // Sweden (same)
+    'CH': 'CH',           // Switzerland (same)
+    'TR': 'TR',           // Turkey (same)
+    'UA': 'UA',           // Ukraine (same)
+    'VA': 'VA',           // Vatican City (same)
+    
+    // Americas
+    'CA': 'CA',           // Canada (same)
+    'MX': 'MX',           // Mexico (same)
+    
+    // United States - all states use US-XX format (same)
+    'US-AL': 'US-AL',     // Alabama (same)
+    'US-AK': 'US-AK',     // Alaska (same)
+    'US-AZ': 'US-AZ',     // Arizona (same)
+    'US-AR': 'US-AR',     // Arkansas (same)
+    'US-CA': 'US-CA',     // California (same)
+    'US-CO': 'US-CO',     // Colorado (same)
+    'US-CT': 'US-CT',     // Connecticut (same)
+    'US-DE': 'US-DE',     // Delaware (same)
+    'US-DC': 'US-DC',     // District of Columbia (same)
+    'US-FL': 'US-FL',     // Florida (same)
+    'US-GA': 'US-GA',     // Georgia (same)
+    'US-HI': 'US-HI',     // Hawaii (same)
+    'US-ID': 'US-ID',     // Idaho (same)
+    'US-IL': 'US-IL',     // Illinois (same)
+    'US-IN': 'US-IN',     // Indiana (same)
+    'US-IA': 'US-IA',     // Iowa (same)
+    'US-KS': 'US-KS',     // Kansas (same)
+    'US-KY': 'US-KY',     // Kentucky (same)
+    'US-LA': 'US-LA',     // Louisiana (same)
+    'US-ME': 'US-ME',     // Maine (same)
+    'US-MD': 'US-MD',     // Maryland (same)
+    'US-MA': 'US-MA',     // Massachusetts (same)
+    'US-MI': 'US-MI',     // Michigan (same)
+    'US-MN': 'US-MN',     // Minnesota (same)
+    'US-MS': 'US-MS',     // Mississippi (same)
+    'US-MO': 'US-MO',     // Missouri (same)
+    'US-MT': 'US-MT',     // Montana (same)
+    'US-NE': 'US-NE',     // Nebraska (same)
+    'US-NV': 'US-NV',     // Nevada (same)
+    'US-NH': 'US-NH',     // New Hampshire (same)
+    'US-NJ': 'US-NJ',     // New Jersey (same)
+    'US-NM': 'US-NM',     // New Mexico (same)
+    'US-NY': 'US-NY',     // New York (same)
+    'US-NC': 'US-NC',     // North Carolina (same)
+    'US-ND': 'US-ND',     // North Dakota (same)
+    'US-OH': 'US-OH',     // Ohio (same)
+    'US-OK': 'US-OK',     // Oklahoma (same)
+    'US-OR': 'US-OR',     // Oregon (same)
+    'US-PA': 'US-PA',     // Pennsylvania (same)
+    'US-RI': 'US-RI',     // Rhode Island (same)
+    'US-SC': 'US-SC',     // South Carolina (same)
+    'US-SD': 'US-SD',     // South Dakota (same)
+    'US-TN': 'US-TN',     // Tennessee (same)
+    'US-TX': 'US-TX',     // Texas (same)
+    'US-UT': 'US-UT',     // Utah (same)
+    'US-VT': 'US-VT',     // Vermont (same)
+    'US-VA': 'US-VA',     // Virginia (same)
+    'US-WA': 'US-WA',     // Washington (same)
+    'US-WV': 'US-WV',     // West Virginia (same)
+    'US-WI': 'US-WI',     // Wisconsin (same)
+    'US-WY': 'US-WY',     // Wyoming (same)
+    'US-AS': 'US-AS',     // American Samoa (same)
+    'US-GU': 'US-GU',     // Guam (same)
+    'US-MP': 'US-MP',     // Northern Mariana Islands (same)
+    'US-PR': 'US-PR',     // Puerto Rico (same)
+    'US-VI': 'US-VI',     // US Virgin Islands (same)
+    
+    // Central & South America
+    'AR': 'AR',           // Argentina (same)
+    'BO': 'BO',           // Bolivia (same)
+    'BR': 'BR',           // Brazil (same)
+    'CL': 'CL',           // Chile (same)
+    'CO': 'CO',           // Colombia (same)
+    'CR': 'CR',           // Costa Rica (same)
+    'EC': 'EC',           // Ecuador (same)
+    'SV': 'SV',           // El Salvador (same)
+    'GT': 'GT',           // Guatemala (same)
+    'HN': 'HN',           // Honduras (same)
+    'NI': 'NI',           // Nicaragua (same)
+    'PA': 'PA',           // Panama (same)
+    'PY': 'PY',           // Paraguay (same)
+    'PE': 'PE',           // Peru (same)
+    'UY': 'UY',           // Uruguay (same)
+    'VE': 'VE',           // Venezuela (same)
+    
+    // Caribbean
+    'AG': 'AG',           // Antigua and Barbuda (same)
+    'BS': 'BS',           // Bahamas (same)
+    'BB': 'BB',           // Barbados (same)
+    'BZ': 'BZ',           // Belize (same)
+    'DM': 'DM',           // Dominica (same)
+    'DO': 'DO',           // Dominican Republic (same)
+    'GD': 'GD',           // Grenada (same)
+    'JM': 'JM',           // Jamaica (same)
+    'KN': 'KN',           // Saint Kitts and Nevis (same)
+    'LC': 'LC',           // Saint Lucia (same)
+    'VC': 'VC',           // Saint Vincent and the Grenadines (same)
+    'TT': 'TT',           // Trinidad and Tobago (same)
+    
+    // Asia-Pacific
+    'AU': 'AU',           // Australia (same)
+    'NZ': 'NZ',           // New Zealand (same)
+    'CN': 'CN',           // China (same)
+    'HK': 'HK',           // Hong Kong (same)
+    'IN': 'IN',           // India (same)
+    'ID': 'ID',           // Indonesia (same)
+    'JP': 'JP',           // Japan (same)
+    'MY': 'MY',           // Malaysia (same)
+    'PH': 'PH',           // Philippines (same)
+    'SG': 'SG',           // Singapore (same)
+    'KR': 'KR',           // South Korea (same)
+    'TW': 'TW',           // Taiwan (same)
+    'TH': 'TH',           // Thailand (same)
+    'VN': 'VN',           // Vietnam (same)
+    
+    // Middle East
+    'BH': 'BH',           // Bahrain (same)
+    'IL': 'IL',           // Israel (same)
+    'JO': 'JO',           // Jordan (same)
+    'KW': 'KW',           // Kuwait (same)
+    'LB': 'LB',           // Lebanon (same)
+    'OM': 'OM',           // Oman (same)
+    'QA': 'QA',           // Qatar (same)
+    'SA': 'SA',           // Saudi Arabia (same)
+    
+    // United Arab Emirates (all 7 emirates)
+    'AE-AZ': 'AE-AZ',     // Abu Dhabi (same)
+    'AE-AJ': 'AE-AJ',     // Ajman (same)
+    'AE-DU': 'AE-DU',     // Dubai (same)
+    'AE-FU': 'AE-FU',     // Fujairah (same)
+    'AE-RK': 'AE-RK',     // Ras Al Khaimah (same)
+    'AE-SH': 'AE-SH',     // Sharjah (same)
+    'AE-UQ': 'AE-UQ',     // Umm Al Quwain (same)
+    
+    // Africa
+    'ZA': 'ZA',           // South Africa (same)
+    'EG': 'EG',           // Egypt (same)
+    'GH': 'GH',           // Ghana (same)
+    'KE': 'KE',           // Kenya (same)
+    'MA': 'MA',           // Morocco (same)
+    'NG': 'NG'            // Nigeria (same)
+  };
+  
+  // Return mapped code or original if no mapping exists
+  return jurisdictionMappings[frontendCode] || frontendCode;
+}
+
+/**
  * Perform KYB search (extracted from handleKYBSearch for reusability)
  * Sends 'company-lookup' message to parent for Thirdfort API call
  * Searches by company number (preferred) OR company name (not both)
@@ -2549,16 +2754,19 @@ function performKYBSearch(jurisdictionCode, companyName, companyNumber) {
     `;
   }
   
+  // Convert jurisdiction codes to Thirdfort API format
+  const thirdfortJurisdiction = convertJurisdictionForThirdfort(jurisdictionCode);
+  
   // Prefer company number over name - only search by ONE field
   const searchBy = companyNumber ? 'number' : 'name';
   const searchValue = companyNumber ? companyNumber : companyName;
   
-  console.log(`📡 Sending company-lookup to parent: ${searchBy} = "${searchValue}", jurisdiction = ${jurisdictionCode}`);
+  console.log(`📡 Sending company-lookup to parent: ${searchBy} = "${searchValue}", jurisdiction = ${jurisdictionCode} → ${thirdfortJurisdiction}`);
   
   // Send message to parent for Thirdfort API call
   window.parent.postMessage({
     type: 'company-lookup',
-    jurisdictionCode: jurisdictionCode,
+    jurisdictionCode: thirdfortJurisdiction,
     searchBy: searchBy,
     searchValue: searchValue
   }, '*');
@@ -5083,9 +5291,9 @@ function buildElectronicIDRequest() {
     actor.email = email;
   }
   
-  // Check if this is a giftor (only for certain matter types)
-  const relation = checkState.clientData?.r;
-  if (relation === 'Gifter') {
+  // Set actor type based on currently selected matter sub-category
+  // (not client data relation, as user may have changed the selection)
+  if (checkState.matterSubCategory === 'giftor') {
     actor.type = 'giftor';
   }
   
