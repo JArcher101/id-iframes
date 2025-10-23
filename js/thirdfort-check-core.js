@@ -4084,15 +4084,49 @@ function displayKYBSearchResults(companies) {
   let html = '';
   companies.forEach(company => {
     const statusClass = company.status === 'active' ? 'active' : 'dissolved';
+    
+    // Debug: Log company data structure to understand what we're getting
+    console.log('Company data structure:', {
+      name: company.name,
+      numbers: company.numbers,
+      number: company.number,
+      tag: company.tag,
+      jurisdiction: company.jurisdiction
+    });
+    
+    // Extract company number from numbers array (Thirdfort API uses plural)
+    // Handle cases where numbers array might be undefined (name searches)
+    let companyNumber = 'N/A';
+    let companyTag = 'Company';
+    
+    if (company.numbers && Array.isArray(company.numbers) && company.numbers.length > 0) {
+      companyNumber = company.numbers[0];
+      // If there's a second element, use it as company type
+      if (company.numbers.length > 1) {
+        companyTag = company.numbers[1];
+      }
+    } else if (company.number) {
+      // Fallback to single number field if numbers array doesn't exist
+      companyNumber = company.number;
+    }
+    
+    // Use company.tag if available, otherwise keep the extracted tag
+    if (company.tag) {
+      companyTag = company.tag;
+    }
+    
     html += `
-      <div class="kyb-company-card" data-company-id="${company.id}" data-company-number="${company.number}" data-company-name="${company.name}" data-jurisdiction="${company.jurisdiction}">
+      <div class="kyb-company-card" data-company-id="${company.id}" data-company-number="${companyNumber}" data-company-name="${company.name}" data-jurisdiction="${company.jurisdiction}">
         <div class="kyb-company-name">${company.name}</div>
         <div class="kyb-company-meta">
           <div class="kyb-company-meta-item">
-            <span class="kyb-company-meta-label">Number:</span> ${company.number}
+            <span class="kyb-company-meta-label">Number:</span> ${companyNumber}
           </div>
           <div class="kyb-company-meta-item">
             <span class="kyb-company-meta-label">Jurisdiction:</span> ${company.jurisdiction}
+          </div>
+          <div class="kyb-company-meta-item">
+            <span class="kyb-company-meta-label">Type:</span> ${companyTag}
           </div>
         </div>
         <span class="kyb-company-status ${statusClass}">${company.status}</span>
