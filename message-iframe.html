@@ -368,6 +368,32 @@
             margin-right: auto;
         }
 
+        /* System messages - full width, no card, inline text */
+        .message.system {
+            background: transparent;
+            color: rgb(0, 60, 113);
+            margin: 6px 0;
+            padding: 0;
+            border-radius: 0;
+            width: 100%;
+            max-width: 100%;
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .message.system .system-user,
+        .message.system .system-text {
+            font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-weight: 400;
+        }
+        .message.system .system-time {
+            margin-left: auto;
+            font-family: 'RotisItalic', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-style: italic;
+            color: rgba(0, 60, 113, 0.7);
+        }
+
         .message-text {
             font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 14px;
@@ -1212,14 +1238,28 @@
             // Find the last blue message index (for notification dot placement)
             let lastBlueMessageIndex = -1;
             for (let i = allMessages.length - 1; i >= 0; i--) {
-                if (allMessages[i].type !== whiteType) {
+                const t = (allMessages[i].type || '').toLowerCase();
+                if (t !== (whiteType || '').toLowerCase() && t !== 'system') {
                     lastBlueMessageIndex = i;
                     break;
                 }
             }
             
             const messageDiv = document.createElement('div');
+            const msgTypeLower = (message.type || '').toLowerCase();
+            const isSystem = msgTypeLower === 'system';
             const isWhiteCard = message.type === whiteType;
+            if (isSystem) {
+                messageDiv.className = 'message system';
+                messageDiv.innerHTML = `
+                    <span class="system-user">${message.user}</span>
+                    <span class="system-text">${message.message}</span>
+                    <span class="system-time">${message.time}</span>
+                `;
+                const loadEarlierBtn = document.getElementById('loadEarlierBtn');
+                messagesContainer.insertBefore(messageDiv, loadEarlierBtn.nextSibling);
+                return;
+            }
             messageDiv.className = `message ${isWhiteCard ? 'sent' : 'received'}`;
             
             // Determine if this message should show notification dot
@@ -1261,14 +1301,27 @@
             // Find the last blue message index (for notification dot placement)
             let lastBlueMessageIndex = -1;
             for (let i = allMessages.length - 1; i >= 0; i--) {
-                if (allMessages[i].type !== whiteType) {
+                const t = (allMessages[i].type || '').toLowerCase();
+                if (t !== (whiteType || '').toLowerCase() && t !== 'system') {
                     lastBlueMessageIndex = i;
                     break;
                 }
             }
             
             const messageDiv = document.createElement('div');
+            const msgTypeLower = (message.type || '').toLowerCase();
+            const isSystem = msgTypeLower === 'system';
             const isWhiteCard = message.type === whiteType;
+            if (isSystem) {
+                messageDiv.className = 'message system';
+                messageDiv.innerHTML = `
+                    <span class="system-user">${message.user}</span>
+                    <span class="system-text">${message.message}</span>
+                    <span class="system-time">${message.time}</span>
+                `;
+                messagesContainer.appendChild(messageDiv);
+                return;
+            }
             messageDiv.className = `message ${isWhiteCard ? 'sent' : 'received'}`;
             
             // Determine if this message should show notification dot
