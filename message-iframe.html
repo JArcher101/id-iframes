@@ -1254,9 +1254,8 @@
             if (isSystem) {
                 messageDiv.className = 'message system';
                 messageDiv.innerHTML = `
-                    <span class="system-user">${message.user}</span>
                     <span class="system-text">${message.message}</span>
-                    <span class="system-time">${message.time}</span>
+                    <span class="system-time">- ${message.time}</span>
                 `;
                 const loadEarlierBtn = document.getElementById('loadEarlierBtn');
                 messagesContainer.insertBefore(messageDiv, loadEarlierBtn.nextSibling);
@@ -1317,9 +1316,8 @@
             if (isSystem) {
                 messageDiv.className = 'message system';
                 messageDiv.innerHTML = `
-                    <span class="system-user">${message.user}</span>
                     <span class="system-text">${message.message}</span>
-                    <span class="system-time">${message.time}</span>
+                    <span class="system-time">- ${message.time}</span>
                 `;
                 messagesContainer.appendChild(messageDiv);
                 return;
