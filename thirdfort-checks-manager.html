@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thirdfort Checks Manager</title>
+    <link rel="stylesheet" href="css/thirdfort-checks-manager.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Loading State -->
+        <div id="loading-state" class="loading-state">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; font-family: 'RotisRegular', sans-serif; color: #666;">
+                Waiting for data...
+            </p>
+            <button class="mock-btn" onclick="manager?.loadMockData()" style="margin-top: 20px;">
+                Load Mock Data
+            </button>
+        </div>
+
+        <!-- List View -->
+        <div id="list-view" class="list-view hidden">
+            <!-- Mock Data Button (for testing) -->
+            <div style="margin-bottom: 10px; text-align: right;">
+                <button id="mock-data-btn" class="mock-btn" onclick="manager.loadMockData()">
+                    Load Mock Data
+                </button>
+            </div>
+            
+            <div id="checks-list" class="checks-list">
+                <!-- Check items will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Detail View -->
+        <div id="detail-view" class="detail-view hidden">
+            <!-- Top Action Bar -->
+            <div class="detail-top-bar">
+                <button id="back-btn" class="back-btn">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1d71b8" stroke-width="2">
+                        <path d="M15 10H5M5 10L10 15M5 10L10 5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="detail-action-buttons">
+                    <!-- View Report and Expand buttons will be inserted here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Abort Check Card (conditional) - appears FIRST when check is open -->
+            <div id="abort-card" class="abort-card hidden">
+                <!-- Abort content will be dynamically inserted -->
+            </div>
+
+            <!-- Ongoing Monitoring Card (conditional) - appears SECOND when applicable -->
+            <div id="monitoring-card" class="card monitoring-card hidden">
+                <!-- Monitoring content will be dynamically inserted -->
+            </div>
+
+            <!-- Header Card -->
+            <div id="detail-header" class="card header-card">
+                <!-- Header content will be dynamically inserted -->
+            </div>
+
+            <!-- Client/Company Details Card -->
+            <div id="details-card" class="card details-card">
+                <!-- Details content will be dynamically inserted -->
+            </div>
+
+            <!-- PEP/Sanctions Updates Card (conditional) -->
+            <div id="pep-updates-card" class="card pep-updates-card hidden">
+                <!-- PEP updates will be dynamically inserted -->
+            </div>
+
+            <!-- Tasks/Reports Section -->
+            <div id="tasks-section" class="tasks-section">
+                <!-- Task cards will be dynamically inserted -->
+            </div>
+
+            <!-- Updates/Audit Trail Section -->
+            <div id="updates-section" class="updates-section">
+                <!-- Update cards will be dynamically inserted -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/thirdfort-checks-manager.js"></script>
+</body>
+</html>
+

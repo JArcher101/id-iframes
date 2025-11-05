@@ -122,6 +122,11 @@ function initializeEventListeners() {
     
     // Handle input navigation
     input.addEventListener('keydown', function(e) {
+      // Ignore keyboard shortcuts (Ctrl+V, Ctrl+C, Cmd+V, etc.)
+      if (e.ctrlKey || e.metaKey) {
+        return;
+      }
+      
       if (e.key === 'Backspace' && !this.value && index > 0) {
         // Move to previous input on backspace when current is empty
         liteDobInputs[index - 1].focus();
@@ -140,6 +145,34 @@ function initializeEventListeners() {
       }
     });
   });
+  
+  // Handle paste in first DOB field with robust date parsing
+  if (liteDobInputs[0]) {
+    liteDobInputs[0].addEventListener('paste', function(e) {
+      e.preventDefault();
+      
+      const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+      console.log('📋 Pasted DOB text:', pastedText);
+      
+      // Try to parse the date
+      const parsedDate = parseDateString(pastedText);
+      
+      if (parsedDate) {
+        // Fill all 8 DOB inputs with DDMMYYYY format
+        liteDobInputs.forEach((input, index) => {
+          if (input) {
+            input.value = parsedDate[index];
+          }
+        });
+        
+        liteDobInputs[7].focus();
+        const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
+        console.log('✅ Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
+      } else {
+        console.warn('⚠️ Could not parse date from pasted text:', pastedText);
+      }
+    });
+  }
   
   // Lite Screen Address Manual Entry Toggle
   const liteAddressNotListed = document.getElementById('liteAddressNotListed');
@@ -657,6 +690,96 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
 }
 
 /**
+ * Parse various date formats into DDMMYYYY string
+ * Supports: dd/mm/yyyy, dd-mm-yy, dd.mm.yyyy, dd Jan yyyy, January 11 2001, etc.
+ */
+function parseDateString(dateStr) {
+  if (!dateStr) return null;
+  
+  const text = dateStr.trim().toLowerCase();
+  
+  // Month name mappings
+  const months = {
+    'jan': '01', 'january': '01',
+    'feb': '02', 'february': '02',
+    'mar': '03', 'march': '03',
+    'apr': '04', 'april': '04',
+    'may': '05',
+    'jun': '06', 'june': '06',
+    'jul': '07', 'july': '07',
+    'aug': '08', 'august': '08',
+    'sep': '09', 'sept': '09', 'september': '09',
+    'oct': '10', 'october': '10',
+    'nov': '11', 'november': '11',
+    'dec': '12', 'december': '12'
+  };
+  
+  let day = null, month = null, year = null;
+  
+  // Try pure 8-digit format first (DDMMYYYY like "22022003")
+  const pureDigits = text.replace(/[^0-9]/g, '');
+  if (pureDigits.length === 8) {
+    day = pureDigits.substring(0, 2);
+    month = pureDigits.substring(2, 4);
+    year = pureDigits.substring(4, 8);
+  }
+  
+  // Try numeric format with separators (dd/mm/yyyy, dd-mm-yy, dd.mm.yyyy)
+  if (!day) {
+    const numericMatch = text.match(/(\d{1,2})[\s\-\/.]+(\d{1,2})[\s\-\/.]+(\d{2,4})/);
+    if (numericMatch) {
+      day = numericMatch[1].padStart(2, '0');
+      month = numericMatch[2].padStart(2, '0');
+      year = numericMatch[3];
+    }
+  }
+  
+  // Try text month formats (11 Jan 2001, January 11th 2001, Jan 11 01)
+  if (!day) {
+    // Day first: "11 January 2001", "11th Jan 01"
+    const dayFirstMatch = text.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]+)\s+(\d{2,4})/);
+    if (dayFirstMatch) {
+      day = dayFirstMatch[1].padStart(2, '0');
+      const monthName = dayFirstMatch[2];
+      month = months[monthName] || months[monthName.substring(0, 3)];
+      year = dayFirstMatch[3];
+    }
+  }
+  
+  // Try month first: "January 11 2001", "Jan 11th 01"
+  if (!day) {
+    const monthFirstMatch = text.match(/([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{2,4})/);
+    if (monthFirstMatch) {
+      const monthName = monthFirstMatch[1];
+      month = months[monthName] || months[monthName.substring(0, 3)];
+      day = monthFirstMatch[2].padStart(2, '0');
+      year = monthFirstMatch[3];
+    }
+  }
+  
+  // Validate and normalize
+  if (!day || !month || !year) return null;
+  
+  // Convert 2-digit year to 4-digit (assume 1900s for 00-99)
+  if (year.length === 2) {
+    const yearNum = parseInt(year, 10);
+    year = yearNum >= 0 && yearNum <= 30 ? '20' + year : '19' + year;
+  }
+  
+  // Validate ranges
+  const dayNum = parseInt(day, 10);
+  const monthNum = parseInt(month, 10);
+  const yearNum = parseInt(year, 10);
+  
+  if (dayNum < 1 || dayNum > 31) return null;
+  if (monthNum < 1 || monthNum > 12) return null;
+  if (yearNum < 1900 || yearNum > 2100) return null;
+  
+  // Return as DDMMYYYY string
+  return day + month + year;
+}
+
+/**
  * Display address autocomplete suggestions in dropdown
  */
 function displayAddressSuggestions(suggestions, field) {
@@ -723,12 +846,53 @@ function handleAddressData(addressData, field) {
   if (field === 'lite' || field === 'current') {
     liteCurrentAddressObject = thirdfortAddress;
     console.log('✅ Lite Screen address stored:', liteCurrentAddressObject);
+    
+    // Update address card display text
+    const currentAddressText = document.getElementById('liteCurrentAddressText');
+    if (currentAddressText) {
+      currentAddressText.textContent = formatAddressForCard(liteCurrentAddressObject);
+    }
+    
+    // Show current address card if hidden
+    const currentAddressCard = document.getElementById('liteCurrentAddressCard');
+    if (currentAddressCard) {
+      currentAddressCard.classList.remove('hidden');
+    }
+    
+    // Load address into manual fields
+    liteActiveAddressType = 'current';
+    loadAddressIntoManualFields(liteCurrentAddressObject, 'lite');
+    
+    // Show manual address fields if hidden
+    const liteManualAddressFields = document.getElementById('liteManualAddressFields');
+    if (liteManualAddressFields) {
+      liteManualAddressFields.classList.remove('hidden');
+      
+      // Validate fields after DOM updates
+      setTimeout(() => {
+        validateLiteManualAddress();
+      }, 100);
+    }
+    
+    // Update card selection states
+    updateLiteAddressCardStates();
   }
   
   // If it's a previous address (in case we add that later)
   if (field === 'previous') {
     litePreviousAddressObject = thirdfortAddress;
     console.log('✅ Lite Screen previous address stored:', litePreviousAddressObject);
+    
+    // Update previous address card display
+    const previousAddressText = document.getElementById('litePreviousAddressText');
+    if (previousAddressText) {
+      previousAddressText.textContent = formatAddressForCard(litePreviousAddressObject);
+    }
+    
+    const previousAddressCard = document.getElementById('litePreviousAddressCard');
+    if (previousAddressCard) {
+      previousAddressCard.classList.remove('hidden');
+    }
   }
 }
 
@@ -5418,10 +5582,31 @@ function buildElectronicIDRequest() {
     });
   }
   
+  // Build custom description based on matter category and subcategory
+  let description;
+  
+  if (checkState.matterCategory === 'conveyancing' || checkState.matterCategory === 'property-other') {
+    // For conveyancing/property-other: use subcategory + property address
+    const subCategoryMap = {
+      'purchase': 'Purchase of',
+      'sale': 'Sale of', 
+      'remortgage': 'Remortgage of',
+      'occupier': 'Occupier of',
+      'giftor': 'Giftor of',
+      'giftee': 'Giftee of'
+    };
+    
+    const prefix = subCategoryMap[checkState.matterSubCategory] || checkState.matterSubCategory;
+    description = `${prefix} ${reference}`;
+  } else {
+    // For private-client/other: just use the ID check reference
+    description = reference;
+  }
+  
   return {
     type: 'v2',
     ref: reference,
-    name: `${fullName} - Electronic ID`,
+    name: description,
     request: {
       actor: actor,
       tasks: tasks
