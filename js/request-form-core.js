@@ -3666,7 +3666,17 @@ function addIDImageToCarousel(imageData) {
   
   // Only show side tag for Front or Back, not for Single
   const sideTag = (imageData.side === 'Front' || imageData.side === 'Back') ? `<span class="side-tag">${imageData.side}</span>` : '';
-  const uploadInfo = imageData.uploadInfo || `Uploaded by ${imageData.uploader || 'email@domain.com'} on ${imageData.date || new Date().toLocaleDateString('en-GB')} ${new Date().toLocaleTimeString('en-GB', {hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'})}`;
+  
+  // Format upload info - check if date already includes time to avoid duplication
+  let uploadInfo;
+  if (imageData.uploadInfo) {
+    uploadInfo = imageData.uploadInfo;
+  } else {
+    const dateStr = imageData.date || new Date().toLocaleDateString('en-GB');
+    // Check if date already includes time (contains ":" or multiple ",")
+    const hasTime = dateStr.includes(':') || (dateStr.split(',').length > 1 && dateStr.split(',')[1].trim().match(/\d/));
+    uploadInfo = `Uploaded by ${imageData.uploader || 'email@domain.com'} on ${dateStr}${hasTime ? '' : ' ' + new Date().toLocaleTimeString('en-GB', {hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'})}`;
+  }
   
   card.innerHTML = `
     <div class="image-preview">
