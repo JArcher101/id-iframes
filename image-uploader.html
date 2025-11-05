@@ -827,6 +827,19 @@
       border-radius:8px; 
       text-align:center;
     }
+    
+    /* Name verification hint - shown after name inputs */
+    .name-hint {
+      font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.85rem;
+      color: #e67e22;
+      background: rgba(230, 126, 34, 0.1);
+      border: 1px solid rgba(230, 126, 34, 0.3);
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin: 10px 0;
+      text-align: left;
+    }
     .btn-secondary.selected { 
       background:var(--primary); 
       color:#fff; 
@@ -1444,6 +1457,11 @@
           <label for="lastName" class="required">Surname</label>
           <input type="text" id="lastName" name="lastName" required />
         </div>
+      </div>
+
+      <!-- Name Verification Hint -->
+      <div class="name-hint">
+        ⚠️ Ensure the name matches the above Photo ID exactly. If they are known by a different name please indicate this below.
       </div>
 
       <div class="row">
@@ -2472,13 +2490,15 @@
       // UK addresses: Individual fields only (no address_1, address_2)
       if (country === 'GBR') {
         // Strategy: Use explicit fields when available, intelligently extract from line_* when not
+        // Complex parsing to handle all getaddress.io response variations
         
         let buildingNumber = getAddressData.building_number || getAddressData.sub_building_number || '';
         let buildingNameFromLine1 = '';
         let flatNumber = getAddressData.flat_number || '';
         
         // Parse line_1 intelligently using thoroughfare as the key
-        if (getAddressData.line_1) {
+        // ONLY parse if buildingNumber OR building_name is missing (prevents duplicates)
+        if (getAddressData.line_1 && (!buildingNumber || !getAddressData.building_name)) {
           let addressPrefix = getAddressData.line_1.trim();
           
           // Remove thoroughfare/street from line_1 if present
@@ -2515,7 +2535,7 @@
         }
         
         // Building name: Combine all available building name data
-        // Priority: sub_building_name, then building_name/extracted, then line_2 (if not street)
+        // Priority: sub_building_name, building_name/extracted from line_1, line_2 (if not street)
         const buildingNameParts = [
           getAddressData.sub_building_name,
           getAddressData.building_name || buildingNameFromLine1,
@@ -2851,35 +2871,155 @@
       }
     });
 
-    // DOB: Auto-tab between 8 digit inputs with smart navigation
+    // DOB: Auto-tab between 8 digit inputs with smart navigation and paste support
     dobInputs.forEach((input, idx) => {
-      // Clear value when focusing on an input
-      input.addEventListener('focus', () => {
-        input.value = '';
-      });
-      
-      // Handle input - move to next field when digit entered
-      input.addEventListener('input', (e) => {
-        const value = e.target.value;
-        // Only allow single digits
-        if (value.length > 1) {
-          input.value = value.slice(-1);
+      // Handle keyboard navigation
+      input.addEventListener('keydown', function(e) {
+        // Ignore keyboard shortcuts (Ctrl+V, Ctrl+C, Cmd+V, etc.)
+        if (e.ctrlKey || e.metaKey) {
+          return;
         }
-        // Move to next field if digit entered and not last field
-        if (input.value.length === 1 && idx < dobInputs.length-1) {
-          dobInputs[idx+1].focus();
+        
+        if (e.key === 'Backspace' && !this.value && idx > 0) {
+          // Move to previous input on backspace when current is empty
+          dobInputs[idx - 1].focus();
+        } else if (this.value.length === 1 && idx < dobInputs.length - 1) {
+          // Move to next input when current is filled
+          dobInputs[idx + 1].focus();
         }
       });
       
-      // Handle backspace - move to previous field if current is empty
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Backspace' && input.value === '' && idx > 0) {
-          e.preventDefault();
-          dobInputs[idx-1].focus();
-          dobInputs[idx-1].value = '';
+      // Handle only numeric input
+      input.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        // Auto-advance when digit entered
+        if (this.value.length === 1 && idx < dobInputs.length - 1) {
+          dobInputs[idx + 1].focus();
         }
       });
     });
+    
+    // Handle paste in first DOB field with robust date parsing
+    if (dobInputs[0]) {
+      dobInputs[0].addEventListener('paste', function(e) {
+        e.preventDefault();
+        
+        const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+        console.log('📋 Pasted DOB text:', pastedText);
+        
+        // Try to parse the date
+        const parsedDate = parseDateString(pastedText);
+        
+        if (parsedDate) {
+          // Fill all 8 DOB inputs with DDMMYYYY format
+          dobInputs.forEach((input, index) => {
+            if (input) {
+              input.value = parsedDate[index];
+            }
+          });
+          
+          dobInputs[7].focus();
+          const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
+          console.log('✅ Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
+        } else {
+          console.warn('⚠️ Could not parse date from pasted text:', pastedText);
+        }
+      });
+    }
+
+    /*
+    =====================================================================
+    DATE PARSING - Parse various date formats into DDMMYYYY string
+    - Supports: dd/mm/yyyy, dd-mm-yy, dd.mm.yyyy, dd Jan yyyy, January 11 2001, etc.
+    - Used for paste functionality in DOB inputs
+    - Returns: 8-character string in DDMMYYYY format, or null if invalid
+    =====================================================================
+    */
+    function parseDateString(dateStr) {
+      if (!dateStr) return null;
+      
+      const text = dateStr.trim().toLowerCase();
+      
+      // Month name mappings
+      const months = {
+        'jan': '01', 'january': '01',
+        'feb': '02', 'february': '02',
+        'mar': '03', 'march': '03',
+        'apr': '04', 'april': '04',
+        'may': '05',
+        'jun': '06', 'june': '06',
+        'jul': '07', 'july': '07',
+        'aug': '08', 'august': '08',
+        'sep': '09', 'sept': '09', 'september': '09',
+        'oct': '10', 'october': '10',
+        'nov': '11', 'november': '11',
+        'dec': '12', 'december': '12'
+      };
+      
+      let day = null, month = null, year = null;
+      
+      // Try pure 8-digit format first (DDMMYYYY like "22022003")
+      const pureDigits = text.replace(/[^0-9]/g, '');
+      if (pureDigits.length === 8) {
+        day = pureDigits.substring(0, 2);
+        month = pureDigits.substring(2, 4);
+        year = pureDigits.substring(4, 8);
+      }
+      
+      // Try numeric format with separators (dd/mm/yyyy, dd-mm-yy, dd.mm.yyyy)
+      if (!day) {
+        const numericMatch = text.match(/(\d{1,2})[\s\-\/.]+(\d{1,2})[\s\-\/.]+(\d{2,4})/);
+        if (numericMatch) {
+          day = numericMatch[1].padStart(2, '0');
+          month = numericMatch[2].padStart(2, '0');
+          year = numericMatch[3];
+        }
+      }
+      
+      // Try text month formats (11 Jan 2001, January 11th 2001, Jan 11 01)
+      if (!day) {
+        // Day first: "11 January 2001", "11th Jan 01"
+        const dayFirstMatch = text.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]+)\s+(\d{2,4})/);
+        if (dayFirstMatch) {
+          day = dayFirstMatch[1].padStart(2, '0');
+          const monthName = dayFirstMatch[2];
+          month = months[monthName] || months[monthName.substring(0, 3)];
+          year = dayFirstMatch[3];
+        }
+      }
+      
+      // Try month first: "January 11 2001", "Jan 11th 01"
+      if (!day) {
+        const monthFirstMatch = text.match(/([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{2,4})/);
+        if (monthFirstMatch) {
+          const monthName = monthFirstMatch[1];
+          month = months[monthName] || months[monthName.substring(0, 3)];
+          day = monthFirstMatch[2].padStart(2, '0');
+          year = monthFirstMatch[3];
+        }
+      }
+      
+      // Validate and normalize
+      if (!day || !month || !year) return null;
+      
+      // Convert 2-digit year to 4-digit (assume 1900s for 00-99)
+      if (year.length === 2) {
+        const yearNum = parseInt(year, 10);
+        year = yearNum >= 0 && yearNum <= 30 ? '20' + year : '19' + year;
+      }
+      
+      // Validate ranges
+      const dayNum = parseInt(day, 10);
+      const monthNum = parseInt(month, 10);
+      const yearNum = parseInt(year, 10);
+      
+      if (dayNum < 1 || dayNum > 31) return null;
+      if (monthNum < 1 || monthNum > 12) return null;
+      if (yearNum < 1900 || yearNum > 2100) return null;
+      
+      // Return as DDMMYYYY string
+      return day + month + year;
+    }
 
     /*
     =====================================================================
@@ -4192,6 +4332,24 @@
           showSection4();
         }, 2000);
       }
+    }
+
+    /*
+    =====================================================================
+    SEND UPLOAD SUCCESS MESSAGE TO PARENT
+    - Compiles final form data and sends upload-success message to parent
+    - Includes form data and S3 keys for uploaded images
+    =====================================================================
+    */
+    function sendUploadSuccessMessage() {
+      const finalFormData = compileFormData();
+      // Overwrite idImages with new S3 keys data (backend appends to existing)
+      finalFormData.idImages = s3Keys;
+      window.parent.postMessage({
+        type: 'upload-success',
+        data: finalFormData,
+        idImages: s3Keys
+      }, '*');
     }
 
     /*
