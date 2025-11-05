@@ -584,8 +584,22 @@ class ThirdfortChecksManager {
         // 2. It's a v2 transaction (ID starts with 'c')
         // v1 checks (IDV, etc.) and v2 checks (KYB) cannot be aborted via API
         const isOpenStatus = check.status === 'open' || check.status === 'processing';
-        const isV2Transaction = check.transactionId && check.transactionId.startsWith('c');
+        
+        // Check both transactionId and checkId fields (either could be used)
+        const checkId = check.transactionId || check.checkId;
+        const isV2Transaction = checkId && checkId.startsWith('c');
+        
         const canAbort = isOpenStatus && isV2Transaction;
+        
+        console.log('🔍 Abort card check:', {
+            status: check.status,
+            isOpenStatus,
+            checkId,
+            transactionId: check.transactionId,
+            checkIdField: check.checkId,
+            isV2Transaction,
+            canAbort
+        });
         
         if (!canAbort) {
             this.abortCard.classList.add('hidden');
