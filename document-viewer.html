@@ -2058,8 +2058,9 @@
         INCOMING MESSAGES (from parent):
         1. 'display-documents' - Document data to display in list view
         2. 'display-images' / 'image-display' - Image data to display in carousel
-        3. 'put-links' - S3 pre-signed PUT URLs for file upload
-        4. 'put-error' - Error response when PUT link generation fails
+        3. 'thirdfort-document' - Open Thirdfort check PDF by s3Key
+        4. 'put-links' - S3 pre-signed PUT URLs for file upload
+        5. 'put-error' - Error response when PUT link generation fails
         
         OUTGOING MESSAGES (to parent):
         1. 'file-data' - Request for S3 PUT links before file upload
@@ -4214,17 +4215,22 @@
         2. 'display-images' / 'image-display' - Shows image carousel (legacy)
            - Resets uploader if active
            - Displays images with navigation
+        
+        3. 'thirdfort-document' - Opens Thirdfort check PDF by s3Key
+           - Searches current documents array for matching s3Key
+           - Opens document in popup window (like eye button)
+           - Shows error popup if document not found
            
-        3. 'put-links' - S3 upload URLs received
+        4. 'put-links' - S3 upload URLs received
            - Handled by handlePutResponse()
            
-        4. 'put-error' - Upload preparation failed
+        5. 'put-error' - Upload preparation failed
            - Handled by handlePutError()
         
-        5. 'button-enable' - Enable upload more button
+        6. 'button-enable' - Enable upload more button
            - Enables the "Upload more documents" button
         
-        6. 'button-disable' - Disable upload more button
+        7. 'button-disable' - Disable upload more button
            - Disables the "Upload more documents" button
         =====================================================================
         */
@@ -4233,6 +4239,9 @@
                 // Reset iframe to initial loading state (called when switching entries)
                 console.log('Received reset message - returning to awaiting state');
                 returnToAwaitingData();
+            } else if (event.data && event.data.type === 'thirdfort-document') {
+                // Handle Thirdfort check PDF viewing request
+                handleThirdfortDocument(event.data);
             } else if (event.data && event.data.type === 'display-documents') {
                 console.log('Received document display data:', event.data);
                 
@@ -4286,6 +4295,59 @@
             // Recalculate document card layout on resize
             checkUploaderInfoLayout();
         });
+
+        /*
+        =====================================================================
+        HANDLE THIRDFORT DOCUMENT
+        - Receives s3Key from checks manager iframe
+        - Finds matching document in current documents array
+        - Opens document in popup window (like eye button)
+        - Shows error popup if document not found
+        =====================================================================
+        */
+        function handleThirdfortDocument(data) {
+            console.log('📄 Thirdfort document request received:', data);
+            
+            if (!data || !data.s3Key) {
+                console.error('No s3Key provided in thirdfort-document message');
+                showError('Cannot open document: No s3Key provided');
+                return;
+            }
+            
+            // Check if we have documents loaded
+            if (!images || images.length === 0) {
+                console.error('No documents available in iframe');
+                showError('Cannot open document: No documents loaded in viewer');
+                return;
+            }
+            
+            // Find document by s3Key in current images/documents array
+            const document = images.find(doc => doc.s3Key === data.s3Key);
+            
+            if (!document) {
+                console.error('Document not found with s3Key:', data.s3Key);
+                console.log('Available documents:', images.map(d => ({ s3Key: d.s3Key, name: d.name })));
+                showError('Cannot open document: Document not found in current view');
+                return;
+            }
+            
+            // Check if document has liveUrl
+            if (!document.liveUrl) {
+                console.error('Document has no liveUrl:', document);
+                showError('Cannot open document: No URL available for this document');
+                return;
+            }
+            
+            // Open document in popup window (matching viewDocument function behavior)
+            const width = 1000;
+            const height = 800;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
+            const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+            
+            window.open(document.liveUrl, 'thirdfortDocument', features);
+            console.log('✅ Opened Thirdfort document:', document.name || document.document, 'URL:', document.liveUrl);
+        }
 
         // Handle display images data from parent
         function handleDisplayImages(data) {

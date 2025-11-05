@@ -63,7 +63,58 @@ class ThirdfortChecksManager {
                 break;
             case 'error':
                 console.error('❌ Error from parent:', data.message);
+                this.showError(data.message);
                 break;
+        }
+    }
+    
+    showError(message) {
+        // Create error banner at top of current view
+        const errorBanner = document.createElement('div');
+        errorBanner.style.cssText = `
+            background: #dc3545;
+            color: white;
+            padding: 15px 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-family: 'RotisRegular', sans-serif;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+            animation: slideDown 0.3s ease;
+        `;
+        
+        errorBanner.innerHTML = `
+            <div>
+                <strong style="display: block; margin-bottom: 5px;">Error</strong>
+                ${message || 'An error occurred. Please try again.'}
+            </div>
+            <button onclick="this.parentElement.remove()" style="
+                background: none;
+                border: none;
+                color: white;
+                font-size: 1.5rem;
+                cursor: pointer;
+                padding: 0 5px;
+                line-height: 1;
+            ">×</button>
+        `;
+        
+        // Add to current visible view
+        const activeView = document.querySelector('#list-view:not(.hidden), #detail-view:not(.hidden)');
+        if (activeView) {
+            activeView.insertBefore(errorBanner, activeView.firstChild);
+            
+            // Auto-remove after 8 seconds
+            setTimeout(() => {
+                if (errorBanner.parentElement) {
+                    errorBanner.style.opacity = '0';
+                    errorBanner.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => errorBanner.remove(), 300);
+                }
+            }, 8000);
         }
     }
     
@@ -2159,6 +2210,151 @@ class ThirdfortChecksManager {
                     { timestamp: new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString(), update: 'PDF received and uploaded to S3 - CLEAR' },
                     { timestamp: weekAgo.toISOString(), update: 'Sanctions monitoring alert - outstanding hits require review - CONSIDER' },
                     { timestamp: yesterday.toISOString(), update: 'Sanctions monitoring update - all hits dismissed or cleared - CLEAR' }
+                ]
+            },
+            
+            // 17. KYB - CONSIDER (UBO and Beneficial Ownership issues) - Real data example
+            {
+                checkId: 'mock_kyb_ubo_017',
+                checkType: 'kyb',
+                status: 'closed',
+                companyName: 'THURSTAN HOSKIN SOLICITORS LLP',
+                tasks: ['company:summary', 'company:sanctions', 'company:ubo', 'company:beneficial-check', 'company:shareholders'],
+                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
+                initiatedAt: new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                updatedAt: yesterday.toISOString(),
+                completedAt: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(),
+                pdfReady: true,
+                pdfS3Key: 'protected/JmXPHqr',
+                pdfAddedAt: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(),
+                hasMonitoring: true,
+                taskOutcomes: {
+                    'company:summary': { result: 'clear', status: 'closed', data: { 
+                        people: [
+                            { name: 'Barbara Archer', position: 'Designated LLP Member', nationality: 'British' },
+                            { name: 'Stephen John Duncan Morrison', position: 'Designated LLP Member', nationality: 'British' }
+                        ]
+                    }},
+                    'company:sanctions': { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: true } },
+                    'company:ubo': { result: 'consider', status: 'unobtainable', data: { uboUnavailable: true } },
+                    'company:beneficial-check': { result: 'consider', status: 'unobtainable', data: {} },
+                    'company:shareholders': { result: 'clear', status: 'closed', data: { document_count: 1 } }
+                },
+                companyData: {
+                    name: 'THURSTAN HOSKIN SOLICITORS LLP',
+                    number: 'OC421980',
+                    jurisdiction: 'UK',
+                    incorporation_date: '2018-04-12',
+                    address: {
+                        line1: 'Chynoweth, Chapel Street',
+                        town: 'Redruth',
+                        county: 'Cornwall',
+                        postcode: 'TR15 2BY',
+                        country: 'United Kingdom'
+                    },
+                    status: 'Active',
+                    legal_form: 'Limited Partnership',
+                    sic_code: '69100 - Legal activities',
+                    employees: 20
+                },
+                hasAlerts: true,
+                considerReasons: ['beneficial ownership issues', 'UBO concerns'],
+                updates: [
+                    { timestamp: new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString(), update: 'KYB check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
+                    { timestamp: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(), update: 'Check completed - awaiting PDF' },
+                    { timestamp: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(), update: 'PDF received and uploaded to S3 - CONSIDER: beneficial ownership issues' },
+                    { timestamp: yesterday.toISOString(), update: 'Refreshed from Thirdfort API - Status: closed' }
+                ]
+            },
+            
+            // 18. IDV - OPEN (Documents uploaded, awaiting processing) - Real data example
+            {
+                checkId: 'mock_idv_open_018',
+                checkType: 'idv',
+                status: 'open',
+                consumerName: 'Jacob Robert Moran',
+                tasks: ['report:identity'],
+                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
+                initiatedAt: yesterday.toISOString(),
+                updatedAt: now.toISOString(),
+                pdfReady: false,
+                hasMonitoring: false,
+                documentsUploaded: true,
+                documentType: 'passport',
+                taskOutcomes: {
+                    'identity:lite': { status: 'pending', data: {} }
+                },
+                piiData: {
+                    name: { first: 'Jacob', last: 'Moran', other: 'Robert' }
+                },
+                hasAlerts: false,
+                considerReasons: [],
+                updates: [
+                    { timestamp: yesterday.toISOString(), update: 'IDV check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
+                    { timestamp: yesterday.toISOString(), update: 'Documents uploaded by consumer' },
+                    { timestamp: now.toISOString(), update: 'Refreshed from Thirdfort API - Status: open' }
+                ]
+            },
+            
+            // 19. Enhanced ID - OPEN (Multiple tasks including SoF and Bank Statement) - Real data example
+            {
+                transactionId: 'mock_eid_open_019',
+                checkType: 'electronic-id',
+                status: 'open',
+                consumerName: 'Jacob Robert Archer-Moran',
+                consumerPhone: '+447506430094',
+                consumerEmail: 'jacob.archer-moran@thurstanhoskin.co.uk',
+                tasks: ['report:identity', 'report:footprint', 'report:peps', 'documents:poa', 'report:sof-v1', 'report:bank-statement', 'report:bank-summary'],
+                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
+                initiatedAt: weekAgo.toISOString(),
+                updatedAt: now.toISOString(),
+                pdfReady: false,
+                hasMonitoring: true,
+                smsSent: true,
+                taskOutcomes: {},
+                piiData: {
+                    name: { first: 'Jacob Robert', last: 'Archer-Moran' }
+                },
+                hasAlerts: false,
+                considerReasons: [],
+                updates: [
+                    { timestamp: weekAgo.toISOString(), update: 'Electronic ID check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
+                    { timestamp: weekAgo.toISOString(), update: 'Transaction confirmed by Thirdfort' },
+                    { timestamp: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(), update: 'Refreshed from Thirdfort API - Status: open' },
+                    { timestamp: yesterday.toISOString(), update: 'Refreshed from Thirdfort API - Status: open' },
+                    { timestamp: now.toISOString(), update: 'Refreshed from Thirdfort API - Status: open' }
+                ]
+            },
+            
+            // 20. Lite Screen - CLOSED with PDF (Minimal consumer data) - Real data example
+            {
+                transactionId: 'mock_lite_020',
+                checkType: 'lite-screen',
+                status: 'closed',
+                consumerName: 'Test Consumer',
+                tasks: ['report:footprint', 'report:peps'],
+                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
+                initiatedAt: yesterday.toISOString(),
+                updatedAt: yesterday.toISOString(),
+                completedAt: yesterday.toISOString(),
+                pdfReady: true,
+                pdfS3Key: 'protected/fX6hWC1',
+                pdfAddedAt: yesterday.toISOString(),
+                hasMonitoring: true,
+                taskOutcomes: {
+                    footprint: { result: 'clear', status: 'closed', data: { quality: 85, match_count: 2 } },
+                    peps: { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: true } }
+                },
+                piiData: {
+                    name: { first: 'Test', last: 'Consumer' }
+                },
+                hasAlerts: false,
+                considerReasons: [],
+                updates: [
+                    { timestamp: yesterday.toISOString(), update: 'Lite Screen check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
+                    { timestamp: yesterday.toISOString(), update: 'Transaction completed - awaiting PDF' },
+                    { timestamp: yesterday.toISOString(), update: 'PDF received and uploaded to S3 - CLEAR' },
+                    { timestamp: yesterday.toISOString(), update: 'Refreshed from Thirdfort API - Status: closed' }
                 ]
             }
         ];

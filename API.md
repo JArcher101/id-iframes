@@ -5,20 +5,21 @@ This document describes the communication interface for each iframe component. A
 ## Table of Contents
 
 1. [Thirdfort Check Manager](#thirdfort-check-manager) ⭐ NEW
-2. [Audit Log Viewer](#audit-log-viewer)
-3. [Wallboard Dashboard](#wallboard-dashboard)
-4. [Single Image Viewer](#single-image-viewer)
-5. [Image Viewer](#image-viewer)
-6. [Migration Tagger](#migration-tagger) ⭐ NEW
-7. [Image Uploader](#image-uploader)
-8. [Document Viewer](#document-viewer)
-9. [Message iframe](#message-iframe)
-10. [Report Uploader](#report-uploader)
-11. [Cashiers Log](#cashiers-log)
-12. [Chart Viewer](#chart-viewer)
-13. [Request Form](#request-form)
-14. [Client Details Form](#client-details-form)
-15. [General Integration Guide](#general-integration-guide)
+2. [Thirdfort Checks Manager](#thirdfort-checks-manager) ⭐ NEW
+3. [Audit Log Viewer](#audit-log-viewer)
+4. [Wallboard Dashboard](#wallboard-dashboard)
+5. [Single Image Viewer](#single-image-viewer)
+6. [Image Viewer](#image-viewer)
+7. [Migration Tagger](#migration-tagger) ⭐ NEW
+8. [Image Uploader](#image-uploader)
+9. [Document Viewer](#document-viewer)
+10. [Message iframe](#message-iframe)
+11. [Report Uploader](#report-uploader)
+12. [Cashiers Log](#cashiers-log)
+13. [Chart Viewer](#chart-viewer)
+14. [Request Form](#request-form)
+15. [Client Details Form](#client-details-form)
+16. [General Integration Guide](#general-integration-guide)
 
 ---
 
@@ -518,6 +519,320 @@ checkState = {
 - **Mock Data**: Testing buttons for various client scenarios (Form E, eSoF, LPA, etc.)
 - **Real-Time Validation**: All fields validated before submission
 - **Multi-Endpoint Construction**: Separate request objects for each Thirdfort API endpoint
+
+---
+
+## Thirdfort Checks Manager
+
+**File:** `thirdfort-checks-manager.html`
+
+### Description
+Display and management interface for viewing Thirdfort check results. Shows a list of all checks with status indicators, and provides detailed view for individual checks with outcomes, PII data, task results, monitoring alerts, and audit trail. Handles Electronic ID, Lite Screen, IDV, and KYB check types.
+
+### Architecture
+- **Core:** `js/thirdfort-checks-manager.js` (~2,300 lines) - State management, list/detail rendering, data processing
+- **Styles:** `css/thirdfort-checks-manager.css` - Check cards, status badges, responsive layouts
+
+### Features
+
+#### List View
+- **Check Cards**: Visual cards showing check type, status, client/company name
+- **Status Icons**: Open, Processing, Closed with CLEAR/CONSIDER indicators
+- **PEP/Sanctions Badge**: Blue badge for ongoing monitoring
+- **Alert Indicators**: Warning/info hints (up to 9 displayed, prioritized by severity)
+- **Last Update**: Timestamp of most recent check activity
+- **PDF Button**: Quick access to completed reports (when available)
+- **Mock Data Button**: Load test data for development/testing
+
+#### Detail View
+- **Header Card**: Check details, client/company info, status, initiated by/at
+- **Abort Card**: For open checks - ability to cancel/abort the check
+- **Monitoring Card**: Shows ongoing PEP/Sanctions monitoring status when active
+- **Client/Company Details**: PII data (name, DOB, address, document info) or company data
+- **PEP/Sanctions Updates**: History of monitoring alerts with outcomes and match details
+- **Task Cards**: Individual task results (Identity, Document, PEPs, Address, Footprint, etc.)
+- **Updates/Audit Trail**: Chronological history of check events
+- **Action Buttons**: View Report (PDF), Expand (full window), Back to list
+
+### Parent → iframe (Incoming Messages)
+
+#### `checks-data`
+Loads array of check objects to display in the manager.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'checks-data',
+  data: {
+    checks: [
+      {
+        // Check identification
+        transactionId: 'd3x4y3023amg0301hms0',  // For electronic-id/lite-screen
+        // OR
+        checkId: 'd3x4vrf23amg0301hm9g',        // For kyb/idv
+        
+        // Basic info
+        checkType: 'electronic-id',  // 'electronic-id' | 'lite-screen' | 'idv' | 'kyb'
+        status: 'open',              // 'open' | 'processing' | 'closed' | 'aborted'
+        initiatedBy: 'user@example.com',
+        initiatedAt: '2025-10-23T15:51:40.051Z',
+        updatedAt: '2025-10-30T16:34:28.287Z',
+        completedAt: '2025-10-23T15:51:40.051Z',  // Optional, when status = 'closed'
+        
+        // Client data (for electronic-id, lite-screen, idv)
+        consumerName: 'Jacob Robert Archer-Moran',
+        consumerEmail: 'jacob@example.com',       // Optional
+        consumerPhone: '+447506430094',           // Optional
+        
+        // Company data (for kyb)
+        companyName: 'ACME Corporation Ltd',
+        companyData: {                            // Optional detailed company info
+          name: 'ACME Corporation Ltd',
+          number: 'OC421980',
+          jurisdiction: 'UK',
+          address: { /* address object */ }
+        },
+        
+        // Tasks requested
+        tasks: [
+          'report:identity',
+          'report:peps',
+          'report:footprint',
+          'documents:poa',
+          'report:sof-v1',
+          'company:summary',
+          'company:sanctions',
+          // etc.
+        ],
+        
+        // Task outcomes (populated when check completes)
+        taskOutcomes: {
+          'identity': {
+            result: 'clear',     // 'clear' | 'consider' | 'fail'
+            status: 'closed',    // 'pending' | 'closed' | 'unobtainable'
+            data: { /* task-specific data */ }
+          },
+          'peps': {
+            result: 'consider',
+            status: 'closed',
+            data: {
+              total_hits: 2,
+              monitored: true,
+              matches: [ /* PEP match objects */ ]
+            }
+          },
+          'company:ubo': {
+            result: 'consider',
+            status: 'unobtainable',
+            data: { uboUnavailable: true }
+          }
+          // ... other tasks
+        },
+        
+        // PII/Personal data (for individual checks)
+        piiData: {
+          name: { first: 'Jacob', last: 'Archer-Moran', other: 'Robert' },
+          dob: '1990-05-15',
+          address: {
+            line1: '123 High Street',
+            town: 'London',
+            postcode: 'SW1A 1AA',
+            country: 'GBR'
+          },
+          document: {
+            number: 'AB123456C',
+            type: 'passport',
+            mrz_line1: 'P<GBRMORAN<<JACOB<ROBERT<<<<<<<<<<<<<<<<<',
+            mrz_line2: 'AB1234567GBR9005151M2305151<<<<<<<<<<<<<<<0'
+          }
+        },
+        
+        // PDF report
+        pdfReady: true,                           // Boolean
+        pdfS3Key: 'protected/JmXPHqr',           // S3 key when PDF available
+        pdfAddedAt: '2025-10-30T12:58:51.448Z',  // Timestamp when PDF created
+        
+        // Alerts and warnings
+        hasAlerts: true,                         // Boolean - any warnings/issues
+        considerReasons: [                       // Array of hint strings
+          'beneficial ownership issues',
+          'PEP hits',
+          'address quality not sufficient'
+        ],
+        
+        // Monitoring
+        hasMonitoring: true,                     // Boolean - PEP/Sanctions monitoring active
+        
+        // PEP/Sanctions updates (from monitoring alerts)
+        pepSanctionsUpdates: [
+          {
+            timestamp: '2025-10-30T12:41:24.196Z',
+            type: 'peps',          // 'peps' | 'sanctions'
+            outcome: 'consider',   // 'consider' | 'clear'
+            s3Key: 'protected/pep0013a',
+            matchCount: 2,
+            alertSeverity: 'high', // 'low' | 'medium' | 'high' | 'critical'
+            detailedReason: 'New PEP matches found',
+            taskOutcomes: {
+              peps: { /* updated task outcome */ }
+            }
+          }
+        ],
+        
+        // Audit trail
+        updates: [
+          {
+            timestamp: '2025-10-23T15:51:41.656Z',
+            update: 'Electronic ID check initiated by jacob.archer-moran@thurstanhoskin.co.uk'
+          },
+          {
+            timestamp: '2025-10-30T16:34:28.287Z',
+            update: 'Refreshed from Thirdfort API - Status: open'
+          }
+        ],
+        
+        // Optional fields
+        smsSent: true,                           // Boolean - SMS sent to consumer
+        documentsUploaded: true,                 // Boolean - consumer uploaded docs
+        documentType: 'passport',                // String - document type for IDV
+        thirdfortResponse: { /* raw API response */ }  // Optional - full Thirdfort API response
+      }
+      // ... more checks
+    ]
+  }
+}, '*');
+```
+
+#### Check Type Identification
+- **Electronic ID / Lite Screen**: Use `transactionId` property
+- **KYB / IDV**: Use `checkId` property
+- The manager automatically detects which ID property is present
+
+#### Task Outcomes Format
+Task outcomes use a consistent structure across all task types:
+- `result`: Overall outcome ('clear', 'consider', 'fail')
+- `status`: Task completion status ('pending', 'closed', 'unobtainable')
+- `data`: Task-specific data object with detailed results
+
+Common task types:
+- **Individual**: `identity`, `nfc`, `document`, `facial_similarity`, `peps`, `address`, `footprint`, `documents:poa`, `documents:poo`, `report:sof-v1`, `report:bank-statement`
+- **Business**: `company:summary`, `company:sanctions`, `company:ubo`, `company:beneficial-check`, `company:shareholders`
+
+#### Real-World Data Examples
+The check objects shown above match the structure of data returned from the Thirdfort API after processing through your backend integration. The manager handles:
+- Varying data completeness (open vs closed checks)
+- Optional fields (some checks may not have all properties)
+- Nested objects (taskOutcomes, piiData, companyData)
+- Arrays (pepSanctionsUpdates, updates, considerReasons)
+
+### iframe → Parent (Outgoing Messages)
+
+#### `iframe-ready`
+Sent when iframe loads and is ready to receive data.
+
+```javascript
+// iframe sends
+{ type: 'iframe-ready', data: {} }
+```
+
+Parent should respond with `checks-data` message.
+
+#### `view-pdf`
+User clicked to view a PDF report.
+
+```javascript
+// iframe sends
+{
+  type: 'view-pdf',
+  data: {
+    s3Key: 'protected/JmXPHqr'
+  }
+}
+```
+
+Parent should open/download the PDF from S3.
+
+#### `abort-check`
+User clicked to abort an open check.
+
+```javascript
+// iframe sends
+{
+  type: 'abort-check',
+  data: {
+    id: 'd3x4y3023amg0301hms0',
+    resourceType: 'transaction'  // 'transaction' or 'check'
+  }
+}
+```
+
+Parent should call Thirdfort API to abort the check and refresh data.
+
+#### `cancel-check`
+User confirmed cancellation of a check.
+
+```javascript
+// iframe sends
+{
+  type: 'cancel-check',
+  data: {
+    id: 'd3x4vrf23amg0301hm9g',
+    resourceType: 'check'  // 'transaction' or 'check'
+  }
+}
+```
+
+Parent should process the cancellation and update the checks list.
+
+#### `toggle-monitoring`
+User toggled PEP/Sanctions monitoring on/off for a check.
+
+```javascript
+// iframe sends
+{
+  type: 'toggle-monitoring',
+  data: {
+    id: 'd3x4vrf23amg0301hm9g',
+    type: 'transaction',  // 'transaction' or 'check'
+    enabled: true         // new monitoring state
+  }
+}
+```
+
+Parent should update monitoring status via Thirdfort API.
+
+### Integration Notes
+
+1. **Check Status Flow**:
+   - `open` → User hasn't completed check yet
+   - `processing` → Thirdfort is processing the check
+   - `closed` → Check complete, results available
+   - `aborted` → Check was cancelled
+
+2. **Alert Priority**:
+   - ALERT level (red): PEP/Sanction hits, document integrity issues, identity failures
+   - WARNING level (amber): Address quality, facial similarity, bank link flags
+   - INFO level (grey): Downgrades, skipped tasks, routine notifications
+   - Maximum 9 hints displayed, prioritized by severity
+
+3. **Monitoring Badge**:
+   - Blue badge appears on checks with active PEP/Sanctions monitoring
+   - Shows in both list view and detail view
+   - Indicates ongoing surveillance for watchlist changes
+
+4. **PDF Generation**:
+   - `pdfReady: false` → No PDF available yet
+   - `pdfReady: true` → PDF available at `pdfS3Key`
+   - Parent handles S3 URL generation and CloudFront signed URLs
+
+5. **Data Refresh**:
+   - Parent can send updated `checks-data` at any time
+   - Manager will re-render list and update current detail view
+   - Useful for polling/webhook updates
+
+6. **Mock Data**:
+   - "Load Mock Data" button generates 20 test checks
+   - Useful for development and UI testing
+   - Covers all check types, statuses, and edge cases
 
 ---
 
