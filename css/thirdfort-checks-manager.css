@@ -807,6 +807,18 @@ body {
     color: #333;
 }
 
+.detail-value-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.detail-status-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
 /* PEP Updates Card */
 .pep-updates-header {
     font-family: 'Transport', sans-serif;
@@ -1060,31 +1072,172 @@ body {
     font-size: 13px;
     color: var(--grey);
     margin-top: 6px;
+    padding: 0 16px;
+}
+
+.task-card.consider .task-summary-inline {
+    color: #f7931e;
+    font-family: 'RotisBold', sans-serif;
 }
 
 .task-checks-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 8px;
 }
 
 .task-check-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     font-family: 'RotisRegular', sans-serif;
     font-size: 12px;
     color: #333;
 }
 
+/* Indented items (for sub-items like people, shareholders) */
+.task-check-item.indented {
+    margin-left: 24px;
+}
+
+/* Section headers (for grouping items) */
+.task-check-item.section-header {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 13px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
 .objective-icon {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
+    margin-top: 2px;
 }
 
 .task-check-text {
     flex: 1;
+    line-height: 1.4;
+}
+
+/* Person Profile Cards */
+.person-profile-card {
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+    width: 100%;
+    display: block;
+}
+
+.person-profile-card:hover {
+    background: #f0f0f0;
+    border-color: #1d71b8;
+    box-shadow: 0 2px 4px rgba(29, 113, 184, 0.1);
+}
+
+/* Ensure person cards don't inherit task-check-item flex layout */
+.task-checks-grid .person-profile-card {
+    display: block;
+}
+
+/* Remove any status icons from person cards */
+.person-profile-card .objective-icon,
+.person-profile-card .task-status-icon {
+    display: none !important;
+}
+
+.task-checks-grid .person-profile-card .objective-icon,
+.task-checks-grid .person-profile-card .task-status-icon {
+    display: none !important;
+}
+
+.people-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
+.people-card-name {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 14px;
+    color: #333;
+    flex: 1;
+}
+
+.people-card-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-family: 'RotisBold', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.badge-director {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.badge-officer {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.badge-trustee {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.badge-psc {
+    background: #e8f5e9;
+    color: #388e3c;
+}
+
+.people-card-details {
+    color: #666;
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.profile-detail-row {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+    color: #555;
+    line-height: 1.5;
+}
+
+.profile-detail-label {
+    font-family: 'RotisBold', sans-serif;
+    color: #666;
+}
+
+.people-card-share {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #ddd;
+    color: #1d71b8;
+    font-family: 'RotisBold', sans-serif;
+    font-size: 12px;
+}
+
+.person-warning {
+    color: #ff0000;
+    font-family: 'RotisBold', sans-serif;
+    font-size: 11px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #ddd;
 }
 
 /* Updates Section */

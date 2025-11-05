@@ -707,11 +707,32 @@ class ThirdfortChecksManager {
                 ` : ''}
             `;
         } else {
-            // KYB Check
+            // KYB Check - Get data from companyData and company:summary if available
             const companyData = check.companyData || {};
-            const companyName = check.companyName || companyData.name || '—';
-            const companyNumber = companyData.number || '—';
-            const jurisdiction = companyData.jurisdiction || '—';
+            const companySummary = check.taskOutcomes?.['company:summary']?.breakdown || {};
+            
+            // Prefer data from company:summary as it's more comprehensive
+            const companyName = check.companyName || companySummary.name || companyData.name || '—';
+            const companyNumber = companySummary.registration_number || companyData.number || '—';
+            const jurisdiction = companyData.jurisdiction || companySummary.country || '—';
+            const legalForm = companySummary.legal_form || '—';
+            const status = companySummary.status || companySummary.detailed_operating_status || '—';
+            const incorporationDate = companySummary.date_of_incorporation 
+                ? new Date(companySummary.date_of_incorporation).toLocaleDateString('en-GB') 
+                : '—';
+            
+            // Address
+            const addr = companySummary.formatted_address || {};
+            const fullAddress = [addr.street, addr.city, addr.zip, addr.country]
+                .filter(Boolean).join(', ') || '—';
+            
+            const tradingAddr = companySummary.trading_address || {};
+            const tradingAddress = [tradingAddr.street, tradingAddr.city, tradingAddr.zip, tradingAddr.country]
+                .filter(Boolean).join(', ');
+            
+            const sicDesc = companySummary.sic_nace_codes_des || '';
+            const website = companySummary.url || '';
+            const employees = companySummary.number_of_employees || '';
             
             // Build company details grid items (only show if data exists)
             const gridItems = [];
@@ -743,11 +764,81 @@ class ThirdfortChecksManager {
                 `);
             }
             
+            if (legalForm && legalForm !== '—') {
+                gridItems.push(`
+                    <div class="detail-item">
+                        <div class="detail-label">Legal Form</div>
+                        <div class="detail-value">${legalForm}</div>
+                    </div>
+                `);
+            }
+            
+            if (status && status !== '—') {
+                const isActive = status.toLowerCase() === 'active';
+                const statusIcon = isActive 
+                    ? `<svg class="detail-status-icon" viewBox="0 0 300 300"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>`
+                    : `<svg class="detail-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+                gridItems.push(`
+                    <div class="detail-item">
+                        <div class="detail-label">Status</div>
+                        <div class="detail-value detail-value-with-icon">${statusIcon}${status.charAt(0).toUpperCase() + status.slice(1)}</div>
+                    </div>
+                `);
+            }
+            
+            if (incorporationDate && incorporationDate !== '—') {
+                gridItems.push(`
+                    <div class="detail-item">
+                        <div class="detail-label">Incorporation Date</div>
+                        <div class="detail-value">${incorporationDate}</div>
+                    </div>
+                `);
+            }
+            
+            if (sicDesc) {
+                gridItems.push(`
+                    <div class="detail-item">
+                        <div class="detail-label">Industry</div>
+                        <div class="detail-value">${sicDesc}</div>
+                    </div>
+                `);
+            }
+            
+            if (employees) {
+                gridItems.push(`
+                    <div class="detail-item">
+                        <div class="detail-label">Employees</div>
+                        <div class="detail-value">${employees}</div>
+                    </div>
+                `);
+            }
+            
+            if (website) {
+                gridItems.push(`
+                    <div class="detail-item">
+                        <div class="detail-label">Website</div>
+                        <div class="detail-value">${website}</div>
+                    </div>
+                `);
+            }
+            
             detailsContent = `
                 <div class="details-header">
                     <div class="details-title">Company Details</div>
                 </div>
                 ${gridItems.length > 0 ? `<div class="details-grid">${gridItems.join('')}</div>` : ''}
+                ${fullAddress && fullAddress !== '—' ? `
+                <div class="detail-item" style="margin-top: 12px;">
+                    <div class="detail-label">Registered Address</div>
+                    <div class="detail-value">${fullAddress}</div>
+                </div>
+                ` : ''}
+                ${tradingAddress && tradingAddress !== fullAddress ? `
+                <div class="detail-item" style="margin-top: 8px;">
+                    <div class="detail-label">Trading Address</div>
+                    <div class="detail-value">${tradingAddress}</div>
+                </div>
+                ` : ''}
             `;
         }
         
@@ -859,7 +950,7 @@ class ThirdfortChecksManager {
             'sof:v1', 'bank:statement', 'bank:summary',
             'documents:poa', 'documents:poo', 'documents:other',
             'company:summary', 'company:sanctions', 'company:peps', 
-            'company:ubo', 'company:beneficial-check'
+            'company:ubo', 'company:beneficial-check', 'company:shareholders'
         ];
         
         taskOrder.forEach(taskKey => {
@@ -873,10 +964,15 @@ class ThirdfortChecksManager {
     
     createTaskCard(taskType, outcome) {
         const result = outcome.result || 'unknown';
+        const status = outcome.status || '';
         let borderClass = '';
         let statusIcon = '';
         
-        if (result === 'clear') {
+        // Handle unobtainable status explicitly
+        if (status === 'unobtainable') {
+            borderClass = 'consider';
+            statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+        } else if (result === 'clear') {
             borderClass = 'clear';
             statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>`;
         } else if (result === 'consider' || result === 'alert') {
@@ -910,22 +1006,41 @@ class ThirdfortChecksManager {
         }
         
         // Standard expandable task card
-        const taskSummary = outcome.result ? this.formatResult(outcome.result) : 'Pending';
+        let taskSummary = outcome.result ? this.formatResult(outcome.result) : 'Pending';
+        
+        // Add status information for unobtainable tasks
+        if (outcome.status === 'unobtainable') {
+            taskSummary = `<span style="color: #f7931e;">Unobtainable</span> - Some information may still be available`;
+        }
         
         let checksHtml = '';
         if (taskChecks.length > 0) {
             checksHtml = '<div class="task-checks-grid">';
-            taskChecks.forEach(check => {
-                const checkIcon = this.getTaskCheckIcon(check.status);
-                checksHtml += `
-                    <div class="task-check-item">
-                        ${checkIcon}
-                        <span class="task-check-text">${check.text}</span>
-                    </div>
-                `;
+            taskChecks.forEach((check, index) => {
+                // Handle person profile cards - NO ICONS
+                if (check.isPersonCard === true && check.personData) {
+                    console.log(`Rendering person card ${index}:`, check.personData.name || check.personData.fullName);
+                    checksHtml += this.createPersonProfileCard(check.personData);
+                } else {
+                    // Standard check item with icon
+                    const checkIcon = this.getTaskCheckIcon(check.status);
+                    const indentedClass = check.indented ? ' indented' : '';
+                    const sectionHeaderClass = check.isSectionHeader ? ' section-header' : '';
+                    checksHtml += `
+                        <div class="task-check-item${indentedClass}${sectionHeaderClass}">
+                            ${checkIcon}
+                            <span class="task-check-text">${check.text}</span>
+                        </div>
+                    `;
+                }
             });
             checksHtml += '</div>';
         }
+        
+        // Show inline status for unobtainable
+        const inlineStatus = outcome.status === 'unobtainable' 
+            ? '<div class="task-summary-inline">Unobtainable - Some information may still be available</div>' 
+            : '';
         
         return `
             <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
@@ -933,9 +1048,10 @@ class ThirdfortChecksManager {
                     <div class="task-title">${taskTitle}</div>
                     ${statusIcon}
                 </div>
-                ${outcome.status === 'closed' ? `
+                ${inlineStatus}
+                ${outcome.status === 'closed' || outcome.status === 'unobtainable' ? `
                 <div class="task-details">
-                    <div class="task-summary">${taskSummary}</div>
+                    ${outcome.status !== 'unobtainable' ? `<div class="task-summary">${taskSummary}</div>` : ''}
                     ${checksHtml}
                 </div>
                 ` : ''}
@@ -1078,6 +1194,195 @@ class ThirdfortChecksManager {
         return result.charAt(0).toUpperCase() + result.slice(1);
     }
     
+    createPersonProfileCard(personData) {
+        // Create a profile card for officers, PSCs, beneficial owners, etc.
+        const name = personData.name || personData.fullName || personData.organizationName || 'Unknown';
+        const isIndividual = personData.beneficiaryType === 'Individual' || personData.birthDate || personData.dob;
+        const isBusiness = personData.businessEntityType || personData.beneficiaryType === 'Business';
+        
+        // Determine role badges
+        let badges = '';
+        const roleLabels = new Set(); // Use Set to avoid duplicates
+        
+        // Officer/Director/Member role from position or category
+        const position = personData.position || personData.category || '';
+        if (position) {
+            if (position.toLowerCase().includes('director')) {
+                roleLabels.add('Director');
+            } else if (position.toLowerCase().includes('member')) {
+                roleLabels.add('Member');
+            } else {
+                roleLabels.add(position);
+            }
+        }
+        
+        // PSC indicator (from nature of control types)
+        if (personData.natureOfControlTypes && personData.natureOfControlTypes.length > 0) {
+            roleLabels.add('PSC');
+        }
+        
+        // UBO indicator (ultimate beneficial owner)
+        if (personData.is_ubo === true) {
+            roleLabels.add('UBO');
+        }
+        
+        // Beneficial Owner (from beneficiaryType)
+        if ((personData.beneficiaryType === 'Business' || personData.beneficiaryType === 'Individual') && !personData.is_ubo) {
+            roleLabels.add('Beneficial Owner');
+        }
+        
+        // Create badge HTML
+        roleLabels.forEach(label => {
+            let badgeClass = 'badge-officer'; // Default
+            
+            if (label === 'Director') {
+                badgeClass = 'badge-director';
+            } else if (label === 'PSC' || label === 'UBO' || label === 'Beneficial Owner') {
+                badgeClass = 'badge-psc';
+            } else if (label === 'Trustee') {
+                badgeClass = 'badge-trustee';
+            } else if (label.toLowerCase().includes('member')) {
+                badgeClass = 'badge-officer';
+            }
+            
+            badges += `<span class="people-card-badge ${badgeClass}">${label}</span>`;
+        });
+        
+        // Build profile details HTML
+        let detailsHtml = '';
+        
+        // Date of Birth
+        const dob = personData.dob || personData.birthDate || '';
+        if (dob) {
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">DOB:</span> ${dob}</div>`;
+        }
+        
+        // Nationality
+        const nationality = personData.nationality || '';
+        if (nationality) {
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">Nationality:</span> ${nationality}</div>`;
+        }
+        
+        // Residence Country
+        const residenceCountry = personData.residenceCountryName || '';
+        if (residenceCountry && residenceCountry !== nationality) {
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">Residence:</span> ${residenceCountry}</div>`;
+        }
+        
+        // Business Entity Type
+        if (isBusiness && personData.businessEntityType) {
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">Entity Type:</span> ${personData.businessEntityType}</div>`;
+        }
+        
+        // Beneficiary Type
+        if (personData.beneficiaryType && !isBusiness) {
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">Type:</span> ${personData.beneficiaryType}</div>`;
+        }
+        
+        // Country (for businesses)
+        const country = personData.country || '';
+        if (country) {
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">Country:</span> ${country}</div>`;
+        }
+        
+        // Appointment Date
+        const startDate = personData.start_date || personData.natureOfControlStartDate || '';
+        if (startDate) {
+            const appointDate = new Date(startDate).toLocaleDateString('en-GB');
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">Appointed:</span> ${appointDate}</div>`;
+        }
+        
+        // End Date / Resignation
+        const endDate = personData.end_date || '';
+        if (endDate) {
+            const resignDate = new Date(endDate).toLocaleDateString('en-GB');
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">Resigned:</span> ${resignDate}</div>`;
+        }
+        
+        // Address
+        let addressStr = '';
+        if (typeof personData.address === 'string') {
+            addressStr = personData.address;
+        } else if (personData.address && typeof personData.address === 'object') {
+            const addr = personData.address;
+            addressStr = [addr.street, addr.city, addr.zip, addr.country]
+                .filter(Boolean).join(', ');
+        }
+        if (addressStr) {
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">Address:</span> ${addressStr}</div>`;
+        }
+        
+        // DUNS Number
+        if (personData.duns) {
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">DUNS:</span> ${personData.duns}</div>`;
+        }
+        
+        // Member ID
+        if (personData.memberID) {
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">Member ID:</span> ${personData.memberID}</div>`;
+        }
+        
+        // Associations
+        if (personData.associations && personData.associations !== null) {
+            detailsHtml += `<div class="profile-detail-row"><span class="profile-detail-label">Associations:</span> ${personData.associations}</div>`;
+        }
+        
+        // Flags/Warnings
+        let warnings = '';
+        if (personData.is_disqualified_director) {
+            warnings += '<div class="person-warning">⚠️ DISQUALIFIED DIRECTOR</div>';
+        }
+        if (personData.has_bankruptcy_history) {
+            warnings += '<div class="person-warning">⚠️ BANKRUPTCY HISTORY</div>';
+        }
+        if (personData.isOutOfBusiness) {
+            warnings += '<div class="person-warning">⚠️ OUT OF BUSINESS</div>';
+        }
+        
+        // Ownership/Share information with Nature of Control
+        let shareInfo = '';
+        const shareDetails = [];
+        
+        // Ownership percentages
+        const beneficialPct = personData.beneficialOwnershipPercentage || 0;
+        const directPct = personData.directOwnershipPercentage || 0;
+        const indirectPct = personData.indirectOwnershipPercentage || 0;
+        const ownershipPct = personData.ownershipPercentage || 0;
+        const votingPct = personData.votingPercentageHigh || 0;
+        
+        if (beneficialPct > 0) shareDetails.push(`${beneficialPct}% beneficial`);
+        if (directPct > 0) shareDetails.push(`${directPct}% direct`);
+        if (indirectPct > 0) shareDetails.push(`${indirectPct}% indirect`);
+        if (ownershipPct > 0 && beneficialPct === 0 && directPct === 0) shareDetails.push(`${ownershipPct}% ownership`);
+        if (votingPct > 0) shareDetails.push(`${votingPct}% voting rights`);
+        
+        // Nature of Control
+        if (personData.natureOfControlTypes && Array.isArray(personData.natureOfControlTypes) && personData.natureOfControlTypes.length > 0) {
+            const controls = this.formatNatureOfControl(personData.natureOfControlTypes);
+            if (controls) {
+                shareDetails.push(controls);
+            }
+        }
+        
+        if (shareDetails.length > 0) {
+            shareInfo = `<div class="people-card-share">📊 ${shareDetails.join(' | ')}</div>`;
+        }
+        
+        return `
+            <div class="person-profile-card">
+                <div class="people-card-header">
+                    <div class="people-card-name">${name}</div>
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">${badges}</div>
+                </div>
+                <div class="people-card-details">
+                    ${detailsHtml}
+                </div>
+                ${shareInfo}
+                ${warnings}
+            </div>
+        `;
+    }
+    
     getTaskCheckIcon(status) {
         // Return colored circle icons for task objectives
         if (status === 'CL') {
@@ -1091,6 +1396,53 @@ class ThirdfortChecksManager {
             return `<svg class="objective-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>`;
         }
         return '';
+    }
+    
+    deduplicatePeople(owners, officers) {
+        // Remove owners who are already listed as officers (same person in multiple roles)
+        // Match by name and date of birth (if available)
+        if (!officers || !Array.isArray(officers) || officers.length === 0) {
+            return owners;
+        }
+        
+        const officerNames = new Set();
+        officers.forEach(officer => {
+            const name = officer.name?.toLowerCase().trim();
+            const dob = officer.dob;
+            if (name) {
+                // Create a unique key combining name and DOB (if available)
+                const key = dob ? `${name}|${dob}` : name;
+                officerNames.add(key);
+            }
+        });
+        
+        return owners.filter(owner => {
+            const name = (owner.fullName || owner.organizationName || '').toLowerCase().trim();
+            const dob = owner.dateOfBirth;
+            if (!name) return true; // Keep if no name
+            
+            const key = dob ? `${name}|${dob}` : name;
+            return !officerNames.has(key);
+        });
+    }
+    
+    formatNatureOfControl(controlTypes) {
+        // Simplify long nature of control descriptions
+        if (!controlTypes || !Array.isArray(controlTypes) || controlTypes.length === 0) {
+            return '';
+        }
+        
+        return controlTypes.map(control => {
+            // Simplify common patterns
+            return control
+                .replace(/Ownership of (\d+% to \d+%|\d+%) of voting rights/gi, '$1 voting rights')
+                .replace(/Right to share (\d+% to \d+%|\d+%) of surplus assets/gi, '$1 surplus assets')
+                .replace(/Right to appoint and remove directors/gi, 'Appoint/remove directors')
+                .replace(/Right to appoint and remove members/gi, 'Appoint/remove members')
+                .replace(/Significant influence or control/gi, 'Significant influence')
+                .replace(/of a limited liability partnership/gi, '(LLP)')
+                .replace(/of a company/gi, '');
+        }).join('; ');
     }
     
     calculateRiskLevel(hit, updateType) {
@@ -1161,7 +1513,8 @@ class ThirdfortChecksManager {
             'company:sanctions': 'Company Sanctions',
             'company:peps': 'Company PEP Screening',
             'company:ubo': 'Ultimate Beneficial Owner',
-            'company:beneficial-check': 'PSC Extract'
+            'company:beneficial-check': 'PSC Extract',
+            'company:shareholders': 'Shareholders'
         };
         return titles[taskType] || taskType;
     }
@@ -1281,16 +1634,43 @@ class ThirdfortChecksManager {
         }
         else if (taskType === 'peps' || taskType === 'sanctions' || 
                  taskType === 'company:peps' || taskType === 'company:sanctions') {
-            const totalHits = data.total_hits || 0;
+            const breakdown = outcome.breakdown || {};
+            const totalHits = breakdown.total_hits || data.total_hits || 0;
+            const hits = breakdown.hits || data.hits || [];
+            const matches = breakdown.matches || data.matches || [];
+            
             checks.push({
                 status: totalHits === 0 ? 'CL' : 'CO',
                 text: `${totalHits} match${totalHits !== 1 ? 'es' : ''} found`
             });
             
-            if (data.monitored !== undefined) {
+            // Show individual hits if available
+            const hitsList = hits.length > 0 ? hits : matches;
+            if (hitsList.length > 0) {
+                hitsList.forEach(hit => {
+                    const name = hit.name || 'Unknown';
+                    const list = hit.sanctions_list || hit.position || '';
+                    const country = hit.country || '';
+                    const reason = hit.reason || hit.relationship || '';
+                    
+                    let hitText = name;
+                    if (list) hitText += ` - ${list}`;
+                    if (country) hitText += ` [${country}]`;
+                    if (reason) hitText += ` | ${reason}`;
+                    
+                    checks.push({
+                        status: 'CO',
+                        text: hitText,
+                        indented: true
+                    });
+                });
+            }
+            
+            if (data.monitored !== undefined || breakdown.monitored !== undefined) {
+                const isMonitored = data.monitored || breakdown.monitored;
                 checks.push({
-                    status: data.monitored ? 'CL' : 'AL',
-                    text: data.monitored ? 'Ongoing monitoring enabled' : 'Monitoring disabled'
+                    status: isMonitored ? 'CL' : 'AL',
+                    text: isMonitored ? 'Ongoing monitoring enabled' : 'Monitoring disabled'
                 });
             }
         }
@@ -1309,6 +1689,133 @@ class ThirdfortChecksManager {
                 checks.push({
                     status: data.verified ? 'CL' : 'CO',
                     text: data.verified ? 'Identity verified' : 'Identity verification requires review'
+                });
+            }
+        }
+        else if (taskType === 'company:summary') {
+            // Company Summary - Show people as profile cards
+            const breakdown = outcome.breakdown || {};
+            
+            // Officers/People as profile cards
+            if (breakdown.people && Array.isArray(breakdown.people) && breakdown.people.length > 0) {
+                breakdown.people.forEach(person => {
+                    checks.push({
+                        isPersonCard: true,
+                        personData: person
+                        // NO status or text field - only isPersonCard and personData
+                    });
+                });
+            }
+        }
+        else if (taskType === 'company:ubo') {
+            // Ultimate Beneficial Owners
+            const breakdown = outcome.breakdown || {};
+            
+            // Show unobtainable message if applicable
+            if (breakdown.uboUnavailable && outcome.status === 'unobtainable') {
+                checks.push({
+                    status: 'CO',
+                    text: 'UBO information unobtainable - available PSC/ownership data shown below'
+                });
+            }
+            
+            // PSCs (Persons with Significant Control) as profile cards
+            if (breakdown.pscs && Array.isArray(breakdown.pscs) && breakdown.pscs.length > 0) {
+                breakdown.pscs.forEach(psc => {
+                    const person = psc.person || {};
+                    // Merge PSC-level data with person data
+                    const personWithControls = {
+                        ...person,
+                        natureOfControlTypes: psc.natureOfControlTypes,
+                        natureOfControlStartDate: psc.natureOfControlStartDate
+                    };
+                    
+                    checks.push({
+                        isPersonCard: true,
+                        personData: personWithControls
+                        // NO status or text field
+                    });
+                });
+            }
+            
+            // Beneficial Owners as profile cards
+            if (breakdown.beneficialOwners && Array.isArray(breakdown.beneficialOwners) && breakdown.beneficialOwners.length > 0) {
+                breakdown.beneficialOwners.forEach(owner => {
+                    checks.push({
+                        isPersonCard: true,
+                        personData: owner
+                        // NO status or text field
+                    });
+                });
+            }
+            
+            // Relationships (ownership structure)
+            if (breakdown.relationships && Array.isArray(breakdown.relationships) && breakdown.relationships.length > 0) {
+                checks.push({
+                    status: 'CN',
+                    text: 'Ownership Relationships',
+                    isSectionHeader: true
+                });
+                
+                breakdown.relationships.forEach(rel => {
+                    const relText = `${rel.source || 'Unknown'} → ${rel.target || 'Unknown'} (${rel.type || 'relationship'})`;
+                    checks.push({
+                        status: 'CN',
+                        text: relText,
+                        indented: true
+                    });
+                });
+            }
+        }
+        else if (taskType === 'company:beneficial-check') {
+            // PSC Extract document
+            const breakdown = outcome.breakdown || {};
+            
+            if (breakdown.documents && Array.isArray(breakdown.documents) && breakdown.documents.length > 0) {
+                checks.push({
+                    status: 'CL',
+                    text: `PSC Extract document obtained`
+                });
+            } else if (outcome.status === 'unobtainable') {
+                checks.push({
+                    status: 'CO',
+                    text: 'PSC Extract unobtainable - manual review required'
+                });
+            }
+        }
+        else if (taskType === 'company:shareholders') {
+            // Shareholders information
+            const breakdown = outcome.breakdown || {};
+            
+            if (breakdown.documents && Array.isArray(breakdown.documents) && breakdown.documents.length > 0) {
+                checks.push({
+                    status: 'CL',
+                    text: `Shareholder register obtained (${breakdown.documents.length} document${breakdown.documents.length !== 1 ? 's' : ''})`
+                });
+            }
+            
+            // If we have shareholder data in breakdown
+            if (breakdown.shareholders && Array.isArray(breakdown.shareholders) && breakdown.shareholders.length > 0) {
+                checks.push({
+                    status: 'CN',
+                    text: `${breakdown.shareholders.length} Shareholder${breakdown.shareholders.length !== 1 ? 's' : ''}`,
+                    isSectionHeader: true
+                });
+                
+                breakdown.shareholders.forEach(shareholder => {
+                    const name = shareholder.name || 'Unknown';
+                    const shares = shareholder.shares || '';
+                    const percentage = shareholder.percentage || '';
+                    
+                    let shareText = name;
+                    if (shares) shareText += ` - ${shares} shares`;
+                    if (percentage) shareText += ` (${percentage}%)`;
+                    
+                    checks.push({
+                        status: 'CL',
+                        text: shareText,
+                        indented: true
+                    });
                 });
             }
         }
@@ -1362,75 +1869,340 @@ class ThirdfortChecksManager {
     }
     
     generateMockData() {
-        const now = new Date();
-        const yesterday = new Date(now - 24 * 60 * 60 * 1000);
-        const twoDaysAgo = new Date(now - 2 * 24 * 60 * 60 * 1000);
-        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-        
+        // Real KYB check data for THURSTAN HOSKIN SOLICITORS LLP
         return [
-            // 1. Enhanced ID - Safe Harbour - CLEAR
             {
-                transactionId: 'mock_eid_sh_001',
-                checkType: 'electronic-id',
+                checkId: 'd45v1gy23amg0306599g',
+                checkType: 'kyb',
                 status: 'closed',
-                consumerName: 'Sarah Thompson',
-                consumerPhone: '+447123456789',
-                consumerEmail: 'sarah.thompson@example.com',
-                tasks: ['report:identity', 'report:peps', 'report:address', 'report:footprint', 'documents:poa', 'documents:poo'],
+                companyName: 'THURSTAN HOSKIN SOLICITORS LLP',
                 initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: twoDaysAgo.toISOString(),
-                updatedAt: yesterday.toISOString(),
-                completedAt: yesterday.toISOString(),
+                initiatedAt: '2025-11-05T20:17:10.220Z',
+                updatedAt: '2025-11-05T21:15:23.171Z',
+                completedAt: '2025-11-05T20:17:29.568Z',
                 pdfReady: true,
-                pdfS3Key: 'protected/abc1234',
-                pdfAddedAt: yesterday.toISOString(),
+                pdfS3Key: 'protected/V0QcMFD',
+                pdfAddedAt: '2025-11-05T20:21:46.714Z',
                 hasMonitoring: true,
-                taskOutcomes: {
-                    nfc: { result: 'clear', status: 'closed', data: { chip_read: true } },
-                    identity: { result: 'clear', status: 'closed', data: { verified: true } },
-                    document: { result: 'clear', status: 'closed', data: { 
-                        authenticity: 'genuine', 
-                        integrity: 'passed', 
-                        compromised: 'no',
-                        consistency: 'consistent',
-                        validation: 'valid'
-                    }},
-                    facial_similarity: { result: 'clear', status: 'closed', data: { 
-                        comparison: 'good_match',
-                        authenticity: 'genuine',
-                        integrity: 'passed'
-                    }},
-                    peps: { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: true } },
-                    address: { result: 'clear', status: 'closed', data: { sources: 3, quality: 95 } },
-                    footprint: { result: 'clear', status: 'closed', data: {} },
-                    'documents:poa': { result: 'clear', status: 'closed', data: { document_count: 1 } },
-                    'documents:poo': { result: 'clear', status: 'closed', data: { document_count: 1 } }
+                hasAlerts: false,
+                companyData: {
+                    jurisdiction: 'UK',
+                    number: 'OC421980',
+                    name: 'THURSTAN HOSKIN SOLICITORS LLP',
+                    numbers: ['OC421980'],
+                    id: '223822293'
                 },
-                piiData: {
-                    name: { first: 'Sarah', last: 'Thompson' },
-                    dob: '1985-06-15',
-                    address: {
-                        line1: '123 High Street',
-                        town: 'London',
-                        postcode: 'SW1A 1AA',
-                        country: 'GBR'
+                thirdfortResponse: {
+                    request: {
+                        data: {
+                            jurisdiction: 'UK',
+                            number: 'OC421980',
+                            name: 'THURSTAN HOSKIN SOLICITORS LLP',
+                            numbers: ['OC421980'],
+                            id: '223822293'
+                        },
+                        reports: [
+                            { type: 'company:summary' },
+                            { type: 'company:sanctions', opts: { monitored: true } },
+                            { type: 'company:ubo' },
+                            { type: 'company:beneficial-check' },
+                            { type: 'company:shareholders' }
+                        ]
                     },
-                    document: {
-                        number: 'AB123456C',
-                        mrz_line1: 'P<GBRTHOMPSON<<SARAH<<<<<<<<<<<<<<<<<<<<<<<<',
-                        mrz_line2: 'AB1234567GBR8506151F2506151<<<<<<<<<<<<<<<0'
+                    ref: '21 Green Lane',
+                    id: 'd45v1gy23amg0306599g',
+                    reports: [],
+                    status: 'open',
+                    type: 'company'
+                },
+                tasks: [],
+                taskOutcomes: {
+                    'company:beneficial-check': {
+                        breakdown: {},
+                        result: 'consider',
+                        documents: [],
+                        id: 'd45v1ke23amg030659dg',
+                        status: 'unobtainable',
+                        createdAt: '2025-11-05T20:17:17.370Z'
+                    },
+                    'company:summary': {
+                        breakdown: {
+                            vat: '',
+                            people: [
+                                {
+                                    associations: null,
+                                    name: 'Barbara Archer',
+                                    start_date: '2018-04-12',
+                                    dob: '1974-07',
+                                    country: '',
+                                    id: 'd45r1k29io6g00db42dg',
+                                    is_disqualified_director: false,
+                                    end_date: '',
+                                    nationality: 'British',
+                                    has_bankruptcy_history: false,
+                                    address: 'Redruth, Cornwall, TR15 2BY',
+                                    category: 'Member',
+                                    position: 'Designated LLP Member'
+                                },
+                                {
+                                    associations: null,
+                                    name: 'Stephen John Duncan Morrison',
+                                    start_date: '2018-04-12',
+                                    dob: '1972-07',
+                                    country: '',
+                                    id: 'd45r1k29io6g00db42e0',
+                                    is_disqualified_director: false,
+                                    end_date: '',
+                                    nationality: 'British',
+                                    has_bankruptcy_history: false,
+                                    address: 'Redruth, Cornwall, TR15 2BY',
+                                    category: 'Member',
+                                    position: 'Designated LLP Member'
+                                }
+                            ],
+                            is_exporter: false,
+                            sic_nace_codes: '69100',
+                            is_agent: false,
+                            email: '',
+                            is_importer: false,
+                            shareOwnership: [
+                                {
+                                    natureOfControlStartDate: '2018-04-12',
+                                    natureOfControl: '',
+                                    isOutOfBusiness: false,
+                                    is_ubo: true,
+                                    indirectOwnershipPercentage: 0,
+                                    stockDetails: null,
+                                    fullName: 'Barbara Archer',
+                                    natureOfControlTypes: [
+                                        'Right to share 25% to 50% of surplus assets of a limited liability partnership',
+                                        'Ownership of 25% to 50% of voting rights of a limited liability partnership'
+                                    ],
+                                    dateOfBirth: '1974-07',
+                                    organizationName: '',
+                                    ownershipPercentage: 0,
+                                    subjectType: { description: '' },
+                                    beneficiaryType: 'Individual',
+                                    duns: '',
+                                    id: 'd45r1k29io6g00db42cg',
+                                    votingPercentageHigh: 0,
+                                    nationality: 'British',
+                                    address: null,
+                                    category: '',
+                                    residenceCountryName: 'United Kingdom'
+                                },
+                                {
+                                    natureOfControlStartDate: '2018-04-12',
+                                    natureOfControl: '',
+                                    isOutOfBusiness: false,
+                                    is_ubo: true,
+                                    indirectOwnershipPercentage: 0,
+                                    stockDetails: null,
+                                    fullName: 'Stephen John Duncan Morrison',
+                                    natureOfControlTypes: [
+                                        'Right to share 25% to 50% of surplus assets of a limited liability partnership',
+                                        'Ownership of 25% to 50% of voting rights of a limited liability partnership'
+                                    ],
+                                    dateOfBirth: '1972-07',
+                                    organizationName: '',
+                                    ownershipPercentage: 0,
+                                    subjectType: { description: '' },
+                                    beneficiaryType: 'Individual',
+                                    duns: '',
+                                    id: 'd45r1k29io6g00db42d0',
+                                    votingPercentageHigh: 0,
+                                    nationality: 'British',
+                                    address: null,
+                                    category: '',
+                                    residenceCountryName: 'United Kingdom'
+                                }
+                            ],
+                            url: 'www.thurstanhoskin.co.uk',
+                            description: '',
+                            provided_status_start_date: '2018-04-13',
+                            lei: '',
+                            share_capital: '',
+                            legal_form: 'Limited Partnership',
+                            formatted_address: {
+                                po_box: '',
+                                city: 'REDRUTH',
+                                zip: 'TR15 2BY',
+                                country: 'United Kingdom',
+                                cc: 'GB',
+                                street: 'CHYNOWETH, CHAPEL STREET',
+                                district: 'CORNWALL'
+                            },
+                            country: 'United Kingdom',
+                            detailed_operating_status: 'active',
+                            last_update: '',
+                            id: '',
+                            date_of_incorporation: '2018-04-12',
+                            sic_nace_codes_des: 'Legal activities',
+                            business_trust_index: {
+                                trust_index: 0,
+                                investigation_date: '',
+                                data_provider: '',
+                                national_percentile: 0,
+                                tsrReport_date: '',
+                                trust_class: ''
+                            },
+                            status: 'active',
+                            share_currency: '',
+                            number_of_employees: 20,
+                            provided_status: 'Active',
+                            trading_address: {
+                                po_box: '',
+                                city: 'REDRUTH',
+                                zip: 'TR15 2BY',
+                                country: 'United Kingdom',
+                                cc: 'GB',
+                                street: 'Chynoweth Chapel Street',
+                                district: 'Cornwall'
+                            },
+                            tax_code: '',
+                            address: 'CHYNOWETH, CHAPEL STREET, CORNWALL, REDRUTH, United Kingdom, GB, TR15 2BY',
+                            dissolution_date: '',
+                            registration_number: 'OC421980',
+                            paidup_capital: '',
+                            phone: ''
+                        },
+                        result: 'clear',
+                        documents: [],
+                        id: 'd45v1m623amg030659hg',
+                        status: 'closed',
+                        createdAt: '2025-11-05T20:17:20.796Z'
+                    },
+                    'company:shareholders': {
+                        breakdown: {
+                            documents: [
+                                {
+                                    id: '49621b12-655b-4fee-8715-3daefb7f9ca8',
+                                    type: 'shareholders',
+                                    provider: 'documents-api'
+                                }
+                            ]
+                        },
+                        result: 'clear',
+                        documents: ['49621b12-655b-4fee-8715-3daefb7f9ca8'],
+                        id: 'd45v1my23amg030659m0',
+                        status: 'closed',
+                        createdAt: '2025-11-05T20:17:23.522Z'
+                    },
+                    'company:sanctions': {
+                        breakdown: {
+                            total_hits: 0,
+                            hits: []
+                        },
+                        result: 'clear',
+                        documents: ['d45v3ed23amg030659pg'],
+                        id: 'd45v1jy23amg030659b0',
+                        status: 'closed',
+                        createdAt: '2025-11-05T20:17:15.660Z'
+                    },
+                    'company:ubo': {
+                        breakdown: {
+                            uboUnavailable: true,
+                            relationships: [],
+                            pscs: [
+                                {
+                                    natureOfControl: '',
+                                    natureOfControlStartDate: '2018-04-12',
+                                    natureOfControlTypes: [
+                                        'Right to share 25% to 50% of surplus assets of a limited liability partnership',
+                                        'Ownership of 25% to 50% of voting rights of a limited liability partnership'
+                                    ],
+                                    person: {
+                                        name: 'Barbara Archer',
+                                        beneficialOwnershipPercentage: 0,
+                                        businessEntityType: '',
+                                        isOutOfBusiness: false,
+                                        indirectOwnershipPercentage: 0,
+                                        country: '',
+                                        beneficiaryType: 'Individual',
+                                        duns: '',
+                                        isBeneficiary: false,
+                                        birthDate: '1974-07',
+                                        nationality: 'British',
+                                        address: null,
+                                        memberID: 2079789992,
+                                        residenceCountryName: 'United Kingdom',
+                                        directOwnershipPercentage: 0
+                                    }
+                                },
+                                {
+                                    natureOfControl: '',
+                                    natureOfControlStartDate: '2018-04-12',
+                                    natureOfControlTypes: [
+                                        'Right to share 25% to 50% of surplus assets of a limited liability partnership',
+                                        'Ownership of 25% to 50% of voting rights of a limited liability partnership'
+                                    ],
+                                    person: {
+                                        name: 'Stephen John Duncan Morrison',
+                                        beneficialOwnershipPercentage: 0,
+                                        businessEntityType: '',
+                                        isOutOfBusiness: false,
+                                        indirectOwnershipPercentage: 0,
+                                        country: '',
+                                        beneficiaryType: 'Individual',
+                                        duns: '',
+                                        isBeneficiary: false,
+                                        birthDate: '1972-07',
+                                        nationality: 'British',
+                                        address: null,
+                                        memberID: 2079789993,
+                                        residenceCountryName: 'United Kingdom',
+                                        directOwnershipPercentage: 0
+                                    }
+                                }
+                            ],
+                            beneficialOwners: [
+                                {
+                                    name: 'THURSTAN HOSKIN SOLICITORS LLP',
+                                    beneficialOwnershipPercentage: 0,
+                                    businessEntityType: 'Limited Liability Partnership',
+                                    isOutOfBusiness: false,
+                                    indirectOwnershipPercentage: 0,
+                                    country: 'GB',
+                                    beneficiaryType: 'Business',
+                                    duns: '223822293',
+                                    isBeneficiary: false,
+                                    birthDate: '',
+                                    nationality: '',
+                    address: {
+                                        po_box: '',
+                                        city: 'REDRUTH',
+                                        zip: 'TR15 2BY',
+                                        country: 'United Kingdom',
+                                        cc: 'GB',
+                                        street: '',
+                                        district: ''
+                                    },
+                                    memberID: 287723562,
+                                    residenceCountryName: '',
+                                    directOwnershipPercentage: 0
+                                }
+                            ]
+                        },
+                        result: 'consider',
+                        documents: [],
+                        id: 'd45v1kp23amg030659fg',
+                        status: 'unobtainable',
+                        createdAt: '2025-11-05T20:17:18.266Z'
                     }
                 },
-                hasAlerts: false,
-                considerReasons: [], // 0 hints (CLEAR with monitoring)
                 updates: [
-                    { timestamp: twoDaysAgo.toISOString(), update: 'Electronic ID check initiated' },
-                    { timestamp: yesterday.toISOString(), update: 'Transaction completed - awaiting PDF' },
-                    { timestamp: yesterday.toISOString(), update: 'PDF received and uploaded to S3 - CLEAR' }
+                    { timestamp: '2025-11-05T20:17:10.220Z', update: 'KYB check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
+                    { timestamp: '2025-11-05T20:17:29.568Z', update: 'Check completed - awaiting PDF' },
+                    { timestamp: '2025-11-05T20:21:46.714Z', update: 'PDF received and uploaded to S3 - CLEAR' },
+                    { timestamp: '2025-11-05T21:15:23.171Z', update: 'Refreshed from Thirdfort API - Status: closed' }
                 ]
-            },
-            
-            // 2. Enhanced ID - CONSIDER (1 hint: PEP hits)
+            }
+        ];
+    }
+}
+
+// Removed below - keeping only the real THURSTAN HOSKIN SOLICITORS LLP check
+/*
             {
                 transactionId: 'mock_eid_pep_002',
                 checkType: 'electronic-id',
@@ -2377,10 +3149,7 @@ class ThirdfortChecksManager {
                     { timestamp: yesterday.toISOString(), update: 'Refreshed from Thirdfort API - Status: closed' }
                 ]
             }
-        ];
-    }
-}
-
+*/
 // ===================================================================
 // INITIALIZE
 // ===================================================================
