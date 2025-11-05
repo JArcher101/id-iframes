@@ -4210,51 +4210,6 @@
       const files = collectFiles();
       const total = files.length;
       
-      console.log(`⚡ Uploading ALL ${total} files simultaneously with Promise.all()`);
-      
-      // Check if files and links arrays match
-      if (files.length !== links.length) {
-        console.error('Mismatch between files and links arrays:', { filesCount: files.length, linksCount: links.length });
-        showError(`File count mismatch: ${files.length} files but ${links.length} upload links. Please try again.`);
-        return;
-      }
-      
-      // Create upload promise for each file
-      const uploadPromises = files.map(async (fileObj, index) => {
-        const fileItem = document.getElementById(`file-${index}`);
-        const statusText = fileItem.querySelector('.status-text');
-        
-        // Update to uploading state
-        fileItem.classList.add('uploading');
-        statusText.textContent = 'Uploading...';
-        
-        try {
-          // Upload to S3 using PUT link (note: PUT links are single-use)
-          await uploadToS3(fileObj.file, links[index]);
-          
-          // Success
-          fileItem.classList.remove('uploading');
-          fileItem.classList.add('success');
-          statusText.textContent = 'Success';
-          
-          return { success: true, index };
-          
-        } catch (error) {
-          console.error(`Upload error for file ${index}:`, error);
-          
-          // Error (note: retries require new PUT links from parent)
-          fileItem.classList.remove('uploading');
-          fileItem.classList.add('error');
-          statusText.textContent = `Error: ${error.message}`;
-          
-          return { success: false, index, error };
-        }
-      });
-      
-    async function uploadFiles(links) {
-      const files = collectFiles();
-      const total = files.length;
-      
       let completed = 0; // Track completions for progress bar
       
       console.log(`⚡ Uploading ALL ${total} files simultaneously with Promise.all()`);
