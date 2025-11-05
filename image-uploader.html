@@ -3794,12 +3794,12 @@
       
       // Check if we have existing images
       if (formData.idImages && Array.isArray(formData.idImages) && formData.idImages.length > 0) {
-        // Filter images by type
+        // Filter images by type (accept both formats with/without space for backwards compatibility)
         const filteredImages = formData.idImages.filter(img => {
           if (type === 'photoId') {
-            return img.type === 'PhotoID';
+            return img.type === 'PhotoID' || img.type === 'Photo ID';
           } else {
-            return img.type === 'Address ID';
+            return img.type === 'AddressID' || img.type === 'Address ID';
           }
         });
         
