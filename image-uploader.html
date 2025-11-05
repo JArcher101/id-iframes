@@ -1367,6 +1367,7 @@
     - Appears when iframe first loads and when form is reset
     - Hidden when 'initiation-data' message received from parent
     - Pure CSS animation (no images required)
+    - Takes over entire card to prevent showing alongside form sections
     =====================================================================
     */
     .loading-container {
@@ -1376,6 +1377,12 @@
       justify-content: center;
       padding: 60px 20px;
       gap: 20px;
+      min-height: 200px;
+    }
+    
+    /* When loading, hide all other card content */
+    .loading-container:not(.hidden) ~ * {
+      display: none !important;
     }
     
     .loading-spinner {
