@@ -1352,6 +1352,9 @@ function setupFileHandlers() {
     // Show dropdown
     cdfDocumentType.classList.remove('hidden');
     
+    // Update upload area to show filename immediately (better UX)
+    updateCDFUploadAreaWithFile(file);
+    
     // Check if a type is already selected
     if (!cdfDocumentType.value) {
       // Wait for user to select a type - set up a one-time listener
