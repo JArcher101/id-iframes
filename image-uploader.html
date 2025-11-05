@@ -1360,11 +1360,55 @@
       font-style: italic;
       font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
+    
+    /* 
+    =====================================================================
+    LOADING STATE - Spinner shown while waiting for parent data
+    - Appears when iframe first loads and when form is reset
+    - Hidden when 'initiation-data' message received from parent
+    - Pure CSS animation (no images required)
+    =====================================================================
+    */
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      gap: 20px;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #666;
+    }
   </style>
 </head>
 <body>
   <div class="responsive-container">
     <div class="card" id="cardContainer">
+    
+    <!-- Loading State - shown while waiting for parent data -->
+    <div id="loadingContainer" class="loading-container">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading client data...</div>
+    </div>
     
     <!-- Section Title -->
     <h2 id="cardTitle"></h2>
@@ -2054,6 +2098,9 @@
     */
     
     // ===== DOM ELEMENTS =====
+    // Loading state elements
+    const loadingContainer = document.getElementById('loadingContainer');
+    
     // Section 1: Client details form elements
     const cardTitle = document.getElementById('cardTitle');
     const headerInfo = document.getElementById('headerInfo');
@@ -3401,6 +3448,7 @@
     // ===== SECTION NAVIGATION =====
     // Show/hide sections and update UI state
     function showSection1(){
+      loadingContainer.classList.add('hidden'); // Hide loading spinner
       cardTitle.textContent = 'Section 1 - Client Details';
       form.classList.remove('hidden'); section2.classList.add('hidden'); section3.classList.add('hidden');
       // mockBtn.classList.add('hidden'); // Mock button removed
@@ -4583,7 +4631,8 @@
       prevTown.value = '';
       prevPostcode.value = '';
       
-      // Reset all sections - hide everything to show awaiting data state
+      // Reset all sections - hide everything and show loading state
+      loadingContainer.classList.remove('hidden'); // Show loading spinner
       form.classList.add('hidden');
       section2.classList.add('hidden');
       section3.classList.add('hidden');
@@ -4622,6 +4671,7 @@
     // ===== SECTION NAVIGATION FUNCTIONS =====
     // Show Section 1: Client Details
     function showSection1() {
+      loadingContainer.classList.add('hidden'); // Hide loading spinner
       cardTitle.textContent = 'Section 1 - Client Details';
       form.classList.remove('hidden');
       section2.classList.add('hidden');

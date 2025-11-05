@@ -994,14 +994,15 @@ function handleClientData(message) {
   
   // === ID IMAGES ===
   if (data.idI && Array.isArray(data.idI) && data.idI.length > 0) {
-    idImages = data.idI;
+    // Clear idImages array before loading new data (prevents duplication)
+    idImages = [];
     
     // Clear existing carousel
     const carousel = document.getElementById('idImagesCarousel');
     if (carousel) {
       carousel.innerHTML = '';
       
-      // Add each image to carousel
+      // Add each image to carousel (addIDImageToCarousel will push to idImages)
       data.idI.forEach((image, index) => {
         addIDImageToCarousel({
           id: image._id || image.s3Key || index,
@@ -1018,8 +1019,8 @@ function handleClientData(message) {
       updateCarouselNavigation();
     }
     
-    // Update Form J validation flags based on images
-    updateFormJFlags(data.idI, data.i);
+    // Update Form J validation flags based on loaded images
+    updateFormJFlags(idImages, data.i);
   }
   
   // === ID DOCUMENTS ===
@@ -3083,30 +3084,64 @@ function updateFormJFlags(images, iconData) {
   );
   
   // Count Driving Licence as BOTH Photo ID AND Address ID (dual purpose)
-  const drivingLicenceCount = images.filter(img => 
+  // Only counts if we have BOTH Front AND Back of the Driving License
+  const drivingLicenseImages = images.filter(img => 
     img.document === 'Driving Licence' && (img.type === 'PhotoID' || img.type === 'Photo ID')
-  ).length > 0 ? 1 : 0;
+  );
+  const hasDrivingLicenseFront = drivingLicenseImages.some(img => img.side?.toLowerCase() === 'front');
+  const hasDrivingLicenseBack = drivingLicenseImages.some(img => img.side?.toLowerCase() === 'back');
+  const drivingLicenceCount = (hasDrivingLicenseFront && hasDrivingLicenseBack) ? 1 : 0;
   
   // Check if we have sufficient photos
   // Address IDs = pure Address IDs + Driving Licence (if present)
   const totalAddressIDs = addressIDs.length + drivingLicenceCount;
-  const hasTwoAddressIDs = totalAddressIDs >= 2;
   
   // Check Photo ID conditions:
-  // Either: 1 Photo ID with side undefined/single
-  // Or: 2 Photo IDs with one front and one back
+  // We need at least 1 COMPLETE Photo ID document:
+  // - Single-sided (Passport, etc.): 1 image with side='Single'
+  // - Front/Back (Driving License, etc.): 2 images (Front + Back) of same document type
   let hasValidPhotoIDs = false;
   
-  if (photoIDs.length === 1) {
-    const side = photoIDs[0].side?.toLowerCase();
-    hasValidPhotoIDs = !side || side === 'single' || side === '';
-  } else if (photoIDs.length >= 2) {
-    const hasFront = photoIDs.some(img => img.side?.toLowerCase() === 'front');
-    const hasBack = photoIDs.some(img => img.side?.toLowerCase() === 'back');
-    hasValidPhotoIDs = hasFront && hasBack;
+  // Group Photo IDs by document type
+  const photoIDsByDocument = {};
+  photoIDs.forEach(img => {
+    const docType = img.document || 'Unknown';
+    if (!photoIDsByDocument[docType]) {
+      photoIDsByDocument[docType] = [];
+    }
+    photoIDsByDocument[docType].push(img);
+  });
+  
+  // Check if we have at least 1 complete Photo ID document
+  for (const docType in photoIDsByDocument) {
+    const images = photoIDsByDocument[docType];
+    
+    if (images.length === 1) {
+      // Single image - check if it's marked as 'Single' side
+      const side = images[0].side?.toLowerCase();
+      if (!side || side === 'single' || side === '') {
+        hasValidPhotoIDs = true;
+        break;
+      }
+    } else if (images.length >= 2) {
+      // Multiple images - check if we have both Front and Back
+      const hasFront = images.some(img => img.side?.toLowerCase() === 'front');
+      const hasBack = images.some(img => img.side?.toLowerCase() === 'back');
+      if (hasFront && hasBack) {
+        hasValidPhotoIDs = true;
+        break;
+      }
+    }
   }
   
-  formJSufficientPhotos = hasTwoAddressIDs && hasValidPhotoIDs;
+  // Special case: If Photo ID is Driving License (Front + Back), only need 1 Address ID
+  // Otherwise, need 2 Address IDs
+  // Note: Must be COMPLETE Driving License (both Front AND Back) to reduce requirement
+  const hasCompleteDrivingLicense = (hasDrivingLicenseFront && hasDrivingLicenseBack);
+  const requiredAddressIDs = hasCompleteDrivingLicense ? 1 : 2;
+  const hasSufficientAddressIDs = totalAddressIDs >= requiredAddressIDs;
+  
+  formJSufficientPhotos = hasSufficientAddressIDs && hasValidPhotoIDs;
   
   // Check if conditions are met from icon data
   // data.i.p = has photo ID taken
@@ -3116,8 +3151,13 @@ function updateFormJFlags(images, iconData) {
   
   console.log('📊 Form J Flags Updated:');
   console.log('  - Sufficient Photos:', formJSufficientPhotos);
-  console.log('    - Address IDs:', addressIDs.length, '+ Driving Licence:', drivingLicenceCount, '= Total:', totalAddressIDs, '(need 2)');
-  console.log('    - Photo IDs valid:', hasValidPhotoIDs, '(count:', photoIDs.length, ')');
+  console.log('    - Address IDs:', addressIDs.length, '+ DL bonus:', drivingLicenceCount, '= Total:', totalAddressIDs);
+  console.log('    - Has Complete Driving License:', hasCompleteDrivingLicense, '(Front + Back)');
+  console.log('    - Required Address IDs:', requiredAddressIDs, '(DL with Front+Back = 1, otherwise = 2)');
+  console.log('    - Has Sufficient Address IDs:', hasSufficientAddressIDs);
+  console.log('    - Photo ID documents:', Object.keys(photoIDsByDocument).length, '(need 1 complete)');
+  console.log('    - Photo ID images total:', photoIDs.length);
+  console.log('    - Photo IDs valid:', hasValidPhotoIDs);
   console.log('  - Conditions Met:', formJConditionsMet);
   console.log('    - Has Photo ID:', iconData?.p);
   console.log('    - Has Address ID:', iconData?.a);
