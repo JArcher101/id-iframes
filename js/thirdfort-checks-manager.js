@@ -164,6 +164,9 @@ class ThirdfortChecksManager {
     loadChecks(checks) {
         console.log('📊 Loading checks:', checks.length);
         
+        // Reset current check and view state when new data loads
+        this.currentCheck = null;
+        this.currentView = 'loading';
         this.checks = checks;
         
         if (checks.length === 0) {
@@ -570,7 +573,7 @@ class ThirdfortChecksManager {
         this.monitoringCard.innerHTML = `
             <div class="monitoring-header">
                 <div class="monitoring-title">${title}</div>
-                <div class="monitoring-toggle ${hasMonitoring ? 'enabled' : ''}" onclick="manager.toggleMonitoring(${!hasMonitoring})">
+                <div class="monitoring-toggle ${hasMonitoring ? 'enabled' : ''}" onclick="manager.toggleMonitoring(${hasMonitoring})">
                     <div class="monitoring-toggle-slider"></div>
                 </div>
             </div>
