@@ -2078,7 +2078,7 @@
     5. User proceeds to Section 4 (Address ID) → chooses Yes/No, uploads if Yes
     6. User clicks Upload → Child collects all files and sends 'image-data' to parent
     7. Parent generates S3 keys and sends 'put-links' → Child uploads to S3
-    8. Child sends 'upload-success' with form data and s3Keys → Form remains active
+    8. Child sends 'upload-success' with form data and s3Keys → Form resets to loading state
     
     FILE UPLOAD PROCESS:
     - Child creates file metadata objects (type, document, side, name, data, uploader, date)
@@ -2089,7 +2089,8 @@
     - Parent appends new s3Keys to existing idImages array in database
     
     IMPORTANT NOTES:
-    - Form does NOT reset after successful upload (user can add more images)
+    - Form resets to loading state after successful upload (ready for next client)
+    - 1.5 second delay after upload shows "Upload Complete!" before reset
     - photographicIdTaken and addressIdTaken markers update based on existing + new uploads
     - Existing images displayed in separate container above upload prompts
     - Validation prevents upload if neither Photo ID nor Address ID present
@@ -4392,6 +4393,11 @@
         data: finalFormData,
         idImages: s3Keys
       }, '*');
+      
+      // Reset form to loading state after successful upload (ready for next client)
+      setTimeout(() => {
+        resetForm();
+      }, 1500); // 1.5 second delay to show "Upload Complete!" message
     }
 
     /*
@@ -4502,16 +4508,8 @@
         } else {
           uploadStatus.textContent = 'Upload Complete!';
           // Send success message to parent with form data and S3 keys
-          const finalFormData = compileFormData();
-          // Overwrite idImages with new S3 keys data (backend appends to existing)
-          finalFormData.idImages = s3Keys;
-          window.parent.postMessage({
-            type: 'upload-success',
-            data: finalFormData,
-            idImages: s3Keys
-          }, '*');
-          
-          // Form stays active after successful upload - no reset needed
+          sendUploadSuccessMessage();
+          // Note: sendUploadSuccessMessage() now handles the reset to loading state
         }
       }
     }
@@ -4550,12 +4548,12 @@
 
     /*
     =====================================================================
-    FORM RESET - Return to Initial State
-    - ONLY called when parent sends 'initiation-data' message
+    FORM RESET - Return to Loading State
+    - Called when parent sends 'initiation-data' message (new client data)
+    - Called 1.5 seconds after successful upload (ready for next client)
     - Clears all form inputs and state variables
-    - Hides all sections and shows "Awaiting data" state
+    - Hides all sections and shows loading spinner
     - Resets button states and upload areas
-    - Does NOT reset after successful upload (form stays active)
     - Purpose: Prepare form for new client data from parent
     =====================================================================
     */
