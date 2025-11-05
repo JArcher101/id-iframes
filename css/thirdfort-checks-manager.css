@@ -1245,6 +1245,17 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    margin-top: 20px;
+}
+
+.updates-header {
+    font-family: 'Transport', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: #112F5B;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e1e4e8;
 }
 
 .update-card {

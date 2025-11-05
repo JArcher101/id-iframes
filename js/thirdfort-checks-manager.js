@@ -1067,7 +1067,7 @@ class ThirdfortChecksManager {
             return;
         }
         
-        let updatesHtml = '';
+        let updatesHtml = '<div class="updates-header">Audit Trail</div>';
         
         // Show in reverse order (most recent first)
         [...updates].reverse().forEach(update => {
