@@ -3446,14 +3446,8 @@
     }
 
     // ===== SECTION NAVIGATION =====
-    // Show/hide sections and update UI state
-    function showSection1(){
-      loadingContainer.classList.add('hidden'); // Hide loading spinner
-      cardTitle.textContent = 'Section 1 - Client Details';
-      form.classList.remove('hidden'); section2.classList.add('hidden'); section3.classList.add('hidden');
-      // mockBtn.classList.add('hidden'); // Mock button removed
-      updateHeader();
-    }
+    // Note: showSection1() is defined later (line ~4673) with complete section hiding logic
+    
     function showSection2(){
       cardTitle.textContent = 'Section 2 - Photo ID';
       form.classList.add('hidden'); section2.classList.remove('hidden'); section3.classList.add('hidden');
