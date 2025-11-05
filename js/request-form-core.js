@@ -1034,7 +1034,7 @@ function handleClientData(message) {
   // Show appropriate section: Client Details OR Business/Charity Details
   updateClientOrBusinessSection();
   
-  // === SELECT REQUEST TYPE TAGS FROM uT FIELD ===
+  // === SELECT REQUEST TYPE TAGS FROM uT AND eS FIELDS ===
   // If data includes uT (update type), select those tags
   if (data.uT && Array.isArray(data.uT) && data.uT.length > 0) {
     console.log('📋 Selecting request types from uT field:', data.uT);
@@ -1058,6 +1058,27 @@ function handleClientData(message) {
       currentRequestType = data.uT[0];
       // Load content for the primary request type
       loadRequestTypeContent(currentRequestType);
+    }
+  }
+  
+  // === SELECT eSoF TAG FROM eS FIELD ===
+  // Check if eSoF should be selected based on eS field
+  const esofTag = document.querySelector('[data-type="esof"]');
+  if (esofTag) {
+    const hasEsofRequested = data.eS && Array.isArray(data.eS) && data.eS.includes('Requested');
+    
+    if (hasEsofRequested) {
+      // eSoF was requested - select the tag
+      esofTag.classList.add('selected');
+      console.log('✅ eSoF tag selected (eS includes "Requested")');
+    } else {
+      // eSoF not requested or eS field missing - ensure tag is deselected
+      // Only deselect if it's not in the uT array (uT takes precedence)
+      const inUT = data.uT && Array.isArray(data.uT) && data.uT.includes('esof');
+      if (!inUT && esofTag.classList.contains('selected')) {
+        esofTag.classList.remove('selected');
+        console.log('🗑️ eSoF tag deselected (eS not "Requested" and not in uT)');
+      }
     }
   }
   
