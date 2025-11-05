@@ -4674,7 +4674,12 @@
     // ===== SECTION NAVIGATION FUNCTIONS =====
     // Show Section 1: Client Details
     function showSection1() {
-      loadingContainer.classList.add('hidden'); // Hide loading spinner
+      if (loadingContainer) {
+        loadingContainer.classList.add('hidden'); // Hide loading spinner
+        console.log('🔄 Loading spinner hidden, showing Section 1');
+      } else {
+        console.error('❌ loadingContainer element not found!');
+      }
       cardTitle.textContent = 'Section 1 - Client Details';
       form.classList.remove('hidden');
       section2.classList.add('hidden');
