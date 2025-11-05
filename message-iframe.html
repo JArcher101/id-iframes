@@ -1480,55 +1480,33 @@
 
         /*
         =====================================================================
-        DOWNLOAD FILE - Downloads file attachment from message
+        DOWNLOAD FILE - Opens file attachment in popup window for viewing
         =====================================================================
         Parameters:
         - liveUrl: S3 URL or file URL from message.liveUrl
         - fileName: Original filename from message.file.name (optional)
         
         Logic:
-        1. Fetches file as blob
-        2. Creates temporary download link
-        3. Triggers download with actual filename (or extracted from URL)
-        4. Fallback: Opens in new tab if fetch fails
+        1. Opens file in centered popup window (1000x800)
+        2. Browser handles file display based on file type
+        3. Users can view PDFs, images, and other files in browser viewer
+        4. Users can download from browser viewer if needed
         */
         function downloadFile(liveUrl, fileName) {
-            // Use provided fileName or try to extract from URL
-            let downloadName = fileName || 'attachment';
-            
-            // If no fileName provided, try to extract from URL
-            if (!fileName) {
-                try {
-                    const urlPath = new URL(liveUrl).pathname;
-                    const extractedName = urlPath.split('/').pop();
-                    if (extractedName) {
-                        downloadName = extractedName;
-                    }
-                } catch (e) {
-                    console.warn('Could not extract filename from URL');
-                }
+            if (!liveUrl) {
+                console.error('No URL provided for file');
+                return;
             }
             
-            // Fetch the file as a blob and download it
-            fetch(liveUrl)
-                .then(response => response.blob())
-                .then(blob => {
-                    // Create temporary object URL
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = downloadName;
-                    link.style.display = 'none';
-                    document.body.appendChild(link);
-                    link.click(); // Trigger download
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url); // Clean up the object URL
-                })
-                .catch(error => {
-                    console.error('Download failed:', error);
-                    // Fallback to opening in new tab if fetch fails
-                    window.open(liveUrl, '_blank');
-                });
+            // Open in centered popup window (same as eye button in document-viewer)
+            const width = 1000;
+            const height = 800;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
+            const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+            
+            window.open(liveUrl, 'messageAttachment', features);
+            console.log('Opening file in popup window:', fileName || liveUrl);
         }
 
         /*
