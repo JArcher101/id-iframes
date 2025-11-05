@@ -638,7 +638,10 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
         
         // Whatever remains is the building name
         if (addressPrefix) {
-          buildingNameFromLine1 = addressPrefix;
+          // Don't use purely numeric values as building names (they're building numbers)
+          if (!/^\d+$/.test(addressPrefix)) {
+            buildingNameFromLine1 = addressPrefix;
+          }
         }
       }
     }
@@ -646,7 +649,7 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
     // Building name: Combine all available building name data
     const buildingNameParts = [
       getAddressData.sub_building_name,
-      getAddressData.building_name || buildingNameFromLine1,
+      getAddressData.building_name && !/^\d+$/.test(getAddressData.building_name.trim()) ? getAddressData.building_name : buildingNameFromLine1,
       getAddressData.line_2 && getAddressData.line_2 !== getAddressData.thoroughfare ? getAddressData.line_2 : ''
     ].filter(p => p && p.trim());
     

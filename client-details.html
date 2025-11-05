@@ -1624,7 +1624,10 @@
             
             // Whatever remains is the building name
             if (addressPrefix) {
-              buildingNameFromLine1 = addressPrefix;
+              // Don't use purely numeric values as building names (they're building numbers)
+              if (!/^\d+$/.test(addressPrefix)) {
+                buildingNameFromLine1 = addressPrefix;
+              }
             }
           }
         }
@@ -1633,7 +1636,7 @@
         // Priority: sub_building_name, building_name/extracted from line_1, line_2 (if not street)
         const buildingNameParts = [
           getAddressData.sub_building_name,
-          getAddressData.building_name || buildingNameFromLine1,
+          getAddressData.building_name && !/^\d+$/.test(getAddressData.building_name.trim()) ? getAddressData.building_name : buildingNameFromLine1,
           getAddressData.line_2 && getAddressData.line_2 !== getAddressData.thoroughfare ? getAddressData.line_2 : ''
         ].filter(p => p && p.trim());
         
@@ -3033,29 +3036,8 @@
         if (!isValid) {
           return {
             isValid: false,
-            error: 'Please enter a valid mobile phone number.'
+            error: 'Please enter a valid phone number.'
           };
-        }
-        
-        // Additional check for mobile number type (REQUIRED for Thirdfort)
-        // PhoneNumberType enum values: MOBILE = 1, FIXED_LINE_OR_MOBILE = 2
-        try {
-          const numberType = phoneUtil.getNumberType(number);
-          
-          // Check against integer values (CDN doesn't expose enum, but values are standard)
-          // 0 = FIXED_LINE, 1 = MOBILE, 2 = FIXED_LINE_OR_MOBILE
-          const isMobile = (numberType === 1 || numberType === 2);
-          
-          if (!isMobile) {
-            return {
-              isValid: false,
-              error: 'Please enter a valid mobile phone number (not a landline). Thirdfort electronic ID checks require a mobile number.'
-            };
-          }
-        } catch (typeError) {
-          // If getNumberType fails, log but don't fail validation
-          console.warn('Could not determine phone number type:', typeError);
-          // Continue - the number is still format-valid even if we can't determine type
         }
         
         // Format as E164 using integer 0 (CDN doesn't expose enum)
