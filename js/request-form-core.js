@@ -1034,6 +1034,33 @@ function handleClientData(message) {
   // Show appropriate section: Client Details OR Business/Charity Details
   updateClientOrBusinessSection();
   
+  // === SELECT REQUEST TYPE TAGS FROM uT FIELD ===
+  // If data includes uT (update type), select those tags
+  if (data.uT && Array.isArray(data.uT) && data.uT.length > 0) {
+    console.log('📋 Selecting request types from uT field:', data.uT);
+    
+    // Clear all existing selections first
+    elements.requestTags.forEach(tag => tag.classList.remove('selected'));
+    
+    // Select each tag specified in uT array
+    data.uT.forEach(requestType => {
+      const tag = document.querySelector(`[data-type="${requestType}"]`);
+      if (tag) {
+        tag.classList.add('selected');
+        console.log(`✅ Selected tag: ${requestType}`);
+      } else {
+        console.warn(`⚠️ Request type tag not found: ${requestType}`);
+      }
+    });
+    
+    // Set currentRequestType to the primary (first) type
+    if (data.uT[0]) {
+      currentRequestType = data.uT[0];
+      // Load content for the primary request type
+      loadRequestTypeContent(currentRequestType);
+    }
+  }
+  
   console.log('✅ Client data loaded and form populated');
   console.log('📊 Form J Flags - Sufficient Photos:', formJSufficientPhotos, '| Conditions Met:', formJConditionsMet);
 }
