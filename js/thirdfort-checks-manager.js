@@ -579,9 +579,15 @@ class ThirdfortChecksManager {
     }
     
     renderAbortCard(check) {
-        const showAbort = check.status === 'open' || check.status === 'processing';
+        // Only show abort for:
+        // 1. Status is open or processing
+        // 2. It's a v2 transaction (ID starts with 'c')
+        // v1 checks (IDV, etc.) and v2 checks (KYB) cannot be aborted via API
+        const isOpenStatus = check.status === 'open' || check.status === 'processing';
+        const isV2Transaction = check.transactionId && check.transactionId.startsWith('c');
+        const canAbort = isOpenStatus && isV2Transaction;
         
-        if (!showAbort) {
+        if (!canAbort) {
             this.abortCard.classList.add('hidden');
             return;
         }
