@@ -1380,8 +1380,8 @@
       min-height: 200px;
     }
     
-    /* When loading, hide all other card content */
-    .loading-container:not(.hidden) ~ * {
+    /* Ensure hidden class works on loading container */
+    .loading-container.hidden {
       display: none !important;
     }
     
@@ -3457,6 +3457,7 @@
     // Note: showSection1() is defined later (line ~4673) with complete section hiding logic
     
     function showSection2(){
+      loadingContainer.classList.add('hidden'); // Hide loading spinner
       cardTitle.textContent = 'Section 2 - Photo ID';
       form.classList.add('hidden'); section2.classList.remove('hidden'); section3.classList.add('hidden');
       // mockBtn.classList.add('hidden'); // Mock button removed
@@ -3483,6 +3484,7 @@
       updateHeader();
     }
     function showSection3(){
+      loadingContainer.classList.add('hidden'); // Hide loading spinner
       cardTitle.textContent = 'Section 3 - Address History';
       form.classList.add('hidden'); section2.classList.add('hidden'); section3.classList.remove('hidden'); section4.classList.add('hidden');
       // mockBtn.classList.add('hidden'); // Mock button removed
@@ -3490,6 +3492,7 @@
     }
 
     function showSection4(){
+      loadingContainer.classList.add('hidden'); // Hide loading spinner
       cardTitle.textContent = 'Section 4 - Address ID';
       form.classList.add('hidden'); section2.classList.add('hidden'); section3.classList.add('hidden'); section4.classList.remove('hidden'); section5.classList.add('hidden');
       // mockBtn.classList.add('hidden'); // Mock button removed
@@ -4215,6 +4218,7 @@
     // ===== SECTION 5: UPLOAD PROGRESS =====
     // Show upload section with progress tracking
     function showUploadSection() {
+      loadingContainer.classList.add('hidden'); // Hide loading spinner
       cardTitle.textContent = 'Uploading Files';
       form.classList.add('hidden'); 
       section2.classList.add('hidden'); 
