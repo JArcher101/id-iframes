@@ -1807,7 +1807,14 @@ function setupBusinessCharityHandlers() {
       
       // Clear stored company data when user types
       businessData = null;
+      
+      // Clear from requestData as well
+      if (requestData.cI) {
+        requestData.cI.bD = null;
+      }
+      
       updateCompanyButtons();
+      updateIDDocumentsUI(requestData); // Update entity linked hint
       
       // Hide dropdown if too short or not UK
       if (searchTerm.length < 2 || (registrationCountry && registrationCountry.dataset.jurisdictionCode !== 'GB')) {
@@ -1848,7 +1855,14 @@ function setupBusinessCharityHandlers() {
       
       // Clear stored company data when user types
       businessData = null;
+      
+      // Clear from requestData as well
+      if (requestData.cI) {
+        requestData.cI.bD = null;
+      }
+      
       updateCompanyButtons();
+      updateIDDocumentsUI(requestData); // Update entity linked hint
       
       // Hide dropdown if too short or not UK
       if (searchTerm.length < 2 || (registrationCountry && registrationCountry.dataset.jurisdictionCode !== 'GB')) {
@@ -2020,6 +2034,16 @@ function setupMatterDetailsHandlers() {
     businessCheckbox.addEventListener('change', function() {
       // Update requestData
       requestData.b = this.checked;
+      
+      // Clear business data when unchecked
+      if (!this.checked) {
+        businessData = null;
+        if (requestData.cI) {
+          requestData.cI.bD = null;
+        }
+        updateCompanyButtons();
+      }
+      
       // Show/hide appropriate section
       updateClientOrBusinessSection();
       // Re-evaluate ID Documents UI
@@ -2031,6 +2055,16 @@ function setupMatterDetailsHandlers() {
     charityCheckbox.addEventListener('change', function() {
       // Update requestData
       requestData.c = this.checked;
+      
+      // Clear business data when unchecked
+      if (!this.checked) {
+        businessData = null;
+        if (requestData.cI) {
+          requestData.cI.bD = null;
+        }
+        updateCompanyButtons();
+      }
+      
       // Show/hide appropriate section
       updateClientOrBusinessSection();
       // Re-evaluate ID Documents UI
@@ -2155,6 +2189,53 @@ function setupAddressAutocomplete(field) {
       }
     });
   }
+}
+
+/*
+Format Companies House registered_office_address to Thirdfort API format
+- Companies House uses: premises, address_line_1, address_line_2, locality, postal_code
+- Thirdfort uses: building_name, building_number, street, sub_street, town, postcode
+*/
+function formatCompaniesHouseToThirdfort(companiesHouseAddress) {
+  if (!companiesHouseAddress) return null;
+  
+  // Companies House format breakdown:
+  // premises: Building number (e.g., "94")
+  // address_line_1: Building name or street (e.g., "Chynoweth", "Southgate Street")
+  // address_line_2: Street or sub-street (e.g., "Chapel Street")
+  // locality: Town/City (e.g., "Redruth")
+  // postal_code: Postcode
+  
+  // Detect if address_line_1 is a street name or building name
+  // If it contains "Street", "Road", "Avenue", "Lane", etc., it's likely a street
+  const streetKeywords = /\b(street|road|avenue|lane|drive|close|way|place|terrace|crescent|square|court|grove|park|gardens?|mews|hill|row|walk|view|rise)\b/i;
+  const isLine1Street = streetKeywords.test(companiesHouseAddress.address_line_1 || '');
+  
+  let buildingNumber = companiesHouseAddress.premises || '';
+  let buildingName = '';
+  let street = '';
+  let subStreet = '';
+  
+  if (isLine1Street) {
+    // address_line_1 is the street, address_line_2 is sub-street or additional info
+    street = companiesHouseAddress.address_line_1 || '';
+    subStreet = companiesHouseAddress.address_line_2 || '';
+  } else {
+    // address_line_1 is building name, address_line_2 is the street
+    buildingName = companiesHouseAddress.address_line_1 || '';
+    street = companiesHouseAddress.address_line_2 || '';
+  }
+  
+  return {
+    building_name: buildingName,
+    building_number: buildingNumber,
+    flat_number: '',
+    postcode: companiesHouseAddress.postal_code || '',
+    street: street,
+    sub_street: subStreet,
+    town: companiesHouseAddress.locality || '',
+    country: 'GBR'
+  };
 }
 
 /*
@@ -2714,43 +2795,37 @@ function autoPopulateRegisteredAddress() {
   
   const regOffice = businessData.registered_office_address;
   
-  // Build address string for search
-  const addressParts = [
-    regOffice.premises,
-    regOffice.address_line_1,
-    regOffice.address_line_2,
-    regOffice.locality,
-    regOffice.postal_code
-  ].filter(p => p && p.trim());
+  // Convert Companies House address format directly to Thirdfort format
+  const thirdfortAddress = formatCompaniesHouseToThirdfort(regOffice);
   
-  const addressString = addressParts.join(', ');
-  
-  // Check if new address is different from current (skip if identical)
-  const currentAddressText = currentAddress?.value?.trim() || '';
-  const isDifferentAddress = currentAddressText !== addressString;
-  
-  if (addressString && isDifferentAddress) {
-    console.log('📍 Auto-populating registered office address:', addressString);
+  if (thirdfortAddress) {
+    // Check if new address is different from current (skip if identical)
+    const currentDisplayText = formatAddressForDisplay(currentAddressObject);
+    const newDisplayText = formatAddressForDisplay(thirdfortAddress);
+    const isDifferentAddress = currentDisplayText !== newDisplayText;
     
-    // Set UK as country
-    if (currentCountry) {
-      setCountry('currentCountry', 'GBR');
+    if (isDifferentAddress || !currentAddressObject) {
+      console.log('📍 Auto-populating registered office address:', thirdfortAddress);
+      
+      // Set UK as country
+      if (currentCountry) {
+        setCountry('currentCountry', 'GBR');
+      }
+      
+      // Store the Thirdfort address object directly
+      currentAddressObject = thirdfortAddress;
+      
+      // Update requestData
+      if (!requestData.cI) requestData.cI = {};
+      requestData.cI.a = thirdfortAddress;
+      
+      // Display in the autocomplete field
+      currentAddress.value = formatAddressForDisplay(thirdfortAddress);
+      
+      console.log('✅ Registered office address converted and stored:', currentAddressObject);
+    } else {
+      console.log('ℹ️ Registered office address is identical to current address, keeping existing');
     }
-    
-    // Populate the autocomplete field
-    currentAddress.value = addressString;
-    
-    // Trigger address search to find exact match in getaddress.io
-    if (addressString.length >= 7) {
-      console.log('📡 Searching for registered office address in getaddress.io');
-      window.parent.postMessage({
-        type: 'address-search',
-        searchTerm: addressString,
-        field: 'current'
-      }, '*');
-    }
-  } else if (!isDifferentAddress && addressString) {
-    console.log('ℹ️ Registered office address is identical to current address, keeping existing');
   }
 }
 
