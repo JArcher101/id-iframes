@@ -5403,17 +5403,13 @@ function buildLiteScreenRequest() {
   const internationalAddressCheckbox = document.getElementById('internationalAddressVerification');
   const internationalAddressEnabled = internationalAddressCard && !internationalAddressCard.classList.contains('hidden') && internationalAddressCheckbox?.checked;
   
-  // Parse DDMMYYYY into day, month, year components
-  let dobData = null;
+  // Convert DDMMYYYY to ISO 8601
+  let isoDate = '';
   if (dobDigits && dobDigits.length === 8) {
     const day = dobDigits.substring(0, 2);
     const month = dobDigits.substring(2, 4);
     const year = dobDigits.substring(4, 8);
-    dobData = {
-      day: day,
-      month: month,
-      year: year
-    };
+    isoDate = `${year}-${month}-${day}T00:00:00.000Z`;
   }
   
   // Build expectations object
@@ -5425,7 +5421,7 @@ function buildLiteScreenRequest() {
       }
     },
     dob: {
-      data: dobData
+      data: isoDate
     }
   };
   
