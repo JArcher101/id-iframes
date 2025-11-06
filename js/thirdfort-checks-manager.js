@@ -200,7 +200,10 @@ class ThirdfortChecksManager {
     showEmptyState() {
         this.currentView = 'empty';
         this.loadingState.classList.add('hidden');
-        this.listView.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No Thirdfort checks found</div>';
+        
+        // Don't replace entire listView.innerHTML - just clear the checks list and show message
+        this.checksList.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No Thirdfort checks found</div>';
+        
         this.listView.classList.remove('hidden');
     }
     
