@@ -5554,17 +5554,19 @@ function buildElectronicIDRequest() {
     });
   }
   
-  // Add footprint (address verification)
-  const internationalAddressCard = document.getElementById('internationalAddressCard');
-  const internationalAddressCheckbox = document.getElementById('internationalAddressVerification');
-  const internationalAddressEnabled = !internationalAddressCard.classList.contains('hidden') && internationalAddressCheckbox?.checked;
-  
-  tasks.push({
-    type: 'report:footprint',
-    opts: {
-      consent: internationalAddressEnabled && country !== 'GBR'
-    }
-  });
+  // Add footprint (address verification) - ONLY for standard ID, not additional tasks
+  if (checkState.electronicIdType === 'standard') {
+    const internationalAddressCard = document.getElementById('internationalAddressCard');
+    const internationalAddressCheckbox = document.getElementById('internationalAddressVerification');
+    const internationalAddressEnabled = !internationalAddressCard.classList.contains('hidden') && internationalAddressCheckbox?.checked;
+    
+    tasks.push({
+      type: 'report:footprint',
+      opts: {
+        consent: internationalAddressEnabled && country !== 'GBR'
+      }
+    });
+  }
   
   // Add PEPs screening (only for standard ID type)
   if (checkState.electronicIdType === 'standard') {
