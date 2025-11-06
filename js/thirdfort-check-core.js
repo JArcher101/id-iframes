@@ -5624,16 +5624,16 @@ function buildElectronicIDRequest() {
   if (checkState.matterCategory === 'conveyancing' || checkState.matterCategory === 'property-other') {
     // For conveyancing/property-other: use subcategory + property address
     const subCategoryMap = {
-      'purchase': 'Purchase of',
-      'sale': 'Sale of', 
-      'remortgage': 'Remortgage of',
-      'occupier': 'Occupier of',
-      'giftor': 'Giftor of',
-      'giftee': 'Giftee of'
+      'purchaser': 'Purchase of',
+      'seller': 'Sale of', 
+      'landlord': 'Letting of',
+      'tenant': 'Tenancy of',
+      'giftor': 'Gift of',
+      'other': ''
     };
     
     const prefix = subCategoryMap[checkState.matterSubCategory] || checkState.matterSubCategory;
-    description = `${prefix} ${reference}`;
+    description = prefix ? `${prefix} ${reference}` : reference;
   } else {
     // For private-client/other: just use the ID check reference
     description = reference;
