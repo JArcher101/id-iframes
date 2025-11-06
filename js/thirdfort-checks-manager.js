@@ -1263,6 +1263,798 @@ class ThirdfortChecksManager {
         `;
     }
     
+    renderChainColumn(chain, flag, accountNames) {
+        let html = `<div class="chain-column">`;
+        
+        // Step 1: Source income (if exists)
+        if (chain.source) {
+            const sourceDate = new Date(chain.source.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            const sourceAmount = Math.abs(chain.source.amount).toFixed(2);
+            
+            html += `
+                <div class="chain-card">
+                    <span class="chain-card-date">${sourceDate}</span>
+                    <span class="chain-card-desc">${chain.source.description || chain.source.merchant_name || 'Income'}</span>
+                    <span class="chain-card-account">${chain.source.accountName}</span>
+                    <span class="chain-card-amount positive">+${flag}${sourceAmount}</span>
+                </div>
+                <div class="chain-connector">↓</div>
+            `;
+        }
+        
+        // Step 2: Transfer out / Payment
+        const outDate = new Date(chain.out.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        const outAmount = Math.abs(chain.out.amount).toFixed(2);
+        
+        html += `
+            <div class="chain-card">
+                <span class="chain-card-date">${outDate}</span>
+                <span class="chain-card-desc">${chain.out.description || chain.out.merchant_name || 'Payment'}</span>
+                <span class="chain-card-account">${chain.out.accountName}</span>
+                <span class="chain-card-amount negative">${flag}${outAmount}</span>
+            </div>
+        `;
+        
+        // Step 3: Transfer in (if cross-account)
+        if (chain.in) {
+            const inDate = new Date(chain.in.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            const inAmount = Math.abs(chain.in.amount).toFixed(2);
+            
+            html += `
+                <div class="chain-connector">↓</div>
+                <div class="chain-card">
+                    <span class="chain-card-date">${inDate}</span>
+                    <span class="chain-card-desc">${chain.in.description || chain.in.merchant_name || 'Transfer'}</span>
+                    <span class="chain-card-account">${chain.in.accountName}</span>
+                    <span class="chain-card-amount positive">+${flag}${inAmount}</span>
+                </div>
+            `;
+        }
+        
+        // Step 4: Subsequent payment (if exists)
+        if (chain.payment) {
+            const paymentDate = new Date(chain.payment.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            const paymentAmount = Math.abs(chain.payment.amount).toFixed(2);
+            
+            html += `
+                <div class="chain-connector">↓</div>
+                <div class="chain-card">
+                    <span class="chain-card-date">${paymentDate}</span>
+                    <span class="chain-card-desc">${chain.payment.description || chain.payment.merchant_name || 'Payment'}</span>
+                    <span class="chain-card-account">${chain.payment.accountName}</span>
+                    <span class="chain-card-amount negative">${flag}${paymentAmount}</span>
+                </div>
+            `;
+        }
+        
+        html += `</div>`;
+        return html;
+    }
+    
+    createBankAnalysisSections(analysis, accounts = {}) {
+        // Create analysis sections: repeating transactions, large one-offs, SoF matches
+        let html = '';
+        
+        // Helper to get transaction details from ID
+        const getTransactionById = (txId) => {
+            for (const [accountId, accountData] of Object.entries(accounts)) {
+                const statement = accountData.statement || [];
+                const tx = statement.find(t => t.id === txId);
+                if (tx) {
+                    const accountInfo = accountData.info || accountData;
+                    return { ...tx, accountName: accountInfo.name || 'Account', accountId };
+                }
+            }
+            return null;
+        };
+        
+        // 1. Repeating Transactions Section
+        if (analysis.repeating_transactions && analysis.repeating_transactions.length > 0) {
+            let repeatingHtml = '';
+            
+            analysis.repeating_transactions.forEach((group, index) => {
+                const amount = group.sort_score;
+                const frequency = group.items.length;
+                const currencySymbol = this.getCurrencyFlag('GBP'); // Default to GBP, could be determined from transactions
+                
+                // Get all transaction details
+                const transactions = group.items.map(id => getTransactionById(id)).filter(tx => tx);
+                
+                if (transactions.length === 0) return;
+                
+                // Check if this is an internal transfer (same amount, opposite signs, different accounts)
+                const accountsSet = [...new Set(transactions.map(tx => tx.accountName))];
+                const hasIncoming = transactions.some(tx => tx.amount > 0);
+                const hasOutgoing = transactions.some(tx => tx.amount < 0);
+                const isInternalTransfer = accountsSet.length > 1 && hasIncoming && hasOutgoing;
+                
+                let transactionsListHtml = '';
+                
+                if (isInternalTransfer) {
+                    // Split into outgoing and incoming
+                    const outgoing = transactions.filter(tx => tx.amount < 0).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    const incoming = transactions.filter(tx => tx.amount > 0).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    
+                    // Match by date proximity (within 7 days)
+                    const matched = [];
+                    const unmatchedOut = [];
+                    const unmatchedIn = [];
+                    
+                    outgoing.forEach(outTx => {
+                        const outDate = new Date(outTx.timestamp);
+                        const match = incoming.find(inTx => {
+                            if (matched.includes(inTx.id)) return false;
+                            const inDate = new Date(inTx.timestamp);
+                            const daysDiff = Math.abs((inDate - outDate) / (1000 * 60 * 60 * 24));
+                            return daysDiff <= 7; // Within 7 days
+                        });
+                        
+                        if (match) {
+                            matched.push(match.id);
+                            const outDate = new Date(outTx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                            const inDate = new Date(match.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                            
+                            transactionsListHtml += `
+                                <div class="transfer-pair">
+                                    <div class="transfer-out">
+                                        <div class="transfer-date">${outDate}</div>
+                                        <div class="transfer-desc">${outTx.description || outTx.merchant_name || 'Transfer'}</div>
+                                        <div class="transfer-account">${outTx.accountName}</div>
+                                        <div class="transfer-amount negative">${currencySymbol}${Math.abs(outTx.amount).toFixed(2)}</div>
+                                    </div>
+                                    <div class="transfer-arrow">↔</div>
+                                    <div class="transfer-in">
+                                        <div class="transfer-date">${inDate}</div>
+                                        <div class="transfer-desc">${match.description || match.merchant_name || 'Transfer'}</div>
+                                        <div class="transfer-account">${match.accountName}</div>
+                                        <div class="transfer-amount positive">+${currencySymbol}${Math.abs(match.amount).toFixed(2)}</div>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            unmatchedOut.push(outTx);
+                        }
+                    });
+                    
+                    // Add unmatched incoming
+                    incoming.forEach(inTx => {
+                        if (!matched.includes(inTx.id)) {
+                            unmatchedIn.push(inTx);
+                        }
+                    });
+                    
+                    // Show unmatched transactions in single column
+                    [...unmatchedOut, ...unmatchedIn].forEach(tx => {
+                        const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                        const txAmount = tx.amount;
+                        const amountClass = txAmount >= 0 ? 'positive' : 'negative';
+                        const sign = txAmount >= 0 ? '+' : '';
+                        
+                        transactionsListHtml += `
+                            <div class="repeating-tx-row">
+                                <span class="repeating-tx-date">${date}</span>
+                                <span class="repeating-tx-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                                <span class="repeating-tx-account">${tx.accountName}</span>
+                                <span class="repeating-tx-amount ${amountClass}">${sign}${currencySymbol}${Math.abs(txAmount).toFixed(2)}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    // Single account pattern - show normally
+                    transactions.forEach(tx => {
+                        const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                        const txAmount = tx.amount;
+                        const amountClass = txAmount >= 0 ? 'positive' : 'negative';
+                        const sign = txAmount >= 0 ? '+' : '';
+                        
+                        transactionsListHtml += `
+                            <div class="repeating-tx-row">
+                                <span class="repeating-tx-date">${date}</span>
+                                <span class="repeating-tx-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                                <span class="repeating-tx-account">${tx.accountName}</span>
+                                <span class="repeating-tx-amount ${amountClass}">${sign}${currencySymbol}${Math.abs(txAmount).toFixed(2)}</span>
+                            </div>
+                        `;
+                    });
+                }
+                
+                repeatingHtml += `
+                    <div class="analysis-item-card">
+                        <div class="analysis-card-header">
+                            <div class="analysis-card-title">
+                                ${currencySymbol}${Math.abs(amount).toFixed(2)} × ${frequency}
+                                ${isInternalTransfer ? '<span class="internal-transfer-badge">Internal Transfer</span>' : ''}
+                            </div>
+                            <div class="analysis-card-meta">
+                                ${accountsSet.length > 1 ? `Between: ${accountsSet.join(' ↔ ')}` : `Account: ${accountsSet[0]}`}
+                            </div>
+                        </div>
+                        <div class="repeating-transactions-list">
+                            ${transactionsListHtml}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="bank-analysis-section collapsed" onclick="event.stopPropagation(); this.classList.toggle('collapsed');">
+                    <div class="analysis-section-header">
+                        <span class="analysis-section-title">Repeating Transactions (${analysis.repeating_transactions.length} patterns)</span>
+                        <span class="expand-indicator">▼</span>
+                    </div>
+                    <div class="analysis-section-content">
+                        ${repeatingHtml}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 2. Large One-off Transactions Section
+        if (analysis.large_one_off_transactions && analysis.large_one_off_transactions.length > 0) {
+            // Get all large one-off transactions
+            const oneOffTxs = analysis.large_one_off_transactions
+                .map(txId => getTransactionById(txId))
+                .filter(tx => tx);
+            
+            // Separate into incoming and outgoing
+            const oneOffIn = oneOffTxs.filter(tx => tx.amount > 0);
+            const oneOffOut = oneOffTxs.filter(tx => tx.amount < 0);
+            
+            // Apply same three-pass chain detection logic
+            const matched = [];
+            const transferPairs = [];
+            const chains = [];
+            
+            // First pass: Exact cross-account transfers
+            oneOffOut.forEach(outTx => {
+                if (matched.includes(outTx.id)) return;
+                const outDate = new Date(outTx.timestamp);
+                const outAmount = Math.abs(outTx.amount);
+                
+                const match = oneOffIn.find(inTx => {
+                    if (matched.includes(inTx.id)) return false;
+                    const inDate = new Date(inTx.timestamp);
+                    const inAmount = Math.abs(inTx.amount);
+                    
+                    return Math.abs(inAmount - outAmount) < 0.01 && 
+                           inTx.account_id !== outTx.account_id && 
+                           inDate.toDateString() === outDate.toDateString();
+                });
+                
+                if (match) {
+                    matched.push(match.id);
+                    matched.push(outTx.id);
+                    transferPairs.push({ out: outTx, in: match });
+                }
+            });
+            
+            // Second pass: Same-account flows
+            oneOffOut.forEach(outTx => {
+                if (matched.includes(outTx.id)) return;
+                const outDate = new Date(outTx.timestamp);
+                const outAmount = Math.abs(outTx.amount);
+                
+                const match = oneOffIn.find(inTx => {
+                    if (matched.includes(inTx.id)) return false;
+                    const inDate = new Date(inTx.timestamp);
+                    const inAmount = Math.abs(inTx.amount);
+                    const daysDiff = (outDate - inDate) / (1000 * 60 * 60 * 24);
+                    
+                    return inTx.account_id === outTx.account_id && 
+                           daysDiff >= 0 && daysDiff <= 3 &&
+                           inAmount >= outAmount &&
+                           (inAmount - outAmount) <= Math.max(500, inAmount * 0.2);
+                });
+                
+                if (match) {
+                    matched.push(match.id);
+                    matched.push(outTx.id);
+                    chains.push({ 
+                        source: match, 
+                        out: outTx, 
+                        in: null
+                    });
+                }
+            });
+            
+            // Third pass: Extend transfer pairs with preceding income / subsequent payment
+            const extendedChains = [];
+            transferPairs.forEach(pair => {
+                const candidateIncomes = oneOffIn.filter(precedingTx => {
+                    if (matched.includes(precedingTx.id)) return false;
+                    const precedingDate = new Date(precedingTx.timestamp);
+                    const outDate = new Date(pair.out.timestamp);
+                    const daysDiff = (outDate - precedingDate) / (1000 * 60 * 60 * 24);
+                    
+                    return precedingTx.account_id === pair.out.account_id && 
+                           daysDiff >= 0 && daysDiff <= 3;
+                });
+                
+                const precedingIncome = candidateIncomes.length > 0
+                    ? candidateIncomes.reduce((largest, tx) => 
+                        Math.abs(tx.amount) > Math.abs(largest.amount) ? tx : largest
+                      )
+                    : null;
+                
+                const subsequentPayment = oneOffOut.find(paymentTx => {
+                    if (matched.includes(paymentTx.id)) return false;
+                    const paymentDate = new Date(paymentTx.timestamp);
+                    const inDate = new Date(pair.in.timestamp);
+                    const daysDiff = (paymentDate - inDate) / (1000 * 60 * 60 * 24);
+                    
+                    return paymentTx.account_id === pair.in.account_id && 
+                           daysDiff >= 0 && daysDiff <= 2;
+                });
+                
+                if (precedingIncome || subsequentPayment) {
+                    if (precedingIncome) matched.push(precedingIncome.id);
+                    if (subsequentPayment) matched.push(subsequentPayment.id);
+                    
+                    extendedChains.push({
+                        source: precedingIncome,
+                        out: pair.out,
+                        in: pair.in,
+                        payment: subsequentPayment
+                    });
+                    pair.extended = true;
+                }
+            });
+            
+            // Combine all chains (extended first, then basic chains, then unextended pairs)
+            const allOneOffChains = [...extendedChains, ...chains, ...transferPairs.filter(p => !p.extended)];
+            
+            // Build chains HTML (2 per row)
+            let chainsHtml = '';
+            for (let i = 0; i < allOneOffChains.length; i += 2) {
+                const chain1 = allOneOffChains[i];
+                const chain2 = allOneOffChains[i + 1];
+                const flag = this.getCurrencyFlag((chain1.source?.currency || chain1.out.currency) || 'GBP');
+                
+                chainsHtml += `<div class="chains-row">`;
+                
+                // Left column - Chain 1
+                chainsHtml += this.renderChainColumn(chain1, flag, accountNames);
+                
+                // Right column - Chain 2 (if exists)
+                if (chain2) {
+                    const flag2 = this.getCurrencyFlag((chain2.source?.currency || chain2.out.currency) || 'GBP');
+                    chainsHtml += this.renderChainColumn(chain2, flag2, accountNames);
+                }
+                
+                chainsHtml += `</div>`;
+            }
+            
+            // Build unmatched transactions in columns
+            const unmatchedIn = oneOffIn.filter(tx => !matched.includes(tx.id));
+            const unmatchedOut = oneOffOut.filter(tx => !matched.includes(tx.id));
+            
+            let incomingHtml = '';
+            unmatchedIn.forEach(tx => {
+                const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                const flag = this.getCurrencyFlag(tx.currency || 'GBP');
+                
+                incomingHtml += `
+                    <div class="transaction-row incoming">
+                        <span class="transaction-date">${date}</span>
+                        <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                        <span class="account-badge">${tx.accountName}</span>
+                        <span class="transaction-amount positive">${flag}${Math.abs(tx.amount).toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            
+            let outgoingHtml = '';
+            unmatchedOut.forEach(tx => {
+                const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                const flag = this.getCurrencyFlag(tx.currency || 'GBP');
+                
+                outgoingHtml += `
+                    <div class="transaction-row outgoing">
+                        <span class="transaction-date">${date}</span>
+                        <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                        <span class="account-badge">${tx.accountName}</span>
+                        <span class="transaction-amount negative">${flag}${Math.abs(tx.amount).toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            
+            // Build columns section
+            let columnsHtml = '';
+            const hasIncoming = incomingHtml.trim().length > 0;
+            const hasOutgoing = outgoingHtml.trim().length > 0;
+            
+            if (hasIncoming || hasOutgoing) {
+                if (hasIncoming && hasOutgoing) {
+                    columnsHtml = `
+                        <div class="transactions-columns">
+                            <div class="transactions-column">
+                                <div class="column-header incoming-header">Incoming</div>
+                                ${incomingHtml}
+                            </div>
+                            <div class="transactions-column">
+                                <div class="column-header outgoing-header">Outgoing</div>
+                                ${outgoingHtml}
+                            </div>
+                        </div>
+                    `;
+                } else if (hasIncoming) {
+                    columnsHtml = `
+                        <div class="transactions-columns single-column">
+                            <div class="transactions-column">
+                                <div class="column-header incoming-header">Incoming</div>
+                                ${incomingHtml}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    columnsHtml = `
+                        <div class="transactions-columns single-column">
+                            <div class="transactions-column">
+                                <div class="column-header outgoing-header">Outgoing</div>
+                                ${outgoingHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            html += `
+                <div class="bank-analysis-section collapsed" onclick="event.stopPropagation(); this.classList.toggle('collapsed');">
+                    <div class="analysis-section-header">
+                        <span class="analysis-section-title">Large One-off Transactions (${analysis.large_one_off_transactions.length})</span>
+                        <span class="expand-indicator">▼</span>
+                    </div>
+                    <div class="analysis-section-content">
+                        ${chainsHtml ? `
+                            <div class="internal-transfers-label">Linked Transactions</div>
+                            ${chainsHtml}
+                        ` : ''}
+                        ${columnsHtml}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 3. SoF Matches Section
+        if (analysis.sof_matches && Object.keys(analysis.sof_matches).length > 0) {
+            let sofMatchesHtml = '';
+            
+            for (const [sofType, txIds] of Object.entries(analysis.sof_matches)) {
+                const sofLabels = {
+                    'gift': 'Gift Funding',
+                    'mortgage': 'Mortgage',
+                    'savings': 'Savings',
+                    'property_sale': 'Property Sale',
+                    'asset_sale': 'Asset Sale',
+                    'htb_lisa': 'Help to Buy / LISA',
+                    'inheritance': 'Inheritance'
+                };
+                
+                const label = sofLabels[sofType] || sofType;
+                let txListHtml = '';
+                
+                txIds.forEach(txId => {
+                    const tx = getTransactionById(txId);
+                    if (!tx) return;
+                    
+                    const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    const amount = tx.amount;
+                    const amountClass = amount >= 0 ? 'positive' : 'negative';
+                    const sign = amount >= 0 ? '+' : '';
+                    const currencySymbol = this.getCurrencyFlag(tx.currency || 'GBP');
+                    
+                    txListHtml += `
+                        <div class="sof-match-tx-row">
+                            <span class="sof-match-date">${date}</span>
+                            <span class="sof-match-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="sof-match-account">${tx.accountName}</span>
+                            <span class="sof-match-amount ${amountClass}">${sign}${currencySymbol}${Math.abs(amount).toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+                
+                if (txListHtml) {
+                    sofMatchesHtml += `
+                        <div class="sof-match-group">
+                            <div class="sof-match-label">${label}</div>
+                            ${txListHtml}
+                        </div>
+                    `;
+                }
+            }
+            
+            if (sofMatchesHtml) {
+                html += `
+                    <div class="bank-analysis-section collapsed" onclick="event.stopPropagation(); this.classList.toggle('collapsed');">
+                        <div class="analysis-section-header">
+                            <span class="analysis-section-title">Potential SoF Matches</span>
+                            <span class="expand-indicator">▼</span>
+                        </div>
+                        <div class="analysis-section-content">
+                            ${sofMatchesHtml}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        return html;
+    }
+    
+    createBiggestTransactionsSection(summaryByCcy, accounts = {}) {
+        const currencyFlag = this.getCurrencyFlag.bind(this);
+        
+        // Create a map of account IDs to account names for quick lookup
+        const accountNames = {};
+        const accountColors = ['#93C5FD', '#86EFAC', '#FCA5A5', '#C4B5FD', '#FDBA74', '#A5F3FC', '#D1D5DB'];
+        let colorIndex = 0;
+        
+        for (const [accountId, accountData] of Object.entries(accounts)) {
+            const info = accountData.info || accountData;
+            const name = info.name || 'Account';
+            accountNames[accountId] = {
+                name: name,
+                color: accountColors[colorIndex % accountColors.length]
+            };
+            colorIndex++;
+        }
+        
+        let currenciesHtml = '';
+        
+        for (const [currency, data] of Object.entries(summaryByCcy)) {
+            const topIn = data.top_in || [];
+            const topOut = data.top_out || [];
+            const flag = currencyFlag(currency);
+            
+            // Filter transactions to only include those that actually match this currency
+            const filteredTopIn = topIn.filter(tx => tx.currency === currency).slice(0, 5);
+            const filteredTopOut = topOut.filter(tx => tx.currency === currency).slice(0, 5);
+            
+            // Skip this currency if no matching transactions
+            if (filteredTopIn.length === 0 && filteredTopOut.length === 0) {
+                continue;
+            }
+            
+            // Match internal transfers and transaction chains
+            const matched = [];
+            const transferPairs = [];
+            const transactionChains = [];
+            
+            // First pass: Find exact cross-account transfers (same amount, same day, different accounts)
+            filteredTopOut.forEach(outTx => {
+                if (matched.includes(outTx.id)) return;
+                const outDate = new Date(outTx.timestamp);
+                const outAmount = Math.abs(outTx.amount);
+                
+                const match = filteredTopIn.find(inTx => {
+                    if (matched.includes(inTx.id)) return false;
+                    const inDate = new Date(inTx.timestamp);
+                    const inAmount = Math.abs(inTx.amount);
+                    
+                    // Exact transfer: same amount, same day, different accounts
+                    return Math.abs(inAmount - outAmount) < 0.01 && 
+                           inTx.account_id !== outTx.account_id && 
+                           inDate.toDateString() === outDate.toDateString();
+                });
+                
+                if (match) {
+                    matched.push(match.id);
+                    matched.push(outTx.id);
+                    transferPairs.push({ out: outTx, in: match });
+                }
+            });
+            
+            // Second pass: Find same-account flows (income → payment from same account)
+            filteredTopOut.forEach(outTx => {
+                if (matched.includes(outTx.id)) return;
+                const outDate = new Date(outTx.timestamp);
+                const outAmount = Math.abs(outTx.amount);
+                
+                const match = filteredTopIn.find(inTx => {
+                    if (matched.includes(inTx.id)) return false;
+                    const inDate = new Date(inTx.timestamp);
+                    const inAmount = Math.abs(inTx.amount);
+                    const daysDiff = (outDate - inDate) / (1000 * 60 * 60 * 24);
+                    
+                    // Same account flow: income before payment, within 3 days
+                    return inTx.account_id === outTx.account_id && 
+                           daysDiff >= 0 && daysDiff <= 3 &&
+                           inAmount >= outAmount &&
+                           (inAmount - outAmount) <= Math.max(500, inAmount * 0.2);
+                });
+                
+                if (match) {
+                    matched.push(match.id);
+                    matched.push(outTx.id);
+                    transactionChains.push({ 
+                        source: match, 
+                        out: outTx, 
+                        in: null  // Same account, no cross-transfer
+                    });
+                }
+            });
+            
+            // Third pass: Look for extended chains (income → transfer out → transfer in → payment)
+            const extendedChains = [];
+            transferPairs.forEach(pair => {
+                // Check for preceding income to the outgoing account
+                const candidateIncomes = filteredTopIn.filter(precedingTx => {
+                    if (matched.includes(precedingTx.id)) return false;
+                    const precedingDate = new Date(precedingTx.timestamp);
+                    const outDate = new Date(pair.out.timestamp);
+                    const daysDiff = (outDate - precedingDate) / (1000 * 60 * 60 * 24);
+                    
+                    return precedingTx.account_id === pair.out.account_id && 
+                           daysDiff >= 0 && daysDiff <= 3;
+                });
+                
+                const precedingIncome = candidateIncomes.length > 0
+                    ? candidateIncomes.reduce((largest, tx) => 
+                        Math.abs(tx.amount) > Math.abs(largest.amount) ? tx : largest
+                      )
+                    : null;
+                
+                // Check for subsequent payment from the incoming account
+                const subsequentPayment = filteredTopOut.find(paymentTx => {
+                    if (matched.includes(paymentTx.id)) return false;
+                    const paymentDate = new Date(paymentTx.timestamp);
+                    const inDate = new Date(pair.in.timestamp);
+                    const daysDiff = (paymentDate - inDate) / (1000 * 60 * 60 * 24);
+                    
+                    return paymentTx.account_id === pair.in.account_id && 
+                           daysDiff >= 0 && daysDiff <= 2;
+                });
+                
+                if (precedingIncome || subsequentPayment) {
+                    if (precedingIncome) matched.push(precedingIncome.id);
+                    if (subsequentPayment) matched.push(subsequentPayment.id);
+                    
+                    extendedChains.push({
+                        source: precedingIncome,
+                        out: pair.out,
+                        in: pair.in,
+                        payment: subsequentPayment
+                    });
+                    pair.extended = true; // Mark as processed
+                }
+            });
+            
+            // Create transaction chains and pairs - display 2 per row
+            let transfersHtml = '';
+            const allChains = [...extendedChains, ...transactionChains, ...transferPairs.filter(p => !p.extended)];
+            
+            for (let i = 0; i < allChains.length; i += 2) {
+                const chain1 = allChains[i];
+                const chain2 = allChains[i + 1];
+                
+                transfersHtml += `<div class="chains-row">`;
+                
+                // Left column - Chain 1
+                if (chain1) {
+                    const flag1 = this.getCurrencyFlag((chain1.source?.currency || chain1.out.currency) || currency);
+                    transfersHtml += this.renderChainColumn(chain1, flag1, accountNames);
+                }
+                
+                // Right column - Chain 2
+                if (chain2) {
+                    const flag2 = this.getCurrencyFlag((chain2.source?.currency || chain2.out.currency) || currency);
+                    transfersHtml += this.renderChainColumn(chain2, flag2, accountNames);
+                }
+                
+                transfersHtml += `</div>`;
+            }
+            
+            // Create unmatched transaction rows
+            let incomingHtml = '';
+            filteredTopIn.forEach(tx => {
+                if (matched.includes(tx.id)) return;
+                
+                const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                const amount = tx.amount.toFixed(2);
+                const description = tx.description || tx.merchant_name || 'Transaction';
+                const accountInfo = accountNames[tx.account_id];
+                const accountBadge = accountInfo ? accountInfo.name : '';
+                
+                incomingHtml += `
+                    <div class="transaction-row incoming">
+                        <span class="transaction-date">${date}</span>
+                        <span class="transaction-description">${description}</span>
+                        ${accountBadge ? `<span class="account-badge">${accountBadge}</span>` : ''}
+                        <span class="transaction-amount positive">${flag}${amount}</span>
+                    </div>
+                `;
+            });
+            
+            let outgoingHtml = '';
+            filteredTopOut.forEach(tx => {
+                if (matched.includes(tx.id)) return;
+                
+                const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                const amount = Math.abs(tx.amount).toFixed(2);
+                const description = tx.description || tx.merchant_name || 'Transaction';
+                const accountInfo = accountNames[tx.account_id];
+                const accountBadge = accountInfo ? accountInfo.name : '';
+                
+                outgoingHtml += `
+                    <div class="transaction-row outgoing">
+                        <span class="transaction-date">${date}</span>
+                        <span class="transaction-description">${description}</span>
+                        ${accountBadge ? `<span class="account-badge">${accountBadge}</span>` : ''}
+                        <span class="transaction-amount negative">${flag}${amount}</span>
+                    </div>
+                `;
+            });
+            
+            // Build the columns section only if there are unmatched transactions
+            let columnsHtml = '';
+            const hasIncoming = incomingHtml.trim().length > 0;
+            const hasOutgoing = outgoingHtml.trim().length > 0;
+            
+            if (hasIncoming || hasOutgoing) {
+                if (hasIncoming && hasOutgoing) {
+                    // Both columns
+                    columnsHtml = `
+                        <div class="transactions-columns">
+                            <div class="transactions-column">
+                                <div class="column-header incoming-header">Largest Incoming</div>
+                                ${incomingHtml}
+                            </div>
+                            <div class="transactions-column">
+                                <div class="column-header outgoing-header">Largest Outgoing</div>
+                                ${outgoingHtml}
+                            </div>
+                        </div>
+                    `;
+                } else if (hasIncoming) {
+                    // Only incoming
+                    columnsHtml = `
+                        <div class="transactions-columns single-column">
+                            <div class="transactions-column">
+                                <div class="column-header incoming-header">Largest Incoming</div>
+                                ${incomingHtml}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Only outgoing
+                    columnsHtml = `
+                        <div class="transactions-columns single-column">
+                            <div class="transactions-column">
+                                <div class="column-header outgoing-header">Largest Outgoing</div>
+                                ${outgoingHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            currenciesHtml += `
+                <div class="currency-transactions-row">
+                    <div class="currency-label">${flag} ${currency}</div>
+                    ${transfersHtml ? `
+                        <div class="internal-transfers-section">
+                            <div class="internal-transfers-label">Internal Transfers</div>
+                            ${transfersHtml}
+                        </div>
+                    ` : ''}
+                    ${columnsHtml}
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="biggest-transactions-container collapsed" onclick="event.stopPropagation(); this.classList.toggle('collapsed');">
+                <div class="biggest-transactions-header">
+                    <span class="biggest-transactions-title">Biggest Transactions by Currency</span>
+                    <span class="expand-indicator">▼</span>
+                </div>
+                <div class="biggest-transactions-content">
+                    ${currenciesHtml}
+                </div>
+            </div>
+        `;
+    }
+    
     createBankTaskCard(bankSummary, bankStatement) {
         // Combined bank task card - handles both linking (summary) and PDF upload (statement)
         const hasSummary = bankSummary && bankSummary.status === 'closed';
@@ -1361,6 +2153,22 @@ class ThirdfortChecksManager {
             accountsHtml += '</div>';
         }
         
+        // Add biggest transactions by currency section
+        let biggestTransactionsHtml = '';
+        const summaryByCcy = (hasSummary && bankSummary.breakdown && bankSummary.breakdown.summary && bankSummary.breakdown.summary.by_ccy) 
+            ? bankSummary.breakdown.summary.by_ccy 
+            : null;
+        
+        if (summaryByCcy && Object.keys(summaryByCcy).length > 0) {
+            biggestTransactionsHtml = this.createBiggestTransactionsSection(summaryByCcy, accounts);
+        }
+        
+        // Add analysis sections if available
+        let analysisHtml = '';
+        if (bankStatement?.breakdown?.analysis) {
+            analysisHtml = this.createBankAnalysisSections(bankStatement.breakdown.analysis, accounts);
+        }
+        
         return `
             <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
@@ -1370,9 +2178,121 @@ class ThirdfortChecksManager {
                 <div class="task-details">
                     ${checksHtml}
                     ${accountsHtml}
+                    ${biggestTransactionsHtml}
+                    ${analysisHtml}
                 </div>
             </div>
         `;
+    }
+    
+    getBankBrandColors(providerId, providerName) {
+        // Map of UK banks to their official brand colors (gradient pairs)
+        const bankColors = {
+            // High Street Banks
+            'ob-barclays': { from: '#00AEEF', to: '#008CB8' },
+            'barclays': { from: '#00AEEF', to: '#008CB8' },
+            'ob-hsbc': { from: '#DB0011', to: '#A30009' },
+            'hsbc': { from: '#DB0011', to: '#A30009' },
+            'hsbc uk': { from: '#DB0011', to: '#A30009' },
+            'ob-lloyds': { from: '#006F62', to: '#004D43' },
+            'lloyds': { from: '#006F62', to: '#004D43' },
+            'lloyds bank': { from: '#006F62', to: '#004D43' },
+            'ob-halifax': { from: '#0076BE', to: '#005691' },
+            'halifax': { from: '#0076BE', to: '#005691' },
+            'ob-natwest': { from: '#5A287F', to: '#42205F' },
+            'natwest': { from: '#5A287F', to: '#42205F' },
+            'ob-rbs': { from: '#003C71', to: '#002952' },
+            'rbs': { from: '#003C71', to: '#002952' },
+            'royal bank of scotland': { from: '#003C71', to: '#002952' },
+            'ob-santander': { from: '#EC0000', to: '#B30000' },
+            'santander': { from: '#EC0000', to: '#B30000' },
+            'santander uk': { from: '#EC0000', to: '#B30000' },
+            'ob-nationwide': { from: '#0C2340', to: '#081629' },
+            'nationwide': { from: '#0C2340', to: '#081629' },
+            'nationwide building society': { from: '#0C2340', to: '#081629' },
+            'ob-bankofscotland': { from: '#005EB8', to: '#004489' },
+            'bank of scotland': { from: '#005EB8', to: '#004489' },
+            'ob-tsb': { from: '#00A1DE', to: '#0078A8' },
+            'tsb': { from: '#00A1DE', to: '#0078A8' },
+            'tsb bank': { from: '#00A1DE', to: '#0078A8' },
+            'ob-cooperative': { from: '#00B1E7', to: '#0088B5' },
+            'cooperative bank': { from: '#00B1E7', to: '#0088B5' },
+            'the co-operative bank': { from: '#00B1E7', to: '#0088B5' },
+            'ob-metro': { from: '#951B81', to: '#6E1460' },
+            'metro': { from: '#951B81', to: '#6E1460' },
+            'metro bank': { from: '#951B81', to: '#6E1460' },
+            'ob-virginmoney': { from: '#E30613', to: '#B0050F' },
+            'virgin money': { from: '#E30613', to: '#B0050F' },
+            'ob-firstdirect': { from: '#242833', to: '#13161E' },
+            'first direct': { from: '#242833', to: '#13161E' },
+            
+            // Digital/Fintech Banks
+            'ob-monzo': { from: '#EB3C53', to: '#D5447E' },
+            'monzo': { from: '#EB3C53', to: '#D5447E' },
+            'ob-starling': { from: '#6935D3', to: '#4F1FA8' },
+            'starling': { from: '#6935D3', to: '#4F1FA8' },
+            'starling bank': { from: '#6935D3', to: '#4F1FA8' },
+            'ob-revolut': { from: '#242833', to: '#13161E' },
+            'revolut': { from: '#242833', to: '#13161E' },
+            'ob-chase': { from: '#117ACA', to: '#0D5C9C' },
+            'chase': { from: '#117ACA', to: '#0D5C9C' },
+            'chase uk': { from: '#117ACA', to: '#0D5C9C' },
+            'ob-tide': { from: '#FF6B00', to: '#CC5500' },
+            'tide': { from: '#FF6B00', to: '#CC5500' },
+            'ob-curve': { from: '#2E3192', to: '#1F2166' },
+            'curve': { from: '#2E3192', to: '#1F2166' },
+            
+            // Building Societies
+            'ob-yorkshire': { from: '#002B5C', to: '#001A3A' },
+            'yorkshire': { from: '#002B5C', to: '#001A3A' },
+            'yorkshire building society': { from: '#002B5C', to: '#001A3A' },
+            'ob-coventry': { from: '#E41937', to: '#B4142C' },
+            'coventry': { from: '#E41937', to: '#B4142C' },
+            'coventry building society': { from: '#E41937', to: '#B4142C' },
+            
+            // Irish Banks
+            'ob-bankofireland': { from: '#005EB8', to: '#004489' },
+            'bank of ireland': { from: '#005EB8', to: '#004489' },
+            'bank of ireland uk': { from: '#005EB8', to: '#004489' },
+            'ob-aib': { from: '#00A3E0', to: '#007DB0' },
+            'aib': { from: '#00A3E0', to: '#007DB0' },
+            'allied irish bank': { from: '#00A3E0', to: '#007DB0' },
+            'ob-danske': { from: '#003755', to: '#00253B' },
+            'danske': { from: '#003755', to: '#00253B' },
+            'danske bank': { from: '#003755', to: '#00253B' },
+            'ob-ulster': { from: '#E30613', to: '#B0050F' },
+            'ulster': { from: '#E30613', to: '#B0050F' },
+            'ulster bank': { from: '#E30613', to: '#B0050F' },
+            
+            // Retail Banks
+            'ob-tesco': { from: '#00539F', to: '#003D75' },
+            'tesco': { from: '#00539F', to: '#003D75' },
+            'tesco bank': { from: '#00539F', to: '#003D75' },
+            'ob-sainsburys': { from: '#F06C00', to: '#C45500' },
+            'sainsburys': { from: '#F06C00', to: '#C45500' },
+            'sainsburys bank': { from: '#F06C00', to: '#C45500' },
+            'ob-marks': { from: '#334A2C', to: '#243520' },
+            'm&s bank': { from: '#334A2C', to: '#243520' },
+            'marks and spencer': { from: '#334A2C', to: '#243520' },
+            
+            // International/Specialist
+            'ob-clydesdale': { from: '#002855', to: '#001A38' },
+            'clydesdale': { from: '#002855', to: '#001A38' },
+            'clydesdale bank': { from: '#002855', to: '#001A38' },
+            'ob-handelsbanken': { from: '#003C71', to: '#002952' },
+            'handelsbanken': { from: '#003C71', to: '#002952' },
+            'handelsbanken uk': { from: '#003C71', to: '#002952' },
+            'ob-clearbank': { from: '#00A3E0', to: '#007DB0' },
+            'clearbank': { from: '#00A3E0', to: '#007DB0' }
+        };
+        
+        const colors = bankColors[providerId?.toLowerCase()] || bankColors[providerName?.toLowerCase()];
+        
+        if (colors) {
+            return colors;
+        }
+        // Default fallback - your current blue
+        return { from: '#1d71b8', to: '#155a94' };
     }
     
     getBankLogo(providerId, providerName) {
@@ -1518,9 +2438,9 @@ class ThirdfortChecksManager {
         const swiftBic = number.swift_bic || '';
         
         // Get account holder details (from nested info array)
-        let accountHolderDetails = null;
+        let accountHolderName = '';
         if (Array.isArray(info.info) && info.info.length > 0) {
-            accountHolderDetails = info.info[0];
+            accountHolderName = info.info[0].full_name || '';
         }
         
         // Get balance amounts
@@ -1540,98 +2460,78 @@ class ThirdfortChecksManager {
         // Store the full data in a data attribute for the lightbox
         const accountDataJson = JSON.stringify({accountId, accountData}).replace(/"/g, '&quot;');
         
+        // Format the collapsed text based on whether we have a logo
+        let collapsedTextHtml;
+        if (bankLogo) {
+            collapsedTextHtml = `<span class="account-name-text">${accountName}</span>${accountHolderName ? ` - <span class="account-holder-text">${accountHolderName}</span>` : ''}`;
+        } else {
+            const prefix = `${provider.name || 'Bank'} - `;
+            collapsedTextHtml = `<span class="account-name-text">${prefix}${accountName}</span>${accountHolderName ? ` - <span class="account-holder-text">${accountHolderName}</span>` : ''}`;
+        }
+        
         return `
-            <div class="bank-account-card collapsed" data-account-data="${accountDataJson}" onclick="this.classList.toggle('collapsed')">
+            <div class="bank-account-card collapsed" data-account-data="${accountDataJson}" onclick="event.stopPropagation();">
                 <!-- Collapsed/Minimized Header -->
-                <div class="account-collapsed-header">
-                    <span class="account-collapsed-text">${accountName} - ${provider.name || 'Bank'}</span>
-                    ${bankLogo ? bankLogo : ''}
+                <div class="account-collapsed-header" onclick="event.stopPropagation(); this.closest('.bank-account-card').classList.toggle('collapsed');">
+                    <div class="account-header-left">
+                        ${bankLogo ? bankLogo : ''}
+                        <span class="account-collapsed-text">${collapsedTextHtml}</span>
+                    </div>
+                    ${txCount > 0 ? `
+                        <button class="view-statement-mini-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.closest('.bank-account-card').dataset.accountData);">
+                            View transactions
+                        </button>
+                    ` : ''}
                 </div>
                 
                 <!-- Expanded Details -->
                 <div class="account-expanded-details">
-                    <div class="account-numbers-compact">
-                        <div class="account-number-item">
-                            <span class="account-label">Sort:</span>
-                            <span class="account-value">${sortCode}</span>
-                        </div>
-                        <div class="account-number-item">
-                            <span class="account-label">Account:</span>
-                            <span class="account-value">${accountNumber}</span>
-                        </div>
-                        ${iban ? `
-                            <div class="account-number-item">
-                                <span class="account-label">IBAN:</span>
-                                <span class="account-value">${iban}</span>
+                    <div class="account-expanded-columns">
+                        <div class="account-details-column">
+                            <div class="account-detail-row">
+                                <span class="account-detail-label">Sort Code:</span>
+                                <span class="account-detail-value">${sortCode}</span>
                             </div>
-                        ` : ''}
-                        ${swiftBic ? `
-                            <div class="account-number-item">
-                                <span class="account-label">SWIFT:</span>
-                                <span class="account-value">${swiftBic}</span>
+                            <div class="account-detail-row">
+                                <span class="account-detail-label">Account:</span>
+                                <span class="account-detail-value">${accountNumber}</span>
                             </div>
-                        ` : ''}
+                            ${iban ? `
+                                <div class="account-detail-row">
+                                    <span class="account-detail-label">IBAN:</span>
+                                    <span class="account-detail-value">${iban}</span>
+                                </div>
+                            ` : ''}
+                            ${swiftBic ? `
+                                <div class="account-detail-row">
+                                    <span class="account-detail-label">SWIFT:</span>
+                                    <span class="account-detail-value">${swiftBic}</span>
+                                </div>
+                            ` : ''}
+                            <div class="account-detail-row">
+                                <span class="account-detail-label">Currency:</span>
+                                <span class="account-detail-value">${currencyFlag} ${currency}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="account-balance-column">
+                            <div class="balance-compact-card">
+                                <div class="balance-compact-title">Balance</div>
+                                <div class="balance-compact-item">
+                                    <span class="balance-compact-label">Available:</span>
+                                    <span class="balance-compact-value">${currency} ${availableBalance.toFixed(2)}</span>
+                                </div>
+                                <div class="balance-compact-item">
+                                    <span class="balance-compact-label">Current:</span>
+                                    <span class="balance-compact-value">${currency} ${currentBalance.toFixed(2)}</span>
+                                </div>
+                                <div class="balance-compact-item">
+                                    <span class="balance-compact-label">Overdraft:</span>
+                                    <span class="balance-compact-value">${overdraft > 0 ? `${currency} ${overdraft.toFixed(2)}` : 'None'}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="nested-details-compact balance-compact">
-                        <div class="nested-title">Balance</div>
-                        <div class="details-compact-grid">
-                            <div class="detail-item">
-                                <span class="detail-label">Available:</span>
-                                <span class="detail-value">${currency} ${availableBalance.toFixed(2)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Current:</span>
-                                <span class="detail-value">${currency} ${currentBalance.toFixed(2)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Overdraft:</span>
-                                <span class="detail-value">${overdraft > 0 ? `${currency} ${overdraft.toFixed(2)}` : 'None'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Currency:</span>
-                                <span class="detail-value">${currencyFlag} ${currency}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    ${accountHolderDetails ? `
-                        <div class="nested-details-compact holder-compact">
-                            <div class="nested-title">Account Holder</div>
-                            <div class="details-compact-grid">
-                                ${accountHolderDetails.full_name ? `
-                                    <div class="detail-item full-width">
-                                        <span class="detail-label">Name:</span>
-                                        <span class="detail-value">${accountHolderDetails.full_name}</span>
-                                    </div>
-                                ` : ''}
-                                ${accountHolderDetails.date_of_birth ? `
-                                    <div class="detail-item">
-                                        <span class="detail-label">DOB:</span>
-                                        <span class="detail-value">${accountHolderDetails.date_of_birth}</span>
-                                    </div>
-                                ` : ''}
-                                ${accountHolderDetails.phones ? `
-                                    <div class="detail-item">
-                                        <span class="detail-label">Phone:</span>
-                                        <span class="detail-value">${accountHolderDetails.phones}</span>
-                                    </div>
-                                ` : ''}
-                                ${accountHolderDetails.emails ? `
-                                    <div class="detail-item full-width">
-                                        <span class="detail-label">Email:</span>
-                                        <span class="detail-value">${accountHolderDetails.emails}</span>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    ` : ''}
-                    
-                    ${txCount > 0 ? `
-                        <button class="view-statement-compact-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.closest('.bank-account-card').dataset.accountData);">
-                            View Statement (${txCount})
-                        </button>
-                    ` : ''}
                 </div>
             </div>
         `;
@@ -1644,70 +2544,115 @@ class ThirdfortChecksManager {
         const statement = accountData.statement || accountData.transactions || [];
         const info = accountData.info || accountData;
         const number = info.number || {};
+        const balance = info.balance || {};
+        const provider = info.provider || {};
+        const accountName = info.name || 'Bank Account';
+        const currency = info.currency || 'GBP';
+        const currencyFlag = this.getCurrencyFlag(currency);
+        const currencySymbol = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency;
         
-        // Build statement HTML
-        let statementHtml = `
-            <div class="bank-statement-header">
-                <h2>Bank Statement</h2>
-                <div class="statement-account-info">
-                    ${number.sort_code ? `<div>Sort Code: ${number.sort_code}</div>` : ''}
-                    ${number.number ? `<div>Account Number: ${number.number}</div>` : ''}
-                    ${number.iban ? `<div>IBAN: ${number.iban}</div>` : ''}
-                </div>
-            </div>
-            <div class="bank-statement-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Description</th>
-                            <th>Amount</th>
-                            <th>Balance</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
+        // Get bank logo and brand colors
+        const bankLogo = this.getBankLogo(provider.id, provider.name);
+        const brandColors = this.getBankBrandColors(provider.id, provider.name);
         
-        // Sort transactions by timestamp
+        // Sort transactions by timestamp (oldest first for running balance calculation)
         const sortedTransactions = [...statement].sort((a, b) => 
             new Date(a.timestamp) - new Date(b.timestamp)
         );
         
-        // Get currency from account
-        const currency = info.currency || 'GBP';
-        const currencySymbol = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency;
+        // Calculate running balances if not provided
+        let runningBalance = balance.current || 0;
+        if (sortedTransactions.length > 0) {
+            // Work backwards from current balance
+            for (let i = sortedTransactions.length - 1; i >= 0; i--) {
+                if (!sortedTransactions[i].running_balance) {
+                    sortedTransactions[i].running_balance = runningBalance;
+                }
+                runningBalance -= sortedTransactions[i].amount;
+            }
+        }
         
-        sortedTransactions.forEach(tx => {
-            const date = new Date(tx.timestamp).toLocaleDateString('en-GB');
+        // Reverse for display (newest first)
+        sortedTransactions.reverse();
+        
+        // Build transactions HTML - modern statement style
+        let transactionsHtml = '';
+        sortedTransactions.forEach((tx, index) => {
+            const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { 
+                day: '2-digit', 
+                month: 'short', 
+                year: 'numeric' 
+            });
             const description = tx.description || tx.merchant_name || 'Transaction';
-            const amount = tx.amount.toFixed(2);
-            const balance = tx.running_balance ? tx.running_balance.toFixed(2) : '—';
-            const amountClass = tx.amount < 0 ? 'negative' : 'positive';
+            const isDebit = tx.amount < 0;
+            const amountOut = isDebit ? Math.abs(tx.amount).toFixed(2) : '';
+            const amountIn = !isDebit ? tx.amount.toFixed(2) : '';
+            const runningBal = tx.running_balance ? tx.running_balance.toFixed(2) : '—';
+            const amountClass = isDebit ? 'negative' : 'positive';
             
-            statementHtml += `
-                <tr>
-                    <td>${date}</td>
-                    <td>${description}</td>
-                    <td class="${amountClass}">${currencySymbol}${amount}</td>
-                    <td>${balance !== '—' ? currencySymbol + balance : balance}</td>
-                </tr>
+            transactionsHtml += `
+                <div class="statement-transaction-row ${amountClass}">
+                    <div class="statement-tx-date">${date}</div>
+                    <div class="statement-tx-description">${description}</div>
+                    <div class="statement-tx-out">${amountOut ? currencySymbol + amountOut : '—'}</div>
+                    <div class="statement-tx-in">${amountIn ? currencySymbol + amountIn : '—'}</div>
+                    <div class="statement-tx-balance">${currencySymbol}${runningBal}</div>
+                </div>
             `;
         });
         
-        statementHtml += `
-                    </tbody>
-                </table>
-            </div>
-        `;
-        
-        // Create and show lightbox
+        // Create modern bank statement overlay
         const lightbox = document.createElement('div');
         lightbox.className = 'bank-statement-lightbox';
         lightbox.innerHTML = `
             <div class="lightbox-overlay" onclick="this.parentElement.remove()"></div>
-            <div class="lightbox-content">
-                ${statementHtml}
-                <button class="close-lightbox-btn" onclick="this.closest('.bank-statement-lightbox').remove()">Close</button>
+            <div class="statement-container">
+                <div class="statement-header-modern" style="background: linear-gradient(135deg, ${brandColors.from} 0%, ${brandColors.to} 100%);">
+                    <div class="statement-header-top">
+                        ${bankLogo ? `<div class="statement-bank-logo">${bankLogo}</div>` : ''}
+                        <div class="statement-header-info">
+                            <h2 class="statement-account-name">${accountName}</h2>
+                            <div class="statement-provider">${provider.name || 'Bank'}</div>
+                        </div>
+                        <button class="statement-close-btn" onclick="this.closest('.bank-statement-lightbox').remove()">✕</button>
+                    </div>
+                    <div class="statement-account-details">
+                        ${number.sort_code ? `<span>Sort Code: ${number.sort_code}</span>` : ''}
+                        ${number.number ? `<span>Account: ${number.number}</span>` : ''}
+                        ${number.iban ? `<span>IBAN: ${number.iban}</span>` : ''}
+                        <span>${currencyFlag} ${currency}</span>
+                    </div>
+                    <div class="statement-balance-summary">
+                        <div class="balance-summary-item">
+                            <span class="balance-summary-label">Current Balance</span>
+                            <span class="balance-summary-amount">${currencySymbol}${(balance.current || 0).toFixed(2)}</span>
+                        </div>
+                        <div class="balance-summary-item">
+                            <span class="balance-summary-label">Available</span>
+                            <span class="balance-summary-amount">${currencySymbol}${(balance.available || 0).toFixed(2)}</span>
+                        </div>
+                        ${balance.overdraft && balance.overdraft > 0 ? `
+                            <div class="balance-summary-item">
+                                <span class="balance-summary-label">Overdraft Limit</span>
+                                <span class="balance-summary-amount">${currencySymbol}${balance.overdraft.toFixed(2)}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="statement-transactions-list">
+                    <div class="statement-list-header">
+                        <h3>Transactions</h3>
+                        <span class="transaction-count">${sortedTransactions.length} transaction${sortedTransactions.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="statement-column-headers">
+                        <div class="header-date">Date</div>
+                        <div class="header-description">Description</div>
+                        <div class="header-out">Amount Out</div>
+                        <div class="header-in">Amount In</div>
+                        <div class="header-balance">Balance</div>
+                    </div>
+                    ${transactionsHtml}
+                </div>
             </div>
         `;
         
@@ -11871,5 +12816,6 @@ let manager;
 
 document.addEventListener('DOMContentLoaded', () => {
     manager = new ThirdfortChecksManager();
+    window.thirdfortManager = manager; // Make accessible globally for inline onclick handlers
 });
 
