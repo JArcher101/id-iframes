@@ -79,6 +79,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Helps provide immediate context without navigating to separate sections
 
 ### Fixed
+- **Image Viewer & Single Image Viewer**: Fixed download buttons opening images in current tab instead of downloading
+  - Updated `downloadImage()` function to open in new tab if fetch() fails due to CORS
+  - Added `target="_blank"` and `rel="noopener noreferrer"` to fallback link
+  - Documented CloudFront Response Headers Policy requirement in AWS setup guides
+  - Created `aws-setup/06-cloudfront-response-headers.json` for CORS configuration
+  - **Root cause**: CloudFront doesn't forward S3 CORS headers by default
+  - **Solution**: Apply Response Headers Policy to both CloudFront distributions
+- **Image Uploader**: Fixed `sendUploadSuccessMessage is not defined` error
+  - Created missing function to send upload success message to parent
+  - Function compiles form data and sends `upload-success` message with S3 keys
 - Chart Viewer: Fixed doughnut chart expansion - serialize functions for postMessage
 - Cashiers Log: Container height fully responsive with dynamic card loading
 - Form K: Fixed "sale" worktype detection bug (was matching "Purchase" due to substring "se")

@@ -589,8 +589,8 @@ class ThirdfortChecksManager {
         const isOpenStatus = check.status === 'open' || check.status === 'processing';
         
         // Check both transactionId and checkId fields (either could be used)
-        const checkId = check.transactionId || check.checkId;
-        const isV2Transaction = checkId && checkId.startsWith('c');
+        const checkId = check.transactionId ? true : false
+        const isV2Transaction = checkId
         
         const canAbort = isOpenStatus && isV2Transaction;
         

@@ -801,7 +801,10 @@
             
             // Fetch image and trigger download
             fetch(imageData.liveUrl)
-                .then(response => response.blob())
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.blob();
+                })
                 .then(blob => {
                     const url = window.URL.createObjectURL(blob);
                     const link = document.createElement('a');
@@ -813,11 +816,13 @@
                     window.URL.revokeObjectURL(url);
                 })
                 .catch(error => {
-                    console.error('Error downloading image:', error);
-                    // Fallback: try direct download
+                    console.error('Error downloading image via fetch:', error);
+                    // Fallback: open in new tab (cross-origin restrictions prevent direct download)
                     const link = document.createElement('a');
                     link.href = imageData.liveUrl;
                     link.download = imageData.name || `image-${Date.now()}.jpg`;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
