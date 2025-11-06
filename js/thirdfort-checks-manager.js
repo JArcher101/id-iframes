@@ -1507,7 +1507,16 @@ class ThirdfortChecksManager {
         const docTaskKey = `documents:${cleanType}`;
         const hasDocument = check.taskOutcomes && check.taskOutcomes[docTaskKey];
         const docIcon = hasDocument ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
-        const docStatusText = hasDocument ? 'Document uploaded' : 'Check the report pdf for evidence or obtain from the client and review manually';
+        
+        // Specific message for gift type
+        let docStatusText = 'Document uploaded';
+        if (!hasDocument) {
+            if (type === 'fund:gift') {
+                docStatusText = 'Ensure the gifter undergoes their own AML, ID and SoF/SoW Checks';
+            } else {
+                docStatusText = 'Check the report pdf for evidence or obtain from the client and review manually';
+            }
+        }
         
         // Build detailed information based on fund type
         let detailsHtml = '';
