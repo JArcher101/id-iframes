@@ -1135,7 +1135,31 @@ class ThirdfortChecksManager {
     
     renderTasksSection(check) {
         const taskOutcomes = check.taskOutcomes || {};
+        const isOpen = check.status === 'open' || check.status === 'processing';
         
+        // For open checks, show minimized task cards based on requested tasks
+        if (isOpen && Object.keys(taskOutcomes).length === 0) {
+            const requestTasks = check.thirdfortResponse?.request?.tasks || check.tasks || [];
+            
+            if (requestTasks.length === 0) {
+                this.tasksSection.innerHTML = '';
+                return;
+            }
+            
+            let tasksHtml = '<div class="tasks-open-header">Requested Tasks (Processing)</div>';
+            
+            requestTasks.forEach(task => {
+                const taskType = typeof task === 'string' ? task : task.type;
+                // Convert task type to display format
+                const displayType = this.normalizeTaskType(taskType);
+                tasksHtml += this.createOpenTaskCard(displayType);
+            });
+            
+            this.tasksSection.innerHTML = tasksHtml;
+            return;
+        }
+        
+        // For closed checks or checks with outcomes
         if (Object.keys(taskOutcomes).length === 0) {
             this.tasksSection.innerHTML = '';
             return;
@@ -1170,6 +1194,39 @@ class ThirdfortChecksManager {
         });
         
         this.tasksSection.innerHTML = tasksHtml;
+    }
+    
+    normalizeTaskType(taskType) {
+        // Convert API task types to our internal format
+        const typeMap = {
+            'report:identity': 'identity',
+            'report:footprint': 'address',
+            'report:peps': 'screening',
+            'report:sanctions': 'sanctions',
+            'report:screening:lite': 'screening',
+            'report:sof-v1': 'sof:v1',
+            'report:bank-statement': 'bank:statement',
+            'report:bank-summary': 'bank:summary'
+        };
+        
+        return typeMap[taskType] || taskType;
+    }
+    
+    createOpenTaskCard(taskType) {
+        const taskTitle = this.getTaskTitle(taskType);
+        
+        return `
+            <div class="task-card open-task non-expandable">
+                <div class="task-header">
+                    <div class="task-title">${taskTitle}</div>
+                    <svg class="task-status-icon" viewBox="0 0 300 300">
+                        <path fill="#999" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/>
+                        <circle cx="150" cy="150" r="30" fill="#fff"/>
+                    </svg>
+                </div>
+                <div class="task-summary-inline">Task in progress</div>
+            </div>
+        `;
     }
     
     createTaskCard(taskType, outcome, check) {
@@ -2635,6 +2692,202 @@ class ThirdfortChecksManager {
         // Real KYB check data for THURSTAN HOSKIN SOLICITORS LLP
         return [
             {
+                "consumerPhone": "+447754241686",
+                "checkType": "electronic-id",
+                "initiatedAt": "2025-11-06T16:42:43.686Z",
+                "consumerName": "Benjamin David Jasper Meehan",
+                "tasks": [
+                  "report:identity",
+                  "report:footprint",
+                  "report:peps",
+                  "documents:poa",
+                  "documents:poo"
+                ],
+                "updates": [
+                  {
+                    "timestamp": "2025-11-06T16:42:43.686Z",
+                    "update": "Electronic ID check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
+                  }
+                ],
+                "status": "open",
+                "initiatedBy": "jacob.archer-moran@thurstanhoskin.co.uk",
+                "hasMonitoring": true,
+                "thirdfortResponse": {
+                  "name": "Sale of 21 Green Lane",
+                  "request": {
+                    "actor": {
+                      "name": "Benjamin David Jasper Meehan",
+                      "phone": "+447754241686"
+                    },
+                    "tasks": [
+                      {
+                        "opts": {
+                          "nfc": "preferred"
+                        },
+                        "type": "report:identity"
+                      },
+                      {
+                        "opts": {
+                          "consent": false
+                        },
+                        "type": "report:footprint"
+                      },
+                      {
+                        "opts": {
+                          "monitored": true
+                        },
+                        "type": "report:peps"
+                      },
+                      {
+                        "type": "documents:poa"
+                      },
+                      {
+                        "type": "documents:poo"
+                      }
+                    ]
+                  },
+                  "ref": "21 Green Lane",
+                  "id": "d46d00g23amg030rw7s0",
+                  "reports": [],
+                  "status": "open",
+                  "metadata": {
+                    "notify": {
+                      "type": "http",
+                      "data": {
+                        "hmac_key": "XZ9PtCPxkpoVkiKRx0KPOIz/tVztJB7bYtE1pBRbvhs=",
+                        "method": "POST",
+                        "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                      }
+                    },
+                    "created_by": "d3t0auq9io6g00ak3kkg",
+                    "print": {
+                      "team": "Cashiers",
+                      "tenant": "Thurstan Hoskin Solicitors LLP",
+                      "user": "THS Bot"
+                    },
+                    "context": {
+                      "gid": "d3t2k5a9io6g00ak3km0",
+                      "uid": "d3t0auq9io6g00ak3kkg",
+                      "team_id": "d3t2k5a9io6g00ak3km0",
+                      "tenant_id": "d3t2ifa9io6g00ak3klg"
+                    },
+                    "ce": {
+                      "uri": "/v1/checks/4151797878"
+                    },
+                    "created_at": "2025-11-06T16:42:42.371Z"
+                  },
+                  "type": "v2",
+                  "opts": {
+                    "peps": {
+                      "monitored": true
+                    }
+                  }
+                },
+                "smsSent": true,
+                "transactionId": "d46d00g23amg030rw7s0"
+            },{
+                "consumerPhone": "+447493580033",
+                "checkType": "electronic-id",
+                "initiatedAt": "2025-11-06T16:37:23.440Z",
+                "consumerName": "Se Idris Stewart",
+                "tasks": [
+                  "report:identity",
+                  "report:footprint",
+                  "report:peps",
+                  "documents:poa",
+                  "report:sof-v1",
+                  "report:bank-statement",
+                  "report:bank-summary"
+                ],
+                "updates": [
+                  {
+                    "timestamp": "2025-11-06T16:37:23.440Z",
+                    "update": "Electronic ID check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
+                  }
+                ],
+                "status": "open",
+                "initiatedBy": "jacob.archer-moran@thurstanhoskin.co.uk",
+                "hasMonitoring": true,
+                "thirdfortResponse": {
+                  "name": "Purchase of 21 Green Lane",
+                  "request": {
+                    "actor": {
+                      "name": "Se Idris Stewart",
+                      "phone": "+447493580033"
+                    },
+                    "tasks": [
+                      {
+                        "opts": {
+                          "nfc": "preferred"
+                        },
+                        "type": "report:identity"
+                      },
+                      {
+                        "opts": {
+                          "consent": false
+                        },
+                        "type": "report:footprint"
+                      },
+                      {
+                        "opts": {
+                          "monitored": true
+                        },
+                        "type": "report:peps"
+                      },
+                      {
+                        "type": "documents:poa"
+                      },
+                      {
+                        "type": "report:sof-v1"
+                      },
+                      {
+                        "type": "report:bank-statement"
+                      },
+                      {
+                        "type": "report:bank-summary"
+                      }
+                    ]
+                  },
+                  "ref": "21 Green Lane",
+                  "id": "d46cxge23amg030rw7r0",
+                  "reports": [],
+                  "status": "open",
+                  "metadata": {
+                    "notify": {
+                      "type": "http",
+                      "data": {
+                        "hmac_key": "0mF1p3cyDWZ51HIsGXPecer4a7uFQIXBk0JLO56Wr0U=",
+                        "method": "POST",
+                        "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                      }
+                    },
+                    "created_by": "d3t0auq9io6g00ak3kkg",
+                    "print": {
+                      "team": "Cashiers",
+                      "tenant": "Thurstan Hoskin Solicitors LLP",
+                      "user": "THS Bot"
+                    },
+                    "context": {
+                      "gid": "d3t2k5a9io6g00ak3km0",
+                      "uid": "d3t0auq9io6g00ak3kkg",
+                      "team_id": "d3t2k5a9io6g00ak3km0",
+                      "tenant_id": "d3t2ifa9io6g00ak3klg"
+                    },
+                    "ce": {
+                      "uri": "/v1/checks/4151797877"
+                    },
+                    "created_at": "2025-11-06T16:37:19.858Z"
+                  },
+                  "type": "v2",
+                  "opts": {
+                    "peps": {
+                      "monitored": true
+                    }
+                  }
+                },
+                "smsSent": true,
+                "transactionId": "d46cxge23amg030rw7r0"
+              },{
                 "taskOutcomes": {
                   "identity:lite": {
                     "breakdown": {

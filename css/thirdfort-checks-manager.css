@@ -1000,6 +1000,16 @@ body {
     gap: 8px;
 }
 
+.tasks-open-header {
+    font-family: 'Transport', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: #112F5B;
+    margin-bottom: 4px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e1e4e8;
+}
+
 .task-card {
     background: white;
     border-radius: 8px;
@@ -1008,6 +1018,20 @@ body {
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     cursor: pointer;
     transition: all 0.2s;
+}
+
+.task-card.open-task {
+    border-left-color: #999;
+    opacity: 0.9;
+    cursor: default;
+}
+
+.task-card.non-expandable {
+    cursor: default;
+}
+
+.task-card.non-expandable:hover {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .task-card:hover {
