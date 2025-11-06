@@ -571,8 +571,21 @@ class ThirdfortChecksManager {
         }
         
         const hasMonitoring = check.hasMonitoring === true;
+        
+        // Check if check has PEP/sanctions/screening tasks (required for monitoring)
+        const tasks = check.tasks || [];
+        const taskOutcomes = check.taskOutcomes || {};
+        const hasPepSanctionsTasks = tasks.includes('report:peps') || 
+                                     tasks.includes('report:screening:lite') ||
+                                     taskOutcomes['peps'] || 
+                                     taskOutcomes['sanctions'] ||
+                                     taskOutcomes['company:peps'] ||
+                                     taskOutcomes['company:sanctions'];
+        
+        // Can only toggle/show monitoring if check has PEP/sanctions tasks
         const canToggle = (check.checkType === 'electronic-id' || check.checkType === 'lite-screen') 
-                          && check.status !== 'aborted';
+                          && check.status !== 'aborted'
+                          && hasPepSanctionsTasks;
         const canDisable = check.checkType === 'kyb' && hasMonitoring && check.status !== 'aborted';
         
         if (!canToggle && !canDisable) {
