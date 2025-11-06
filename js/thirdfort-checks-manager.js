@@ -1315,32 +1315,112 @@ class ThirdfortChecksManager {
         };
         
         if (check.checkType === 'electronic-id') {
-            return this.isEnhancedID(check) ? 'Enhanced ID Check' : 'Original ID Check';
+            // Determine if it's Enhanced, Original, or Additional Tasks Only
+            const idType = this.getElectronicIDType(check);
+            
+            if (idType === 'enhanced') {
+                return 'Enhanced ID Check';
+            } else if (idType === 'original') {
+                return 'Original ID Check';
+            } else if (idType && idType !== 'additional') {
+                // Specific additional task name(s)
+                return idType;
+            } else {
+                return 'Additional Tasks';
+            }
         }
         
         return labels[check.checkType] || 'Thirdfort Check';
     }
     
-    isEnhancedID(check) {
-        if (check.checkType !== 'electronic-id') return false;
+    getElectronicIDType(check) {
+        if (check.checkType !== 'electronic-id') return null;
         
-        // For closed checks: check taskOutcomes
-        const nfcReport = check.taskOutcomes?.['nfc'];
-        if (nfcReport) {
-            return nfcReport.status !== 'unobtainable';
-        }
-        
-        // For open checks: check original request tasks
+        // Check for identity task in outcomes (closed checks) or request (open checks)
+        const taskOutcomes = check.taskOutcomes || {};
         const requestTasks = check.thirdfortResponse?.request?.tasks || [];
-        const identityTask = requestTasks.find(task => task.type === 'report:identity');
         
-        // Enhanced ID has NFC with 'preferred' option
-        if (identityTask && identityTask.opts && identityTask.opts.nfc === 'preferred') {
-            return true;
+        // Check if identity task exists
+        const hasIdentityOutcome = taskOutcomes['identity'] || taskOutcomes['nfc'];
+        const hasIdentityRequest = requestTasks.find(task => task.type === 'report:identity');
+        
+        // If no identity task at all, determine specific additional task name
+        if (!hasIdentityOutcome && !hasIdentityRequest) {
+            return this.getAdditionalTasksLabel(check);
         }
         
-        // Default to Original ID if no NFC found
-        return false;
+        // For closed checks: check NFC outcome
+        const nfcReport = taskOutcomes['nfc'];
+        if (nfcReport) {
+            return nfcReport.status !== 'unobtainable' ? 'enhanced' : 'original';
+        }
+        
+        // For open checks: check if NFC preferred was requested
+        if (hasIdentityRequest && hasIdentityRequest.opts && hasIdentityRequest.opts.nfc === 'preferred') {
+            return 'enhanced';
+        }
+        
+        // If identity task exists but no NFC, it's Original
+        return 'original';
+    }
+    
+    getAdditionalTasksLabel(check) {
+        // Get all non-identity tasks from check
+        const requestTasks = check.thirdfortResponse?.request?.tasks || [];
+        const tasks = check.tasks || [];
+        
+        // Filter out identity/footprint/peps tasks to get only additional tasks
+        const additionalTasks = requestTasks.filter(task => {
+            const type = typeof task === 'string' ? task : task.type;
+            return !['report:identity', 'report:footprint', 'report:peps', 'report:sanctions'].includes(type);
+        }).map(task => typeof task === 'string' ? task : task.type);
+        
+        // If no additional tasks found in requestTasks, check tasks array
+        if (additionalTasks.length === 0) {
+            const taskTypes = tasks.filter(t => 
+                !['report:identity', 'report:footprint', 'report:peps', 'report:sanctions'].includes(t)
+            );
+            additionalTasks.push(...taskTypes);
+        }
+        
+        const hasPoA = additionalTasks.includes('documents:poa');
+        const hasPoO = additionalTasks.includes('documents:poo');
+        const hasSoF = additionalTasks.includes('report:sof-v1');
+        const hasBank = additionalTasks.some(t => t.includes('bank'));
+        
+        // Single task scenarios
+        if (additionalTasks.length === 1) {
+            const taskNames = {
+                'documents:poa': 'Proof of Address',
+                'documents:poo': 'Proof of Ownership',
+                'report:sof-v1': 'Source of Funds Questionnaire',
+                'report:bank-statement': 'Bank Statement Linking',
+                'report:bank-summary': 'Bank Summary'
+            };
+            return taskNames[additionalTasks[0]] || 'Additional Tasks';
+        }
+        
+        // Combination scenarios
+        if (hasPoA && hasPoO && !hasSoF && !hasBank) {
+            return 'Proof of Ownership & Address';
+        }
+        
+        if ((hasSoF || hasBank) && !hasPoA && !hasPoO) {
+            if (hasSoF && hasBank) {
+                return 'Source of Funds Questionnaire & Linking';
+            } else if (hasSoF) {
+                return 'Source of Funds Questionnaire';
+            } else {
+                return 'Bank Linking';
+            }
+        }
+        
+        // Mixed proof tasks with SoF/bank tasks
+        return 'Additional Tasks';
+    }
+    
+    isEnhancedID(check) {
+        return this.getElectronicIDType(check) === 'enhanced';
     }
     
     checksSafeHarbour(check) {
