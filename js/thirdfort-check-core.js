@@ -5627,8 +5627,8 @@ function buildElectronicIDRequest() {
       'purchaser': 'Purchase of',
       'seller': 'Sale of', 
       'landlord': 'Letting of',
-      'tenant': 'Tenancy of',
-      'giftor': 'Gift of',
+      'tenant': 'Occupier\'s consent for',
+      'giftor': 'Gift towards purchase of',
       'other': ''
     };
     
