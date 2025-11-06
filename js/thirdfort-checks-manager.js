@@ -23,6 +23,7 @@ class ThirdfortChecksManager {
         this.monitoringCard = document.getElementById('monitoring-card');
         this.abortCard = document.getElementById('abort-card');
         this.detailsCard = document.getElementById('details-card');
+        this.documentDetailsCard = document.getElementById('document-details-card');
         this.pepUpdatesCard = document.getElementById('pep-updates-card');
         this.tasksSection = document.getElementById('tasks-section');
         this.updatesSection = document.getElementById('updates-section');
@@ -408,6 +409,11 @@ class ThirdfortChecksManager {
         // Render client/company details
         this.renderDetailsCard(check);
         
+        // Render document details (IDV only)
+        if (check.checkType === 'idv') {
+            this.renderDocumentDetailsCard(check);
+        }
+        
         // Render PEP/Sanctions updates (if any)
         this.renderPepUpdatesCard(check);
         
@@ -643,8 +649,20 @@ class ThirdfortChecksManager {
         if (isPersonCheck) {
             // Person checks (Electronic ID, Lite Screen, IDV)
             const piiData = check.piiData || {};
-            const name = check.consumerName || (piiData.name ? `${piiData.name.first || ''} ${piiData.name.last || ''}`.trim() : '—');
-            const dob = piiData.dob ? new Date(piiData.dob).toLocaleDateString('en-GB') : '—';
+            
+            // For IDV checks, also pull data from identity:lite taskOutcomes
+            const idvProperties = check.checkType === 'idv' 
+                ? check.taskOutcomes?.['identity:lite']?.breakdown?.document?.properties 
+                : null;
+            
+            const name = check.consumerName || 
+                        (idvProperties ? `${idvProperties.first_name || ''} ${idvProperties.last_name || ''}`.trim() : '') ||
+                        (piiData.name ? `${piiData.name.first || ''} ${piiData.name.last || ''}`.trim() : '—');
+            
+            const dob = idvProperties?.date_of_birth 
+                ? new Date(idvProperties.date_of_birth).toLocaleDateString('en-GB')
+                : (piiData.dob ? new Date(piiData.dob).toLocaleDateString('en-GB') : '—');
+            
             const mobile = check.consumerPhone || check.thirdfortResponse?.request?.actor?.phone || '—';
             const email = check.consumerEmail || check.thirdfortResponse?.request?.actor?.email || '—';
             
@@ -658,10 +676,19 @@ class ThirdfortChecksManager {
             ].filter(Boolean).join(', ') || '—';
             
             const docInfo = check.taskOutcomes?.['document']?.data || {};
-            const docNumber = docInfo.number || piiData.document?.number || '—';
+            const docNumber = docInfo.number || piiData.document?.number || 
+                            (idvProperties?.document_numbers?.[0]?.value) || '—';
             const mrz = piiData.document?.mrz_line1 && piiData.document?.mrz_line2
                 ? `${piiData.document.mrz_line1}\n${piiData.document.mrz_line2}`
                 : '';
+            
+            // Additional IDV-specific fields
+            const documentType = check.documentType || idvProperties?.document_type || '';
+            const expiryDate = idvProperties?.date_of_expiry 
+                ? new Date(idvProperties.date_of_expiry).toLocaleDateString('en-GB')
+                : '';
+            const issuingCountry = idvProperties?.issuing_country || '';
+            const nationality = idvProperties?.nationality || '';
             
             // Build client details grid items (only show if data exists)
             const gridItems = [];
@@ -707,15 +734,15 @@ class ThirdfortChecksManager {
                     <div class="details-title">Client Details</div>
                 </div>
                 ${gridItems.length > 0 ? `<div class="details-grid">${gridItems.join('')}</div>` : ''}
-                ${fullAddress && fullAddress !== '—' ? `
+                ${fullAddress && fullAddress !== '—' && check.checkType !== 'idv' ? `
                 <div class="detail-item" style="margin-top: 12px;">
                     <div class="detail-label">Address</div>
                     <div class="detail-value">${fullAddress}</div>
                 </div>
                 ` : ''}
-                ${docNumber !== '—' || mrz ? `
+                ${(docNumber !== '—' || mrz) && check.checkType !== 'idv' ? `
                 <div class="detail-item" style="margin-top: 12px;">
-                    <div class="detail-label">Document Details</div>
+                    <div class="detail-label">Document Number</div>
                     <div class="detail-value">${docNumber}</div>
                     ${mrz ? `<div class="detail-value" style="font-size: 11px; font-family: monospace; margin-top: 4px; white-space: pre;">${mrz}</div>` : ''}
                 </div>
@@ -858,6 +885,105 @@ class ThirdfortChecksManager {
         }
         
         this.detailsCard.innerHTML = detailsContent;
+    }
+    
+    renderDocumentDetailsCard(check) {
+        // Only for IDV checks - show document-specific information
+        if (!this.documentDetailsCard || check.checkType !== 'idv') {
+            if (this.documentDetailsCard) {
+                this.documentDetailsCard.classList.add('hidden');
+            }
+            return;
+        }
+        
+        this.documentDetailsCard.classList.remove('hidden');
+        
+        // Extract document properties from identity:lite task outcomes
+        const idvProperties = check.taskOutcomes?.['identity:lite']?.breakdown?.document?.properties || {};
+        
+        const gridItems = [];
+        
+        // Document Type
+        const documentType = check.documentType || idvProperties.document_type || '';
+        if (documentType) {
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Document Type</div>
+                    <div class="detail-value">${documentType.charAt(0).toUpperCase() + documentType.slice(1)}</div>
+                </div>
+            `);
+        }
+        
+        // Document Number
+        const docNumbers = idvProperties.document_numbers || [];
+        if (docNumbers.length > 0) {
+            const docNumber = docNumbers[0].value || '—';
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Document Number</div>
+                    <div class="detail-value" style="font-family: monospace;">${docNumber}</div>
+                </div>
+            `);
+        }
+        
+        // Nationality
+        if (idvProperties.nationality) {
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Nationality</div>
+                    <div class="detail-value">${idvProperties.nationality}</div>
+                </div>
+            `);
+        }
+        
+        // Issuing Country
+        if (idvProperties.issuing_country) {
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Issuing Country</div>
+                    <div class="detail-value">${idvProperties.issuing_country}</div>
+                </div>
+            `);
+        }
+        
+        // Issuing Date
+        if (idvProperties.issuing_date) {
+            const issuingDate = new Date(idvProperties.issuing_date).toLocaleDateString('en-GB');
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Issuing Date</div>
+                    <div class="detail-value">${issuingDate}</div>
+                </div>
+            `);
+        }
+        
+        // Expiry Date
+        if (idvProperties.date_of_expiry) {
+            const expiryDate = new Date(idvProperties.date_of_expiry).toLocaleDateString('en-GB');
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Expiry Date</div>
+                    <div class="detail-value">${expiryDate}</div>
+                </div>
+            `);
+        }
+        
+        // Gender
+        if (idvProperties.gender) {
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Gender</div>
+                    <div class="detail-value">${idvProperties.gender.charAt(0).toUpperCase() + idvProperties.gender.slice(1)}</div>
+                </div>
+            `);
+        }
+        
+        this.documentDetailsCard.innerHTML = `
+            <div class="details-header">
+                <div class="details-title">Document Details</div>
+            </div>
+            ${gridItems.length > 0 ? `<div class="details-grid">${gridItems.join('')}</div>` : '<div style="padding: 20px; color: #666;">No document details available</div>'}
+        `;
     }
     
     renderPepUpdatesCard(check) {
@@ -1514,6 +1640,7 @@ class ThirdfortChecksManager {
             'peps': 'PEP Screening',
             'sanctions': 'Sanctions Screening',
             'identity': 'Identity Verification',
+            'identity:lite': 'Document Verification',
             'nfc': 'NFC Chip Verification',
             'liveness': 'Liveness Check',
             'facial_similarity': 'Facial Similarity',
@@ -1706,6 +1833,32 @@ class ThirdfortChecksManager {
                     text: data.verified ? 'Identity verified' : 'Identity verification requires review'
                 });
             }
+        }
+        else if (taskType === 'identity:lite') {
+            // IDV document verification - Show detailed breakdown
+            const breakdown = outcome.breakdown?.document?.breakdown || {};
+            
+            // Document verification categories
+            const categories = [
+                { key: 'visual_authenticity', label: 'Visual Authenticity' },
+                { key: 'image_integrity', label: 'Image Integrity' },
+                { key: 'data_validation', label: 'Data Validation' },
+                { key: 'data_consistency', label: 'Data Consistency' },
+                { key: 'data_comparison', label: 'Data Comparison' },
+                { key: 'compromised_document', label: 'Compromised Check' },
+                { key: 'age_validation', label: 'Age Validation' },
+                { key: 'police_record', label: 'Police Record' }
+            ];
+            
+            categories.forEach(cat => {
+                if (breakdown[cat.key]) {
+                    const result = breakdown[cat.key].result || 'unknown';
+                    checks.push({
+                        status: result === 'clear' ? 'CL' : (result === 'fail' ? 'AL' : 'CO'),
+                        text: cat.label
+                    });
+                }
+            });
         }
         else if (taskType === 'company:summary') {
             // Company Summary - Show people as profile cards
