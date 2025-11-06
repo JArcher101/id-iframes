@@ -524,6 +524,18 @@ class ThirdfortChecksManager {
             `);
         }
         
+        // Add Transaction/Check ID for support reference
+        const resourceId = check.transactionId || check.checkId;
+        const resourceType = check.transactionId ? 'Transaction ID' : 'Check ID';
+        if (resourceId) {
+            metaItems.push(`
+                <div class="meta-item">
+                    <div class="meta-label">${resourceType}</div>
+                    <div class="meta-value" style="font-family: monospace; user-select: all; cursor: text;" title="Click to select all, then copy">${resourceId}</div>
+                </div>
+            `);
+        }
+        
         // Get Thirdfort URL
         const env = 'sandbox'; // TODO: Make this dynamic
         const baseUrl = env === 'production' ? 'https://app.thirdfort.io' : 'https://sandbox.thirdfort.io';
