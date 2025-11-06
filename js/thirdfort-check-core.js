@@ -3275,9 +3275,6 @@ function handleIDVAnswerSelection(event) {
     }
   }
   
-  // Update PEP monitoring visibility
-  updatePEPMonitoringVisibility();
-  
   validateForm();
 }
 
