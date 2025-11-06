@@ -5409,47 +5409,83 @@ function buildLiteScreenRequest() {
     isoDate = `${year}-${month}-${day}T00:00:00.000Z`;
   }
   
-  // Build expectations object
-  const expectations = {
-    name: {
-      data: {
-        first: firstName,
-        last: lastName
+  // Build expectations and tasks based on screening type
+  let expectations;
+  let tasks;
+  
+  if (checkState.liteScreenType === 'aml-only') {
+    // AML Only: Standalone screening with year of birth
+    const year = dobDigits.length === 8 ? dobDigits.substring(4, 8) : '';
+    const countryData = document.getElementById('liteCountry')?.dataset.countryCode || 'GBR';
+    
+    expectations = {
+      'name:lite': {
+        data: {
+          first: firstName,
+          last: lastName
+        }
+      },
+      yob: {
+        data: year
+      },
+      country: {
+        data: countryData
       }
-    },
-    dob: {
-      data: isoDate
-    }
-  };
-  
-  // Add middle name if provided
-  if (middleName) {
-    expectations.name.data.other = middleName;
-  }
-  
-  // Add address ONLY for "AML & Address Screening" type
-  // For "AML Only", we exclude address and Thirdfort only screens name/DOB against watchlists
-  if (checkState.liteScreenType === 'aml-address' && address) {
-    expectations.address = {
-      data: address
     };
-  }
-  
-  // Build tasks array
-  const tasks = [
-    {
-      type: 'report:footprint',
-      opts: {
-        consent: internationalAddressEnabled && countryCode !== 'GBR'
-      }
-    },
-    {
-      type: 'report:peps',
-      opts: {
-        monitored: pepMonitoringEnabled
-      }
+    
+    if (middleName) {
+      expectations['name:lite'].data.other = middleName;
     }
-  ];
+    
+    tasks = [
+      {
+        type: 'report:screening:lite',
+        opts: {
+          monitored: pepMonitoringEnabled || false
+        }
+      }
+    ];
+    
+  } else {
+    // AML & Address: Full screening with DOB and address
+    expectations = {
+      name: {
+        data: {
+          first: firstName,
+          last: lastName
+        }
+      },
+      dob: {
+        data: isoDate
+      }
+    };
+    
+    if (middleName) {
+      expectations.name.data.other = middleName;
+    }
+    
+    // Add address for AML & Address screening
+    if (address) {
+      expectations.address = {
+        data: address
+      };
+    }
+    
+    tasks = [
+      {
+        type: 'report:footprint',
+        opts: {
+          consent: internationalAddressEnabled && countryCode !== 'GBR'
+        }
+      },
+      {
+        type: 'report:peps',
+        opts: {
+          monitored: pepMonitoringEnabled || false
+        }
+      }
+    ];
+  }
   
   // Get check reference from client data
   const checkRef = checkState.clientData?.mD || 'Lite Screening Check';
