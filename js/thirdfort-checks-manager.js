@@ -1087,7 +1087,7 @@ class ThirdfortChecksManager {
         // Define task order
         const taskOrder = [
             'address', 'footprint', 'peps', 'sanctions',
-            'identity', 'nfc', 'liveness', 'facial_similarity', 'document',
+            'identity', 'identity:lite', 'nfc', 'liveness', 'facial_similarity', 'document',
             'sof:v1', 'bank:statement', 'bank:summary',
             'documents:poa', 'documents:poo', 'documents:other',
             'company:summary', 'company:sanctions', 'company:peps', 
