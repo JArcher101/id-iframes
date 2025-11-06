@@ -1476,105 +1476,163 @@ class ThirdfortChecksManager {
         return '';
     }
     
+    getCurrencyFlag(currency) {
+        // Map currency codes to country flags
+        const currencyFlags = {
+            'GBP': '🇬🇧',
+            'EUR': '🇪🇺',
+            'USD': '🇺🇸',
+            'CHF': '🇨🇭',
+            'JPY': '🇯🇵',
+            'CAD': '🇨🇦',
+            'AUD': '🇦🇺',
+            'NZD': '🇳🇿',
+            'SGD': '🇸🇬',
+            'HKD': '🇭🇰',
+            'SEK': '🇸🇪',
+            'NOK': '🇳🇴',
+            'DKK': '🇩🇰',
+            'PLN': '🇵🇱',
+            'CZK': '🇨🇿',
+            'HUF': '🇭🇺',
+            'RON': '🇷🇴'
+        };
+        return currencyFlags[currency] || '💱';
+    }
+    
     createBankAccountCard(accountId, accountData) {
-        // Handle both possible data structures (bank:statement and bank:summary)
-        const info = accountData.info || {};
-        const number = accountData.number || info.number || {};
-        const balance = accountData.balance || {};
-        const balances = accountData.balances || [];
-        const transactions = accountData.transactions || [];
-        const provider = accountData.provider || {};
-        const accountName = accountData.name || 'Bank Account';
-        const accountType = accountData.type || 'TRANSACTION';
-        const currency = accountData.currency || balance.currency || 'GBP';
+        // Handle both possible data structures - nested 'info' or direct properties
+        const info = accountData.info || accountData;
+        const number = info.number || {};
+        const balance = info.balance || {};
+        const provider = info.provider || {};
+        const accountName = info.name || 'Bank Account';
+        const accountType = info.type || 'TRANSACTION';
+        const currency = info.currency || balance.currency || 'GBP';
+        const statement = accountData.statement || [];
         
         // Get account number details
         const accountNumber = number.number || 'N/A';
         const sortCode = number.sort_code || 'N/A';
         const iban = number.iban || '';
+        const swiftBic = number.swift_bic || '';
         
-        // Get account holder name (from info array if available)
-        let accountHolder = '';
-        if (Array.isArray(info) && info.length > 0) {
-            accountHolder = info[0].full_name || '';
+        // Get account holder details (from nested info array)
+        let accountHolderDetails = null;
+        if (Array.isArray(info.info) && info.info.length > 0) {
+            accountHolderDetails = info.info[0];
         }
         
-        // Get balance - check multiple possible locations
-        let balanceText = 'N/A';
-        let availableBalance = 0;
-        let currentBalance = 0;
-        let overdraft = 0;
-        
-        if (balance.available !== undefined || balance.current !== undefined) {
-            availableBalance = balance.available || 0;
-            currentBalance = balance.current || 0;
-            overdraft = balance.overdraft || 0;
-            balanceText = `${currency} ${currentBalance.toFixed(2)}`;
-        } else if (balances.length > 0) {
-            const latestBalance = balances[balances.length - 1];
-            availableBalance = latestBalance.available_balance || 0;
-            currentBalance = latestBalance.current_balance || 0;
-            balanceText = `${currency} ${(currentBalance / 100).toFixed(2)}`;
-        }
+        // Get balance amounts
+        const availableBalance = balance.available || 0;
+        const currentBalance = balance.current || 0;
+        const overdraft = balance.overdraft || 0;
         
         // Transaction count
-        const txCount = transactions.length;
+        const txCount = statement.length;
         
         // Get bank logo
         const bankLogo = this.getBankLogo(provider.id, provider.name);
         
+        // Get currency flag
+        const currencyFlag = this.getCurrencyFlag(currency);
+        
         // Store the full data in a data attribute for the lightbox
         const accountDataJson = JSON.stringify({accountId, accountData}).replace(/"/g, '&quot;');
         
-        // Format account type for display
-        const typeDisplay = accountType === 'TRANSACTION' ? 'Current Account' : 
-                           accountType === 'SAVINGS' ? 'Savings Account' : accountType;
-        
         return `
-            <div class="bank-account-card" ${txCount > 0 ? `onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.dataset.accountData);"` : ''} data-account-data="${accountDataJson}">
-                <div class="account-header-row">
-                    <div class="account-provider">
-                        ${bankLogo}
-                        <div class="provider-details">
-                            <div class="provider-name">${provider.name || 'Bank'}</div>
-                            <div class="account-type-badge">${typeDisplay}</div>
+            <div class="bank-account-card" data-account-data="${accountDataJson}">
+                <div class="account-main-header">
+                    <h3 class="account-name-title">${accountName}</h3>
+                </div>
+                
+                <div class="account-provider-row">
+                    <div class="provider-name-text">${provider.name || 'Bank'}</div>
+                    ${bankLogo ? `<div class="provider-logo-container">${bankLogo}</div>` : ''}
+                </div>
+                
+                <div class="account-numbers-section">
+                    <div class="account-number-row">
+                        <span class="account-label">Sort Code:</span>
+                        <span class="account-value">${sortCode}</span>
+                    </div>
+                    <div class="account-number-row">
+                        <span class="account-label">Account Number:</span>
+                        <span class="account-value">${accountNumber}</span>
+                    </div>
+                    ${iban ? `
+                        <div class="account-number-row">
+                            <span class="account-label">IBAN:</span>
+                            <span class="account-value">${iban}</span>
+                        </div>
+                    ` : ''}
+                    ${swiftBic ? `
+                        <div class="account-number-row">
+                            <span class="account-label">SWIFT/BIC:</span>
+                            <span class="account-value">${swiftBic}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="nested-details-card balance-card">
+                    <div class="nested-card-title">Balance Details</div>
+                    <div class="balance-details-grid">
+                        <div class="balance-detail-row">
+                            <span class="balance-detail-label">Available:</span>
+                            <span class="balance-detail-value">${currency} ${availableBalance.toFixed(2)}</span>
+                        </div>
+                        <div class="balance-detail-row">
+                            <span class="balance-detail-label">Current:</span>
+                            <span class="balance-detail-value">${currency} ${currentBalance.toFixed(2)}</span>
+                        </div>
+                        <div class="balance-detail-row">
+                            <span class="balance-detail-label">Overdraft:</span>
+                            <span class="balance-detail-value">${overdraft > 0 ? `${currency} ${overdraft.toFixed(2)}` : 'No overdraft'}</span>
+                        </div>
+                        <div class="balance-detail-row">
+                            <span class="balance-detail-label">Currency:</span>
+                            <span class="balance-detail-value">${currencyFlag} ${currency}</span>
                         </div>
                     </div>
                 </div>
-                <div class="account-name-display">${accountName}</div>
-                ${accountHolder ? `<div class="account-holder">Account Holder: ${accountHolder}</div>` : ''}
-                <div class="account-numbers">
-                    <div class="account-detail"><strong>Sort Code:</strong> ${sortCode}</div>
-                    <div class="account-detail"><strong>Account:</strong> ${accountNumber}</div>
-                    ${iban ? `<div class="account-detail"><strong>IBAN:</strong> ${iban}</div>` : ''}
-                </div>
-                <div class="account-balance-section">
-                    <div class="balance-item">
-                        <span class="balance-label">Current Balance:</span>
-                        <span class="balance-amount">${balanceText}</span>
+                
+                ${accountHolderDetails ? `
+                    <div class="nested-details-card holder-card">
+                        <div class="nested-card-title">Account Holder</div>
+                        <div class="holder-details-grid">
+                            ${accountHolderDetails.full_name ? `
+                                <div class="holder-detail-row">
+                                    <span class="holder-detail-label">Name:</span>
+                                    <span class="holder-detail-value">${accountHolderDetails.full_name}</span>
+                                </div>
+                            ` : ''}
+                            ${accountHolderDetails.date_of_birth ? `
+                                <div class="holder-detail-row">
+                                    <span class="holder-detail-label">Date of Birth:</span>
+                                    <span class="holder-detail-value">${accountHolderDetails.date_of_birth}</span>
+                                </div>
+                            ` : ''}
+                            ${accountHolderDetails.phones ? `
+                                <div class="holder-detail-row">
+                                    <span class="holder-detail-label">Phone:</span>
+                                    <span class="holder-detail-value">${accountHolderDetails.phones}</span>
+                                </div>
+                            ` : ''}
+                            ${accountHolderDetails.emails ? `
+                                <div class="holder-detail-row">
+                                    <span class="holder-detail-label">Email:</span>
+                                    <span class="holder-detail-value">${accountHolderDetails.emails}</span>
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
-                    ${availableBalance !== currentBalance && availableBalance > 0 ? `
-                        <div class="balance-item">
-                            <span class="balance-label">Available:</span>
-                            <span class="balance-amount">${currency} ${availableBalance.toFixed(2)}</span>
-                        </div>
-                    ` : ''}
-                    ${overdraft > 0 ? `
-                        <div class="balance-item">
-                            <span class="balance-label">Overdraft:</span>
-                            <span class="balance-amount">${currency} ${overdraft.toFixed(2)}</span>
-                        </div>
-                    ` : ''}
-                    ${txCount > 0 ? `
-                        <div class="balance-item">
-                            <span class="balance-label">Transactions:</span>
-                            <span class="balance-amount">${txCount}</span>
-                        </div>
-                    ` : ''}
-                </div>
+                ` : ''}
+                
                 ${txCount > 0 ? `
                     <div class="account-action">
-                        <button class="view-statement-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.parentElement.parentElement.dataset.accountData);">View Full Statement</button>
+                        <button class="view-statement-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.closest('.bank-account-card').dataset.accountData);">
+                            View Statement (${txCount} transaction${txCount !== 1 ? 's' : ''})
+                        </button>
                     </div>
                 ` : ''}
             </div>
@@ -1585,8 +1643,8 @@ class ThirdfortChecksManager {
         // Parse the account data
         const data = JSON.parse(accountDataStr.replace(/&quot;/g, '"'));
         const accountData = data.accountData;
-        const transactions = accountData.transactions || [];
-        const info = accountData.info || {};
+        const statement = accountData.statement || accountData.transactions || [];
+        const info = accountData.info || accountData;
         const number = info.number || {};
         
         // Build statement HTML
@@ -1613,23 +1671,27 @@ class ThirdfortChecksManager {
         `;
         
         // Sort transactions by timestamp
-        const sortedTransactions = [...transactions].sort((a, b) => 
+        const sortedTransactions = [...statement].sort((a, b) => 
             new Date(a.timestamp) - new Date(b.timestamp)
         );
+        
+        // Get currency from account
+        const currency = info.currency || 'GBP';
+        const currencySymbol = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency;
         
         sortedTransactions.forEach(tx => {
             const date = new Date(tx.timestamp).toLocaleDateString('en-GB');
             const description = tx.description || tx.merchant_name || 'Transaction';
-            const amount = (tx.amount / 100).toFixed(2);
-            const balance = tx.running_balance ? (tx.running_balance / 100).toFixed(2) : '—';
+            const amount = tx.amount.toFixed(2);
+            const balance = tx.running_balance ? tx.running_balance.toFixed(2) : '—';
             const amountClass = tx.amount < 0 ? 'negative' : 'positive';
             
             statementHtml += `
                 <tr>
                     <td>${date}</td>
                     <td>${description}</td>
-                    <td class="${amountClass}">£${amount}</td>
-                    <td>£${balance}</td>
+                    <td class="${amountClass}">${currencySymbol}${amount}</td>
+                    <td>${balance !== '—' ? currencySymbol + balance : balance}</td>
                 </tr>
             `;
         });
