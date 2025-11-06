@@ -1541,100 +1541,98 @@ class ThirdfortChecksManager {
         const accountDataJson = JSON.stringify({accountId, accountData}).replace(/"/g, '&quot;');
         
         return `
-            <div class="bank-account-card" data-account-data="${accountDataJson}">
-                <div class="account-main-header">
-                    <h3 class="account-name-title">${accountName}</h3>
+            <div class="bank-account-card collapsed" data-account-data="${accountDataJson}" onclick="this.classList.toggle('collapsed')">
+                <!-- Collapsed/Minimized Header -->
+                <div class="account-collapsed-header">
+                    <span class="account-collapsed-text">${accountName} - ${provider.name || 'Bank'}</span>
+                    ${bankLogo ? bankLogo : ''}
                 </div>
                 
-                <div class="account-provider-row">
-                    <div class="provider-name-text">${provider.name || 'Bank'}</div>
-                    ${bankLogo ? `<div class="provider-logo-container">${bankLogo}</div>` : ''}
-                </div>
-                
-                <div class="account-numbers-section">
-                    <div class="account-number-row">
-                        <span class="account-label">Sort Code:</span>
-                        <span class="account-value">${sortCode}</span>
+                <!-- Expanded Details -->
+                <div class="account-expanded-details">
+                    <div class="account-numbers-compact">
+                        <div class="account-number-item">
+                            <span class="account-label">Sort:</span>
+                            <span class="account-value">${sortCode}</span>
+                        </div>
+                        <div class="account-number-item">
+                            <span class="account-label">Account:</span>
+                            <span class="account-value">${accountNumber}</span>
+                        </div>
+                        ${iban ? `
+                            <div class="account-number-item">
+                                <span class="account-label">IBAN:</span>
+                                <span class="account-value">${iban}</span>
+                            </div>
+                        ` : ''}
+                        ${swiftBic ? `
+                            <div class="account-number-item">
+                                <span class="account-label">SWIFT:</span>
+                                <span class="account-value">${swiftBic}</span>
+                            </div>
+                        ` : ''}
                     </div>
-                    <div class="account-number-row">
-                        <span class="account-label">Account Number:</span>
-                        <span class="account-value">${accountNumber}</span>
+                    
+                    <div class="nested-details-compact balance-compact">
+                        <div class="nested-title">Balance</div>
+                        <div class="details-compact-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Available:</span>
+                                <span class="detail-value">${currency} ${availableBalance.toFixed(2)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Current:</span>
+                                <span class="detail-value">${currency} ${currentBalance.toFixed(2)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Overdraft:</span>
+                                <span class="detail-value">${overdraft > 0 ? `${currency} ${overdraft.toFixed(2)}` : 'None'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Currency:</span>
+                                <span class="detail-value">${currencyFlag} ${currency}</span>
+                            </div>
+                        </div>
                     </div>
-                    ${iban ? `
-                        <div class="account-number-row">
-                            <span class="account-label">IBAN:</span>
-                            <span class="account-value">${iban}</span>
+                    
+                    ${accountHolderDetails ? `
+                        <div class="nested-details-compact holder-compact">
+                            <div class="nested-title">Account Holder</div>
+                            <div class="details-compact-grid">
+                                ${accountHolderDetails.full_name ? `
+                                    <div class="detail-item full-width">
+                                        <span class="detail-label">Name:</span>
+                                        <span class="detail-value">${accountHolderDetails.full_name}</span>
+                                    </div>
+                                ` : ''}
+                                ${accountHolderDetails.date_of_birth ? `
+                                    <div class="detail-item">
+                                        <span class="detail-label">DOB:</span>
+                                        <span class="detail-value">${accountHolderDetails.date_of_birth}</span>
+                                    </div>
+                                ` : ''}
+                                ${accountHolderDetails.phones ? `
+                                    <div class="detail-item">
+                                        <span class="detail-label">Phone:</span>
+                                        <span class="detail-value">${accountHolderDetails.phones}</span>
+                                    </div>
+                                ` : ''}
+                                ${accountHolderDetails.emails ? `
+                                    <div class="detail-item full-width">
+                                        <span class="detail-label">Email:</span>
+                                        <span class="detail-value">${accountHolderDetails.emails}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
                         </div>
                     ` : ''}
-                    ${swiftBic ? `
-                        <div class="account-number-row">
-                            <span class="account-label">SWIFT/BIC:</span>
-                            <span class="account-value">${swiftBic}</span>
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div class="nested-details-card balance-card">
-                    <div class="nested-card-title">Balance Details</div>
-                    <div class="balance-details-grid">
-                        <div class="balance-detail-row">
-                            <span class="balance-detail-label">Available:</span>
-                            <span class="balance-detail-value">${currency} ${availableBalance.toFixed(2)}</span>
-                        </div>
-                        <div class="balance-detail-row">
-                            <span class="balance-detail-label">Current:</span>
-                            <span class="balance-detail-value">${currency} ${currentBalance.toFixed(2)}</span>
-                        </div>
-                        <div class="balance-detail-row">
-                            <span class="balance-detail-label">Overdraft:</span>
-                            <span class="balance-detail-value">${overdraft > 0 ? `${currency} ${overdraft.toFixed(2)}` : 'No overdraft'}</span>
-                        </div>
-                        <div class="balance-detail-row">
-                            <span class="balance-detail-label">Currency:</span>
-                            <span class="balance-detail-value">${currencyFlag} ${currency}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                ${accountHolderDetails ? `
-                    <div class="nested-details-card holder-card">
-                        <div class="nested-card-title">Account Holder</div>
-                        <div class="holder-details-grid">
-                            ${accountHolderDetails.full_name ? `
-                                <div class="holder-detail-row">
-                                    <span class="holder-detail-label">Name:</span>
-                                    <span class="holder-detail-value">${accountHolderDetails.full_name}</span>
-                                </div>
-                            ` : ''}
-                            ${accountHolderDetails.date_of_birth ? `
-                                <div class="holder-detail-row">
-                                    <span class="holder-detail-label">Date of Birth:</span>
-                                    <span class="holder-detail-value">${accountHolderDetails.date_of_birth}</span>
-                                </div>
-                            ` : ''}
-                            ${accountHolderDetails.phones ? `
-                                <div class="holder-detail-row">
-                                    <span class="holder-detail-label">Phone:</span>
-                                    <span class="holder-detail-value">${accountHolderDetails.phones}</span>
-                                </div>
-                            ` : ''}
-                            ${accountHolderDetails.emails ? `
-                                <div class="holder-detail-row">
-                                    <span class="holder-detail-label">Email:</span>
-                                    <span class="holder-detail-value">${accountHolderDetails.emails}</span>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                ` : ''}
-                
-                ${txCount > 0 ? `
-                    <div class="account-action">
-                        <button class="view-statement-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.closest('.bank-account-card').dataset.accountData);">
-                            View Statement (${txCount} transaction${txCount !== 1 ? 's' : ''})
+                    
+                    ${txCount > 0 ? `
+                        <button class="view-statement-compact-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.closest('.bank-account-card').dataset.accountData);">
+                            View Statement (${txCount})
                         </button>
-                    </div>
-                ` : ''}
+                    ` : ''}
+                </div>
             </div>
         `;
     }

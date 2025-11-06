@@ -1773,129 +1773,152 @@ body {
 .bank-account-card {
     background: white;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
     transition: all 0.2s;
+    cursor: pointer;
 }
 
-.account-main-header {
-    margin-bottom: 12px;
+.bank-account-card:hover {
+    border-color: var(--light-blue);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-.account-name-title {
-    font-family: 'RotisBold', sans-serif;
-    font-size: 18px;
-    color: var(--primary-blue);
-    margin: 0;
-}
-
-.account-provider-row {
+/* Collapsed/Minimized State */
+.account-collapsed-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 12px;
-    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
-    margin-bottom: 16px;
+    gap: 8px;
 }
 
-.provider-name-text {
-    font-family: 'RotisBold', sans-serif;
-    font-size: 16px;
+.account-collapsed-text {
+    font-family: 'Rotis', sans-serif;
+    font-size: 13px;
     color: var(--dark-grey);
+    flex: 1;
 }
 
-.provider-logo-container {
-    display: flex;
-    align-items: center;
-}
-
-.bank-logo {
-    width: 48px;
-    height: 48px;
+.account-collapsed-header .bank-logo {
+    width: 28px;
+    height: 28px;
     object-fit: contain;
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid rgba(0, 0, 0, 0.05);
     background: white;
-    padding: 4px;
+    padding: 2px;
 }
 
-.account-numbers-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 16px;
+/* Expanded Details - Hidden by default */
+.bank-account-card.collapsed .account-expanded-details {
+    display: none;
 }
 
-.account-number-row {
+.account-expanded-details {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Compact Account Numbers */
+.account-numbers-compact {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.account-number-item {
     display: flex;
-    justify-content: space-between;
-    padding: 6px 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    gap: 4px;
+    font-size: 11px;
 }
 
 .account-label {
-    font-size: 12px;
     color: var(--grey);
-    font-family: 'Transport', sans-serif;
+    font-family: 'Rotis', sans-serif;
 }
 
 .account-value {
-    font-size: 13px;
     color: var(--dark-grey);
-    font-family: 'Transport', sans-serif;
-    font-weight: bold;
+    font-family: 'Rotis', sans-serif;
 }
 
-/* Nested Details Cards */
-.nested-details-card {
+/* Compact Nested Details */
+.nested-details-compact {
     background: rgba(0, 0, 0, 0.02);
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 12px;
-    border-left: 3px solid var(--primary-blue);
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 8px;
+    border-left: 2px solid var(--primary-blue);
 }
 
-.nested-card-title {
+.nested-title {
     font-family: 'RotisBold', sans-serif;
-    font-size: 13px;
+    font-size: 11px;
     color: var(--primary-blue);
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
 }
 
-.balance-details-grid,
-.holder-details-grid {
+.details-compact-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+}
+
+.detail-item {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    font-size: 10px;
 }
 
-.balance-detail-row,
-.holder-detail-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.detail-item.full-width {
+    grid-column: 1 / -1;
 }
 
-.balance-detail-label,
-.holder-detail-label {
-    font-size: 12px;
+.detail-label {
     color: var(--grey);
-    font-family: 'Transport', sans-serif;
+    font-family: 'Rotis', sans-serif;
 }
 
-.balance-detail-value,
-.holder-detail-value {
-    font-size: 13px;
+.detail-value {
     color: var(--dark-grey);
-    font-family: 'Transport', sans-serif;
-    font-weight: bold;
+    font-family: 'Rotis', sans-serif;
 }
 
-.holder-card {
+.holder-compact {
     border-left-color: var(--dark-grey);
+}
+
+.view-statement-compact-btn {
+    width: 100%;
+    padding: 6px 10px;
+    background: var(--light-blue);
+    border: none;
+    border-radius: 4px;
+    font-family: 'Rotis', sans-serif;
+    font-size: 11px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 8px;
+}
+
+.view-statement-compact-btn:hover {
+    background: var(--primary-blue);
+}
+
+.bank-logo {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    background: white;
+    padding: 2px;
 }
 
 .account-action {
