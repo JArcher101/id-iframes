@@ -672,20 +672,30 @@ class ThirdfortChecksManager {
             const piiData = check.piiData || {};
             const expectations = check.expectations || {};  // Lite Screen expectations (available before completion)
             
+            // For screening:lite checks, get data from the task outcome
+            const screeningLiteData = check.taskOutcomes?.['screening:lite']?.data || {};
+            const isScreeningLite = screeningLiteData && Object.keys(screeningLiteData).length > 0;
+            
             // For IDV checks, also pull data from identity:lite taskOutcomes
             const idvProperties = check.checkType === 'idv' 
                 ? check.taskOutcomes?.['identity:lite']?.breakdown?.document?.properties 
                 : null;
             
-            const name = check.consumerName || 
+            const consumerName = check.consumerName ? check.consumerName.trim() : '';
+            const name = (consumerName || 
+                        (isScreeningLite && screeningLiteData['name:lite'] ? 
+                            `${screeningLiteData['name:lite'].first || ''} ${screeningLiteData['name:lite'].last || ''}`.trim() : '') ||
                         (idvProperties ? `${idvProperties.first_name || ''} ${idvProperties.last_name || ''}`.trim() : '') ||
                         (expectations.name?.data ? `${expectations.name.data.first || ''} ${expectations.name.data.last || ''}`.trim() : '') ||
-                        (piiData.name ? `${piiData.name.first || ''} ${piiData.name.last || ''}`.trim() : '—');
+                        (piiData.name ? `${piiData.name.first || ''} ${piiData.name.last || ''}`.trim() : '')) || '—';
             
-            const dob = idvProperties?.date_of_birth 
-                ? new Date(idvProperties.date_of_birth).toLocaleDateString('en-GB')
-                : (expectations.dob?.data ? new Date(expectations.dob.data).toLocaleDateString('en-GB') : '')
-                || (piiData.dob ? new Date(piiData.dob).toLocaleDateString('en-GB') : '—');
+            // For screening:lite, use yob (year of birth) instead of full DOB
+            const dob = isScreeningLite && screeningLiteData.yob 
+                ? screeningLiteData.yob  // Just show the year for screening:lite
+                : idvProperties?.date_of_birth 
+                    ? new Date(idvProperties.date_of_birth).toLocaleDateString('en-GB')
+                    : (expectations.dob?.data ? new Date(expectations.dob.data).toLocaleDateString('en-GB') : '')
+                    || (piiData.dob ? new Date(piiData.dob).toLocaleDateString('en-GB') : '—');
             
             const mobile = check.consumerPhone || check.thirdfortResponse?.request?.actor?.phone || '—';
             const email = check.consumerEmail || check.thirdfortResponse?.request?.actor?.email || '—';
@@ -729,15 +739,38 @@ class ThirdfortChecksManager {
             }
             
             if (dob && dob !== '—') {
+                const dobLabel = isScreeningLite ? 'Year of Birth' : 'Date of Birth';
                 gridItems.push(`
                     <div class="detail-item">
-                        <div class="detail-label">Date of Birth</div>
+                        <div class="detail-label">${dobLabel}</div>
                         <div class="detail-value">${dob}</div>
                     </div>
                 `);
             }
             
-            if (mobile && mobile !== '—') {
+            // For screening:lite, show country
+            if (isScreeningLite && screeningLiteData.country) {
+                const countryCode = screeningLiteData.country;
+                const countryNames = {
+                    'GBR': 'United Kingdom',
+                    'USA': 'United States',
+                    'UK': 'United Kingdom',
+                    'US': 'United States',
+                    'FR': 'France',
+                    'DE': 'Germany',
+                    'ES': 'Spain',
+                    'IT': 'Italy'
+                };
+                const countryName = countryNames[countryCode] || countryCode;
+                gridItems.push(`
+                    <div class="detail-item">
+                        <div class="detail-label">Country</div>
+                        <div class="detail-value">${countryName}</div>
+                    </div>
+                `);
+            }
+            
+            if (mobile && mobile !== '—' && !isScreeningLite) {
                 gridItems.push(`
                     <div class="detail-item">
                         <div class="detail-label">Mobile</div>
@@ -746,7 +779,7 @@ class ThirdfortChecksManager {
                 `);
             }
             
-            if (email && email !== '—') {
+            if (email && email !== '—' && !isScreeningLite) {
                 gridItems.push(`
                     <div class="detail-item">
                         <div class="detail-label">Email</div>
@@ -760,13 +793,13 @@ class ThirdfortChecksManager {
                     <div class="details-title">Client Details</div>
                 </div>
                 ${gridItems.length > 0 ? `<div class="details-grid">${gridItems.join('')}</div>` : ''}
-                ${fullAddress && fullAddress !== '—' && check.checkType !== 'idv' ? `
+                ${fullAddress && fullAddress !== '—' && check.checkType !== 'idv' && !isScreeningLite ? `
                 <div class="detail-item" style="margin-top: 12px;">
                     <div class="detail-label">Address</div>
                     <div class="detail-value">${fullAddress}</div>
                 </div>
                 ` : ''}
-                ${(docNumber !== '—' || mrz) && check.checkType !== 'idv' ? `
+                ${(docNumber !== '—' || mrz) && check.checkType !== 'idv' && !isScreeningLite ? `
                 <div class="detail-item" style="margin-top: 12px;">
                     <div class="detail-label">Document Number</div>
                     <div class="detail-value">${docNumber}</div>
@@ -1108,11 +1141,21 @@ class ThirdfortChecksManager {
             return;
         }
         
+        // Convert screening:lite or peps to screening (combined PEP + Sanctions + Adverse Media for individuals)
+        // For individual checks, PEP and Sanctions are combined into "Screening"
+        if (taskOutcomes['screening:lite']) {
+            taskOutcomes['screening'] = taskOutcomes['screening:lite'];
+        } else if (taskOutcomes['peps'] && !taskOutcomes['company:peps']) {
+            // If it's a standalone peps task (not company peps), rename to screening
+            taskOutcomes['screening'] = taskOutcomes['peps'];
+            delete taskOutcomes['peps'];
+        }
+        
         let tasksHtml = '';
         
         // Define task order
         const taskOrder = [
-            'address', 'footprint', 'peps', 'sanctions',
+            'address', 'screening', 'peps', 'sanctions',
             'identity', 'identity:lite', 'nfc', 'liveness', 'facial_similarity', 'document',
             'sof:v1', 'bank:statement', 'bank:summary',
             'documents:poa', 'documents:poo', 'documents:other',
@@ -1122,14 +1165,14 @@ class ThirdfortChecksManager {
         
         taskOrder.forEach(taskKey => {
             if (taskOutcomes[taskKey]) {
-                tasksHtml += this.createTaskCard(taskKey, taskOutcomes[taskKey]);
+                tasksHtml += this.createTaskCard(taskKey, taskOutcomes[taskKey], check);
             }
         });
         
         this.tasksSection.innerHTML = tasksHtml;
     }
     
-    createTaskCard(taskType, outcome) {
+    createTaskCard(taskType, outcome, check) {
         const result = outcome.result || 'unknown';
         const status = outcome.status || '';
         let borderClass = '';
@@ -1151,7 +1194,7 @@ class ThirdfortChecksManager {
         }
         
         const taskTitle = this.getTaskTitle(taskType);
-        const taskChecks = this.getTaskChecks(taskType, outcome);
+        const taskChecks = this.getTaskChecks(taskType, outcome, check);
         
         // Document tasks (PoA, PoO) - Non-expandable, just status text
         const isDocumentTask = taskType === 'documents:poa' || taskType === 'documents:poo' || taskType === 'documents:other';
@@ -1188,6 +1231,9 @@ class ThirdfortChecksManager {
                 if (check.isPersonCard === true && check.personData) {
                     console.log(`Rendering person card ${index}:`, check.personData.name || check.personData.fullName);
                     checksHtml += this.createPersonProfileCard(check.personData);
+                } else if (check.isHitCard === true && check.hitData) {
+                    // Handle screening hit cards (PEP, Sanctions, Adverse Media)
+                    checksHtml += this.createScreeningHitCard(check.hitData);
                 } else {
                     // Standard check item with icon
                     const checkIcon = this.getTaskCheckIcon(check.status);
@@ -1204,10 +1250,15 @@ class ThirdfortChecksManager {
             checksHtml += '</div>';
         }
         
-        // Show inline status for unobtainable
-        const inlineStatus = outcome.status === 'unobtainable' 
-            ? '<div class="task-summary-inline">Unobtainable - Some information may still be available</div>' 
-            : '';
+        // Show inline status for unobtainable or inline warnings (like address verification issues)
+        let inlineStatus = '';
+        if (outcome.status === 'unobtainable') {
+            inlineStatus = '<div class="task-summary-inline">Unobtainable - Some information may still be available</div>';
+        } else if (outcome.inlineWarning) {
+            // For address verification and other tasks with specific warnings
+            const warningClass = result === 'fail' ? 'task-summary-inline-fail' : 'task-summary-inline-consider';
+            inlineStatus = `<div class="task-summary-inline ${warningClass}">${outcome.inlineWarning}</div>`;
+        }
         
         return `
             <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
@@ -1565,6 +1616,236 @@ class ThirdfortChecksManager {
         return '';
     }
     
+    createScreeningHitCard(hitData) {
+        const {
+            name, dob, hitType, hitIcon, score, flagTypes, positions, countries, aka, media, associates, fields, match_types
+        } = hitData;
+        
+        const uniqueId = `hit-${Math.random().toString(36).substr(2, 9)}`;
+        
+        let html = `
+            <div class="screening-hit-card">
+                <div class="screening-hit-header">
+                    <div class="screening-hit-name">${name}</div>
+                    <div class="screening-hit-badges">
+        `;
+        
+        // Organize badges by type for separate rows
+        const pepBadges = [];
+        const sanctionBadges = [];
+        const adverseBadges = [];
+        const otherBadges = [];
+        
+        if (flagTypes && flagTypes.length > 0) {
+            const uniqueFlags = [...new Set(flagTypes)];
+            uniqueFlags.forEach(flag => {
+                let badgeText = flag.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                
+                if (flag.includes('pep')) {
+                    // Extract PEP class if available
+                    if (flag.includes('class-1')) badgeText = 'PEP Class 1';
+                    else if (flag.includes('class-2')) badgeText = 'PEP Class 2';
+                    else if (flag.includes('class-3')) badgeText = 'PEP Class 3';
+                    else if (flag.includes('class-4')) badgeText = 'PEP Class 4';
+                    else if (flag === 'pep') badgeText = 'PEP';
+                    pepBadges.push(badgeText);
+                } else if (flag.includes('sanction')) {
+                    sanctionBadges.push(badgeText);
+                } else if (flag.includes('adverse-media')) {
+                    adverseBadges.push(badgeText);
+                } else {
+                    otherBadges.push(badgeText);
+                }
+            });
+        }
+        
+        // PEP badges row (purple)
+        if (pepBadges.length > 0) {
+            html += '<div class="hit-badge-row">';
+            pepBadges.forEach(badge => {
+                html += `<span class="hit-badge hit-badge-pep">${badge}</span>`;
+            });
+            html += '</div>';
+        }
+        
+        // Sanctions badges row (red)
+        if (sanctionBadges.length > 0) {
+            html += '<div class="hit-badge-row">';
+            sanctionBadges.forEach(badge => {
+                html += `<span class="hit-badge hit-badge-sanction">${badge}</span>`;
+            });
+            html += '</div>';
+        }
+        
+        // Adverse Media badges row (blue)
+        if (adverseBadges.length > 0) {
+            html += '<div class="hit-badge-row">';
+            adverseBadges.forEach(badge => {
+                html += `<span class="hit-badge hit-badge-adverse">${badge}</span>`;
+            });
+            html += '</div>';
+        }
+        
+        // Match types row (green)
+        if (match_types && match_types.length > 0) {
+            html += '<div class="hit-badge-row">';
+            match_types.forEach(matchType => {
+                const matchText = matchType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                html += `<span class="hit-badge hit-badge-match">${matchText}</span>`;
+            });
+            html += '</div>';
+        }
+        
+        // Other badges row
+        if (otherBadges.length > 0) {
+            html += '<div class="hit-badge-row">';
+            otherBadges.forEach(badge => {
+                html += `<span class="hit-badge hit-badge-default">${badge}</span>`;
+            });
+            html += '</div>';
+        }
+        
+        html += `
+                    </div>
+                </div>
+                <div class="screening-hit-body">
+                    <div class="hit-main-column">
+        `;
+        
+        // Date of Birth
+        if (dob) {
+            html += `<div class="hit-info-row"><span class="hit-info-label">Date of Birth:</span> <span class="hit-info-value">${dob}</span></div>`;
+        }
+        
+        // Positions - show all
+        if (positions && positions.length > 0) {
+            html += `<div class="hit-info-row"><span class="hit-info-label">Position${positions.length > 1 ? 's' : ''}:</span> <span class="hit-info-value">${positions.join(', ')}</span></div>`;
+        }
+        
+        // AKA - show all
+        if (aka && aka.length > 0) {
+            html += `<div class="hit-info-row"><span class="hit-info-label">Also Known As:</span> <span class="hit-info-value">${aka.join(', ')}</span></div>`;
+        }
+        
+        // Countries with flag emojis - show all
+        if (countries && countries.length > 0) {
+            html += `<div class="hit-info-row"><span class="hit-info-label">Countries:</span> <div class="hit-countries">`;
+            countries.forEach(country => {
+                const flagEmoji = this.getCountryFlag(country);
+                html += `<span class="country-tag">${flagEmoji} ${country}</span>`;
+            });
+            html += `</div></div>`;
+        }
+        
+        // Number of sources
+        if (fields && fields.length > 0) {
+            html += `<div class="hit-info-row"><span class="hit-info-label">Data Sources:</span> <span class="hit-info-value">${fields.length} source${fields.length !== 1 ? 's' : ''}</span></div>`;
+        }
+        
+        // Media articles - expandable
+        if (media && media.length > 0) {
+            html += `
+                <div class="hit-info-row hit-media-section">
+                    <span class="hit-info-label">Media Articles:</span> 
+                    <span class="hit-info-value hit-media-toggle" onclick="document.getElementById('${uniqueId}-media').classList.toggle('expanded'); event.stopPropagation();">
+                        ${media.length} article${media.length !== 1 ? 's' : ''} ▼
+                    </span>
+                </div>
+                <div id="${uniqueId}-media" class="hit-media-list">
+            `;
+            // Show first 10 articles
+            media.slice(0, 10).forEach((article, idx) => {
+                const date = article.date && article.date !== '0001-01-01T00:00:00Z' ? new Date(article.date).toLocaleDateString() : 'Unknown date';
+                const title = article.title || 'Untitled';
+                const snippet = article.snippet ? article.snippet.substring(0, 200) + '...' : '';
+                const url = article.url || '';
+                html += `
+                    <div class="media-article">
+                        ${url ? `<a href="${url}" target="_blank" class="media-article-title" onclick="event.stopPropagation(); window.open('${url}', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes'); return false;">${title}</a>` : `<div class="media-article-title">${title}</div>`}
+                        ${snippet ? `<div class="media-article-snippet">${snippet}</div>` : ''}
+                        <div class="media-article-date">${date}</div>
+                    </div>
+                `;
+            });
+            
+            // Additional articles shown when expanded
+            if (media.length > 10) {
+                html += `<div id="${uniqueId}-media-extra" class="hit-media-list-extra">`;
+                media.slice(10).forEach((article, idx) => {
+                    const date = article.date && article.date !== '0001-01-01T00:00:00Z' ? new Date(article.date).toLocaleDateString() : 'Unknown date';
+                    const title = article.title || 'Untitled';
+                    const snippet = article.snippet ? article.snippet.substring(0, 200) + '...' : '';
+                    const url = article.url || '';
+                    html += `
+                        <div class="media-article">
+                            ${url ? `<a href="${url}" target="_blank" class="media-article-title" onclick="event.stopPropagation(); window.open('${url}', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes'); return false;">${title}</a>` : `<div class="media-article-title">${title}</div>`}
+                            ${snippet ? `<div class="media-article-snippet">${snippet}</div>` : ''}
+                            <div class="media-article-date">${date}</div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                html += `<div class="media-article-more" onclick="document.getElementById('${uniqueId}-media-extra').classList.toggle('expanded'); this.textContent = this.textContent.startsWith('+') ? 'Show less' : '+ ${media.length - 10} more article${media.length - 10 !== 1 ? 's' : ''}'; event.stopPropagation();">+ ${media.length - 10} more article${media.length - 10 !== 1 ? 's' : ''}</div>`;
+            }
+            html += `</div>`;
+        }
+        
+        html += `
+                    </div>
+        `;
+        
+        // Associates column
+        if (associates && associates.length > 0) {
+            const hasMany = associates.length >= 6;
+            html += `
+                    <div class="hit-associates-column${hasMany ? ' has-many' : ''}">
+                        <div class="associates-header">Associates (${associates.length})</div>
+                        <div class="associates-grid">
+            `;
+            associates.forEach(assoc => {
+                const assocName = assoc.name || 'Unknown';
+                const assocRelation = assoc.association || 'Unknown relation';
+                html += `
+                    <div class="associate-card">
+                        <span class="associate-name">${assocName}</span>
+                        <span class="associate-badge">${assocRelation}</span>
+                    </div>
+                `;
+            });
+            html += `
+                        </div>
+                    </div>
+            `;
+        }
+        
+        html += `
+                </div>
+            </div>
+        `;
+        
+        return html;
+    }
+    
+    getCountryFlag(countryName) {
+        // Map country names to flag emojis
+        const flagMap = {
+            'United Kingdom': '🇬🇧', 'UK': '🇬🇧', 'Great Britain': '🇬🇧', 'GB': '🇬🇧',
+            'United States': '🇺🇸', 'USA': '🇺🇸', 'US': '🇺🇸',
+            'France': '🇫🇷', 'FR': '🇫🇷',
+            'Germany': '🇩🇪', 'DE': '🇩🇪',
+            'Spain': '🇪🇸', 'ES': '🇪🇸',
+            'Italy': '🇮🇹', 'IT': '🇮🇹',
+            'Belgium': '🇧🇪', 'BE': '🇧🇪',
+            'Brazil': '🇧🇷', 'BR': '🇧🇷',
+            'Iran': '🇮🇷', 'IR': '🇮🇷',
+            'Japan': '🇯🇵', 'JP': '🇯🇵',
+            'Malta': '🇲🇹', 'MT': '🇲🇹',
+            'Sri Lanka': '🇱🇰', 'LK': '🇱🇰',
+            'Ireland': '🇮🇪', 'IE': '🇮🇪'
+        };
+        return flagMap[countryName] || '🌍';
+    }
+    
     deduplicatePeople(owners, officers) {
         // Remove owners who are already listed as officers (same person in multiple roles)
         // Match by name and date of birth (if available)
@@ -1663,6 +1944,7 @@ class ThirdfortChecksManager {
         const titles = {
             'address': 'Address Verification',
             'footprint': 'Digital Footprint',
+            'screening': 'Screening',
             'peps': 'PEP Screening',
             'sanctions': 'Sanctions Screening',
             'identity': 'Identity Verification',
@@ -1701,35 +1983,12 @@ class ThirdfortChecksManager {
         return 'Processing...';
     }
     
-    getTaskChecks(taskType, outcome) {
+    getTaskChecks(taskType, outcome, check) {
         const checks = [];
         const data = outcome.data || {};
         
         // Task-specific checks based on type
-        if (taskType === 'address') {
-            // Address objectives: sources and quality
-            if (data.sources !== undefined) {
-                checks.push({
-                    status: data.sources >= 2 ? 'CL' : 'CO',
-                    text: `${data.sources} Address source${data.sources !== 1 ? 's' : ''}`
-                });
-            }
-            
-            if (data.quality !== undefined) {
-                checks.push({
-                    status: data.quality >= 80 ? 'CL' : 'CO',
-                    text: `Address Quality at ${data.quality}%`
-                });
-            }
-            
-            if (data.mortality_hit !== undefined) {
-                checks.push({
-                    status: data.mortality_hit ? 'AL' : 'CL',
-                    text: data.mortality_hit ? 'Mortality hit detected' : 'No mortality hits'
-                });
-            }
-        } 
-        else if (taskType === 'document') {
+        if (taskType === 'document') {
             // Document objectives: authenticity, integrity, compromised, consistency, validation
             if (data.authenticity) {
                 const isGenuine = data.authenticity === 'genuine';
@@ -1857,6 +2116,221 @@ class ThirdfortChecksManager {
                 checks.push({
                     status: data.verified ? 'CL' : 'CO',
                     text: data.verified ? 'Identity verified' : 'Identity verification requires review'
+                });
+            }
+        }
+        else if (taskType === 'address') {
+            // Address verification (Lite Screen) - includes footprint data
+            const data = outcome.data || {};
+            const quality = data.quality !== undefined ? data.quality : 0;
+            const sources = data.sources !== undefined ? data.sources : 0;
+            
+            // Get footprint data from the check
+            const footprintOutcome = check.taskOutcomes?.footprint;
+            const footprintBreakdown = footprintOutcome?.breakdown || {};
+            
+            // Determine status based on quality and sources
+            // Quality: 0% = fail, 1-79% = consider, 80%+ = clear
+            // Sources: 0 = fail, 1 = consider, 2+ = clear
+            let qualityStatus = quality === 0 ? 'AL' : (quality >= 80 ? 'CL' : 'CO');
+            let sourcesStatus = sources === 0 ? 'AL' : (sources >= 2 ? 'CL' : 'CO');
+            
+            // Overall status is the worst of the two
+            let overallStatus = 'CL';
+            if (qualityStatus === 'AL' || sourcesStatus === 'AL') {
+                overallStatus = 'AL';
+            } else if (qualityStatus === 'CO' || sourcesStatus === 'CO') {
+                overallStatus = 'CO';
+            }
+            
+            // Check for footprint rules/warnings
+            const rules = footprintBreakdown.rules || [];
+            let inlineWarning = '';
+            if (rules.length > 0 && rules[0].text) {
+                inlineWarning = rules[0].text;
+            } else if (quality === 0 && sources === 0) {
+                inlineWarning = 'No address verification data available';
+            }
+            
+            // Add inline warning to outcome for display in minimized card
+            if (inlineWarning) {
+                outcome.inlineWarning = inlineWarning;
+            }
+            
+            // Address verification summary
+            checks.push({
+                status: qualityStatus,
+                text: `Verification Quality: ${quality}%`
+            });
+            
+            checks.push({
+                status: sourcesStatus,
+                text: `Address Sources: ${sources}`
+            });
+            
+            // Add footprint details if available
+            if (footprintBreakdown.data_count) {
+                const score = footprintBreakdown.data_count.properties?.score || 0;
+                // Score: 0 = fail, 1-79 = consider, 80+ = clear
+                const scoreStatus = score === 0 ? 'AL' : (score >= 80 ? 'CL' : 'CO');
+                checks.push({
+                    status: scoreStatus,
+                    text: `Data Count Score: ${score}`,
+                    indented: true
+                });
+            }
+            
+            if (footprintBreakdown.data_quality) {
+                const score = footprintBreakdown.data_quality.properties?.score || 0;
+                // Score: 0 = fail, 1-79 = consider, 80+ = clear
+                const scoreStatus = score === 0 ? 'AL' : (score >= 80 ? 'CL' : 'CO');
+                checks.push({
+                    status: scoreStatus,
+                    text: `Data Quality Score: ${score}`,
+                    indented: true
+                });
+            }
+        }
+        else if (taskType === 'screening') {
+            // Combined Screening (PEP + Sanctions + Adverse Media)
+            const breakdown = outcome.breakdown || {};
+            const totalHits = breakdown.total_hits || 0;
+            const hits = breakdown.hits || [];
+            
+            checks.push({
+                status: totalHits === 0 ? 'CL' : 'CO',
+                text: `${totalHits} match${totalHits !== 1 ? 'es' : ''} found`
+            });
+            
+            // Show detailed hit information using the same format as PEP updates
+            if (hits.length > 0) {
+                hits.forEach(hit => {
+                    const name = hit.name || 'Unknown';
+                    const dob = hit.dob?.main || hit.dob;
+                    const flagTypes = hit.flag_types || [];
+                    const positions = hit.political_positions || [];
+                    const countries = hit.countries || [];
+                    const aka = hit.aka || [];
+                    const score = hit.score || 0;
+                    
+                    // Determine primary hit type
+                    let hitType = '';
+                    let hitIcon = '⚠️';
+                    
+                    // Check flag types if available (screening:lite format)
+                    if (flagTypes.length > 0) {
+                        if (flagTypes.some(f => f.includes('pep'))) {
+                            hitType = 'PEP';
+                            hitIcon = '👤';
+                        }
+                        if (flagTypes.some(f => f.includes('sanction'))) {
+                            hitType = hitType ? `${hitType} + Sanctions` : 'Sanctions';
+                            hitIcon = '🚫';
+                        }
+                        if (flagTypes.some(f => f.includes('adverse-media'))) {
+                            hitType = hitType ? `${hitType} + Adverse Media` : 'Adverse Media';
+                            hitIcon = '📰';
+                        }
+                    } else {
+                        // Default to PEP if no flag types (simple peps format)
+                        hitType = 'PEP';
+                        hitIcon = '👤';
+                    }
+                    
+                    // Create a "hit card" structure similar to PEP updates
+                    checks.push({
+                        isHitCard: true,
+                        hitData: {
+                            name,
+                            dob,
+                            hitType,
+                            hitIcon,
+                            score,
+                            flagTypes,
+                            positions,
+                            countries,
+                            aka,
+                            media: hit.media || [],
+                            associates: hit.associates || [],
+                            fields: hit.fields || [],
+                            match_types: hit.match_types || []
+                        }
+                    });
+                });
+            }
+        }
+        else if (taskType === 'peps') {
+            // PEP Screening (Lite Screen or standalone)
+            const breakdown = outcome.breakdown || {};
+            const totalHits = breakdown.total_hits || 0;
+            const hits = breakdown.hits || [];
+            
+            checks.push({
+                status: totalHits === 0 ? 'CL' : 'CO',
+                text: `${totalHits} PEP match${totalHits !== 1 ? 'es' : ''} found`
+            });
+            
+            // Show individual hits if any
+            if (hits.length > 0) {
+                hits.forEach(hit => {
+                    const name = hit.name || 'Unknown';
+                    const positions = hit.political_positions || [];
+                    const countries = hit.countries || [];
+                    
+                    let hitText = `${name}`;
+                    if (positions.length > 0) hitText += ` | ${positions.slice(0, 2).join(', ')}`;
+                    if (countries.length > 0) hitText += ` [${countries.slice(0, 3).join(', ')}]`;
+                    
+                    checks.push({
+                        status: 'CO',
+                        text: hitText,
+                        indented: true
+                    });
+                });
+            }
+        }
+        else if (taskType === 'footprint') {
+            // Digital Footprint (Lite Screen)
+            const breakdown = outcome.breakdown || {};
+            
+            // Data count
+            if (breakdown.data_count) {
+                const score = breakdown.data_count.properties?.score || 0;
+                const result = breakdown.data_count.result || '';
+                checks.push({
+                    status: result === 'clear' ? 'CL' : 'CO',
+                    text: `Data Count Score: ${score}`
+                });
+            }
+            
+            // Data quality
+            if (breakdown.data_quality) {
+                const score = breakdown.data_quality.properties?.score || 0;
+                const result = breakdown.data_quality.result || '';
+                checks.push({
+                    status: result === 'clear' ? 'CL' : 'CO',
+                    text: `Data Quality Score: ${score}`
+                });
+            }
+            
+            // Service name
+            if (breakdown.service_name) {
+                checks.push({
+                    status: 'CN',
+                    text: `Service: ${breakdown.service_name}`
+                });
+            }
+            
+            // Rules
+            if (breakdown.rules && Array.isArray(breakdown.rules) && breakdown.rules.length > 0) {
+                breakdown.rules.forEach(rule => {
+                    if (rule.text) {
+                        checks.push({
+                            status: 'CO',
+                            text: rule.text,
+                            indented: true
+                        });
+                    }
                 });
             }
         }
@@ -2066,6 +2540,1558 @@ class ThirdfortChecksManager {
         // Real KYB check data for THURSTAN HOSKIN SOLICITORS LLP
         return [
             {
+                "taskOutcomes": {
+                  "identity:lite": {
+                    "breakdown": {
+                      "document": {
+                        "name": "document",
+                        "breakdown": {
+                          "compromised_document": {
+                            "result": "clear"
+                          },
+                          "data_consistency": {
+                            "breakdown": {
+                              "first_name": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "date_of_expiry": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "date_of_birth": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "last_name": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "nationality": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "issuing_country": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "document_numbers": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "document_type": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "gender": {
+                                "properties": {},
+                                "result": "clear"
+                              }
+                            },
+                            "result": "clear"
+                          },
+                          "data_comparison": {
+                            "breakdown": {
+                              "first_name": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "date_of_expiry": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "date_of_birth": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "last_name": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "issuing_country": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "document_numbers": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "document_type": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "gender": {
+                                "properties": {},
+                                "result": "clear"
+                              }
+                            },
+                            "result": "clear"
+                          },
+                          "data_validation": {
+                            "breakdown": {
+                              "mrz": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "date_of_birth": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "document_numbers": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "expiry_date": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "document_expiration": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "gender": {
+                                "properties": {},
+                                "result": "clear"
+                              }
+                            },
+                            "result": "clear"
+                          },
+                          "image_integrity": {
+                            "breakdown": {
+                              "colour_picture": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "conclusive_document_quality": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "image_quality": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "supported_document": {
+                                "properties": {},
+                                "result": "clear"
+                              }
+                            },
+                            "result": "clear"
+                          },
+                          "visual_authenticity": {
+                            "breakdown": {
+                              "face_detection": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "fonts": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "picture_face_integrity": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "original_document_present": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "security_features": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "digital_tampering": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "template": {
+                                "properties": {},
+                                "result": "clear"
+                              },
+                              "other": {
+                                "properties": {},
+                                "result": "clear"
+                              }
+                            },
+                            "result": "clear"
+                          },
+                          "age_validation": {
+                            "breakdown": {
+                              "minimum_accepted_age": {
+                                "properties": {},
+                                "result": "clear"
+                              }
+                            },
+                            "result": "clear"
+                          },
+                          "police_record": {
+                            "result": "clear"
+                          }
+                        },
+                        "result": "clear",
+                        "documents": [
+                          {
+                            "id": "15c3d5a5-27fe-4205-8d1e-993bdd12425f"
+                          }
+                        ],
+                        "id": "1c6010af-de27-438f-b4fe-2925922d9233",
+                        "properties": {
+                          "first_name": "Jacob",
+                          "date_of_expiry": "2031-05-28",
+                          "issuing_date": "2018-08-16",
+                          "date_of_birth": "1990-01-01",
+                          "last_name": "Moran",
+                          "nationality": null,
+                          "issuing_country": "GBR",
+                          "document_numbers": [
+                            {
+                              "type": "document_number",
+                              "value": "999999999"
+                            }
+                          ],
+                          "document_type": "passport",
+                          "gender": null
+                        },
+                        "status": "complete",
+                        "created_at": "2025-11-06T14:24:13Z",
+                        "href": "/v3.6/reports/1c6010af-de27-438f-b4fe-2925922d9233",
+                        "sub_result": "clear"
+                      }
+                    },
+                    "data": {
+                      "name": {
+                        "first": "Jacob",
+                        "last": "Moran",
+                        "other": "Robert"
+                      }
+                    },
+                    "result": "clear",
+                    "documents": [
+                      "d46az5m23amg030rw7e0"
+                    ],
+                    "id": "d46az5423amg030rw7d0",
+                    "status": "closed",
+                    "createdAt": "2025-11-06T14:24:20.118Z"
+                  }
+                },
+                "updatedAt": "2025-11-06T14:24:24.286Z",
+                "pdfReady": true,
+                "checkType": "idv",
+                "completedAt": "2025-11-06T14:24:24.286Z",
+                "documentsUploaded": true,
+                "initiatedAt": "2025-11-06T14:24:07.606Z",
+                "pdfS3Key": "protected/T0pW749",
+                "updates": [
+                  {
+                    "timestamp": "2025-11-06T14:24:07.606Z",
+                    "update": "IDV check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
+                  },
+                  {
+                    "timestamp": "2025-11-06T14:24:12.835Z",
+                    "update": "Documents uploaded by jacob.archer-moran@thurstanhoskin.co.uk"
+                  },
+                  {
+                    "timestamp": "2025-11-06T14:24:24.286Z",
+                    "update": "Check completed - awaiting PDF"
+                  },
+                  {
+                    "timestamp": "2025-11-06T14:24:41.148Z",
+                    "update": "PDF received and uploaded to S3 - CLEAR"
+                  }
+                ],
+                "status": "closed",
+                "initiatedBy": "jacob.archer-moran@thurstanhoskin.co.uk",
+                "documentType": "passport",
+                "hasMonitoring": false,
+                "thirdfortResponse": {
+                  "name": "Jacob Robert Moran - Document Verification",
+                  "request": {
+                    "data": {
+                      "name": {
+                        "first": "Jacob",
+                        "last": "Moran",
+                        "other": "Robert"
+                      }
+                    },
+                    "reports": [
+                      {
+                        "type": "identity:lite"
+                      }
+                    ]
+                  },
+                  "ref": "50/52",
+                  "id": "d46az1c23amg030rw740",
+                  "reports": [],
+                  "status": "open",
+                  "metadata": {
+                    "notify": {
+                      "type": "http",
+                      "data": {
+                        "hmac_key": "Ues4QT63f9iE7YP6/AEgfV0oAxPz9ewWRrBNN2+XrfI=",
+                        "method": "POST",
+                        "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                      }
+                    },
+                    "created_by": "d3t2m5q9io6g00ak3kmg",
+                    "print": {
+                      "team": "Cashiers",
+                      "tenant": "Thurstan Hoskin Solicitors LLP",
+                      "user": "Jacob Archer-Moran"
+                    },
+                    "context": {
+                      "gid": "d3t2k5a9io6g00ak3km0",
+                      "uid": "d3t2m5q9io6g00ak3kmg",
+                      "team_id": "d3t2k5a9io6g00ak3km0",
+                      "tenant_id": "d3t2ifa9io6g00ak3klg"
+                    },
+                    "ce": {
+                      "uri": "/v1/checks/4151797872"
+                    },
+                    "created_at": "2025-11-06T14:24:05.185Z"
+                  },
+                  "type": "document"
+                },
+                "companyData": {
+                  "name": {
+                    "first": "Jacob",
+                    "last": "Moran",
+                    "other": "Robert"
+                  },
+                  "numbers": []
+                },
+                "checkId": "d46az1c23amg030rw740",
+                "hasAlerts": false,
+                "pdfAddedAt": "2025-11-06T14:24:41.148Z"
+              },
+              {
+                "taskOutcomes": {
+                  "address": {
+                    "result": "fail",
+                    "status": "closed",
+                    "data": {
+                      "quality": 0,
+                      "sources": 0
+                    }
+                  },
+                  "peps": {
+                    "breakdown": {
+                      "total_hits": 0,
+                      "hits": []
+                    },
+                    "data": {
+                      "dob": "2001-01-11T00:00:00.000Z",
+                      "name": {
+                        "first": "Jacob",
+                        "last": "Archer-Moran",
+                        "other": "Robert"
+                      },
+                      "address": {
+                        "postcode": "TR15 2ND",
+                        "country": "GBR",
+                        "street": "Southgate Street",
+                        "building_number": "94",
+                        "town": "Redruth"
+                      }
+                    },
+                    "result": "clear",
+                    "documents": [
+                      "d46az3w23amg030rw79g"
+                    ],
+                    "id": "d46az3c23amg030rw77g",
+                    "status": "closed",
+                    "createdAt": "2025-11-06T14:24:13.923Z"
+                  },
+                  "footprint": {
+                    "breakdown": {
+                      "data_count": {
+                        "properties": {
+                          "score": 0
+                        },
+                        "result": "consider"
+                      },
+                      "data_quality": {
+                        "properties": {
+                          "score": 0
+                        },
+                        "result": "consider"
+                      },
+                      "rules": [
+                        {
+                          "id": "U000",
+                          "name": "",
+                          "score": 0,
+                          "text": "No trace of supplied Address(es), or manual Authentication required by the Applicant"
+                        }
+                      ],
+                      "service_name": "Authenticateplus"
+                    },
+                    "data": {
+                      "address": {
+                        "postcode": "TR15 2ND",
+                        "country": "GBR",
+                        "street": "Southgate Street",
+                        "building_number": "94",
+                        "town": "Redruth"
+                      },
+                      "dob": "2001-01-11T00:00:00.000Z",
+                      "name": {
+                        "first": "Jacob",
+                        "last": "Archer-Moran",
+                        "other": "Robert"
+                      }
+                    },
+                    "result": "fail",
+                    "documents": [],
+                    "id": "d46az2c23amg030rw75g",
+                    "status": "closed",
+                    "createdAt": "2025-11-06T14:24:09.471Z"
+                  }
+                },
+                "pdfReady": true,
+                "checkType": "lite-screen",
+                "initiatedAt": "2025-11-06T14:24:03.509Z",
+                "considerReasons": [
+                  "address verification",
+                  "digital footprint"
+                ],
+                "pdfS3Key": "protected/UNXOQyZ",
+                "consumerName": "Jacob Archer-Moran",
+                "tasks": [
+                  "report:footprint",
+                  "report:peps"
+                ],
+                "updates": [
+                  {
+                    "timestamp": "2025-11-06T14:24:03.509Z",
+                    "update": "Lite Screen check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
+                  },
+                  {
+                    "timestamp": "2025-11-06T14:24:21.661Z",
+                    "update": "PEPs & Sanctions task completed"
+                  },
+                  {
+                    "timestamp": "2025-11-06T14:24:59.640Z",
+                    "update": "PDF received and uploaded to S3 - CONSIDER: address verification, digital footprint"
+                  }
+                ],
+                "status": "closed",
+                "initiatedBy": "jacob.archer-moran@thurstanhoskin.co.uk",
+                "piiData": {
+                  "name": {
+                    "first": "Jacob",
+                    "last": "Archer-Moran",
+                    "other": "Robert"
+                  },
+                  "address": {
+                    "postcode": "TR15 2ND",
+                    "country": "GBR",
+                    "street": "Southgate Street",
+                    "building_number": "94",
+                    "town": "Redruth"
+                  },
+                  "dob": "2001-01-11T00:00:00.000Z",
+                  "document": {}
+                },
+                "hasMonitoring": true,
+                "thirdfortResponse": {
+                  "name": "Jacob Archer-Moran - Lite Screening",
+                  "request": {
+                    "tasks": [
+                      {
+                        "opts": {
+                          "consent": false
+                        },
+                        "type": "report:footprint"
+                      },
+                      {
+                        "opts": {
+                          "monitored": true
+                        },
+                        "type": "report:peps"
+                      }
+                    ]
+                  },
+                  "ref": "21 Green Lane",
+                  "id": "d46az0c23amg030rw73g",
+                  "reports": [],
+                  "status": "open",
+                  "metadata": {
+                    "notify": {
+                      "type": "http",
+                      "data": {
+                        "hmac_key": "Ues4QT63f9iE7YP6/AEgfV0oAxPz9ewWRrBNN2+XrfI=",
+                        "method": "POST",
+                        "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                      }
+                    },
+                    "created_by": "d3t2m5q9io6g00ak3kmg",
+                    "print": {
+                      "team": "Cashiers",
+                      "tenant": "Thurstan Hoskin Solicitors LLP",
+                      "user": "Jacob Archer-Moran"
+                    },
+                    "context": {
+                      "gid": "d3t2k5a9io6g00ak3km0",
+                      "uid": "d3t2m5q9io6g00ak3kmg",
+                      "team_id": "d3t2k5a9io6g00ak3km0",
+                      "tenant_id": "d3t2ifa9io6g00ak3klg"
+                    },
+                    "ce": {
+                      "uri": "/v1/checks/4151797871"
+                    },
+                    "created_at": "2025-11-06T14:24:01.434Z"
+                  },
+                  "type": "v2",
+                  "opts": {
+                    "peps": {
+                      "monitored": true
+                    }
+                  }
+                },
+                "expectations": {
+                  "name": {
+                    "data": {
+                      "first": "Jacob",
+                      "last": "Archer-Moran",
+                      "other": "Robert"
+                    }
+                  },
+                  "dob": {
+                    "data": "2001-01-11T00:00:00.000Z"
+                  },
+                  "address": {
+                    "data": {
+                      "postcode": "TR15 2ND",
+                      "country": "GBR",
+                      "building_name": "",
+                      "flat_number": "",
+                      "street": "Southgate Street",
+                      "building_number": "94",
+                      "sub_street": "",
+                      "town": "Redruth"
+                    }
+                  }
+                },
+                "hasAlerts": true,
+                "pdfAddedAt": "2025-11-06T14:24:59.640Z",
+                "transactionId": "d46az0c23amg030rw73g"
+              },{
+                "taskOutcomes": {
+                  "screening:lite": {
+                    "breakdown": {
+                      "total_hits": 2,
+                      "hits": [
+                        {
+                          "name": "Farage Nigel",
+                          "assets": [
+                            {
+                              "public_url": "http://complyadvantage-asset-development.s3.amazonaws.com/e0fe3b97-e0eb-448f-a61c-93a3111355a1.jpg",
+                              "type": "picture"
+                            },
+                            {
+                              "public_url": "http://complyadvantage-asset-development.s3.amazonaws.com/bc450214-b99b-4063-9546-9a06bfe0e74d.jpg",
+                              "type": "picture"
+                            },
+                            {
+                              "public_url": "http://complyadvantage-asset.s3.amazonaws.com/a0caf84e-0a3c-4dc6-89ee-b3e4db2fd3ac.pdf",
+                              "type": "pdf"
+                            }
+                          ],
+                          "dob": {
+                            "main": "1964",
+                            "other": [
+                              "1964-04-03",
+                              "1964-03-04"
+                            ]
+                          },
+                          "score": 1,
+                          "flag_types": [
+                            "adverse-media",
+                            "adverse-media-financial-crime",
+                            "adverse-media-fraud",
+                            "adverse-media-general",
+                            "adverse-media-narcotics",
+                            "adverse-media-sexual-crime",
+                            "adverse-media-terrorism",
+                            "adverse-media-violent-crime",
+                            "pep",
+                            "pep-class-1",
+                            "pep-class-2",
+                            "pep-class-4"
+                          ],
+                          "source_notes": {
+                            "united-kingdom-political-parties-leadership": {
+                              "aml_types": [
+                                "pep-class-1"
+                              ],
+                              "country_codes": [
+                                "GB"
+                              ],
+                              "name": "United Kingdom Political Parties Leadership"
+                            },
+                            "united-kingdom-elected-parliament": {
+                              "aml_types": [
+                                "pep-class-1"
+                              ],
+                              "country_codes": [
+                                "GB"
+                              ],
+                              "name": "United Kingdom Elected Parliament"
+                            },
+                            "complyadvantage": {
+                              "aml_types": [
+                                "pep-class-1",
+                                "pep-class-2",
+                                "pep-class-4"
+                              ],
+                              "country_codes": [
+                                "GB"
+                              ],
+                              "name": "ComplyAdvantage PEP Data"
+                            },
+                            "complyadvantage-adverse-media": {
+                              "aml_types": [
+                                "adverse-media",
+                                "adverse-media-financial-crime",
+                                "adverse-media-fraud",
+                                "adverse-media-general",
+                                "adverse-media-narcotics",
+                                "adverse-media-sexual-crime",
+                                "adverse-media-terrorism",
+                                "adverse-media-violent-crime"
+                              ],
+                              "country_codes": [
+                                "BR",
+                                "ES",
+                                "FR",
+                                "GB",
+                                "IR",
+                                "LK"
+                              ],
+                              "name": "ComplyAdvantage Adverse Media"
+                            },
+                            "pep-european-parliament-meps": {
+                              "aml_types": [
+                                "pep-class-2"
+                              ],
+                              "country_codes": [
+                                "GB"
+                              ],
+                              "name": "European Union Parliament Leadership"
+                            },
+                            "pep-uk-parliament": {
+                              "aml_types": [
+                                "pep-class-1"
+                              ],
+                              "country_codes": [
+                                "GB"
+                              ],
+                              "name": "United Kingdom Parliament"
+                            },
+                            "company-am": {
+                              "aml_types": [
+                                "adverse-media",
+                                "adverse-media-financial-crime",
+                                "adverse-media-fraud",
+                                "adverse-media-general"
+                              ],
+                              "country_codes": [
+                                "BE",
+                                "GB",
+                                "JP",
+                                "MT"
+                              ],
+                              "name": "company AM"
+                            }
+                          },
+                          "political_positions": [
+                            "Member of the European Parliament",
+                            "Member of the European Parliament",
+                            "Member of the National Legislature",
+                            "Member of the National Legislature",
+                            "Senior Political Party Official"
+                          ],
+                          "countries": [
+                            "Belgium",
+                            "Brazil",
+                            "France",
+                            "Iran",
+                            "Japan",
+                            "Malta",
+                            "Spain",
+                            "Sri Lanka",
+                            "United Kingdom"
+                          ],
+                          "aka": [
+                            "Farage",
+                            "Nigel Farage",
+                            "Nigel Farge",
+                            "Modi Nigel Farage",
+                            "Farage Nigel",
+                            "Nigel Farange",
+                            "Nigel Paul Farage"
+                          ],
+                          "id": "MBCV344J0BV3UD0",
+                          "match_types": [
+                            "name_exact",
+                            "year_of_birth"
+                          ],
+                          "fields": [
+                            {
+                              "name": "Original Place of Birth Text",
+                              "source": "pep-european-parliament-meps",
+                              "value": "Farnborough"
+                            },
+                            {
+                              "name": "Original Place of Birth Text",
+                              "source": "complyadvantage",
+                              "value": "Farnborough"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "company-am",
+                              "value": "Belgium"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "company-am",
+                              "value": "Belgium, Malta, United Kingdom"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Brazil"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Brazil, Spain"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "France"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "France, Iran"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Iran"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "company-am",
+                              "value": "Japan"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "united-kingdom-elected-parliament",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "company-am",
+                              "value": "Japan, United Kingdom"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "united-kingdom-elected-parliament",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "company-am",
+                              "value": "Malta"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "pep-uk-parliament",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "pep-uk-parliament",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Spain"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Sri Lanka"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Sri Lanka"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "pep-european-parliament-meps",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "pep-european-parliament-meps",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "united-kingdom-political-parties-leadership",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "united-kingdom-political-parties-leadership",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "complyadvantage",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Place of Birth",
+                              "source": "pep-uk-parliament",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Original Place of Birth Text",
+                              "source": "pep-uk-parliament",
+                              "value": "Farnborough, Kent, England"
+                            },
+                            {
+                              "name": "Active Start Date",
+                              "source": "united-kingdom-elected-parliament",
+                              "value": "2024-07-17"
+                            },
+                            {
+                              "name": "Active Start Date",
+                              "source": "pep-uk-parliament",
+                              "value": "2024-06-03"
+                            },
+                            {
+                              "name": "Date of Birth",
+                              "source": "complyadvantage",
+                              "value": "1964"
+                            },
+                            {
+                              "name": "Date of Birth",
+                              "source": "complyadvantage",
+                              "value": "1964-04-03"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "company-am",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Date of Birth",
+                              "source": "pep-european-parliament-meps",
+                              "value": "1964-03-04"
+                            },
+                            {
+                              "name": "Date of Birth",
+                              "source": "pep-uk-parliament",
+                              "value": "1964-04-03"
+                            },
+                            {
+                              "name": "Political Position",
+                              "source": "pep-european-parliament-meps",
+                              "value": "Member of the European Parliament"
+                            },
+                            {
+                              "name": "Political Position",
+                              "source": "complyadvantage",
+                              "value": "Member of the European Parliament"
+                            },
+                            {
+                              "name": "Political Position",
+                              "source": "united-kingdom-elected-parliament",
+                              "value": "Member of the National Legislature"
+                            },
+                            {
+                              "name": "Political Position",
+                              "source": "pep-uk-parliament",
+                              "value": "Member of the National Legislature"
+                            },
+                            {
+                              "name": "Date of Birth",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "1964"
+                            },
+                            {
+                              "name": "Political Position",
+                              "source": "united-kingdom-political-parties-leadership",
+                              "value": "Senior Political Party Official"
+                            },
+                            {
+                              "name": "Additional Information",
+                              "source": "complyadvantage",
+                              "value": "A member of the European Parliament."
+                            },
+                            {
+                              "name": "Chamber",
+                              "source": "united-kingdom-elected-parliament",
+                              "value": "Parliament"
+                            },
+                            {
+                              "name": "Chamber",
+                              "source": "pep-european-parliament-meps",
+                              "value": "European Parliament"
+                            },
+                            {
+                              "name": "Chamber",
+                              "source": "pep-uk-parliament",
+                              "value": "Parliament"
+                            },
+                            {
+                              "name": "Chamber",
+                              "source": "united-kingdom-political-parties-leadership",
+                              "value": "Reform UK"
+                            },
+                            {
+                              "name": "Chamber",
+                              "source": "complyadvantage",
+                              "value": "SURREY HEATH BOROUGH"
+                            },
+                            {
+                              "name": "City",
+                              "source": "complyadvantage",
+                              "value": "Surrey"
+                            },
+                            {
+                              "name": "Function",
+                              "source": "united-kingdom-political-parties-leadership",
+                              "value": "Leader"
+                            },
+                            {
+                              "name": "Function",
+                              "source": "united-kingdom-elected-parliament",
+                              "value": "MPs"
+                            },
+                            {
+                              "name": "Institution Type",
+                              "source": "united-kingdom-elected-parliament",
+                              "value": "National Bicameral Legislature"
+                            },
+                            {
+                              "name": "Institution Type",
+                              "source": "pep-uk-parliament",
+                              "value": "National Bicameral Legislature"
+                            },
+                            {
+                              "name": "Institution Type",
+                              "source": "united-kingdom-political-parties-leadership",
+                              "value": "Political Party"
+                            },
+                            {
+                              "name": "Other Info",
+                              "source": "pep-european-parliament-meps",
+                              "value": "Non-attached Members"
+                            },
+                            {
+                              "name": "Other Info",
+                              "source": "united-kingdom-political-parties-leadership",
+                              "value": "Officers"
+                            },
+                            {
+                              "name": "Political Group",
+                              "source": "complyadvantage",
+                              "value": "Europe of Freedom and Direct Democracy Group"
+                            },
+                            {
+                              "name": "Political Party",
+                              "source": "united-kingdom-elected-parliament",
+                              "value": "Reform UK"
+                            },
+                            {
+                              "name": "Political Party",
+                              "source": "pep-uk-parliament",
+                              "value": "Reform UK"
+                            },
+                            {
+                              "name": "Political Party",
+                              "source": "pep-european-parliament-meps",
+                              "value": "The Brexit Party"
+                            },
+                            {
+                              "name": "Political Region",
+                              "source": "united-kingdom-elected-parliament",
+                              "value": "Clacton"
+                            },
+                            {
+                              "name": "Political Region",
+                              "source": "pep-uk-parliament",
+                              "value": "Clacton"
+                            },
+                            {
+                              "name": "Related URL",
+                              "source": "complyadvantage",
+                              "value": "http://surreyheath.moderngov.co.uk/mgMemberIndexMEP.aspx?bcr=7"
+                            },
+                            {
+                              "name": "Related URL",
+                              "source": "pep-uk-parliament",
+                              "value": "https://members.parliament.uk/member/5091/contact"
+                            },
+                            {
+                              "name": "Locationurl",
+                              "source": "complyadvantage",
+                              "value": "https://dbpedia.org/data/Nigel_Farage.json"
+                            },
+                            {
+                              "name": "Locationurl",
+                              "source": "pep-uk-parliament",
+                              "value": "https://en.wikipedia.org/wiki/Nigel_Farage"
+                            },
+                            {
+                              "name": "Locationurl",
+                              "source": "complyadvantage",
+                              "value": "https://en.wikipedia.org/wiki/Nigel_Farage"
+                            },
+                            {
+                              "name": "Locationurl",
+                              "source": "united-kingdom-political-parties-leadership",
+                              "value": "https://search.electoralcommission.org.uk/English/Registrations/PP7931"
+                            },
+                            {
+                              "name": "Locationurl",
+                              "source": "complyadvantage",
+                              "value": "https://www.google.com/search?hl=en-us&q=who+is+Farage&ucbcb=1"
+                            },
+                            {
+                              "name": "Locationurl",
+                              "source": "complyadvantage",
+                              "value": "https://www.google.com/search?hl=en-us&q=who+is+Nigel+Farage&ucbcb=1"
+                            },
+                            {
+                              "name": "Locationurl",
+                              "source": "complyadvantage",
+                              "value": "https://www.google.com/search?hl=en-us&q=who+is+Nigel+Paul+Farage&ucbcb=1"
+                            },
+                            {
+                              "name": "Locationurl",
+                              "source": "united-kingdom-elected-parliament",
+                              "value": "https://www.parallelparliament.co.uk/MPs"
+                            },
+                            {
+                              "name": "Picture URL Internal",
+                              "source": "pep-european-parliament-meps",
+                              "value": "http://complyadvantage-asset-development.s3.amazonaws.com/bc450214-b99b-4063-9546-9a06bfe0e74d.jpg"
+                            },
+                            {
+                              "name": "Picture URL Internal",
+                              "source": "complyadvantage",
+                              "value": "http://complyadvantage-asset-development.s3.amazonaws.com/e0fe3b97-e0eb-448f-a61c-93a3111355a1.jpg"
+                            },
+                            {
+                              "name": "Countries",
+                              "value": "Belgium, Brazil, France, Iran, Japan, Malta, Spain, Sri Lanka, United Kingdom"
+                            }
+                          ],
+                          "media": [
+                            {
+                              "date": "0001-01-01T00:00:00Z",
+                              "snippet": "\" Farage should face highest penalty for serious breach of EP code of conduct<\\/a><\\/blockquote>\\n",
+                              "title": "(no title)",
+                              "url": "https://cde.news/wp-json/oembed/1.0/embed?url=https://cde.news/farage-should-face-highest-penalty-for-serious-breach-of-ep-code-of-conduct/"
+                            },
+                            {
+                              "date": "2025-08-14T00:00:00Z",
+                              "snippet": "The public was also not informed for months that Rudakubana had been referred to the anti-terror Prevent programme multiple times, but the police had dismissed him as a threat. For having questioned if there was a potential terror motive, figures such as Reform UK leader Nigel Farage were accused of spreading \"conspiracy theories\" and establishment media even blamed the Brexit boss for stoking the riots which broke out in the wake of the attack. However, the government's independent reviewer of terrorism legislation, Jonathan Hall KC, later vindicated Farage by acknowledging that the information released by the police was \" inadequet \" and that the \"public could have been told immediately that there had been an attack by a 17-year-old male who was black, British, born in Wales and has lived in the UK all his life.\"",
+                              "title": "British Police Told Reveal Ethnicity, Migration Status of Suspects in High-Profile Cases",
+                              "url": "https://www.breitbart.com/europe/2025/08/14/british-police-told-reveal-ethnicity-migration-status-of-suspects-in-high-profile-cases/"
+                            },
+                            {
+                              "date": "2024-08-12T00:00:00Z",
+                              "snippet": ": atendendo ao apelo de Nigel Farange, o chefe fascista inglês, hordas de hooligans de extrema-direita depredaram albergues para imigrantes e tocaram o terror por uma semana em uma das principais economias do Ocidente. Com efeito, a cena internacional se altera rapidamente.",
+                              "title": "Caminhamos bem no Brics, mas o quadro da união na América Latina é desolador – Opinião – CartaCapital",
+                              "url": "https://www.cartacapital.com.br/opiniao/caminhamos-bem-no-brics-mas-o-quadro-da-uniao-na-america-latina-e-desolador/?utm_medium=leiamais"
+                            },
+                            {
+                              "date": "2018-03-13T00:00:00Z",
+                              "snippet": "While Nigel Farage's successor-but-one Paul \"Dr Nutty\" Nuttall protests that he never doctored a CV with an invented university PhD, Ukip's ritzy nonpareil continues to enjoy the high life. My informant spied Farage, the self-appointed people's chief revolter, relaxing in first class on a British Airways flight from New York to Blighty. Drinking three types of champagne doesn't come cheap at £8,00 0 one-way, so either the Brexit elitist is earning big bucks or he has found a sugar daddy.",
+                              "title": "Commons Confidential: Money for old Gove",
+                              "url": "https://www.newstatesman.com/politics/uk/2016/12/commons-confidential-money-old-gove?page=2&qt-trending=1"
+                            },
+                            {
+                              "date": "2016-02-11T00:00:00Z",
+                              "snippet": "Cameron is well aware of this. This week, he was accused of deploying \"Project Fear\" - a tactic utilized by playing on voters' security concerns - by saying that a vote to leave the EU would result in the migrant camp in Calais moving to Dover. These may be baseless claims from the prime minister, but the bloodcurdling warnings about the dangers of leaving the EU, coupled with a weak oppositional campaign, will be enough to scare voters into staying.",
+                              "title": "David Cameron's EU Deal Isn't Great - But It's Enough to Secure a Referendum Victory | Huffington Post",
+                              "url": "http://www.huffingtonpost.co.uk/sami-quadri/eu-referendum_b_9204882.html"
+                            },
+                            {
+                              "date": "2018-04-15T00:00:00Z",
+                              "snippet": ": British MEP and UKIP leader Nigel Farage has been accused of employing both his wife and alleged mistress out of his Parliament allowances Want to contribute?",
+                              "title": "EU Tweets of the Week: The Good, the Sad and the Ugly – 14 March 2014",
+                              "url": "https://www.european-views.com/2018/04/eu-tweets-of-the-week-the-good-the-sad-and-the-ugly-14-march-2014/"
+                            },
+                            {
+                              "date": "2001-09-11T00:00:00Z",
+                              "snippet": "In the meantime, the populist radical rightwing parties have been trying to show a vociferous reaction to these terror attacks by describing them as a direct result of the multicultural policies adopted by various European states. Nigel Paul Farage, leader of the UK Independence Party, has charged Islamist groups as being a fifth column of London's enemies in the country, while Geert Wilders, leader of the Netherlands Freedom Party, has noted that it is time to fight against the Islamization of the country. In Germany, a radical group called PEGIDA, meaning the \"Patriots against the Islamization of the West\", has been organizing mass protests in various cities in Germany in protest to what it calls the Islamization of Europe.",
+                              "title": "Europe's radical Right against Muslims",
+                              "url": "http://english.irib.ir/radioislam/commentaries/item/205796-europe"
+                            },
+                            {
+                              "date": "0001-01-01T00:00:00Z",
+                              "snippet": "Those party leaders that oppose the EU , all seem to be taken to court . We will have to see if Petry , Le Penn , Farage etc , are found guilty , or if not , whether the EU has abused its position to make false allegations . Posted on 10/4/17",
+                              "title": "Ex-AfD leader Frauke Petry charged with perjury – POLITICO",
+                              "url": "https://www.politico.eu/article/frauke-petry-ex-afd-leader-charged-with-perjury/"
+                            },
+                            {
+                              "date": "2018-02-25T00:00:00Z",
+                              "snippet": "WikiLeaks published troves of hacked e-mails last year that damaged Hillary Clinton 's campaign and is suspected of having co-operated with Russia through third parties, according to recent congressional testimony by the former CIA director John Brennan, who also said the adamant denials of collusion by Assange and Russia were disingenuous. Farage has not been accused of wrongdoing and is not a suspect or a target of the US investigation. But being a 'person of interest ' means investigators believe he may have information about the acts that are under investigation and he may therefore be subject to their scrutiny.",
+                              "title": "Farage ق€ ̃person of interestق€TM in FBI probe into Trump, Russia",
+                              "url": "http://www.gulf-times.com/story/551866/Farage-person-of-interest-in-FBI-probe-into-Trump-Russia"
+                            },
+                            {
+                              "date": "2018-03-16T00:00:00Z",
+                              "snippet": "Farage's exploitation of the Charlie Hebdo murders is a new low Farage's exploitation of the Charlie Hebdo murders is a new low Farage 's exploitation of the Charlie Hebdo murders is a new low The Ukip leader's attack on multiculturalism is a demonstration of his malign intent.",
+                              "title": "Farage's exploitation of the Charlie Hebdo murders is a new low",
+                              "url": "https://www.newstatesman.com/politics/2015/01/farages-exploitation-charlie-hebdo-murders-new-low?qt-trending=1"
+                            },
+                            {
+                              "date": "2018-03-13T00:00:00Z",
+                              "snippet": "What came through very quickly during the interviews was how little the Leave activists particularly Farage's gang were concerned about the official Remain campaign.",
+                              "title": "Huge Egos, Dark Plotting And Deep Suspicion: Welcome To The Brexit Club",
+                              "url": "http://www.huffingtonpost.co.uk/owen-bennett/brexit-club_b_12466130.html?utm_hp_ref=uk"
+                            },
+                            {
+                              "date": "2018-03-03T00:00:00Z",
+                              "snippet": "Nigel Farage could be passing secret communications to Julian Assange inside the Ecuadorian embassy, a US intelligence expert has speculated, weeks after the MEP was pictured there Roger Stone, a Republican close to Trump, said he has 'back-channel communications' with Assange through an intermediary. Asked if that person was Farage, he denied it Now a senior US intelligence source, speaking to the Observer , has poured fuel on the fire by suggesting that Farage could be a conduit for secret communications. The unnamed source said",
+                              "title": "Is Farage acting as a courier for Assange? | Daily Mail Online",
+                              "url": "http://www.dailymail.co.uk/news/article-4436828/Is-Farage-acting-courier-Assange.html"
+                            },
+                            {
+                              "date": "2024-08-01T00:00:00Z",
+                              "snippet": "No knife attacks or bombings or such like. I remember the NF who were much more extreme and were violent against immigrants and wanted them all out. They were known as criminals but the word terrorist never used, I think it's thrown about too easily these days",
+                              "title": "Japan Today",
+                              "url": "https://japantoday.com/member/jimizo"
+                            },
+                            {
+                              "date": "2025-10-22T00:00:00Z",
+                              "snippet": "Reform's leader in Wales until 2021, Mr Gill admitted eight counts of bribery after making statements in favour of Russia. In his initial statement following Mr Gill's conviction, Mr Farage took a swipe at Ukraine claiming it is \"a country beset by corruption\", while not once criticising Russia. This has seen the party make a humiliating mockup of Mr Farage and Putin as Russian dolls, suggesting Reform's energy plan would see the UK forced to rely on the Kremlin.",
+                              "title": "Labour slams Farage over Putin praise: 'What's really inside Reform's energy plan?' - The Mirror",
+                              "url": "https://www.mirror.co.uk/news/politics/labour-ramp-up-attacks-nigel-36114108"
+                            },
+                            {
+                              "date": "2025-10-14T00:00:00Z",
+                              "snippet": "which Mr Farage described as \"pretty chilling\". Sentencing judge Mrs Justice Steyn told Fayaz Khan she agreed with Nigel Farage that his threats to kill the politician were \"pretty chilling\". Undated handout screengrab taken from a video issued by the Crown Prosecution Service of Fayaz Khan making threats to Nigel Farage.",
+                              "title": "Man who threatened to kill Farage in Tiktok post jailed for five years",
+                              "url": "https://www.itv.com/news/2025-10-14/man-who-threatened-to-kill-farage-jailed-for-five-years"
+                            },
+                            {
+                              "date": "2025-10-30T00:00:00Z",
+                              "snippet": "Crypto sleuth ZachXBT said the \"wallet address belongs to George Cottrell with high confidence.\" \"He's been an adviser to Nigel Farage, is known for high-stakes gambling, and was found guilty of wire fraud,\" he added. During the lead-up to Trump's election win, the wallet named \"GCottrell93\" reportedly bought $9 million of Trump Polymarket shares and won $13 million.",
+                              "title": "Nigel Farage Adviser Reportedly Whale Behind Polymarket's Major Trump Bets",
+                              "url": "https://www.ccn.com/news/crypto/nigel-farage-adviser-reportedly-whale-behind-polymarkets-major-trump-bets/"
+                            },
+                            {
+                              "date": "2018-03-13T00:00:00Z",
+                              "snippet": "Nigel Farage says Angela Merkel should \"take responsibility\" for Berlin attack https //t.co/A4LWiJ1oDD pic.twitter.com/lRRpyljtAO On the day of Jo Cox's murder, Farage launched an anti-immigration poster depicting a queue of refugees, with the slogan \"Breaking Point\". It was criticised by other Leave campaigners such as Douglas Carswell and Michael Gove.",
+                              "title": "Nigel Farage attacks Jo Cox's widower: \"He would know more about extremists than me\"",
+                              "url": "https://www.newstatesman.com/2016/12/nigel-farage-attacks-jo-coxs-widower-he-would-know-more-about-extremists-me?page=3&qt-trending=1"
+                            },
+                            {
+                              "date": "2023-12-11T00:00:00Z",
+                              "snippet": "Four other blokes stripped naked.\" Farage, 59, also revealed ITV had messed up with a drinking trial Down Your Sorrows on day seven which he did with Tony Bellew. Farage insisted he had made them change it midway through the challenge because it was too tough and claimed they would never repeat the trial in the way they had to do it because it was dangerous for their health.",
+                              "title": "Nigel Farage in furious row with ITV bosses over breaching I'm A Celebrity rules - Mirror Online",
+                              "url": "https://www.mirror.co.uk/tv/tv-news/nigel-farage-furious-row-itv-31648505.amp"
+                            },
+                            {
+                              "date": "2025-11-03T00:00:00Z",
+                              "snippet": "Manifesto tax cuts 'only ever aspirations' But Mr Farage is also being accused of U-turning on the tax cuts he pledged in Reform UK's 2024 general election manifesto, which was called \"Our Contract With You\". Key measures in the document included raising the minimum threshold of income tax to £20,000, raising the higher rate threshold from £50,271 to £70,000, abolishing stamp duty for properties below £750,000, and abolishing taxes on inheritances below £2m.",
+                              "title": "Nigel Farage says Reform UK could cut minimum wage for young people - and defends U-turn on tax pledges",
+                              "url": "https://news.sky.com/story/nigel-farage-says-reform-uk-could-cut-minimum-wage-for-young-people-and-defends-u-turn-on-tax-pledges-13463252"
+                            },
+                            {
+                              "date": "2018-03-13T00:00:00Z",
+                              "snippet": "Others were equally disgusted at the Ukip politician 's comments. Farage was also accused on social media of political point-scoring in the wake of last night 's attack, which police are treating as a \"terror attack \". Some echoed Cox 's sentiments and asked whether Farage should be held to account for the actions \"of those who support your agenda \".",
+                              "title": "Nigel Farage's Brendan Cox Comments Spark Outrage In Wake Of Berlin Terror Attack",
+                              "url": "http://www.huffingtonpost.co.uk/entry/brendan-cox-takes-down-nigel-farage-over-berlin-terror-tweet_uk_5858f018e4b0acb6e4b8ebc4"
+                            },
+                            {
+                              "date": "2018-03-13T00:00:00Z",
+                              "snippet": "\"Could I lead Ukip? Yeah, I think I could\" How much longer will Nigel Farage be in charge? His deputy leader, Paul Nuttall, has his eye on the top job.",
+                              "title": "Paul Nuttall: 'Could I lead Ukip? Yeah, I think I could'",
+                              "url": "https://www.newstatesman.com/politics/2015/01/paul-nuttall-could-i-lead-ukip-yeah-i-think-i-could?page=2&qt-trending=1"
+                            },
+                            {
+                              "date": "2025-09-05T00:00:00Z",
+                              "snippet": "The decision to embrace Malhotra is one of several actions by Farage that suggest Reform is heading towards closer policy alignment with Trump and Project 2025. In May 2024, Farage was himself accused by the World Health Organisation (WHO) of \"spreading misinformation\" after becoming the face of Action on World Health (AWH), a campaign for the UK to end its membership of the World Health Organisation (WHO). AWH has received favourable coverage in right-wing newspapers, repeating the narratives of groups associated with coordinated COVID disinformation that has seeped into the mainstream media via outlets like the Telegraph, GB News and TalkTV.",
+                              "title": "Reform UK Conference: Anti-Vax Misinformation Doctor Given Prime Health Slot – Byline Times",
+                              "url": "https://bylinetimes.com/2025/09/05/reform-conference-aseem-malhotra/"
+                            },
+                            {
+                              "date": "2023-07-19T00:00:00Z",
+                              "snippet": "- Referred to NF's controversial profile in public life and politics, reflected in the adverse press outlined in the paper presented. - Despite the adverse press, from a legal perspective NF has not been formally charged of any wrongdoing, and is not subject to any regulatory censure.",
+                              "title": "Revealed: The Coutts files on Nigel Farage | The Spectator",
+                              "url": "https://www.spectator.co.uk/article/the-coutts-files-on-nigel-farage/"
+                            },
+                            {
+                              "date": "2014-05-27T00:00:00Z",
+                              "snippet": "«Son mode de vie me fait peur. Nigel boit et fume beaucoup trop». La prochaine étape pour Nigel Farage est de rendre respectable son parti, très souvent assimilé à la droite extrême en Grande-Bretagne.",
+                              "title": "Royaume-Uni - Nigel Farage, le visage des europhobes britanniques",
+                              "url": "https://www.parismatch.com/Actu/International/Nigel-Farage-le-visage-des-europhobes-britanniques-566248"
+                            },
+                            {
+                              "date": "2023-07-18T00:00:00Z",
+                              "snippet": "\"Team uncovered adverse press. This included various reports that claimed NF incited race hate when he compared the Black Lives Matter (BLM) movement to the Taliban and Islamic extremists in relation to the toppling of the Colston statue in Bristol.\" It also cites adverse press relating to \"appearances on InfoWars (the American conspiracy show run by far-Right pundit Alex Jones) and continued support for Alex Jones\" despite him being ordered to pay $1 billion in damages to the families of the victims of the 2012 Sandy Hook mass shooting for claiming it was faked.",
+                              "title": "The dossier that blows apart the Coutts claims about closing Nigel Farage's account",
+                              "url": "https://www.telegraph.co.uk/news/2023/07/18/coutts-records-undermine-claim-exiting-farage-not-political/?li_medium=liftigniter-onward-journey&li_source=LI"
+                            },
+                            {
+                              "date": "2018-03-13T00:00:00Z",
+                              "snippet": "The day before, she and her family had joined the \"Battle of Brexit\" on the Thames . She was known as a refugee campaigner - the morning of her murder, Nigel Farage had already sparked controversy with a \"Breaking Point\" poster featuring a line of refugees. For those who had already been complaining about the hate-fuelled rhetoric, an \"I told you so\" can't be far from their lips.",
+                              "title": "The murder of Jo Cox is rallying Remain - but score political points at your peril",
+                              "url": "https://www.newstatesman.com/politics/staggers/2016/06/murder-jo-cox-rallying-remain-score-political-points-your-peril?page=2&qt-trending=1"
+                            },
+                            {
+                              "date": "2019-05-21T00:00:00Z",
+                              "snippet": "Other anti-EU candidates not associated with the Brexit Party have also been targeted by milkshakes in recent weeks. Farage, a 55-year-old former commodities broker, played an instrumental role in persuading Britain 's mainstream political parties to hold a referendum on leaving the European Union in 2016, and then convincing voters to back Brexit during the subsequent campaign. Britain remains deeply divided over the issue and parliament has been unable to agree when, how or even if the country should leave the bloc.",
+                              "title": "Times Online - Daily Online Edition of The Sunday Times Sri Lanka",
+                              "url": "http://www.sundaytimes.lk/article/1088665/all-shook-up-brexit-partys-nigel-farage-doused-with-milkshake-on-campaign"
+                            },
+                            {
+                              "date": "2018-03-13T00:00:00Z",
+                              "snippet": "And...would Nigel Farage be in charge? Banks and Farage are close friends, and Banks has little enthusiasm for Ukip without Farage in charge. He admires his leadership abilities.",
+                              "title": "Will Arron Banks' new party be Ukip 2.0 or a right-wing Momentum?",
+                              "url": "https://www.newstatesman.com/politics/staggers/2017/03/will-arron-banks-new-party-be-ukip-20-or-right-wing-momentum?page=3&qt-trending=1"
+                            },
+                            {
+                              "date": "2025-10-10T00:00:00Z",
+                              "snippet": "Your Party will put the working class \"back at the heart of politics\", Zarah Sultana said, as she warned fascism is \"growling at the door\". The Independent MP for Coventry South accused Nigel Farage of \"peddling racism\" to distract people from his \"real agenda\". Co-founder Jeremy Corbyn also said the new political party must offer something \"very, very different\" from the \"simplistic appeal\" of the Reform UK leader.",
+                              "title": "Your Party will put working class 'back at heart of politics' – Sultana",
+                              "url": "https://www.irishnews.com/news/uk/your-party-will-put-working-class-back-at-heart-of-politics-sultana-HW323N42EJJMXF3JTNWXE5UXD4/"
+                            },
+                            {
+                              "date": "2016-06-30T00:00:00Z",
+                              "snippet": "La democracia necesita de la participación. Si a alguien un agitador como Nigel Farange o un partido sacudido por la corrupción como el PP le dan miedo, lo puede manifestar en las urnas. Por otra parte, tampoco se ha de pensar que",
+                              "title": "¿Un abismo politico entre las generaciones? - Mallorca Zeitung",
+                              "url": "http://www.mallorcazeitung.es/meinung/2016/06/30/abismo-politico-generaciones-54170173.html"
+                            }
+                          ],
+                          "associates": [
+                            {
+                              "association": "parent",
+                              "name": "Barbara Stevens"
+                            },
+                            {
+                              "association": "former spouse",
+                              "name": "Gráinne Hayes"
+                            },
+                            {
+                              "association": "spouse",
+                              "name": "Gráinne Hayes"
+                            },
+                            {
+                              "association": "parent",
+                              "name": "Guy Justus Oscar Farage"
+                            },
+                            {
+                              "association": "child",
+                              "name": "Isabelle Farage"
+                            },
+                            {
+                              "association": "spouse",
+                              "name": "Kirsten Farage"
+                            },
+                            {
+                              "association": "spouse",
+                              "name": "Kirsten Mehr"
+                            },
+                            {
+                              "association": "child",
+                              "name": "Samuel Farage"
+                            },
+                            {
+                              "association": "child",
+                              "name": "Thomas Farage"
+                            },
+                            {
+                              "association": "child",
+                              "name": "Victoria Farage"
+                            }
+                          ]
+                        },
+                        {
+                          "name": "Nigel Farage",
+                          "dob": {
+                            "main": "1964-04-03",
+                            "other": []
+                          },
+                          "score": 1,
+                          "flag_types": [
+                            "pep",
+                            "pep-class-1"
+                          ],
+                          "source_notes": {
+                            "complyadvantage": {
+                              "aml_types": [
+                                "pep-class-1"
+                              ],
+                              "name": "ComplyAdvantage PEP Data"
+                            },
+                            "united-kingdom-mps-and-lords-rca": {
+                              "aml_types": [
+                                "pep-class-1"
+                              ],
+                              "country_codes": [
+                                "GB"
+                              ],
+                              "name": "United Kingdom MPs and Lords RCA"
+                            }
+                          },
+                          "political_positions": [
+                            "Member of the National Legislature"
+                          ],
+                          "countries": [
+                            "United Kingdom"
+                          ],
+                          "aka": [
+                            "Nigel Farage"
+                          ],
+                          "id": "D655PR5UHW408JL",
+                          "match_types": [
+                            "name_exact",
+                            "year_of_birth"
+                          ],
+                          "fields": [
+                            {
+                              "name": "Country",
+                              "source": "united-kingdom-mps-and-lords-rca",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "united-kingdom-mps-and-lords-rca",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Place of Birth",
+                              "source": "united-kingdom-mps-and-lords-rca",
+                              "value": "United Kingdom"
+                            },
+                            {
+                              "name": "Original Place of Birth Text",
+                              "source": "united-kingdom-mps-and-lords-rca",
+                              "value": "Farnborough, Kent, England"
+                            },
+                            {
+                              "name": "Date of Birth",
+                              "source": "complyadvantage",
+                              "value": "1964-04-03"
+                            },
+                            {
+                              "name": "Political Position",
+                              "source": "united-kingdom-mps-and-lords-rca",
+                              "value": "Member of the National Legislature"
+                            },
+                            {
+                              "name": "Locationurl",
+                              "source": "united-kingdom-mps-and-lords-rca",
+                              "value": "https://en.wikipedia.org/wiki/Nigel_Farage"
+                            },
+                            {
+                              "name": "Locationurl",
+                              "source": "complyadvantage",
+                              "value": "https://en.wikipedia.org/wiki/Nigel_Farage"
+                            },
+                            {
+                              "name": "Locationurl",
+                              "source": "united-kingdom-mps-and-lords-rca",
+                              "value": "https://simple.wikipedia.org/wiki/Nigel_Farage#Personal_life"
+                            },
+                            {
+                              "name": "Countries",
+                              "value": "United Kingdom"
+                            }
+                          ],
+                          "associates": [
+                            {
+                              "association": "parent",
+                              "name": "Barbara Farage"
+                            },
+                            {
+                              "association": "former spouse",
+                              "name": "Gráinne Hayes"
+                            },
+                            {
+                              "association": "parent",
+                              "name": "Guy Justus Oscar Farage"
+                            },
+                            {
+                              "association": "child",
+                              "name": "Isabelle Farage"
+                            },
+                            {
+                              "association": "former spouse",
+                              "name": "Kirsten Mehr"
+                            },
+                            {
+                              "association": "partner",
+                              "name": "Laure Ferrari"
+                            },
+                            {
+                              "association": "child",
+                              "name": "Samuel Farage"
+                            },
+                            {
+                              "association": "child",
+                              "name": "Thomas Farage"
+                            },
+                            {
+                              "association": "child",
+                              "name": "Victoria Farage"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    "data": {
+                      "yob": "1964",
+                      "name:lite": {
+                        "first": "Nigel",
+                        "last": "Farage"
+                      },
+                      "country": "GBR"
+                    },
+                    "result": "consider",
+                    "documents": [
+                      "d46awh223amg030rw720"
+                    ],
+                    "id": "d46atm223amg030rw6yg",
+                    "status": "closed",
+                    "createdAt": "2025-11-06T14:14:40.874Z"
+                  }
+                },
+                "updatedAt": "2025-11-06T14:14:47.605Z",
+                "pdfReady": true,
+                "checkType": "lite-screen",
+                "completedAt": "2025-11-06T14:14:47.605Z",
+                "initiatedAt": "2025-11-06T14:14:36.793Z",
+                "considerReasons": [
+                  "PEP hits"
+                ],
+                "pdfS3Key": "protected/ptw6KVD",
+                "consumerName": " ",
+                "tasks": [
+                  "report:screening:lite"
+                ],
+                "updates": [
+                  {
+                    "timestamp": "2025-11-06T14:14:36.793Z",
+                    "update": "Lite Screen check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
+                  },
+                  {
+                    "timestamp": "2025-11-06T14:14:47.605Z",
+                    "update": "Transaction completed - awaiting PDF"
+                  },
+                  {
+                    "timestamp": "2025-11-06T14:19:01.253Z",
+                    "update": "PDF received and uploaded to S3 - CONSIDER: PEP hits"
+                  },
+                  {
+                    "timestamp": "2025-11-06T14:19:22.647Z",
+                    "update": "PDF received and uploaded to S3 - CONSIDER: PEP hits"
+                  }
+                ],
+                "status": "closed",
+                "initiatedBy": "jacob.archer-moran@thurstanhoskin.co.uk",
+                "piiData": {
+                  "name": {},
+                  "address": {},
+                  "document": {}
+                },
+                "thirdfortResponse": {
+                  "name": "Nigel Farage - Lite Screening",
+                  "request": {
+                    "tasks": [
+                      {
+                        "opts": {
+                          "monitored": false
+                        },
+                        "type": "report:screening:lite"
+                      }
+                    ]
+                  },
+                  "ref": "Lite Screening Check",
+                  "id": "d46atjj23amg030rw6x0",
+                  "reports": [],
+                  "status": "open",
+                  "metadata": {
+                    "notify": {
+                      "type": "http",
+                      "data": {
+                        "hmac_key": "9YHj0N6aqWq3ealMttvU5hNycILlzz8zLEC3GvHBwNA=",
+                        "method": "POST",
+                        "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                      }
+                    },
+                    "created_by": "d3t2m5q9io6g00ak3kmg",
+                    "print": {
+                      "team": "Cashiers",
+                      "tenant": "Thurstan Hoskin Solicitors LLP",
+                      "user": "Jacob Archer-Moran"
+                    },
+                    "context": {
+                      "gid": "d3t2k5a9io6g00ak3km0",
+                      "uid": "d3t2m5q9io6g00ak3kmg",
+                      "team_id": "d3t2k5a9io6g00ak3km0",
+                      "tenant_id": "d3t2ifa9io6g00ak3klg"
+                    },
+                    "ce": {
+                      "uri": "/v1/checks/4151797870"
+                    },
+                    "created_at": "2025-11-06T14:14:33.622Z"
+                  },
+                  "type": "v2",
+                  "opts": {
+                    "screening": {
+                      "monitored": false
+                    }
+                  }
+                },
+                "expectations": {
+                  "name:lite": {
+                    "data": {
+                      "first": "Nigel",
+                      "last": "Farage"
+                    }
+                  },
+                  "yob": {
+                    "data": "1964"
+                  },
+                  "country": {
+                    "data": "GBR"
+                  }
+                },
+                "hasAlerts": true,
+                "pdfAddedAt": "2025-11-06T14:19:22.647Z",
+                "transactionId": "d46atjj23amg030rw6x0"
+              },{
                 checkId: 'd45v1gy23amg0306599g',
                 checkType: 'kyb',
                 status: 'closed',
