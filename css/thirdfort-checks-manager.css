@@ -1638,3 +1638,264 @@ body {
     background: var(--primary-blue);
 }
 
+/* Source of Funds (SoF) Styles */
+.sof-property-details {
+    margin: 12px 0;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 6px;
+}
+
+.property-bullet {
+    padding: 4px 0;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.sof-chart-container {
+    margin: 16px 0;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.funding-sources-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.funding-source-card {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    padding: 12px;
+    transition: box-shadow 0.2s;
+}
+
+.funding-source-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.funding-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.funding-type {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 14px;
+    color: var(--primary-blue);
+}
+
+.funding-amount {
+    font-family: 'Transport', sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--dark-grey);
+}
+
+.funding-detail {
+    font-size: 12px;
+    color: var(--grey);
+    margin: 4px 0;
+}
+
+.funding-doc-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.doc-status-icon {
+    font-size: 16px;
+}
+
+.doc-status-text {
+    font-size: 12px;
+    color: var(--grey);
+}
+
+/* Bank Account Styles */
+.bank-accounts-container {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.bank-accounts-title {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 14px;
+    color: var(--dark-grey);
+    margin-bottom: 12px;
+}
+
+.bank-account-card {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bank-account-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--light-blue);
+}
+
+.account-header {
+    margin-bottom: 8px;
+}
+
+.account-title {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 14px;
+    color: var(--primary-blue);
+}
+
+.account-details {
+    margin: 8px 0;
+}
+
+.account-detail {
+    font-size: 12px;
+    color: var(--grey);
+    margin: 4px 0;
+}
+
+.account-action {
+    margin-top: 12px;
+}
+
+.view-statement-btn {
+    padding: 6px 12px;
+    background: var(--light-blue);
+    border: none;
+    border-radius: 4px;
+    font-family: 'Transport', sans-serif;
+    font-size: 12px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.view-statement-btn:hover {
+    background: var(--primary-blue);
+}
+
+/* Bank Statement Lightbox */
+.bank-statement-lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    cursor: pointer;
+}
+
+.lightbox-content {
+    position: relative;
+    background: white;
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    z-index: 1;
+}
+
+.bank-statement-header {
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--primary-blue);
+    padding-bottom: 12px;
+}
+
+.bank-statement-header h2 {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 18px;
+    color: var(--dark-grey);
+    margin: 0 0 8px 0;
+}
+
+.statement-account-info {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--grey);
+}
+
+.bank-statement-table {
+    margin: 16px 0;
+}
+
+.bank-statement-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.bank-statement-table th {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 10px;
+    text-align: left;
+    font-family: 'RotisBold', sans-serif;
+    font-size: 13px;
+    color: var(--dark-grey);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.bank-statement-table td {
+    padding: 10px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.bank-statement-table .negative {
+    color: #d32f2f;
+    font-weight: bold;
+}
+
+.bank-statement-table .positive {
+    color: #388e3c;
+    font-weight: bold;
+}
+
+.close-lightbox-btn {
+    padding: 8px 16px;
+    background: var(--light-blue);
+    border: none;
+    border-radius: 4px;
+    font-family: 'Transport', sans-serif;
+    font-size: 13px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 16px;
+}
+
+.close-lightbox-btn:hover {
+    background: var(--primary-blue);
+}
+

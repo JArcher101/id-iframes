@@ -1337,6 +1337,20 @@ class ThirdfortChecksManager {
         
         checksHtml += '</div>';
         
+        // Add linked accounts section if statement data exists
+        let accountsHtml = '';
+        if (hasStatement && bankStatement.breakdown && bankStatement.breakdown.accounts) {
+            const accounts = bankStatement.breakdown.accounts;
+            accountsHtml = '<div class="bank-accounts-container">';
+            accountsHtml += '<div class="bank-accounts-title">Linked Accounts</div>';
+            
+            for (const [accountId, accountData] of Object.entries(accounts)) {
+                accountsHtml += this.createBankAccountCard(accountId, accountData);
+            }
+            
+            accountsHtml += '</div>';
+        }
+        
         return `
             <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
@@ -1345,9 +1359,126 @@ class ThirdfortChecksManager {
                 </div>
                 <div class="task-details">
                     ${checksHtml}
+                    ${accountsHtml}
                 </div>
             </div>
         `;
+    }
+    
+    createBankAccountCard(accountId, accountData) {
+        const info = accountData.info || {};
+        const number = info.number || {};
+        const balances = accountData.balances || [];
+        const transactions = accountData.transactions || [];
+        
+        // Get account number details
+        const accountNumber = number.number || 'N/A';
+        const sortCode = number.sort_code || 'N/A';
+        const iban = number.iban || '';
+        
+        // Get latest balance
+        let balanceText = 'N/A';
+        if (balances.length > 0) {
+            const latestBalance = balances[balances.length - 1];
+            const amount = latestBalance.current_balance || latestBalance.available_balance || 0;
+            const currency = latestBalance.currency || 'GBP';
+            balanceText = `${currency} ${(amount / 100).toFixed(2)}`;
+        }
+        
+        // Transaction count
+        const txCount = transactions.length;
+        
+        // Store the full data in a data attribute for the lightbox
+        const accountDataJson = JSON.stringify({accountId, accountData}).replace(/"/g, '&quot;');
+        
+        return `
+            <div class="bank-account-card" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.dataset.accountData);" data-account-data="${accountDataJson}">
+                <div class="account-header">
+                    <div class="account-title">Account ${sortCode} ${accountNumber}</div>
+                </div>
+                <div class="account-details">
+                    ${iban ? `<div class="account-detail">IBAN: ${iban}</div>` : ''}
+                    <div class="account-detail">Balance: ${balanceText}</div>
+                    <div class="account-detail">Transactions: ${txCount}</div>
+                </div>
+                <div class="account-action">
+                    <button class="view-statement-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.parentElement.parentElement.dataset.accountData);">View Statement</button>
+                </div>
+            </div>
+        `;
+    }
+    
+    showBankStatement(accountId, accountDataStr) {
+        // Parse the account data
+        const data = JSON.parse(accountDataStr.replace(/&quot;/g, '"'));
+        const accountData = data.accountData;
+        const transactions = accountData.transactions || [];
+        const info = accountData.info || {};
+        const number = info.number || {};
+        
+        // Build statement HTML
+        let statementHtml = `
+            <div class="bank-statement-header">
+                <h2>Bank Statement</h2>
+                <div class="statement-account-info">
+                    ${number.sort_code ? `<div>Sort Code: ${number.sort_code}</div>` : ''}
+                    ${number.number ? `<div>Account Number: ${number.number}</div>` : ''}
+                    ${number.iban ? `<div>IBAN: ${number.iban}</div>` : ''}
+                </div>
+            </div>
+            <div class="bank-statement-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        // Sort transactions by timestamp
+        const sortedTransactions = [...transactions].sort((a, b) => 
+            new Date(a.timestamp) - new Date(b.timestamp)
+        );
+        
+        sortedTransactions.forEach(tx => {
+            const date = new Date(tx.timestamp).toLocaleDateString('en-GB');
+            const description = tx.description || tx.merchant_name || 'Transaction';
+            const amount = (tx.amount / 100).toFixed(2);
+            const balance = tx.running_balance ? (tx.running_balance / 100).toFixed(2) : '—';
+            const amountClass = tx.amount < 0 ? 'negative' : 'positive';
+            
+            statementHtml += `
+                <tr>
+                    <td>${date}</td>
+                    <td>${description}</td>
+                    <td class="${amountClass}">£${amount}</td>
+                    <td>£${balance}</td>
+                </tr>
+            `;
+        });
+        
+        statementHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        // Create and show lightbox
+        const lightbox = document.createElement('div');
+        lightbox.className = 'bank-statement-lightbox';
+        lightbox.innerHTML = `
+            <div class="lightbox-overlay" onclick="this.parentElement.remove()"></div>
+            <div class="lightbox-content">
+                ${statementHtml}
+                <button class="close-lightbox-btn" onclick="this.closest('.bank-statement-lightbox').remove()">Close</button>
+            </div>
+        `;
+        
+        document.body.appendChild(lightbox);
     }
     
     createFundingSourceCard(fund, check, index) {
