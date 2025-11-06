@@ -1337,10 +1337,20 @@ class ThirdfortChecksManager {
         
         checksHtml += '</div>';
         
-        // Add linked accounts section if statement data exists
+        // Add linked accounts section - check both summary and statement data
         let accountsHtml = '';
+        let accounts = {};
+        
+        // Try to get accounts from bank:statement first (has transaction data)
         if (hasStatement && bankStatement.breakdown && bankStatement.breakdown.accounts) {
-            const accounts = bankStatement.breakdown.accounts;
+            accounts = bankStatement.breakdown.accounts;
+        }
+        // Also check bank:summary for accounts
+        else if (hasSummary && bankSummary.breakdown && bankSummary.breakdown.accounts) {
+            accounts = bankSummary.breakdown.accounts;
+        }
+        
+        if (Object.keys(accounts).length > 0) {
             accountsHtml = '<div class="bank-accounts-container">';
             accountsHtml += '<div class="bank-accounts-title">Linked Accounts</div>';
             
@@ -1365,45 +1375,144 @@ class ThirdfortChecksManager {
         `;
     }
     
+    getBankLogo(providerId, providerName) {
+        // Map of common UK banks to their logo URLs
+        const bankLogos = {
+            'ob-barclays': 'https://logo.clearbit.com/barclays.co.uk',
+            'barclays': 'https://logo.clearbit.com/barclays.co.uk',
+            'ob-hsbc': 'https://logo.clearbit.com/hsbc.co.uk',
+            'hsbc': 'https://logo.clearbit.com/hsbc.co.uk',
+            'ob-lloyds': 'https://logo.clearbit.com/lloydsbank.com',
+            'lloyds': 'https://logo.clearbit.com/lloydsbank.com',
+            'ob-natwest': 'https://logo.clearbit.com/natwest.com',
+            'natwest': 'https://logo.clearbit.com/natwest.com',
+            'ob-rbs': 'https://logo.clearbit.com/rbs.co.uk',
+            'rbs': 'https://logo.clearbit.com/rbs.co.uk',
+            'ob-santander': 'https://logo.clearbit.com/santander.co.uk',
+            'santander': 'https://logo.clearbit.com/santander.co.uk',
+            'ob-tsb': 'https://logo.clearbit.com/tsb.co.uk',
+            'tsb': 'https://logo.clearbit.com/tsb.co.uk',
+            'ob-nationwide': 'https://logo.clearbit.com/nationwide.co.uk',
+            'nationwide': 'https://logo.clearbit.com/nationwide.co.uk',
+            'ob-halifax': 'https://logo.clearbit.com/halifax.co.uk',
+            'halifax': 'https://logo.clearbit.com/halifax.co.uk',
+            'ob-monzo': 'https://logo.clearbit.com/monzo.com',
+            'monzo': 'https://logo.clearbit.com/monzo.com',
+            'ob-starling': 'https://logo.clearbit.com/starlingbank.com',
+            'starling': 'https://logo.clearbit.com/starlingbank.com',
+            'ob-revolut': 'https://logo.clearbit.com/revolut.com',
+            'revolut': 'https://logo.clearbit.com/revolut.com'
+        };
+        
+        const logoUrl = bankLogos[providerId?.toLowerCase()] || bankLogos[providerName?.toLowerCase()];
+        
+        if (logoUrl) {
+            return `<img src="${logoUrl}" alt="${providerName}" class="bank-logo" onerror="this.style.display='none'">`;
+        }
+        return '';
+    }
+    
     createBankAccountCard(accountId, accountData) {
+        // Handle both possible data structures (bank:statement and bank:summary)
         const info = accountData.info || {};
-        const number = info.number || {};
+        const number = accountData.number || info.number || {};
+        const balance = accountData.balance || {};
         const balances = accountData.balances || [];
         const transactions = accountData.transactions || [];
+        const provider = accountData.provider || {};
+        const accountName = accountData.name || 'Bank Account';
+        const accountType = accountData.type || 'TRANSACTION';
+        const currency = accountData.currency || balance.currency || 'GBP';
         
         // Get account number details
         const accountNumber = number.number || 'N/A';
         const sortCode = number.sort_code || 'N/A';
         const iban = number.iban || '';
         
-        // Get latest balance
+        // Get account holder name (from info array if available)
+        let accountHolder = '';
+        if (Array.isArray(info) && info.length > 0) {
+            accountHolder = info[0].full_name || '';
+        }
+        
+        // Get balance - check multiple possible locations
         let balanceText = 'N/A';
-        if (balances.length > 0) {
+        let availableBalance = 0;
+        let currentBalance = 0;
+        let overdraft = 0;
+        
+        if (balance.available !== undefined || balance.current !== undefined) {
+            availableBalance = balance.available || 0;
+            currentBalance = balance.current || 0;
+            overdraft = balance.overdraft || 0;
+            balanceText = `${currency} ${currentBalance.toFixed(2)}`;
+        } else if (balances.length > 0) {
             const latestBalance = balances[balances.length - 1];
-            const amount = latestBalance.current_balance || latestBalance.available_balance || 0;
-            const currency = latestBalance.currency || 'GBP';
-            balanceText = `${currency} ${(amount / 100).toFixed(2)}`;
+            availableBalance = latestBalance.available_balance || 0;
+            currentBalance = latestBalance.current_balance || 0;
+            balanceText = `${currency} ${(currentBalance / 100).toFixed(2)}`;
         }
         
         // Transaction count
         const txCount = transactions.length;
         
+        // Get bank logo
+        const bankLogo = this.getBankLogo(provider.id, provider.name);
+        
         // Store the full data in a data attribute for the lightbox
         const accountDataJson = JSON.stringify({accountId, accountData}).replace(/"/g, '&quot;');
         
+        // Format account type for display
+        const typeDisplay = accountType === 'TRANSACTION' ? 'Current Account' : 
+                           accountType === 'SAVINGS' ? 'Savings Account' : accountType;
+        
         return `
-            <div class="bank-account-card" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.dataset.accountData);" data-account-data="${accountDataJson}">
-                <div class="account-header">
-                    <div class="account-title">Account ${sortCode} ${accountNumber}</div>
+            <div class="bank-account-card" ${txCount > 0 ? `onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.dataset.accountData);"` : ''} data-account-data="${accountDataJson}">
+                <div class="account-header-row">
+                    <div class="account-provider">
+                        ${bankLogo}
+                        <div class="provider-details">
+                            <div class="provider-name">${provider.name || 'Bank'}</div>
+                            <div class="account-type-badge">${typeDisplay}</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="account-details">
-                    ${iban ? `<div class="account-detail">IBAN: ${iban}</div>` : ''}
-                    <div class="account-detail">Balance: ${balanceText}</div>
-                    <div class="account-detail">Transactions: ${txCount}</div>
+                <div class="account-name-display">${accountName}</div>
+                ${accountHolder ? `<div class="account-holder">Account Holder: ${accountHolder}</div>` : ''}
+                <div class="account-numbers">
+                    <div class="account-detail"><strong>Sort Code:</strong> ${sortCode}</div>
+                    <div class="account-detail"><strong>Account:</strong> ${accountNumber}</div>
+                    ${iban ? `<div class="account-detail"><strong>IBAN:</strong> ${iban}</div>` : ''}
                 </div>
-                <div class="account-action">
-                    <button class="view-statement-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.parentElement.parentElement.dataset.accountData);">View Statement</button>
+                <div class="account-balance-section">
+                    <div class="balance-item">
+                        <span class="balance-label">Current Balance:</span>
+                        <span class="balance-amount">${balanceText}</span>
+                    </div>
+                    ${availableBalance !== currentBalance && availableBalance > 0 ? `
+                        <div class="balance-item">
+                            <span class="balance-label">Available:</span>
+                            <span class="balance-amount">${currency} ${availableBalance.toFixed(2)}</span>
+                        </div>
+                    ` : ''}
+                    ${overdraft > 0 ? `
+                        <div class="balance-item">
+                            <span class="balance-label">Overdraft:</span>
+                            <span class="balance-amount">${currency} ${overdraft.toFixed(2)}</span>
+                        </div>
+                    ` : ''}
+                    ${txCount > 0 ? `
+                        <div class="balance-item">
+                            <span class="balance-label">Transactions:</span>
+                            <span class="balance-amount">${txCount}</span>
+                        </div>
+                    ` : ''}
                 </div>
+                ${txCount > 0 ? `
+                    <div class="account-action">
+                        <button class="view-statement-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.parentElement.parentElement.dataset.accountData);">View Full Statement</button>
+                    </div>
+                ` : ''}
             </div>
         `;
     }
