@@ -1467,7 +1467,7 @@ class ThirdfortChecksManager {
                 'documents:poa': 'Proof of Address',
                 'documents:poo': 'Proof of Ownership',
                 'report:sof-v1': 'Source of Funds Questionnaire',
-                'report:bank-statement': 'Bank Statement Linking',
+                'report:bank-statement': 'Bank Summary',
                 'report:bank-summary': 'Bank Summary'
             };
             return taskNames[additionalTasks[0]] || 'Additional Tasks';
@@ -1480,11 +1480,11 @@ class ThirdfortChecksManager {
         
         if ((hasSoF || hasBank) && !hasPoA && !hasPoO) {
             if (hasSoF && hasBank) {
-                return 'Source of Funds Questionnaire & Linking';
+                return 'Source of Funds Questionnaire & Bank Summary';
             } else if (hasSoF) {
                 return 'Source of Funds Questionnaire';
             } else {
-                return 'Bank Linking';
+                return 'Bank Summary';
             }
         }
         
@@ -2122,7 +2122,7 @@ class ThirdfortChecksManager {
             'facial_similarity': 'Facial Similarity',
             'document': 'Document Authenticity',
             'sof:v1': 'Source of Funds Questionnaire',
-            'bank:statement': 'Bank Statement Analysis',
+            'bank:statement': 'Bank Summary',
             'bank:summary': 'Bank Summary',
             'documents:poa': 'Proof of Address',
             'documents:poo': 'Proof of Ownership',
