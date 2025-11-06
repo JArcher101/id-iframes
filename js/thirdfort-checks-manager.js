@@ -165,9 +165,7 @@ class ThirdfortChecksManager {
     loadChecks(checks) {
         console.log('📊 Loading checks:', checks.length);
         
-        // Reset current check and view state when new data loads
         this.currentCheck = null;
-        this.currentView = 'loading';
         this.checks = checks;
         
         if (checks.length === 0) {
@@ -182,29 +180,47 @@ class ThirdfortChecksManager {
     // VIEW MANAGEMENT
     // ===================================================================
     
-    showListView() {
-        this.currentView = 'list';
+    /**
+     * Centralized view switcher - ensures only ONE view visible at a time
+     * @param {string} view - 'loading' | 'empty' | 'list' | 'detail'
+     */
+    switchView(view) {
+        console.log('🔄 Switching view to:', view);
+        
+        // Step 1: Hide ALL views
         this.loadingState.classList.add('hidden');
-        this.listView.classList.remove('hidden');
+        this.listView.classList.add('hidden');
         this.detailView.classList.add('hidden');
+        
+        // Step 2: Show requested view
+        if (view === 'loading') {
+            this.loadingState.classList.remove('hidden');
+        } else if (view === 'empty') {
+            // Empty state uses list-view container with message
+            this.checksList.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No Thirdfort checks found</div>';
+            this.listView.classList.remove('hidden');
+        } else if (view === 'list') {
+            this.listView.classList.remove('hidden');
+        } else if (view === 'detail') {
+            this.detailView.classList.remove('hidden');
+        }
+        
+        // Step 3: Update state
+        this.currentView = view;
+    }
+    
+    showListView() {
+        this.switchView('list');
     }
     
     showDetailView(check) {
         this.currentCheck = check;
-        this.currentView = 'detail';
-        this.listView.classList.add('hidden');
-        this.detailView.classList.remove('hidden');
+        this.switchView('detail');
         this.renderDetailView(check);
     }
     
     showEmptyState() {
-        this.currentView = 'empty';
-        this.loadingState.classList.add('hidden');
-        
-        // Don't replace entire listView.innerHTML - just clear the checks list and show message
-        this.checksList.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No Thirdfort checks found</div>';
-        
-        this.listView.classList.remove('hidden');
+        this.switchView('empty');
     }
     
     // ===================================================================
