@@ -649,6 +649,7 @@ class ThirdfortChecksManager {
         if (isPersonCheck) {
             // Person checks (Electronic ID, Lite Screen, IDV)
             const piiData = check.piiData || {};
+            const expectations = check.expectations || {};  // Lite Screen expectations (available before completion)
             
             // For IDV checks, also pull data from identity:lite taskOutcomes
             const idvProperties = check.checkType === 'idv' 
@@ -657,18 +658,22 @@ class ThirdfortChecksManager {
             
             const name = check.consumerName || 
                         (idvProperties ? `${idvProperties.first_name || ''} ${idvProperties.last_name || ''}`.trim() : '') ||
+                        (expectations.name?.data ? `${expectations.name.data.first || ''} ${expectations.name.data.last || ''}`.trim() : '') ||
                         (piiData.name ? `${piiData.name.first || ''} ${piiData.name.last || ''}`.trim() : '—');
             
             const dob = idvProperties?.date_of_birth 
                 ? new Date(idvProperties.date_of_birth).toLocaleDateString('en-GB')
-                : (piiData.dob ? new Date(piiData.dob).toLocaleDateString('en-GB') : '—');
+                : (expectations.dob?.data ? new Date(expectations.dob.data).toLocaleDateString('en-GB') : '')
+                || (piiData.dob ? new Date(piiData.dob).toLocaleDateString('en-GB') : '—');
             
             const mobile = check.consumerPhone || check.thirdfortResponse?.request?.actor?.phone || '—';
             const email = check.consumerEmail || check.thirdfortResponse?.request?.actor?.email || '—';
             
-            const address = piiData.address || {};
+            // Address - use piiData first, then expectations for lite-screen
+            const address = piiData.address || expectations.address?.data || {};
             const fullAddress = [
-                address.line1,
+                address.line1 || (address.building_number || address.building_name ? 
+                    [address.building_number, address.building_name, address.street].filter(Boolean).join(', ') : ''),
                 address.line2,
                 address.town,
                 address.postcode,
