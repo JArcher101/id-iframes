@@ -1639,8 +1639,14 @@ body {
 }
 
 /* Source of Funds (SoF) Styles */
+.sof-top-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+}
+
 .sof-property-details {
-    margin: 12px 0;
     padding: 12px;
     background: rgba(0, 0, 0, 0.02);
     border-radius: 6px;
@@ -1653,16 +1659,18 @@ body {
 }
 
 .sof-chart-container {
-    margin: 16px 0;
     padding: 12px;
     background: white;
     border-radius: 6px;
     border: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .funding-sources-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 12px;
     margin-top: 16px;
 }
@@ -1705,6 +1713,29 @@ body {
     margin: 4px 0;
 }
 
+.funding-section-title {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 13px;
+    color: var(--dark-grey);
+    margin: 12px 0 8px 0;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.funding-person {
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 4px;
+}
+
+.person-name {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 13px;
+    color: var(--primary-blue);
+    margin-bottom: 4px;
+}
+
 .funding-doc-status {
     display: flex;
     align-items: center;
@@ -1714,8 +1745,10 @@ body {
     border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.doc-status-icon {
-    font-size: 16px;
+.funding-doc-status .task-check-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
 .doc-status-text {

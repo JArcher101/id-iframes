@@ -1483,36 +1483,123 @@ class ThirdfortChecksManager {
     
     createFundingSourceCard(fund, check, index) {
         const type = fund.type || 'unknown';
-        const amount = fund.amount ? `£${(fund.amount / 100).toLocaleString()}` : 'Not specified';
+        const data = fund.data || {};
+        const amount = data.amount ? `£${(data.amount / 100).toLocaleString()}` : 'Not specified';
         
-        // Map funding type to display name
+        // Map funding type to display name (handle fund: prefix)
+        const cleanType = type.replace('fund:', '').replace(/:/g, '_');
         const typeNames = {
             'mortgage': 'Mortgage',
             'savings': 'Savings',
             'gift': 'Gift',
-            'sale': 'Property Sale',
+            'sale_property': 'Property Sale',
+            'sale_assets': 'Asset Sale',
             'inheritance': 'Inheritance',
+            'htb': 'Help to Buy / LISA',
             'investment': 'Investment',
             'business': 'Business Income',
             'loan': 'Loan',
             'other': 'Other'
         };
-        const typeName = typeNames[type] || type;
+        const typeName = typeNames[cleanType] || cleanType;
         
         // Check if corresponding document exists in taskOutcomes
-        const docTaskKey = `documents:${type}`;
+        const docTaskKey = `documents:${cleanType}`;
         const hasDocument = check.taskOutcomes && check.taskOutcomes[docTaskKey];
-        const docStatus = hasDocument ? '✅' : '❌';
-        const docStatusText = hasDocument ? 'Uploaded' : 'Not uploaded';
+        const docIcon = hasDocument ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('AL');
+        const docStatusText = hasDocument ? 'Document uploaded' : 'No document uploaded';
         
-        // Additional details based on fund type
+        // Build detailed information based on fund type
         let detailsHtml = '';
-        if (type === 'mortgage' && fund.lender) {
-            detailsHtml = `<div class="funding-detail">Lender: ${fund.lender}</div>`;
-        } else if (type === 'gift' && fund.donor) {
-            detailsHtml = `<div class="funding-detail">Donor: ${fund.donor}</div>`;
-        } else if (type === 'sale' && fund.property_address) {
-            detailsHtml = `<div class="funding-detail">Property: ${fund.property_address}</div>`;
+        
+        if (type === 'fund:mortgage') {
+            if (data.lender) {
+                detailsHtml += `<div class="funding-detail"><strong>Lender:</strong> ${data.lender}</div>`;
+            }
+            if (data.location) {
+                detailsHtml += `<div class="funding-detail"><strong>Location:</strong> ${data.location}</div>`;
+            }
+        } else if (type === 'fund:savings') {
+            if (data.people && data.people.length > 0) {
+                detailsHtml += '<div class="funding-section-title">People Contributing:</div>';
+                data.people.forEach(person => {
+                    const isActor = person.actor ? ' (Primary)' : ' (Joint)';
+                    detailsHtml += `<div class="funding-person">`;
+                    detailsHtml += `<div class="person-name"><strong>${person.name}${isActor}</strong></div>`;
+                    if (person.employment_status) {
+                        detailsHtml += `<div class="funding-detail">Status: ${person.employment_status}</div>`;
+                    }
+                    if (person.phone) {
+                        detailsHtml += `<div class="funding-detail">Phone: ${person.phone}</div>`;
+                    }
+                    if (person.incomes && person.incomes.length > 0) {
+                        person.incomes.forEach(income => {
+                            const annual = income.annual_total ? `£${(income.annual_total / 100).toLocaleString()}/year` : '';
+                            detailsHtml += `<div class="funding-detail">Income: ${income.source} - ${annual} (${income.frequency || 'N/A'})</div>`;
+                        });
+                    }
+                    detailsHtml += `</div>`;
+                });
+            }
+        } else if (type === 'fund:gift') {
+            if (data.giftor) {
+                detailsHtml += '<div class="funding-section-title">Gift Details:</div>';
+                if (data.giftor.name) {
+                    detailsHtml += `<div class="funding-detail"><strong>From:</strong> ${data.giftor.name}</div>`;
+                }
+                if (data.giftor.relationship) {
+                    detailsHtml += `<div class="funding-detail"><strong>Relationship:</strong> ${data.giftor.relationship}</div>`;
+                }
+                if (data.giftor.phone) {
+                    detailsHtml += `<div class="funding-detail"><strong>Phone:</strong> ${data.giftor.phone}</div>`;
+                }
+                if (typeof data.giftor.contactable !== 'undefined') {
+                    detailsHtml += `<div class="funding-detail"><strong>Contactable:</strong> ${data.giftor.contactable ? 'Yes' : 'No'}</div>`;
+                }
+                if (typeof data.repayable !== 'undefined') {
+                    detailsHtml += `<div class="funding-detail"><strong>Repayable:</strong> ${data.repayable ? 'Yes' : 'No'}</div>`;
+                }
+            }
+        } else if (type === 'fund:sale:property') {
+            detailsHtml += '<div class="funding-section-title">Property Sale Details:</div>';
+            if (data.date) {
+                const saleDate = new Date(data.date).toLocaleDateString('en-GB');
+                detailsHtml += `<div class="funding-detail"><strong>Completion Date:</strong> ${saleDate}</div>`;
+            }
+            if (data.status) {
+                detailsHtml += `<div class="funding-detail"><strong>Status:</strong> ${data.status}</div>`;
+            }
+            if (data.lawyer) {
+                detailsHtml += `<div class="funding-detail"><strong>Lawyer:</strong> ${data.lawyer}</div>`;
+            }
+        } else if (type === 'fund:sale:assets') {
+            detailsHtml += '<div class="funding-section-title">Asset Sale Details:</div>';
+            if (data.description) {
+                detailsHtml += `<div class="funding-detail"><strong>Asset:</strong> ${data.description}</div>`;
+            }
+            if (data.location) {
+                detailsHtml += `<div class="funding-detail"><strong>Location:</strong> ${data.location}</div>`;
+            }
+        } else if (type === 'fund:htb') {
+            detailsHtml += '<div class="funding-section-title">Help to Buy / LISA:</div>';
+            if (data.type) {
+                detailsHtml += `<div class="funding-detail"><strong>Type:</strong> ${data.type.toUpperCase()}</div>`;
+            }
+            if (data.location) {
+                detailsHtml += `<div class="funding-detail"><strong>Location:</strong> ${data.location}</div>`;
+            }
+        } else if (type === 'fund:inheritance') {
+            detailsHtml += '<div class="funding-section-title">Inheritance Details:</div>';
+            if (data.from) {
+                detailsHtml += `<div class="funding-detail"><strong>From:</strong> ${data.from}</div>`;
+            }
+            if (data.date) {
+                const inheritDate = new Date(data.date).toLocaleDateString('en-GB');
+                detailsHtml += `<div class="funding-detail"><strong>Date:</strong> ${inheritDate}</div>`;
+            }
+            if (typeof data.is_owner !== 'undefined') {
+                detailsHtml += `<div class="funding-detail"><strong>Beneficiary:</strong> ${data.is_owner ? 'Primary' : 'Secondary'}</div>`;
+            }
         }
         
         return `
@@ -1523,7 +1610,7 @@ class ThirdfortChecksManager {
                 </div>
                 ${detailsHtml}
                 <div class="funding-doc-status">
-                    <span class="doc-status-icon">${docStatus}</span>
+                    ${docIcon}
                     <span class="doc-status-text">${docStatusText}</span>
                 </div>
             </div>
@@ -1558,10 +1645,10 @@ class ThirdfortChecksManager {
             
             propertyDetailsHtml = `
                 <div class="sof-property-details">
-                    <div class="property-bullet">📍 Property: ${fullAddress}</div>
-                    <div class="property-bullet">💷 Purchase Price: ${price}</div>
-                    <div class="property-bullet">📋 Stamp Duty: ${sdlt}</div>
-                    <div class="property-bullet">🏗️ New Build: ${newBuild}</div>
+                    <div class="property-bullet">📍 <strong>Property:</strong> ${fullAddress}</div>
+                    <div class="property-bullet">💷 <strong>Purchase Price:</strong> ${price}</div>
+                    <div class="property-bullet">📋 <strong>Stamp Duty:</strong> ${sdlt}</div>
+                    <div class="property-bullet">🏗️ <strong>New Build:</strong> ${newBuild}</div>
                 </div>
             `;
         }
@@ -1574,7 +1661,7 @@ class ThirdfortChecksManager {
                 <iframe 
                     id="${chartIframeId}" 
                     src="single-chart-viewer.html" 
-                    style="width: 100%; height: 400px; border: none;"
+                    style="width: 100%; height: 300px; border: none;"
                     onload="this.contentWindow.postMessage({type: 'chart-data', ...${JSON.stringify(chartData).replace(/"/g, '&quot;')}}, '*')"
                 ></iframe>
             </div>
@@ -1595,8 +1682,10 @@ class ThirdfortChecksManager {
                 </div>
                 <div class="task-details">
                     <div class="task-summary">Questionnaire completed with ${funds.length} funding source${funds.length !== 1 ? 's' : ''}</div>
-                    ${propertyDetailsHtml}
-                    ${chartHtml}
+                    <div class="sof-top-section">
+                        ${propertyDetailsHtml}
+                        ${chartHtml}
+                    </div>
                     ${fundingCardsHtml}
                 </div>
             </div>
