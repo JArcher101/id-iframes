@@ -298,8 +298,8 @@ class ThirdfortChecksManager {
         typeLabel.textContent = this.getCheckTypeLabel(check);
         header.appendChild(typeLabel);
         
-        // CLEAR/CONSIDER tag (only if closed)
-        if (check.status === 'closed') {
+        // CLEAR/CONSIDER tag (only if closed AND PDF ready)
+        if (check.status === 'closed' && check.pdfReady) {
             const tag = document.createElement('span');
             tag.className = `outcome-tag ${check.hasAlerts ? 'consider' : 'clear'}`;
             tag.textContent = check.hasAlerts ? 'CONSIDER' : 'CLEAR';
@@ -469,9 +469,14 @@ class ThirdfortChecksManager {
         } else if (check.status === 'aborted') {
             statusTag = '<span class="status-tag cancelled">CANCELLED</span>';
         } else if (check.status === 'closed') {
-            statusTag = check.hasAlerts 
-                ? '<span class="status-tag consider">CONSIDER</span>' 
-                : '<span class="status-tag clear">CLEAR</span>';
+            // Only show CLEAR/CONSIDER if PDF is ready, otherwise show PROCESSING
+            if (check.pdfReady) {
+                statusTag = check.hasAlerts 
+                    ? '<span class="status-tag consider">CONSIDER</span>' 
+                    : '<span class="status-tag clear">CLEAR</span>';
+            } else {
+                statusTag = '<span class="status-tag processing">PROCESSING</span>';
+            }
         }
         
         const pepHitsCount = (check.pepSanctionsUpdates || []).reduce((sum, update) => 
