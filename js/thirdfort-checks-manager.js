@@ -2211,6 +2211,128 @@ class ThirdfortChecksManager {
                     { timestamp: '2025-11-05T20:21:46.714Z', update: 'PDF received and uploaded to S3 - CLEAR' },
                     { timestamp: '2025-11-05T21:15:23.171Z', update: 'Refreshed from Thirdfort API - Status: closed' }
                 ]
+            },
+            // Real IDV check data - Passport verification
+            {
+                checkId: 'd45zn1423amg03065a2g',
+                checkType: 'idv',
+                status: 'closed',
+                consumerName: 'Jacob Robert Moran',
+                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
+                initiatedAt: '2025-11-06T01:31:50.378Z',
+                updatedAt: '2025-11-06T01:32:09.461Z',
+                completedAt: '2025-11-06T01:32:09.461Z',
+                pdfReady: true,
+                pdfS3Key: 'protected/YwyAoiy',
+                pdfAddedAt: '2025-11-06T01:32:18.033Z',
+                hasMonitoring: false,
+                hasAlerts: false,
+                documentType: 'passport',
+                documentsUploaded: true,
+                taskOutcomes: {
+                    'identity:lite': {
+                        result: 'clear',
+                        status: 'closed',
+                        id: 'd45zn4c23amg03065a40',
+                        createdAt: '2025-11-06T01:32:01.642Z',
+                        data: {
+                            name: {
+                                first: 'Jacob',
+                                last: 'Moran',
+                                other: 'Robert'
+                            }
+                        },
+                        documents: ['d45zn4m23amg03065a50'],
+                        breakdown: {
+                            document: {
+                                name: 'document',
+                                result: 'clear',
+                                breakdown: {
+                                    compromised_document: { result: 'clear' },
+                                    data_consistency: { result: 'clear' },
+                                    data_comparison: { result: 'clear' },
+                                    data_validation: { result: 'clear' },
+                                    image_integrity: { result: 'clear' },
+                                    visual_authenticity: { result: 'clear' },
+                                    age_validation: { result: 'clear' },
+                                    police_record: { result: 'clear' }
+                                },
+                                properties: {
+                                    first_name: 'Jacob',
+                                    last_name: 'Moran',
+                                    date_of_birth: '1990-01-01',
+                                    date_of_expiry: '2031-05-28',
+                                    issuing_date: '2018-08-16',
+                                    issuing_country: 'GBR',
+                                    document_type: 'passport',
+                                    document_numbers: [{ type: 'document_number', value: '999999999' }],
+                                    nationality: null,
+                                    gender: null
+                                }
+                            }
+                        }
+                    }
+                },
+                companyData: {
+                    name: {
+                        first: 'Jacob',
+                        last: 'Moran',
+                        other: 'Robert'
+                    },
+                    numbers: []
+                },
+                thirdfortResponse: {
+                    name: 'Jacob Robert Moran - Document Verification',
+                    type: 'document',
+                    ref: '50/999',
+                    id: 'd45zn1423amg03065a2g',
+                    status: 'open',
+                    reports: [],
+                    request: {
+                        data: {
+                            name: {
+                                first: 'Jacob',
+                                last: 'Moran',
+                                other: 'Robert'
+                            }
+                        },
+                        reports: [
+                            { type: 'identity:lite' }
+                        ]
+                    },
+                    metadata: {
+                        notify: {
+                            type: 'http',
+                            data: {
+                                hmac_key: 'GgUi5IyCFm4TOsMy3Q4cvq6bnQEBJq/0uRqECCRoz+4=',
+                                method: 'POST',
+                                uri: 'https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook'
+                            }
+                        },
+                        created_by: 'd3t0auq9io6g00ak3kkg',
+                        print: {
+                            team: 'Cashiers',
+                            tenant: 'Thurstan Hoskin Solicitors LLP',
+                            user: 'THS Bot'
+                        },
+                        context: {
+                            gid: 'd3t2k5a9io6g00ak3km0',
+                            uid: 'd3t0auq9io6g00ak3kkg',
+                            team_id: 'd3t2k5a9io6g00ak3km0',
+                            tenant_id: 'd3t2ifa9io6g00ak3klg'
+                        },
+                        ce: {
+                            uri: '/v1/checks/4151797853'
+                        },
+                        created_at: '2025-11-06T01:31:47.945Z'
+                    }
+                },
+                updates: [
+                    { timestamp: '2025-11-06T01:31:50.378Z', update: 'IDV check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
+                    { timestamp: '2025-11-06T01:31:54.869Z', update: 'Documents uploaded by jacob.archer-moran@thurstanhoskin.co.uk' },
+                    { timestamp: '2025-11-06T01:32:09.461Z', update: 'Check completed - awaiting PDF' },
+                    { timestamp: '2025-11-06T01:32:18.033Z', update: 'PDF received and uploaded to S3 - CLEAR' }
+                ]
             }
         ];
     }
