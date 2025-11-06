@@ -1164,10 +1164,20 @@ class ThirdfortChecksManager {
             
             let tasksHtml = '<div class="tasks-open-header">Requested Tasks (Processing)</div>';
             
+            // Track unique task types (merge bank tasks)
+            const displayedTasks = new Set();
+            
             requestTasks.forEach(task => {
                 const taskType = typeof task === 'string' ? task : task.type;
                 // Convert task type to display format
                 const displayType = this.normalizeTaskType(taskType);
+                
+                // Skip if already displayed (for bank tasks)
+                if (displayedTasks.has(displayType)) {
+                    return;
+                }
+                
+                displayedTasks.add(displayType);
                 tasksHtml += this.createOpenTaskCard(displayType);
             });
             
@@ -1197,14 +1207,22 @@ class ThirdfortChecksManager {
         const taskOrder = [
             'address', 'screening', 'peps', 'sanctions',
             'identity', 'identity:lite', 'nfc', 'liveness', 'facial_similarity', 'document',
-            'sof:v1', 'bank:statement', 'bank:summary',
+            'sof:v1', 'bank', // Combined bank task
             'documents:poa', 'documents:poo', 'documents:other',
             'company:summary', 'company:sanctions', 'company:peps', 
             'company:ubo', 'company:beneficial-check', 'company:shareholders'
         ];
         
         taskOrder.forEach(taskKey => {
-            if (taskOutcomes[taskKey]) {
+            // Special handling for bank task - combines bank:summary and bank:statement
+            if (taskKey === 'bank') {
+                const bankSummary = taskOutcomes['bank:summary'];
+                const bankStatement = taskOutcomes['bank:statement'];
+                
+                if (bankSummary || bankStatement) {
+                    tasksHtml += this.createBankTaskCard(bankSummary, bankStatement);
+                }
+            } else if (taskOutcomes[taskKey]) {
                 tasksHtml += this.createTaskCard(taskKey, taskOutcomes[taskKey], check);
             }
         });
@@ -1221,8 +1239,8 @@ class ThirdfortChecksManager {
             'report:sanctions': 'sanctions',
             'report:screening:lite': 'screening',
             'report:sof-v1': 'sof:v1',
-            'report:bank-statement': 'bank:statement',
-            'report:bank-summary': 'bank:summary'
+            'report:bank-statement': 'bank',  // Both bank tasks map to 'bank'
+            'report:bank-summary': 'bank'      // Merged into single card
         };
         
         return typeMap[taskType] || taskType;
@@ -1241,6 +1259,93 @@ class ThirdfortChecksManager {
                     </svg>
                 </div>
                 <div class="task-summary-inline">Task in progress</div>
+            </div>
+        `;
+    }
+    
+    createBankTaskCard(bankSummary, bankStatement) {
+        // Combined bank task card - handles both linking (summary) and PDF upload (statement)
+        const hasSummary = bankSummary && bankSummary.status === 'closed';
+        const hasStatement = bankStatement && bankStatement.status === 'closed';
+        
+        // Determine overall status
+        let borderClass = 'clear';
+        let statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>`;
+        
+        if (hasSummary && bankSummary.result === 'consider') {
+            borderClass = 'consider';
+            statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+        } else if (hasSummary && bankSummary.result === 'fail') {
+            borderClass = 'alert';
+            statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>`;
+        } else if (hasStatement && !hasSummary) {
+            // PDF upload only - always consider (manual review)
+            borderClass = 'consider';
+            statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+        } else if (!hasSummary && !hasStatement) {
+            // Neither provided - fail
+            borderClass = 'alert';
+            statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>`;
+        }
+        
+        // Build checks HTML
+        let checksHtml = '<div class="task-checks-grid">';
+        
+        if (hasSummary) {
+            // Bank linking completed - show detailed analysis
+            const summaryData = bankSummary.data || {};
+            const breakdown = bankSummary.breakdown || {};
+            
+            checksHtml += `
+                <div class="task-check-item">
+                    ${this.getTaskCheckIcon('CL')}
+                    <span class="task-check-text">Bank linking completed via Open Banking</span>
+                </div>
+            `;
+            
+            // Show any red flags or analysis results
+            if (breakdown.red_flags && breakdown.red_flags.length > 0) {
+                breakdown.red_flags.forEach(flag => {
+                    checksHtml += `
+                        <div class="task-check-item indented">
+                            ${this.getTaskCheckIcon('CO')}
+                            <span class="task-check-text">${flag}</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+        
+        if (hasStatement && !hasSummary) {
+            // PDF upload fallback
+            checksHtml += `
+                <div class="task-check-item">
+                    ${this.getTaskCheckIcon('CO')}
+                    <span class="task-check-text">Client declined Bank linking but uploaded Statements for manual review</span>
+                </div>
+            `;
+        }
+        
+        if (!hasSummary && !hasStatement) {
+            checksHtml += `
+                <div class="task-check-item">
+                    ${this.getTaskCheckIcon('AL')}
+                    <span class="task-check-text">Bank information not provided</span>
+                </div>
+            `;
+        }
+        
+        checksHtml += '</div>';
+        
+        return `
+            <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
+                <div class="task-header">
+                    <div class="task-title">Bank Summary</div>
+                    ${statusIcon}
+                </div>
+                <div class="task-details">
+                    ${checksHtml}
+                </div>
             </div>
         `;
     }
@@ -1468,7 +1573,8 @@ class ThirdfortChecksManager {
                 'documents:poo': 'Proof of Ownership',
                 'report:sof-v1': 'Source of Funds Questionnaire',
                 'report:bank-statement': 'Bank Summary',
-                'report:bank-summary': 'Bank Summary'
+                'report:bank-summary': 'Bank Summary',
+                'bank': 'Bank Summary'
             };
             return taskNames[additionalTasks[0]] || 'Additional Tasks';
         }
@@ -2122,6 +2228,7 @@ class ThirdfortChecksManager {
             'facial_similarity': 'Facial Similarity',
             'document': 'Document Authenticity',
             'sof:v1': 'Source of Funds Questionnaire',
+            'bank': 'Bank Summary',
             'bank:statement': 'Bank Summary',
             'bank:summary': 'Bank Summary',
             'documents:poa': 'Proof of Address',
