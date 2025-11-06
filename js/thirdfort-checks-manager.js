@@ -1324,8 +1324,23 @@ class ThirdfortChecksManager {
     isEnhancedID(check) {
         if (check.checkType !== 'electronic-id') return false;
         
+        // For closed checks: check taskOutcomes
         const nfcReport = check.taskOutcomes?.['nfc'];
-        return nfcReport && nfcReport.status !== 'unobtainable';
+        if (nfcReport) {
+            return nfcReport.status !== 'unobtainable';
+        }
+        
+        // For open checks: check original request tasks
+        const requestTasks = check.thirdfortResponse?.request?.tasks || [];
+        const identityTask = requestTasks.find(task => task.type === 'report:identity');
+        
+        // Enhanced ID has NFC with 'preferred' option
+        if (identityTask && identityTask.opts && identityTask.opts.nfc === 'preferred') {
+            return true;
+        }
+        
+        // Default to Original ID if no NFC found
+        return false;
     }
     
     checksSafeHarbour(check) {
