@@ -1506,8 +1506,8 @@ class ThirdfortChecksManager {
         // Check if corresponding document exists in taskOutcomes
         const docTaskKey = `documents:${cleanType}`;
         const hasDocument = check.taskOutcomes && check.taskOutcomes[docTaskKey];
-        const docIcon = hasDocument ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('AL');
-        const docStatusText = hasDocument ? 'Document uploaded' : 'No document uploaded';
+        const docIcon = hasDocument ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
+        const docStatusText = hasDocument ? 'Document uploaded' : 'Check the report pdf for evidence or obtain from the client and review manually';
         
         // Build detailed information based on fund type
         let detailsHtml = '';
@@ -2039,13 +2039,13 @@ class ThirdfortChecksManager {
         const fundingLabels = [];
         const fundingAmounts = [];
         const fundingColors = {
-            'fund:mortgage': '#1E40AF',      // Blue
-            'fund:savings': '#059669',        // Green
-            'fund:gift': '#DC2626',           // Red
-            'fund:sale:property': '#7C3AED',  // Purple
-            'fund:sale:assets': '#EA580C',    // Orange
-            'fund:htb': '#0891B2',            // Cyan
-            'fund:inheritance': '#4B5563'     // Gray
+            'fund:mortgage': '#93C5FD',      // Pastel Blue
+            'fund:savings': '#86EFAC',        // Pastel Green
+            'fund:gift': '#FCA5A5',           // Pastel Pink/Red
+            'fund:sale:property': '#C4B5FD',  // Pastel Purple
+            'fund:sale:assets': '#FDBA74',    // Pastel Orange
+            'fund:htb': '#A5F3FC',            // Pastel Cyan
+            'fund:inheritance': '#D1D5DB'     // Pastel Gray
         };
         
         const typeLabels = {
