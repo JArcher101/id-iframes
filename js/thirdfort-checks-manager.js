@@ -1333,23 +1333,36 @@ class ThirdfortChecksManager {
                 html += `</div>`;
             }
             
-            // Check for matched bank transactions
+            // Check for matched bank transactions in BOTH bank:summary and bank:statement
+            const bankSummary = taskOutcomes['bank:summary'];
             const bankStatement = taskOutcomes['bank:statement'];
-            if (bankStatement?.breakdown?.analysis?.sof_matches) {
+            
+            // Try bank:summary first (Open Banking - most likely to have transaction matching)
+            let giftMatches = null;
+            if (bankSummary?.breakdown?.analysis?.sof_matches) {
+                const sofMatches = bankSummary.breakdown.analysis.sof_matches;
+                if (Array.isArray(sofMatches)) {
+                    giftMatches = sofMatches.filter(m => m.fund_type === 'fund:gift');
+                }
+            }
+            
+            // Fallback to bank:statement if no matches in bank:summary
+            if ((!giftMatches || giftMatches.length === 0) && bankStatement?.breakdown?.analysis?.sof_matches) {
                 const sofMatches = bankStatement.breakdown.analysis.sof_matches;
                 if (Array.isArray(sofMatches)) {
-                    const giftMatches = sofMatches.filter(m => m.fund_type === 'fund:gift');
-                    
-                    if (giftMatches.length > 0 && giftMatches[0].transactions?.length > 0) {
-                        html += `<div class="red-flag-detail-section">`;
-                        html += `<div class="red-flag-detail-title">Potential Matched Transactions</div>`;
-                        giftMatches[0].transactions.slice(0, 3).forEach(tx => {
-                            const txAmount = Math.abs(tx.amount);
-                            html += `<div class="red-flag-detail-item">${new Date(tx.timestamp).toLocaleDateString('en-GB')} - ${tx.description} - £${txAmount.toLocaleString()}</div>`;
-                        });
-                        html += `</div>`;
-                    }
+                    giftMatches = sofMatches.filter(m => m.fund_type === 'fund:gift');
                 }
+            }
+            
+            // Display matched transactions if found
+            if (giftMatches && giftMatches.length > 0 && giftMatches[0].transactions?.length > 0) {
+                html += `<div class="red-flag-detail-section">`;
+                html += `<div class="red-flag-detail-title">Potential Matched Transactions</div>`;
+                giftMatches[0].transactions.slice(0, 3).forEach(tx => {
+                    const txAmount = Math.abs(tx.amount);
+                    html += `<div class="red-flag-detail-item">${new Date(tx.timestamp).toLocaleDateString('en-GB')} - ${tx.description} - £${txAmount.toLocaleString()}</div>`;
+                });
+                html += `</div>`;
             }
         });
         
@@ -3689,9 +3702,14 @@ class ThirdfortChecksManager {
         
         // Special handling for Source of Funds (sof:v1)
         if (taskType === 'sof:v1' && outcome.breakdown) {
-            // Get bank statement analysis for SoF matching
+            // Get bank analysis for SoF matching - check BOTH bank:summary and bank:statement
+            const bankSummary = check.taskOutcomes?.['bank:summary'];
             const bankStatement = check.taskOutcomes?.['bank:statement'];
-            const sofMatches = bankStatement?.breakdown?.analysis?.sof_matches || {};
+            
+            // Prefer bank:summary (Open Banking) if available, fallback to bank:statement
+            const sofMatches = bankSummary?.breakdown?.analysis?.sof_matches || 
+                               bankStatement?.breakdown?.analysis?.sof_matches || 
+                               {};
             return this.createSOFTaskCard(outcome, check, sofMatches);
         }
         
