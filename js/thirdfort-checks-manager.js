@@ -1696,6 +1696,8 @@ class ThirdfortChecksManager {
     
     createBankAnalysisSections(analysis, accounts = {}, sofTask = null) {
         // Create analysis sections: repeating transactions, large one-offs, SoF matches
+        if (!analysis) return '';
+        
         let html = '';
         
         // Extract SoF funding details for linking
