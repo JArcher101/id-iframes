@@ -1002,107 +1002,138 @@ body {
 }
 
 /* =====================================================================
-   RED FLAGS CARD
+   RED FLAGS CARD (Uses standard task card styles)
    ===================================================================== */
 
 .red-flags-card {
-    background: white;
-    border: 1px solid #e1e4e8;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.red-flags-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #e1e4e8;
-}
-
-.red-flags-header .objective-icon {
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-}
-
-.red-flags-title-text {
-    font-family: 'Transport', sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: #112F5B;
-}
-
-.red-flags-content {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    /* Container only - actual styling comes from .task-card */
 }
 
 /* Individual flag sections */
 .red-flag-section {
-    padding: 12px;
+    padding: 10px;
     background: #f9f9f9;
     border: 1px solid #e1e4e8;
     border-radius: 6px;
+    margin-bottom: 10px;
 }
 
 .red-flag-title {
     font-family: 'Transport', sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     color: #d32f2f;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .red-flag-subtitle {
     font-family: 'RotisBold', 'Quicksand', sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .red-flag-amount {
     font-family: 'Transport', sans-serif;
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 600;
     color: #112F5B;
-    margin: 8px 0;
+    margin: 6px 0;
 }
 
 .red-flag-subsection {
-    margin-top: 16px;
-    padding-top: 12px;
+    margin-top: 12px;
+    padding-top: 10px;
     border-top: 1px solid #e1e4e8;
 }
 
 .red-flag-detail-section {
-    margin-top: 12px;
+    margin-top: 10px;
 }
 
 .red-flag-detail-title {
     font-family: 'RotisBold', 'Quicksand', sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #444;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
 }
 
 .red-flag-detail-item {
     font-family: 'RotisRegular', sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     color: #444;
-    line-height: 1.6;
+    line-height: 1.5;
+    margin-bottom: 3px;
+}
+
+/* People Grid for savings contributors */
+.people-grid {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* 1 person - full width */
+.people-grid-1 {
+    grid-template-columns: 1fr;
+}
+
+/* 2 people - 50/50 split */
+.people-grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* 3 people - 2 columns, 3rd spans both */
+.people-grid-3 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.people-grid-3 .person-card:nth-child(3) {
+    grid-column: 1 / -1;
+}
+
+/* 4+ people - 2x2 grid */
+.people-grid-4,
+.people-grid-5,
+.people-grid-6 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.person-card {
+    background: white;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.person-card-name {
+    font-family: 'RotisBold', 'Quicksand', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #112F5B;
     margin-bottom: 4px;
+}
+
+.person-card-role {
+    font-family: 'Transport', sans-serif;
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.person-card-item {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+    color: #444;
+    line-height: 1.4;
+    margin-bottom: 3px;
 }
 
 /* Provider breakdown in savings flag */
 .red-flag-provider-item {
-    margin-top: 8px;
-    padding: 8px;
+    margin-top: 6px;
+    padding: 6px;
     background: white;
     border: 1px solid #e1e4e8;
     border-radius: 4px;
@@ -1111,19 +1142,19 @@ body {
 .red-flag-provider-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
+    gap: 6px;
+    margin-bottom: 3px;
 }
 
 .red-flag-provider-header .bank-logo {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     object-fit: contain;
 }
 
 .red-flag-provider-name {
     font-family: 'RotisBold', 'Quicksand', sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #112F5B;
     flex: 1;
@@ -1131,17 +1162,17 @@ body {
 
 .red-flag-provider-total {
     font-family: 'Transport', sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: #39b549;
 }
 
 .red-flag-provider-account {
     font-family: 'RotisRegular', sans-serif;
-    font-size: 12px;
+    font-size: 11px;
     color: #666;
-    margin-left: 28px;
-    line-height: 1.4;
+    margin-left: 22px;
+    line-height: 1.3;
 }
 
 /* Tasks Section */

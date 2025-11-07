@@ -1230,39 +1230,51 @@ class ThirdfortChecksManager {
         
         const taskOutcomes = check.taskOutcomes || {};
         const totalFlags = allFlags.length;
+        const flagWord = totalFlags === 1 ? 'flag' : 'flags';
         
-        // Build the HTML with red consider icon
-        let flagsHtml = `
-            <div class="red-flags-header">
-                ${this.getTaskCheckIcon('CO', true)}
-                <div class="red-flags-title-text">Red Flags Summary</div>
-            </div>
-            <div class="red-flags-content">
-        `;
+        // Build the HTML as a collapsible task card
+        let flagsContent = '';
         
         // Process each flag with rich detail
         allFlags.forEach((flag, index) => {
             const flagType = flag.description || '';
             
             if (flagType === 'Gifts Received') {
-                flagsHtml += this.renderGiftFlag(flag, taskOutcomes, check);
+                flagsContent += this.renderGiftFlag(flag, taskOutcomes, check);
             } else if (flagType === 'Declared savings > actual savings' || flagType.includes('savings')) {
-                flagsHtml += this.renderSavingsFlag(flag, taskOutcomes, check);
+                flagsContent += this.renderSavingsFlag(flag, taskOutcomes, check);
             } else if (flagType === 'No Mortgage Used') {
-                flagsHtml += this.renderNoMortgageFlag(flag, taskOutcomes);
+                flagsContent += this.renderNoMortgageFlag(flag, taskOutcomes);
             } else if (flagType === 'Cryptocurrency Funding') {
-                flagsHtml += this.renderCryptoFlag(flag, taskOutcomes);
+                flagsContent += this.renderCryptoFlag(flag, taskOutcomes);
             } else if (flagType === 'Funds from Overseas') {
-                flagsHtml += this.renderOverseasFlag(flag, taskOutcomes);
+                flagsContent += this.renderOverseasFlag(flag, taskOutcomes);
             } else if (flagType.includes('cash deposit')) {
-                flagsHtml += this.renderCashDepositFlag(flag, taskOutcomes);
+                flagsContent += this.renderCashDepositFlag(flag, taskOutcomes);
             } else {
                 // Generic flag rendering
-                flagsHtml += this.renderGenericFlag(flag);
+                flagsContent += this.renderGenericFlag(flag);
             }
         });
         
-        flagsHtml += `</div>`;
+        // Wrap in task card format
+        let flagsHtml = `
+            <div class="task-card consider" onclick="this.classList.toggle('expanded')">
+                <div class="task-header">
+                    <div class="task-title-row">
+                        ${this.getTaskCheckIcon('CO', true)}
+                        <div class="task-title">Red Flags</div>
+                    </div>
+                    <svg class="expand-arrow" viewBox="0 0 24 24" fill="#112F5B">
+                        <path d="M7 10l5 5 5-5z"/>
+                    </svg>
+                </div>
+                <div class="task-summary-inline">${totalFlags} Red ${flagWord} identified</div>
+                <div class="task-content">
+                    ${flagsContent}
+                </div>
+            </div>
+        `;
         
         this.redFlagsCard.innerHTML = flagsHtml;
     }
@@ -1347,20 +1359,32 @@ class ThirdfortChecksManager {
         // Show people contributing to savings
         savingsFunds.forEach(fund => {
             if (fund.data?.people && fund.data.people.length > 0) {
+                html += `<div class="people-grid people-grid-${fund.data.people.length}">`;
+                
                 fund.data.people.forEach(person => {
-                    html += `<div class="red-flag-detail-item"><strong>${person.name}</strong>`;
-                    if (person.employment_status) html += ` (${person.employment_status})`;
-                    html += `</div>`;
+                    const isActor = person.actor ? 'Primary' : 'Joint';
+                    const employmentStatus = person.employment_status === 'independent' ? 'Self-employed' : 
+                                            person.employment_status ? person.employment_status.charAt(0).toUpperCase() + person.employment_status.slice(1) : '';
+                    
+                    html += `<div class="person-card">`;
+                    html += `<div class="person-card-name">${person.name}</div>`;
+                    html += `<div class="person-card-role">${isActor}</div>`;
+                    if (employmentStatus) {
+                        html += `<div class="person-card-item">${employmentStatus}</div>`;
+                    }
                     if (person.incomes && person.incomes.length > 0) {
                         person.incomes.forEach(income => {
-                            const annual = income.annual_total ? `£${(income.annual_total / 100).toLocaleString()}/year` : '';
-                            html += `<div class="red-flag-detail-item" style="margin-left: 12px;">${income.source}: ${annual}</div>`;
+                            html += `<div class="person-card-item">Income: ${income.source || 'N/A'}</div>`;
+                            html += `<div class="person-card-item">Frequency: ${income.frequency || 'N/A'}</div>`;
                             if (income.reference) {
-                                html += `<div class="red-flag-detail-item" style="margin-left: 24px; font-size: 11px; color: #666;">Payslip Ref: ${income.reference}</div>`;
+                                html += `<div class="person-card-item">Payslip Ref: ${income.reference}</div>`;
                             }
                         });
                     }
+                    html += `</div>`;
                 });
+                
+                html += `</div>`;
             }
         });
         html += `</div>`;
@@ -2241,21 +2265,35 @@ class ThirdfortChecksManager {
                     
                     // Savings details
                     if (matchingFund.type === 'fund:savings') {
-                        if (fundData.people) {
+                        if (fundData.people && fundData.people.length > 0) {
+                            detailsContent += `<div class="people-grid people-grid-${fundData.people.length}">`;
+                            
                             fundData.people.forEach(person => {
                                 if (person.name) {
-                                    detailsContent += `<div class="sof-fund-detail"><strong>Saver:</strong> ${person.name}</div>`;
+                                    const isActor = person.actor ? 'Primary' : 'Joint';
+                                    const employmentStatus = person.employment_status === 'independent' ? 'Self-employed' : 
+                                                            person.employment_status ? person.employment_status.charAt(0).toUpperCase() + person.employment_status.slice(1) : '';
+                                    
+                                    detailsContent += `<div class="person-card">`;
+                                    detailsContent += `<div class="person-card-name">${person.name}</div>`;
+                                    detailsContent += `<div class="person-card-role">${isActor}</div>`;
+                                    if (employmentStatus) {
+                                        detailsContent += `<div class="person-card-item">${employmentStatus}</div>`;
+                                    }
                                     if (person.incomes && person.incomes.length > 0) {
                                         person.incomes.forEach(income => {
-                                            const annual = income.annual_total ? `£${(income.annual_total / 100).toLocaleString()}/year` : '';
-                                            detailsContent += `<div class="sof-fund-detail">${income.source}: ${annual} (${income.frequency || 'N/A'})</div>`;
+                                            detailsContent += `<div class="person-card-item">Income: ${income.source || 'N/A'}</div>`;
+                                            detailsContent += `<div class="person-card-item">Frequency: ${income.frequency || 'N/A'}</div>`;
                                             if (income.reference) {
-                                                detailsContent += `<div class="sof-fund-detail" style="margin-left: 16px; font-size: 10px; color: #666;">Payslip Ref: ${income.reference}</div>`;
+                                                detailsContent += `<div class="person-card-item">Payslip Ref: ${income.reference}</div>`;
                                             }
                                         });
                                     }
+                                    detailsContent += `</div>`;
                                 }
                             });
+                            
+                            detailsContent += `</div>`;
                         }
                         
                         // Document status
@@ -3381,27 +3419,32 @@ class ThirdfortChecksManager {
         } else if (type === 'fund:savings') {
             if (data.people && data.people.length > 0) {
                 detailsHtml += '<div class="funding-section-title">People Contributing:</div>';
+                detailsHtml += `<div class="people-grid people-grid-${data.people.length}">`;
+                
                 data.people.forEach(person => {
-                    const isActor = person.actor ? ' (Primary)' : ' (Joint)';
-                    detailsHtml += `<div class="funding-person">`;
-                    detailsHtml += `<div class="person-name"><strong>${person.name}${isActor}</strong></div>`;
-                    if (person.employment_status) {
-                        detailsHtml += `<div class="funding-detail">Status: ${person.employment_status}</div>`;
-                    }
-                    if (person.phone) {
-                        detailsHtml += `<div class="funding-detail">Phone: ${person.phone}</div>`;
+                    const isActor = person.actor ? 'Primary' : 'Joint';
+                    const employmentStatus = person.employment_status === 'independent' ? 'Self-employed' : 
+                                            person.employment_status ? person.employment_status.charAt(0).toUpperCase() + person.employment_status.slice(1) : '';
+                    
+                    detailsHtml += `<div class="person-card">`;
+                    detailsHtml += `<div class="person-card-name">${person.name}</div>`;
+                    detailsHtml += `<div class="person-card-role">${isActor}</div>`;
+                    if (employmentStatus) {
+                        detailsHtml += `<div class="person-card-item">${employmentStatus}</div>`;
                     }
                     if (person.incomes && person.incomes.length > 0) {
                         person.incomes.forEach(income => {
-                            const annual = income.annual_total ? `£${(income.annual_total / 100).toLocaleString()}/year` : '';
-                            detailsHtml += `<div class="funding-detail">Income: ${income.source} - ${annual} (${income.frequency || 'N/A'})</div>`;
+                            detailsHtml += `<div class="person-card-item">Income: ${income.source || 'N/A'}</div>`;
+                            detailsHtml += `<div class="person-card-item">Frequency: ${income.frequency || 'N/A'}</div>`;
                             if (income.reference) {
-                                detailsHtml += `<div class="funding-detail" style="margin-left: 12px; font-size: 11px; color: #666;">Payslip Ref: ${income.reference}</div>`;
+                                detailsHtml += `<div class="person-card-item">Payslip Ref: ${income.reference}</div>`;
                             }
                         });
                     }
                     detailsHtml += `</div>`;
                 });
+                
+                detailsHtml += `</div>`;
             }
         } else if (type === 'fund:gift') {
             if (data.giftor) {
