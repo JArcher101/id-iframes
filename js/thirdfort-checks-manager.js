@@ -1827,33 +1827,138 @@ class ThirdfortChecksManager {
                     }
                     
                     // Property sale details
-                    if (matchingFund.type === 'fund:sale:property' && fundData.date) {
-                        const saleDate = new Date(fundData.date).toLocaleDateString('en-GB');
-                        detailsContent += `<div class="sof-fund-detail"><strong>Sale Date:</strong> ${saleDate}</div>`;
+                    if (matchingFund.type === 'fund:sale:property') {
+                        if (fundData.date) {
+                            const saleDate = new Date(fundData.date).toLocaleDateString('en-GB');
+                            detailsContent += `<div class="sof-fund-detail"><strong>Sale Date:</strong> ${saleDate}</div>`;
+                        }
                         if (fundData.status) {
                             detailsContent += `<div class="sof-fund-detail"><strong>Status:</strong> ${fundData.status}</div>`;
                         }
                         if (fundData.lawyer) {
                             detailsContent += `<div class="sof-fund-detail"><strong>Lawyer:</strong> ${fundData.lawyer}</div>`;
                         }
+                        
+                        // Document status
+                        const hasDoc = check.taskOutcomes?.['documents:sale-property'];
+                        const docIcon = hasDoc ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
+                        const docText = hasDoc ? 'Evidence document uploaded' : 'Check the report pdf for evidence or obtain from the client and review manually';
+                        detailsContent += `
+                            <div class="sof-fund-detail" style="margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                                ${docIcon}
+                                <span style="font-size: 11px;">${docText}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    // Asset sale details
+                    if (matchingFund.type === 'fund:sale:assets') {
+                        if (fundData.description) {
+                            detailsContent += `<div class="sof-fund-detail"><strong>Asset:</strong> ${fundData.description}</div>`;
+                        }
+                        if (fundData.date) {
+                            const saleDate = new Date(fundData.date).toLocaleDateString('en-GB');
+                            detailsContent += `<div class="sof-fund-detail"><strong>Sale Date:</strong> ${saleDate}</div>`;
+                        }
+                        
+                        // Document status
+                        const hasDoc = check.taskOutcomes?.['documents:sale-assets'];
+                        const docIcon = hasDoc ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
+                        const docText = hasDoc ? 'Evidence document uploaded' : 'Check the report pdf for evidence or obtain from the client and review manually';
+                        detailsContent += `
+                            <div class="sof-fund-detail" style="margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                                ${docIcon}
+                                <span style="font-size: 11px;">${docText}</span>
+                            </div>
+                        `;
                     }
                     
                     // Savings details
-                    if (matchingFund.type === 'fund:savings' && fundData.people) {
-                        fundData.people.forEach(person => {
-                            if (person.name) {
-                                detailsContent += `<div class="sof-fund-detail"><strong>Saver:</strong> ${person.name}`;
-                                if (person.income) detailsContent += ` (Income: £${person.income.toLocaleString()})`;
-                                detailsContent += `</div>`;
-                            }
-                        });
+                    if (matchingFund.type === 'fund:savings') {
+                        if (fundData.people) {
+                            fundData.people.forEach(person => {
+                                if (person.name) {
+                                    detailsContent += `<div class="sof-fund-detail"><strong>Saver:</strong> ${person.name}`;
+                                    if (person.income) detailsContent += ` (Income: £${person.income.toLocaleString()})`;
+                                    detailsContent += `</div>`;
+                                }
+                            });
+                        }
+                        
+                        // Document status
+                        const hasDoc = check.taskOutcomes?.['documents:savings'];
+                        const docIcon = hasDoc ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
+                        const docText = hasDoc ? 'Evidence document uploaded' : 'Check the report pdf for evidence or obtain from the client and review manually';
+                        detailsContent += `
+                            <div class="sof-fund-detail" style="margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                                ${docIcon}
+                                <span style="font-size: 11px;">${docText}</span>
+                            </div>
+                        `;
                     }
                     
                     // Mortgage details
                     if (matchingFund.type === 'fund:mortgage') {
+                        if (fundData.lender) {
+                            detailsContent += `<div class="sof-fund-detail"><strong>Lender:</strong> ${fundData.lender}</div>`;
+                        }
+                        
+                        // Document status
+                        const hasDoc = check.taskOutcomes?.['documents:mortgage'];
+                        const docIcon = hasDoc ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
+                        const docText = hasDoc ? 'Evidence document uploaded' : 'Check the report pdf for evidence or obtain from the client and review manually';
+                        detailsContent += `
+                            <div class="sof-fund-detail" style="margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                                ${docIcon}
+                                <span style="font-size: 11px;">${docText}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    // HTB/LISA details
+                    if (matchingFund.type === 'fund:htb') {
                         if (fundData.provider) {
                             detailsContent += `<div class="sof-fund-detail"><strong>Provider:</strong> ${fundData.provider}</div>`;
                         }
+                        if (typeof fundData.is_owner !== 'undefined') {
+                            detailsContent += `<div class="sof-fund-detail"><strong>Beneficiary:</strong> ${fundData.is_owner ? 'Primary' : 'Secondary'}</div>`;
+                        }
+                        
+                        // Document status
+                        const hasDoc = check.taskOutcomes?.['documents:htb'];
+                        const docIcon = hasDoc ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
+                        const docText = hasDoc ? 'Evidence document uploaded' : 'Check the report pdf for evidence or obtain from the client and review manually';
+                        detailsContent += `
+                            <div class="sof-fund-detail" style="margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                                ${docIcon}
+                                <span style="font-size: 11px;">${docText}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    // Inheritance details
+                    if (matchingFund.type === 'fund:inheritance') {
+                        if (fundData.deceased) {
+                            detailsContent += `<div class="sof-fund-detail"><strong>Deceased:</strong> ${fundData.deceased}</div>`;
+                        }
+                        if (fundData.date_of_death) {
+                            const deathDate = new Date(fundData.date_of_death).toLocaleDateString('en-GB');
+                            detailsContent += `<div class="sof-fund-detail"><strong>Date of Death:</strong> ${deathDate}</div>`;
+                        }
+                        if (fundData.relationship) {
+                            detailsContent += `<div class="sof-fund-detail"><strong>Relationship:</strong> ${fundData.relationship}</div>`;
+                        }
+                        
+                        // Document status
+                        const hasDoc = check.taskOutcomes?.['documents:inheritance'];
+                        const docIcon = hasDoc ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
+                        const docText = hasDoc ? 'Evidence document uploaded' : 'Check the report pdf for evidence or obtain from the client and review manually';
+                        detailsContent += `
+                            <div class="sof-fund-detail" style="margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                                ${docIcon}
+                                <span style="font-size: 11px;">${docText}</span>
+                            </div>
+                        `;
                     }
                     
                     if (fundAmount || detailsContent) {
@@ -2859,7 +2964,7 @@ class ThirdfortChecksManager {
         }
         
         // Map funding type to display name (handle fund: prefix)
-        const cleanType = type.replace('fund:', '').replace(/:/g, '_');
+        const cleanType = type.replace('fund:', '').replace(/:/g, '-');
         const typeNames = {
             'mortgage': 'Mortgage',
             'savings': 'Savings',
