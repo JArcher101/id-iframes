@@ -1133,47 +1133,66 @@ body {
 
 /* Provider breakdown in savings flag */
 .red-flag-provider-item {
-    margin-top: 6px;
-    padding: 6px;
+    margin-top: 8px;
+    padding: 10px;
     background: white;
     border: 1px solid #e1e4e8;
-    border-radius: 4px;
+    border-radius: 6px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
 }
 
-.red-flag-provider-header {
+.red-flag-bank-logo {
+    width: 80px;
+    height: 80px;
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 3px;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
-.red-flag-provider-header .bank-logo {
-    width: 16px;
-    height: 16px;
+.red-flag-bank-logo img {
+    width: 80px;
+    height: 80px;
     object-fit: contain;
 }
 
-.red-flag-provider-name {
+.red-flag-provider-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.red-flag-provider-details-full {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.red-flag-provider-name-header {
     font-family: 'RotisBold', 'Quicksand', sans-serif;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
     color: #112F5B;
-    flex: 1;
+    margin-bottom: 4px;
 }
 
 .red-flag-provider-total {
     font-family: 'Transport', sans-serif;
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 600;
     color: #39b549;
+    margin-bottom: 4px;
 }
 
 .red-flag-provider-account {
     font-family: 'RotisRegular', sans-serif;
-    font-size: 11px;
+    font-size: 12px;
     color: #666;
-    margin-left: 22px;
-    line-height: 1.3;
+    line-height: 1.4;
 }
 
 /* Tasks Section */

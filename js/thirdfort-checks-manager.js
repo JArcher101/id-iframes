@@ -1395,12 +1395,15 @@ class ThirdfortChecksManager {
         const providerTotals = {};
         
         Object.values(accounts).forEach(account => {
-            const balance = account.balance?.current || account.balance?.available || 0;
+            // Handle both nested (bank:statement) and flat (bank:summary) structures
+            const accountInfo = account.info || account;
+            const balance = accountInfo.balance?.current || accountInfo.balance?.available || 0;
+            
             if (balance > 0) {
                 totalActual += balance;
                 
-                const providerName = account.provider?.name || 'Unknown Provider';
-                const providerId = account.provider?.id || providerName;
+                const providerName = accountInfo.provider?.name || 'Unknown Provider';
+                const providerId = accountInfo.provider?.id || providerName;
                 
                 if (!providerTotals[providerId]) {
                     providerTotals[providerId] = {
@@ -1411,7 +1414,7 @@ class ThirdfortChecksManager {
                 }
                 providerTotals[providerId].total += balance;
                 providerTotals[providerId].accounts.push({
-                    name: account.account_name || account.type || 'Account',
+                    name: accountInfo.name || accountInfo.account_name || accountInfo.type || 'Account',
                     balance: balance
                 });
             }
@@ -1421,19 +1424,31 @@ class ThirdfortChecksManager {
         
         // Breakdown by provider
         Object.values(providerTotals).forEach(provider => {
-            const logo = this.getBankLogo(provider.name, provider.name);
-            html += `<div class="red-flag-provider-item">`;
-            html += `<div class="red-flag-provider-header">`;
-            html += logo;
-            html += `<span class="red-flag-provider-name">${provider.name}</span>`;
-            html += `<span class="red-flag-provider-total">£${provider.total.toLocaleString()}</span>`;
-            html += `</div>`;
+            const logoHtml = this.getBankLogo(provider.name, provider.name);
+            const hasLogo = logoHtml.includes('<img');
             
-            if (provider.accounts.length > 1) {
+            html += `<div class="red-flag-provider-item">`;
+            
+            // If logo exists, show it at 80x80px on left, total and accounts on right stacked
+            if (hasLogo) {
+                html += `<div class="red-flag-bank-logo">${logoHtml}</div>`;
+                html += `<div class="red-flag-provider-details">`;
+                html += `<div class="red-flag-provider-total">£${provider.total.toLocaleString()}</div>`;
                 provider.accounts.forEach(acc => {
                     html += `<div class="red-flag-provider-account">${acc.name}: £${acc.balance.toLocaleString()}</div>`;
                 });
+                html += `</div>`;
+            } else {
+                // No logo - show name and accounts
+                html += `<div class="red-flag-provider-details-full">`;
+                html += `<div class="red-flag-provider-name-header">${provider.name}</div>`;
+                html += `<div class="red-flag-provider-total">£${provider.total.toLocaleString()}</div>`;
+                provider.accounts.forEach(acc => {
+                    html += `<div class="red-flag-provider-account">${acc.name}: £${acc.balance.toLocaleString()}</div>`;
+                });
+                html += `</div>`;
             }
+            
             html += `</div>`;
         });
         
