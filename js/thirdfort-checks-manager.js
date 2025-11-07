@@ -10,6 +10,7 @@ class ThirdfortChecksManager {
         this.checks = [];
         this.currentCheck = null;
         this.currentView = 'loading'; // 'loading', 'list', 'detail'
+        this.mode = 'edit'; // 'view' or 'edit' - controls interaction permissions
         
         // DOM elements
         this.loadingState = document.getElementById('loading-state');
@@ -53,6 +54,23 @@ class ThirdfortChecksManager {
     // ===================================================================
     // MESSAGE HANDLING
     // ===================================================================
+    // Parent sends 'checks-data' message with:
+    //   - checks: array of check objects
+    //   - mode: 'view' or 'edit' (optional, defaults to 'edit')
+    //
+    // VIEW MODE: Read-only access
+    //   - CAN view all check details
+    //   - CAN open PDF reports
+    //   - CANNOT toggle monitoring
+    //   - CANNOT abort checks
+    //   - CANNOT open in Thirdfort portal (expand arrow hidden)
+    //
+    // EDIT MODE: Full access (default)
+    //   - All interactions enabled
+    //   - Can toggle monitoring
+    //   - Can abort checks
+    //   - Can open in Thirdfort portal
+    // ===================================================================
     
     handleMessage(event) {
         const { type, data } = event.data;
@@ -61,6 +79,9 @@ class ThirdfortChecksManager {
         
         switch (type) {
             case 'checks-data':
+                // Set mode (default to 'edit' if not specified)
+                this.mode = data.mode || 'edit';
+                console.log(`🔒 Mode set to: ${this.mode}`);
                 this.loadChecks(data.checks || []);
                 break;
             case 'error':
@@ -464,20 +485,22 @@ class ThirdfortChecksManager {
             `;
         }
         
-        // Expand button (always show)
-        const env = 'sandbox';
-        const baseUrl = env === 'production' ? 'https://app.thirdfort.io' : 'https://sandbox.thirdfort.io';
-        const thirdfortUrl = check.transactionId 
-            ? `${baseUrl}/transactions/${check.transactionId}`
-            : `${baseUrl}/checks/${check.checkId}`;
-        
-        buttons += `
-            <button class="top-action-btn" onclick="window.open('${thirdfortUrl}', '_blank', 'width=1200,height=800')" title="View in Thirdfort Portal">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d71b8" stroke-width="2">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
-                </svg>
-            </button>
-        `;
+        // Expand button (only show in edit mode)
+        if (this.mode === 'edit') {
+            const env = 'sandbox';
+            const baseUrl = env === 'production' ? 'https://app.thirdfort.io' : 'https://sandbox.thirdfort.io';
+            const thirdfortUrl = check.transactionId 
+                ? `${baseUrl}/transactions/${check.transactionId}`
+                : `${baseUrl}/checks/${check.checkId}`;
+            
+            buttons += `
+                <button class="top-action-btn" onclick="window.open('${thirdfortUrl}', '_blank', 'width=1200,height=800')" title="View in Thirdfort Portal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d71b8" stroke-width="2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
+                    </svg>
+                </button>
+            `;
+        }
         
         actionButtonsContainer.innerHTML = buttons;
     }
@@ -592,8 +615,8 @@ class ThirdfortChecksManager {
     }
     
     renderMonitoringCard(check) {
-        // Hide for IDV (no monitoring option)
-        if (check.checkType === 'idv') {
+        // Hide in view mode or for IDV (no monitoring option)
+        if (this.mode === 'view' || check.checkType === 'idv') {
             this.monitoringCard.classList.add('hidden');
             return;
         }
@@ -641,6 +664,12 @@ class ThirdfortChecksManager {
     }
     
     renderAbortCard(check) {
+        // Hide in view mode
+        if (this.mode === 'view') {
+            this.abortCard.classList.add('hidden');
+            return;
+        }
+        
         // Only show abort for:
         // 1. Status is open or processing
         // 2. It's a v2 transaction (ID starts with 'c')
