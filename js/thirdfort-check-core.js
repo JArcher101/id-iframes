@@ -5487,13 +5487,14 @@ function buildLiteScreenRequest() {
   ];
   }
   
-  // Get check reference from client data
-  const checkRef = checkState.clientData?.mD || 'Lite Screening Check';
+  // Get check reference from client data and prepend Val'ID'ate
+  const internalRef = checkState.checkReference || checkState.clientData?.mD || 'Lite Screening Check';
+  const formattedRef = `Val'ID'ate: ${internalRef}`;
   const checkName = `${firstName} ${lastName} - Lite Screening`;
   
   return {
     type: 'v2',
-    ref: checkRef,
+    ref: formattedRef, // Prepend Val'ID'ate to identify API-initiated checks
     name: checkName,
     request: {
       expectations: expectations,
@@ -5641,11 +5642,14 @@ function buildElectronicIDRequest() {
     description = reference;
   }
   
-  // ref = Internal check reference (from top input, e.g., "50/52")
+  // ref = Internal check reference (from top input, e.g., "50/52") with Val'ID'ate prefix
   // name = Formatted description for SMS (e.g., "Sale of 21 Green Lane" OR "Estate of John Smith")
+  const internalRef = checkState.checkReference || reference;
+  const formattedRef = `Val'ID'ate: ${internalRef}`;
+  
   return {
     type: 'v2',
-    ref: checkState.checkReference || reference, // Use internal reference from top input, fallback to property address
+    ref: formattedRef, // Prepend Val'ID'ate to identify API-initiated checks
     name: description,
     request: {
       actor: actor,
@@ -5744,8 +5748,9 @@ function buildKYBRequest() {
   const monitoringCheckbox = document.getElementById('ongoingMonitoring');
   const monitoringEnabled = monitoringCheckbox?.checked || false;
   
-  // Get check reference from client data
-  const checkRef = checkState.clientData?.mD || 'KYB Check';
+  // Get check reference from client data and prepend Val'ID'ate
+  const internalRef = checkState.checkReference || checkState.clientData?.mD || 'KYB Check';
+  const checkRef = `Val'ID'ate: ${internalRef}`;
   
   // Use jurisdiction from selected company if available, otherwise use form value
   // Convert to Thirdfort jurisdiction code if needed
@@ -5844,9 +5849,13 @@ function buildCompleteRequest() {
       const fullPhone = phone ? `${countryCode}${phone}` : null;
       
       if (fullPhone) {
+        // Get internal reference and prepend Val'ID'ate
+        const internalRef = checkState.checkReference || checkState.clientData?.mD || 'IDV Check';
+        const formattedRef = `Val'ID'ate: ${internalRef}`;
+        
         const idvRequest = {
           type: 'v2',
-          ref: checkState.clientData?.mD || 'IDV Check',
+          ref: formattedRef, // Prepend Val'ID'ate to identify API-initiated checks
           name: `${fullName} - IDV Check`,
           request: {
             actor: {
@@ -6016,9 +6025,12 @@ function submitLiteIDVCheck() {
     const fullName = middleName ? `${firstName} ${middleName} ${lastName}` : `${firstName} ${lastName}`;
     
     // Build IDV check request (document verification doesn't require phone)
+    const internalRef = checkState.checkReference || checkState.clientData?.mD || 'IDV Check';
+    const formattedRef = `Val'ID'ate: ${internalRef}`;
+    
     payload.idv = {
       type: 'document',
-      ref: checkState.checkReference || checkState.clientData?.mD || 'IDV Check',
+      ref: formattedRef, // Prepend Val'ID'ate to identify API-initiated checks
       name: `${fullName} - Document Verification`,
       request: {
         data: {
