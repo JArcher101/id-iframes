@@ -2343,7 +2343,7 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
             if (addressPrefix) {
               // Don't use purely numeric values as building names (they're building numbers)
               if (!/^\d+$/.test(addressPrefix)) {
-                buildingNameFromLine1 = addressPrefix;
+              buildingNameFromLine1 = addressPrefix;
               }
             }
           }

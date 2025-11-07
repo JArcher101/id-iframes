@@ -1218,9 +1218,10 @@ class ThirdfortChecksManager {
             if (taskKey === 'bank') {
                 const bankSummary = taskOutcomes['bank:summary'];
                 const bankStatement = taskOutcomes['bank:statement'];
+                const sofTask = taskOutcomes['sof:v1']; // Get SoF data for linking
                 
                 if (bankSummary || bankStatement) {
-                    tasksHtml += this.createBankTaskCard(bankSummary, bankStatement);
+                    tasksHtml += this.createBankTaskCard(bankSummary, bankStatement, sofTask);
                 }
             } else if (taskOutcomes[taskKey]) {
                 tasksHtml += this.createTaskCard(taskKey, taskOutcomes[taskKey], check);
@@ -1263,7 +1264,7 @@ class ThirdfortChecksManager {
         `;
     }
     
-    renderChainColumn(chain, flag, accountNames) {
+    renderChainColumn(chain, flag) {
         let html = `<div class="chain-column">`;
         
         // Step 1: Source income (if exists)
@@ -1331,9 +1332,12 @@ class ThirdfortChecksManager {
         return html;
     }
     
-    createBankAnalysisSections(analysis, accounts = {}) {
+    createBankAnalysisSections(analysis, accounts = {}, sofTask = null) {
         // Create analysis sections: repeating transactions, large one-offs, SoF matches
         let html = '';
+        
+        // Extract SoF funding details for linking
+        const sofFunds = sofTask?.breakdown?.funds || [];
         
         // Helper to get transaction details from ID
         const getTransactionById = (txId) => {
@@ -1355,123 +1359,159 @@ class ThirdfortChecksManager {
             analysis.repeating_transactions.forEach((group, index) => {
                 const amount = group.sort_score;
                 const frequency = group.items.length;
-                const currencySymbol = this.getCurrencyFlag('GBP'); // Default to GBP, could be determined from transactions
+                const currencySymbol = this.getCurrencyFlag('GBP');
                 
                 // Get all transaction details
                 const transactions = group.items.map(id => getTransactionById(id)).filter(tx => tx);
-                
                 if (transactions.length === 0) return;
                 
-                // Check if this is an internal transfer (same amount, opposite signs, different accounts)
-                const accountsSet = [...new Set(transactions.map(tx => tx.accountName))];
-                const hasIncoming = transactions.some(tx => tx.amount > 0);
-                const hasOutgoing = transactions.some(tx => tx.amount < 0);
-                const isInternalTransfer = accountsSet.length > 1 && hasIncoming && hasOutgoing;
+                // Separate into incoming and outgoing
+                const incomingTxs = transactions.filter(tx => tx.amount > 0);
+                const outgoingTxs = transactions.filter(tx => tx.amount < 0);
                 
-                let transactionsListHtml = '';
+                // Apply chain detection
+                const matched = [];
+                const chains = [];
                 
-                if (isInternalTransfer) {
-                    // Split into outgoing and incoming
-                    const outgoing = transactions.filter(tx => tx.amount < 0).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                    const incoming = transactions.filter(tx => tx.amount > 0).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                // Pass 1: Exact cross-account transfers (same day)
+                outgoingTxs.forEach(outTx => {
+                    if (matched.includes(outTx.id)) return;
+                    const outDate = new Date(outTx.timestamp);
                     
-                    // Match by date proximity (within 7 days)
-                    const matched = [];
-                    const unmatchedOut = [];
-                    const unmatchedIn = [];
+                    const match = incomingTxs.find(inTx => {
+                        if (matched.includes(inTx.id)) return false;
+                        const inDate = new Date(inTx.timestamp);
+                        return inDate.toDateString() === outDate.toDateString() && 
+                               inTx.account_id !== outTx.account_id;
+                    });
                     
-                    outgoing.forEach(outTx => {
-                        const outDate = new Date(outTx.timestamp);
-                        const match = incoming.find(inTx => {
-                            if (matched.includes(inTx.id)) return false;
-                            const inDate = new Date(inTx.timestamp);
-                            const daysDiff = Math.abs((inDate - outDate) / (1000 * 60 * 60 * 24));
-                            return daysDiff <= 7; // Within 7 days
-                        });
+                    if (match) {
+                        matched.push(match.id);
+                        matched.push(outTx.id);
+                        chains.push({ out: outTx, in: match });
+                    }
+                });
+                
+                // Pass 2: Same-account flows
+                outgoingTxs.forEach(outTx => {
+                    if (matched.includes(outTx.id)) return;
+                    const outDate = new Date(outTx.timestamp);
+                    
+                    const match = incomingTxs.find(inTx => {
+                        if (matched.includes(inTx.id)) return false;
+                        const inDate = new Date(inTx.timestamp);
+                        const daysDiff = (outDate - inDate) / (1000 * 60 * 60 * 24);
                         
-                        if (match) {
-                            matched.push(match.id);
-                            const outDate = new Date(outTx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                            const inDate = new Date(match.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                            
-                            transactionsListHtml += `
-                                <div class="transfer-pair">
-                                    <div class="transfer-out">
-                                        <div class="transfer-date">${outDate}</div>
-                                        <div class="transfer-desc">${outTx.description || outTx.merchant_name || 'Transfer'}</div>
-                                        <div class="transfer-account">${outTx.accountName}</div>
-                                        <div class="transfer-amount negative">${currencySymbol}${Math.abs(outTx.amount).toFixed(2)}</div>
-                                    </div>
-                                    <div class="transfer-arrow">↔</div>
-                                    <div class="transfer-in">
-                                        <div class="transfer-date">${inDate}</div>
-                                        <div class="transfer-desc">${match.description || match.merchant_name || 'Transfer'}</div>
-                                        <div class="transfer-account">${match.accountName}</div>
-                                        <div class="transfer-amount positive">+${currencySymbol}${Math.abs(match.amount).toFixed(2)}</div>
-                                    </div>
-                                </div>
-                            `;
-                        } else {
-                            unmatchedOut.push(outTx);
-                        }
+                        return inTx.account_id === outTx.account_id && 
+                               daysDiff >= 0 && daysDiff <= 3;
                     });
                     
-                    // Add unmatched incoming
-                    incoming.forEach(inTx => {
-                        if (!matched.includes(inTx.id)) {
-                            unmatchedIn.push(inTx);
-                        }
-                    });
+                    if (match) {
+                        matched.push(match.id);
+                        matched.push(outTx.id);
+                        chains.push({ source: match, out: outTx, in: null });
+                    }
+                });
+                
+                // Build chains HTML (2 per row)
+                let chainsHtml = '';
+                for (let i = 0; i < chains.length; i += 2) {
+                    const chain1 = chains[i];
+                    const chain2 = chains[i + 1];
                     
-                    // Show unmatched transactions in single column
-                    [...unmatchedOut, ...unmatchedIn].forEach(tx => {
-                        const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                        const txAmount = tx.amount;
-                        const amountClass = txAmount >= 0 ? 'positive' : 'negative';
-                        const sign = txAmount >= 0 ? '+' : '';
-                        
-                        transactionsListHtml += `
-                            <div class="repeating-tx-row">
-                                <span class="repeating-tx-date">${date}</span>
-                                <span class="repeating-tx-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>
-                                <span class="repeating-tx-account">${tx.accountName}</span>
-                                <span class="repeating-tx-amount ${amountClass}">${sign}${currencySymbol}${Math.abs(txAmount).toFixed(2)}</span>
-                            </div>
-                        `;
-                    });
-                } else {
-                    // Single account pattern - show normally
-                    transactions.forEach(tx => {
-                        const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                        const txAmount = tx.amount;
-                        const amountClass = txAmount >= 0 ? 'positive' : 'negative';
-                        const sign = txAmount >= 0 ? '+' : '';
-                        
-                        transactionsListHtml += `
-                            <div class="repeating-tx-row">
-                                <span class="repeating-tx-date">${date}</span>
-                                <span class="repeating-tx-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>
-                                <span class="repeating-tx-account">${tx.accountName}</span>
-                                <span class="repeating-tx-amount ${amountClass}">${sign}${currencySymbol}${Math.abs(txAmount).toFixed(2)}</span>
-                            </div>
-                        `;
-                    });
+                    chainsHtml += `<div class="chains-row">`;
+                    if (chain1) chainsHtml += this.renderChainColumn(chain1, currencySymbol);
+                    if (chain2) chainsHtml += this.renderChainColumn(chain2, currencySymbol);
+                    chainsHtml += `</div>`;
                 }
+                
+                // Build unmatched transactions in columns
+                const unmatchedIn = incomingTxs.filter(tx => !matched.includes(tx.id));
+                const unmatchedOut = outgoingTxs.filter(tx => !matched.includes(tx.id));
+                
+                let incomingHtml = '';
+                unmatchedIn.forEach(tx => {
+                    const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                    incomingHtml += `
+                        <div class="transaction-row incoming">
+                            <span class="transaction-date">${date}</span>
+                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="account-badge">${tx.accountName}</span>
+                            <span class="transaction-amount positive">${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+                
+                let outgoingHtml = '';
+                unmatchedOut.forEach(tx => {
+                    const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                    outgoingHtml += `
+                        <div class="transaction-row outgoing">
+                            <span class="transaction-date">${date}</span>
+                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="account-badge">${tx.accountName}</span>
+                            <span class="transaction-amount negative">${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+                
+                // Build columns section
+                let columnsHtml = '';
+                const hasIncoming = incomingHtml.trim().length > 0;
+                const hasOutgoing = outgoingHtml.trim().length > 0;
+                
+                if (hasIncoming || hasOutgoing) {
+                    if (hasIncoming && hasOutgoing) {
+                        columnsHtml = `
+                            <div class="transactions-columns">
+                                <div class="transactions-column">
+                                    <div class="column-header incoming-header">Incoming</div>
+                                    ${incomingHtml}
+                                </div>
+                                <div class="transactions-column">
+                                    <div class="column-header outgoing-header">Outgoing</div>
+                                    ${outgoingHtml}
+                                </div>
+                            </div>
+                        `;
+                    } else if (hasIncoming) {
+                        columnsHtml = `
+                            <div class="transactions-columns single-column">
+                                <div class="transactions-column">
+                                    <div class="column-header incoming-header">Incoming</div>
+                                    ${incomingHtml}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        columnsHtml = `
+                            <div class="transactions-columns single-column">
+                                <div class="transactions-column">
+                                    <div class="column-header outgoing-header">Outgoing</div>
+                                    ${outgoingHtml}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                const accountsSet = [...new Set(transactions.map(tx => tx.accountName))];
                 
                 repeatingHtml += `
                     <div class="analysis-item-card">
                         <div class="analysis-card-header">
                             <div class="analysis-card-title">
                                 ${currencySymbol}${Math.abs(amount).toFixed(2)} × ${frequency}
-                                ${isInternalTransfer ? '<span class="internal-transfer-badge">Internal Transfer</span>' : ''}
                             </div>
                             <div class="analysis-card-meta">
                                 ${accountsSet.length > 1 ? `Between: ${accountsSet.join(' ↔ ')}` : `Account: ${accountsSet[0]}`}
                             </div>
                         </div>
-                        <div class="repeating-transactions-list">
-                            ${transactionsListHtml}
-                        </div>
+                        ${chainsHtml ? `
+                            <div class="internal-transfers-label">Linked Transactions</div>
+                            ${chainsHtml}
+                        ` : ''}
+                        ${columnsHtml}
                     </div>
                 `;
             });
@@ -1613,12 +1653,12 @@ class ThirdfortChecksManager {
                 chainsHtml += `<div class="chains-row">`;
                 
                 // Left column - Chain 1
-                chainsHtml += this.renderChainColumn(chain1, flag, accountNames);
+                chainsHtml += this.renderChainColumn(chain1, flag);
                 
                 // Right column - Chain 2 (if exists)
                 if (chain2) {
                     const flag2 = this.getCurrencyFlag((chain2.source?.currency || chain2.out.currency) || 'GBP');
-                    chainsHtml += this.renderChainColumn(chain2, flag2, accountNames);
+                    chainsHtml += this.renderChainColumn(chain2, flag2);
                 }
                 
                 chainsHtml += `</div>`;
@@ -1731,8 +1771,102 @@ class ThirdfortChecksManager {
                 };
                 
                 const label = sofLabels[sofType] || sofType;
-                let txListHtml = '';
                 
+                // Find matching funding method in SoF task
+                const matchingFund = sofFunds.find(fund => {
+                    const fundTypeMap = {
+                        'fund:gift': 'gift',
+                        'fund:mortgage': 'mortgage',
+                        'fund:savings': 'savings',
+                        'fund:property_sale': 'property_sale',
+                        'fund:asset_sale': 'asset_sale',
+                        'fund:htb_lisa': 'htb_lisa',
+                        'fund:inheritance': 'inheritance'
+                    };
+                    return fundTypeMap[fund.type] === sofType;
+                });
+                
+                // Build funding details card
+                let fundDetailsHtml = '';
+                if (matchingFund) {
+                    const fundData = matchingFund.data || {};
+                    const fundAmount = fundData.amount ? `£${(fundData.amount / 100).toLocaleString()}` : '';
+                    
+                    let detailsContent = '';
+                    
+                    // Gift details
+                    if (matchingFund.type === 'fund:gift') {
+                        if (fundData.giftor) {
+                            if (fundData.giftor.name) {
+                                detailsContent += `<div class="sof-fund-detail"><strong>Giftor:</strong> ${fundData.giftor.name}</div>`;
+                            }
+                            if (fundData.giftor.relationship) {
+                                detailsContent += `<div class="sof-fund-detail"><strong>Relationship:</strong> ${fundData.giftor.relationship}</div>`;
+                            }
+                            if (fundData.giftor.phone) {
+                                detailsContent += `<div class="sof-fund-detail"><strong>Phone:</strong> ${fundData.giftor.phone}</div>`;
+                            }
+                            if (typeof fundData.giftor.contactable !== 'undefined') {
+                                detailsContent += `<div class="sof-fund-detail"><strong>Contactable:</strong> ${fundData.giftor.contactable ? 'Yes' : 'No'}</div>`;
+                            }
+                        }
+                        if (typeof fundData.repayable !== 'undefined') {
+                            detailsContent += `<div class="sof-fund-detail"><strong>Repayable:</strong> ${fundData.repayable ? 'Yes' : 'No'}</div>`;
+                        }
+                        
+                        // Document status
+                        const hasDoc = matchingFund.documents && matchingFund.documents.length > 0;
+                        const docIcon = hasDoc ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
+                        const docText = hasDoc ? 'Evidence document uploaded' : 'Ensure the gifter undergoes their own AML, ID and SoF/SoW Checks';
+                        detailsContent += `
+                            <div class="sof-fund-detail" style="margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+                                ${docIcon}
+                                <span style="font-size: 11px;">${docText}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    // Property sale details
+                    if (matchingFund.type === 'fund:sale:property' && fundData.date) {
+                        const saleDate = new Date(fundData.date).toLocaleDateString('en-GB');
+                        detailsContent += `<div class="sof-fund-detail"><strong>Sale Date:</strong> ${saleDate}</div>`;
+                        if (fundData.status) {
+                            detailsContent += `<div class="sof-fund-detail"><strong>Status:</strong> ${fundData.status}</div>`;
+                        }
+                        if (fundData.lawyer) {
+                            detailsContent += `<div class="sof-fund-detail"><strong>Lawyer:</strong> ${fundData.lawyer}</div>`;
+                        }
+                    }
+                    
+                    // Savings details
+                    if (matchingFund.type === 'fund:savings' && fundData.people) {
+                        fundData.people.forEach(person => {
+                            if (person.name) {
+                                detailsContent += `<div class="sof-fund-detail"><strong>Saver:</strong> ${person.name}`;
+                                if (person.income) detailsContent += ` (Income: £${person.income.toLocaleString()})`;
+                                detailsContent += `</div>`;
+                            }
+                        });
+                    }
+                    
+                    // Mortgage details
+                    if (matchingFund.type === 'fund:mortgage') {
+                        if (fundData.provider) {
+                            detailsContent += `<div class="sof-fund-detail"><strong>Provider:</strong> ${fundData.provider}</div>`;
+                        }
+                    }
+                    
+                    if (fundAmount || detailsContent) {
+                        fundDetailsHtml = `
+                            <div class="sof-fund-details-card">
+                                ${fundAmount ? `<div class="sof-fund-amount">${fundAmount}</div>` : ''}
+                                ${detailsContent}
+                            </div>
+                        `;
+                    }
+                }
+                
+                let txListHtml = '';
                 txIds.forEach(txId => {
                     const tx = getTransactionById(txId);
                     if (!tx) return;
@@ -1757,6 +1891,7 @@ class ThirdfortChecksManager {
                     sofMatchesHtml += `
                         <div class="sof-match-group">
                             <div class="sof-match-label">${label}</div>
+                            ${fundDetailsHtml}
                             ${txListHtml}
                         </div>
                     `;
@@ -1807,8 +1942,18 @@ class ThirdfortChecksManager {
             const flag = currencyFlag(currency);
             
             // Filter transactions to only include those that actually match this currency
-            const filteredTopIn = topIn.filter(tx => tx.currency === currency).slice(0, 5);
-            const filteredTopOut = topOut.filter(tx => tx.currency === currency).slice(0, 5);
+            let filteredTopIn = topIn.filter(tx => tx.currency === currency).slice(0, 5);
+            let filteredTopOut = topOut.filter(tx => tx.currency === currency).slice(0, 5);
+            
+            // Enrich transactions with account names
+            filteredTopIn = filteredTopIn.map(tx => ({
+                ...tx,
+                accountName: accountNames[tx.account_id]?.name || 'Account'
+            }));
+            filteredTopOut = filteredTopOut.map(tx => ({
+                ...tx,
+                accountName: accountNames[tx.account_id]?.name || 'Account'
+            }));
             
             // Skip this currency if no matching transactions
             if (filteredTopIn.length === 0 && filteredTopOut.length === 0) {
@@ -1932,13 +2077,13 @@ class ThirdfortChecksManager {
                 // Left column - Chain 1
                 if (chain1) {
                     const flag1 = this.getCurrencyFlag((chain1.source?.currency || chain1.out.currency) || currency);
-                    transfersHtml += this.renderChainColumn(chain1, flag1, accountNames);
+                    transfersHtml += this.renderChainColumn(chain1, flag1);
                 }
                 
                 // Right column - Chain 2
                 if (chain2) {
                     const flag2 = this.getCurrencyFlag((chain2.source?.currency || chain2.out.currency) || currency);
-                    transfersHtml += this.renderChainColumn(chain2, flag2, accountNames);
+                    transfersHtml += this.renderChainColumn(chain2, flag2);
                 }
                 
                 transfersHtml += `</div>`;
@@ -2055,7 +2200,7 @@ class ThirdfortChecksManager {
         `;
     }
     
-    createBankTaskCard(bankSummary, bankStatement) {
+    createBankTaskCard(bankSummary, bankStatement, sofTask = null) {
         // Combined bank task card - handles both linking (summary) and PDF upload (statement)
         const hasSummary = bankSummary && bankSummary.status === 'closed';
         const hasStatement = bankStatement && bankStatement.status === 'closed';
@@ -2166,7 +2311,7 @@ class ThirdfortChecksManager {
         // Add analysis sections if available
         let analysisHtml = '';
         if (bankStatement?.breakdown?.analysis) {
-            analysisHtml = this.createBankAnalysisSections(bankStatement.breakdown.analysis, accounts);
+            analysisHtml = this.createBankAnalysisSections(bankStatement.breakdown.analysis, accounts, sofTask);
         }
         
         return `
@@ -2659,10 +2804,59 @@ class ThirdfortChecksManager {
         document.body.appendChild(lightbox);
     }
     
-    createFundingSourceCard(fund, check, index) {
+    createFundingSourceCard(fund, check, index, sofMatches = {}, accounts = {}) {
         const type = fund.type || 'unknown';
         const data = fund.data || {};
         const amount = data.amount ? `£${(data.amount / 100).toLocaleString()}` : 'Not specified';
+        
+        // Get matched bank transactions for this funding type
+        const fundTypeMap = {
+            'fund:gift': 'gift',
+            'fund:mortgage': 'mortgage',
+            'fund:savings': 'savings',
+            'fund:property_sale': 'property_sale',
+            'fund:asset_sale': 'asset_sale',
+            'fund:htb_lisa': 'htb_lisa',
+            'fund:inheritance': 'inheritance'
+        };
+        const matchKey = fundTypeMap[type];
+        const matchedTxIds = sofMatches[matchKey] || [];
+        
+        // Build matched transactions HTML
+        let matchedTxHtml = '';
+        if (matchedTxIds.length > 0) {
+            matchedTxHtml = '<div class="matched-transactions-section"><div class="matched-tx-label">Potential Matched Transactions:</div>';
+            
+            matchedTxIds.forEach(txId => {
+                // Find transaction in accounts
+                let tx = null;
+                for (const [accountId, accountData] of Object.entries(accounts)) {
+                    const statement = accountData.statement || [];
+                    tx = statement.find(t => t.id === txId);
+                    if (tx) {
+                        tx.accountName = (accountData.info || accountData).name || 'Account';
+                        break;
+                    }
+                }
+                
+                if (tx) {
+                    const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    const currencySymbol = this.getCurrencyFlag(tx.currency || 'GBP');
+                    const txAmount = tx.amount >= 0 ? '+' : '';
+                    
+                    matchedTxHtml += `
+                        <div class="matched-tx-row">
+                            <span class="matched-tx-date">${date}</span>
+                            <span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="matched-tx-account">${tx.accountName}</span>
+                            <span class="matched-tx-amount">${txAmount}${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            matchedTxHtml += '</div>';
+        }
         
         // Map funding type to display name (handle fund: prefix)
         const cleanType = type.replace('fund:', '').replace(/:/g, '_');
@@ -2796,6 +2990,7 @@ class ThirdfortChecksManager {
                     <div class="funding-amount">${amount}</div>
                 </div>
                 ${detailsHtml}
+                ${matchedTxHtml}
                 <div class="funding-doc-status">
                     ${docIcon}
                     <span class="doc-status-text">${docStatusText}</span>
@@ -2804,11 +2999,15 @@ class ThirdfortChecksManager {
         `;
     }
     
-    createSOFTaskCard(outcome, check) {
+    createSOFTaskCard(outcome, check, sofMatches = {}) {
         const result = outcome.result || 'clear';
         const breakdown = outcome.breakdown || {};
         const property = breakdown.property || {};
         const funds = breakdown.funds || [];
+        
+        // Get bank statement accounts for transaction lookup
+        const bankStatement = check.taskOutcomes?.['bank:statement'];
+        const accounts = bankStatement?.breakdown?.accounts || {};
         
         // Determine border class and status icon
         let borderClass = result === 'clear' ? 'clear' : (result === 'fail' ? 'alert' : 'consider');
@@ -2857,7 +3056,7 @@ class ThirdfortChecksManager {
         // Individual funding source cards
         let fundingCardsHtml = '<div class="funding-sources-container">';
         funds.forEach((fund, index) => {
-            fundingCardsHtml += this.createFundingSourceCard(fund, check, index);
+            fundingCardsHtml += this.createFundingSourceCard(fund, check, index, sofMatches, accounts);
         });
         fundingCardsHtml += '</div>';
         
@@ -2925,7 +3124,10 @@ class ThirdfortChecksManager {
         
         // Special handling for Source of Funds (sof:v1)
         if (taskType === 'sof:v1' && outcome.breakdown) {
-            return this.createSOFTaskCard(outcome, check);
+            // Get bank statement analysis for SoF matching
+            const bankStatement = check.taskOutcomes?.['bank:statement'];
+            const sofMatches = bankStatement?.breakdown?.analysis?.sof_matches || {};
+            return this.createSOFTaskCard(outcome, check, sofMatches);
         }
         
         // Standard expandable task card
