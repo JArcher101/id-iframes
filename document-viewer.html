@@ -2040,20 +2040,20 @@
         <!-- Awaiting data state - shows loading spinner -->
         <div class="awaiting-state" id="awaitingState">
             <div class="fixed-header">
-                <h2 class="client-heading">ID Documents</h2>
+            <h2 class="client-heading">ID Documents</h2>
             </div>
             <div class="scrollable-content">
-                <div class="documents-grid" style="display: flex; align-items: center; justify-content: center; min-height: 200px;">
-                    <div style="text-align: center;">
-                        <div class="loading-spinner"></div>
-                        <div style="color: #666; font-size: 0.85rem; margin-top: 10px;">Loading documents...</div>
-                    </div>
+            <div class="documents-grid" style="display: flex; align-items: center; justify-content: center; min-height: 200px;">
+                <div style="text-align: center;">
+                    <div class="loading-spinner"></div>
+                    <div style="color: #666; font-size: 0.85rem; margin-top: 10px;">Loading documents...</div>
                 </div>
+            </div>
             </div>
             <!-- Disabled add button in fixed footer -->
             <div class="fixed-footer">
                 <div class="add-more-container">
-                    <button class="add-more-btn" disabled>Add documents</button>
+                <button class="add-more-btn" disabled>Add documents</button>
                 </div>
             </div>
         </div>
@@ -2061,52 +2061,52 @@
         <!-- Document display state -->
         <div class="image-display-section hidden" id="imageDisplaySection">
             <div class="fixed-header">
-                <h2 class="client-heading" id="clientHeading">ID Documents</h2>
+            <h2 class="client-heading" id="clientHeading">ID Documents</h2>
             </div>
             <div class="scrollable-content">
-                <div class="documents-grid" id="documentsGrid">
-                    <div class="loading" id="loadingState">Loading documents...</div>
-                </div>
+            <div class="documents-grid" id="documentsGrid">
+                <div class="loading" id="loadingState">Loading documents...</div>
             </div>
+        </div>
             <!-- Add more documents button in fixed footer -->
             <div class="fixed-footer hidden" id="addMoreContainer">
                 <div class="add-more-container">
-                    <button class="add-more-btn" id="addMoreBtn">Add documents</button>
+            <button class="add-more-btn" id="addMoreBtn">Add documents</button>
                 </div>
+        </div>
+    </div>
+
+    <!-- ID Image Uploader Section -->
+    <div class="id-uploader-section hidden" id="idUploaderSection">
+        <div class="uploader-fixed-header">
+        <div class="uploader-header-container">
+            <div class="uploader-header-top">
+                <h2>Document Uploader</h2>
+                <button class="cancel-header-btn" id="cancelHeaderBtn">Cancel</button>
+            </div>
+            <div class="uploader-header-subheading">
+                <h3 id="uploaderSubheading">Add more documents for...</h3>
             </div>
         </div>
         
-        <!-- ID Image Uploader Section -->
-        <div class="id-uploader-section hidden" id="idUploaderSection">
-        <div class="uploader-fixed-header">
-            <div class="uploader-header-container">
-                <div class="uploader-header-top">
-                    <h2>Document Uploader</h2>
-                    <button class="cancel-header-btn" id="cancelHeaderBtn">Cancel</button>
-                </div>
-                <div class="uploader-header-subheading">
-                    <h3 id="uploaderSubheading">Add more documents for...</h3>
-                </div>
-            </div>
-            
-            <div class="dynamic-hint" id="dynamicHint"></div>
+        <div class="dynamic-hint" id="dynamicHint"></div>
         </div>
         
         <div class="uploader-scrollable-content">
-            <div class="uploader-cards-container" id="uploaderCardsContainer">
-                <!-- Initial card will be added here -->
+        <div class="uploader-cards-container" id="uploaderCardsContainer">
+            <!-- Initial card will be added here -->
+        </div>
+        
+        <div class="upload-actions">
+            <div class="button-row">
+                <button class="add-document-btn" id="addDocumentBtn" onclick="addAnotherDocument()">Add another document</button>
             </div>
-            
-            <div class="upload-actions">
-                <div class="button-row">
-                    <button class="add-document-btn" id="addDocumentBtn" onclick="addAnotherDocument()">Add another document</button>
+            <div class="upload-button-row">
+                <button class="upload-btn" id="uploadAllBtn">Upload All Documents</button>
                 </div>
-                <div class="upload-button-row">
-                    <button class="upload-btn" id="uploadAllBtn">Upload All Documents</button>
-                </div>
+            </div>
             </div>
         </div>
-    </div>
     </div>
 
     <!-- Error Popup -->

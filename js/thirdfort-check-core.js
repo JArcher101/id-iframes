@@ -5449,42 +5449,42 @@ function buildLiteScreenRequest() {
   } else {
     // AML & Address: Full screening with DOB and address
     expectations = {
-      name: {
-        data: {
-          first: firstName,
-          last: lastName
-        }
-      },
-      dob: {
-        data: isoDate
+    name: {
+      data: {
+        first: firstName,
+        last: lastName
       }
-    };
-    
-    if (middleName) {
-      expectations.name.data.other = middleName;
+    },
+    dob: {
+      data: isoDate
     }
-    
+  };
+  
+  if (middleName) {
+    expectations.name.data.other = middleName;
+  }
+  
     // Add address for AML & Address screening
     if (address) {
-      expectations.address = {
-        data: address
-      };
-    }
-    
+    expectations.address = {
+      data: address
+    };
+  }
+  
     tasks = [
-      {
-        type: 'report:footprint',
-        opts: {
-          consent: internationalAddressEnabled && countryCode !== 'GBR'
-        }
-      },
-      {
-        type: 'report:peps',
-        opts: {
-          monitored: pepMonitoringEnabled || false
-        }
+    {
+      type: 'report:footprint',
+      opts: {
+        consent: internationalAddressEnabled && countryCode !== 'GBR'
       }
-    ];
+    },
+    {
+      type: 'report:peps',
+      opts: {
+          monitored: pepMonitoringEnabled || false
+      }
+    }
+  ];
   }
   
   // Get check reference from client data
@@ -5556,16 +5556,16 @@ function buildElectronicIDRequest() {
   
   // Add footprint (address verification) - ONLY for standard ID, not additional tasks
   if (checkState.electronicIdType === 'standard') {
-    const internationalAddressCard = document.getElementById('internationalAddressCard');
-    const internationalAddressCheckbox = document.getElementById('internationalAddressVerification');
-    const internationalAddressEnabled = !internationalAddressCard.classList.contains('hidden') && internationalAddressCheckbox?.checked;
-    
-    tasks.push({
-      type: 'report:footprint',
-      opts: {
-        consent: internationalAddressEnabled && country !== 'GBR'
-      }
-    });
+  const internationalAddressCard = document.getElementById('internationalAddressCard');
+  const internationalAddressCheckbox = document.getElementById('internationalAddressVerification');
+  const internationalAddressEnabled = !internationalAddressCard.classList.contains('hidden') && internationalAddressCheckbox?.checked;
+  
+  tasks.push({
+    type: 'report:footprint',
+    opts: {
+      consent: internationalAddressEnabled && country !== 'GBR'
+    }
+  });
   }
   
   // Add PEPs screening (only for standard ID type)
@@ -5637,13 +5637,15 @@ function buildElectronicIDRequest() {
     const prefix = subCategoryMap[checkState.matterSubCategory] || checkState.matterSubCategory;
     description = prefix ? `${prefix} ${reference}` : reference;
   } else {
-    // For private-client/other: just use the ID check reference
+    // For private-client/other: just use the ID check reference as-is
     description = reference;
   }
   
+  // ref = Internal check reference (from top input, e.g., "50/52")
+  // name = Formatted description for SMS (e.g., "Sale of 21 Green Lane" OR "Estate of John Smith")
   return {
     type: 'v2',
-    ref: reference,
+    ref: checkState.checkReference || reference, // Use internal reference from top input, fallback to property address
     name: description,
     request: {
       actor: actor,

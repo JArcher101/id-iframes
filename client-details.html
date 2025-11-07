@@ -1097,6 +1097,7 @@
     9. 'company-data' - Full company data (directors, officers, PSCs, registered office)
     10. 'charity-results' - Charity search results from Charity Commission API
     11. 'charity-data' - Full charity data (trustees, income, expenditure)
+    12. 'sanctions-check' - Open UK Sanctions List search in popup window
     
     OUTGOING MESSAGES:
     1. 'address-search' - Request autocomplete suggestions
@@ -2452,20 +2453,6 @@
       }
     }
     
-    /*
-    Open UK Sanctions List search in popup window
-    */
-    function openSanctionsCheck() {
-      const url = 'https://sanctionssearchapp.ofsi.hmtreasury.gov.uk/';
-      const width = 1000;
-      const height = 800;
-      const left = (screen.width - width) / 2;
-      const top = (screen.height - height) / 2;
-      const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
-      
-      window.open(url, 'sanctionsCheck', features);
-      console.log('🔍 Opening OFSI Sanctions Search');
-    }
     
     /*
     Refresh company data from Companies House
@@ -3624,8 +3611,18 @@
         // Store full company/charity data (directors/trustees, officers, PSCs, etc.)
         handleCompanyData(event.data.companyData || event.data.charityData);
       } else if (event.data && event.data.type === 'sanctions-check') {
-        // Open sanctions check popup when Wix button sends message
-        openSanctionsCheck();
+        // Open UK Sanctions List in popup window
+        const width = 1200;
+        const height = 800;
+        const left = (screen.width - width) / 2;
+        const top = (screen.height - height) / 2;
+        const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes,menubar=yes,toolbar=yes,location=yes`;
+        
+        const popup = window.open('https://search-uk-sanctions-list.service.gov.uk/', 'sanctionsSearch', features);
+        if (popup) {
+          popup.focus();
+        }
+        console.log('🔍 Opened UK Sanctions List search');
       }
     });
     

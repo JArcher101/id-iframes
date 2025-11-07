@@ -3098,12 +3098,12 @@ if (ofsiOpenBtn) {
 window.openDocument = openDocument;
 
 /*
-Open OFSI Consolidated Sanctions Search in popup window
+Open UK Sanctions List Search in popup window
 */
 function openOFSISearch() {
-  console.log('Opening OFSI Consolidated Sanctions Search');
+  console.log('Opening UK Sanctions List Search');
   const popup = window.open(
-    'https://sanctionssearchapp.ofsi.hmtreasury.gov.uk/', 
+    'https://search-uk-sanctions-list.service.gov.uk/', 
     'ofsiSearch', 
     'width=1200,height=800,scrollbars=yes,resizable=yes,menubar=yes,toolbar=yes,location=yes,status=yes'
   );
