@@ -1299,16 +1299,18 @@ class ThirdfortChecksManager {
             const bankStatement = taskOutcomes['bank:statement'];
             if (bankStatement?.breakdown?.analysis?.sof_matches) {
                 const sofMatches = bankStatement.breakdown.analysis.sof_matches;
-                const giftMatches = sofMatches.filter(m => m.fund_type === 'fund:gift');
-                
-                if (giftMatches.length > 0 && giftMatches[0].transactions?.length > 0) {
-                    html += `<div class="red-flag-detail-section">`;
-                    html += `<div class="red-flag-detail-title">Potential Matched Transactions</div>`;
-                    giftMatches[0].transactions.slice(0, 3).forEach(tx => {
-                        const txAmount = Math.abs(tx.amount);
-                        html += `<div class="red-flag-detail-item">${new Date(tx.timestamp).toLocaleDateString('en-GB')} - ${tx.description} - £${txAmount.toLocaleString()}</div>`;
-                    });
-                    html += `</div>`;
+                if (Array.isArray(sofMatches)) {
+                    const giftMatches = sofMatches.filter(m => m.fund_type === 'fund:gift');
+                    
+                    if (giftMatches.length > 0 && giftMatches[0].transactions?.length > 0) {
+                        html += `<div class="red-flag-detail-section">`;
+                        html += `<div class="red-flag-detail-title">Potential Matched Transactions</div>`;
+                        giftMatches[0].transactions.slice(0, 3).forEach(tx => {
+                            const txAmount = Math.abs(tx.amount);
+                            html += `<div class="red-flag-detail-item">${new Date(tx.timestamp).toLocaleDateString('en-GB')} - ${tx.description} - £${txAmount.toLocaleString()}</div>`;
+                        });
+                        html += `</div>`;
+                    }
                 }
             }
         });
