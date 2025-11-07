@@ -1257,20 +1257,17 @@ class ThirdfortChecksManager {
             }
         });
         
-        // Wrap in task card format
+        // Wrap in task card format (with red status icon)
+        const redStatusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+        
         let flagsHtml = `
             <div class="task-card consider" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
-                    <div class="task-title-row">
-                        ${this.getTaskCheckIcon('CO', true)}
-                        <div class="task-title">Red Flags</div>
-                    </div>
-                    <svg class="expand-arrow" viewBox="0 0 24 24" fill="#112F5B">
-                        <path d="M7 10l5 5 5-5z"/>
-                    </svg>
+                    <div class="task-title">Red Flags</div>
+                    ${redStatusIcon}
                 </div>
                 <div class="task-summary-inline">${totalFlags} Red ${flagWord} identified</div>
-                <div class="task-content">
+                <div class="task-details">
                     ${flagsContent}
                 </div>
             </div>
