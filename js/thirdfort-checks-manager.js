@@ -1228,65 +1228,287 @@ class ThirdfortChecksManager {
         // Show the card
         this.redFlagsCard.classList.remove('hidden');
         
-        // Build the HTML
+        const taskOutcomes = check.taskOutcomes || {};
         const totalFlags = allFlags.length;
+        
+        // Build the HTML with red consider icon
         let flagsHtml = `
             <div class="red-flags-header">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" stroke-width="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
-                <div class="red-flags-title">
-                    <div class="red-flags-title-text">Red Flag Summary</div>
-                    <div class="red-flags-count">Total flags detected: ${totalFlags}</div>
-                </div>
+                ${this.getTaskCheckIcon('CO', true)}
+                <div class="red-flags-title-text">Red Flags Summary</div>
             </div>
             <div class="red-flags-content">
         `;
         
+        // Process each flag with rich detail
         allFlags.forEach((flag, index) => {
-            // Parse the flag structure
-            // Flags could be strings or objects with description, supporting_data, threshold_amount, etc.
-            let description = '';
-            let details = '';
+            const flagType = flag.description || '';
             
-            if (typeof flag === 'string') {
-                description = flag;
+            if (flagType === 'Gifts Received') {
+                flagsHtml += this.renderGiftFlag(flag, taskOutcomes, check);
+            } else if (flagType === 'Declared savings > actual savings' || flagType.includes('savings')) {
+                flagsHtml += this.renderSavingsFlag(flag, taskOutcomes, check);
+            } else if (flagType === 'No Mortgage Used') {
+                flagsHtml += this.renderNoMortgageFlag(flag, taskOutcomes);
+            } else if (flagType === 'Cryptocurrency Funding') {
+                flagsHtml += this.renderCryptoFlag(flag, taskOutcomes);
+            } else if (flagType === 'Funds from Overseas') {
+                flagsHtml += this.renderOverseasFlag(flag, taskOutcomes);
+            } else if (flagType.includes('cash deposit')) {
+                flagsHtml += this.renderCashDepositFlag(flag, taskOutcomes);
             } else {
-                description = flag.description || flag.flag || '';
-                
-                // Build details from various fields
-                const parts = [];
-                if (flag.supporting_data) parts.push(flag.supporting_data);
-                if (flag.threshold_amount) parts.push(`Threshold: ${flag.threshold_amount}`);
-                if (flag.value) parts.push(`Value: ${flag.value}`);
-                if (flag.declared) parts.push(`Declared: ${flag.declared}`);
-                if (flag.actual) parts.push(`Actual: ${flag.actual}`);
-                
-                details = parts.join(' | ');
+                // Generic flag rendering
+                flagsHtml += this.renderGenericFlag(flag);
             }
-            
-            flagsHtml += `
-                <div class="red-flag-item">
-                    <div class="red-flag-number">${index + 1}</div>
-                    <div class="red-flag-details">
-                        <div class="red-flag-description">${description}</div>
-                        ${details ? `<div class="red-flag-supporting">${details}</div>` : ''}
-                        ${flag.source ? `<div class="red-flag-source">Source: ${flag.source}</div>` : ''}
-                    </div>
-                </div>
-            `;
         });
         
-        flagsHtml += `
-            </div>
-            <div class="red-flags-footer">
-                Invest your time wisely - these flags have been automatically detected to help you focus on high-risk areas.
-            </div>
-        `;
+        flagsHtml += `</div>`;
         
         this.redFlagsCard.innerHTML = flagsHtml;
+    }
+    
+    renderGiftFlag(flag, taskOutcomes, check) {
+        const sofTask = taskOutcomes['sof:v1'];
+        if (!sofTask?.breakdown?.funds) return '';
+        
+        // Find gift funding methods
+        const giftFunds = sofTask.breakdown.funds.filter(f => f.type === 'fund:gift');
+        if (giftFunds.length === 0) return '';
+        
+        let html = `<div class="red-flag-section">`;
+        html += `<div class="red-flag-title">Gift</div>`;
+        
+        giftFunds.forEach(giftFund => {
+            const amount = giftFund.data?.amount || 0;
+            const giftor = giftFund.data?.giftor || {};
+            
+            html += `<div class="red-flag-amount">£${(amount / 100).toLocaleString()}</div>`;
+            
+            // Giftor details
+            if (giftor.name) {
+                html += `<div class="red-flag-detail-section">`;
+                html += `<div class="red-flag-detail-title">Giftor Details</div>`;
+                html += `<div class="red-flag-detail-item"><strong>Name:</strong> ${giftor.name}</div>`;
+                if (giftor.relationship) html += `<div class="red-flag-detail-item"><strong>Relationship:</strong> ${giftor.relationship}</div>`;
+                if (giftor.phone) html += `<div class="red-flag-detail-item"><strong>Phone:</strong> ${giftor.phone}</div>`;
+                if (giftor.contactable !== undefined) html += `<div class="red-flag-detail-item"><strong>Contactable:</strong> ${giftor.contactable ? 'Yes' : 'No'}</div>`;
+                html += `</div>`;
+            }
+            
+            // Check for matched bank transactions
+            const bankStatement = taskOutcomes['bank:statement'];
+            if (bankStatement?.breakdown?.analysis?.sof_matches) {
+                const sofMatches = bankStatement.breakdown.analysis.sof_matches;
+                const giftMatches = sofMatches.filter(m => m.fund_type === 'fund:gift');
+                
+                if (giftMatches.length > 0 && giftMatches[0].transactions?.length > 0) {
+                    html += `<div class="red-flag-detail-section">`;
+                    html += `<div class="red-flag-detail-title">Potential Matched Transactions</div>`;
+                    giftMatches[0].transactions.slice(0, 3).forEach(tx => {
+                        const txAmount = Math.abs(tx.amount);
+                        html += `<div class="red-flag-detail-item">${new Date(tx.timestamp).toLocaleDateString('en-GB')} - ${tx.description} - £${txAmount.toLocaleString()}</div>`;
+                    });
+                    html += `</div>`;
+                }
+            }
+        });
+        
+        html += `</div>`;
+        return html;
+    }
+    
+    renderSavingsFlag(flag, taskOutcomes, check) {
+        const sofTask = taskOutcomes['sof:v1'];
+        const bankStatement = taskOutcomes['bank:statement'];
+        const bankSummary = taskOutcomes['bank:summary'];
+        
+        if (!sofTask?.breakdown?.funds) return '';
+        
+        // Find savings funding method
+        const savingsFunds = sofTask.breakdown.funds.filter(f => f.type === 'fund:savings');
+        if (savingsFunds.length === 0) return '';
+        
+        let html = `<div class="red-flag-section">`;
+        html += `<div class="red-flag-title">Savings</div>`;
+        html += `<div class="red-flag-subtitle">Declared savings less than actual</div>`;
+        
+        // Declared savings
+        let totalDeclared = 0;
+        savingsFunds.forEach(fund => {
+            totalDeclared += fund.data?.amount || 0;
+        });
+        
+        html += `<div class="red-flag-subsection">`;
+        html += `<div class="red-flag-detail-title">Declared Savings</div>`;
+        html += `<div class="red-flag-amount">£${(totalDeclared / 100).toLocaleString()}</div>`;
+        
+        // Show people contributing to savings
+        savingsFunds.forEach(fund => {
+            if (fund.data?.people && fund.data.people.length > 0) {
+                fund.data.people.forEach(person => {
+                    html += `<div class="red-flag-detail-item"><strong>${person.name}</strong>`;
+                    if (person.employment_status) html += ` (${person.employment_status})`;
+                    html += `</div>`;
+                    if (person.incomes && person.incomes.length > 0) {
+                        person.incomes.forEach(income => {
+                            const annual = income.annual_total ? `£${(income.annual_total / 100).toLocaleString()}/year` : '';
+                            html += `<div class="red-flag-detail-item" style="margin-left: 12px;">${income.source}: ${annual}</div>`;
+                            if (income.reference) {
+                                html += `<div class="red-flag-detail-item" style="margin-left: 24px; font-size: 11px; color: #666;">Payslip Ref: ${income.reference}</div>`;
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        html += `</div>`;
+        
+        // Actual savings from bank accounts
+        html += `<div class="red-flag-subsection">`;
+        html += `<div class="red-flag-detail-title">Actual Savings</div>`;
+        
+        const accounts = bankStatement?.breakdown?.accounts || bankSummary?.breakdown?.accounts || {};
+        let totalActual = 0;
+        const providerTotals = {};
+        
+        Object.values(accounts).forEach(account => {
+            const balance = account.balance?.current || account.balance?.available || 0;
+            if (balance > 0) {
+                totalActual += balance;
+                
+                const providerName = account.provider?.name || 'Unknown Provider';
+                const providerId = account.provider?.id || providerName;
+                
+                if (!providerTotals[providerId]) {
+                    providerTotals[providerId] = {
+                        name: providerName,
+                        total: 0,
+                        accounts: []
+                    };
+                }
+                providerTotals[providerId].total += balance;
+                providerTotals[providerId].accounts.push({
+                    name: account.account_name || account.type || 'Account',
+                    balance: balance
+                });
+            }
+        });
+        
+        html += `<div class="red-flag-amount">£${totalActual.toLocaleString()}</div>`;
+        
+        // Breakdown by provider
+        Object.values(providerTotals).forEach(provider => {
+            const logo = this.getBankLogo(provider.name, provider.name);
+            html += `<div class="red-flag-provider-item">`;
+            html += `<div class="red-flag-provider-header">`;
+            html += logo;
+            html += `<span class="red-flag-provider-name">${provider.name}</span>`;
+            html += `<span class="red-flag-provider-total">£${provider.total.toLocaleString()}</span>`;
+            html += `</div>`;
+            
+            if (provider.accounts.length > 1) {
+                provider.accounts.forEach(acc => {
+                    html += `<div class="red-flag-provider-account">${acc.name}: £${acc.balance.toLocaleString()}</div>`;
+                });
+            }
+            html += `</div>`;
+        });
+        
+        html += `</div>`;
+        html += `</div>`;
+        return html;
+    }
+    
+    renderNoMortgageFlag(flag, taskOutcomes) {
+        const sofTask = taskOutcomes['sof:v1'];
+        if (!sofTask?.breakdown) return '';
+        
+        const property = sofTask.breakdown.property || {};
+        const funds = sofTask.breakdown.funds || [];
+        
+        let html = `<div class="red-flag-section">`;
+        html += `<div class="red-flag-title">No Mortgage Used</div>`;
+        
+        const propertyPrice = property.price || 0;
+        html += `<div class="red-flag-detail-section">`;
+        html += `<div class="red-flag-detail-title">Property Details</div>`;
+        html += `<div class="red-flag-amount">£${(propertyPrice / 100).toLocaleString()}</div>`;
+        if (property.address) {
+            const addr = property.address;
+            html += `<div class="red-flag-detail-item">${addr.building_number || ''} ${addr.street || ''}, ${addr.town || ''}, ${addr.postcode || ''}</div>`;
+        }
+        html += `<div class="red-flag-detail-item">Funded entirely without mortgage</div>`;
+        html += `</div>`;
+        
+        html += `</div>`;
+        return html;
+    }
+    
+    renderCryptoFlag(flag, taskOutcomes) {
+        const sofTask = taskOutcomes['sof:v1'];
+        if (!sofTask?.breakdown?.funds) return '';
+        
+        const cryptoFunds = sofTask.breakdown.funds.filter(f => f.type === 'fund:crypto' || f.type === 'fund:cryptocurrency');
+        if (cryptoFunds.length === 0) return '';
+        
+        let html = `<div class="red-flag-section">`;
+        html += `<div class="red-flag-title">Cryptocurrency</div>`;
+        
+        cryptoFunds.forEach(fund => {
+            const amount = fund.data?.amount || 0;
+            html += `<div class="red-flag-amount">£${(amount / 100).toLocaleString()}</div>`;
+            if (fund.data?.description) {
+                html += `<div class="red-flag-detail-item">${fund.data.description}</div>`;
+            }
+        });
+        
+        html += `</div>`;
+        return html;
+    }
+    
+    renderOverseasFlag(flag, taskOutcomes) {
+        const sofTask = taskOutcomes['sof:v1'];
+        if (!sofTask?.breakdown?.funds) return '';
+        
+        const overseasFunds = sofTask.breakdown.funds.filter(f => {
+            const loc = f.data?.location;
+            return loc && loc !== 'GBR' && loc !== 'GB' && loc !== 'UK';
+        });
+        
+        if (overseasFunds.length === 0) return '';
+        
+        let html = `<div class="red-flag-section">`;
+        html += `<div class="red-flag-title">Funds from Overseas</div>`;
+        
+        overseasFunds.forEach(fund => {
+            const amount = fund.data?.amount || 0;
+            const location = fund.data?.location || '';
+            html += `<div class="red-flag-amount">£${(amount / 100).toLocaleString()}</div>`;
+            html += `<div class="red-flag-detail-item">Source: ${location}</div>`;
+        });
+        
+        html += `</div>`;
+        return html;
+    }
+    
+    renderCashDepositFlag(flag, taskOutcomes) {
+        let html = `<div class="red-flag-section">`;
+        html += `<div class="red-flag-title">Cash Deposits</div>`;
+        html += `<div class="red-flag-detail-section">`;
+        html += `<div class="red-flag-detail-item">${flag.supporting_data || ''}</div>`;
+        html += `<div class="red-flag-detail-item">${flag.threshold_amount || ''}</div>`;
+        html += `</div>`;
+        html += `</div>`;
+        return html;
+    }
+    
+    renderGenericFlag(flag) {
+        let html = `<div class="red-flag-section">`;
+        html += `<div class="red-flag-title">${flag.description || 'Flag'}</div>`;
+        if (flag.supporting_data) html += `<div class="red-flag-detail-item">${flag.supporting_data}</div>`;
+        if (flag.threshold_amount) html += `<div class="red-flag-detail-item">${flag.threshold_amount}</div>`;
+        html += `</div>`;
+        return html;
     }
     
     renderTasksSection(check) {
@@ -3926,14 +4148,15 @@ class ThirdfortChecksManager {
         `;
     }
     
-    getTaskCheckIcon(status) {
+    getTaskCheckIcon(status, isRed = false) {
         // Return colored circle icons for task objectives
         if (status === 'CL') {
             // Green circle with checkmark
             return `<svg class="objective-icon" viewBox="0 0 300 300"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>`;
         } else if (status === 'CO' || status === 'CN') {
-            // Orange circle with minus
-            return `<svg class="objective-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+            // Orange or Red circle with minus (for red flags)
+            const color = isRed ? '#d32f2f' : '#f7931e';
+            return `<svg class="objective-icon" viewBox="0 0 300 300"><path fill="${color}" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
         } else if (status === 'AL' || status === 'FA') {
             // Red circle with X
             return `<svg class="objective-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>`;
