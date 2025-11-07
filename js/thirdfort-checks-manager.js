@@ -25,6 +25,7 @@ class ThirdfortChecksManager {
         this.detailsCard = document.getElementById('details-card');
         this.documentDetailsCard = document.getElementById('document-details-card');
         this.pepUpdatesCard = document.getElementById('pep-updates-card');
+        this.redFlagsCard = document.getElementById('red-flags-card');
         this.tasksSection = document.getElementById('tasks-section');
         this.updatesSection = document.getElementById('updates-section');
         
@@ -435,6 +436,9 @@ class ThirdfortChecksManager {
         
         // Render PEP/Sanctions updates (if any)
         this.renderPepUpdatesCard(check);
+        
+        // Render red flags card (if any)
+        this.renderRedFlagsCard(check);
         
         // Render tasks/reports
         this.renderTasksSection(check);
@@ -1147,6 +1151,142 @@ class ThirdfortChecksManager {
         });
         
         this.pepUpdatesCard.innerHTML = updatesHtml;
+    }
+    
+    extractRedFlags(check) {
+        // Priority 1: Use pre-calculated red flags from backend (transaction:pdf webhook)
+        // These are generated once and stored with the check object
+        if (check.redFlags && Array.isArray(check.redFlags) && check.redFlags.length > 0) {
+            console.log('🚩 Using stored red flags:', check.redFlags.length);
+            return check.redFlags;
+        }
+        
+        console.log('⚠️ No stored red flags found, checking alternative locations...');
+        const allFlags = [];
+        const taskOutcomes = check.taskOutcomes || {};
+        
+        // Fallback: Check in taskOutcomes breakdown (if stored by Thirdfort API directly)
+        const sofTask = taskOutcomes['sof:v1'];
+        if (sofTask?.breakdown?.red_flags && sofTask.breakdown.red_flags.length > 0) {
+            sofTask.breakdown.red_flags.forEach(flag => {
+                allFlags.push({
+                    source: 'Source of Funds',
+                    ...flag
+                });
+            });
+        }
+        
+        const bankSummary = taskOutcomes['bank:summary'];
+        if (bankSummary?.breakdown?.red_flags && bankSummary.breakdown.red_flags.length > 0) {
+            bankSummary.breakdown.red_flags.forEach(flag => {
+                allFlags.push({
+                    source: 'Bank Linking',
+                    ...flag
+                });
+            });
+        }
+        
+        const bankStatement = taskOutcomes['bank:statement'];
+        if (bankStatement?.breakdown?.red_flags && bankStatement.breakdown.red_flags.length > 0) {
+            bankStatement.breakdown.red_flags.forEach(flag => {
+                allFlags.push({
+                    source: 'Bank Linking',
+                    ...flag
+                });
+            });
+        }
+        
+        // Additional fallback: Check in reports array
+        if (check.reports && Array.isArray(check.reports)) {
+            check.reports.forEach(report => {
+                if (report.breakdown?.red_flags && report.breakdown.red_flags.length > 0) {
+                    const source = report.type === 'sof:v1' ? 'Source of Funds' : 
+                                   report.type.includes('bank') ? 'Bank Linking' : 
+                                   'Check Report';
+                    report.breakdown.red_flags.forEach(flag => {
+                        allFlags.push({
+                            source: source,
+                            ...flag
+                        });
+                    });
+                }
+            });
+        }
+        
+        return allFlags;
+    }
+    
+    renderRedFlagsCard(check) {
+        const allFlags = this.extractRedFlags(check);
+        
+        // If no flags, hide the card
+        if (allFlags.length === 0) {
+            this.redFlagsCard.classList.add('hidden');
+            return;
+        }
+        
+        // Show the card
+        this.redFlagsCard.classList.remove('hidden');
+        
+        // Build the HTML
+        const totalFlags = allFlags.length;
+        let flagsHtml = `
+            <div class="red-flags-header">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <div class="red-flags-title">
+                    <div class="red-flags-title-text">Red Flag Summary</div>
+                    <div class="red-flags-count">Total flags detected: ${totalFlags}</div>
+                </div>
+            </div>
+            <div class="red-flags-content">
+        `;
+        
+        allFlags.forEach((flag, index) => {
+            // Parse the flag structure
+            // Flags could be strings or objects with description, supporting_data, threshold_amount, etc.
+            let description = '';
+            let details = '';
+            
+            if (typeof flag === 'string') {
+                description = flag;
+            } else {
+                description = flag.description || flag.flag || '';
+                
+                // Build details from various fields
+                const parts = [];
+                if (flag.supporting_data) parts.push(flag.supporting_data);
+                if (flag.threshold_amount) parts.push(`Threshold: ${flag.threshold_amount}`);
+                if (flag.value) parts.push(`Value: ${flag.value}`);
+                if (flag.declared) parts.push(`Declared: ${flag.declared}`);
+                if (flag.actual) parts.push(`Actual: ${flag.actual}`);
+                
+                details = parts.join(' | ');
+            }
+            
+            flagsHtml += `
+                <div class="red-flag-item">
+                    <div class="red-flag-number">${index + 1}</div>
+                    <div class="red-flag-details">
+                        <div class="red-flag-description">${description}</div>
+                        ${details ? `<div class="red-flag-supporting">${details}</div>` : ''}
+                        ${flag.source ? `<div class="red-flag-source">Source: ${flag.source}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        flagsHtml += `
+            </div>
+            <div class="red-flags-footer">
+                Invest your time wisely - these flags have been automatically detected to help you focus on high-risk areas.
+            </div>
+        `;
+        
+        this.redFlagsCard.innerHTML = flagsHtml;
     }
     
     renderTasksSection(check) {
@@ -9975,7 +10115,21 @@ class ThirdfortChecksManager {
                 "hasAlerts": false,
                 "pdfAddedAt": "2025-11-06T18:07:35.445Z",
                 "smsSent": true,
-                "transactionId": "d46e3ge23amg030rw8y0"
+                "transactionId": "d46e3ge23amg030rw8y0",
+                "redFlags": [
+                  {
+                    "description": "Gifts Received",
+                    "supporting_data": "1 gift received - £10,000.00",
+                    "threshold_amount": "Any gifts flagged",
+                    "source": "Source of Funds"
+                  },
+                  {
+                    "description": "Declared savings > actual savings",
+                    "declared": "£20,000.00",
+                    "actual": "£253.71",
+                    "source": "Bank Linking"
+                  }
+                ]
             },{
                 "consumerPhone": "+447754241686",
                 "checkType": "electronic-id",
