@@ -1878,9 +1878,16 @@ class ThirdfortChecksManager {
                         if (fundData.people) {
                             fundData.people.forEach(person => {
                                 if (person.name) {
-                                    detailsContent += `<div class="sof-fund-detail"><strong>Saver:</strong> ${person.name}`;
-                                    if (person.income) detailsContent += ` (Income: £${person.income.toLocaleString()})`;
-                                    detailsContent += `</div>`;
+                                    detailsContent += `<div class="sof-fund-detail"><strong>Saver:</strong> ${person.name}</div>`;
+                                    if (person.incomes && person.incomes.length > 0) {
+                                        person.incomes.forEach(income => {
+                                            const annual = income.annual_total ? `£${(income.annual_total / 100).toLocaleString()}/year` : '';
+                                            detailsContent += `<div class="sof-fund-detail">${income.source}: ${annual} (${income.frequency || 'N/A'})</div>`;
+                                            if (income.reference) {
+                                                detailsContent += `<div class="sof-fund-detail" style="margin-left: 16px; font-size: 10px; color: #666;">Payslip Ref: ${income.reference}</div>`;
+                                            }
+                                        });
+                                    }
                                 }
                             });
                         }
@@ -3022,6 +3029,9 @@ class ThirdfortChecksManager {
                         person.incomes.forEach(income => {
                             const annual = income.annual_total ? `£${(income.annual_total / 100).toLocaleString()}/year` : '';
                             detailsHtml += `<div class="funding-detail">Income: ${income.source} - ${annual} (${income.frequency || 'N/A'})</div>`;
+                            if (income.reference) {
+                                detailsHtml += `<div class="funding-detail" style="margin-left: 12px; font-size: 11px; color: #666;">Payslip Ref: ${income.reference}</div>`;
+                            }
                         });
                     }
                     detailsHtml += `</div>`;
