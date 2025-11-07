@@ -1006,7 +1006,8 @@ body {
    ===================================================================== */
 
 .red-flags-card {
-    /* Container only - actual styling comes from .task-card */
+    /* Container only - task card is rendered inside */
+    margin-bottom: 8px;
 }
 
 /* Individual flag sections */
