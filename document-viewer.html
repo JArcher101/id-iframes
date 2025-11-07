@@ -91,8 +91,11 @@
         body {
             font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: transparent;
-            padding: 10px;
-            overflow-x: hidden;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         
         /* 
@@ -107,8 +110,37 @@
             max-width: 980px;
             min-width: 250px;
             margin: 0 auto;
-            padding: 0 5px;
+            padding: 0;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Fixed header section for list view */
+        .fixed-header {
+            flex-shrink: 0;
+            background: transparent;
+            padding: 10px 10px 0 10px;
+            z-index: 10;
+        }
+        
+        /* Scrollable content area for document cards */
+        .scrollable-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0 10px;
+            min-height: 0;
+        }
+        
+        /* Fixed footer section for add documents button */
+        .fixed-footer {
+            flex-shrink: 0;
+            background: transparent;
+            padding: 10px;
+            z-index: 10;
         }
 
         .image-display-container {
@@ -129,6 +161,9 @@
         .awaiting-state {
             width: 100%;
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
         .hidden {
@@ -137,7 +172,7 @@
 
         .add-more-container {
             text-align: center;
-            margin-top: 10px;
+            margin-top: 0;
             width: 100%;
             margin-left: auto;
             margin-right: auto;
@@ -184,10 +219,31 @@
             max-width: 980px;
             min-width: 250px;
             margin: 0 auto;
-            padding: 15px;
+            padding: 0;
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Fixed header for uploader */
+        .uploader-fixed-header {
+            flex-shrink: 0;
+            padding: 15px 15px 10px 15px;
+            background: white;
+            z-index: 10;
+        }
+        
+        /* Scrollable area for uploader cards and buttons */
+        .uploader-scrollable-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0 15px 15px 15px;
+            min-height: 0;
         }
 
 
@@ -619,6 +675,10 @@
             margin: 0 auto;
             padding: 15px;
             box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
 
         .uploading-message {
@@ -785,7 +845,7 @@
             background: #f5f5f5;
             padding: 8px 12px;
             border-radius: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .uploader-header-top {
@@ -1140,6 +1200,9 @@
         .image-display-section {
             width: 100%;
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
         .client-heading {
@@ -1147,7 +1210,7 @@
             font-size: 0.9rem;
             font-weight: 500;
             color: rgb(0, 60, 113);
-            margin: 0 0 7px 0;
+            margin: 0;
             text-align: left;
             background: #f5f5f5;
             padding: 8px 12px;
@@ -1275,7 +1338,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            padding: 10px 0 0 0;
+            padding: 10px 0;
             width: 100%;
         }
 
@@ -1758,8 +1821,9 @@
         }
 
         @media (max-width: 768px) {
-            body { padding: 8px; }
-            .responsive-container { padding: 0 8px; }
+            .fixed-header { padding: 8px 8px 0 8px; }
+            .scrollable-content { padding: 0 8px; }
+            .fixed-footer { padding: 8px; }
             .image-display-container { 
                 max-width: 100%; 
                 width: 100%;
@@ -1787,11 +1851,14 @@
                 width: 100%;
                 max-width: 100%;
             }
+            .uploader-fixed-header { padding: 12px 12px 8px 12px; }
+            .uploader-scrollable-content { padding: 0 12px 12px 12px; }
         }
         
         @media (max-width: 480px) {
-            body { padding: 5px; }
-            .responsive-container { padding: 0 5px; }
+            .fixed-header { padding: 5px 5px 0 5px; }
+            .scrollable-content { padding: 0 5px; }
+            .fixed-footer { padding: 5px; }
             .image-display-container { 
                 max-width: 100%; 
                 width: 100%;
@@ -1819,6 +1886,8 @@
                 width: 100%;
                 max-width: 100%;
             }
+            .uploader-fixed-header { padding: 10px 10px 6px 10px; }
+            .uploader-scrollable-content { padding: 0 10px 10px 10px; }
         }
         
         
@@ -1830,7 +1899,9 @@
         }
         
         @media (max-width: 320px) {
-            .responsive-container { padding: 0 3px; }
+            .fixed-header { padding: 3px 3px 0 3px; }
+            .scrollable-content { padding: 0 3px; }
+            .fixed-footer { padding: 3px; }
             .image-display-container { 
                 max-width: 100%; 
                 width: 100%;
@@ -1858,15 +1929,12 @@
                 width: 100%;
                 max-width: 100%;
             }
+            .uploader-fixed-header { padding: 8px 8px 4px 8px; }
+            .uploader-scrollable-content { padding: 0 8px 8px 8px; }
         }
         
         /* Responsive uploader section */
         @media (max-width: 768px) {
-            .id-uploader-section { 
-                padding: 12px; 
-                width: 100%;
-                max-width: 100%;
-            }
             .uploader-header-container { padding: 6px 10px; }
             .uploader-header-top h2 { font-size: 1.1rem; }
             .uploader-header-subheading h3 { font-size: 0.8rem; }
@@ -1884,11 +1952,6 @@
         }
         
         @media (max-width: 480px) {
-            .id-uploader-section { 
-                padding: 10px; 
-                width: 100%;
-                max-width: 100%;
-            }
             .uploader-header-container { padding: 5px 8px; }
             .uploader-header-top h2 { font-size: 1rem; }
             .uploader-header-subheading h3 { font-size: 0.75rem; }
@@ -1909,11 +1972,6 @@
         }
         
         @media (max-width: 320px) {
-            .id-uploader-section { 
-                padding: 8px; 
-                width: 100%;
-                max-width: 100%;
-            }
             .uploader-header-container { padding: 4px 6px; }
             .uploader-header-top h2 { font-size: 0.9rem; }
             .uploader-header-subheading h3 { font-size: 0.7rem; }
@@ -1971,57 +2029,72 @@
         <div class="image-display-container">
         <!-- Awaiting data state - shows loading spinner -->
         <div class="awaiting-state" id="awaitingState">
-            <h2 class="client-heading">ID Documents</h2>
-            <div class="documents-grid" style="display: flex; align-items: center; justify-content: center; min-height: 200px;">
-                <div style="text-align: center;">
-                    <div class="loading-spinner"></div>
-                    <div style="color: #666; font-size: 0.85rem; margin-top: 10px;">Loading documents...</div>
+            <div class="fixed-header">
+                <h2 class="client-heading">ID Documents</h2>
+            </div>
+            <div class="scrollable-content">
+                <div class="documents-grid" style="display: flex; align-items: center; justify-content: center; min-height: 200px;">
+                    <div style="text-align: center;">
+                        <div class="loading-spinner"></div>
+                        <div style="color: #666; font-size: 0.85rem; margin-top: 10px;">Loading documents...</div>
+                    </div>
                 </div>
             </div>
-            <!-- Disabled add button -->
-            <div class="add-more-container" style="margin-top: 10px;">
-                <button class="add-more-btn" disabled>Add documents</button>
+            <!-- Disabled add button in fixed footer -->
+            <div class="fixed-footer">
+                <div class="add-more-container">
+                    <button class="add-more-btn" disabled>Add documents</button>
+                </div>
             </div>
         </div>
 
         <!-- Document display state -->
         <div class="image-display-section hidden" id="imageDisplaySection">
-            <h2 class="client-heading" id="clientHeading">ID Documents</h2>
-            <div class="documents-grid" id="documentsGrid">
-                <div class="loading" id="loadingState">Loading documents...</div>
+            <div class="fixed-header">
+                <h2 class="client-heading" id="clientHeading">ID Documents</h2>
             </div>
-        </div>
-
-        <!-- Add more documents button -->
-        <div class="add-more-container hidden" id="addMoreContainer">
-            <button class="add-more-btn" id="addMoreBtn">Add documents</button>
+            <div class="scrollable-content">
+                <div class="documents-grid" id="documentsGrid">
+                    <div class="loading" id="loadingState">Loading documents...</div>
+                </div>
+            </div>
+            <!-- Add more documents button in fixed footer -->
+            <div class="fixed-footer hidden" id="addMoreContainer">
+                <div class="add-more-container">
+                    <button class="add-more-btn" id="addMoreBtn">Add documents</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- ID Image Uploader Section -->
     <div class="id-uploader-section hidden" id="idUploaderSection">
-        <div class="uploader-header-container">
-            <div class="uploader-header-top">
-                <h2>Document Uploader</h2>
-                <button class="cancel-header-btn" id="cancelHeaderBtn">Cancel</button>
+        <div class="uploader-fixed-header">
+            <div class="uploader-header-container">
+                <div class="uploader-header-top">
+                    <h2>Document Uploader</h2>
+                    <button class="cancel-header-btn" id="cancelHeaderBtn">Cancel</button>
+                </div>
+                <div class="uploader-header-subheading">
+                    <h3 id="uploaderSubheading">Add more documents for...</h3>
+                </div>
             </div>
-            <div class="uploader-header-subheading">
-                <h3 id="uploaderSubheading">Add more documents for...</h3>
-            </div>
+            
+            <div class="dynamic-hint" id="dynamicHint"></div>
         </div>
         
-        <div class="dynamic-hint" id="dynamicHint"></div>
-        
-        <div class="uploader-cards-container" id="uploaderCardsContainer">
-            <!-- Initial card will be added here -->
-        </div>
-        
-        <div class="upload-actions">
-            <div class="button-row">
-                <button class="add-document-btn" id="addDocumentBtn" onclick="addAnotherDocument()">Add another document</button>
+        <div class="uploader-scrollable-content">
+            <div class="uploader-cards-container" id="uploaderCardsContainer">
+                <!-- Initial card will be added here -->
             </div>
-            <div class="upload-button-row">
-                <button class="upload-btn" id="uploadAllBtn">Upload All Documents</button>
+            
+            <div class="upload-actions">
+                <div class="button-row">
+                    <button class="add-document-btn" id="addDocumentBtn" onclick="addAnotherDocument()">Add another document</button>
+                </div>
+                <div class="upload-button-row">
+                    <button class="upload-btn" id="uploadAllBtn">Upload All Documents</button>
+                </div>
             </div>
         </div>
     </div>
