@@ -2205,6 +2205,12 @@
                 addMoreContainer.classList.add('hidden');
             }
             
+            // Remove old counter if it exists (do this BEFORE early return)
+            const oldCounter = document.getElementById('imageCounter');
+            if (oldCounter) {
+                oldCounter.remove();
+            }
+            
             if (images.length === 0) {
                 imageSlider.innerHTML = `
                     <div class="no-images">
@@ -2245,12 +2251,6 @@
             setTimeout(() => {
                 showImage(0);
             }, 100);
-            
-            // Remove old counter if it exists
-            const oldCounter = document.getElementById('imageCounter');
-            if (oldCounter) {
-                oldCounter.remove();
-            }
             
             // Add image counter to the image display section's reel-container (not the awaiting state one)
             const counter = document.createElement('div');
