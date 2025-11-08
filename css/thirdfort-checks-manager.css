@@ -4123,25 +4123,91 @@ body {
 }
 
 .pep-hit-card {
-    position: relative;
+    display: flex;
+    gap: 12px;
     margin-bottom: 12px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 2px solid #e1e4e8;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .pep-hit-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    background: #e9ecef;
+    border-color: #1d71b8;
 }
 
-.pep-hit-card .hit-checkbox {
-    position: absolute;
-    top: 12px;
-    right: 12px;
+.pep-hit-card .hit-checkbox-left {
     width: 20px;
     height: 20px;
+    margin-top: 2px;
     cursor: pointer;
-    z-index: 10;
+    flex-shrink: 0;
+}
+
+.pep-hit-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.pep-hit-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.pep-hit-name {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 15px;
+    color: #003c71;
+}
+
+.pep-badges-inline {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.pep-aka {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 8px;
+}
+
+.pep-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 20px;
+    margin-bottom: 8px;
+}
+
+.pep-detail-item {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+}
+
+.pep-label {
+    font-weight: 600;
+    color: #666;
+}
+
+.pep-value {
+    color: #333;
+}
+
+.pep-countries {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
 }
 
 .hit-card-content {

@@ -18023,22 +18023,24 @@ class ThirdfortChecksManager {
     }
     
     /**
-     * Create a PEP hit card for selection (matching screening task card format)
+     * Create a PEP hit card for selection (compact layout with checkbox on left)
      */
     createPepHitCard(hit) {
-        let html = '<div class="screening-hit-card pep-hit-card">';
+        let html = '<div class="pep-hit-card">';
         
-        // Checkbox at top right
+        // Checkbox on the left
         html += '<input type="checkbox" name="hits" value="' + hit.id + '" ';
         html += 'data-name="' + hit.name + '" ';
         html += 'data-type="' + hit.type + '" ';
-        html += 'data-report-id="' + hit.reportId + '" class="hit-checkbox">';
+        html += 'data-report-id="' + hit.reportId + '" class="hit-checkbox-left">';
         
-        html += '<div class="screening-hit-header">';
-        html += '<div class="screening-hit-name">' + hit.name + '</div>';
-        html += '<div class="screening-hit-badges">';
+        html += '<div class="pep-hit-content">';
         
-        // Organize badges by type
+        // Header: Name + all badges on one line
+        html += '<div class="pep-hit-header">';
+        html += '<strong class="pep-hit-name">' + hit.name + '</strong>';
+        
+        // All badges inline - organize by type
         const pepBadges = [];
         const sanctionBadges = [];
         const adverseBadges = [];
@@ -18063,79 +18065,117 @@ class ThirdfortChecksManager {
             });
         }
         
-        // PEP badges row (purple) - show first 3 + count
-        if (pepBadges.length > 0) {
-            html += '<div class="hit-badge-row">';
-            pepBadges.slice(0, 3).forEach(badge => {
-                html += '<span class="hit-badge hit-badge-pep">' + badge + '</span>';
-            });
-            if (pepBadges.length > 3) {
-                html += '<span class="hit-badge hit-badge-pep">+' + (pepBadges.length - 3) + '</span>';
-            }
-            html += '</div>';
+        html += '<div class="pep-badges-inline">';
+        
+        // PEP badges (purple) - first 3
+        pepBadges.slice(0, 3).forEach(badge => {
+            html += '<span class="hit-badge hit-badge-pep">' + badge + '</span>';
+        });
+        if (pepBadges.length > 3) {
+            html += '<span class="hit-badge hit-badge-pep">+' + (pepBadges.length - 3) + '</span>';
         }
         
-        // Sanctions badges row (red) - show first 3 + count
-        if (sanctionBadges.length > 0) {
-            html += '<div class="hit-badge-row">';
-            sanctionBadges.slice(0, 3).forEach(badge => {
-                html += '<span class="hit-badge hit-badge-sanction">' + badge + '</span>';
-            });
-            if (sanctionBadges.length > 3) {
-                html += '<span class="hit-badge hit-badge-sanction">+' + (sanctionBadges.length - 3) + '</span>';
-            }
-            html += '</div>';
+        // Sanctions badges (red) - first 3
+        sanctionBadges.slice(0, 3).forEach(badge => {
+            html += '<span class="hit-badge hit-badge-sanction">' + badge + '</span>';
+        });
+        if (sanctionBadges.length > 3) {
+            html += '<span class="hit-badge hit-badge-sanction">+' + (sanctionBadges.length - 3) + '</span>';
         }
         
-        // Adverse Media badges row (blue) - show first 3 + count
-        if (adverseBadges.length > 0) {
-            html += '<div class="hit-badge-row">';
-            adverseBadges.slice(0, 3).forEach(badge => {
-                html += '<span class="hit-badge hit-badge-adverse">' + badge + '</span>';
-            });
-            if (adverseBadges.length > 3) {
-                html += '<span class="hit-badge hit-badge-adverse">+' + (adverseBadges.length - 3) + '</span>';
-            }
-            html += '</div>';
+        // Adverse Media badges (blue) - first 3
+        adverseBadges.slice(0, 3).forEach(badge => {
+            html += '<span class="hit-badge hit-badge-adverse">' + badge + '</span>';
+        });
+        if (adverseBadges.length > 3) {
+            html += '<span class="hit-badge hit-badge-adverse">+' + (adverseBadges.length - 3) + '</span>';
         }
         
         html += '</div></div>'; // Close badges and header
         
-        // Hit body with detailed information
-        html += '<div class="screening-hit-body"><div class="hit-main-column">';
+        // AKA (full width if present)
+        if (hit.aka && hit.aka.length > 0) {
+            const akaList = hit.aka.slice(0, 5).join(', ');
+            const extra = hit.aka.length > 5 ? ' (+' + (hit.aka.length - 5) + ' more)' : '';
+            html += '<div class="pep-aka">Also Known As: ' + akaList + extra + '</div>';
+        }
         
-        // Date of Birth
+        // Two-column layout for details
+        html += '<div class="pep-details-grid">';
+        
+        // Left column
+        html += '<div class="pep-detail-item">';
         if (hit.dob) {
-            html += '<div class="hit-info-row"><span class="hit-info-label">Date of Birth:</span> <span class="hit-info-value">' + hit.dob + '</span></div>';
+            html += '<span class="pep-label">Date of Birth:</span> <span class="pep-value">' + hit.dob + '</span>';
+        } else {
+            html += '<span class="pep-label">Date of Birth:</span> <span class="pep-value">—</span>';
         }
+        html += '</div>';
         
-        // Match Score
+        // Right column
+        html += '<div class="pep-detail-item">';
         if (hit.score) {
-            html += '<div class="hit-info-row"><span class="hit-info-label">Match Score:</span> <span class="hit-info-value">' + hit.score + '</span></div>';
+            html += '<span class="pep-label">Match Score:</span> <span class="pep-value">' + hit.score + '</span>';
+        } else {
+            html += '<span class="pep-label">Match Score:</span> <span class="pep-value">—</span>';
         }
+        html += '</div>';
         
-        // Political Positions - show first 3 + count
+        // Left column
+        html += '<div class="pep-detail-item">';
         if (hit.politicalPositions && hit.politicalPositions.length > 0) {
-            const positions = hit.politicalPositions.slice(0, 3).join(', ');
-            const extra = hit.politicalPositions.length > 3 ? ' (+' + (hit.politicalPositions.length - 3) + ' more)' : '';
-            html += '<div class="hit-info-row"><span class="hit-info-label">Position' + (hit.politicalPositions.length > 1 ? 's' : '') + ':</span> <span class="hit-info-value">' + positions + extra + '</span></div>';
+            const pos = hit.politicalPositions[0];
+            const extra = hit.politicalPositions.length > 1 ? ' (+' + (hit.politicalPositions.length - 1) + ' more)' : '';
+            html += '<span class="pep-label">Position:</span> <span class="pep-value">' + pos + extra + '</span>';
+        } else {
+            html += '<span class="pep-label">Position:</span> <span class="pep-value">—</span>';
         }
+        html += '</div>';
         
-        // Countries with flags - show first 3 + count
+        // Right column
+        html += '<div class="pep-detail-item">';
+        if (hit.fields && hit.fields.length > 0) {
+            html += '<span class="pep-label">Data Sources:</span> <span class="pep-value">' + hit.fields.length + '</span>';
+        } else {
+            html += '<span class="pep-label">Data Sources:</span> <span class="pep-value">—</span>';
+        }
+        html += '</div>';
+        
+        // Left column
+        html += '<div class="pep-detail-item">';
+        if (hit.associates && hit.associates.length > 0) {
+            html += '<span class="pep-label">Associates:</span> <span class="pep-value">' + hit.associates.length + '</span>';
+        } else {
+            html += '<span class="pep-label">Associates:</span> <span class="pep-value">—</span>';
+        }
+        html += '</div>';
+        
+        // Right column
+        html += '<div class="pep-detail-item">';
+        if (hit.media && hit.media.length > 0) {
+            html += '<span class="pep-label">Media Articles:</span> <span class="pep-value">' + hit.media.length + '</span>';
+        } else {
+            html += '<span class="pep-label">Media Articles:</span> <span class="pep-value">—</span>';
+        }
+        html += '</div>';
+        
+        html += '</div>'; // Close grid
+        
+        // Countries (full width)
         if (hit.countries && hit.countries.length > 0) {
-            html += '<div class="hit-info-row"><span class="hit-info-label">Countries:</span> <div class="hit-countries">';
-            hit.countries.slice(0, 3).forEach(country => {
+            html += '<div class="pep-countries">Countries: ';
+            hit.countries.slice(0, 5).forEach(country => {
                 const flagEmoji = this.getCountryFlag(country);
                 html += '<span class="country-tag">' + flagEmoji + ' ' + country + '</span>';
             });
-            if (hit.countries.length > 3) {
-                html += '<span class="country-tag">+' + (hit.countries.length - 3) + ' more</span>';
+            if (hit.countries.length > 5) {
+                html += '<span class="country-tag">+' + (hit.countries.length - 5) + ' more</span>';
             }
-            html += '</div></div>';
+            html += '</div>';
         }
         
-        html += '</div></div>'; // Close hit-main-column and screening-hit-body
-        html += '</div>'; // Close screening-hit-card
+        html += '</div>'; // Close pep-hit-content
+        html += '</div>'; // Close pep-hit-card
         
         return html;
     }
