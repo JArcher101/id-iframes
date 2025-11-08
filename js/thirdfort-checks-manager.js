@@ -5808,20 +5808,6 @@ class ThirdfortChecksManager {
                     text: data.verified ? 'Identity verified' : 'Identity verification requires review'
                 });
             }
-            
-            // Check if Proof of Address documents exist when identity has issues
-            if (outcome.result === 'consider' || outcome.result === 'fail') {
-                const poaTask = check?.taskOutcomes?.['documents:poa'];
-                const poaDocs = poaTask?.documents || poaTask?.breakdown?.documents || [];
-                
-                if (poaDocs.length > 0) {
-                    checks.push({
-                        status: 'CN',
-                        text: `⚠ Review ${poaDocs.length} uploaded Proof of Address document${poaDocs.length > 1 ? 's' : ''} for additional verification`,
-                        isSectionHeader: true
-                    });
-                }
-            }
         }
         else if (taskType === 'address') {
             // Address verification - includes footprint data from electronic-id checks or lite screen data
@@ -5853,20 +5839,47 @@ class ThirdfortChecksManager {
                 inlineWarning = 'No address verification data available';
             }
             
-            // Add inline warning to outcome for display in minimized card
+            // Check if Proof of Address documents exist when address fails/consider
+            const poaTask = check?.taskOutcomes?.['documents:poa'];
+            const poaDocs = poaTask?.documents || poaTask?.breakdown?.documents || [];
+            
+            // Build inline warning for collapsed header
             if (inlineWarning) {
                 outcome.inlineWarning = inlineWarning;
+                
+                // Append PoA review prompt if applicable
+                if (poaDocs.length > 0 && (outcome.result === 'consider' || outcome.result === 'fail')) {
+                    outcome.inlineWarning += ` - Review ${poaDocs.length} uploaded Proof of Address document${poaDocs.length > 1 ? 's' : ''} to verify address`;
+                }
+            }
+            
+            // Show main warning in expanded details
+            if (inlineWarning) {
+                checks.push({
+                    status: overallStatus === 'AL' ? 'AL' : 'CO',
+                    text: inlineWarning
+                });
+            }
+            
+            // Show PoA review prompt in expanded details
+            if (poaDocs.length > 0 && (outcome.result === 'consider' || outcome.result === 'fail')) {
+                checks.push({
+                    status: 'CO',
+                    text: `Review ${poaDocs.length} uploaded Proof of Address document${poaDocs.length > 1 ? 's' : ''} to verify address`
+                });
             }
             
             // Address verification summary
             checks.push({
                 status: qualityStatus,
-                text: `Verification Quality: ${quality}%`
+                text: `Verification Quality: ${quality}%`,
+                indented: true
             });
             
             checks.push({
                 status: sourcesStatus,
-                text: `Address Sources: ${sources}`
+                text: `Address Sources: ${sources}`,
+                indented: true
             });
             
             // Add footprint details if available (from electronic-id checks)
@@ -5892,20 +5905,6 @@ class ThirdfortChecksManager {
                     text: `Data Quality Score: ${score}`,
                     indented: true
                 });
-            }
-            
-            // Check if Proof of Address documents exist when address fails/consider
-            if (outcome.result === 'consider' || outcome.result === 'fail') {
-                const poaTask = check?.taskOutcomes?.['documents:poa'];
-                const poaDocs = poaTask?.documents || poaTask?.breakdown?.documents || [];
-                
-                if (poaDocs.length > 0) {
-                    checks.push({
-                        status: 'CN',
-                        text: `⚠ Review ${poaDocs.length} uploaded Proof of Address document${poaDocs.length > 1 ? 's' : ''} to verify address`,
-                        isSectionHeader: true
-                    });
-                }
             }
         }
         else if (taskType === 'screening') {
