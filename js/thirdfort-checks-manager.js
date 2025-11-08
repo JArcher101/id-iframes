@@ -17991,7 +17991,6 @@ class ThirdfortChecksManager {
             // Create a dismissal card
             queueHTML += '<div class="dismissal-queue-card">';
             queueHTML += '<div class="dismissal-header">';
-            queueHTML += '<span class="hit-type-badge ' + dismissal.reportType + '">' + dismissal.reportType.toUpperCase() + '</span>';
             queueHTML += '<span>Dismissing ' + dismissal.hitIds.length + ' hit' + (dismissal.hitIds.length > 1 ? 's' : '') + '</span>';
             queueHTML += '<button class="remove-update-btn" onclick="manager.removeDismissalFromQueue(' + dismissal.id + ')" title="Remove from queue">';
             queueHTML += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">';
