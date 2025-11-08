@@ -17965,8 +17965,8 @@ class ThirdfortChecksManager {
         selectedHits.forEach(cb => cb.checked = false);
         document.getElementById('pepDismissalReason').value = '';
         
-        // Re-render to remove dismissed hits from list
-        this.closePepOverlay();
+        // Re-render to remove dismissed hits from list (don't clear queue)
+        this.closePepOverlay(false);
         this.renderPepDismissalOverlay(this.currentCheck);
         
         // Enable save button
@@ -18017,8 +18017,8 @@ class ThirdfortChecksManager {
     removeDismissalFromQueue(dismissalId) {
         this.pendingDismissals = this.pendingDismissals.filter(d => d.id !== dismissalId);
         
-        // Re-render overlay to show hits again
-        this.closePepOverlay();
+        // Re-render overlay to show hits again (don't clear queue)
+        this.closePepOverlay(false);
         this.renderPepDismissalOverlay(this.currentCheck);
         
         // Disable save button if queue is empty
@@ -18063,11 +18063,13 @@ class ThirdfortChecksManager {
         this.closePepOverlay();
     }
     
-    closePepOverlay() {
+    closePepOverlay(clearQueue = true) {
         const overlay = document.getElementById('pepOverlay');
         if (overlay) overlay.remove();
-        // Clear pending dismissals when closing
-        this.pendingDismissals = [];
+        // Clear pending dismissals when closing (unless we're just re-rendering)
+        if (clearQueue) {
+            this.pendingDismissals = [];
+        }
     }
     
     // ===================================================================
