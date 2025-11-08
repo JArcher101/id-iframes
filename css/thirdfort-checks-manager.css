@@ -3768,3 +3768,37 @@ body {
     margin: 0;
 }
 
+
+/* ===================================================================
+   TOP ACTION BUTTONS WITH TEXT
+   =================================================================== */
+
+.top-action-btn-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: white;
+    border: 1px solid rgb(0,60,113);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Transport', sans-serif;
+    font-size: 13px;
+    color: rgb(0,60,113);
+    font-weight: 500;
+}
+
+.top-action-btn-text:hover {
+    background: rgb(0,60,113);
+    color: white;
+}
+
+.top-action-btn-text:hover svg {
+    stroke: white;
+}
+
+.top-action-btn-text span {
+    white-space: nowrap;
+}
+

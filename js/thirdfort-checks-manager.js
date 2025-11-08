@@ -479,7 +479,52 @@ class ThirdfortChecksManager {
         
         let buttons = '';
         
-        // View Report button (if PDF available)
+        // Button order: [Add Notes] [Dismiss PEPs] [SoF Investigation] [PDF icon] [Expand icon]
+        
+        // 1. Consider overlay button (Add Notes) - Text + Icon
+        if (check.status === 'closed' && this.hasConsiderFailItems(check)) {
+            buttons += `
+                <button class="top-action-btn-text" onclick="manager.renderConsiderOverlay(manager.currentCheck)" 
+                    title="Annotate Consider/Fail Items">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgb(0,60,113)" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    <span>Add Notes</span>
+                </button>
+            `;
+        }
+        
+        // 2. PEP dismissal overlay button (Dismiss PEPs) - Text + Icon
+        if (check.status === 'closed' && this.hasPepSanctionsHits(check)) {
+            buttons += `
+                <button class="top-action-btn-text" onclick="manager.renderPepDismissalOverlay(manager.currentCheck)" 
+                    title="Whitelist PEP/Sanctions Hits">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgb(0,60,113)" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    <span>Dismiss PEPs</span>
+                </button>
+            `;
+        }
+        
+        // 3. SoF overlay button - Text + Icon
+        if (check.status === 'closed' && this.hasSofBankTasks(check)) {
+            buttons += `
+                <button class="top-action-btn-text" onclick="manager.renderSofOverlay(manager.currentCheck)" 
+                    title="Source of Funds Investigation Notes">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgb(0,60,113)" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                    <span>SoF Investigation</span>
+                </button>
+            `;
+        }
+        
+        // 4. View Report button - Icon only
         if (check.pdfReady && check.pdfS3Key) {
             buttons += `
                 <button class="top-action-btn" onclick="manager.viewPDF('${check.pdfS3Key}')" title="View PDF Report">
@@ -490,50 +535,7 @@ class ThirdfortChecksManager {
             `;
         }
         
-        // Annotation overlays for closed checks
-        if (check.status === 'closed') {
-            // Consider overlay button
-            if (this.hasConsiderFailItems(check)) {
-                buttons += `
-                    <button class="top-action-btn annotation-btn" onclick="manager.renderConsiderOverlay(manager.currentCheck)" 
-                        title="Annotate Consider/Fail Items">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f7931e" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                    </button>
-                `;
-            }
-            
-            // SoF overlay button
-            if (this.hasSofBankTasks(check)) {
-                buttons += `
-                    <button class="top-action-btn annotation-btn" onclick="manager.renderSofOverlay(manager.currentCheck)" 
-                        title="SoF Investigation Notes">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d71b8" stroke-width="2">
-                            <line x1="12" y1="1" x2="12" y2="23"/>
-                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                        </svg>
-                    </button>
-                `;
-            }
-            
-            // PEP dismissal overlay button
-            if (this.hasPepSanctionsHits(check)) {
-                buttons += `
-                    <button class="top-action-btn annotation-btn" onclick="manager.renderPepDismissalOverlay(manager.currentCheck)" 
-                        title="Dismiss PEP/Sanctions Hits">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="15" y1="9" x2="9" y2="15"/>
-                            <line x1="9" y1="9" x2="15" y2="15"/>
-                        </svg>
-                    </button>
-                `;
-            }
-        }
-        
-        // Expand button - open transaction in Thirdfort Portal
+        // 5. Expand button - Icon only
         if (check.transactionId) {
             buttons += `
                 <button class="top-action-btn" onclick="manager.openThirdfortTransaction('${check.checkType}', '${check.transactionId}')" title="View in Thirdfort Portal">
