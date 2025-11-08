@@ -5808,6 +5808,20 @@ class ThirdfortChecksManager {
                     text: data.verified ? 'Identity verified' : 'Identity verification requires review'
                 });
             }
+            
+            // Check if Proof of Address documents exist when identity has issues
+            if (outcome.result === 'consider' || outcome.result === 'fail') {
+                const poaTask = check?.taskOutcomes?.['documents:poa'];
+                const poaDocs = poaTask?.documents || poaTask?.breakdown?.documents || [];
+                
+                if (poaDocs.length > 0) {
+                    checks.push({
+                        status: 'CN',
+                        text: `⚠ Review ${poaDocs.length} uploaded Proof of Address document${poaDocs.length > 1 ? 's' : ''} for additional verification`,
+                        isSectionHeader: true
+                    });
+                }
+            }
         }
         else if (taskType === 'address') {
             // Address verification - includes footprint data from electronic-id checks or lite screen data
@@ -5878,6 +5892,20 @@ class ThirdfortChecksManager {
                     text: `Data Quality Score: ${score}`,
                     indented: true
                 });
+            }
+            
+            // Check if Proof of Address documents exist when address fails/consider
+            if (outcome.result === 'consider' || outcome.result === 'fail') {
+                const poaTask = check?.taskOutcomes?.['documents:poa'];
+                const poaDocs = poaTask?.documents || poaTask?.breakdown?.documents || [];
+                
+                if (poaDocs.length > 0) {
+                    checks.push({
+                        status: 'CN',
+                        text: `⚠ Review ${poaDocs.length} uploaded Proof of Address document${poaDocs.length > 1 ? 's' : ''} to verify address`,
+                        isSectionHeader: true
+                    });
+                }
             }
         }
         else if (taskType === 'screening') {
@@ -17048,14 +17076,30 @@ class ThirdfortChecksManager {
         // Address/footprint specific
         if (taskType === 'address' || taskType === 'footprint') {
             const rules = outcome.breakdown?.rules || [];
+            let reasonText = '';
+            
             if (rules.length > 0 && rules[0].text) {
-                return rules[0].text;
+                reasonText = rules[0].text;
+            } else {
+                reasonText = 'Address verification issues';
             }
-            return 'Address verification issues';
+            
+            // Check if Proof of Address documents exist
+            const poaDocs = outcome.breakdown?.documents || [];
+            if (poaDocs.length > 0 && (outcome.result === 'consider' || outcome.result === 'fail')) {
+                reasonText += ` - Review ${poaDocs.length} uploaded Proof of Address document${poaDocs.length > 1 ? 's' : ''}`;
+            }
+            
+            return reasonText;
         }
         
         // Identity/NFC specific - check for name mismatch details
         if (taskType === 'identity' || taskType === 'nfc') {
+            // Check if Enhanced was requested but NFC unobtainable
+            if (taskType === 'identity' && outcome.status === 'unobtainable') {
+                return 'Enhanced ID requested but Original completed as NFC unobtainable';
+            }
+            
             // Check NFC data comparison for name mismatch
             const nfcComparison = outcome.breakdown?.nfc?.breakdown?.data_comparison?.breakdown?.name || 
                                  outcome.breakdown?.data_comparison?.breakdown?.name ||
@@ -17085,6 +17129,13 @@ class ThirdfortChecksManager {
             // Check for general NFC consider
             if (outcome.breakdown?.nfc?.result === 'consider') {
                 return 'NFC verification requires review';
+            }
+        }
+        
+        // NFC/Biometrics unobtainable
+        if (taskType === 'nfc' || taskType === 'biometrics') {
+            if (outcome.status === 'unobtainable') {
+                return 'Enhanced ID requested but Original completed as NFC unobtainable';
             }
         }
         
