@@ -17054,6 +17054,40 @@ class ThirdfortChecksManager {
             return 'Address verification issues';
         }
         
+        // Identity/NFC specific - check for name mismatch details
+        if (taskType === 'identity' || taskType === 'nfc') {
+            // Check NFC data comparison for name mismatch
+            const nfcComparison = outcome.breakdown?.nfc?.breakdown?.data_comparison?.breakdown?.name || 
+                                 outcome.breakdown?.data_comparison?.breakdown?.name ||
+                                 outcome.data?.comparison;
+            
+            if (nfcComparison && nfcComparison.result === 'consider') {
+                const matchPct = nfcComparison.properties?.levenshtein_pct;
+                const nfcName = outcome.data?.nfc?.name;
+                
+                // Get client-entered name
+                const clientName = outcome.data?.name;
+                let clientNameStr = '';
+                if (clientName) {
+                    const parts = [clientName.first, clientName.other, clientName.last].filter(p => p);
+                    clientNameStr = parts.join(' ');
+                }
+                
+                if (nfcName && clientNameStr && matchPct) {
+                    return `Name mismatch: NFC shows "${nfcName}" but client entered "${clientNameStr}" (${matchPct}% match)`;
+                } else if (nfcName && matchPct) {
+                    return `Name mismatch: NFC shows "${nfcName}" (${matchPct}% match)`;
+                } else if (matchPct) {
+                    return `Name mismatch detected (${matchPct}% match)`;
+                }
+            }
+            
+            // Check for general NFC consider
+            if (outcome.breakdown?.nfc?.result === 'consider') {
+                return 'NFC verification requires review';
+            }
+        }
+        
         // Default based on status
         if (outcome.result === 'fail') {
             return 'Failed verification';
