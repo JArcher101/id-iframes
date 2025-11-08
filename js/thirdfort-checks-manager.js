@@ -1459,13 +1459,26 @@ class ThirdfortChecksManager {
         // Wrap in task card format (with RED consider status icon)
         const redConsiderIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
         
+        // Build header checks with red flag icon
+        const headerChecksHtml = `
+            <div class="task-header-checks">
+                <div class="task-check-item">
+                    <svg class="task-check-icon" viewBox="0 0 300 300">
+                        <path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/>
+                        <path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/>
+                    </svg>
+                    <span class="task-check-text">${totalFlags} Red ${flagWord} identified</span>
+                </div>
+            </div>
+        `;
+        
         let flagsHtml = `
             <div class="task-card consider" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
                     <div class="task-title">Red Flags</div>
                     ${redConsiderIcon}
                 </div>
-                <div class="task-summary-inline">${totalFlags} Red ${flagWord} identified</div>
+                ${headerChecksHtml}
                 <div class="task-details">
                     ${flagsContent}
                 </div>
@@ -3272,9 +3285,8 @@ class ThirdfortChecksManager {
                     <div class="task-title">Bank Summary</div>
                     ${statusIcon}
                 </div>
-                ${inlineWarning ? `<div class="task-summary-inline">${inlineWarning}</div>` : ''}
+                ${headerChecksHtml}
                 <div class="task-details">
-                    ${checksHtml}
                     ${accountsHtml}
                     ${biggestTransactionsHtml}
                     ${analysisHtml}
