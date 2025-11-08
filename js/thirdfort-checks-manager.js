@@ -18023,7 +18023,7 @@ class ThirdfortChecksManager {
     }
     
     /**
-     * Create a PEP hit card for selection (like screening hit card)
+     * Create a PEP hit card for selection (matching screening hit card format)
      */
     createPepHitCard(hit) {
         let html = '<label class="pep-hit-card">';
@@ -18032,31 +18032,96 @@ class ThirdfortChecksManager {
         html += 'data-type="' + hit.type + '" ';
         html += 'data-report-id="' + hit.reportId + '">';
         
-        html += '<div class="hit-card-content">';
-        html += '<div class="hit-card-header">';
-        html += '<strong class="hit-name">' + hit.name + '</strong>';
-        html += '<span class="hit-type-badge ' + hit.type + '">' + hit.type.toUpperCase() + '</span>';
-        html += '</div>';
+        html += '<div class="screening-hit-card">';
+        html += '<div class="screening-hit-header">';
+        html += '<div class="screening-hit-name">' + hit.name + '</div>';
+        html += '<div class="screening-hit-badges">';
         
-        // Hit details
-        if (hit.dob) {
-            html += '<div class="hit-info-line">DOB: ' + hit.dob + '</div>';
-        }
-        if (hit.score) {
-            html += '<div class="hit-info-line">Match Score: ' + hit.score + '</div>';
-        }
-        if (hit.politicalPositions && hit.politicalPositions.length > 0) {
-            html += '<div class="hit-info-line">Positions: ' + hit.politicalPositions.slice(0, 2).join(', ') + '</div>';
-        }
-        if (hit.countries && hit.countries.length > 0) {
-            html += '<div class="hit-info-line">Countries: ' + hit.countries.slice(0, 3).join(', ') + '</div>';
-        }
+        // Organize badges by type
+        const pepBadges = [];
+        const sanctionBadges = [];
+        const adverseBadges = [];
+        
         if (hit.flagTypes && hit.flagTypes.length > 0) {
-            const flagTypeText = hit.flagTypes.slice(0, 3).map(f => f.replace('adverse-media-', '').replace(/-/g, ' ')).join(', ');
-            html += '<div class="hit-info-line hit-flags">' + flagTypeText + '</div>';
+            const uniqueFlags = [...new Set(hit.flagTypes)];
+            uniqueFlags.forEach(flag => {
+                let badgeText = flag.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                
+                if (flag.includes('pep')) {
+                    if (flag.includes('class-1')) badgeText = 'PEP Class 1';
+                    else if (flag.includes('class-2')) badgeText = 'PEP Class 2';
+                    else if (flag.includes('class-3')) badgeText = 'PEP Class 3';
+                    else if (flag.includes('class-4')) badgeText = 'PEP Class 4';
+                    else if (flag === 'pep') badgeText = 'PEP';
+                    pepBadges.push(badgeText);
+                } else if (flag.includes('sanction')) {
+                    sanctionBadges.push(badgeText);
+                } else if (flag.includes('adverse-media')) {
+                    adverseBadges.push(badgeText);
+                }
+            });
         }
         
-        html += '</div></label>';
+        // PEP badges row (purple)
+        if (pepBadges.length > 0) {
+            html += '<div class="hit-badge-row">';
+            pepBadges.forEach(badge => {
+                html += '<span class="hit-badge hit-badge-pep">' + badge + '</span>';
+            });
+            html += '</div>';
+        }
+        
+        // Sanctions badges row (red)
+        if (sanctionBadges.length > 0) {
+            html += '<div class="hit-badge-row">';
+            sanctionBadges.forEach(badge => {
+                html += '<span class="hit-badge hit-badge-sanction">' + badge + '</span>';
+            });
+            html += '</div>';
+        }
+        
+        // Adverse Media badges row (blue)
+        if (adverseBadges.length > 0) {
+            html += '<div class="hit-badge-row">';
+            adverseBadges.forEach(badge => {
+                html += '<span class="hit-badge hit-badge-adverse">' + badge + '</span>';
+            });
+            html += '</div>';
+        }
+        
+        html += '</div></div>'; // Close badges and header
+        
+        // Hit body with detailed information
+        html += '<div class="screening-hit-body"><div class="hit-main-column">';
+        
+        // Date of Birth
+        if (hit.dob) {
+            html += '<div class="hit-info-row"><span class="hit-info-label">Date of Birth:</span> <span class="hit-info-value">' + hit.dob + '</span></div>';
+        }
+        
+        // Match Score
+        if (hit.score) {
+            html += '<div class="hit-info-row"><span class="hit-info-label">Match Score:</span> <span class="hit-info-value">' + hit.score + '</span></div>';
+        }
+        
+        // Political Positions
+        if (hit.politicalPositions && hit.politicalPositions.length > 0) {
+            html += '<div class="hit-info-row"><span class="hit-info-label">Position' + (hit.politicalPositions.length > 1 ? 's' : '') + ':</span> <span class="hit-info-value">' + hit.politicalPositions.join(', ') + '</span></div>';
+        }
+        
+        // Countries with flags
+        if (hit.countries && hit.countries.length > 0) {
+            html += '<div class="hit-info-row"><span class="hit-info-label">Countries:</span> <div class="hit-countries">';
+            hit.countries.forEach(country => {
+                const flagEmoji = this.getCountryFlag(country);
+                html += '<span class="country-tag">' + flagEmoji + ' ' + country + '</span>';
+            });
+            html += '</div></div>';
+        }
+        
+        html += '</div></div>'; // Close hit-main-column and screening-hit-body
+        html += '</div>'; // Close screening-hit-card
+        html += '</label>';
         
         return html;
     }
