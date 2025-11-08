@@ -3171,6 +3171,7 @@ class ThirdfortChecksManager {
         
         // Get accounts count for header display
         let accounts = {};
+        let accountsHtml = '';
         if (hasStatement && bankStatement.breakdown && bankStatement.breakdown.accounts) {
             accounts = bankStatement.breakdown.accounts;
         } else if (hasSummary && bankSummary.breakdown && bankSummary.breakdown.accounts) {
@@ -3233,18 +3234,7 @@ class ThirdfortChecksManager {
         // Build detail checks (visible when expanded)
         let checksHtml = '';
         
-        // Add linked accounts section - check both summary and statement data
-        let accountsHtml = '';
-        let accounts = {};
-        
-        // Try to get accounts from bank:statement first (has transaction data)
-        if (hasStatement && bankStatement.breakdown && bankStatement.breakdown.accounts) {
-            accounts = bankStatement.breakdown.accounts;
-        }
-        // Also check bank:summary for accounts
-        else if (hasSummary && bankSummary.breakdown && bankSummary.breakdown.accounts) {
-            accounts = bankSummary.breakdown.accounts;
-        }
+        // Add linked accounts section (already retrieved accounts above for header)
         
         if (Object.keys(accounts).length > 0) {
             accountsHtml = '<div class="bank-accounts-container">';
