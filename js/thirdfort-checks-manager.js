@@ -17892,7 +17892,7 @@ class ThirdfortChecksManager {
         
         // Also exclude hits in pending dismissals
         this.pendingDismissals.forEach(dismissal => {
-            dismissal.hitIds.forEach(id => dismissedIds.add(id));
+            dismissal.hits.forEach(hit => dismissedIds.add(hit.id));
         });
         
         // Collect all undismissed hits with full details
@@ -18197,14 +18197,18 @@ class ThirdfortChecksManager {
             return;
         }
         
-        // Create dismissal object
+        // Store full hit objects (each has its own reportId)
+        const hits = selectedHits.map(cb => ({
+            id: cb.value,
+            name: cb.dataset.name,
+            type: cb.dataset.type,
+            reportId: cb.dataset.reportId // Each hit may have different reportId
+        }));
+        
+        // Create dismissal batch
         const dismissal = {
             id: Date.now(),
-            hitIds: selectedHits.map(cb => cb.value),
-            hitNames: selectedHits.map(cb => cb.dataset.name),
-            hitTypes: selectedHits.map(cb => cb.dataset.type),
-            reportId: selectedHits[0].dataset.reportId,
-            reportType: selectedHits[0].dataset.type,
+            hits: hits, // Store full hit objects
             reason
         };
         
@@ -18240,7 +18244,7 @@ class ThirdfortChecksManager {
             // Create a dismissal card
             queueHTML += '<div class="dismissal-queue-card">';
             queueHTML += '<div class="dismissal-header">';
-            queueHTML += '<span>Dismissing ' + dismissal.hitIds.length + ' hit' + (dismissal.hitIds.length > 1 ? 's' : '') + '</span>';
+            queueHTML += '<span>Dismissing ' + dismissal.hits.length + ' hit' + (dismissal.hits.length > 1 ? 's' : '') + '</span>';
             queueHTML += '<button class="remove-update-btn" onclick="manager.removeDismissalFromQueue(' + dismissal.id + ')" title="Remove from queue">';
             queueHTML += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">';
             queueHTML += '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>';
@@ -18249,8 +18253,8 @@ class ThirdfortChecksManager {
             queueHTML += '<div class="dismissal-body">';
             queueHTML += '<p class="dismissal-reason">' + dismissal.reason + '</p>';
             queueHTML += '<div class="dismissed-hits-list">';
-            dismissal.hitNames.forEach((name, idx) => {
-                queueHTML += '<span class="dismissed-hit-name">• ' + name + '</span>';
+            dismissal.hits.forEach(hit => {
+                queueHTML += '<span class="dismissed-hit-name">• ' + hit.name + '</span>';
             });
             queueHTML += '</div>';
             queueHTML += '</div></div>';
@@ -18287,22 +18291,64 @@ class ThirdfortChecksManager {
         
         const check = this.currentCheck;
         
-        // Process each dismissal batch
-        this.pendingDismissals.forEach(dismissal => {
-            // Build dismissals array for Thirdfort API
-            const dismissals = dismissal.hitIds.map(id => ({
-                id,
-                reason: dismissal.reason
-            }));
-            
-            // Send to parent
-            this.sendMessage('dismiss-pep-hits', {
-                checkId: check.checkId || check.transactionId,
-                transactionId: check.transactionId,
-                reportId: dismissal.reportId,
-                reportType: dismissal.reportType,
-                dismissals
+        // Group hits by reportId across all dismissal batches
+        // A single dismissal batch with same reason might have hits from different reports
+        const dismissalsByReport = {};
+        
+        this.pendingDismissals.forEach(dismissalBatch => {
+            dismissalBatch.hits.forEach(hit => {
+                const reportId = hit.reportId;
+                
+                // Create entry for this reportId if it doesn't exist
+                if (!dismissalsByReport[reportId]) {
+                    dismissalsByReport[reportId] = {
+                        reportId: reportId,
+                        reportType: hit.type, // 'peps', 'sanctions', etc.
+                        dismissals: []
+                    };
+                }
+                
+                // Find existing dismissal batch with same reason
+                let existingBatch = dismissalsByReport[reportId].dismissals.find(
+                    d => d.reason === dismissalBatch.reason
+                );
+                
+                if (!existingBatch) {
+                    existingBatch = {
+                        reason: dismissalBatch.reason,
+                        hits: []
+                    };
+                    dismissalsByReport[reportId].dismissals.push(existingBatch);
+                }
+                
+                // Add hit to this batch
+                existingBatch.hits.push({
+                    id: hit.id,
+                    name: hit.name,
+                    type: hit.type
+                });
             });
+        });
+        
+        // Flatten structure for backend - array of dismissal batches with reportId
+        const dismissals = [];
+        Object.values(dismissalsByReport).forEach(report => {
+            report.dismissals.forEach(batch => {
+                dismissals.push({
+                    reportId: report.reportId,
+                    reportType: report.reportType,
+                    hits: batch.hits,
+                    reason: batch.reason
+                });
+            });
+        });
+        
+        console.log('📤 Sending dismissals to backend:', dismissals);
+        
+        // Send single message to parent with all dismissals
+        this.sendMessage('dismiss-pep-hits', {
+            checkId: check.checkId || check.transactionId,
+            dismissals
         });
         
         // Clear pending dismissals
