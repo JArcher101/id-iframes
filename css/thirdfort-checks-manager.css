@@ -1316,6 +1316,11 @@ body {
     font-family: 'RotisBold', sans-serif;
 }
 
+.task-summary-inline-red {
+    color: #d32f2f !important;
+    font-family: 'RotisBold', sans-serif;
+}
+
 .identity-hint {
     font-family: 'RotisRegular', sans-serif;
     font-size: 13px;

@@ -1456,16 +1456,16 @@ class ThirdfortChecksManager {
             }
         });
         
-        // Wrap in task card format (with red status icon)
-        const redStatusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+        // Wrap in task card format (with orange consider status icon)
+        const considerStatusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
         
         let flagsHtml = `
             <div class="task-card consider" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
                     <div class="task-title">Red Flags</div>
-                    ${redStatusIcon}
+                    ${considerStatusIcon}
                 </div>
-                <div class="task-summary-inline">${totalFlags} Red ${flagWord} identified</div>
+                <div class="task-summary-inline task-summary-inline-red">${totalFlags} Red ${flagWord} identified</div>
                 <div class="task-details">
                     ${flagsContent}
                 </div>
@@ -3169,46 +3169,41 @@ class ThirdfortChecksManager {
             statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>`;
         }
         
-        // Build checks HTML
-        let checksHtml = '<div class="task-checks-grid">';
+        // Build header checks (visible when collapsed)
+        let headerChecksHtml = '<div class="task-header-checks">';
         
-        if (hasSummary) {
-            // Bank linking completed - show detailed analysis
-            const summaryData = bankSummary.data || {};
-            const breakdown = bankSummary.breakdown || {};
-            
-            checksHtml += `
+        if (linkingSkipped && isDocumentUpload) {
+            // Bank linking skipped but statements uploaded
+            headerChecksHtml += `
+                <div class="task-check-item">
+                    ${this.getTaskCheckIcon('CO')}
+                    <span class="task-check-text">Bank linking skipped</span>
+                </div>
                 <div class="task-check-item">
                     ${this.getTaskCheckIcon('CL')}
+                    <span class="task-check-text">Statements uploaded and scanned</span>
+                </div>
+            `;
+        } else if (hasSummary) {
+            // Bank linking completed
+            const summaryStatus = bankSummary.result === 'clear' ? 'CL' : (bankSummary.result === 'fail' ? 'AL' : 'CO');
+            headerChecksHtml += `
+                <div class="task-check-item">
+                    ${this.getTaskCheckIcon(summaryStatus)}
                     <span class="task-check-text">Bank linking completed via Open Banking</span>
                 </div>
             `;
-            
-            // Show any red flags or analysis results
-            if (breakdown.red_flags && breakdown.red_flags.length > 0) {
-                breakdown.red_flags.forEach(flag => {
-                    checksHtml += `
-                        <div class="task-check-item indented">
-                            ${this.getTaskCheckIcon('CO')}
-                            <span class="task-check-text">${flag}</span>
-                        </div>
-                    `;
-                });
-            }
-        }
-        
-        if (hasStatement && !hasSummary) {
-            // PDF upload fallback
-            checksHtml += `
+        } else if (hasStatement && !hasSummary) {
+            // PDF upload only
+            headerChecksHtml += `
                 <div class="task-check-item">
                     ${this.getTaskCheckIcon('CO')}
-                    <span class="task-check-text">Client declined Bank linking but uploaded Statements for manual review</span>
+                    <span class="task-check-text">Bank linking declined - Statements uploaded for manual review</span>
                 </div>
             `;
-        }
-        
-        if (!hasSummary && !hasStatement) {
-            checksHtml += `
+        } else if (!hasSummary && !hasStatement) {
+            // Neither provided
+            headerChecksHtml += `
                 <div class="task-check-item">
                     ${this.getTaskCheckIcon('AL')}
                     <span class="task-check-text">Bank information not provided</span>
@@ -3216,7 +3211,10 @@ class ThirdfortChecksManager {
             `;
         }
         
-        checksHtml += '</div>';
+        headerChecksHtml += '</div>';
+        
+        // Build detail checks (visible when expanded)
+        let checksHtml = '';
         
         // Add linked accounts section - check both summary and statement data
         let accountsHtml = '';
@@ -4095,14 +4093,28 @@ class ThirdfortChecksManager {
         });
         fundingCardsHtml += '</div>';
         
+        // Build header checks (visible when collapsed)
+        const fundCount = funds.length;
+        const fundStatus = fundCount === 0 ? 'AL' : 'CL';
+        const fundText = fundCount === 0 ? 'Task skipped' : `${fundCount} funding method${fundCount !== 1 ? 's' : ''} identified`;
+        
+        const headerChecksHtml = `
+            <div class="task-header-checks">
+                <div class="task-check-item">
+                    ${this.getTaskCheckIcon(fundStatus)}
+                    <span class="task-check-text">${fundText}</span>
+                </div>
+            </div>
+        `;
+        
         return `
             <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
                     <div class="task-title">Source of Funds Questionnaire</div>
                     ${statusIcon}
                 </div>
+                ${headerChecksHtml}
                 <div class="task-details">
-                    <div class="task-summary">Questionnaire completed with ${funds.length} funding source${funds.length !== 1 ? 's' : ''}</div>
                     <div class="sof-top-section">
                         ${propertyDetailsHtml}
                         ${chartHtml}
@@ -4171,14 +4183,41 @@ class ThirdfortChecksManager {
         const taskTitle = this.getTaskTitle(taskType);
         const taskChecks = this.getTaskChecks(taskType, outcome, check);
         
-        // Document tasks (PoA, PoO) - Non-expandable, just status text
+        // Document tasks (PoA, PoO) - Non-expandable with header checks
         const isDocumentTask = taskType === 'documents:poa' || taskType === 'documents:poo' || taskType === 'documents:other';
         
         if (isDocumentTask) {
             // Get document count from documents array or breakdown.documents array
             const docCount = outcome.documents?.length || outcome.breakdown?.documents?.length || outcome.data?.document_count || 0;
-            const isSkipped = status === 'skipped' || (result === 'fail' && docCount === 0);
-            const summaryText = isSkipped ? 'Consumer skipped in app' : `${docCount} document${docCount !== 1 ? 's' : ''} uploaded`;
+            const isSkipped = status === 'skipped';
+            
+            // Determine status based on document count
+            // 0 docs = fail/alert, 1 doc = consider, 2+ docs = clear
+            let docStatus = 'AL';
+            let docText = '';
+            
+            if (isSkipped) {
+                docStatus = 'CO';
+                docText = 'Consumer skipped in app';
+            } else if (docCount === 0) {
+                docStatus = 'AL';
+                docText = 'No documents uploaded';
+            } else if (docCount === 1) {
+                docStatus = 'CO';
+                docText = '1 document uploaded';
+            } else {
+                docStatus = 'CL';
+                docText = `${docCount} documents uploaded`;
+            }
+            
+            const headerChecksHtml = `
+                <div class="task-header-checks">
+                    <div class="task-check-item">
+                        ${this.getTaskCheckIcon(docStatus)}
+                        <span class="task-check-text">${docText}</span>
+                    </div>
+                </div>
+            `;
             
             return `
                 <div class="task-card ${borderClass} non-expandable">
@@ -4186,7 +4225,7 @@ class ThirdfortChecksManager {
                         <div class="task-title">${taskTitle}</div>
                         ${statusIcon}
                     </div>
-                    <div class="task-summary-inline">${summaryText}</div>
+                    ${headerChecksHtml}
                 </div>
             `;
         }
@@ -4288,14 +4327,12 @@ class ThirdfortChecksManager {
             checksHtml += '</div>';
         }
         
-        // Show inline status for unobtainable or inline warnings (like address verification issues)
-        let inlineStatus = '';
+        // Add header check for unobtainable status
         if (outcome.status === 'unobtainable') {
-            inlineStatus = '<div class="task-summary-inline">Unobtainable - Some information may still be available</div>';
-        } else if (outcome.inlineWarning) {
-            // For address verification and other tasks with specific warnings
-            const warningClass = result === 'fail' ? 'task-summary-inline-fail' : 'task-summary-inline-consider';
-            inlineStatus = `<div class="task-summary-inline ${warningClass}">${outcome.inlineWarning}</div>`;
+            taskChecks.unshift({
+                status: 'CO',
+                text: 'Unobtainable - Some information may still be available'
+            });
         }
         
         // Add annotations display
@@ -4307,7 +4344,6 @@ class ThirdfortChecksManager {
                     <div class="task-title">${taskTitle}</div>
                     ${statusIcon}
                 </div>
-                ${inlineStatus}
                 ${headerChecksHtml}
                 ${outcome.status === 'closed' || outcome.status === 'unobtainable' ? `
                 <div class="task-details">
@@ -5452,21 +5488,44 @@ class ThirdfortChecksManager {
             // Identity verification (overall check) with detailed breakdown
             const breakdown = outcome.breakdown || {};
             
-            // Add inline status for warnings
+            // Add header checks for NFC and Biometrics status
             const nfcTask = breakdown.nfc;
+            const biometricsTask = breakdown.biometrics;
+            
             if (nfcTask?.status === 'unobtainable') {
                 // Check if Enhanced ID was requested
                 const requestTasks = check.thirdfortResponse?.request?.tasks || [];
                 const identityRequest = requestTasks.find(t => t.type === 'report:identity');
                 const nfcPreferred = identityRequest?.opts?.nfc === 'preferred';
                 
-                if (nfcPreferred) {
-                    outcome.inlineWarning = 'NFC Scan unobtainable - Original ID completed';
-                } else {
-                    outcome.inlineWarning = 'NFC Scan unobtainable';
+                // Show NFC unobtainable status
+                checks.push({
+                    status: 'CO',
+                    text: 'NFC Scan unobtainable'
+                });
+                
+                // If Biometrics also unobtainable, show it
+                if (biometricsTask?.status === 'unobtainable') {
+                    checks.push({
+                        status: 'CO',
+                        text: 'Biometric Scan unobtainable'
+                    });
+                }
+                
+                // Show Original ID completion status (if Enhanced was requested)
+                if (nfcPreferred && breakdown.document) {
+                    const docResult = breakdown.document.result || 'clear';
+                    const docStatus = docResult === 'clear' ? 'CL' : (docResult === 'fail' ? 'AL' : 'CO');
+                    checks.push({
+                        status: docStatus,
+                        text: 'Original ID completed'
+                    });
                 }
             } else if (nfcTask?.result === 'consider') {
-                outcome.inlineWarning = 'NFC verification requires review';
+                checks.push({
+                    status: 'CO',
+                    text: 'NFC verification requires review'
+                });
             }
             
             // 1. Document Verification (nested collapsible card)
