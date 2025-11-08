@@ -18006,8 +18006,10 @@ class ThirdfortChecksManager {
         
         // Red Flags Section (if applicable)
         if (relatedFlags.length > 0) {
+            const redCircleIcon = `<svg class="inline-icon" viewBox="0 0 24 24" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="12" r="10" fill="#d32f2f"/><line x1="7" y1="12" x2="17" y2="12" stroke="white" stroke-width="2"/></svg>`;
+            
             html += '<div class="red-flags-subsection">';
-            html += '<div class="red-flag-header">🚩 Red Flags</div>';
+            html += `<div class="red-flag-header">${redCircleIcon}Red Flags</div>`;
             
             relatedFlags.forEach((flag, flagIdx) => {
                 html += '<div class="red-flag-item">';
@@ -18016,14 +18018,14 @@ class ThirdfortChecksManager {
                     html += `<div class="red-flag-details">${flag.details}</div>`;
                 }
                 
-                // Red flag status selector
+                // Red flag status selector with icons
                 html += '<div class="red-flag-status">';
                 html += '<label><strong>Status:</strong></label>';
                 html += `<select class="red-flag-status-select" data-fund-idx="${fundIdx}" data-flag-idx="${flagIdx}">`;
                 html += '<option value="">-- Select Action --</option>';
-                html += '<option value="confirmed">⚠️ Confirmed - Requires attention</option>';
-                html += '<option value="dismissed">✓ Dismissed - Not applicable</option>';
-                html += '<option value="review">? Under review</option>';
+                html += '<option value="confirmed">✗ Confirmed - Requires attention</option>';
+                html += '<option value="dismissed">✓ Clear - Not applicable</option>';
+                html += '<option value="review">— Consider - Under review</option>';
                 html += '</select>';
                 html += '</div>';
                 
@@ -18158,9 +18160,18 @@ class ThirdfortChecksManager {
                 html += `<span class="matched-tx-amount">${txAmount}${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>`;
                 html += '</div>';
                 html += '<div class="tx-marker-actions">';
-                html += `<button type="button" class="tx-marker-btn verified" data-tx-id="${txId}" data-marker="verified" title="Mark as verified" onclick="this.classList.toggle('active')">✓</button>`;
-                html += `<button type="button" class="tx-marker-btn rejected" data-tx-id="${txId}" data-marker="rejected" title="Mark as unrelated" onclick="this.classList.toggle('active')">✗</button>`;
-                html += `<button type="button" class="tx-marker-btn review" data-tx-id="${txId}" data-marker="review" title="Needs review" onclick="this.classList.toggle('active')">?</button>`;
+                // Verified icon (green tick)
+                html += `<button type="button" class="tx-marker-btn verified" data-tx-id="${txId}" data-marker="verified" title="Linked - Verified" onclick="this.classList.toggle('active')">`;
+                html += '<svg viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#29aa54" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m82.463 145.485 11.839-14.701c6.248-7.759 17.586-8.958 25.345-2.71l13.74 11.063c3.866 3.114 9.402 2.913 13.041-.471l77.851-72.369c7.935-7.378 20.297-6.956 27.675.979l11.502 12.371c7.378 7.935 6.956 20.297-.979 27.675l-102.381 95.214c-7.573 7.042-19.254 7.178-26.992.314l-49.356-43.798c-7.759-6.885-8.476-18.813-1.591-26.572z"/></svg>';
+                html += '</button>';
+                // Rejected icon (red cross)
+                html += `<button type="button" class="tx-marker-btn rejected" data-tx-id="${txId}" data-marker="rejected" title="Not linked - Unrelated" onclick="this.classList.toggle('active')">`;
+                html += '<svg viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m87.53 81.36 19.09-19.09c3.91-3.91 10.24-3.91 14.14 0l29.23 29.23 29.23-29.23c3.91-3.91 10.24-3.91 14.14 0l19.09 19.09c3.91 3.91 3.91 10.24 0 14.14l-29.23 29.23 29.23 29.23c3.91 3.91 3.91 10.24 0 14.14l-19.09 19.09c-3.91 3.91-10.24 3.91-14.14 0l-29.23-29.23-29.23 29.23c-3.91 3.91-10.24 3.91-14.14 0l-19.09-19.09c-3.91-3.91-3.91-10.24 0-14.14l29.23-29.23-29.23-29.23c-3.91-3.91-3.91-10.24 0-14.14zm-6.17 106.91 19.09 19.09c3.91 3.91 10.24 3.91 14.14 0l29.23-29.23 29.23 29.23c3.91 3.91 10.24 3.91 14.14 0l19.09-19.09c3.91-3.91 3.91-10.24 0-14.14l-29.23-29.23 29.23-29.23c3.91-3.91 3.91-10.24 0-14.14l-19.09-19.09c-3.91-3.91-10.24-3.91-14.14 0l-29.23 29.23-29.23-29.23c-3.91-3.91-10.24-3.91-14.14 0l-19.09 19.09c-3.91 3.91-3.91 10.24 0 14.14l29.23 29.23-29.23 29.23c-3.91 3.91-3.91 10.24 0 14.14z"/></svg>';
+                html += '</button>';
+                // Review icon (orange dash)
+                html += `<button type="button" class="tx-marker-btn review" data-tx-id="${txId}" data-marker="review" title="Needs review" onclick="this.classList.toggle('active')">`;
+                html += '<svg viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+                html += '</button>';
                 html += '</div>';
                 html += '</div>';
             }

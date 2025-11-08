@@ -4525,48 +4525,78 @@ body {
     background: white;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
     transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+}
+
+.tx-marker-btn:hover {
+    transform: scale(1.05);
+}
+
+.tx-marker-btn svg {
+    width: 16px;
+    height: 16px;
+    transition: all 0.2s;
 }
 
 .tx-marker-btn.verified {
-    color: #388e3c;
     border-color: #c8e6c9;
 }
 
+.tx-marker-btn.verified:hover {
+    border-color: #388e3c;
+}
+
 .tx-marker-btn.verified.active {
-    background: #388e3c;
-    color: white;
+    background: #e8f5e9;
     border-color: #388e3c;
     box-shadow: 0 2px 8px rgba(56, 142, 60, 0.3);
 }
 
+.tx-marker-btn.verified.active svg {
+    width: 18px;
+    height: 18px;
+}
+
 .tx-marker-btn.rejected {
-    color: #d32f2f;
     border-color: #ffcdd2;
 }
 
+.tx-marker-btn.rejected:hover {
+    border-color: #d32f2f;
+}
+
 .tx-marker-btn.rejected.active {
-    background: #d32f2f;
-    color: white;
+    background: #ffebee;
     border-color: #d32f2f;
     box-shadow: 0 2px 8px rgba(211, 47, 47, 0.3);
 }
 
+.tx-marker-btn.rejected.active svg {
+    width: 18px;
+    height: 18px;
+}
+
 .tx-marker-btn.review {
-    color: #f7931e;
     border-color: #ffe0b2;
 }
 
+.tx-marker-btn.review:hover {
+    border-color: #f7931e;
+}
+
 .tx-marker-btn.review.active {
-    background: #f7931e;
-    color: white;
+    background: #fff7ed;
     border-color: #f7931e;
     box-shadow: 0 2px 8px rgba(247, 147, 30, 0.3);
+}
+
+.tx-marker-btn.review.active svg {
+    width: 18px;
+    height: 18px;
 }
 
 /* Previous annotations display */
