@@ -17886,8 +17886,8 @@ class ThirdfortChecksManager {
         const data = fund.data || {};
         const amount = data.amount ? `£${(data.amount / 100).toLocaleString()}` : 'Not specified';
         
-        // Get matched transactions
-        const matchedTxIds = this.getMatchedTransactions(type, sofMatches);
+        // Get matched transactions (pass fund object for savings priority logic)
+        const matchedTxIds = this.getMatchedTransactions(type, sofMatches, fund);
         
         // Map funding type to display name
         const cleanType = type.replace('fund:', '').replace(/:/g, '-');
@@ -18125,7 +18125,7 @@ class ThirdfortChecksManager {
         return html;
     }
     
-    getMatchedTransactions(fundType, sofMatches) {
+    getMatchedTransactions(fundType, sofMatches, fund = null) {
         const fundTypeMap = {
             'fund:gift': ['gift', 'gift_transactions'],
             'fund:mortgage': ['mortgage', 'mortgage_transactions'],
@@ -18140,7 +18140,16 @@ class ThirdfortChecksManager {
             'fund:income': ['salary_transactions', 'income_transactions']
         };
         
-        const matchKeys = fundTypeMap[fundType] || [];
+        let matchKeys = fundTypeMap[fundType] || [];
+        
+        // For savings with people/incomes data, prioritize salary_transactions
+        if (fundType === 'fund:savings' && fund) {
+            const data = fund.data || {};
+            if (data.people && data.people.some(p => p.incomes && p.incomes.length > 0)) {
+                matchKeys = ['salary_transactions', ...matchKeys];
+            }
+        }
+        
         let matchedTxIds = [];
         
         for (const key of matchKeys) {
