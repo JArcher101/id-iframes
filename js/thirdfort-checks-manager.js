@@ -17143,18 +17143,30 @@ class ThirdfortChecksManager {
     }
     
     /**
-     * Format objective path for display
+     * Format objective path for display (simplified, no parent task prefix)
      */
     formatObjectivePath(path) {
-        return path
-            .split('.')
+        const parts = path.split('.');
+        
+        // Remove first part (task type) and 'breakdown' parts
+        const filteredParts = parts
+            .slice(1)  // Remove task type prefix (identity, address, etc.)
+            .filter(part => part !== 'breakdown' && part !== 'data')  // Remove 'breakdown' and 'data' noise
             .map(part => {
                 // Convert snake_case to Title Case
                 return part
                     .replace(/_/g, ' ')
                     .replace(/\b\w/g, l => l.toUpperCase());
-            })
-            .join(' → ');
+            });
+        
+        // If we end up with nothing, use the last part of original
+        if (filteredParts.length === 0) {
+            return parts[parts.length - 1]
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase());
+        }
+        
+        return filteredParts.join(' ');
     }
     
     /**
