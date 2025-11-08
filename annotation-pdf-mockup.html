@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consider Annotations - PDF Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            background: #fff;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .pdf-header {
+            border-bottom: 3px solid #003c71;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .pdf-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #003c71;
+            margin-bottom: 10px;
+        }
+        
+        .check-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .check-info-item {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .check-info-label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .annotations-section {
+            margin-top: 30px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #003c71;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e5e5;
+        }
+        
+        .annotation-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+        
+        .annotation-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .task-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .task-icon.identity { background: #5e35b1; }
+        .task-icon.address { background: #1976d2; }
+        .task-icon.screening { background: #d32f2f; }
+        .task-icon.sof { background: #388e3c; }
+        
+        .annotation-task-info {
+            flex: 1;
+        }
+        
+        .annotation-task-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #003c71;
+        }
+        
+        .annotation-objective {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .status-change {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: white;
+            border-radius: 4px;
+        }
+        
+        .status-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .status-box.consider {
+            background: #fff3e0;
+            color: #f7931e;
+            border: 1px solid #f7931e;
+        }
+        
+        .status-box.fail {
+            background: #ffebee;
+            color: #d32f2f;
+            border: 1px solid #d32f2f;
+        }
+        
+        .status-box.clear {
+            background: #e8f5e9;
+            color: #388e3c;
+            border: 1px solid #388e3c;
+        }
+        
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+        }
+        
+        .status-arrow {
+            font-size: 20px;
+            color: #999;
+        }
+        
+        .reason-box {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #003c71;
+            margin-bottom: 12px;
+        }
+        
+        .reason-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        
+        .reason-text {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.5;
+        }
+        
+        .annotation-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #666;
+            padding-top: 10px;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .annotation-user {
+            font-weight: 600;
+        }
+        
+        .annotation-date {
+            font-style: italic;
+        }
+        
+        .pdf-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e5e5;
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+        }
+        
+        /* Status icons as inline SVG */
+        .icon-clear {
+            fill: #388e3c;
+        }
+        
+        .icon-consider {
+            fill: #f7931e;
+        }
+        
+        .icon-fail {
+            fill: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <!-- PDF Header -->
+    <div class="pdf-header">
+        <div class="pdf-title">Consider Annotations Report</div>
+        <div class="check-info">
+            <div class="check-info-item">
+                <span class="check-info-label">Check Type:</span>
+                <span>Enhanced ID Check</span>
+            </div>
+            <div class="check-info-item">
+                <span class="check-info-label">Consumer:</span>
+                <span>Se Idris Stewart</span>
+            </div>
+            <div class="check-info-item">
+                <span class="check-info-label">Check Reference:</span>
+                <span>Val'ID'ate: 50/52</span>
+            </div>
+            <div class="check-info-item">
+                <span class="check-info-label">Matter:</span>
+                <span>Purchase of 21 Green Lane</span>
+            </div>
+            <div class="check-info-item">
+                <span class="check-info-label">Generated:</span>
+                <span>08 Nov 2025, 14:30</span>
+            </div>
+            <div class="check-info-item">
+                <span class="check-info-label">Status:</span>
+                <span>Closed - Consider</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Annotations Section -->
+    <div class="annotations-section">
+        <div class="section-title">Annotations & Updates</div>
+        
+        <!-- Annotation 1 -->
+        <div class="annotation-card">
+            <div class="annotation-header">
+                <div class="task-icon identity">ID</div>
+                <div class="annotation-task-info">
+                    <div class="annotation-task-title">Identity Verification</div>
+                    <div class="annotation-objective">NFC Data Comparison → Name</div>
+                </div>
+            </div>
+            
+            <div class="status-change">
+                <div class="status-box consider">
+                    <svg class="status-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" class="icon-consider"/>
+                        <line x1="7" y1="12" x2="17" y2="12" stroke="white" stroke-width="2"/>
+                    </svg>
+                    <span>Consider</span>
+                </div>
+                <span class="status-arrow">→</span>
+                <div class="status-box clear">
+                    <svg class="status-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" class="icon-clear"/>
+                        <path d="M7 12l3 3 7-7" stroke="white" stroke-width="2" fill="none"/>
+                    </svg>
+                    <span>Clear</span>
+                </div>
+            </div>
+            
+            <div class="reason-box">
+                <div class="reason-label">Reason</div>
+                <div class="reason-text">Name mismatch: NFC shows 'Se Idris Qasim Stewart' but client entered 'Se Idris Stewart' (82% match). Confirmed middle name variation - same person verified via additional documentation.</div>
+            </div>
+            
+            <div class="annotation-footer">
+                <span class="annotation-user">Updated by: jacob.archer-moran</span>
+                <span class="annotation-date">08 Nov 2025, 14:25</span>
+            </div>
+        </div>
+
+        <!-- Annotation 2 -->
+        <div class="annotation-card">
+            <div class="annotation-header">
+                <div class="task-icon address">AD</div>
+                <div class="annotation-task-info">
+                    <div class="annotation-task-title">Address Verification</div>
+                    <div class="annotation-objective">Data Count</div>
+                </div>
+            </div>
+            
+            <div class="status-change">
+                <div class="status-box consider">
+                    <svg class="status-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" class="icon-consider"/>
+                        <line x1="7" y1="12" x2="17" y2="12" stroke="white" stroke-width="2"/>
+                    </svg>
+                    <span>Consider</span>
+                </div>
+                <span class="status-arrow">→</span>
+                <div class="status-box clear">
+                    <svg class="status-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" class="icon-clear"/>
+                        <path d="M7 12l3 3 7-7" stroke="white" stroke-width="2" fill="none"/>
+                    </svg>
+                    <span>Clear</span>
+                </div>
+            </div>
+            
+            <div class="reason-box">
+                <div class="reason-label">Reason</div>
+                <div class="reason-text">Reviewed 2 uploaded Proof of Address documents - Council Tax bill and Bank Statement both confirm current residence at stated address. Data count low due to recent move but verified via documents.</div>
+            </div>
+            
+            <div class="annotation-footer">
+                <span class="annotation-user">Updated by: jacob.archer-moran</span>
+                <span class="annotation-date">08 Nov 2025, 14:26</span>
+            </div>
+        </div>
+
+        <!-- Annotation 3 -->
+        <div class="annotation-card">
+            <div class="annotation-header">
+                <div class="task-icon address">AD</div>
+                <div class="annotation-task-info">
+                    <div class="annotation-task-title">Address Verification</div>
+                    <div class="annotation-objective">Data Quality</div>
+                </div>
+            </div>
+            
+            <div class="status-change">
+                <div class="status-box consider">
+                    <svg class="status-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" class="icon-consider"/>
+                        <line x1="7" y1="12" x2="17" y2="12" stroke="white" stroke-width="2"/>
+                    </svg>
+                    <span>Consider</span>
+                </div>
+                <span class="status-arrow">→</span>
+                <div class="status-box clear">
+                    <svg class="status-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" class="icon-clear"/>
+                        <path d="M7 12l3 3 7-7" stroke="white" stroke-width="2" fill="none"/>
+                    </svg>
+                    <span>Clear</span>
+                </div>
+            </div>
+            
+            <div class="reason-box">
+                <div class="reason-label">Reason</div>
+                <div class="reason-text">Quality score acceptable given recent house move. Supporting documents provided confirm address and residency.</div>
+            </div>
+            
+            <div class="annotation-footer">
+                <span class="annotation-user">Updated by: jacob.archer-moran</span>
+                <span class="annotation-date">08 Nov 2025, 14:26</span>
+            </div>
+        </div>
+
+        <!-- Annotation 4 - Example of keeping as Consider -->
+        <div class="annotation-card">
+            <div class="annotation-header">
+                <div class="task-icon screening">SC</div>
+                <div class="annotation-task-info">
+                    <div class="annotation-task-title">PEP Screening</div>
+                    <div class="annotation-objective">PEP Hit: Vladimir Putin</div>
+                </div>
+            </div>
+            
+            <div class="status-change">
+                <div class="status-box consider">
+                    <svg class="status-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" class="icon-consider"/>
+                        <line x1="7" y1="12" x2="17" y2="12" stroke="white" stroke-width="2"/>
+                    </svg>
+                    <span>Consider</span>
+                </div>
+                <span class="status-arrow">→</span>
+                <div class="status-box consider">
+                    <svg class="status-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" class="icon-consider"/>
+                        <line x1="7" y1="12" x2="17" y2="12" stroke="white" stroke-width="2"/>
+                    </svg>
+                    <span>Consider</span>
+                </div>
+            </div>
+            
+            <div class="reason-box">
+                <div class="reason-label">Reason</div>
+                <div class="reason-text">Potential match requires further review. Name and DOB similar but location and profession differ. Awaiting additional documentation to confirm different person.</div>
+            </div>
+            
+            <div class="annotation-footer">
+                <span class="annotation-user">Updated by: sarah.compliance</span>
+                <span class="annotation-date">08 Nov 2025, 15:10</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Footer -->
+    <div class="pdf-footer">
+        <p>This report was generated from Thurstan Hoskin's Thirdfort ID Management System</p>
+        <p>Report ID: ANT-2025-11-08-1430 | Page 1 of 1</p>
+    </div>
+</body>
+</html>
+
