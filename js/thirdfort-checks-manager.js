@@ -17745,7 +17745,7 @@ class ThirdfortChecksManager {
     }
     
     /**
-     * Render PEP Dismissal Overlay
+     * Render PEP Dismissal Overlay with queue system
      */
     renderPepDismissalOverlay(check) {
         const outcomes = check.taskOutcomes || {};
@@ -17753,9 +17753,19 @@ class ThirdfortChecksManager {
         const sanctionsTask = outcomes['sanctions'];
         const existingDismissals = check.pepDismissals || [];
         
+        // Initialize pending dismissals array
+        if (!this.pendingDismissals) {
+            this.pendingDismissals = [];
+        }
+        
         const dismissedIds = new Set(existingDismissals.map(d => d.hitId));
         
-        // Collect all hits
+        // Also exclude hits in pending dismissals
+        this.pendingDismissals.forEach(dismissal => {
+            dismissal.hitIds.forEach(id => dismissedIds.add(id));
+        });
+        
+        // Collect all undismissed hits with full details
         const hits = [];
         
         if (pepsTask?.breakdown?.hits) {
@@ -17768,7 +17778,11 @@ class ThirdfortChecksManager {
                         reportId: pepsTask.id,
                         dob: hit.dob?.main || hit.dob,
                         score: hit.score,
-                        flagTypes: hit.flag_types || []
+                        flagTypes: hit.flag_types || [],
+                        politicalPositions: hit.political_positions || [],
+                        countries: hit.countries || [],
+                        aka: hit.aka || [],
+                        fullHit: hit  // Keep full object for detailed display
                     });
                 }
             });
@@ -17783,178 +17797,277 @@ class ThirdfortChecksManager {
                         type: 'sanctions',
                         reportId: sanctionsTask.id,
                         score: hit.score,
-                        flagTypes: hit.flag_types || []
+                        flagTypes: hit.flag_types || [],
+                        countries: hit.countries || [],
+                        aka: hit.aka || [],
+                        fullHit: hit
                     });
                 }
             });
         }
         
-        let overlayHTML = `
-            <div class="annotation-overlay" id="pepOverlay">
-                <div class="annotation-overlay-backdrop" onclick="manager.closePepOverlay()"></div>
-                <div class="annotation-overlay-content">
-                    <div class="annotation-overlay-header">
-                        <h2>PEP & Sanctions Dismissal</h2>
-                        <button class="overlay-close-btn" onclick="manager.closePepOverlay()">✕</button>
-                    </div>
-                    
-                    <div class="annotation-overlay-body">
-        `;
+        let overlayHTML = '<div class="annotation-overlay" id="pepOverlay">';
+        overlayHTML += '<div class="annotation-overlay-backdrop" onclick="manager.closePepOverlay()"></div>';
+        overlayHTML += '<div class="annotation-overlay-content">';
         
+        // Header with SAVE button
+        overlayHTML += '<div class="annotation-overlay-header">';
+        overlayHTML += '<h2>Dismiss PEP & Sanctions Hits</h2>';
+        overlayHTML += '<div class="header-actions">';
+        if (this.mode === 'edit') {
+            overlayHTML += '<button class="btn-primary-small" onclick="manager.savePendingDismissals()" id="saveDismissalsBtn" disabled>SAVE</button>';
+        }
+        overlayHTML += '<button class="overlay-close-btn" onclick="manager.closePepOverlay()">✕</button>';
+        overlayHTML += '</div></div>';
+        
+        overlayHTML += '<div class="annotation-overlay-body">';
+        
+        // Dismissals queue section
+        overlayHTML += '<div class="updates-queue-section">';
+        overlayHTML += '<h3>Dismissals to add</h3>';
+        overlayHTML += '<div id="dismissalsQueue" class="updates-queue">';
+        if (this.pendingDismissals.length === 0) {
+            overlayHTML += '<p class="text-muted">No dismissals queued. Select hits below and add a dismissal reason.</p>';
+        }
+        overlayHTML += '</div></div>';
+        
+        // Add Dismissal section
         if (this.mode === 'edit' && hits.length > 0) {
-            overlayHTML += `
-                        <form id="pepDismissalForm">
-                            <div class="annotation-section">
-                                <h3>Undismissed Hits</h3>
-                                <div class="annotation-checkbox-group">
-            `;
+            overlayHTML += '<div class="add-update-section">';
+            overlayHTML += '<h3>Add Dismissal</h3>';
+            
+            // Show each hit as a detailed card (like screening task card)
+            overlayHTML += '<div class="pep-hits-list">';
             
             hits.forEach(hit => {
-                overlayHTML += `
-                                <label class="annotation-checkbox pep-hit">
-                                    <input type="checkbox" name="hits" value="${hit.id}" 
-                                        data-name="${hit.name}" data-type="${hit.type}" data-report-id="${hit.reportId}">
-                                    <div class="hit-details">
-                                        <strong>${hit.name}</strong>
-                                        <span class="hit-type-badge ${hit.type}">${hit.type.toUpperCase()}</span>
-                                        ${hit.dob ? `<p>DOB: ${hit.dob}</p>` : ''}
-                                        ${hit.score ? `<p>Match Score: ${hit.score}</p>` : ''}
-                                        ${hit.flagTypes.length > 0 ? `<p class="flag-types">${hit.flagTypes.slice(0, 3).join(', ')}</p>` : ''}
-                                    </div>
-                                </label>
-                `;
+                overlayHTML += this.createPepHitCard(hit);
             });
             
-            overlayHTML += `
-                                </div>
-                            </div>
-                            
-                            <div class="annotation-section">
-                                <h3>Dismissal Reason</h3>
-                                <div class="form-group">
-                                    <label for="pepReason">Reason for Dismissal</label>
-                                    <textarea id="pepReason" rows="4" required 
-                                        placeholder="Explain why these hits should be dismissed (e.g., 'Confirmed different person - different DOB', 'Different spelling of name')..."></textarea>
-                                </div>
-                            </div>
-                            
-                            <div class="annotation-actions">
-                                <button type="button" class="btn-secondary" onclick="manager.closePepOverlay()">Cancel</button>
-                                <button type="button" class="btn-secondary" onclick="manager.generatePepPDF()">Generate PDF</button>
-                                <button type="submit" class="btn-primary">Dismiss Selected</button>
-                            </div>
-                        </form>
-            `;
+            overlayHTML += '</div>';
+            
+            // Dismissal reason textarea
+            overlayHTML += '<div class="form-group">';
+            overlayHTML += '<label for="pepDismissalReason">Dismissal Reason</label>';
+            overlayHTML += '<textarea id="pepDismissalReason" rows="3" placeholder="Explain why selected hits should be dismissed (e.g., \'Confirmed different person - different DOB\', \'Different spelling of name\')..."></textarea>';
+            overlayHTML += '</div>';
+            
+            // Add dismissal button
+            overlayHTML += '<button type="button" class="btn-add-update" onclick="manager.addDismissalToQueue()">Add dismissal</button>';
+            
+            overlayHTML += '</div>';
         } else if (hits.length === 0 && this.mode === 'edit') {
-            overlayHTML += `
-                        <div class="annotation-section">
-                            <p class="text-muted">All hits have been dismissed.</p>
-                        </div>
-                        <div class="annotation-actions">
-                            <button type="button" class="btn-secondary" onclick="manager.closePepOverlay()">Close</button>
-                            <button type="button" class="btn-secondary" onclick="manager.generatePepPDF()">Generate PDF</button>
-                        </div>
-            `;
-        } else {
-            overlayHTML += `
-                        <div class="annotation-actions">
-                            <button type="button" class="btn-secondary" onclick="manager.closePepOverlay()">Close</button>
-                            <button type="button" class="btn-secondary" onclick="manager.generatePepPDF()">Generate PDF</button>
-                        </div>
-            `;
+            overlayHTML += '<div class="add-update-section">';
+            overlayHTML += '<p class="text-muted">All hits have been dismissed.</p>';
+            overlayHTML += '</div>';
         }
         
-        // Show dismissed hits
+        // Show previously dismissed hits from database
         if (existingDismissals.length > 0) {
-            overlayHTML += `
-                        <div class="annotation-section annotation-history">
-                            <h3>Dismissed Hits</h3>
-            `;
+            overlayHTML += '<div class="annotation-history-section">';
+            overlayHTML += '<h3>Previously Dismissed</h3>';
             
             existingDismissals.forEach(dismissal => {
                 const date = new Date(dismissal.timestamp).toLocaleString('en-GB');
-                overlayHTML += `
-                    <div class="annotation-card dismissed-hit">
-                        <div class="annotation-card-header">
-                            <span class="annotation-objective">${dismissal.hitName}</span>
-                            <span class="hit-type-badge ${dismissal.reportType}">${dismissal.reportType.toUpperCase()}</span>
-                            <span class="annotation-date">${date}</span>
-                        </div>
-                        <div class="annotation-card-body">
-                            <p class="annotation-reason">${dismissal.reason}</p>
-                            <p class="annotation-user">Dismissed by: ${dismissal.userName || dismissal.user}</p>
-                        </div>
-                    </div>
-                `;
+                overlayHTML += '<div class="annotation-card dismissed-hit">';
+                overlayHTML += '<div class="annotation-card-header">';
+                overlayHTML += '<span class="annotation-objective">' + dismissal.hitName + '</span>';
+                overlayHTML += '<span class="hit-type-badge ' + dismissal.reportType + '">' + dismissal.reportType.toUpperCase() + '</span>';
+                overlayHTML += '<span class="annotation-date">' + date + '</span>';
+                overlayHTML += '</div>';
+                overlayHTML += '<div class="annotation-card-body">';
+                overlayHTML += '<p class="annotation-reason">' + dismissal.reason + '</p>';
+                overlayHTML += '<p class="annotation-user">Dismissed by: ' + (dismissal.userName || dismissal.user) + '</p>';
+                overlayHTML += '</div></div>';
             });
             
-            overlayHTML += `</div>`;
+            overlayHTML += '</div>';
         }
         
-        overlayHTML += `
-                    </div>
-                </div>
-            </div>
-        `;
+        overlayHTML += '</div></div></div>';
         
         // Add to DOM
         document.body.insertAdjacentHTML('beforeend', overlayHTML);
         
-        // Add form submit handler
-        if (this.mode === 'edit' && hits.length > 0) {
-            const form = document.getElementById('pepDismissalForm');
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.dismissPepHits(check);
-            });
-        }
-    }
-    
-    closePepOverlay() {
-        const overlay = document.getElementById('pepOverlay');
-        if (overlay) overlay.remove();
+        // Render any pending dismissals
+        this.renderPendingDismissals();
     }
     
     /**
-     * Dismiss PEP/Sanctions hits
+     * Create a PEP hit card for selection (like screening hit card)
      */
-    dismissPepHits(check) {
-        const form = document.getElementById('pepDismissalForm');
-        const selectedHits = Array.from(form.querySelectorAll('input[name="hits"]:checked'));
+    createPepHitCard(hit) {
+        let html = '<label class="pep-hit-card">';
+        html += '<input type="checkbox" name="hits" value="' + hit.id + '" ';
+        html += 'data-name="' + hit.name + '" ';
+        html += 'data-type="' + hit.type + '" ';
+        html += 'data-report-id="' + hit.reportId + '">';
+        
+        html += '<div class="hit-card-content">';
+        html += '<div class="hit-card-header">';
+        html += '<strong class="hit-name">' + hit.name + '</strong>';
+        html += '<span class="hit-type-badge ' + hit.type + '">' + hit.type.toUpperCase() + '</span>';
+        html += '</div>';
+        
+        // Hit details
+        if (hit.dob) {
+            html += '<div class="hit-info-line">DOB: ' + hit.dob + '</div>';
+        }
+        if (hit.score) {
+            html += '<div class="hit-info-line">Match Score: ' + hit.score + '</div>';
+        }
+        if (hit.politicalPositions && hit.politicalPositions.length > 0) {
+            html += '<div class="hit-info-line">Positions: ' + hit.politicalPositions.slice(0, 2).join(', ') + '</div>';
+        }
+        if (hit.countries && hit.countries.length > 0) {
+            html += '<div class="hit-info-line">Countries: ' + hit.countries.slice(0, 3).join(', ') + '</div>';
+        }
+        if (hit.flagTypes && hit.flagTypes.length > 0) {
+            const flagTypeText = hit.flagTypes.slice(0, 3).map(f => f.replace('adverse-media-', '').replace(/-/g, ' ')).join(', ');
+            html += '<div class="hit-info-line hit-flags">' + flagTypeText + '</div>';
+        }
+        
+        html += '</div></label>';
+        
+        return html;
+    }
+    
+    /**
+     * Add selected hits to dismissal queue
+     */
+    addDismissalToQueue() {
+        const selectedHits = Array.from(document.querySelectorAll('#pepOverlay input[name="hits"]:checked'));
+        const reason = document.getElementById('pepDismissalReason').value.trim();
         
         if (selectedHits.length === 0) {
             alert('Please select at least one hit to dismiss');
             return;
         }
         
-        const reason = document.getElementById('pepReason').value.trim();
-        
         if (!reason) {
-            alert('Please provide a reason for dismissal');
+            alert('Please provide a dismissal reason');
             return;
         }
         
-        // Build dismissals array
-        const dismissals = selectedHits.map(checkbox => ({
-            id: checkbox.value,
+        // Create dismissal object
+        const dismissal = {
+            id: Date.now(),
+            hitIds: selectedHits.map(cb => cb.value),
+            hitNames: selectedHits.map(cb => cb.dataset.name),
+            hitTypes: selectedHits.map(cb => cb.dataset.type),
+            reportId: selectedHits[0].dataset.reportId,
+            reportType: selectedHits[0].dataset.type,
             reason
-        }));
+        };
         
-        // Get report info from first selected hit
-        const firstHit = selectedHits[0];
-        const reportType = firstHit.dataset.type;
-        const reportId = firstHit.dataset.reportId;
+        this.pendingDismissals.push(dismissal);
         
-        // Send to parent
-        this.sendMessage('dismiss-pep-hits', {
-            checkId: check.checkId || check.transactionId,
-            transactionId: check.transactionId,
-            reportId,
-            reportType,
-            dismissals
+        // Clear form
+        selectedHits.forEach(cb => cb.checked = false);
+        document.getElementById('pepDismissalReason').value = '';
+        
+        // Re-render to remove dismissed hits from list
+        this.closePepOverlay();
+        this.renderPepDismissalOverlay(this.currentCheck);
+        
+        // Enable save button
+        const saveBtn = document.getElementById('saveDismissalsBtn');
+        if (saveBtn) saveBtn.disabled = false;
+    }
+    
+    /**
+     * Render pending dismissals queue
+     */
+    renderPendingDismissals() {
+        const queueContainer = document.getElementById('dismissalsQueue');
+        if (!queueContainer) return;
+        
+        if (this.pendingDismissals.length === 0) {
+            queueContainer.innerHTML = '<p class="text-muted">No dismissals queued. Select hits below and add a dismissal reason.</p>';
+            return;
+        }
+        
+        let queueHTML = '';
+        this.pendingDismissals.forEach(dismissal => {
+            // Create a dismissal card
+            queueHTML += '<div class="dismissal-queue-card">';
+            queueHTML += '<div class="dismissal-header">';
+            queueHTML += '<span class="hit-type-badge ' + dismissal.reportType + '">' + dismissal.reportType.toUpperCase() + '</span>';
+            queueHTML += '<span>Dismissing ' + dismissal.hitIds.length + ' hit' + (dismissal.hitIds.length > 1 ? 's' : '') + '</span>';
+            queueHTML += '<button class="remove-update-btn" onclick="manager.removeDismissalFromQueue(' + dismissal.id + ')" title="Remove from queue">';
+            queueHTML += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">';
+            queueHTML += '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>';
+            queueHTML += '</svg></button>';
+            queueHTML += '</div>';
+            queueHTML += '<div class="dismissal-body">';
+            queueHTML += '<p class="dismissal-reason">' + dismissal.reason + '</p>';
+            queueHTML += '<div class="dismissed-hits-list">';
+            dismissal.hitNames.forEach((name, idx) => {
+                queueHTML += '<span class="dismissed-hit-name">• ' + name + '</span>';
+            });
+            queueHTML += '</div>';
+            queueHTML += '</div></div>';
         });
         
+        queueContainer.innerHTML = queueHTML;
+    }
+    
+    /**
+     * Remove dismissal from queue
+     */
+    removeDismissalFromQueue(dismissalId) {
+        this.pendingDismissals = this.pendingDismissals.filter(d => d.id !== dismissalId);
+        
+        // Re-render overlay to show hits again
         this.closePepOverlay();
+        this.renderPepDismissalOverlay(this.currentCheck);
+        
+        // Disable save button if queue is empty
+        if (this.pendingDismissals.length === 0) {
+            const saveBtn = document.getElementById('saveDismissalsBtn');
+            if (saveBtn) saveBtn.disabled = true;
+        }
+    }
+    
+    /**
+     * Save all pending dismissals
+     */
+    savePendingDismissals() {
+        if (this.pendingDismissals.length === 0) {
+            alert('No dismissals to save');
+            return;
+        }
+        
+        const check = this.currentCheck;
+        
+        // Process each dismissal batch
+        this.pendingDismissals.forEach(dismissal => {
+            // Build dismissals array for Thirdfort API
+            const dismissals = dismissal.hitIds.map(id => ({
+                id,
+                reason: dismissal.reason
+            }));
+            
+            // Send to parent
+            this.sendMessage('dismiss-pep-hits', {
+                checkId: check.checkId || check.transactionId,
+                transactionId: check.transactionId,
+                reportId: dismissal.reportId,
+                reportType: dismissal.reportType,
+                dismissals
+            });
+        });
+        
+        // Clear pending dismissals
+        this.pendingDismissals = [];
+        
+        this.closePepOverlay();
+    }
+    
+    closePepOverlay() {
+        const overlay = document.getElementById('pepOverlay');
+        if (overlay) overlay.remove();
+        // Clear pending dismissals when closing
+        this.pendingDismissals = [];
     }
     
     // ===================================================================
