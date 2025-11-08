@@ -3222,10 +3222,17 @@ class ThirdfortChecksManager {
         // Get accounts count for header display
         let accounts = {};
         let accountsHtml = '';
+        let isManualUpload = false;
         if (hasStatement && bankStatement.breakdown && bankStatement.breakdown.accounts) {
             accounts = bankStatement.breakdown.accounts;
+            isManualUpload = true; // Manual PDF upload
+            
+            // DEDUPLICATE all account statements for manual uploads
+            // This ensures all analysis (repeating transactions, largest transactions, etc.) uses clean data
+            accounts = this.deduplicateAccountsData(accounts);
         } else if (hasSummary && bankSummary.breakdown && bankSummary.breakdown.accounts) {
             accounts = bankSummary.breakdown.accounts;
+            isManualUpload = false; // Open Banking linking
         }
         const accountCount = Object.keys(accounts).length;
         
@@ -3291,7 +3298,7 @@ class ThirdfortChecksManager {
             accountsHtml += '<div class="bank-accounts-title">Linked Accounts</div>';
             
             for (const [accountId, accountData] of Object.entries(accounts)) {
-                accountsHtml += this.createBankAccountCard(accountId, accountData);
+                accountsHtml += this.createBankAccountCard(accountId, accountData, isManualUpload);
             }
             
             accountsHtml += '</div>';
@@ -3570,18 +3577,30 @@ class ThirdfortChecksManager {
     
     deduplicateTransactions(transactions) {
         // Remove duplicate transactions that occur when the same statement is uploaded multiple times
-        // Match transactions by: timestamp, amount, description, and account_id
+        // When a PDF is uploaded twice, Thirdfort OCR assigns different transaction IDs to each instance
+        // So we match on: timestamp (date only), amount, description, account_id, category
+        // We DON'T use tx.id or tx.reference as these are system-generated per upload
         const seen = new Map();
         const unique = [];
         
         for (const tx of transactions) {
-            // Create a unique key based on transaction properties
+            // Normalize the timestamp to date only (ignore time/milliseconds)
+            // This catches duplicates even if OCR processing times differ slightly
+            const dateOnly = tx.timestamp ? new Date(tx.timestamp).toISOString().split('T')[0] : '';
+            
+            // Normalize description (trim, collapse whitespace, lowercase for comparison)
+            const normalizedDesc = (tx.description || tx.merchant_name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+            
+            // Create a unique key based on actual transaction properties
+            // This will catch true duplicates from same statement uploaded twice
             const key = [
-                tx.timestamp,
-                tx.amount,
-                tx.description || tx.merchant_name || '',
-                tx.account_id || '',
-                tx.currency || 'GBP'
+                dateOnly,               // Date only (YYYY-MM-DD) - allows same-day recurring payments to still be unique by time
+                tx.amount,              // Exact amount
+                normalizedDesc,         // Normalized description
+                tx.account_id || '',    // Account ID
+                tx.currency || 'GBP',   // Currency
+                tx.category || '',      // Transaction category (DD, SO, DEBIT, CREDIT, etc.)
+                tx.type || ''           // Transaction type (DEBIT/CREDIT)
             ].join('|');
             
             if (!seen.has(key)) {
@@ -3593,7 +3612,25 @@ class ThirdfortChecksManager {
         return unique;
     }
     
-    createBankAccountCard(accountId, accountData) {
+    deduplicateAccountsData(accounts) {
+        // Deep clone and deduplicate all transactions within all accounts
+        // This ensures all downstream analysis uses clean data
+        const deduplicatedAccounts = {};
+        
+        for (const [accountId, accountData] of Object.entries(accounts)) {
+            // Clone the account data
+            deduplicatedAccounts[accountId] = JSON.parse(JSON.stringify(accountData));
+            
+            // Deduplicate the statement array
+            if (deduplicatedAccounts[accountId].statement) {
+                deduplicatedAccounts[accountId].statement = this.deduplicateTransactions(deduplicatedAccounts[accountId].statement);
+            }
+        }
+        
+        return deduplicatedAccounts;
+    }
+    
+    createBankAccountCard(accountId, accountData, isManualUpload = false) {
         // Handle both possible data structures - nested 'info' or direct properties
         const info = accountData.info || accountData;
         const number = info.number || {};
@@ -3604,8 +3641,9 @@ class ThirdfortChecksManager {
         const currency = info.currency || balance.currency || 'GBP';
         const statement = accountData.statement || [];
         
-        // Deduplicate transactions (in case same statement uploaded multiple times)
-        const deduplicatedStatement = this.deduplicateTransactions(statement);
+        // Deduplicate transactions ONLY for manual uploads (PDF statements)
+        // Open Banking linking won't have duplicates
+        const deduplicatedStatement = isManualUpload ? this.deduplicateTransactions(statement) : statement;
         
         // Get account number details
         const accountNumber = number.number || 'N/A';
@@ -3646,7 +3684,7 @@ class ThirdfortChecksManager {
         }
         
         return `
-            <div class="bank-account-card collapsed" data-account-data="${accountDataJson}" onclick="event.stopPropagation();">
+            <div class="bank-account-card collapsed" data-account-data="${accountDataJson}" data-is-manual-upload="${isManualUpload}" onclick="event.stopPropagation();">
                 <!-- Collapsed/Minimized Header -->
                 <div class="account-collapsed-header" onclick="event.stopPropagation(); this.closest('.bank-account-card').classList.toggle('collapsed');">
                     <div class="account-header-left">
@@ -3654,7 +3692,7 @@ class ThirdfortChecksManager {
                         <span class="account-collapsed-text">${collapsedTextHtml}</span>
                     </div>
                     ${txCount > 0 ? `
-                        <button class="view-statement-mini-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.closest('.bank-account-card').dataset.accountData);">
+                        <button class="view-statement-mini-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.closest('.bank-account-card').dataset.accountData, this.closest('.bank-account-card').dataset.isManualUpload === 'true');">
                             View transactions
                         </button>
                     ` : ''}
@@ -3713,7 +3751,7 @@ class ThirdfortChecksManager {
         `;
     }
     
-    showBankStatement(accountId, accountDataStr) {
+    showBankStatement(accountId, accountDataStr, isManualUpload = false) {
         // Parse the account data
         const data = JSON.parse(accountDataStr.replace(/&quot;/g, '"'));
         const accountData = data.accountData;
@@ -3731,8 +3769,9 @@ class ThirdfortChecksManager {
         const bankLogo = this.getBankLogo(provider.id, provider.name);
         const brandColors = this.getBankBrandColors(provider.id, provider.name);
         
-        // DEDUPLICATE transactions (in case same statement uploaded multiple times)
-        const deduplicatedStatement = this.deduplicateTransactions(statement);
+        // DEDUPLICATE transactions ONLY for manual uploads (same PDF statement uploaded multiple times)
+        // Bank linking via Open Banking API won't have duplicates
+        const deduplicatedStatement = isManualUpload ? this.deduplicateTransactions(statement) : statement;
         
         // Sort transactions by timestamp (oldest first for running balance calculation)
         const sortedTransactions = [...deduplicatedStatement].sort((a, b) => 
