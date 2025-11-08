@@ -490,6 +490,49 @@ class ThirdfortChecksManager {
             `;
         }
         
+        // Annotation overlays for closed checks
+        if (check.status === 'closed') {
+            // Consider overlay button
+            if (this.hasConsiderFailItems(check)) {
+                buttons += `
+                    <button class="top-action-btn annotation-btn" onclick="manager.renderConsiderOverlay(manager.currentCheck)" 
+                        title="Annotate Consider/Fail Items">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f7931e" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                `;
+            }
+            
+            // SoF overlay button
+            if (this.hasSofBankTasks(check)) {
+                buttons += `
+                    <button class="top-action-btn annotation-btn" onclick="manager.renderSofOverlay(manager.currentCheck)" 
+                        title="SoF Investigation Notes">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d71b8" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"/>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                    </button>
+                `;
+            }
+            
+            // PEP dismissal overlay button
+            if (this.hasPepSanctionsHits(check)) {
+                buttons += `
+                    <button class="top-action-btn annotation-btn" onclick="manager.renderPepDismissalOverlay(manager.currentCheck)" 
+                        title="Dismiss PEP/Sanctions Hits">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc3545" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                    </button>
+                `;
+            }
+        }
+        
         // Expand button - open transaction in Thirdfort Portal
         if (check.transactionId) {
             buttons += `
