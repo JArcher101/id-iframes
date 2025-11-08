@@ -18330,49 +18330,149 @@ class ThirdfortChecksManager {
         
         const annotations = check.considerAnnotations || [];
         const checkName = check.consumerName || check.companyName || 'Unknown';
-        const checkRef = check.transactionId || check.checkId;
+        const checkRef = check.thirdfortResponse?.ref || check.transactionId || check.checkId;
+        const checkType = this.getElectronicIDType(check) || check.checkType || 'Thirdfort Check';
+        const matterName = check.thirdfortResponse?.name || check.matterName || '—';
+        const checkStatus = check.status === 'closed' ? 'Closed' : 'Open';
+        const now = new Date();
+        const generatedDate = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const generatedTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         
-        let htmlContent = `
-            <div style="font-family: Arial, sans-serif; padding: 20px;">
-                <h1 style="color: #112F5B;">Consider & Fail Annotations</h1>
-                <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
-                    <p><strong>Check:</strong> ${checkName}</p>
-                    <p><strong>Reference:</strong> ${checkRef}</p>
-                    <p><strong>Generated:</strong> ${new Date().toLocaleString('en-GB')}</p>
-                </div>
-                
-                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                    <thead>
-                        <tr style="background: #112F5B; color: white;">
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Objective</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Original</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Updated</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Reason</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">User</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
+        // Helper to get task icon background color
+        const getTaskColor = (taskType) => {
+            if (taskType === 'identity') return '#5e35b1';
+            if (taskType === 'address') return '#1976d2';
+            if (taskType === 'screening') return '#d32f2f';
+            if (taskType.includes('sof')) return '#388e3c';
+            return '#666';
+        };
         
+        // Helper to get task label
+        const getTaskLabel = (taskType) => {
+            if (taskType === 'identity') return 'ID';
+            if (taskType === 'address') return 'AD';
+            if (taskType === 'screening') return 'SC';
+            if (taskType.includes('sof')) return 'SF';
+            return 'CK';
+        };
+        
+        // Helper to get status icon SVG
+        const getStatusIcon = (status) => {
+            if (status === 'clear') {
+                return `<svg class="status-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;"><circle cx="12" cy="12" r="10" fill="#388e3c"/><path d="M7 12l3 3 7-7" stroke="white" stroke-width="2" fill="none"/></svg>`;
+            } else if (status === 'fail') {
+                return `<svg class="status-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;"><circle cx="12" cy="12" r="10" fill="#d32f2f"/><line x1="8" y1="8" x2="16" y2="16" stroke="white" stroke-width="2"/><line x1="16" y1="8" x2="8" y2="16" stroke="white" stroke-width="2"/></svg>`;
+            } else {
+                return `<svg class="status-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;"><circle cx="12" cy="12" r="10" fill="#f7931e"/><line x1="7" y1="12" x2="17" y2="12" stroke="white" stroke-width="2"/></svg>`;
+            }
+        };
+        
+        // Build annotation cards HTML
+        let annotationsHTML = '';
         annotations.forEach(ann => {
-            const date = new Date(ann.timestamp).toLocaleDateString('en-GB');
-            htmlContent += `
-                <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${this.formatObjectivePath(ann.objectivePath)}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${ann.originalStatus.toUpperCase()}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${ann.newStatus.toUpperCase()}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${ann.reason}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${ann.userName || ann.user}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${date}</td>
-                </tr>
+            const taskColor = getTaskColor(ann.taskType);
+            const taskLabel = getTaskLabel(ann.taskType);
+            const taskTitle = this.getTaskTitle(ann.taskType);
+            const objectivePath = this.formatObjectivePath(ann.objectivePath);
+            const date = new Date(ann.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            const time = new Date(ann.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            
+            const originalStatusClass = ann.originalStatus === 'clear' ? 'clear' : (ann.originalStatus === 'fail' ? 'fail' : 'consider');
+            const newStatusClass = ann.newStatus === 'clear' ? 'clear' : (ann.newStatus === 'fail' ? 'fail' : 'consider');
+            
+            annotationsHTML += `
+                <div class="annotation-card">
+                    <div class="annotation-header">
+                        <div class="task-icon" style="background: ${taskColor};">${taskLabel}</div>
+                        <div class="annotation-task-info">
+                            <div class="annotation-task-title">${taskTitle}</div>
+                            <div class="annotation-objective">${objectivePath}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-change">
+                        <div class="status-box ${originalStatusClass}">
+                            ${getStatusIcon(ann.originalStatus)}
+                            <span>${ann.originalStatus.charAt(0).toUpperCase() + ann.originalStatus.slice(1)}</span>
+                        </div>
+                        <span class="status-arrow">→</span>
+                        <div class="status-box ${newStatusClass}">
+                            ${getStatusIcon(ann.newStatus)}
+                            <span>${ann.newStatus.charAt(0).toUpperCase() + ann.newStatus.slice(1)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="reason-box">
+                        <div class="reason-label">Reason</div>
+                        <div class="reason-text">${ann.reason}</div>
+                    </div>
+                    
+                    <div class="annotation-footer">
+                        <span class="annotation-user">Updated by: ${ann.userName || ann.user}</span>
+                        <span class="annotation-date">${date}, ${time}</span>
+                    </div>
+                </div>
             `;
         });
         
-        htmlContent += `
-                    </tbody>
-                </table>
-            </div>
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { font-family: Arial, sans-serif; padding: 30px; background: #fff; color: #333; line-height: 1.6; }
+                    .pdf-header { border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px; }
+                    .pdf-title { font-size: 24px; font-weight: bold; color: #003c71; margin-bottom: 10px; }
+                    .check-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 13px; color: #666; }
+                    .check-info-item { display: flex; gap: 8px; }
+                    .check-info-label { font-weight: 600; color: #333; }
+                    .annotations-section { margin-top: 30px; }
+                    .section-title { font-size: 18px; font-weight: bold; color: #003c71; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid #e5e5e5; }
+                    .annotation-card { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 20px; margin-bottom: 20px; page-break-inside: avoid; }
+                    .annotation-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid #dee2e6; }
+                    .task-icon { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; color: white; flex-shrink: 0; }
+                    .annotation-task-info { flex: 1; }
+                    .annotation-task-title { font-size: 16px; font-weight: bold; color: #003c71; }
+                    .annotation-objective { font-size: 12px; color: #666; margin-top: 2px; }
+                    .status-change { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding: 12px; background: white; border-radius: 4px; }
+                    .status-box { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 4px; font-size: 13px; font-weight: 600; }
+                    .status-box.consider { background: #fff3e0; color: #f7931e; border: 1px solid #f7931e; }
+                    .status-box.fail { background: #ffebee; color: #d32f2f; border: 1px solid #d32f2f; }
+                    .status-box.clear { background: #e8f5e9; color: #388e3c; border: 1px solid #388e3c; }
+                    .status-arrow { font-size: 20px; color: #999; }
+                    .reason-box { background: white; padding: 15px; border-radius: 4px; border-left: 4px solid #003c71; margin-bottom: 12px; }
+                    .reason-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+                    .reason-text { font-size: 14px; color: #333; line-height: 1.5; }
+                    .annotation-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #666; padding-top: 10px; border-top: 1px solid #dee2e6; }
+                    .annotation-user { font-weight: 600; }
+                    .annotation-date { font-style: italic; }
+                    .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e5e5; text-align: center; font-size: 11px; color: #999; }
+                </style>
+            </head>
+            <body>
+                <div class="pdf-header">
+                    <div class="pdf-title">Consider Annotations Report</div>
+                    <div class="check-info">
+                        <div class="check-info-item"><span class="check-info-label">Check Type:</span><span>${checkType}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Consumer:</span><span>${checkName}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Check Reference:</span><span>${checkRef}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Matter:</span><span>${matterName}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Generated:</span><span>${generatedDate}, ${generatedTime}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Status:</span><span>${checkStatus}</span></div>
+                    </div>
+                </div>
+                <div class="annotations-section">
+                    <div class="section-title">Annotations & Updates</div>
+                    ${annotationsHTML}
+                </div>
+                <div class="pdf-footer">
+                    <p>This report was generated from Thurstan Hoskin's Thirdfort ID Management System</p>
+                    <p>Report ID: ANT-${Date.now()} | Page 1 of 1</p>
+                </div>
+            </body>
+            </html>
         `;
         
         const element = document.createElement('div');
@@ -18387,7 +18487,11 @@ class ThirdfortChecksManager {
         };
         
         if (typeof html2pdf !== 'undefined') {
-            html2pdf().set(opt).from(element).save();
+            // Generate PDF as blob and open in new window
+            html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                window.open(pdfUrl, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+            });
         } else {
             alert('PDF library not loaded. Please refresh the page.');
         }
