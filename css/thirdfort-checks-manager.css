@@ -4547,13 +4547,13 @@ body {
 }
 
 .tx-marker-btn.verified:hover {
-    border-color: #388e3c;
+    border-color: #39b549;
 }
 
 .tx-marker-btn.verified.active {
     background: #e8f5e9;
-    border-color: #388e3c;
-    box-shadow: 0 2px 8px rgba(56, 142, 60, 0.3);
+    border-color: #39b549;
+    box-shadow: 0 2px 8px rgba(57, 181, 73, 0.3);
 }
 
 .tx-marker-btn.verified.active svg {
@@ -4566,13 +4566,13 @@ body {
 }
 
 .tx-marker-btn.rejected:hover {
-    border-color: #d32f2f;
+    border-color: #ff0000;
 }
 
 .tx-marker-btn.rejected.active {
     background: #ffebee;
-    border-color: #d32f2f;
-    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.3);
+    border-color: #ff0000;
+    box-shadow: 0 2px 8px rgba(255, 0, 0, 0.3);
 }
 
 .tx-marker-btn.rejected.active svg {

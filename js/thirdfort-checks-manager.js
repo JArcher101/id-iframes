@@ -3568,6 +3568,31 @@ class ThirdfortChecksManager {
         return currencyFlags[currency] || '💱';
     }
     
+    deduplicateTransactions(transactions) {
+        // Remove duplicate transactions that occur when the same statement is uploaded multiple times
+        // Match transactions by: timestamp, amount, description, and account_id
+        const seen = new Map();
+        const unique = [];
+        
+        for (const tx of transactions) {
+            // Create a unique key based on transaction properties
+            const key = [
+                tx.timestamp,
+                tx.amount,
+                tx.description || tx.merchant_name || '',
+                tx.account_id || '',
+                tx.currency || 'GBP'
+            ].join('|');
+            
+            if (!seen.has(key)) {
+                seen.set(key, true);
+                unique.push(tx);
+            }
+        }
+        
+        return unique;
+    }
+    
     createBankAccountCard(accountId, accountData) {
         // Handle both possible data structures - nested 'info' or direct properties
         const info = accountData.info || accountData;
@@ -3578,6 +3603,9 @@ class ThirdfortChecksManager {
         const accountType = info.type || 'TRANSACTION';
         const currency = info.currency || balance.currency || 'GBP';
         const statement = accountData.statement || [];
+        
+        // Deduplicate transactions (in case same statement uploaded multiple times)
+        const deduplicatedStatement = this.deduplicateTransactions(statement);
         
         // Get account number details
         const accountNumber = number.number || 'N/A';
@@ -3596,8 +3624,8 @@ class ThirdfortChecksManager {
         const currentBalance = balance.current || 0;
         const overdraft = balance.overdraft || 0;
         
-        // Transaction count
-        const txCount = statement.length;
+        // Transaction count (after deduplication)
+        const txCount = deduplicatedStatement.length;
         
         // Get bank logo
         const bankLogo = this.getBankLogo(provider.id, provider.name);
@@ -3703,8 +3731,11 @@ class ThirdfortChecksManager {
         const bankLogo = this.getBankLogo(provider.id, provider.name);
         const brandColors = this.getBankBrandColors(provider.id, provider.name);
         
+        // DEDUPLICATE transactions (in case same statement uploaded multiple times)
+        const deduplicatedStatement = this.deduplicateTransactions(statement);
+        
         // Sort transactions by timestamp (oldest first for running balance calculation)
-        const sortedTransactions = [...statement].sort((a, b) => 
+        const sortedTransactions = [...deduplicatedStatement].sort((a, b) => 
             new Date(a.timestamp) - new Date(b.timestamp)
         );
         
@@ -18160,15 +18191,15 @@ class ThirdfortChecksManager {
                 html += `<span class="matched-tx-amount">${txAmount}${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>`;
                 html += '</div>';
                 html += '<div class="tx-marker-actions">';
-                // Verified icon (green tick)
+                // Verified icon (green tick) - same as task status CL
                 html += `<button type="button" class="tx-marker-btn verified" data-tx-id="${txId}" data-marker="verified" title="Linked - Verified" onclick="this.classList.toggle('active')">`;
-                html += '<svg viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#29aa54" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m82.463 145.485 11.839-14.701c6.248-7.759 17.586-8.958 25.345-2.71l13.74 11.063c3.866 3.114 9.402 2.913 13.041-.471l77.851-72.369c7.935-7.378 20.297-6.956 27.675.979l11.502 12.371c7.378 7.935 6.956 20.297-.979 27.675l-102.381 95.214c-7.573 7.042-19.254 7.178-26.992.314l-49.356-43.798c-7.759-6.885-8.476-18.813-1.591-26.572z"/></svg>';
+                html += '<svg viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
                 html += '</button>';
-                // Rejected icon (red cross)
+                // Rejected icon (red cross) - same as task status AL
                 html += `<button type="button" class="tx-marker-btn rejected" data-tx-id="${txId}" data-marker="rejected" title="Not linked - Unrelated" onclick="this.classList.toggle('active')">`;
-                html += '<svg viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m87.53 81.36 19.09-19.09c3.91-3.91 10.24-3.91 14.14 0l29.23 29.23 29.23-29.23c3.91-3.91 10.24-3.91 14.14 0l19.09 19.09c3.91 3.91 3.91 10.24 0 14.14l-29.23 29.23 29.23 29.23c3.91 3.91 3.91 10.24 0 14.14l-19.09 19.09c-3.91 3.91-10.24 3.91-14.14 0l-29.23-29.23-29.23 29.23c-3.91 3.91-10.24 3.91-14.14 0l-19.09-19.09c-3.91-3.91-3.91-10.24 0-14.14l29.23-29.23-29.23-29.23c-3.91-3.91-3.91-10.24 0-14.14zm-6.17 106.91 19.09 19.09c3.91 3.91 10.24 3.91 14.14 0l29.23-29.23 29.23 29.23c3.91 3.91 10.24 3.91 14.14 0l19.09-19.09c3.91-3.91 3.91-10.24 0-14.14l-29.23-29.23 29.23-29.23c3.91-3.91 3.91-10.24 0-14.14l-19.09-19.09c-3.91-3.91-10.24-3.91-14.14 0l-29.23 29.23-29.23-29.23c-3.91-3.91-10.24-3.91-14.14 0l-19.09 19.09c-3.91 3.91-3.91 10.24 0 14.14l29.23 29.23-29.23 29.23c-3.91 3.91-3.91 10.24 0 14.14z"/></svg>';
+                html += '<svg viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>';
                 html += '</button>';
-                // Review icon (orange dash)
+                // Review icon (orange dash) - same as task status CO
                 html += `<button type="button" class="tx-marker-btn review" data-tx-id="${txId}" data-marker="review" title="Needs review" onclick="this.classList.toggle('active')">`;
                 html += '<svg viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
                 html += '</button>';
