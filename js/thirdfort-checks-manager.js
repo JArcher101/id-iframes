@@ -17361,11 +17361,19 @@ class ThirdfortChecksManager {
                 statusIcon = '<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>';
             }
             
-            // Build objectives list with check icons
+            // Get icon code based on status
+            let objectiveIconCode = 'CL';  // Default clear
+            if (update.status === 'consider') {
+                objectiveIconCode = 'CO';
+            } else if (update.status === 'fail') {
+                objectiveIconCode = 'AL';
+            }
+            
+            // Build objectives list with matching status icons
             let objectivesHTML = '<div class="task-checks-grid">';
             update.objectives.forEach(obj => {
                 objectivesHTML += '<div class="task-check-item">';
-                objectivesHTML += this.getTaskCheckIcon('CL');  // Always show tick for selected objectives
+                objectivesHTML += this.getTaskCheckIcon(objectiveIconCode);
                 objectivesHTML += '<span class="task-check-text">' + obj.label + '</span>';
                 objectivesHTML += '</div>';
             });
@@ -17374,11 +17382,14 @@ class ThirdfortChecksManager {
             // Render as task card
             queueHTML += '<div class="task-card update-queue-card ' + borderClass + '">';
             queueHTML += '<div class="task-header">';
-            queueHTML += '<div class="task-title">' + taskTitle + '</div>';
-            queueHTML += '<div class="task-header-right">';
             queueHTML += statusIcon;
-            queueHTML += '<button class="remove-update-btn" onclick="manager.removeUpdateFromQueue(' + update.id + ')">×</button>';
-            queueHTML += '</div></div>';
+            queueHTML += '<div class="task-title">' + taskTitle + '</div>';
+            queueHTML += '<button class="remove-update-btn" onclick="manager.removeUpdateFromQueue(' + update.id + ')" title="Remove from queue">';
+            queueHTML += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">';
+            queueHTML += '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>';
+            queueHTML += '</svg>';
+            queueHTML += '</button>';
+            queueHTML += '</div>';
             queueHTML += '<div class="task-details" style="display: block;">';
             queueHTML += '<div class="update-reason-text">' + update.reason + '</div>';
             queueHTML += objectivesHTML;
