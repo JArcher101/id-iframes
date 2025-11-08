@@ -18421,22 +18421,26 @@ class ThirdfortChecksManager {
         };
         
         // Collect funding method notes, verifications, and transaction markers
-        const fundingNotes = form.querySelectorAll('textarea.sof-note-input');
-        fundingNotes.forEach(textarea => {
+        // Find all funding cards to process each one
+        const fundingCards = form.querySelectorAll('.funding-source-card');
+        fundingCards.forEach((card, idx) => {
+            const textarea = card.querySelector('textarea.sof-note-input');
+            if (!textarea) return;
+            
             const note = textarea.value.trim();
             const fundIdx = textarea.dataset.fundIdx;
             const fundType = textarea.dataset.fundType;
             
-            // Get ALL verification checkboxes (they're not scoped per funding method)
-            const checkboxes = form.querySelectorAll(`input[type="checkbox"]:checked`);
+            // Get verification checkboxes WITHIN THIS FUNDING CARD ONLY
+            const checkboxes = card.querySelectorAll('.verification-checks input[type="checkbox"]:checked');
             const verified = [];
             checkboxes.forEach(cb => {
                 verified.push(cb.value);
             });
             
-            // Get transaction markers for ALL transactions (collect all active markers)
+            // Get transaction markers WITHIN THIS FUNDING CARD ONLY
             const transactionMarkers = {};
-            const markerButtons = form.querySelectorAll('.tx-marker-btn.active');
+            const markerButtons = card.querySelectorAll('.tx-marker-btn.active');
             markerButtons.forEach(btn => {
                 const txId = btn.dataset.txId;
                 const marker = btn.dataset.marker; // 'verified', 'rejected', 'review'
@@ -18447,11 +18451,11 @@ class ThirdfortChecksManager {
             
             // Get red flag status and notes for this funding method
             const redFlags = [];
-            const redFlagSelects = form.querySelectorAll(`.red-flag-status-select[data-fund-idx="${fundIdx}"]`);
+            const redFlagSelects = card.querySelectorAll(`.red-flag-status-select[data-fund-idx="${fundIdx}"]`);
             redFlagSelects.forEach(select => {
                 const flagIdx = select.dataset.flagIdx;
                 const status = select.value;
-                const noteTextarea = form.querySelector(`.red-flag-note-input[data-fund-idx="${fundIdx}"][data-flag-idx="${flagIdx}"]`);
+                const noteTextarea = card.querySelector(`.red-flag-note-input[data-fund-idx="${fundIdx}"][data-flag-idx="${flagIdx}"]`);
                 const flagNote = noteTextarea ? noteTextarea.value.trim() : '';
                 
                 if (status || flagNote) {
@@ -18519,7 +18523,7 @@ class ThirdfortChecksManager {
         // Send to parent
         this.sendMessage('save-sof-annotations', {
             checkId: check.checkId || check.transactionId,
-            investigation
+            notes: investigation
         });
         
         // Store context for success handler
