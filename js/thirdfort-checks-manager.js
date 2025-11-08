@@ -18023,16 +18023,17 @@ class ThirdfortChecksManager {
     }
     
     /**
-     * Create a PEP hit card for selection (matching screening hit card format)
+     * Create a PEP hit card for selection (matching screening task card format)
      */
     createPepHitCard(hit) {
-        let html = '<label class="pep-hit-card">';
+        let html = '<div class="screening-hit-card pep-hit-card">';
+        
+        // Checkbox at top right
         html += '<input type="checkbox" name="hits" value="' + hit.id + '" ';
         html += 'data-name="' + hit.name + '" ';
         html += 'data-type="' + hit.type + '" ';
-        html += 'data-report-id="' + hit.reportId + '">';
+        html += 'data-report-id="' + hit.reportId + '" class="hit-checkbox">';
         
-        html += '<div class="screening-hit-card">';
         html += '<div class="screening-hit-header">';
         html += '<div class="screening-hit-name">' + hit.name + '</div>';
         html += '<div class="screening-hit-badges">';
@@ -18062,30 +18063,39 @@ class ThirdfortChecksManager {
             });
         }
         
-        // PEP badges row (purple)
+        // PEP badges row (purple) - show first 3 + count
         if (pepBadges.length > 0) {
             html += '<div class="hit-badge-row">';
-            pepBadges.forEach(badge => {
+            pepBadges.slice(0, 3).forEach(badge => {
                 html += '<span class="hit-badge hit-badge-pep">' + badge + '</span>';
             });
+            if (pepBadges.length > 3) {
+                html += '<span class="hit-badge hit-badge-pep">+' + (pepBadges.length - 3) + '</span>';
+            }
             html += '</div>';
         }
         
-        // Sanctions badges row (red)
+        // Sanctions badges row (red) - show first 3 + count
         if (sanctionBadges.length > 0) {
             html += '<div class="hit-badge-row">';
-            sanctionBadges.forEach(badge => {
+            sanctionBadges.slice(0, 3).forEach(badge => {
                 html += '<span class="hit-badge hit-badge-sanction">' + badge + '</span>';
             });
+            if (sanctionBadges.length > 3) {
+                html += '<span class="hit-badge hit-badge-sanction">+' + (sanctionBadges.length - 3) + '</span>';
+            }
             html += '</div>';
         }
         
-        // Adverse Media badges row (blue)
+        // Adverse Media badges row (blue) - show first 3 + count
         if (adverseBadges.length > 0) {
             html += '<div class="hit-badge-row">';
-            adverseBadges.forEach(badge => {
+            adverseBadges.slice(0, 3).forEach(badge => {
                 html += '<span class="hit-badge hit-badge-adverse">' + badge + '</span>';
             });
+            if (adverseBadges.length > 3) {
+                html += '<span class="hit-badge hit-badge-adverse">+' + (adverseBadges.length - 3) + '</span>';
+            }
             html += '</div>';
         }
         
@@ -18104,24 +18114,28 @@ class ThirdfortChecksManager {
             html += '<div class="hit-info-row"><span class="hit-info-label">Match Score:</span> <span class="hit-info-value">' + hit.score + '</span></div>';
         }
         
-        // Political Positions
+        // Political Positions - show first 3 + count
         if (hit.politicalPositions && hit.politicalPositions.length > 0) {
-            html += '<div class="hit-info-row"><span class="hit-info-label">Position' + (hit.politicalPositions.length > 1 ? 's' : '') + ':</span> <span class="hit-info-value">' + hit.politicalPositions.join(', ') + '</span></div>';
+            const positions = hit.politicalPositions.slice(0, 3).join(', ');
+            const extra = hit.politicalPositions.length > 3 ? ' (+' + (hit.politicalPositions.length - 3) + ' more)' : '';
+            html += '<div class="hit-info-row"><span class="hit-info-label">Position' + (hit.politicalPositions.length > 1 ? 's' : '') + ':</span> <span class="hit-info-value">' + positions + extra + '</span></div>';
         }
         
-        // Countries with flags
+        // Countries with flags - show first 3 + count
         if (hit.countries && hit.countries.length > 0) {
             html += '<div class="hit-info-row"><span class="hit-info-label">Countries:</span> <div class="hit-countries">';
-            hit.countries.forEach(country => {
+            hit.countries.slice(0, 3).forEach(country => {
                 const flagEmoji = this.getCountryFlag(country);
                 html += '<span class="country-tag">' + flagEmoji + ' ' + country + '</span>';
             });
+            if (hit.countries.length > 3) {
+                html += '<span class="country-tag">+' + (hit.countries.length - 3) + ' more</span>';
+            }
             html += '</div></div>';
         }
         
         html += '</div></div>'; // Close hit-main-column and screening-hit-body
         html += '</div>'; // Close screening-hit-card
-        html += '</label>';
         
         return html;
     }

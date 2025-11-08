@@ -4123,28 +4123,25 @@ body {
 }
 
 .pep-hit-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 15px;
-    background: #f8f9fa;
-    border: 2px solid #e1e4e8;
-    border-radius: 8px;
+    position: relative;
+    margin-bottom: 12px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .pep-hit-card:hover {
-    background: #e9ecef;
-    border-color: #1d71b8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.pep-hit-card input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    margin-top: 2px;
+.pep-hit-card .hit-checkbox {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 20px;
+    height: 20px;
     cursor: pointer;
-    flex-shrink: 0;
+    z-index: 10;
 }
 
 .hit-card-content {
