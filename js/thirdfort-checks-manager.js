@@ -17099,88 +17099,99 @@ class ThirdfortChecksManager {
     }
     
     /**
-     * Render Consider Overlay
+     * Render Consider Overlay with update queue system
      */
     renderConsiderOverlay(check) {
         const items = this.findConsiderFailItems(check.taskOutcomes);
         const existingAnnotations = check.considerAnnotations || [];
         
+        // Initialize pending updates array
+        if (!this.pendingUpdates) {
+            this.pendingUpdates = [];
+        }
+        
         // Build overlay HTML
         let overlayHTML = '<div class="annotation-overlay" id="considerOverlay">';
         overlayHTML += '<div class="annotation-overlay-backdrop" onclick="manager.closeConsiderOverlay()"></div>';
         overlayHTML += '<div class="annotation-overlay-content">';
+        
+        // Header with SAVE button
         overlayHTML += '<div class="annotation-overlay-header">';
-        overlayHTML += '<h2>Consider & Fail Items</h2>';
+        overlayHTML += '<h2>Update Task Outcomes</h2>';
+        overlayHTML += '<div class="header-actions">';
+        if (this.mode === 'edit') {
+            overlayHTML += '<button class="btn-primary-small" onclick="manager.savePendingUpdates()" id="saveAllBtn" disabled>SAVE</button>';
+        }
         overlayHTML += '<button class="overlay-close-btn" onclick="manager.closeConsiderOverlay()">✕</button>';
-        overlayHTML += '</div>';
+        overlayHTML += '</div></div>';
+        
         overlayHTML += '<div class="annotation-overlay-body">';
         
-        // Group items by task type
-        const groupedItems = {};
-        items.forEach(item => {
-            if (!groupedItems[item.taskType]) {
-                groupedItems[item.taskType] = [];
-            }
-            groupedItems[item.taskType].push(item);
-        });
-        
-        // Start form if in edit mode
-        if (this.mode === 'edit') {
-            overlayHTML += '<form id="considerAnnotationForm">';
-            overlayHTML += '<div class="annotation-section">';
-            overlayHTML += '<h3>Select Items to Annotate</h3>';
-            overlayHTML += '<div class="annotation-checkbox-group">';
+        // Updates to add section (queue)
+        overlayHTML += '<div class="updates-queue-section">';
+        overlayHTML += '<h3>Updates to add</h3>';
+        overlayHTML += '<div id="updatesQueue" class="updates-queue">';
+        if (this.pendingUpdates.length === 0) {
+            overlayHTML += '<p class="text-muted">No updates queued. Select objectives below and add an update.</p>';
         }
+        overlayHTML += '</div></div>';
         
-        // Render checkboxes grouped by task
-        for (const [taskType, taskItems] of Object.entries(groupedItems)) {
-            overlayHTML += '<div class="annotation-task-group">';
-            overlayHTML += `<h4>${this.getTaskTitle(taskType)}</h4>`;
+        // Add Update section
+        if (this.mode === 'edit') {
+            overlayHTML += '<div class="add-update-section">';
+            overlayHTML += '<h3>Add Update</h3>';
             
-            taskItems.forEach(item => {
-                const indent = item.level * 20;
-                overlayHTML += `<label class="annotation-checkbox" style="padding-left: ${indent}px">`;
-                overlayHTML += `<input type="checkbox" name="objectives" value="${item.path}" data-status="${item.status}">`;
-                overlayHTML += `<span class="status-badge ${item.status}">${item.status.toUpperCase()}</span>`;
-                overlayHTML += `<span>${item.label}</span>`;
-                overlayHTML += '</label>';
+            // Group items by task type
+            const groupedItems = {};
+            items.forEach(item => {
+                if (!groupedItems[item.taskType]) {
+                    groupedItems[item.taskType] = [];
+                }
+                groupedItems[item.taskType].push(item);
             });
             
+            // Radio buttons for objectives
+            overlayHTML += '<div class="objectives-grid">';
+            for (const [taskType, taskItems] of Object.entries(groupedItems)) {
+                overlayHTML += '<div class="objective-column">';
+                overlayHTML += `<h4>${this.getTaskTitle(taskType)}</h4>`;
+                
+                taskItems.forEach(item => {
+                    overlayHTML += '<label class="objective-radio">';
+                    overlayHTML += `<input type="checkbox" name="objectives" value="${item.path}" data-task="${taskType}" data-status="${item.status}" data-label="${item.label}">`;
+                    overlayHTML += `<span>${item.label}</span>`;
+                    overlayHTML += '</label>';
+                });
+                
+                overlayHTML += '</div>';
+            }
             overlayHTML += '</div>';
-        }
-        
-        if (this.mode === 'edit') {
-            overlayHTML += '</div></div>';  // Close checkbox-group and section
-            overlayHTML += '<div class="annotation-section">';
-            overlayHTML += '<h3>Annotation Details</h3>';
+            
+            // Status dropdown
             overlayHTML += '<div class="form-group">';
-            overlayHTML += '<label for="considerStatus">New Status</label>';
-            overlayHTML += '<select id="considerStatus" required>';
-            overlayHTML += '<option value="clear">Clear</option>';
-            overlayHTML += '<option value="consider">Consider</option>';
-            overlayHTML += '<option value="fail">Fail</option>';
+            overlayHTML += '<label for="updateStatus">Status</label>';
+            overlayHTML += '<select id="updateStatus">';
+            overlayHTML += '<option value="clear">CLEAR</option>';
+            overlayHTML += '<option value="consider">CONSIDER</option>';
+            overlayHTML += '<option value="fail">FAIL</option>';
             overlayHTML += '</select></div>';
+            
+            // Reason textarea
             overlayHTML += '<div class="form-group">';
-            overlayHTML += '<label for="considerReason">Reason / Notes</label>';
-            overlayHTML += '<textarea id="considerReason" rows="4" required placeholder="Explain the reason for this status update..."></textarea>';
-            overlayHTML += '</div></div>';
-            overlayHTML += '<div class="annotation-actions">';
-            overlayHTML += '<button type="button" class="btn-secondary" onclick="manager.closeConsiderOverlay()">Cancel</button>';
-            overlayHTML += '<button type="button" class="btn-secondary" onclick="manager.generateConsiderPDF()">Generate PDF</button>';
-            overlayHTML += '<button type="submit" class="btn-primary">Save Annotation</button>';
-            overlayHTML += '</div></form>';
-        } else {
-            overlayHTML += '</div></div>';  // Close checkbox-group and section
-            overlayHTML += '<div class="annotation-actions">';
-            overlayHTML += '<button type="button" class="btn-secondary" onclick="manager.closeConsiderOverlay()">Close</button>';
-            overlayHTML += '<button type="button" class="btn-secondary" onclick="manager.generateConsiderPDF()">Generate PDF</button>';
+            overlayHTML += '<label for="updateReason">Reason</label>';
+            overlayHTML += '<textarea id="updateReason" rows="3" placeholder="Explain the reason for this status update..."></textarea>';
+            overlayHTML += '</div>';
+            
+            // Add update button
+            overlayHTML += '<button type="button" class="btn-add-update" onclick="manager.addUpdateToQueue()">Add update</button>';
+            
             overlayHTML += '</div>';
         }
         
-        // Show existing annotations
+        // Show existing annotations from database
         if (existingAnnotations.length > 0) {
-            overlayHTML += '<div class="annotation-section annotation-history">';
-            overlayHTML += '<h3>Annotation History</h3>';
+            overlayHTML += '<div class="annotation-history-section">';
+            overlayHTML += '<h3>Previous Updates</h3>';
             
             existingAnnotations.forEach(ann => {
                 const date = new Date(ann.timestamp).toLocaleString('en-GB');
@@ -17203,55 +17214,129 @@ class ThirdfortChecksManager {
             overlayHTML += '</div>';
         }
         
-        overlayHTML += '</div></div></div>';  // Close body, content, overlay
+        overlayHTML += '</div></div></div>';
         
         // Add to DOM
         document.body.insertAdjacentHTML('beforeend', overlayHTML);
         
-        // Add form submit handler
-        if (this.mode === 'edit') {
-            const form = document.getElementById('considerAnnotationForm');
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.saveConsiderAnnotations(check);
-            });
-        }
-    }
-    
-    closeConsiderOverlay() {
-        const overlay = document.getElementById('considerOverlay');
-        if (overlay) overlay.remove();
+        // Render any pending updates
+        this.renderPendingUpdates();
     }
     
     /**
-     * Save consider annotations
+     * Add selected objectives to update queue
      */
-    saveConsiderAnnotations(check) {
-        const form = document.getElementById('considerAnnotationForm');
-        const selectedObjectives = Array.from(form.querySelectorAll('input[name="objectives"]:checked'));
+    addUpdateToQueue() {
+        const selectedObjectives = Array.from(document.querySelectorAll('#considerOverlay input[name="objectives"]:checked'));
+        const status = document.getElementById('updateStatus').value;
+        const reason = document.getElementById('updateReason').value.trim();
         
         if (selectedObjectives.length === 0) {
-            alert('Please select at least one item to annotate');
+            alert('Please select at least one objective');
             return;
         }
-        
-        const newStatus = document.getElementById('considerStatus').value;
-        const reason = document.getElementById('considerReason').value.trim();
         
         if (!reason) {
-            alert('Please provide a reason for this annotation');
+            alert('Please provide a reason');
             return;
         }
         
-        // Build annotations array
-        const annotations = selectedObjectives.map(checkbox => ({
-            taskType: checkbox.value.split('.')[0],
-            objectivePath: checkbox.value,
-            originalStatus: checkbox.dataset.status,
-            newStatus,
-            reason,
-            timestamp: new Date().toISOString()
-        }));
+        // Create update object
+        const update = {
+            id: Date.now(),
+            objectives: selectedObjectives.map(cb => ({
+                path: cb.value,
+                taskType: cb.dataset.task,
+                label: cb.dataset.label,
+                originalStatus: cb.dataset.status
+            })),
+            status,
+            reason
+        };
+        
+        this.pendingUpdates.push(update);
+        
+        // Clear form
+        selectedObjectives.forEach(cb => cb.checked = false);
+        document.getElementById('updateReason').value = '';
+        
+        // Re-render queue
+        this.renderPendingUpdates();
+        
+        // Enable save button
+        document.getElementById('saveAllBtn').disabled = false;
+    }
+    
+    /**
+     * Render pending updates queue
+     */
+    renderPendingUpdates() {
+        const queueContainer = document.getElementById('updatesQueue');
+        if (!queueContainer) return;
+        
+        if (this.pendingUpdates.length === 0) {
+            queueContainer.innerHTML = '<p class="text-muted">No updates queued. Select objectives below and add an update.</p>';
+            return;
+        }
+        
+        let queueHTML = '';
+        this.pendingUpdates.forEach(update => {
+            const taskTitle = this.getTaskTitle(update.objectives[0].taskType);
+            const objectivesList = update.objectives.map(obj => '* ' + obj.label).join(' ');
+            
+            queueHTML += '<div class="update-queue-card">';
+            queueHTML += '<div class="update-queue-header">';
+            queueHTML += '<span>✓ ' + taskTitle + ' <span class="status-badge ' + update.status + '">[' + update.status.toUpperCase() + ']</span></span>';
+            queueHTML += '<button class="remove-update-btn" onclick="manager.removeUpdateFromQueue(' + update.id + ')">×</button>';
+            queueHTML += '</div>';
+            queueHTML += '<div class="update-queue-body">';
+            queueHTML += '<p>' + update.reason + '</p>';
+            queueHTML += '<p class="objectives-list">' + objectivesList + '</p>';
+            queueHTML += '</div></div>';
+        });
+        
+        queueContainer.innerHTML = queueHTML;
+    }
+    
+    /**
+     * Remove update from queue
+     */
+    removeUpdateFromQueue(updateId) {
+        this.pendingUpdates = this.pendingUpdates.filter(u => u.id !== updateId);
+        this.renderPendingUpdates();
+        
+        // Disable save button if queue is empty
+        if (this.pendingUpdates.length === 0) {
+            const saveBtn = document.getElementById('saveAllBtn');
+            if (saveBtn) saveBtn.disabled = true;
+        }
+    }
+    
+    /**
+     * Save all pending updates
+     */
+    savePendingUpdates() {
+        if (this.pendingUpdates.length === 0) {
+            alert('No updates to save');
+            return;
+        }
+        
+        const check = this.currentCheck;
+        
+        // Convert pending updates to annotations format
+        const annotations = [];
+        this.pendingUpdates.forEach(update => {
+            update.objectives.forEach(obj => {
+                annotations.push({
+                    taskType: obj.taskType,
+                    objectivePath: obj.path,
+                    originalStatus: obj.originalStatus,
+                    newStatus: update.status,
+                    reason: update.reason,
+                    timestamp: new Date().toISOString()
+                });
+            });
+        });
         
         // Send to parent
         this.sendMessage('save-consider-annotations', {
@@ -17259,7 +17344,17 @@ class ThirdfortChecksManager {
             annotations
         });
         
+        // Clear pending updates
+        this.pendingUpdates = [];
+        
         this.closeConsiderOverlay();
+    }
+    
+    closeConsiderOverlay() {
+        const overlay = document.getElementById('considerOverlay');
+        if (overlay) overlay.remove();
+        // Clear pending updates when closing
+        this.pendingUpdates = [];
     }
     
     /**

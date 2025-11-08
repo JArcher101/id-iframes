@@ -3802,3 +3802,195 @@ body {
     white-space: nowrap;
 }
 
+
+/* ===================================================================
+   QUEUE-BASED OVERLAY STYLES
+   =================================================================== */
+
+.annotation-overlay-header .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-primary-small {
+    padding: 8px 20px;
+    background: #1d71b8;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Transport', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary-small:hover:not(:disabled) {
+    background: #155a93;
+}
+
+.btn-primary-small:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.updates-queue-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e1e4e8;
+}
+
+.updates-queue-section h3 {
+    font-family: 'Transport', sans-serif;
+    font-size: 15px;
+    color: #112F5B;
+    margin: 0 0 12px 0;
+    text-decoration: underline;
+}
+
+.updates-queue {
+    min-height: 60px;
+}
+
+.update-queue-card {
+    background: white;
+    border: 1px solid #e1e4e8;
+    border-left: 4px solid #1d71b8;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.update-queue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.update-queue-header span {
+    font-family: 'Transport', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #112F5B;
+}
+
+.remove-update-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #dc3545;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.remove-update-btn:hover {
+    background: #fef2f2;
+}
+
+.update-queue-body {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 13px;
+}
+
+.update-queue-body p {
+    margin: 0 0 6px 0;
+    color: #333;
+}
+
+.objectives-list {
+    font-size: 11px;
+    color: #666;
+    font-style: italic;
+}
+
+.add-update-section {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.add-update-section h3 {
+    font-family: 'Transport', sans-serif;
+    font-size: 15px;
+    color: #112F5B;
+    margin: 0 0 15px 0;
+    text-decoration: underline;
+}
+
+.objectives-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.objective-column h4 {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 13px;
+    color: #112F5B;
+    margin: 0 0 8px 0;
+    font-weight: 600;
+}
+
+.objective-radio {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    cursor: pointer;
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+    color: #333;
+}
+
+.objective-radio input[type="checkbox"] {
+    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.objective-radio:hover span {
+    color: #1d71b8;
+}
+
+.btn-add-update {
+    width: 100%;
+    padding: 12px;
+    background: rgb(0,60,113);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Transport', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-update:hover {
+    background: rgb(0,40,80);
+}
+
+.annotation-history-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.annotation-history-section h3 {
+    font-family: 'Transport', sans-serif;
+    font-size: 15px;
+    color: #112F5B;
+    margin: 0 0 15px 0;
+}
+
