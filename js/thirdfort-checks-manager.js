@@ -89,10 +89,43 @@ class ThirdfortChecksManager {
                 console.log(`🔒 Mode set to: ${this.mode}`);
                 this.loadChecks(data.checks || []);
                 break;
+                
+            case 'save-success':
+                console.log('✅ Save successful:', data);
+                this.handleSaveSuccess(data);
+                break;
+                
             case 'error':
                 console.error('❌ Error from parent:', data.message);
                 this.showError(data.message);
                 break;
+        }
+    }
+    
+    handleSaveSuccess(data) {
+        // Handle successful save based on what was saved
+        if (this.pendingSave) {
+            const saveType = this.pendingSave.type;
+            
+            if (saveType === 'consider') {
+                // Generate PDF and open in popup
+                console.log('📄 Generating consider annotations PDF...');
+                this.generateConsiderPDF();
+                // Close overlay after PDF generation starts
+                setTimeout(() => this.closeConsiderOverlay(), 500);
+            } else if (saveType === 'pep-dismissal') {
+                // Just close overlay - API will trigger webhook with updated report
+                console.log('✅ PEP dismissals saved - closing overlay');
+                this.closePepOverlay();
+            } else if (saveType === 'sof') {
+                // Generate PDF and open in popup
+                console.log('📄 Generating SoF investigation PDF...');
+                this.generateSofPDF();
+                // Close overlay after PDF generation starts
+                setTimeout(() => this.closeSofOverlay(), 500);
+            }
+            
+            this.pendingSave = null;
         }
     }
     
@@ -17666,16 +17699,20 @@ class ThirdfortChecksManager {
             });
         });
         
-        // Send to parent
+        // Send to parent and wait for success
         this.sendMessage('save-consider-annotations', {
             checkId: check.checkId || check.transactionId,
             annotations
         });
         
+        // Store context for success handler
+        this.pendingSave = {
+            type: 'consider',
+            check: check
+        };
+        
         // Clear pending updates
         this.pendingUpdates = [];
-        
-        this.closeConsiderOverlay();
     }
     
     closeConsiderOverlay() {
@@ -17865,13 +17902,17 @@ class ThirdfortChecksManager {
             return;
         }
         
-        // Send to parent
+        // Send to parent and wait for success
         this.sendMessage('save-sof-annotations', {
             checkId: check.checkId || check.transactionId,
             notes
         });
         
-        this.closeSofOverlay();
+        // Store context for success handler
+        this.pendingSave = {
+            type: 'sof',
+            check: check
+        };
     }
     
     /**
@@ -18351,10 +18392,14 @@ class ThirdfortChecksManager {
             dismissals
         });
         
+        // Store context for success handler
+        this.pendingSave = {
+            type: 'pep-dismissal',
+            check: check
+        };
+        
         // Clear pending dismissals
         this.pendingDismissals = [];
-        
-        this.closePepOverlay();
     }
     
     closePepOverlay(clearQueue = true) {
