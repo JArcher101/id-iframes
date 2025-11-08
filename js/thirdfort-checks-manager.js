@@ -17832,20 +17832,42 @@ class ThirdfortChecksManager {
             
             existingAnnotations.forEach(annotation => {
                 const date = new Date(annotation.timestamp).toLocaleString('en-GB');
+                const investigation = annotation.investigation || {};
+                
                 overlayHTML += '<div class="annotation-card">';
                 overlayHTML += '<div class="annotation-card-header">';
+                overlayHTML += '<span class="annotation-user">By: ' + (annotation.userName || annotation.user) + '</span>';
                 overlayHTML += '<span class="annotation-date">' + date + '</span>';
                 overlayHTML += '</div>';
                 overlayHTML += '<div class="annotation-card-body">';
                 
-                // Show notes from this annotation session
-                if (annotation.notes) {
-                    Object.entries(annotation.notes).forEach(([key, note]) => {
-                        overlayHTML += '<p class="annotation-note"><strong>' + key + ':</strong> ' + note + '</p>';
+                // Show funding method annotations
+                if (investigation.fundingMethods && investigation.fundingMethods.length > 0) {
+                    investigation.fundingMethods.forEach(fm => {
+                        overlayHTML += '<div class="prev-annotation-item">';
+                        overlayHTML += '<strong>' + fm.fundType + ':</strong>';
+                        
+                        if (fm.verified && fm.verified.length > 0) {
+                            overlayHTML += '<div class="prev-checkboxes">Verified: ' + fm.verified.join(', ') + '</div>';
+                        }
+                        
+                        if (fm.transactionMarkers && Object.keys(fm.transactionMarkers).length > 0) {
+                            overlayHTML += '<div class="prev-tx-markers">Transaction markers: ';
+                            Object.entries(fm.transactionMarkers).forEach(([txId, marker]) => {
+                                const markerIcon = marker === 'verified' ? '✓' : marker === 'rejected' ? '✗' : '?';
+                                overlayHTML += markerIcon + ' ';
+                            });
+                            overlayHTML += '</div>';
+                        }
+                        
+                        if (fm.note) {
+                            overlayHTML += '<div class="prev-note">' + fm.note + '</div>';
+                        }
+                        
+                        overlayHTML += '</div>';
                     });
                 }
                 
-                overlayHTML += '<p class="annotation-user">By: ' + (annotation.userName || annotation.user) + '</p>';
                 overlayHTML += '</div></div>';
             });
             
@@ -18050,11 +18072,18 @@ class ThirdfortChecksManager {
                 const currencySymbol = this.getCurrencyFlag(tx.currency || 'GBP');
                 const txAmount = tx.amount >= 0 ? '+' : '';
                 
-                html += '<div class="matched-tx-row">';
+                html += '<div class="matched-tx-row-with-markers">';
+                html += '<div class="matched-tx-info">';
                 html += `<span class="matched-tx-date">${date}</span>`;
                 html += `<span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>`;
                 html += `<span class="matched-tx-account">${accountName}</span>`;
                 html += `<span class="matched-tx-amount">${txAmount}${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>`;
+                html += '</div>';
+                html += '<div class="tx-marker-actions">';
+                html += `<button type="button" class="tx-marker-btn verified" data-tx-id="${txId}" data-marker="verified" title="Mark as verified" onclick="this.classList.toggle('active')">✓</button>`;
+                html += `<button type="button" class="tx-marker-btn rejected" data-tx-id="${txId}" data-marker="rejected" title="Mark as unrelated" onclick="this.classList.toggle('active')">✗</button>`;
+                html += `<button type="button" class="tx-marker-btn review" data-tx-id="${txId}" data-marker="review" title="Needs review" onclick="this.classList.toggle('active')">?</button>`;
+                html += '</div>';
                 html += '</div>';
             }
         });
@@ -18223,28 +18252,39 @@ class ThirdfortChecksManager {
             timestamp: new Date().toISOString()
         };
         
-        // Collect funding method notes and verifications
+        // Collect funding method notes, verifications, and transaction markers
         const fundingNotes = form.querySelectorAll('textarea.sof-note-input');
         fundingNotes.forEach(textarea => {
             const note = textarea.value.trim();
             const fundIdx = textarea.dataset.fundIdx;
             const fundType = textarea.dataset.fundType;
             
-            // Get verification checkboxes for this funding method
-            const checkboxes = form.querySelectorAll(`input[type="checkbox"][name*="_verified"]`);
+            // Get ALL verification checkboxes (they're not scoped per funding method)
+            const checkboxes = form.querySelectorAll(`input[type="checkbox"]:checked`);
             const verified = [];
             checkboxes.forEach(cb => {
-                if (cb.checked) {
-                    verified.push(cb.value);
+                verified.push(cb.value);
+            });
+            
+            // Get transaction markers for ALL transactions (collect all active markers)
+            const transactionMarkers = {};
+            const markerButtons = form.querySelectorAll('.tx-marker-btn.active');
+            markerButtons.forEach(btn => {
+                const txId = btn.dataset.txId;
+                const marker = btn.dataset.marker; // 'verified', 'rejected', 'review'
+                if (txId) {
+                    transactionMarkers[txId] = marker;
                 }
             });
             
-            if (note || verified.length > 0) {
+            // Only add if there's a note, verification, or transaction markers
+            if (note || verified.length > 0 || Object.keys(transactionMarkers).length > 0) {
                 investigation.fundingMethods.push({
                     fundIdx: fundIdx,
                     fundType: fundType,
                     note: note,
-                    verified: verified
+                    verified: verified,
+                    transactionMarkers: transactionMarkers
                 });
             }
         });
