@@ -1459,14 +1459,18 @@ class ThirdfortChecksManager {
         // Wrap in task card format (with RED consider status icon)
         const redConsiderIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
         
-        // Build header checks with red flag icon
+        // Build header checks with red flag icon (using custom red consider icon)
+        const redCheckIcon = `
+            <svg class="task-check-icon" viewBox="0 0 24 24" width="16" height="16">
+                <circle cx="12" cy="12" r="10" fill="#d32f2f"/>
+                <line x1="7" y1="12" x2="17" y2="12" stroke="#ffffff" stroke-width="2"/>
+            </svg>
+        `;
+        
         const headerChecksHtml = `
             <div class="task-header-checks">
                 <div class="task-check-item">
-                    <svg class="task-check-icon" viewBox="0 0 300 300">
-                        <path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/>
-                        <path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/>
-                    </svg>
+                    ${redCheckIcon}
                     <span class="task-check-text">${totalFlags} Red ${flagWord} identified</span>
                 </div>
             </div>
