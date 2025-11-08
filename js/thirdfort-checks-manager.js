@@ -17730,182 +17730,508 @@ class ThirdfortChecksManager {
         const sofTask = outcomes['sof:v1'];
         const bankSummary = outcomes['bank:summary'];
         const bankStatement = outcomes['bank:statement'];
-        const existingNotes = check.sofAnnotations || [];
+        const existingAnnotations = check.sofAnnotations || [];
         
-        // Extract funding methods
-        const fundingMethods = [];
-        if (sofTask?.data?.funds) {
-            sofTask.data.funds.forEach(fund => {
-                fundingMethods.push({
-                    type: fund.type || fund.fund_type,
-                    amount: fund.amount,
-                    description: fund.description
+        const breakdown = sofTask?.breakdown || {};
+        const funds = breakdown.funds || [];
+        const property = breakdown.property || {};
+        
+        // Get accounts and matches
+        const accounts = bankStatement?.breakdown?.accounts || bankSummary?.breakdown?.accounts || {};
+        const sofMatches = bankSummary?.breakdown?.analysis?.sof_matches || 
+                          bankStatement?.breakdown?.analysis?.sof_matches || {};
+        
+        // Get bank analysis data
+        const analysis = bankStatement?.breakdown?.analysis || bankSummary?.breakdown?.analysis || {};
+        const chains = analysis.chain_analysis || [];
+        const largeTransactions = analysis.largest_individual_transactions || [];
+        
+        let overlayHTML = '<div class="annotation-overlay sof-investigation-overlay" id="sofOverlay">';
+        overlayHTML += '<div class="annotation-overlay-backdrop" onclick="manager.closeSofOverlay()"></div>';
+        overlayHTML += '<div class="annotation-overlay-content">';
+        
+        // Header with SAVE button
+        overlayHTML += '<div class="annotation-overlay-header">';
+        overlayHTML += '<h2>Source of Funds Investigation</h2>';
+        overlayHTML += '<div class="header-actions">';
+        if (this.mode === 'edit') {
+            overlayHTML += '<button class="btn-primary-small" type="button" onclick="manager.saveSofInvestigation()">SAVE</button>';
+        }
+        overlayHTML += '<button class="overlay-close-btn" onclick="manager.closeSofOverlay()">✕</button>';
+        overlayHTML += '</div></div>';
+        
+        overlayHTML += '<div class="annotation-overlay-body">';
+        overlayHTML += '<form id="sofInvestigationForm">';
+        
+        // Property Info Section (from task card)
+        if (property.address) {
+            const addr = property.address;
+            const fullAddress = `${addr.building_number || ''} ${addr.street || ''}, ${addr.town || ''}, ${addr.postcode || ''}`.trim();
+            const price = property.price ? `£${(property.price / 100).toLocaleString()}` : 'Not specified';
+            
+            overlayHTML += '<div class="sof-section">';
+            overlayHTML += '<h3>Property Details</h3>';
+            overlayHTML += '<div class="property-info-grid">';
+            overlayHTML += `<div class="property-info-item">📍 <strong>Address:</strong> ${fullAddress}</div>`;
+            overlayHTML += `<div class="property-info-item">💷 <strong>Purchase Price:</strong> ${price}</div>`;
+            overlayHTML += '</div></div>';
+        }
+        
+        // Funding Methods Section
+        if (funds.length > 0) {
+            overlayHTML += '<div class="sof-section">';
+            overlayHTML += '<h3>Funding Methods</h3>';
+            
+            funds.forEach((fund, fundIdx) => {
+                overlayHTML += this.createSofFundingCard(fund, fundIdx, sofMatches, accounts, check);
+            });
+            
+            overlayHTML += '</div>';
+        }
+        
+        // Bank Analysis Section
+        if (chains.length > 0 || largeTransactions.length > 0) {
+            overlayHTML += '<div class="sof-section">';
+            overlayHTML += '<h3>Bank Analysis</h3>';
+            
+            // Transaction Chains
+            if (chains.length > 0) {
+                overlayHTML += '<div class="analysis-subsection">';
+                overlayHTML += '<h4>Transaction Chains (' + chains.length + ')</h4>';
+                
+                chains.forEach((chain, chainIdx) => {
+                    overlayHTML += this.createSofChainCard(chain, chainIdx);
                 });
-            });
+                
+                overlayHTML += '</div>';
+            }
+            
+            // Large One-Off Transactions
+            if (largeTransactions.length > 0) {
+                overlayHTML += '<div class="analysis-subsection">';
+                overlayHTML += '<h4>Large One-Off Transactions</h4>';
+                
+                largeTransactions.forEach((tx, txIdx) => {
+                    overlayHTML += this.createSofTransactionCard(tx, txIdx, accounts);
+                });
+                
+                overlayHTML += '</div>';
+            }
+            
+            overlayHTML += '</div>';
         }
         
-        // Extract red flags
-        const redFlags = [];
-        if (bankSummary?.breakdown?.red_flags) {
-            bankSummary.breakdown.red_flags.forEach(flag => {
-                redFlags.push({ source: 'bank:summary', text: flag });
-            });
-        }
-        if (bankStatement?.breakdown?.red_flags) {
-            bankStatement.breakdown.red_flags.forEach(flag => {
-                redFlags.push({ source: 'bank:statement', text: flag });
-            });
-        }
-        
-        let overlayHTML = `
-            <div class="annotation-overlay" id="sofOverlay">
-                <div class="annotation-overlay-backdrop" onclick="manager.closeSofOverlay()"></div>
-                <div class="annotation-overlay-content">
-                    <div class="annotation-overlay-header">
-                        <h2>Source of Funds Investigation</h2>
-                        <button class="overlay-close-btn" onclick="manager.closeSofOverlay()">✕</button>
-                    </div>
-                    
-                    <div class="annotation-overlay-body">
-                        <form id="sofAnnotationForm">
-        `;
-        
-        // Funding methods section
-        if (fundingMethods.length > 0) {
-            overlayHTML += `
-                            <div class="annotation-section">
-                                <h3>Funding Methods</h3>
-            `;
+        // Previous Annotations Section
+        if (existingAnnotations.length > 0) {
+            overlayHTML += '<div class="annotation-history-section">';
+            overlayHTML += '<h3>Investigation History</h3>';
             
-            fundingMethods.forEach((fund, idx) => {
-                overlayHTML += `
-                                <div class="sof-item">
-                                    <h4>${fund.type ? fund.type.replace('fund:', '').replace(/_/g, ' ').toUpperCase() : 'Unknown'}</h4>
-                                    ${fund.amount ? `<p>Amount: £${fund.amount.toLocaleString()}</p>` : ''}
-                                    ${fund.description ? `<p>${fund.description}</p>` : ''}
-                                    <div class="form-group">
-                                        <label for="sofNote${idx}">Investigation Notes</label>
-                                        <textarea id="sofNote${idx}" data-category="funding" data-method="${fund.type}" 
-                                            rows="3" placeholder="Add investigation notes for this funding source..."></textarea>
-                                    </div>
-                                </div>
-                `;
+            existingAnnotations.forEach(annotation => {
+                const date = new Date(annotation.timestamp).toLocaleString('en-GB');
+                overlayHTML += '<div class="annotation-card">';
+                overlayHTML += '<div class="annotation-card-header">';
+                overlayHTML += '<span class="annotation-date">' + date + '</span>';
+                overlayHTML += '</div>';
+                overlayHTML += '<div class="annotation-card-body">';
+                
+                // Show notes from this annotation session
+                if (annotation.notes) {
+                    Object.entries(annotation.notes).forEach(([key, note]) => {
+                        overlayHTML += '<p class="annotation-note"><strong>' + key + ':</strong> ' + note + '</p>';
+                    });
+                }
+                
+                overlayHTML += '<p class="annotation-user">By: ' + (annotation.userName || annotation.user) + '</p>';
+                overlayHTML += '</div></div>';
             });
             
-            overlayHTML += `</div>`;
+            overlayHTML += '</div>';
         }
         
-        // Red flags section
-        if (redFlags.length > 0) {
-            overlayHTML += `
-                            <div class="annotation-section">
-                                <h3>Red Flags</h3>
-            `;
-            
-            redFlags.forEach((flag, idx) => {
-                overlayHTML += `
-                                <div class="sof-item red-flag">
-                                    <h4>⚠ ${flag.text}</h4>
-                                    <p class="text-muted">Source: ${flag.source}</p>
-                                    <div class="form-group">
-                                        <label for="flagNote${idx}">Investigation Notes</label>
-                                        <textarea id="flagNote${idx}" data-category="redFlag" data-flag="${flag.text}" 
-                                            rows="3" placeholder="Add investigation notes for this red flag..."></textarea>
-                                    </div>
-                                </div>
-                `;
-            });
-            
-            overlayHTML += `</div>`;
-        }
-        
-        overlayHTML += `
-                            <div class="annotation-actions">
-                                <button type="button" class="btn-secondary" onclick="manager.closeSofOverlay()">Close</button>
-                                <button type="button" class="btn-secondary" onclick="manager.generateSofPDF()">Generate PDF</button>
-                                <button type="submit" class="btn-primary">Save Notes</button>
-                            </div>
-                        </form>
-        `;
-        
-        // Show existing notes
-        if (existingNotes.length > 0) {
-            overlayHTML += `
-                        <div class="annotation-section annotation-history">
-                            <h3>Previous Notes</h3>
-            `;
-            
-            existingNotes.forEach(note => {
-                const date = new Date(note.timestamp).toLocaleString('en-GB');
-                overlayHTML += `
-                    <div class="annotation-card sof-note">
-                        <div class="annotation-card-header">
-                            <span class="annotation-objective">${note.category === 'funding' ? note.fundingMethod : note.redFlagType}</span>
-                            <span class="annotation-date">${date}</span>
-                        </div>
-                        <div class="annotation-card-body">
-                            <p class="annotation-reason">${note.note}</p>
-                            <p class="annotation-user">By: ${note.userName || note.user}</p>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            overlayHTML += `</div>`;
-        }
-        
-        overlayHTML += `
-                    </div>
-                </div>
-            </div>
-        `;
+        overlayHTML += '</form></div></div></div>';
         
         // Add to DOM
         document.body.insertAdjacentHTML('beforeend', overlayHTML);
+    }
+    
+    createSofFundingCard(fund, fundIdx, sofMatches, accounts, check) {
+        const type = fund.type || 'unknown';
+        const data = fund.data || {};
+        const amount = data.amount ? `£${(data.amount / 100).toLocaleString()}` : 'Not specified';
         
-        // Add form submit handler
-        const form = document.getElementById('sofAnnotationForm');
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.saveSofAnnotations(check);
+        let html = '<div class="sof-funding-card">';
+        
+        // Card header with type and amount
+        const typeLabel = this.getFundingTypeLabel(type);
+        html += '<div class="sof-card-header">';
+        html += `<div class="sof-card-title">${typeLabel}</div>`;
+        html += `<div class="sof-card-amount">${amount}</div>`;
+        html += '</div>';
+        
+        // Card body
+        html += '<div class="sof-card-body">';
+        
+        // Type-specific info and verification checkboxes
+        html += this.createFundingTypeSection(fund, sofMatches, accounts);
+        
+        // Notes textarea
+        html += '<div class="form-group">';
+        html += `<label>Investigation Notes</label>`;
+        html += `<textarea class="sof-note-input" data-fund-idx="${fundIdx}" data-fund-type="${type}" rows="3" placeholder="Add investigation notes..."></textarea>`;
+        html += '</div>';
+        
+        html += '</div></div>';
+        
+        return html;
+    }
+    
+    getFundingTypeLabel(type) {
+        const labels = {
+            'fund:savings': '💰 Savings',
+            'fund:gift': '🎁 Gift',
+            'fund:mortgage': '🏦 Mortgage',
+            'fund:property_sale': '🏠 Property Sale',
+            'fund:sale:property': '🏠 Property Sale',
+            'fund:asset_sale': '💎 Asset Sale',
+            'fund:sale:assets': '💎 Asset Sale',
+            'fund:htb': '🏡 Help to Buy/LISA',
+            'fund:htb_lisa': '🏡 Help to Buy/LISA',
+            'fund:inheritance': '👴 Inheritance',
+            'fund:income': '💼 Income',
+            'fund:loan': '💳 Loan',
+            'fund:investment': '📈 Investment',
+            'fund:business': '🏢 Business',
+            'fund:other': '📋 Other'
+        };
+        return labels[type] || '📋 Unknown Funding Source';
+    }
+    
+    createFundingTypeSection(fund, sofMatches, accounts) {
+        const type = fund.type || 'unknown';
+        const data = fund.data || {};
+        let html = '';
+        
+        // Get matched transactions for this funding type
+        const matchedTxIds = this.getMatchedTransactions(type, sofMatches);
+        
+        // Type-specific content
+        if (type === 'fund:gift') {
+            // Gift details
+            const giftor = data.giftor || {};
+            html += '<div class="fund-details">';
+            if (giftor.name) html += `<p><strong>Giftor:</strong> ${giftor.name}</p>`;
+            if (giftor.relationship) html += `<p><strong>Relationship:</strong> ${giftor.relationship}</p>`;
+            if (giftor.phone) html += `<p><strong>Phone:</strong> ${giftor.phone}</p>`;
+            html += '</div>';
+            
+            // Verification checkboxes
+            html += '<div class="verification-checks">';
+            html += '<label><input type="checkbox" name="gift_verified" value="relationship"> Giftor relationship confirmed</label>';
+            html += '<label><input type="checkbox" name="gift_verified" value="checks"> Giftor checks completed</label>';
+            if (matchedTxIds.length > 0) {
+                html += '<label><input type="checkbox" name="gift_verified" value="transactions"> Transactions reviewed and linked</label>';
+            }
+            html += '</div>';
+            
+            // Matched transactions
+            if (matchedTxIds.length > 0) {
+                html += this.createMatchedTransactionsSection(matchedTxIds, accounts, 'gift');
+            }
+        }
+        else if (type === 'fund:savings') {
+            // Savings details
+            html += '<div class="fund-details">';
+            if (data.account_name) html += `<p><strong>Account:</strong> ${data.account_name}</p>`;
+            if (data.balance) html += `<p><strong>Balance:</strong> £${(data.balance / 100).toLocaleString()}</p>`;
+            html += '</div>';
+            
+            // Verification checkboxes
+            html += '<div class="verification-checks">';
+            html += '<label><input type="checkbox" name="savings_verified" value="statements"> Account statements reviewed</label>';
+            html += '<label><input type="checkbox" name="savings_verified" value="balance"> Balance verified via Bank Summary</label>';
+            html += '</div>';
+        }
+        else if (type.includes('sale')) {
+            // Asset/Property sale
+            const documents = data.documents || [];
+            html += '<div class="fund-details">';
+            if (data.description) html += `<p>${data.description}</p>`;
+            if (documents.length > 0) {
+                html += `<p><strong>Documents uploaded:</strong> ${documents.length}</p>`;
+            }
+            html += '</div>';
+            
+            // Verification checkboxes
+            html += '<div class="verification-checks">';
+            html += '<label><input type="checkbox" name="sale_verified" value="documents"> Documents reviewed and verified</label>';
+            html += '<label><input type="checkbox" name="sale_verified" value="proceeds"> Sale proceeds confirmed</label>';
+            html += '</div>';
+        }
+        else if (type === 'fund:mortgage') {
+            // Mortgage details
+            html += '<div class="fund-details">';
+            if (data.lender) html += `<p><strong>Lender:</strong> ${data.lender}</p>`;
+            if (data.ltv) html += `<p><strong>LTV:</strong> ${data.ltv}%</p>`;
+            html += '</div>';
+            
+            // Verification checkboxes
+            html += '<div class="verification-checks">';
+            html += '<label><input type="checkbox" name="mortgage_verified" value="offer"> Mortgage offer reviewed</label>';
+            html += '<label><input type="checkbox" name="mortgage_verified" value="affordability"> Affordability confirmed</label>';
+            html += '</div>';
+        }
+        else {
+            // Generic funding source
+            html += '<div class="fund-details">';
+            if (data.description) html += `<p>${data.description}</p>`;
+            html += '</div>';
+            
+            html += '<div class="verification-checks">';
+            html += '<label><input type="checkbox" name="generic_verified" value="verified"> Source verified</label>';
+            html += '</div>';
+        }
+        
+        return html;
+    }
+    
+    getMatchedTransactions(fundType, sofMatches) {
+        const fundTypeMap = {
+            'fund:gift': ['gift', 'gift_transactions'],
+            'fund:mortgage': ['mortgage', 'mortgage_transactions'],
+            'fund:savings': ['savings', 'savings_transactions', 'salary_transactions'],
+            'fund:property_sale': ['property_sale', 'property_sale_transactions'],
+            'fund:sale:property': ['property_sale', 'property_sale_transactions'],
+            'fund:asset_sale': ['asset_sale', 'asset_sale_transactions'],
+            'fund:sale:assets': ['asset_sale', 'asset_sale_transactions']
+        };
+        
+        const matchKeys = fundTypeMap[fundType] || [];
+        let matchedTxIds = [];
+        
+        for (const key of matchKeys) {
+            if (sofMatches[key] && Array.isArray(sofMatches[key])) {
+                matchedTxIds = [...matchedTxIds, ...sofMatches[key]];
+            }
+        }
+        
+        return [...new Set(matchedTxIds)];
+    }
+    
+    createMatchedTransactionsSection(matchedTxIds, accounts, fundType) {
+        let html = '<div class="matched-tx-section">';
+        html += '<p class="matched-tx-label">Potential Matched Transactions (' + matchedTxIds.length + '):</p>';
+        html += '<div class="matched-tx-list">';
+        
+        matchedTxIds.slice(0, 5).forEach(txId => {
+            // Find transaction in accounts
+            let tx = null;
+            let accountName = '';
+            for (const [accountId, accountData] of Object.entries(accounts)) {
+                const statement = accountData.statement || [];
+                tx = statement.find(t => t.id === txId);
+                if (tx) {
+                    accountName = (accountData.info || accountData).name || 'Account';
+                    break;
+                }
+            }
+            
+            if (tx) {
+                const txDate = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                const txAmount = Math.abs(tx.amount).toFixed(2);
+                const txDesc = tx.description || tx.merchant_name || 'Transaction';
+                
+                html += '<div class="matched-tx-item">';
+                html += `<span class="tx-date">${txDate}</span>`;
+                html += `<span class="tx-desc">${txDesc}</span>`;
+                html += `<span class="tx-amount">£${txAmount}</span>`;
+                html += '<div class="tx-actions">';
+                html += '<button type="button" class="tx-action-btn verified" title="Mark as verified">✓</button>';
+                html += '<button type="button" class="tx-action-btn reject" title="Mark as unrelated">✗</button>';
+                html += '<button type="button" class="tx-action-btn question" title="Needs review">?</button>';
+                html += '</div>';
+                html += '</div>';
+            }
         });
-    }
-    
-    closeSofOverlay() {
-        const overlay = document.getElementById('sofOverlay');
-        if (overlay) overlay.remove();
-    }
-    
-    /**
-     * Save SoF annotations
-     */
-    saveSofAnnotations(check) {
-        const form = document.getElementById('sofAnnotationForm');
-        const textareas = form.querySelectorAll('textarea');
         
-        const notes = [];
-        textareas.forEach(textarea => {
+        if (matchedTxIds.length > 5) {
+            html += `<p class="text-muted">+${matchedTxIds.length - 5} more transactions</p>`;
+        }
+        
+        html += '</div></div>';
+        
+        return html;
+    }
+    
+    createSofChainCard(chain, chainIdx) {
+        let html = '<div class="sof-chain-card">';
+        
+        // Chain description
+        html += '<div class="chain-description">';
+        html += '<strong>Chain ' + (chainIdx + 1) + ':</strong> ';
+        
+        // Build chain description
+        const steps = [];
+        if (chain.source) steps.push('Income');
+        steps.push('Transfer Out');
+        if (chain.in) steps.push('Transfer In');
+        html += steps.join(' → ');
+        
+        html += '</div>';
+        
+        // Chain transactions preview
+        html += '<div class="chain-preview">';
+        
+        if (chain.source) {
+            const sourceAmount = Math.abs(chain.source.amount).toFixed(2);
+            html += `<span class="chain-step">£${sourceAmount} (${chain.source.description || 'Income'})</span>`;
+            html += ' → ';
+        }
+        
+        const outAmount = Math.abs(chain.out.amount).toFixed(2);
+        html += `<span class="chain-step">£${outAmount} (${chain.out.description || 'Transfer'})</span>`;
+        
+        html += '</div>';
+        
+        // Action buttons
+        html += '<div class="chain-actions">';
+        html += '<button type="button" class="btn-sm btn-success" onclick="event.target.classList.toggle(\'active\')">Mark Verified</button>';
+        html += '<button type="button" class="btn-sm btn-warning" onclick="event.target.classList.toggle(\'active\')">Mark Suspicious</button>';
+        html += '</div>';
+        
+        // Notes textarea
+        html += '<div class="form-group">';
+        html += `<textarea class="chain-note-input" data-chain-idx="${chainIdx}" rows="2" placeholder="Add note for this chain..."></textarea>`;
+        html += '</div>';
+        
+        html += '</div>';
+        
+        return html;
+    }
+    
+    createSofTransactionCard(tx, txIdx, accounts) {
+        const txDate = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const txAmount = Math.abs(tx.amount).toFixed(2);
+        const txDesc = tx.description || tx.merchant_name || 'Transaction';
+        
+        // Find account name
+        let accountName = '';
+        for (const [accountId, accountData] of Object.entries(accounts)) {
+            const statement = accountData.statement || [];
+            if (statement.find(t => t.id === tx.id)) {
+                accountName = (accountData.info || accountData).name || 'Account';
+                break;
+            }
+        }
+        
+        let html = '<div class="sof-tx-card">';
+        
+        // Transaction details
+        html += '<div class="tx-details">';
+        html += `<span class="tx-date">${txDate}</span>`;
+        html += `<span class="tx-desc">${txDesc}</span>`;
+        html += `<span class="tx-account">${accountName}</span>`;
+        html += `<span class="tx-amount">£${txAmount}</span>`;
+        html += '</div>';
+        
+        // Action buttons
+        html += '<div class="tx-marker-buttons">';
+        html += '<button type="button" class="btn-sm btn-success" onclick="event.target.classList.toggle(\'active\')">✓ Verified</button>';
+        html += '<button type="button" class="btn-sm btn-danger" onclick="event.target.classList.toggle(\'active\')">⚠️ Suspicious</button>';
+        html += '<button type="button" class="btn-sm btn-warning" onclick="event.target.classList.toggle(\'active\')">? Review</button>';
+        html += '</div>';
+        
+        // Notes textarea
+        html += '<div class="form-group">';
+        html += `<textarea class="tx-note-input" data-tx-idx="${txIdx}" data-tx-id="${tx.id}" rows="2" placeholder="Add note..."></textarea>`;
+        html += '</div>';
+        
+        html += '</div>';
+        
+        return html;
+    }
+    
+    saveSofInvestigation() {
+        const check = this.currentCheck;
+        const form = document.getElementById('sofInvestigationForm');
+        
+        // Collect all data
+        const investigation = {
+            fundingMethods: [],
+            chains: [],
+            transactions: [],
+            timestamp: new Date().toISOString()
+        };
+        
+        // Collect funding method notes and verifications
+        const fundingNotes = form.querySelectorAll('textarea.sof-note-input');
+        fundingNotes.forEach(textarea => {
             const note = textarea.value.trim();
-            if (note) {
-                notes.push({
-                    category: textarea.dataset.category,
-                    fundingMethod: textarea.dataset.method,
-                    redFlagType: textarea.dataset.flag,
-                    note,
-                    timestamp: new Date().toISOString()
+            const fundIdx = textarea.dataset.fundIdx;
+            const fundType = textarea.dataset.fundType;
+            
+            // Get verification checkboxes for this funding method
+            const checkboxes = form.querySelectorAll(`input[type="checkbox"][name*="_verified"]`);
+            const verified = [];
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    verified.push(cb.value);
+                }
+            });
+            
+            if (note || verified.length > 0) {
+                investigation.fundingMethods.push({
+                    fundIdx: fundIdx,
+                    fundType: fundType,
+                    note: note,
+                    verified: verified
                 });
             }
         });
         
-        if (notes.length === 0) {
-            alert('Please add at least one note');
+        // Collect chain notes and markers
+        const chainNotes = form.querySelectorAll('textarea.chain-note-input');
+        chainNotes.forEach(textarea => {
+            const note = textarea.value.trim();
+            const chainIdx = textarea.dataset.chainIdx;
+            
+            if (note) {
+                investigation.chains.push({
+                    chainIdx: chainIdx,
+                    note: note
+                });
+            }
+        });
+        
+        // Collect transaction notes and markers
+        const txNotes = form.querySelectorAll('textarea.tx-note-input');
+        txNotes.forEach(textarea => {
+            const note = textarea.value.trim();
+            const txIdx = textarea.dataset.txIdx;
+            const txId = textarea.dataset.txId;
+            
+            if (note) {
+                investigation.transactions.push({
+                    txIdx: txIdx,
+                    txId: txId,
+                    note: note
+                });
+            }
+        });
+        
+        // Check if any data was collected
+        const hasData = investigation.fundingMethods.length > 0 || 
+                       investigation.chains.length > 0 || 
+                       investigation.transactions.length > 0;
+        
+        if (!hasData) {
+            alert('Please add at least one note or verification');
             return;
         }
         
-        // Send to parent and wait for success
+        // Send to parent
         this.sendMessage('save-sof-annotations', {
             checkId: check.checkId || check.transactionId,
-            notes
+            investigation
         });
         
         // Store context for success handler
@@ -17913,6 +18239,11 @@ class ThirdfortChecksManager {
             type: 'sof',
             check: check
         };
+    }
+    
+    closeSofOverlay() {
+        const overlay = document.getElementById('sofOverlay');
+        if (overlay) overlay.remove();
     }
     
     /**

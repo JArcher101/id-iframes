@@ -4286,3 +4286,317 @@ body {
     color: #666;
 }
 
+/* =====================================================================
+   SOF INVESTIGATION OVERLAY
+   ===================================================================== */
+
+.sof-investigation-overlay .annotation-overlay-content {
+    max-width: 900px;
+}
+
+.sof-section {
+    margin-bottom: 30px;
+}
+
+.sof-section h3 {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 18px;
+    color: #003c71;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e5e5e5;
+}
+
+.property-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.property-info-item {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 13px;
+    color: #333;
+}
+
+.sof-funding-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+
+.sof-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e5e5e5;
+}
+
+.sof-card-title {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 16px;
+    color: #003c71;
+}
+
+.sof-card-amount {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 18px;
+    color: #388e3c;
+}
+
+.sof-card-body {
+    font-family: 'RotisRegular', sans-serif;
+}
+
+.fund-details {
+    margin-bottom: 15px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.fund-details p {
+    margin: 4px 0;
+    font-size: 13px;
+}
+
+.verification-checks {
+    margin-bottom: 15px;
+}
+
+.verification-checks label {
+    display: block;
+    padding: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-radius: 4px;
+}
+
+.verification-checks label:hover {
+    background: #f8f9fa;
+}
+
+.verification-checks input[type="checkbox"] {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.matched-tx-section {
+    margin: 15px 0;
+    padding: 12px;
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    border-radius: 4px;
+}
+
+.matched-tx-label {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 13px;
+    color: #856404;
+    margin-bottom: 10px;
+}
+
+.matched-tx-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.matched-tx-item {
+    display: grid;
+    grid-template-columns: 80px 1fr auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 8px;
+    background: white;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.tx-date {
+    font-weight: 600;
+    color: #666;
+}
+
+.tx-desc {
+    color: #333;
+}
+
+.tx-amount {
+    font-family: 'RotisBold', sans-serif;
+    color: #388e3c;
+}
+
+.tx-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.tx-action-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.tx-action-btn.verified {
+    color: #388e3c;
+}
+
+.tx-action-btn.verified:hover,
+.tx-action-btn.verified.active {
+    background: #388e3c;
+    color: white;
+    border-color: #388e3c;
+}
+
+.tx-action-btn.reject {
+    color: #d32f2f;
+}
+
+.tx-action-btn.reject:hover,
+.tx-action-btn.reject.active {
+    background: #d32f2f;
+    color: white;
+    border-color: #d32f2f;
+}
+
+.tx-action-btn.question {
+    color: #f7931e;
+}
+
+.tx-action-btn.question:hover,
+.tx-action-btn.question.active {
+    background: #f7931e;
+    color: white;
+    border-color: #f7931e;
+}
+
+.analysis-subsection {
+    margin: 20px 0;
+}
+
+.analysis-subsection h4 {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 15px;
+    color: #112F5B;
+    margin-bottom: 12px;
+}
+
+.sof-chain-card,
+.sof-tx-card {
+    background: #f8f9fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 12px;
+}
+
+.chain-description {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 14px;
+    color: #003c71;
+    margin-bottom: 10px;
+}
+
+.chain-preview {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.chain-step {
+    color: #333;
+}
+
+.chain-actions,
+.tx-marker-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'RotisRegular', sans-serif;
+    transition: all 0.2s;
+    opacity: 0.7;
+}
+
+.btn-sm:hover {
+    opacity: 1;
+}
+
+.btn-sm.active {
+    opacity: 1;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+}
+
+.btn-sm.btn-success {
+    background: #388e3c;
+    color: white;
+}
+
+.btn-sm.btn-danger {
+    background: #d32f2f;
+    color: white;
+}
+
+.btn-sm.btn-warning {
+    background: #f7931e;
+    color: white;
+}
+
+.tx-details {
+    display: grid;
+    grid-template-columns: 100px 1fr 150px auto;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e1e4e8;
+    font-size: 13px;
+}
+
+.tx-account {
+    color: #666;
+    font-size: 11px;
+}
+
+.chain-note-input,
+.tx-note-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.chain-note-input:focus,
+.tx-note-input:focus {
+    outline: none;
+    border-color: #1d71b8;
+    box-shadow: 0 0 0 2px rgba(29, 113, 184, 0.1);
+}
+
