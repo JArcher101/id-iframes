@@ -4325,38 +4325,18 @@ body {
     color: #003c71;
 }
 
-.sof-funding-card {
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 15px;
-}
-
 .investigation-section {
     margin-top: 20px;
     padding-top: 15px;
     border-top: 2px solid #e5e5e5;
 }
 
-.investigation-section label {
+.investigation-section .form-group label {
     font-family: 'RotisBold', sans-serif;
     font-size: 13px;
     color: #003c71;
     margin-bottom: 8px;
     display: block;
-}
-
-.fund-details {
-    margin-bottom: 15px;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 4px;
-}
-
-.fund-details p {
-    margin: 4px 0;
-    font-size: 13px;
 }
 
 .verification-checks {
@@ -4383,99 +4363,20 @@ body {
     cursor: pointer;
 }
 
-.matched-tx-section {
-    margin: 15px 0;
-    padding: 12px;
-    background: #fff3cd;
-    border-left: 4px solid #ffc107;
-    border-radius: 4px;
-}
-
-.matched-tx-label {
-    font-family: 'RotisBold', sans-serif;
-    font-size: 13px;
-    color: #856404;
-    margin-bottom: 10px;
-}
-
-.matched-tx-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.matched-tx-item {
-    display: grid;
-    grid-template-columns: 80px 1fr auto auto;
-    gap: 12px;
-    align-items: center;
-    padding: 8px;
-    background: white;
-    border-radius: 4px;
-    font-size: 12px;
-}
-
-.tx-date {
-    font-weight: 600;
-    color: #666;
-}
-
-.tx-desc {
-    color: #333;
-}
-
-.tx-amount {
-    font-family: 'RotisBold', sans-serif;
-    color: #388e3c;
-}
-
-.tx-actions {
-    display: flex;
-    gap: 4px;
-}
-
-.tx-action-btn {
-    width: 28px;
-    height: 28px;
+.sof-note-input {
+    width: 100%;
+    padding: 10px;
     border: 1px solid #ddd;
-    background: white;
     border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 13px;
+    resize: vertical;
 }
 
-.tx-action-btn.verified {
-    color: #388e3c;
-}
-
-.tx-action-btn.verified:hover,
-.tx-action-btn.verified.active {
-    background: #388e3c;
-    color: white;
-    border-color: #388e3c;
-}
-
-.tx-action-btn.reject {
-    color: #d32f2f;
-}
-
-.tx-action-btn.reject:hover,
-.tx-action-btn.reject.active {
-    background: #d32f2f;
-    color: white;
-    border-color: #d32f2f;
-}
-
-.tx-action-btn.question {
-    color: #f7931e;
-}
-
-.tx-action-btn.question:hover,
-.tx-action-btn.question.active {
-    background: #f7931e;
-    color: white;
-    border-color: #f7931e;
+.sof-note-input:focus {
+    outline: none;
+    border-color: #1d71b8;
+    box-shadow: 0 0 0 2px rgba(29, 113, 184, 0.1);
 }
 
 .analysis-subsection {

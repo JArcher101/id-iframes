@@ -17886,24 +17886,58 @@ class ThirdfortChecksManager {
         };
         const typeName = typeNames[cleanType] || cleanType;
         
-        let html = '<div class="funding-source-card sof-funding-card">';
+        let html = '<div class="funding-source-card">';
         
         // Card header with type, amount (same as task card)
-        html += '<div class="funding-card-header">';
-        html += `<div class="funding-card-type">${typeName}</div>`;
-        html += `<div class="funding-card-amount">${amount}</div>`;
+        html += '<div class="funding-header">';
+        html += `<div class="funding-type">${typeName}</div>`;
+        html += `<div class="funding-amount">${amount}</div>`;
         html += '</div>';
-        
-        // Card body with all the same details as task card
-        html += '<div class="funding-card-body">';
         
         // Type-specific details (same as task card)
         html += this.createFundingDetailsSection(fund, data, type);
         
-        // Matched transactions (same as task card)
+        // Matched transactions OR no matches message (same as task card)
         if (matchedTxIds.length > 0) {
             html += this.createFundingMatchedTxSection(matchedTxIds, accounts, type);
+        } else {
+            // No matched transactions - show message
+            const labelMap = {
+                'fund:gift': 'Potential Gift Deposits:',
+                'fund:mortgage': 'Potential Mortgage Deposits:',
+                'fund:savings': 'Verified Salary Deposits:',
+                'fund:income': 'Verified Salary Deposits:'
+            };
+            const matchLabel = labelMap[type] || 'Potential Matched Transactions:';
+            
+            const considerIcon = `<svg class="task-status-icon" viewBox="0 0 300 300" style="width: 20px; height: 20px; margin-right: 8px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+            
+            html += '<div class="matched-transactions-section" style="margin-top: 16px;">';
+            html += `<div class="matched-tx-label">${matchLabel}</div>`;
+            html += '<div class="no-matches-hint">';
+            html += considerIcon;
+            html += '<span>No linked bank transactions detected, manual review required</span>';
+            html += '</div></div>';
         }
+        
+        // Document status (same as task card)
+        const docTaskKey = `documents:${cleanType}`;
+        const hasDocument = check.taskOutcomes && check.taskOutcomes[docTaskKey];
+        const docIcon = hasDocument ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
+        
+        let docStatusText = 'Document uploaded';
+        if (!hasDocument) {
+            if (type === 'fund:gift') {
+                docStatusText = 'Ensure the gifter undergoes their own AML, ID and SoF/SoW Checks';
+            } else {
+                docStatusText = 'Check the report pdf for evidence or obtain from the client and review manually';
+            }
+        }
+        
+        html += '<div class="funding-doc-status">';
+        html += docIcon;
+        html += `<span class="doc-status-text">${docStatusText}</span>`;
+        html += '</div>';
         
         // INVESTIGATION FEATURES (NEW)
         html += '<div class="investigation-section">';
@@ -17918,8 +17952,7 @@ class ThirdfortChecksManager {
         html += '</div>';
         
         html += '</div>'; // Close investigation-section
-        html += '</div>'; // Close card-body
-        html += '</div>'; // Close card
+        html += '</div>'; // Close funding-source-card
         
         return html;
     }
