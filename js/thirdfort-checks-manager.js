@@ -17736,10 +17736,14 @@ class ThirdfortChecksManager {
         const funds = breakdown.funds || [];
         const property = breakdown.property || {};
         
-        // Get accounts and matches
-        const accounts = bankStatement?.breakdown?.accounts || bankSummary?.breakdown?.accounts || {};
+        // Get accounts and matches - check all possible sources
+        const docsBankStatement = outcomes['documents:bank-statement'];
+        const accounts = bankStatement?.breakdown?.accounts || 
+                        bankSummary?.breakdown?.accounts || 
+                        docsBankStatement?.breakdown?.accounts || {};
         const sofMatches = bankSummary?.breakdown?.analysis?.sof_matches || 
-                          bankStatement?.breakdown?.analysis?.sof_matches || {};
+                          bankStatement?.breakdown?.analysis?.sof_matches || 
+                          docsBankStatement?.breakdown?.analysis?.sof_matches || {};
         
         // Get bank analysis data
         const analysis = bankStatement?.breakdown?.analysis || bankSummary?.breakdown?.analysis || {};
