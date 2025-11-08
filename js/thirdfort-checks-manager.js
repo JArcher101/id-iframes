@@ -17785,13 +17785,18 @@ class ThirdfortChecksManager {
             overlayHTML += '</div></div>';
         }
         
+        // Get red flags to associate with funding methods
+        const redFlags = this.extractRedFlags(check);
+        
         // Funding Methods Section
         if (funds.length > 0) {
             overlayHTML += '<div class="sof-section">';
             overlayHTML += '<h3>Funding Methods</h3>';
             
             funds.forEach((fund, fundIdx) => {
-                overlayHTML += this.createSofFundingCard(fund, fundIdx, sofMatches, accounts, check);
+                // Find red flags related to this funding method
+                const relatedFlags = this.getRelatedRedFlags(fund, redFlags);
+                overlayHTML += this.createSofFundingCard(fund, fundIdx, sofMatches, accounts, check, relatedFlags);
             });
             
             overlayHTML += '</div>';
@@ -17852,7 +17857,7 @@ class ThirdfortChecksManager {
                         overlayHTML += '<strong>' + fm.fundType + ':</strong>';
                         
                         if (fm.verified && fm.verified.length > 0) {
-                            overlayHTML += '<div class="prev-checkboxes">Verified: ' + fm.verified.join(', ') + '</div>';
+                            overlayHTML += '<div class="prev-checkboxes">✓ Verified: ' + fm.verified.join(', ') + '</div>';
                         }
                         
                         if (fm.transactionMarkers && Object.keys(fm.transactionMarkers).length > 0) {
@@ -17860,6 +17865,18 @@ class ThirdfortChecksManager {
                             Object.entries(fm.transactionMarkers).forEach(([txId, marker]) => {
                                 const markerIcon = marker === 'verified' ? '✓' : marker === 'rejected' ? '✗' : '?';
                                 overlayHTML += markerIcon + ' ';
+                            });
+                            overlayHTML += '</div>';
+                        }
+                        
+                        if (fm.redFlags && fm.redFlags.length > 0) {
+                            overlayHTML += '<div class="prev-red-flags">';
+                            fm.redFlags.forEach(rf => {
+                                const statusIcon = rf.status === 'confirmed' ? '⚠️' : rf.status === 'dismissed' ? '✓' : '?';
+                                overlayHTML += '<div class="prev-red-flag-item">';
+                                overlayHTML += statusIcon + ' Red Flag: ' + rf.status;
+                                if (rf.note) overlayHTML += ' - ' + rf.note;
+                                overlayHTML += '</div>';
                             });
                             overlayHTML += '</div>';
                         }
@@ -17884,7 +17901,29 @@ class ThirdfortChecksManager {
         document.body.insertAdjacentHTML('beforeend', overlayHTML);
     }
     
-    createSofFundingCard(fund, fundIdx, sofMatches, accounts, check) {
+    getRelatedRedFlags(fund, allRedFlags) {
+        const type = fund.type || '';
+        const relatedFlags = [];
+        
+        allRedFlags.forEach(flag => {
+            const flagDesc = flag.description || '';
+            
+            // Map red flags to funding types
+            if (flagDesc === 'Gifts Received' && type === 'fund:gift') {
+                relatedFlags.push(flag);
+            } else if (flagDesc.includes('savings') && type === 'fund:savings') {
+                relatedFlags.push(flag);
+            } else if (flagDesc === 'Cryptocurrency Funding' && type.includes('crypto')) {
+                relatedFlags.push(flag);
+            } else if (flagDesc === 'Funds from Overseas' && (type.includes('overseas') || type.includes('foreign'))) {
+                relatedFlags.push(flag);
+            }
+        });
+        
+        return relatedFlags;
+    }
+    
+    createSofFundingCard(fund, fundIdx, sofMatches, accounts, check, relatedFlags = []) {
         // Use the EXACT same structure as task card but add investigation features
         const type = fund.type || 'unknown';
         const data = fund.data || {};
@@ -17964,6 +18003,41 @@ class ThirdfortChecksManager {
         html += docIcon;
         html += `<span class="doc-status-text">${docStatusText}</span>`;
         html += '</div>';
+        
+        // Red Flags Section (if applicable)
+        if (relatedFlags.length > 0) {
+            html += '<div class="red-flags-subsection">';
+            html += '<div class="red-flag-header">🚩 Red Flags</div>';
+            
+            relatedFlags.forEach((flag, flagIdx) => {
+                html += '<div class="red-flag-item">';
+                html += `<div class="red-flag-title">${flag.description || 'Red Flag'}</div>`;
+                if (flag.details) {
+                    html += `<div class="red-flag-details">${flag.details}</div>`;
+                }
+                
+                // Red flag status selector
+                html += '<div class="red-flag-status">';
+                html += '<label><strong>Status:</strong></label>';
+                html += `<select class="red-flag-status-select" data-fund-idx="${fundIdx}" data-flag-idx="${flagIdx}">`;
+                html += '<option value="">-- Select Action --</option>';
+                html += '<option value="confirmed">⚠️ Confirmed - Requires attention</option>';
+                html += '<option value="dismissed">✓ Dismissed - Not applicable</option>';
+                html += '<option value="review">? Under review</option>';
+                html += '</select>';
+                html += '</div>';
+                
+                // Red flag notes
+                html += '<div class="form-group">';
+                html += `<label><strong>Red Flag Notes</strong></label>`;
+                html += `<textarea class="red-flag-note-input" data-fund-idx="${fundIdx}" data-flag-idx="${flagIdx}" rows="2" placeholder="Add notes about this red flag..."></textarea>`;
+                html += '</div>';
+                
+                html += '</div>';
+            });
+            
+            html += '</div>';
+        }
         
         // INVESTIGATION FEATURES (NEW)
         html += '<div class="investigation-section">';
@@ -18290,14 +18364,33 @@ class ThirdfortChecksManager {
                 }
             });
             
-            // Only add if there's a note, verification, or transaction markers
-            if (note || verified.length > 0 || Object.keys(transactionMarkers).length > 0) {
+            // Get red flag status and notes for this funding method
+            const redFlags = [];
+            const redFlagSelects = form.querySelectorAll(`.red-flag-status-select[data-fund-idx="${fundIdx}"]`);
+            redFlagSelects.forEach(select => {
+                const flagIdx = select.dataset.flagIdx;
+                const status = select.value;
+                const noteTextarea = form.querySelector(`.red-flag-note-input[data-fund-idx="${fundIdx}"][data-flag-idx="${flagIdx}"]`);
+                const flagNote = noteTextarea ? noteTextarea.value.trim() : '';
+                
+                if (status || flagNote) {
+                    redFlags.push({
+                        flagIdx: flagIdx,
+                        status: status,
+                        note: flagNote
+                    });
+                }
+            });
+            
+            // Only add if there's a note, verification, transaction markers, or red flag annotations
+            if (note || verified.length > 0 || Object.keys(transactionMarkers).length > 0 || redFlags.length > 0) {
                 investigation.fundingMethods.push({
                     fundIdx: fundIdx,
                     fundType: fundType,
                     note: note,
                     verified: verified,
-                    transactionMarkers: transactionMarkers
+                    transactionMarkers: transactionMarkers,
+                    redFlags: redFlags
                 });
             }
         });

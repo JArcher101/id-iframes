@@ -4598,3 +4598,100 @@ body {
     border-top: 1px solid #dee2e6;
 }
 
+/* Red flags subsection within funding cards */
+.red-flags-subsection {
+    margin-top: 16px;
+    padding: 15px;
+    background: #fff3e0;
+    border-left: 4px solid #d32f2f;
+    border-radius: 4px;
+}
+
+.red-flag-header {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 14px;
+    color: #d32f2f;
+    margin-bottom: 12px;
+}
+
+.red-flag-item {
+    background: white;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+}
+
+.red-flag-item:last-child {
+    margin-bottom: 0;
+}
+
+.red-flag-title {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 13px;
+    color: #d32f2f;
+    margin-bottom: 6px;
+}
+
+.red-flag-details {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.red-flag-status {
+    margin-bottom: 10px;
+}
+
+.red-flag-status label {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 12px;
+    color: #666;
+    margin-right: 8px;
+}
+
+.red-flag-status-select {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    background: white;
+}
+
+.red-flag-status-select:focus {
+    outline: none;
+    border-color: #1d71b8;
+    box-shadow: 0 0 0 2px rgba(29, 113, 184, 0.1);
+}
+
+.red-flag-note-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.red-flag-note-input:focus {
+    outline: none;
+    border-color: #1d71b8;
+    box-shadow: 0 0 0 2px rgba(29, 113, 184, 0.1);
+}
+
+.prev-red-flags {
+    margin-top: 8px;
+    padding: 8px;
+    background: #fff3e0;
+    border-radius: 4px;
+}
+
+.prev-red-flag-item {
+    font-size: 12px;
+    color: #d32f2f;
+    margin: 4px 0;
+    font-weight: 600;
+}
+
