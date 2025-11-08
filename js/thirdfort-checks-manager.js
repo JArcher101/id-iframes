@@ -5859,11 +5859,6 @@ class ThirdfortChecksManager {
                 inlineWarning = 'No address verification data available';
             }
             
-            // Add inline warning to outcome for display in minimized card
-            if (inlineWarning) {
-                outcome.inlineWarning = inlineWarning;
-            }
-            
             // Check if Proof of Address documents exist when address fails/consider
             const poaTask = check?.taskOutcomes?.['documents:poa'];
             const poaDocs = poaTask?.documents || poaTask?.breakdown?.documents || [];
@@ -9517,10 +9512,10 @@ class ThirdfortChecksManager {
                   },
                   "gender": {
                     "properties": {},
-                    "result": "consider"
+                    "result": "clear"
                   }
                 },
-                "result": "consider"
+                "result": "clear"
               },
               "data_comparison": {
                 "breakdown": {
