@@ -57,6 +57,7 @@ class ThirdfortChecksManager {
     // Parent sends 'checks-data' message with:
     //   - checks: array of check objects
     //   - mode: 'view' or 'edit' (optional, defaults to 'edit')
+    //   - thirdfortEnv: 'sandbox' or 'production' (optional, defaults to 'sandbox')
     //
     // VIEW MODE: Read-only access
     //   - CAN view all check details
@@ -70,6 +71,10 @@ class ThirdfortChecksManager {
     //   - Can toggle monitoring
     //   - Can abort checks
     //   - Can open in Thirdfort portal
+    //
+    // THIRDFORT ENVIRONMENT:
+    //   - 'production': Opens transactions at https://app.thirdfort.com
+    //   - 'sandbox': Opens transactions at https://sandbox.app.thirdfort.com (default)
     // ===================================================================
     
     handleMessage(event) {
@@ -485,16 +490,10 @@ class ThirdfortChecksManager {
             `;
         }
         
-        // Expand button (only show in edit mode)
-        if (this.mode === 'edit') {
-            const env = 'sandbox';
-            const baseUrl = env === 'production' ? 'https://app.thirdfort.io' : 'https://sandbox.thirdfort.io';
-            const thirdfortUrl = check.transactionId 
-                ? `${baseUrl}/transactions/${check.transactionId}`
-                : `${baseUrl}/checks/${check.checkId}`;
-            
+        // Expand button - open transaction in Thirdfort Portal
+        if (check.transactionId) {
             buttons += `
-                <button class="top-action-btn" onclick="window.open('${thirdfortUrl}', '_blank', 'width=1200,height=800')" title="View in Thirdfort Portal">
+                <button class="top-action-btn" onclick="manager.openThirdfortTransaction('${check.checkType}', '${check.transactionId}')" title="View in Thirdfort Portal">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d71b8" stroke-width="2">
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
                     </svg>
@@ -503,6 +502,40 @@ class ThirdfortChecksManager {
         }
         
         actionButtonsContainer.innerHTML = buttons;
+    }
+    
+    openThirdfortTransaction(checkType, transactionId) {
+        // Determine environment (sandbox or production)
+        // For now, default to sandbox - this should be set from backend via THIRDFORT_ENV secret
+        const env = this.thirdfortEnv || 'sandbox';
+        
+        // Build base URL
+        const baseUrl = env === 'production' 
+            ? 'https://app.thirdfort.com' 
+            : 'https://sandbox.app.thirdfort.com';
+        
+        // Determine URL path based on check type
+        let urlPath;
+        if (checkType === 'idv') {
+            urlPath = `/documents/${transactionId}`;
+        } else if (checkType === 'kyb') {
+            urlPath = `/know-your-business/${transactionId}`;
+        } else {
+            // electronic-id, idv-lite (includes all electronic checks and lite screening)
+            urlPath = `/activities/${transactionId}`;
+        }
+        
+        const thirdfortUrl = `${baseUrl}${urlPath}`;
+        
+        console.log('🔗 Opening Thirdfort transaction:', {
+            checkType,
+            transactionId,
+            env,
+            url: thirdfortUrl
+        });
+        
+        // Open in popup window
+        window.open(thirdfortUrl, '_blank', 'width=1400,height=900,resizable=yes,scrollbars=yes');
     }
     
     renderDetailHeader(check) {
@@ -1643,12 +1676,80 @@ class ThirdfortChecksManager {
             delete taskOutcomes['peps'];
         }
         
+        // Combine identity sub-tasks into identity.breakdown for electronic-id v2 checks
+        if (taskOutcomes['identity']) {
+            taskOutcomes['identity'].breakdown = taskOutcomes['identity'].breakdown || {};
+            const breakdown = taskOutcomes['identity'].breakdown;
+            
+            // Move sub-tasks into identity breakdown (only if not already there)
+            if (taskOutcomes['document'] && !breakdown.document) {
+                breakdown.document = taskOutcomes['document'];
+            }
+            if (taskOutcomes['facial_similarity'] && !breakdown.facial_similarity) {
+                breakdown.facial_similarity = taskOutcomes['facial_similarity'];
+            }
+            if (taskOutcomes['nfc'] && !breakdown.nfc) {
+                breakdown.nfc = taskOutcomes['nfc'];
+            }
+            if (taskOutcomes['biometrics'] && !breakdown.biometrics) {
+                breakdown.biometrics = taskOutcomes['biometrics'];
+            }
+            if (taskOutcomes['liveness'] && !breakdown.liveness) {
+                breakdown.liveness = taskOutcomes['liveness'];
+            }
+            
+            // Delete top-level tasks after moving (they're now in breakdown)
+            delete taskOutcomes['document'];
+            delete taskOutcomes['facial_similarity'];
+            delete taskOutcomes['nfc'];
+            delete taskOutcomes['biometrics'];
+            delete taskOutcomes['liveness'];
+        }
+        
+        // Use footprint for address verification (skip separate address card)
+        if (taskOutcomes['footprint']) {
+            taskOutcomes['address'] = taskOutcomes['footprint'];
+            delete taskOutcomes['footprint'];
+        }
+        
+        // Get requested tasks and check for skipped tasks
+        const requestTasks = check.thirdfortResponse?.request?.tasks || [];
+        const requestedTaskTypes = new Set();
+        requestTasks.forEach(task => {
+            const taskType = typeof task === 'string' ? task : task.type;
+            const normalizedType = this.normalizeTaskType(taskType);
+            requestedTaskTypes.add(normalizedType);
+        });
+        
+        // Add skipped task placeholders for requested tasks not in outcomes
+        requestedTaskTypes.forEach(taskType => {
+            // Skip bank tasks - they're handled specially
+            if (taskType === 'bank') {
+                if (!taskOutcomes['bank:summary'] && !taskOutcomes['bank:statement']) {
+                    taskOutcomes[taskType] = {
+                        result: 'fail',
+                        status: 'skipped',
+                        data: {},
+                        documents: []
+                    };
+                }
+            } else if (!taskOutcomes[taskType]) {
+                // Task was requested but not completed - consumer skipped
+                taskOutcomes[taskType] = {
+                    result: 'fail',
+                    status: 'skipped',
+                    data: {},
+                    documents: []
+                };
+            }
+        });
+        
         let tasksHtml = '';
         
         // Define task order
         const taskOrder = [
             'address', 'screening', 'peps', 'sanctions',
-            'identity', 'identity:lite', 'nfc', 'liveness', 'facial_similarity', 'document',
+            'identity', 'identity:lite',
             'sof:v1', 'bank', // Combined bank task
             'documents:poa', 'documents:poo', 'documents:other',
             'company:summary', 'company:sanctions', 'company:peps', 
@@ -1656,11 +1757,21 @@ class ThirdfortChecksManager {
         ];
         
         taskOrder.forEach(taskKey => {
-            // Special handling for bank task - combines bank:summary and bank:statement
+            // Special handling for bank task - combines bank:summary, bank:statement, or documents:bank-statement
             if (taskKey === 'bank') {
-                const bankSummary = taskOutcomes['bank:summary'];
-                const bankStatement = taskOutcomes['bank:statement'];
+                let bankSummary = taskOutcomes['bank:summary'];
+                let bankStatement = taskOutcomes['bank:statement'];
+                const docsBankStatement = taskOutcomes['documents:bank-statement'];
                 const sofTask = taskOutcomes['sof:v1']; // Get SoF data for linking
+                
+                // If bank:summary and bank:statement are rejected/unavailable, check for documents:bank-statement
+                // (consumer uploaded PDFs instead of linking)
+                if (docsBankStatement && docsBankStatement.breakdown?.accounts) {
+                    // Use documents:bank-statement data if available
+                    if (!bankStatement || bankStatement.status === 'rejected' || bankStatement.status === 'skipped') {
+                        bankStatement = docsBankStatement;
+                    }
+                }
                 
                 if (bankSummary || bankStatement) {
                     tasksHtml += this.createBankTaskCard(bankSummary, bankStatement, sofTask);
@@ -2775,18 +2886,31 @@ class ThirdfortChecksManager {
         const hasSummary = bankSummary && bankSummary.status === 'closed';
         const hasStatement = bankStatement && bankStatement.status === 'closed';
         
+        // Check if this is documents:bank-statement (uploaded PDFs with OCR data)
+        const isDocumentUpload = bankStatement && bankStatement.breakdown?.accounts && bankStatement.breakdown?.documents;
+        
+        // Check if linking was requested but skipped (rejected status)
+        const linkingSkipped = (bankSummary && bankSummary.status === 'rejected') || 
+                               (bankStatement && bankStatement.status === 'rejected' && !isDocumentUpload);
+        
         // Determine overall status
         let borderClass = 'clear';
         let statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>`;
+        let inlineWarning = '';
         
-        if (hasSummary && bankSummary.result === 'consider') {
+        // If linking was skipped but documents were uploaded and scanned, show as clear with warning
+        if (linkingSkipped && isDocumentUpload) {
+            borderClass = 'clear';
+            statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>`;
+            inlineWarning = 'Bank linking skipped but documents uploaded and scanned';
+        } else if (hasSummary && bankSummary.result === 'consider') {
             borderClass = 'consider';
             statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
         } else if (hasSummary && bankSummary.result === 'fail') {
             borderClass = 'alert';
             statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>`;
-        } else if (hasStatement && !hasSummary) {
-            // PDF upload only - always consider (manual review)
+        } else if (hasStatement && !hasSummary && !isDocumentUpload) {
+            // PDF upload only without OCR data - always consider (manual review)
             borderClass = 'consider';
             statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
         } else if (!hasSummary && !hasStatement) {
@@ -2890,6 +3014,7 @@ class ThirdfortChecksManager {
                     <div class="task-title">Bank Summary</div>
                     ${statusIcon}
                 </div>
+                ${inlineWarning ? `<div class="task-summary-inline">${inlineWarning}</div>` : ''}
                 <div class="task-details">
                     ${checksHtml}
                     ${accountsHtml}
@@ -3380,22 +3505,68 @@ class ThirdfortChecksManager {
         const amount = data.amount ? `£${(data.amount / 100).toLocaleString()}` : 'Not specified';
         
         // Get matched bank transactions for this funding type
+        // Map all possible funding types to their SOF match keys
         const fundTypeMap = {
-            'fund:gift': 'gift',
-            'fund:mortgage': 'mortgage',
-            'fund:savings': 'savings',
-            'fund:property_sale': 'property_sale',
-            'fund:asset_sale': 'asset_sale',
-            'fund:htb_lisa': 'htb_lisa',
-            'fund:inheritance': 'inheritance'
+            // Standard mappings
+            'fund:gift': ['gift', 'gift_transactions'],
+            'fund:mortgage': ['mortgage', 'mortgage_transactions'],
+            'fund:savings': ['savings', 'savings_transactions', 'salary_transactions'],
+            'fund:property_sale': ['property_sale', 'property_sale_transactions'],
+            'fund:sale:property': ['property_sale', 'property_sale_transactions'],
+            'fund:asset_sale': ['asset_sale', 'asset_sale_transactions'],
+            'fund:sale:assets': ['asset_sale', 'asset_sale_transactions'],
+            'fund:htb': ['htb_lisa', 'htb_transactions', 'htb_lisa_transactions'],
+            'fund:htb_lisa': ['htb_lisa', 'htb_transactions', 'htb_lisa_transactions'],
+            'fund:inheritance': ['inheritance', 'inheritance_transactions'],
+            'fund:income': ['salary_transactions', 'income_transactions'],
+            'fund:loan': ['loan', 'loan_transactions'],
+            'fund:investment': ['investment', 'investment_transactions'],
+            'fund:business': ['business', 'business_transactions'],
+            'fund:other': ['other', 'other_transactions']
         };
-        const matchKey = fundTypeMap[type];
-        const matchedTxIds = sofMatches[matchKey] || [];
+        
+        // For savings with people/incomes data, prioritize salary_transactions
+        let matchKeys = fundTypeMap[type] || [];
+        if (type === 'fund:savings' && data.people && data.people.some(p => p.incomes && p.incomes.length > 0)) {
+            matchKeys = ['salary_transactions', ...matchKeys];  // Prioritize salary for income-based savings
+        }
+        
+        // Try all possible match keys and combine results
+        let matchedTxIds = [];
+        for (const key of matchKeys) {
+            if (sofMatches[key] && Array.isArray(sofMatches[key])) {
+                matchedTxIds = [...matchedTxIds, ...sofMatches[key]];
+            }
+        }
+        
+        // Remove duplicates
+        matchedTxIds = [...new Set(matchedTxIds)];
         
         // Build matched transactions HTML
         let matchedTxHtml = '';
         if (matchedTxIds.length > 0) {
-            matchedTxHtml = '<div class="matched-transactions-section"><div class="matched-tx-label">Potential Matched Transactions:</div>';
+            // Determine label based on funding type
+            const labelMap = {
+                'fund:gift': 'Potential Gift Deposits:',
+                'fund:mortgage': 'Potential Mortgage Deposits:',
+                'fund:savings': 'Verified Salary Deposits:',
+                'fund:income': 'Verified Salary Deposits:',
+                'fund:property_sale': 'Potential Property Sale Proceeds:',
+                'fund:sale:property': 'Potential Property Sale Proceeds:',
+                'fund:asset_sale': 'Potential Asset Sale Proceeds:',
+                'fund:sale:assets': 'Potential Asset Sale Proceeds:',
+                'fund:htb': 'Potential HTB/LISA Deposits:',
+                'fund:htb_lisa': 'Potential HTB/LISA Deposits:',
+                'fund:inheritance': 'Potential Inheritance Deposits:',
+                'fund:loan': 'Potential Loan Deposits:',
+                'fund:investment': 'Potential Investment Deposits:',
+                'fund:business': 'Potential Business Income:',
+                'fund:other': 'Potential Matched Transactions:'
+            };
+            
+            const matchLabel = labelMap[type] || 'Potential Matched Transactions:';
+            
+            matchedTxHtml = `<div class="matched-transactions-section"><div class="matched-tx-label">${matchLabel}</div>`;
             
             matchedTxIds.forEach(txId => {
                 // Find transaction in accounts
@@ -3472,7 +3643,7 @@ class ThirdfortChecksManager {
             }
         } else if (type === 'fund:savings') {
             if (data.people && data.people.length > 0) {
-                detailsHtml += '<div class="funding-section-title">People Contributing:</div>';
+                detailsHtml += '<div class="funding-section-title">Income & Employment Details:</div>';
                 detailsHtml += `<div class="people-grid people-grid-${data.people.length}">`;
                 
                 data.people.forEach(person => {
@@ -3484,14 +3655,19 @@ class ThirdfortChecksManager {
                     detailsHtml += `<div class="person-card-name">${person.name}</div>`;
                     detailsHtml += `<div class="person-card-role">${isActor}</div>`;
                     if (employmentStatus) {
-                        detailsHtml += `<div class="person-card-item">${employmentStatus}</div>`;
+                        detailsHtml += `<div class="person-card-item"><strong>Status:</strong> ${employmentStatus}</div>`;
                     }
                     if (person.incomes && person.incomes.length > 0) {
                         person.incomes.forEach(income => {
-                            detailsHtml += `<div class="person-card-item">Income: ${income.source || 'N/A'}</div>`;
-                            detailsHtml += `<div class="person-card-item">Frequency: ${income.frequency || 'N/A'}</div>`;
+                            const annualAmount = income.annual_total ? `£${(income.annual_total / 100).toLocaleString()}` : 'N/A';
+                            detailsHtml += `<div class="person-card-item"><strong>Source:</strong> ${income.source || 'N/A'}</div>`;
+                            detailsHtml += `<div class="person-card-item"><strong>Annual:</strong> ${annualAmount}</div>`;
+                            detailsHtml += `<div class="person-card-item"><strong>Frequency:</strong> ${income.frequency || 'N/A'}</div>`;
                             if (income.reference) {
-                                detailsHtml += `<div class="person-card-item">Payslip Ref: ${income.reference}</div>`;
+                                detailsHtml += `<div class="person-card-item"><strong>Payslip:</strong> ${income.reference}</div>`;
+                            }
+                            if (income.description) {
+                                detailsHtml += `<div class="person-card-item"><strong>Details:</strong> ${income.description}</div>`;
                             }
                         });
                     }
@@ -3583,9 +3759,10 @@ class ThirdfortChecksManager {
         const property = breakdown.property || {};
         const funds = breakdown.funds || [];
         
-        // Get bank statement accounts for transaction lookup
+        // Get bank statement accounts for transaction lookup - check both bank:statement and documents:bank-statement
         const bankStatement = check.taskOutcomes?.['bank:statement'];
-        const accounts = bankStatement?.breakdown?.accounts || {};
+        const docsBankStatement = check.taskOutcomes?.['documents:bank-statement'];
+        const accounts = bankStatement?.breakdown?.accounts || docsBankStatement?.breakdown?.accounts || {};
         
         // Determine border class and status icon
         let borderClass = result === 'clear' ? 'clear' : (result === 'fail' ? 'alert' : 'consider');
@@ -3657,8 +3834,23 @@ class ThirdfortChecksManager {
     }
     
     createTaskCard(taskType, outcome, check) {
-        const result = outcome.result || 'unknown';
         const status = outcome.status || '';
+        
+        // Recalculate identity result BEFORE reading it
+        if (taskType === 'identity' && outcome.breakdown) {
+            const breakdown = outcome.breakdown;
+            const docResult = breakdown.document?.result || '';
+            const faceResult = breakdown.facial_similarity?.result || breakdown.facial_similarity_video?.result || '';
+            
+            // Clear if document + facial_similarity are both clear (Original standard)
+            if (docResult === 'clear' && faceResult === 'clear') {
+                outcome.result = 'clear';
+            } else if (docResult === 'consider' || faceResult === 'consider' || docResult === 'fail' || faceResult === 'fail') {
+                outcome.result = 'consider';
+            }
+        }
+        
+        const result = outcome.result || 'unknown';
         let borderClass = '';
         let statusIcon = '';
         
@@ -3686,8 +3878,8 @@ class ThirdfortChecksManager {
         if (isDocumentTask) {
             // Get document count from documents array or breakdown.documents array
             const docCount = outcome.documents?.length || outcome.breakdown?.documents?.length || outcome.data?.document_count || 0;
-            const isSkipped = result === 'skipped' || result === 'consider';
-            const summaryText = isSkipped ? 'Task skipped' : `${docCount} document${docCount !== 1 ? 's' : ''} uploaded`;
+            const isSkipped = status === 'skipped' || (result === 'fail' && docCount === 0);
+            const summaryText = isSkipped ? 'Consumer skipped in app' : `${docCount} document${docCount !== 1 ? 's' : ''} uploaded`;
             
             return `
                 <div class="task-card ${borderClass} non-expandable">
@@ -3702,15 +3894,42 @@ class ThirdfortChecksManager {
         
         // Special handling for Source of Funds (sof:v1)
         if (taskType === 'sof:v1' && outcome.breakdown) {
-            // Get bank analysis for SoF matching - check BOTH bank:summary and bank:statement
+            // Get bank analysis for SoF matching - check bank:summary, bank:statement, and documents:bank-statement
             const bankSummary = check.taskOutcomes?.['bank:summary'];
             const bankStatement = check.taskOutcomes?.['bank:statement'];
+            const docsBankStatement = check.taskOutcomes?.['documents:bank-statement'];
             
-            // Prefer bank:summary (Open Banking) if available, fallback to bank:statement
-            const sofMatches = bankSummary?.breakdown?.analysis?.sof_matches || 
-                               bankStatement?.breakdown?.analysis?.sof_matches || 
-                               {};
+            // Get sof_matches from analysis (if available from Open Banking)
+            let sofMatches = bankSummary?.breakdown?.analysis?.sof_matches || 
+                            bankStatement?.breakdown?.analysis?.sof_matches ||
+                            docsBankStatement?.breakdown?.analysis?.sof_matches || 
+                            {};
+            
+            // Get accounts from any source
+            const accounts = bankStatement?.breakdown?.accounts || 
+                           bankSummary?.breakdown?.accounts || 
+                           docsBankStatement?.breakdown?.accounts || 
+                           {};
+            
+            // If no automatic matches but we have accounts, try to find potential matches manually
+            if (Object.keys(sofMatches).length === 0 && Object.keys(accounts).length > 0) {
+                sofMatches = this.findPotentialSOFMatches(outcome.breakdown.funds, accounts);
+            }
+            
             return this.createSOFTaskCard(outcome, check, sofMatches);
+        }
+        
+        // Handle skipped tasks
+        if (status === 'skipped') {
+            return `
+                <div class="task-card ${borderClass} non-expandable">
+                    <div class="task-header">
+                        <div class="task-title">${taskTitle}</div>
+                        ${statusIcon}
+                    </div>
+                    <div class="task-summary-inline">Consumer skipped in app</div>
+                </div>
+            `;
         }
         
         // Standard expandable task card
@@ -3732,6 +3951,9 @@ class ThirdfortChecksManager {
                 } else if (check.isHitCard === true && check.hitData) {
                     // Handle screening hit cards (PEP, Sanctions, Adverse Media)
                     checksHtml += this.createScreeningHitCard(check.hitData);
+                } else if (check.isNestedCard === true) {
+                    // Handle nested collapsible cards (for identity sub-tasks)
+                    checksHtml += this.createNestedTaskCard(check);
                 } else {
                     // Standard check item with icon
                     const checkIcon = this.getTaskCheckIcon(check.status);
@@ -3769,6 +3991,62 @@ class ThirdfortChecksManager {
                 <div class="task-details">
                     ${outcome.status !== 'unobtainable' ? `<div class="task-summary">${taskSummary}</div>` : ''}
                     ${checksHtml}
+                </div>
+                ` : ''}
+            </div>
+        `;
+    }
+    
+    createNestedTaskCard(nestedTask) {
+        const { title, result, items, isUnobtainable } = nestedTask;
+        
+        // Determine status icon
+        let statusIcon = '';
+        if (isUnobtainable) {
+            statusIcon = `<svg class="nested-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+        } else if (result === 'clear') {
+            statusIcon = `<svg class="nested-status-icon" viewBox="0 0 300 300"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>`;
+        } else if (result === 'consider') {
+            statusIcon = `<svg class="nested-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+        } else if (result === 'fail') {
+            statusIcon = `<svg class="nested-status-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>`;
+        }
+        
+        // If unobtainable or no items, make it non-expandable
+        const hasItems = items && items.length > 0;
+        const expandableClass = hasItems ? 'expandable' : 'non-expandable';
+        
+        // Auto-expand if result is consider or fail (to show the issues)
+        const autoExpandClass = (result === 'consider' || result === 'fail') && hasItems ? ' expanded' : '';
+        
+        let itemsHtml = '';
+        if (hasItems) {
+            items.forEach(item => {
+                const itemIcon = this.getTaskCheckIcon(item.status);
+                itemsHtml += `
+                    <div class="nested-item">
+                        ${itemIcon}
+                        <span>${item.text}</span>
+                    </div>
+                `;
+            });
+        }
+        
+        let unobtainableText = '';
+        if (isUnobtainable) {
+            unobtainableText = '<div class="nested-unobtainable">Unobtainable</div>';
+        }
+        
+        return `
+            <div class="nested-task-card ${expandableClass}${autoExpandClass}" onclick="event.stopPropagation(); this.classList.toggle('expanded')">
+                <div class="nested-header">
+                    <span class="nested-title">${title}</span>
+                    ${statusIcon}
+                </div>
+                ${unobtainableText}
+                ${hasItems ? `
+                <div class="nested-items">
+                    ${itemsHtml}
                 </div>
                 ` : ''}
             </div>
@@ -4757,17 +5035,391 @@ class ThirdfortChecksManager {
             }
         }
         else if (taskType === 'nfc') {
-            // NFC chip verification
-            if (data.chip_read !== undefined) {
+            // NFC chip verification with detailed breakdown
+            const breakdown = outcome.breakdown || {};
+            
+            // Check for chip data
+            if (breakdown.chip) {
+                const chipBreakdown = breakdown.chip.breakdown || {};
+                
+                // Clone detection
+                if (chipBreakdown.clone_detection) {
+                    const result = chipBreakdown.clone_detection.result || '';
+                    checks.push({
+                        status: result === 'clear' ? 'CL' : 'AL',
+                        text: 'Clone Detection'
+                    });
+                }
+                
+                // Chip verification
+                if (chipBreakdown.verification) {
+                    const result = chipBreakdown.verification.result || '';
+                    checks.push({
+                        status: result === 'clear' ? 'CL' : 'AL',
+                        text: 'Chip Verification'
+                    });
+                }
+            }
+            
+            // Data comparison
+            if (breakdown.data_comparison) {
+                const compBreakdown = breakdown.data_comparison.breakdown || {};
+                
+                // DOB comparison
+                if (compBreakdown.dob) {
+                    const result = compBreakdown.dob.result || '';
+                    const daysDiff = compBreakdown.dob.properties?.days_difference;
+                    let text = 'Date of Birth Match';
+                    if (daysDiff !== undefined && daysDiff !== 0) {
+                        text += ` (${daysDiff} days difference)`;
+                    }
+                    checks.push({
+                        status: result === 'clear' ? 'CL' : 'CO',
+                        text: text
+                    });
+                }
+                
+                // Name comparison
+                if (compBreakdown.name) {
+                    const result = compBreakdown.name.result || '';
+                    const levenshtein = compBreakdown.name.properties?.levenshtein_pct;
+                    let text = 'Name Match';
+                    if (levenshtein !== undefined) {
+                        text += ` (${levenshtein}% similarity)`;
+                    }
+                    checks.push({
+                        status: result === 'clear' ? 'CL' : 'CO',
+                        text: text
+                    });
+                }
+            }
+            
+            // Fallback for simple data
+            if (!breakdown.chip && !breakdown.data_comparison && data.chip_read !== undefined) {
                 checks.push({
                     status: data.chip_read ? 'CL' : 'AL',
                     text: data.chip_read ? 'NFC chip successfully read' : 'Could not read NFC chip'
                 });
             }
         }
+        else if (taskType === 'biometrics') {
+            // Biometric verification (liveness detection)
+            const breakdown = outcome.breakdown || {};
+            
+            if (breakdown.attempts && Array.isArray(breakdown.attempts) && breakdown.attempts.length > 0) {
+                breakdown.attempts.forEach((attempt, index) => {
+                    const passed = attempt.passed;
+                    const status_val = attempt.status || '';
+                    checks.push({
+                        status: passed ? 'CL' : 'AL',
+                        text: `Liveness Attempt ${index + 1}: ${status_val === 'complete' ? 'Completed' : status_val}`
+                    });
+                });
+            } else {
+                // Simple status
+                checks.push({
+                    status: outcome.result === 'clear' ? 'CL' : 'CO',
+                    text: outcome.result === 'clear' ? 'Biometric verification passed' : 'Biometric verification requires review'
+                });
+            }
+        }
         else if (taskType === 'identity') {
-            // Identity verification (overall check)
-            if (data.verified !== undefined) {
+            // Identity verification (overall check) with detailed breakdown
+            const breakdown = outcome.breakdown || {};
+            
+            // Add inline status for warnings
+            const nfcTask = breakdown.nfc;
+            if (nfcTask?.status === 'unobtainable') {
+                // Check if Enhanced ID was requested
+                const requestTasks = check.thirdfortResponse?.request?.tasks || [];
+                const identityRequest = requestTasks.find(t => t.type === 'report:identity');
+                const nfcPreferred = identityRequest?.opts?.nfc === 'preferred';
+                
+                if (nfcPreferred) {
+                    outcome.inlineWarning = 'NFC Scan unobtainable - Original ID completed';
+                } else {
+                    outcome.inlineWarning = 'NFC Scan unobtainable';
+                }
+            } else if (nfcTask?.result === 'consider') {
+                outcome.inlineWarning = 'NFC verification requires review';
+            }
+            
+            // 1. Document Verification (nested collapsible card)
+            if (breakdown.document) {
+                const docData = breakdown.document.data || {};
+                const docBreakdown = breakdown.document.breakdown || {};
+                const docResult = breakdown.document.result || '';
+                
+                const docObjectives = [];
+                
+                // Check for detailed breakdown structure (like Se's check)
+                if (Object.keys(docBreakdown).length > 0) {
+                    // Detailed breakdown with categories
+                    if (docBreakdown.visual_authenticity) {
+                        docObjectives.push({ 
+                            status: docBreakdown.visual_authenticity.result === 'clear' ? 'CL' : 'AL', 
+                            text: 'Visual Authenticity' 
+                        });
+                    }
+                    if (docBreakdown.image_integrity) {
+                        docObjectives.push({ 
+                            status: docBreakdown.image_integrity.result === 'clear' ? 'CL' : 'AL', 
+                            text: 'Image Integrity' 
+                        });
+                    }
+                    if (docBreakdown.data_validation) {
+                        docObjectives.push({ 
+                            status: docBreakdown.data_validation.result === 'clear' ? 'CL' : 'AL', 
+                            text: 'Data Validation' 
+                        });
+                    }
+                    if (docBreakdown.data_consistency) {
+                        docObjectives.push({ 
+                            status: docBreakdown.data_consistency.result === 'clear' ? 'CL' : 'CO', 
+                            text: 'Data Consistency' 
+                        });
+                    }
+                    if (docBreakdown.data_comparison) {
+                        docObjectives.push({ 
+                            status: docBreakdown.data_comparison.result === 'clear' ? 'CL' : 'CO', 
+                            text: 'Data Comparison' 
+                        });
+                    }
+                    if (docBreakdown.compromised_document) {
+                        docObjectives.push({ 
+                            status: docBreakdown.compromised_document.result === 'clear' ? 'CL' : 'AL', 
+                            text: 'Compromised Check' 
+                        });
+                    }
+                    if (docBreakdown.age_validation) {
+                        docObjectives.push({ 
+                            status: docBreakdown.age_validation.result === 'clear' ? 'CL' : 'AL', 
+                            text: 'Age Validation' 
+                        });
+                    }
+                    if (docBreakdown.police_record) {
+                        docObjectives.push({ 
+                            status: docBreakdown.police_record.result === 'clear' ? 'CL' : 'AL', 
+                            text: 'Police Record' 
+                        });
+                    }
+                } else if (Object.keys(docData).length > 0) {
+                    // Simple data structure (like Benjamin's check)
+                    if (docData.authenticity) {
+                        docObjectives.push({ status: docData.authenticity === 'clear' ? 'CL' : 'AL', text: 'Authenticity' });
+                    }
+                    if (docData.integrity) {
+                        docObjectives.push({ status: docData.integrity === 'clear' ? 'CL' : 'AL', text: 'Integrity' });
+                    }
+                    if (docData.compromised) {
+                        docObjectives.push({ status: docData.compromised === 'clear' ? 'CL' : 'AL', text: 'Compromised Check' });
+                    }
+                    if (docData.consistency) {
+                        docObjectives.push({ status: docData.consistency === 'clear' ? 'CL' : 'CO', text: 'Consistency' });
+                    }
+                    if (docData.validation) {
+                        docObjectives.push({ status: docData.validation === 'clear' ? 'CL' : 'AL', text: 'Validation' });
+                    }
+                }
+                
+                checks.push({
+                    isNestedCard: true,
+                    title: 'Document Verification',
+                    result: docResult,
+                    items: docObjectives
+                });
+            }
+            
+            // 2. Facial Similarity (nested collapsible card)
+            if (breakdown.facial_similarity || breakdown.facial_similarity_video) {
+                const faceTask = breakdown.facial_similarity || breakdown.facial_similarity_video;
+                const faceData = faceTask.data || {};
+                const faceBreakdown = faceTask.breakdown || {};
+                const faceResult = faceTask.result || '';
+                
+                const faceObjectives = [];
+                
+                // Check for detailed breakdown structure (like Se's check)
+                if (Object.keys(faceBreakdown).length > 0) {
+                    // Detailed breakdown with categories
+                    if (faceBreakdown.face_comparison) {
+                        faceObjectives.push({ 
+                            status: faceBreakdown.face_comparison.result === 'clear' ? 'CL' : 'CO', 
+                            text: 'Face Comparison' 
+                        });
+                    }
+                    if (faceBreakdown.image_integrity) {
+                        faceObjectives.push({ 
+                            status: faceBreakdown.image_integrity.result === 'clear' ? 'CL' : 'AL', 
+                            text: 'Image Integrity' 
+                        });
+                    }
+                    if (faceBreakdown.visual_authenticity) {
+                        faceObjectives.push({ 
+                            status: faceBreakdown.visual_authenticity.result === 'clear' ? 'CL' : 'AL', 
+                            text: 'Visual Authenticity' 
+                        });
+                    }
+                } else if (Object.keys(faceData).length > 0) {
+                    // Simple data structure (like Benjamin's check)
+                    if (faceData.authenticity) {
+                        faceObjectives.push({ status: faceData.authenticity === 'clear' ? 'CL' : 'AL', text: 'Authenticity' });
+                    }
+                    if (faceData.comparison) {
+                        faceObjectives.push({ status: faceData.comparison === 'clear' ? 'CL' : 'CO', text: 'Comparison' });
+                    }
+                    if (faceData.integrity) {
+                        faceObjectives.push({ status: faceData.integrity === 'clear' ? 'CL' : 'AL', text: 'Integrity' });
+                    }
+                }
+                
+                checks.push({
+                    isNestedCard: true,
+                    title: 'Facial Similarity',
+                    result: faceResult,
+                    items: faceObjectives
+                });
+            }
+            
+            // 3. NFC (Document) Verification (nested card with detailed breakdown)
+            // Only show if NFC was actually completed (not unobtainable)
+            if (breakdown.nfc && breakdown.nfc.status !== 'unobtainable') {
+                const nfcResult = breakdown.nfc.result || '';
+                const nfcStatus = breakdown.nfc.status || '';
+                const nfcBreakdown = breakdown.nfc.breakdown || {};
+                
+                // Get actual data for comparison descriptions
+                const nfcData = data.nfc || {};
+                const providedData = data.name || {};
+                const providedDob = data.dob || '';
+                
+                const nfcItems = [];
+                
+                // Chip verification details
+                if (nfcBreakdown.chip) {
+                    const chipBreakdown = nfcBreakdown.chip.breakdown || {};
+                    
+                    // Clone detection
+                    if (chipBreakdown.clone_detection) {
+                        nfcItems.push({
+                            status: chipBreakdown.clone_detection.result === 'clear' ? 'CL' : 'AL',
+                            text: 'Clone Detection'
+                        });
+                    }
+                    
+                    // Chip verification
+                    if (chipBreakdown.verification) {
+                        nfcItems.push({
+                            status: chipBreakdown.verification.result === 'clear' ? 'CL' : 'AL',
+                            text: 'Chip Verification'
+                        });
+                    }
+                }
+                
+                // Data comparison details with actual values
+                if (nfcBreakdown.data_comparison) {
+                    const compBreakdown = nfcBreakdown.data_comparison.breakdown || {};
+                    
+                    // DOB comparison
+                    if (compBreakdown.dob) {
+                        const dobResult = compBreakdown.dob.result || '';
+                        const daysDiff = compBreakdown.dob.properties?.days_difference;
+                        
+                        let dobText = '';
+                        if (dobResult === 'clear' && daysDiff === 0) {
+                            dobText = `Date of birth: ${nfcData.dob || 'N/A'}. No difference between NFC chip and client entry`;
+                        } else if (daysDiff !== undefined && daysDiff !== 0) {
+                            dobText = `Date of birth mismatch: ${daysDiff} days difference between NFC chip and client entry`;
+                        } else {
+                            dobText = 'Date of Birth Match';
+                        }
+                        
+                        nfcItems.push({
+                            status: dobResult === 'clear' ? 'CL' : 'CO',
+                            text: dobText
+                        });
+                    }
+                    
+                    // Name comparison with actual values
+                    if (compBreakdown.name) {
+                        const nameResult = compBreakdown.name.result || '';
+                        const levenshtein = compBreakdown.name.properties?.levenshtein_pct;
+                        
+                        // Build full name from provided data
+                        const providedFullName = [providedData.first, providedData.other, providedData.last]
+                            .filter(Boolean).join(' ');
+                        const nfcName = nfcData.name || '';
+                        
+                        let nameText = '';
+                        if (nameResult === 'clear') {
+                            nameText = `Name: ${nfcName}. Match confirmed`;
+                        } else if (levenshtein !== undefined) {
+                            nameText = `Name mismatch: Client entered "${providedFullName}", NFC chip reads "${nfcName}" (${levenshtein}% similarity)`;
+                        } else {
+                            nameText = 'Name Match';
+                        }
+                        
+                        nfcItems.push({
+                            status: nameResult === 'clear' ? 'CL' : 'CO',
+                            text: nameText
+                        });
+                    }
+                }
+                
+                checks.push({
+                    isNestedCard: true,
+                    title: 'NFC (Document) Verification',
+                    result: nfcResult,
+                    items: nfcItems
+                });
+            }
+            
+            // 4. Biometric Verification (Facial Similarity) (nested card)
+            // Only show if biometric was actually completed (not unobtainable)
+            if (breakdown.biometrics && breakdown.biometrics.status !== 'unobtainable') {
+                const bioResult = breakdown.biometrics.result || '';
+                const bioStatus = breakdown.biometrics.status || '';
+                const bioBreakdown = breakdown.biometrics.breakdown || {};
+                
+                const bioItems = [];
+                
+                // Liveness attempts with descriptive text
+                if (bioBreakdown.attempts && Array.isArray(bioBreakdown.attempts)) {
+                    const totalAttempts = bioBreakdown.attempts.length;
+                    const firstAttempt = bioBreakdown.attempts[0];
+                    
+                    if (totalAttempts === 1 && firstAttempt.passed && firstAttempt.status === 'complete') {
+                        // Single successful attempt
+                        bioItems.push({
+                            status: 'CL',
+                            text: 'Live facial video completed on first try'
+                        });
+                    } else {
+                        // Multiple attempts or failed
+                        bioBreakdown.attempts.forEach((attempt, index) => {
+                            const passed = attempt.passed;
+                            const attemptStatus = attempt.status || '';
+                            const attemptText = passed 
+                                ? `Attempt ${index + 1}: ${attemptStatus} - Passed`
+                                : `Attempt ${index + 1}: ${attemptStatus} - Failed`;
+                            bioItems.push({
+                                status: passed ? 'CL' : 'AL',
+                                text: attemptText
+                            });
+                        });
+                    }
+                }
+                
+                checks.push({
+                    isNestedCard: true,
+                    title: 'Biometric Verification (Facial Similarity)',
+                    result: bioResult,
+                    items: bioItems
+                });
+            }
+            
+            // Fallback for simple data
+            if (!breakdown.nfc && !breakdown.biometrics && !breakdown.document && data.verified !== undefined) {
                 checks.push({
                     status: data.verified ? 'CL' : 'CO',
                     text: data.verified ? 'Identity verified' : 'Identity verification requires review'
@@ -4775,14 +5427,11 @@ class ThirdfortChecksManager {
             }
         }
         else if (taskType === 'address') {
-            // Address verification (Lite Screen) - includes footprint data
+            // Address verification - includes footprint data from electronic-id checks or lite screen data
             const data = outcome.data || {};
+            const breakdown = outcome.breakdown || {};
             const quality = data.quality !== undefined ? data.quality : 0;
             const sources = data.sources !== undefined ? data.sources : 0;
-            
-            // Get footprint data from the check
-            const footprintOutcome = check.taskOutcomes?.footprint;
-            const footprintBreakdown = footprintOutcome?.breakdown || {};
             
             // Determine status based on quality and sources
             // Quality: 0% = fail, 1-79% = consider, 80%+ = clear
@@ -4799,7 +5448,7 @@ class ThirdfortChecksManager {
             }
             
             // Check for footprint rules/warnings
-            const rules = footprintBreakdown.rules || [];
+            const rules = breakdown.rules || [];
             let inlineWarning = '';
             if (rules.length > 0 && rules[0].text) {
                 inlineWarning = rules[0].text;
@@ -4823,9 +5472,10 @@ class ThirdfortChecksManager {
                 text: `Address Sources: ${sources}`
             });
             
-            // Add footprint details if available
-            if (footprintBreakdown.data_count) {
-                const score = footprintBreakdown.data_count.properties?.score || 0;
+            // Add footprint details if available (from electronic-id checks)
+            if (breakdown.data_count) {
+                const score = breakdown.data_count.properties?.score || 0;
+                const result = breakdown.data_count.result || '';
                 // Score: 0 = fail, 1-79 = consider, 80+ = clear
                 const scoreStatus = score === 0 ? 'AL' : (score >= 80 ? 'CL' : 'CO');
                 checks.push({
@@ -4835,8 +5485,9 @@ class ThirdfortChecksManager {
                 });
             }
             
-            if (footprintBreakdown.data_quality) {
-                const score = footprintBreakdown.data_quality.properties?.score || 0;
+            if (breakdown.data_quality) {
+                const score = breakdown.data_quality.properties?.score || 0;
+                const result = breakdown.data_quality.result || '';
                 // Score: 0 = fail, 1-79 = consider, 80+ = clear
                 const scoreStatus = score === 0 ? 'AL' : (score >= 80 ? 'CL' : 'CO');
                 checks.push({
@@ -5194,6 +5845,3730 @@ class ThirdfortChecksManager {
     generateMockData() {
         // Real KYB check data for THURSTAN HOSKIN SOLICITORS LLP
         return [
+            // Mock Check 1: THURSTAN HOSKIN SOLICITORS LLP - KYB Check
+            {
+                checkId: 'd45v1gy23amg0306599g',
+                checkType: 'kyb',
+                status: 'closed',
+                companyName: 'THURSTAN HOSKIN SOLICITORS LLP',
+                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
+                initiatedAt: '2025-11-05T20:17:10.220Z',
+                updatedAt: '2025-11-05T21:15:23.171Z',
+                completedAt: '2025-11-05T20:17:29.568Z',
+                pdfReady: true,
+                pdfS3Key: 'protected/V0QcMFD',
+                pdfAddedAt: '2025-11-05T20:21:46.714Z',
+                hasMonitoring: true,
+                hasAlerts: false,
+                companyData: {
+                    jurisdiction: 'UK',
+                    number: 'OC421980',
+                    name: 'THURSTAN HOSKIN SOLICITORS LLP',
+                    numbers: ['OC421980'],
+                    id: '223822293'
+                },
+                thirdfortResponse: {
+                    request: {
+                        data: {
+                            jurisdiction: 'UK',
+                            number: 'OC421980',
+                            name: 'THURSTAN HOSKIN SOLICITORS LLP',
+                            numbers: ['OC421980'],
+                            id: '223822293'
+                        },
+                        reports: [
+                            { type: 'company:summary' },
+                            { type: 'company:sanctions', opts: { monitored: true } },
+                            { type: 'company:ubo' },
+                            { type: 'company:beneficial-check' },
+                            { type: 'company:shareholders' }
+                        ]
+                    },
+                    ref: '21 Green Lane',
+                    id: 'd45v1gy23amg0306599g',
+                    reports: [],
+                    status: 'open',
+                    type: 'company'
+                },
+                tasks: [],
+                taskOutcomes: {
+                    'company:beneficial-check': {
+                        breakdown: {},
+                        result: 'consider',
+                        documents: [],
+                        id: 'd45v1ke23amg030659dg',
+                        status: 'unobtainable',
+                        createdAt: '2025-11-05T20:17:17.370Z'
+                    },
+                    'company:summary': {
+                        breakdown: {
+                            people: [
+                                {
+                                    name: 'Barbara Archer',
+                                    start_date: '2018-04-12',
+                                    dob: '1974-07',
+                                    position: 'Designated LLP Member'
+                                },
+                                {
+                                    name: 'Stephen John Duncan Morrison',
+                                    start_date: '2018-04-12',
+                                    dob: '1972-07',
+                                    position: 'Designated LLP Member'
+                                }
+                            ],
+                            registration_number: 'OC421980',
+                            status: 'active',
+                            date_of_incorporation: '2018-04-12'
+                        },
+                        result: 'clear',
+                        documents: [],
+                        id: 'd45v1m623amg030659hg',
+                        status: 'closed',
+                        createdAt: '2025-11-05T20:17:20.796Z'
+                    },
+                    'company:shareholders': {
+                        breakdown: {
+                            documents: [
+                                {
+                                    id: '49621b12-655b-4fee-8715-3daefb7f9ca8',
+                                    type: 'shareholders',
+                                    provider: 'documents-api'
+                                }
+                            ]
+                        },
+                        result: 'clear',
+                        documents: ['49621b12-655b-4fee-8715-3daefb7f9ca8'],
+                        id: 'd45v1my23amg030659m0',
+                        status: 'closed',
+                        createdAt: '2025-11-05T20:17:23.522Z'
+                    },
+                    'company:sanctions': {
+                        breakdown: {
+                            total_hits: 0,
+                            hits: []
+                        },
+                        result: 'clear',
+                        documents: ['d45v3ed23amg030659pg'],
+                        id: 'd45v1jy23amg030659b0',
+                        status: 'closed',
+                        createdAt: '2025-11-05T20:17:15.660Z'
+                    },
+                    'company:ubo': {
+                        breakdown: {
+                            uboUnavailable: true,
+                            pscs: [
+                                {
+                                    natureOfControlStartDate: '2018-04-12',
+                                    person: {
+                                        name: 'Barbara Archer',
+                                        birthDate: '1974-07',
+                                        nationality: 'British'
+                                    }
+                                },
+                                {
+                                    natureOfControlStartDate: '2018-04-12',
+                                    person: {
+                                        name: 'Stephen John Duncan Morrison',
+                                        birthDate: '1972-07',
+                                        nationality: 'British'
+                                    }
+                                }
+                            ]
+                        },
+                        result: 'consider',
+                        documents: [],
+                        id: 'd45v1kp23amg030659fg',
+                        status: 'unobtainable',
+                        createdAt: '2025-11-05T20:17:18.266Z'
+                    }
+                },
+                updates: [
+                    { timestamp: '2025-11-05T20:17:10.220Z', update: 'KYB check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
+                    { timestamp: '2025-11-05T20:17:29.568Z', update: 'Check completed - awaiting PDF' },
+                    { timestamp: '2025-11-05T20:21:46.714Z', update: 'PDF received and uploaded to S3 - CLEAR' },
+                    { timestamp: '2025-11-05T21:15:23.171Z', update: 'Refreshed from Thirdfort API - Status: closed' }
+                ]
+            },
+            // Mock Check 2: Benjamin David Jasper Meehan - Electronic ID with CONSIDER
+            {
+                "taskOutcomes": {
+                  "document": {
+                    "result": "clear",
+                    "status": "complete",
+                    "data": {
+                      "consistency": "clear",
+                      "compromised": "clear",
+                      "authenticity": "clear",
+                      "integrity": "clear",
+                      "validation": "clear"
+                    }
+                  },
+                  "facial_similarity": {
+                    "result": "clear",
+                    "status": "complete",
+                    "data": {
+                      "authenticity": "clear",
+                      "comparison": "clear",
+                      "integrity": "clear"
+                    }
+                  },
+                  "peps": {
+                    "breakdown": {
+                      "total_hits": 0,
+                      "hits": []
+                    },
+                    "data": {
+                      "dob": "2003-02-22T00:00:00.000Z",
+                      "name": {
+                        "first": "Benjamin",
+                        "last": "Meehan",
+                        "other": "David Jasepr"
+                      },
+                      "address": {
+                        "postcode": "TR15 3SW",
+                        "country": "GBR",
+                        "street": "Woolf Place",
+                        "building_number": "1",
+                        "town": "Redruth"
+                      }
+                    },
+                    "result": "clear",
+                    "documents": [
+                      "d4704s323amg030w7vdg"
+                    ],
+                    "id": "d4704e123amg030w7vbg",
+                    "status": "closed",
+                    "createdAt": "2025-11-07T14:29:12.823Z"
+                  },
+                  "nfc": {
+                    "result": "consider",
+                    "status": "unobtainable",
+                    "data": {
+                      "chip": {},
+                      "comparison": {}
+                    }
+                  },
+                  "documents:poo": {
+                    "breakdown": {
+                      "documents": [
+                        {
+                          "id": "d46gtah23amg030rwa50",
+                          "type": "poo"
+                        },
+                        {
+                          "id": "d46gtb123amg030rwa5g",
+                          "type": "poo"
+                        }
+                      ]
+                    },
+                    "data": {},
+                    "result": "clear",
+                    "documents": [
+                      "d46gtah23amg030rwa50",
+                      "d46gtb123amg030rwa5g"
+                    ],
+                    "id": "d46gvdn23amg030rwa70",
+                    "status": "closed",
+                    "createdAt": "2025-11-06T21:05:58.876Z"
+                  },
+                  "address": {
+                    "result": "fail",
+                    "status": "closed",
+                    "data": {
+                      "quality": 0
+                    }
+                  },
+                  "biometrics": {
+                    "result": "consider",
+                    "status": "unobtainable",
+                    "data": {}
+                  },
+                  "identity": {
+                    "result": "consider",
+                    "status": "closed",
+                    "data": {}
+                  },
+                  "documents:selfie": {
+                    "breakdown": {
+                      "documents": [
+                        {
+                          "id": "d4704d923amg030w7v7g",
+                          "type": "selfie"
+                        }
+                      ]
+                    },
+                    "data": {},
+                    "result": "unknown",
+                    "documents": [
+                      "d4704d923amg030w7v7g"
+                    ],
+                    "id": "d4704d923amg030w7v6g",
+                    "status": "complete",
+                    "createdAt": "2025-11-07T14:29:09.617Z"
+                  },
+                  "footprint": {
+                    "breakdown": {
+                      "data_count": {
+                        "properties": {
+                          "score": 0
+                        },
+                        "result": "consider"
+                      },
+                      "data_quality": {
+                        "properties": {
+                          "score": 0
+                        },
+                        "result": "consider"
+                      },
+                      "service_name": "Authenticateplus",
+                      "documents": [
+                        {
+                          "id": "d47049923amg030w7tzg",
+                          "type": "poa"
+                        }
+                      ],
+                      "rules": [
+                        {
+                          "id": "U000",
+                          "name": "",
+                          "score": 0,
+                          "text": "No trace of supplied Address(es), or manual Authentication required by the Applicant"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "dob": "2003-02-22T00:00:00.000Z",
+                      "name": {
+                        "first": "Benjamin",
+                        "last": "Meehan",
+                        "other": "David Jasepr"
+                      },
+                      "address": {
+                        "postcode": "TR15 3SW",
+                        "country": "GBR",
+                        "street": "Woolf Place",
+                        "building_number": "1",
+                        "town": "Redruth"
+                      }
+                    },
+                    "result": "fail",
+                    "documents": [
+                      "d47049923amg030w7tzg"
+                    ],
+                    "id": "d47049s23amg030w7v10",
+                    "status": "closed",
+                    "createdAt": "2025-11-07T14:28:55.660Z"
+                  }
+                },
+                "updatedAt": "2025-11-07T14:29:17.960Z",
+                "consumerPhone": "+447754241686",
+                "pdfReady": true,
+                "checkType": "electronic-id",
+                "completedAt": "2025-11-07T14:29:17.960Z",
+                "initiatedAt": "2025-11-06T16:42:43.686Z",
+                "considerReasons": [
+                  "address verification",
+                  "digital footprint"
+                ],
+                "pdfS3Key": "protected/l0lXRcU",
+                "consumerName": "Benjamin David Jasper Meehan",
+                "tasks": [
+                  "report:identity",
+                  "report:footprint",
+                  "report:peps",
+                  "documents:poa",
+                  "documents:poo"
+                ],
+                "updates": [
+                  {
+                    "timestamp": "2025-11-06T16:42:43.686Z",
+                    "update": "Electronic ID check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
+                  },
+                  {
+                    "timestamp": "2025-11-07T14:29:17.960Z",
+                    "update": "Transaction completed - awaiting PDF"
+                  },
+                  {
+                    "timestamp": "2025-11-07T14:29:59.000Z",
+                    "update": "PEPs & Sanctions task completed"
+                  },
+                  {
+                    "timestamp": "2025-11-07T14:31:21.496Z",
+                    "update": "PDF received and uploaded to S3 - CONSIDER: address verification, digital footprint, document integrity"
+                  },
+                  {
+                    "timestamp": "2025-11-07T14:33:08.542Z",
+                    "update": "PDF received and uploaded to S3 - CONSIDER: address verification, digital footprint"
+                  }
+                ],
+                "status": "closed",
+                "initiatedBy": "jacob.archer-moran@thurstanhoskin.co.uk",
+                "piiData": {
+                  "name": {
+                    "first": "Benjamin",
+                    "last": "Meehan",
+                    "other": "David Jasepr"
+                  },
+                  "address": {
+                    "postcode": "TR15 3SW",
+                    "country": "GBR",
+                    "street": "Woolf Place",
+                    "building_number": "1",
+                    "town": "Redruth"
+                  },
+                  "dob": "2003-02-22T00:00:00.000Z",
+                  "document": {
+                    "number": "999999999"
+                  }
+                },
+                "hasMonitoring": true,
+                "thirdfortResponse": {
+                  "name": "Sale of 21 Green Lane",
+                  "request": {
+                    "actor": {
+                      "name": "Benjamin David Jasper Meehan",
+                      "phone": "+447754241686"
+                    },
+                    "tasks": [
+                      {
+                        "opts": {
+                          "nfc": "preferred"
+                        },
+                        "type": "report:identity"
+                      },
+                      {
+                        "opts": {
+                          "consent": false
+                        },
+                        "type": "report:footprint"
+                      },
+                      {
+                        "opts": {
+                          "monitored": true
+                        },
+                        "type": "report:peps"
+                      },
+                      {
+                        "type": "documents:poa"
+                      },
+                      {
+                        "type": "documents:poo"
+                      }
+                    ]
+                  },
+                  "ref": "21 Green Lane",
+                  "id": "d46d00g23amg030rw7s0",
+                  "reports": [],
+                  "status": "open",
+                  "metadata": {
+                    "notify": {
+                      "type": "http",
+                      "data": {
+                        "hmac_key": "XZ9PtCPxkpoVkiKRx0KPOIz/tVztJB7bYtE1pBRbvhs=",
+                        "method": "POST",
+                        "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                      }
+                    },
+                    "created_by": "d3t0auq9io6g00ak3kkg",
+                    "print": {
+                      "team": "Cashiers",
+                      "tenant": "Thurstan Hoskin Solicitors LLP",
+                      "user": "THS Bot"
+                    },
+                    "context": {
+                      "gid": "d3t2k5a9io6g00ak3km0",
+                      "uid": "d3t0auq9io6g00ak3kkg",
+                      "team_id": "d3t2k5a9io6g00ak3km0",
+                      "tenant_id": "d3t2ifa9io6g00ak3klg"
+                    },
+                    "ce": {
+                      "uri": "/v1/checks/4151797878"
+                    },
+                    "created_at": "2025-11-06T16:42:42.371Z"
+                  },
+                  "type": "v2",
+                  "opts": {
+                    "peps": {
+                      "monitored": true
+                    }
+                  }
+                },
+                "hasAlerts": true,
+                "pdfAddedAt": "2025-11-07T14:33:08.542Z",
+                "smsSent": true,
+                "transactionId": "d46d00g23amg030rw7s0"
+            },
+            // Mock Check 3: Jacob Robert Moran - Electronic ID with CONSIDER (NFC name mismatch)
+            {
+                "taskOutcomes": {
+                    "documents:poa": {
+                        "breakdown": {
+                            "documents": [
+                                {
+                                    "id": "d472tyb23amg030w7vpg",
+                                    "type": "poa"
+                                },
+                                {
+                                    "id": "d472tyk23amg030w7vq0",
+                                    "type": "poa"
+                                }
+                            ]
+                        },
+                        "data": {},
+                        "result": "clear",
+                        "documents": [
+                            "d472tyb23amg030w7vpg",
+                            "d472tyk23amg030w7vq0"
+                        ],
+                        "id": "d472vm623amg030w7w90",
+                        "status": "closed",
+                        "createdAt": "2025-11-07T17:35:12.907Z"
+                    },
+                    "peps": {
+                        "breakdown": {
+                            "total_hits": 0,
+                            "hits": []
+                        },
+                        "data": {
+                            "dob": "2001-01-11T00:00:00.000Z",
+                            "name": {
+                                "first": "Jacob",
+                                "last": "Archer-Moran",
+                                "other": "Robert"
+                            },
+                            "address": {
+                                "postcode": "TR15 2ND",
+                                "country": "GBR",
+                                "street": "Southgate Street",
+                                "building_number": "94",
+                                "town": "Redruth"
+                            }
+                        },
+                        "result": "clear",
+                        "documents": [
+                            "d472we123amg030w7ww0"
+                        ],
+                        "id": "d472wd123amg030w7wt0",
+                        "status": "closed",
+                        "createdAt": "2025-11-07T17:36:52.386Z"
+                    },
+                    "nfc": {
+                        "result": "consider",
+                        "status": "complete",
+                        "data": {
+                            "chip": {
+                                "clone_detection": "clear",
+                                "verification": "clear"
+                            },
+                            "comparison": {
+                                "dob": 0,
+                                "name": 72
+                            }
+                        }
+                    },
+                    "address": {
+                        "result": "fail",
+                        "status": "closed",
+                        "data": {
+                            "quality": 0
+                        }
+                    },
+                    "biometrics": {
+                        "result": "clear",
+                        "status": "complete",
+                        "data": {}
+                    },
+                    "identity": {
+                        "breakdown": {
+                            "nfc": {
+                                "breakdown": {
+                                    "chip": {
+                                        "breakdown": {
+                                            "clone_detection": {
+                                                "result": "clear"
+                                            },
+                                            "verification": {
+                                                "result": "clear"
+                                            }
+                                        },
+                                        "result": "clear"
+                                    },
+                                    "data_comparison": {
+                                        "breakdown": {
+                                            "dob": {
+                                                "result": "clear",
+                                                "properties": {
+                                                    "days_difference": 0
+                                                }
+                                            },
+                                            "name": {
+                                                "result": "consider",
+                                                "properties": {
+                                                    "levenshtein_pct": 72
+                                                }
+                                            }
+                                        },
+                                        "result": "consider"
+                                    }
+                                },
+                                "result": "consider",
+                                "status": "complete"
+                            },
+                            "documents": [
+                                {
+                                    "id": "d472vbd23amg030w7vqg",
+                                    "type": "passport"
+                                },
+                                {
+                                    "id": "d472vfn23amg030w7vsg",
+                                    "type": "face-image"
+                                },
+                                {
+                                    "id": "d472vky23amg030w7w7g",
+                                    "type": "selfie"
+                                }
+                            ],
+                            "biometrics": {
+                                "breakdown": {
+                                    "attempts": [
+                                        {
+                                            "frame_available": false,
+                                            "passed": true,
+                                            "status": "complete",
+                                            "token": {
+                                                "created_at": 1762536895950,
+                                                "validated_at": 1762536911920,
+                                                "value": "d7b0d934c8c227d6359d6b794e8dddfbd44a98ffe8fe799283855bdd1801vi07"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "result": "clear",
+                                "status": "complete"
+                            }
+                        },
+                        "data": {
+                            "nfc": {
+                                "date_of_expiry": "22.08.2033",
+                                "dob": "11.01.2001",
+                                "name": "MORAN, JACOB ROBERT"
+                            },
+                            "name": {
+                                "first": "Jacob",
+                                "last": "Archer-Moran",
+                                "other": "Robert"
+                            },
+                            "dob": "2001-01-11T00:00:00.000Z"
+                        },
+                        "result": "consider",
+                        "documents": [
+                            "d472vbd23amg030w7vqg",
+                            "d472vfn23amg030w7vsg",
+                            "d472vky23amg030w7w7g"
+                        ],
+                        "id": "d472wc923amg030w7wng",
+                        "status": "closed",
+                        "createdAt": "2025-11-07T17:36:49.799Z"
+                    },
+                    "footprint": {
+                        "breakdown": {
+                            "data_count": {
+                                "properties": {
+                                    "score": 0
+                                },
+                                "result": "consider"
+                            },
+                            "data_quality": {
+                                "properties": {
+                                    "score": 0
+                                },
+                                "result": "consider"
+                            },
+                            "service_name": "Authenticateplus",
+                            "documents": [
+                                {
+                                    "id": "d472wbs23amg030w7wfg",
+                                    "type": "poa"
+                                },
+                                {
+                                    "id": "d472wc123amg030w7wg0",
+                                    "type": "poa"
+                                }
+                            ],
+                            "rules": [
+                                {
+                                    "id": "U000",
+                                    "name": "",
+                                    "score": 0,
+                                    "text": "No trace of supplied Address(es), or manual Authentication required by the Applicant"
+                                }
+                            ]
+                        },
+                        "data": {
+                            "dob": "2001-01-11T00:00:00.000Z",
+                            "name": {
+                                "first": "Jacob",
+                                "last": "Archer-Moran",
+                                "other": "Robert"
+                            },
+                            "address": {
+                                "postcode": "TR15 2ND",
+                                "country": "GBR",
+                                "street": "Southgate Street",
+                                "building_number": "94",
+                                "town": "Redruth"
+                            }
+                        },
+                        "result": "fail",
+                        "documents": [
+                            "d472wbs23amg030w7wfg",
+                            "d472wc123amg030w7wg0"
+                        ],
+                        "id": "d472wc923amg030w7whg",
+                        "status": "closed",
+                        "createdAt": "2025-11-07T17:36:49.214Z"
+                    }
+                },
+                "updatedAt": "2025-11-07T17:36:58.969Z",
+                "consumerPhone": "+447506430094",
+                "pdfReady": true,
+                "checkType": "electronic-id",
+                "completedAt": "2025-11-07T17:36:58.969Z",
+                "initiatedAt": "2025-11-07T17:23:57.085Z",
+                "considerReasons": [
+                    "address verification",
+                    "digital footprint",
+                    "document integrity"
+                ],
+                "pdfS3Key": "protected/FTAxKJt",
+                "consumerName": "Jacob Robert Moran",
+                "tasks": [
+                    "report:identity",
+                    "report:footprint",
+                    "report:peps",
+                    "documents:poa"
+                ],
+                "updates": [
+                    {
+                        "timestamp": "2025-11-07T17:23:57.085Z",
+                        "update": "Electronic ID check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
+                    },
+                    {
+                        "timestamp": "2025-11-07T17:36:58.969Z",
+                        "update": "Transaction completed - awaiting PDF"
+                    },
+                    {
+                        "timestamp": "2025-11-07T17:37:18.427Z",
+                        "update": "PDF received and uploaded to S3 - CONSIDER: address verification, digital footprint, document integrity"
+                    },
+                    {
+                        "timestamp": "2025-11-07T17:40:18.288Z",
+                        "update": "2 additional document(s) uploaded by consumer"
+                    }
+                ],
+                "status": "closed",
+                "initiatedBy": "jacob.archer-moran@thurstanhoskin.co.uk",
+                "piiData": {
+                    "name": {
+                        "first": "Jacob",
+                        "last": "Archer-Moran",
+                        "other": "Robert"
+                    },
+                    "address": {
+                        "postcode": "TR15 2ND",
+                        "country": "GBR",
+                        "street": "Southgate Street",
+                        "building_number": "94",
+                        "town": "Redruth"
+                    },
+                    "dob": "2001-01-11T00:00:00.000Z",
+                    "document": {}
+                },
+                "hasMonitoring": true,
+                "thirdfortResponse": {
+                    "name": "Purchase of 21 Green Lane",
+                    "request": {
+                        "actor": {
+                            "name": "Jacob Robert Moran",
+                            "phone": "+447506430094"
+                        },
+                        "tasks": [
+                            {
+                                "opts": {
+                                    "nfc": "preferred"
+                                },
+                                "type": "report:identity"
+                            },
+                            {
+                                "opts": {
+                                    "consent": false
+                                },
+                                "type": "report:footprint"
+                            },
+                            {
+                                "opts": {
+                                    "monitored": true
+                                },
+                                "type": "report:peps"
+                            },
+                            {
+                                "type": "documents:poa"
+                            }
+                        ]
+                    },
+                    "ref": "Purchase of 21 Green Lane",
+                    "id": "d472pb123amg030w7vgg",
+                    "reports": [],
+                    "status": "open",
+                    "metadata": {
+                        "notify": {
+                            "type": "http",
+                            "data": {
+                                "hmac_key": "GgUi5IyCFm4TOsMy3Q4cvq6bnQEBJq/0uRqECCRoz+4=",
+                                "method": "POST",
+                                "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                            }
+                        },
+                        "created_by": "d3t2m5q9io6g00ak3kmg",
+                        "print": {
+                            "team": "Cashiers",
+                            "tenant": "Thurstan Hoskin Solicitors LLP",
+                            "user": "Jacob Archer-Moran"
+                        },
+                        "context": {
+                            "gid": "d3t2k5a9io6g00ak3km0",
+                            "uid": "d3t2m5q9io6g00ak3kmg",
+                            "team_id": "d3t2k5a9io6g00ak3km0",
+                            "tenant_id": "d3t2ifa9io6g00ak3klg"
+                        },
+                        "ce": {
+                            "uri": "/v1/checks/4151797887"
+                        },
+                        "created_at": "2025-11-07T17:23:55.088Z"
+                    },
+                    "type": "v2",
+                    "opts": {
+                        "peps": {
+                            "monitored": true
+                        }
+                    }
+                },
+                "hasAlerts": true,
+                "pdfAddedAt": "2025-11-07T17:37:18.427Z",
+                "smsSent": true,
+                "transactionId": "d472pb123amg030w7vgg"
+            },
+            // Mock Check 4: Se Idris Stewart - Electronic ID with SOF and Bank Statements
+            {
+    "taskOutcomes": {
+      "document": {
+        "result": "clear",
+        "status": "complete",
+        "data": {
+          "consistency": "clear",
+          "compromised": "clear",
+          "authenticity": "clear",
+          "integrity": "clear",
+          "validation": "clear"
+        }
+      },
+      "sof:v1": {
+        "breakdown": {
+          "property": {
+            "address": {
+              "building_name": "Chapel Farm House",
+              "country": "GBR",
+              "postcode": "TR15 1RW",
+              "town": "Redruth"
+            },
+            "new_build": false,
+            "price": 20000000,
+            "stamp_duty": 150000
+          },
+          "funds": [
+            {
+              "data": {
+                "amount": 1000000,
+                "location": "GBR",
+                "type": "lisa"
+              },
+              "metadata": {
+                "created_at": 1762527831116
+              },
+              "type": "fund:htb"
+            },
+            {
+              "data": {
+                "amount": 500000,
+                "giftor": {
+                  "contactable": true,
+                  "name": "Mum",
+                  "phone": "+447493580033",
+                  "relationship": "Mum"
+                },
+                "location": "GBR",
+                "repayable": false
+              },
+              "metadata": {
+                "created_at": 1762527831327
+              },
+              "type": "fund:gift"
+            },
+            {
+              "data": {
+                "amount": 150000,
+                "description": "Clock",
+                "location": "GBR"
+              },
+              "metadata": {
+                "created_at": 1762527831542
+              },
+              "type": "fund:sale:assets"
+            },
+            {
+              "data": {
+                "amount": 18000000,
+                "lender": "abc",
+                "location": "GBR"
+              },
+              "metadata": {
+                "created_at": 1762527831681
+              },
+              "type": "fund:mortgage"
+            },
+            {
+              "data": {
+                "amount": 500000,
+                "location": "GBR",
+                "people": [
+                  {
+                    "actor": true,
+                    "name": "Se Idris Stewart",
+                    "incomes": [
+                      {
+                        "reference": "payslip",
+                        "source": "salary",
+                        "description": "",
+                        "annual_total": 2700000,
+                        "frequency": "monthly"
+                      }
+                    ],
+                    "employment_status": "employed",
+                    "phone": "+447493580033"
+                  }
+                ]
+              },
+              "metadata": {
+                "created_at": 1762527831814
+              },
+              "type": "fund:savings"
+            }
+          ]
+        },
+        "data": {},
+        "result": "clear",
+        "documents": [],
+        "id": "d472vh623amg030w7w2g",
+        "status": "closed",
+        "createdAt": "2025-11-07T17:35:00.532Z"
+      },
+      "documents:savings": {
+        "breakdown": {
+          "documents": [
+            {
+              "id": "d472wna23amg030w7wz0",
+              "type": "savings"
+            }
+          ]
+        },
+        "data": {},
+        "result": "clear",
+        "documents": [
+          "d472wna23amg030w7wz0"
+        ],
+        "id": "d472wpa23amg030w7x6g",
+        "status": "closed",
+        "createdAt": "2025-11-07T17:37:29.440Z"
+      },
+      "documents:mortgage": {
+        "breakdown": {
+          "documents": [
+            {
+              "id": "d472w9s23amg030w7wf0",
+              "type": "mortgage"
+            }
+          ]
+        },
+        "data": {},
+        "result": "clear",
+        "documents": [
+          "d472w9s23amg030w7wf0"
+        ],
+        "id": "d472wp223amg030w7x20",
+        "status": "closed",
+        "createdAt": "2025-11-07T17:37:28.901Z"
+      },
+      "documents:poa": {
+        "breakdown": {
+          "documents": [
+            {
+              "id": "d470er323amg030w7vg0",
+              "type": "poa"
+            }
+          ]
+        },
+        "data": {},
+        "result": "clear",
+        "documents": [
+          "d470er323amg030w7vg0"
+        ],
+        "id": "d472vgy23amg030w7vxg",
+        "status": "closed",
+        "createdAt": "2025-11-07T17:34:59.453Z"
+      },
+      "facial_similarity": {
+        "result": "clear",
+        "status": "complete",
+        "data": {
+          "authenticity": "clear",
+          "comparison": "clear",
+          "integrity": "clear"
+        }
+      },
+      "peps": {
+        "breakdown": {
+          "total_hits": 0,
+          "hits": []
+        },
+        "data": {
+          "dob": "2000-01-05T00:00:00.000Z",
+          "name": {
+            "first": "Sé",
+            "last": "Stewart",
+            "other": "Idris"
+          },
+          "address": {
+            "postcode": "TR15 2ND",
+            "country": "GBR",
+            "street": "Southgate Street",
+            "building_number": "94",
+            "town": "Redruth"
+          }
+        },
+        "result": "clear",
+        "documents": [
+          "d472x6c23amg030w7xx0"
+        ],
+        "id": "d472x5w23amg030w7xs0",
+        "status": "closed",
+        "createdAt": "2025-11-07T17:38:31.451Z"
+      },
+      "nfc": {
+        "result": "consider",
+        "status": "unobtainable",
+        "data": {
+          "chip": {},
+          "comparison": {}
+        }
+      },
+      "documents:bank-statement": {
+        "breakdown": {
+          "accounts": {
+            "40163406": {
+              "info": {
+                "number": {
+                  "iban": "",
+                  "number": "40163406",
+                  "sort_code": "40-20-55",
+                  "swift_bic": ""
+                },
+                "name": "",
+                "provider": {
+                  "id": "",
+                  "name": "HSBC"
+                },
+                "balance": {
+                  "available": 2.75,
+                  "current": 2.75,
+                  "overdraft": 0
+                },
+                "info": [
+                  {
+                    "full_name": "Mr Se Idris Stewart",
+                    "phones": null,
+                    "date_of_birth": "",
+                    "emails": null,
+                    "update_timestamp": "",
+                    "addresses": null
+                  }
+                ],
+                "credentials_id": "",
+                "currency": "GBP",
+                "metadata": {
+                  "created_at": "2025-11-07T17:35:01.470172Z",
+                  "encryption": "",
+                  "updated_at": "2025-11-07T17:36:32.145693Z"
+                },
+                "type": ""
+              },
+              "statement": [
+                {
+                  "merchant_name": "NEST",
+                  "timestamp": "2025-07-01T00:00:00Z",
+                  "description": "NEST FIRST PAYMENT",
+                  "amount": -60,
+                  "id": "03c57712-eab4-4574-b022-607336d5b059",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "PROSPECT UNION",
+                  "timestamp": "2025-07-01T00:00:00Z",
+                  "description": "PROSPECT UNION",
+                  "amount": -13.33,
+                  "id": "fe049d6e-cc8d-42b2-8e02-9fad81aef643",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "STEWART S *HSM",
+                  "timestamp": "2025-07-01T00:00:00Z",
+                  "description": "STEWART S *HSM SAVE",
+                  "amount": -150,
+                  "id": "2ffd97ed-ce60-4fe4-bb86-53ce568a7a02",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R",
+                  "timestamp": "2025-07-01T00:00:00Z",
+                  "description": "Arch-Mo J R CAR",
+                  "amount": -70,
+                  "id": "fdc1f9f6-319a-4027-bd94-2c74afdbc070",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arc-McDo B",
+                  "timestamp": "2025-07-01T00:00:00Z",
+                  "description": "Arc-McDo B VODAFONE",
+                  "amount": -15,
+                  "id": "f82f3579-3024-44f6-a2f8-af19162b97ee",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "DEX PROPERTY",
+                  "timestamp": "2025-07-01T00:00:00Z",
+                  "description": "DEX PROPERTY 35 SUTHERLAND RM 1",
+                  "amount": -480,
+                  "rolling_account_balance": 1073.91,
+                  "id": "89137c17-da6f-414b-b221-496551762f06",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Katie Havanna Reen",
+                  "timestamp": "2025-07-02T00:00:00Z",
+                  "description": "Katie Havanna Reen SPLITWISE-PAYMENT",
+                  "amount": -32.73,
+                  "rolling_account_balance": 1041.18,
+                  "id": "39dd0f39-1cd7-4da0-92b7-dd4ef640b8d1",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "OBP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-08T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -100,
+                  "rolling_account_balance": 941.18,
+                  "id": "467dcee0-769f-4f84-b710-fae215dbca63",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-09T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -40,
+                  "id": "d98c90f8-49e8-4973-8884-d0f9d0cdddf2",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-09T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -50,
+                  "id": "9099c841-dec8-4bec-8290-16d2f274bcf3",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-12T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -50,
+                  "rolling_account_balance": 936.18,
+                  "id": "ff7861ec-d2ff-49bc-ad98-17c256abdddf",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-16T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -60,
+                  "rolling_account_balance": 876.18,
+                  "id": "942cadee-2578-4cb9-98e3-bc684d9fd184",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-17T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -50,
+                  "rolling_account_balance": 826.18,
+                  "id": "10963733-05e5-405a-94c5-d7580b390d63",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "NHSBSA",
+                  "timestamp": "2025-07-18T00:00:00Z",
+                  "description": "NHSBSA PPC 2",
+                  "amount": -11.45,
+                  "id": "5e7a8546-cca8-46e5-8add-40a412b52ec6",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-18T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -50,
+                  "rolling_account_balance": 764.73,
+                  "id": "0e16d88a-c79c-44d6-8fcb-c1bb6952724f",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Barbara Archer",
+                  "timestamp": "2025-07-19T00:00:00Z",
+                  "description": "Barbara Archer Holiday Flights",
+                  "amount": -140,
+                  "rolling_account_balance": 624.73,
+                  "id": "dc55407c-f7e7-4026-b815-53b69d1d1e85",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "LEE CAJ",
+                  "timestamp": "2025-07-20T00:00:00Z",
+                  "description": "LEE CAJ Joy to the lord",
+                  "amount": 40,
+                  "id": "1444e1f2-3fac-4c78-a8a1-4e0dd3407bc8",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-20T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -240,
+                  "id": "c5c8cc39-44dd-4467-ba8b-d115ee536ebd",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-20T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -50,
+                  "rolling_account_balance": 374.73,
+                  "id": "4f98cc79-7d3b-4201-968f-dba556783460",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-21T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -74.73,
+                  "id": "af6a348e-f528-4a58-af07-02fb91e9c9b1",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-21T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -50,
+                  "rolling_account_balance": 450,
+                  "id": "79865522-6217-4bff-a470-723d0bee6d73",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-23T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -300,
+                  "rolling_account_balance": 318,
+                  "id": "27d47a64-4632-4973-8838-7b8b5ab85839",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "LEE CAJ",
+                  "timestamp": "2025-07-23T00:00:00Z",
+                  "description": "LEE CAJ Airplane disaster",
+                  "amount": 168,
+                  "id": "45c7dc04-1865-460f-a857-cfad071e6831",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-24T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -120,
+                  "rolling_account_balance": 198,
+                  "id": "73171bb4-af3c-46d0-ab1e-f207b2d118e4",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "LADYWELL ARIZONA L",
+                  "timestamp": "2025-07-25T00:00:00Z",
+                  "description": "LADYWELL ARIZONA L SALARY JULY 2025",
+                  "amount": 2162.44,
+                  "id": "18c9a740-dc6c-4eb9-8a5b-fdffd7a3564c",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-25T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -100,
+                  "rolling_account_balance": 2260.44,
+                  "id": "ddb0edbd-2d9a-4eb9-8c48-6f9b5646107d",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-28T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -100,
+                  "rolling_account_balance": 2160.44,
+                  "id": "48b02a93-b68d-4384-9800-7053bc9a48d9",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-07-29T00:00:00Z",
+                  "description": "Se Stewart Monzo-CLGNP",
+                  "amount": -100,
+                  "rolling_account_balance": 2060.44,
+                  "id": "7faa0e99-67c6-4d34-861d-3bcbddadeb10",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "PROSPECT UNION",
+                  "timestamp": "2025-08-01T00:00:00Z",
+                  "description": "DD PROSPECT UNION",
+                  "amount": -13.33,
+                  "id": "78ed938c-c5f4-4737-93df-bf0b8e085d8e",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "NEST",
+                  "timestamp": "2025-08-01T00:00:00Z",
+                  "description": "DD NEST",
+                  "amount": -60,
+                  "id": "12404151-42fc-42cf-a102-d698dc9b1ab2",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "STEWART S *HSM SAVE",
+                  "timestamp": "2025-08-01T00:00:00Z",
+                  "description": "SO STEWART S *HSM SAVE",
+                  "amount": -150,
+                  "id": "93cd5860-cb98-4be2-be2d-87dddf569c35",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R CAR",
+                  "timestamp": "2025-08-01T00:00:00Z",
+                  "description": "SO Arch-Mo J R CAR",
+                  "amount": -70,
+                  "id": "5b0b4661-13bb-42c8-b0af-f6771995eba2",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arc-McDo B VODAFONE",
+                  "timestamp": "2025-08-01T00:00:00Z",
+                  "description": "SO Arc-McDo B VODAFONE",
+                  "amount": -15,
+                  "id": "12d8601d-9b0d-4aaa-be25-a2a2c07634d9",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "DEX PROPERTY 35 SUTHERLAND RM 1",
+                  "timestamp": "2025-08-01T00:00:00Z",
+                  "description": "SO DEX PROPERTY 35 SUTHERLAND RM 1",
+                  "amount": -480,
+                  "id": "091a1417-6f9d-4301-834a-893776f70189",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-08-01T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -200,
+                  "rolling_account_balance": 1072.11,
+                  "id": "d1945c03-afa3-4877-8ba9-4a07398240b2",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-08-02T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -250,
+                  "rolling_account_balance": 822.11,
+                  "id": "5d27588c-4266-41be-8eb6-683123082255",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-08-08T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -200,
+                  "rolling_account_balance": 622.11,
+                  "id": "5d22cd18-a8e5-4c3d-ae5e-a7521cf60955",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-08-09T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -400,
+                  "rolling_account_balance": 222.11,
+                  "id": "8814461c-b7b1-4da5-be9a-ae93066ad667",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Katie Havanna Reen SPLITWISE-PAYMENT",
+                  "timestamp": "2025-08-11T00:00:00Z",
+                  "description": "OBP Katie Havanna Reen SPLITWISE-PAYMENT",
+                  "amount": -15.25,
+                  "id": "e1f3f7b8-5b53-4dbd-9ce0-89fcd8e65fbb",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "OBP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-08-11T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -200,
+                  "id": "550bc2cf-0cd6-416b-8a2a-7a72f876fb91",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "402055 40163414 INTERNET TRANSFER",
+                  "timestamp": "2025-08-11T00:00:00Z",
+                  "description": "TFR 402055 40163414 INTERNET TRANSFER",
+                  "amount": 50,
+                  "rolling_account_balance": 56.86,
+                  "id": "eb8ede2b-24ec-4da9-84ce-989f5a42af1f",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "TFR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-08-17T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -40,
+                  "rolling_account_balance": 16.86,
+                  "id": "d25d875c-1c2e-4ce3-b118-031cdc2d0393",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "NHSBSA PPC 2",
+                  "timestamp": "2025-08-18T00:00:00Z",
+                  "description": "DD NHSBSA PPC 2",
+                  "amount": -11.45,
+                  "rolling_account_balance": 5.41,
+                  "id": "21646963-a1b1-4935-8e8c-134622bc482f",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "402055 40163414 INTERNET TRANSFER",
+                  "timestamp": "2025-08-20T00:00:00Z",
+                  "description": "TFR 402055 40163414 INTERNET TRANSFER",
+                  "amount": 100,
+                  "id": "0132d86a-54ef-495f-b58a-3a87e865006f",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "TFR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-08-20T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -100,
+                  "rolling_account_balance": 5.41,
+                  "id": "74137577-187f-4463-9783-7c877fcce6d1",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "402055 40163414 INTERNET TRANSFER",
+                  "timestamp": "2025-08-22T00:00:00Z",
+                  "description": "TFR 402055 40163414 INTERNET TRANSFER",
+                  "amount": 100,
+                  "id": "fcaba9eb-490f-45e0-8dc3-c6dbec615496",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "TFR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-08-22T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -80,
+                  "id": "7f7a993f-4b9c-4d91-9524-0e2d401d10ac",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-08-22T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -20,
+                  "rolling_account_balance": 5.41,
+                  "id": "c78819f5-6e44-47c8-bd77-1575216314ea",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R Iou",
+                  "timestamp": "2025-08-23T00:00:00Z",
+                  "description": "BP Arch-Mo J R Iou",
+                  "amount": 50,
+                  "id": "309569df-91e5-4c73-a940-13e4843d534e",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-08-23T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -50,
+                  "rolling_account_balance": 5.41,
+                  "id": "ca7caec7-f74f-4273-8cc1-a9a2a25fa912",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "LADYWELL ARIZONA L",
+                  "timestamp": "2025-08-29T00:00:00Z",
+                  "description": "CR LADYWELL ARIZONA L SALARY AUGUST 2025",
+                  "amount": 2575.24,
+                  "id": "2d466586-2717-4bd0-bc2e-d2bf20993242",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-08-29T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -200,
+                  "id": "6ac5bfa3-c855-45e4-8ef1-6bede326feb9",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "CAROLINE LEE",
+                  "timestamp": "2025-08-29T00:00:00Z",
+                  "description": "BP CAROLINE LEE From Se",
+                  "amount": -90,
+                  "rolling_account_balance": 2290.65,
+                  "id": "3e5fdb0d-1823-4d6e-b451-f677efb5440f",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Jacob",
+                  "timestamp": "2025-08-30T00:00:00Z",
+                  "description": "BP Jacob Holidayxx",
+                  "amount": -245,
+                  "rolling_account_balance": 2045.65,
+                  "id": "150be101-6bb1-4b6c-909a-c8e9c533708c",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-08-31T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -100,
+                  "id": "3633bed0-2cfc-4db5-b1c7-d0757f514364",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-08-31T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -200,
+                  "rolling_account_balance": 1745.65,
+                  "id": "a156a3a3-fcf1-4c61-98ac-d0171fc784ac",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-08-31T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -100,
+                  "id": "855a91b7-8f5c-4866-9bd7-fdc72b4af346",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "PROSPECT UNION",
+                  "timestamp": "2025-09-01T00:00:00Z",
+                  "description": "DD PROSPECT UNION",
+                  "amount": -13.33,
+                  "id": "5cc88288-d369-4ebd-88c9-9a2cd75a69d5",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "NEST",
+                  "timestamp": "2025-09-01T00:00:00Z",
+                  "description": "DD NEST",
+                  "amount": -60,
+                  "id": "444c1dbe-116b-4aab-839b-189cdb412e6e",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "STEWART S *HSM SAVE",
+                  "timestamp": "2025-09-01T00:00:00Z",
+                  "description": "SO STEWART S *HSM SAVE",
+                  "amount": -150,
+                  "id": "3acdac30-7262-4fd6-9e64-210b9ed9da7b",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R",
+                  "timestamp": "2025-09-01T00:00:00Z",
+                  "description": "SO Arch-Mo J R CAR",
+                  "amount": -70,
+                  "id": "cadb0d06-2792-40e1-b321-cc7969bfab91",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arc-McDo B",
+                  "timestamp": "2025-09-01T00:00:00Z",
+                  "description": "SO Arc-McDo B VODAFONE",
+                  "amount": -15,
+                  "id": "0a92489f-47a6-4384-a38e-da9057fc95db",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "DEX PROPERTY",
+                  "timestamp": "2025-09-01T00:00:00Z",
+                  "description": "SO DEX PROPERTY 35 SUTHERLAND RM 1",
+                  "amount": -480,
+                  "rolling_account_balance": 957.32,
+                  "id": "dac04f2b-9549-467e-a684-fcd7167741d0",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "PROSPECT UNION",
+                  "timestamp": "2025-09-01T00:00:00Z",
+                  "description": "DD PROSPECT UNION",
+                  "amount": -13.33,
+                  "id": "37d6717f-7204-43ec-84bb-b276d2755ef7",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "NEST",
+                  "timestamp": "2025-09-01T00:00:00Z",
+                  "description": "DD NEST",
+                  "amount": -60,
+                  "id": "478ec493-655c-48b8-933b-577bb620fa42",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "STEWART S *HSM SAVE",
+                  "timestamp": "2025-09-01T00:00:00Z",
+                  "description": "SO STEWART S *HSM SAVE",
+                  "amount": -150,
+                  "id": "db2b6b98-fb73-4827-aafe-e9fff5a83136",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R",
+                  "timestamp": "2025-09-01T00:00:00Z",
+                  "description": "SO Arch-Mo J R CAR",
+                  "amount": -70,
+                  "id": "a6effef9-3137-4b3e-8fd5-a97d5c064e00",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arc-McDo B",
+                  "timestamp": "2025-09-01T00:00:00Z",
+                  "description": "SO Arc-McDo B VODAFONE",
+                  "amount": -15,
+                  "id": "37a8b581-5045-4d3c-95df-a0c1444e9692",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-04T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -200,
+                  "rolling_account_balance": 757.32,
+                  "id": "71f05de8-1388-4207-ae5f-2ca8c68fcc3b",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-05T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -200,
+                  "rolling_account_balance": 557.32,
+                  "id": "8fd28ae6-dc19-4e4b-b892-599bc8cfa5cf",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-07T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -150,
+                  "id": "ce9f6978-3b3c-4551-8367-0c93dbd1cc89",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "KATIE HARRISON",
+                  "timestamp": "2025-09-07T00:00:00Z",
+                  "description": "CR KATIE HARRISON CHASE",
+                  "amount": 80,
+                  "rolling_account_balance": 487.32,
+                  "id": "fe2584da-a62a-4ba6-b342-23fbc6b0f97f",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-07T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -150,
+                  "id": "090ecd3a-c3c8-4b23-92b3-49e2ce9614b4",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-08T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -50,
+                  "id": "82f70dd8-ed5c-467a-bf5f-ebdb199f68ca",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R",
+                  "timestamp": "2025-09-08T00:00:00Z",
+                  "description": "BP Arch-Mo J R Iou",
+                  "amount": 100,
+                  "rolling_account_balance": 537.32,
+                  "id": "a45ac5a4-c462-45a0-b71e-db4d284c9110",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-08T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -50,
+                  "id": "b6a6c8cb-d72d-4207-880e-3504367e04fa",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-12T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -60,
+                  "id": "eba9dd8c-dd8f-4775-af86-cf104abfb659",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Katie Havanna Reen",
+                  "timestamp": "2025-09-12T00:00:00Z",
+                  "description": "OBP Katie Havanna Reen SPLITWISE-PAYMENT",
+                  "amount": -15.25,
+                  "id": "3f15166a-574a-4f3a-8747-961e2c79d88b",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "OBP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-12T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -280,
+                  "rolling_account_balance": 182.07,
+                  "id": "1fe221de-f3ba-48fe-9564-84cf0f2b95d2",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-12T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -60,
+                  "id": "fb9432da-6d31-45bb-94ce-ba83e1337c39",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Katie Havanna Reen",
+                  "timestamp": "2025-09-12T00:00:00Z",
+                  "description": "OBP Katie Havanna Reen SPLITWISE-PAYMENT",
+                  "amount": -15.25,
+                  "id": "a99af3fb-a2e9-4600-8130-1378110476b3",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "OBP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-14T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -180,
+                  "rolling_account_balance": 2.07,
+                  "id": "333bdd32-7bf2-4802-83f8-2d568d6ddca2",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "NHSBSA",
+                  "timestamp": "2025-09-18T00:00:00Z",
+                  "description": "DD NHSBSA PPC 2",
+                  "amount": -11.45,
+                  "id": "ff155fa3-7558-4d9d-96b6-5a941ca7dabb",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "",
+                  "timestamp": "2025-09-18T00:00:00Z",
+                  "description": "TFR 402055 40163414 INTERNET TRANSFER",
+                  "amount": 200,
+                  "id": "b2229847-7132-4733-a342-ba24b776fe16",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "TFR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-18T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -90,
+                  "rolling_account_balance": 100.62,
+                  "id": "b1811952-4e81-4980-af93-c722de4756fa",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "NHSBSA PPC 2",
+                  "timestamp": "2025-09-18T00:00:00Z",
+                  "description": "DD NHSBSA PPC 2",
+                  "amount": -11.45,
+                  "id": "db0e1cec-5c5c-41e7-b61a-95b3cda1a98a",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "",
+                  "timestamp": "2025-09-18T00:00:00Z",
+                  "description": "TFR 402055 40163414 INTERNET TRANSFER",
+                  "amount": 200,
+                  "id": "bedb8a6c-956e-435d-b17f-51683b54e795",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "TFR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-20T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -100,
+                  "rolling_account_balance": 0.62,
+                  "id": "88be2410-9882-452c-bb63-cfdeefd1f7a2",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "LEE CAJ",
+                  "timestamp": "2025-09-23T00:00:00Z",
+                  "description": "CR LEE CAJ favourite parent",
+                  "amount": 100,
+                  "rolling_account_balance": 100.62,
+                  "id": "ab5d57cd-b9cf-4475-99bd-88c08704adc3",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-25T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -100,
+                  "rolling_account_balance": 0.62,
+                  "id": "50daa6c9-82d6-4dc8-81a3-f68d0b81cc44",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "LADYWELL ARIZONA L",
+                  "timestamp": "2025-09-26T00:00:00Z",
+                  "description": "CR LADYWELL ARIZONA L SALARY SEPTEMBER 2",
+                  "amount": 2162.24,
+                  "id": "d8ce6a43-3cc1-4549-8b49-49f05ee6ce97",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "CAROLINE LEE",
+                  "timestamp": "2025-09-26T00:00:00Z",
+                  "description": "BP CAROLINE LEE From Se",
+                  "amount": -80,
+                  "id": "f4e64bf2-7561-4698-8a40-5c4c16561379",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-26T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -200,
+                  "id": "94c1ca78-ebbc-43fd-b325-60cae3035a8d",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "CAROLINE LEE",
+                  "timestamp": "2025-09-26T00:00:00Z",
+                  "description": "BP CAROLINE LEE From Se",
+                  "amount": -110,
+                  "rolling_account_balance": 1772.86,
+                  "id": "99d70e7d-a03e-429d-9d54-f025681505e2",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "LADYWELL ARIZONA L",
+                  "timestamp": "2025-09-26T00:00:00Z",
+                  "description": "CR LADYWELL ARIZONA L SALARY SEPTEMBER 2",
+                  "amount": 2162.24,
+                  "id": "07bc1b6b-0abd-4d79-81fa-7e20e1de4bdc",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "CAROLINE LEE",
+                  "timestamp": "2025-09-26T00:00:00Z",
+                  "description": "BP CAROLINE LEE From Se",
+                  "amount": -80,
+                  "id": "d5e8c0c1-b6b2-47a8-9711-cfaf68b926e2",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-26T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -200,
+                  "id": "1158f471-8ff2-4458-b0b6-21e6ab13f1c3",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Jacob",
+                  "timestamp": "2025-09-28T00:00:00Z",
+                  "description": "BP Jacob Holidayxx",
+                  "amount": -200,
+                  "rolling_account_balance": 1572.86,
+                  "id": "910911cd-2761-4e9c-b00f-e8bcfc05e260",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-29T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -100,
+                  "rolling_account_balance": 1472.86,
+                  "id": "0dc3d8bc-f23f-440b-876c-e419abaa4178",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-30T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -400,
+                  "id": "ec7d7c5a-1c65-4544-bffb-0a1bff52539c",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "DEX Property Manag",
+                  "timestamp": "2025-09-30T00:00:00Z",
+                  "description": "BP DEX Property Manag 35 Sutherland RM 1",
+                  "amount": -15,
+                  "rolling_account_balance": 1057.86,
+                  "id": "f55d11b5-39d7-4d6e-a3c2-2bc4d46c7b0a",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart",
+                  "timestamp": "2025-09-30T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -400,
+                  "id": "67dd0e12-7a71-433f-8a48-955fb47fa4e3",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "PROSPECT UNION",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "DD PROSPECT UNION",
+                  "amount": -13.33,
+                  "id": "dfb58b00-2eff-4215-912a-f0c78c8dcef0",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "NEST",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "DD NEST",
+                  "amount": -60,
+                  "id": "f0483bc5-8e4b-45b1-b8f9-b19bce9d4ee9",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "STEWART S *HSM SAVE",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "SO STEWART S *HSM SAVE",
+                  "amount": -150,
+                  "id": "6b7ff810-98ee-43b4-a0ef-29671e188261",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R CAR",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "SO Arch-Mo J R CAR",
+                  "amount": -70,
+                  "id": "23a7e4ba-ac19-42a1-ba6b-98118a8397a1",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arc-McDo B VODAFONE",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "SO Arc-McDo B VODAFONE",
+                  "amount": -15,
+                  "id": "5c210def-7546-4858-a309-ec6a8792360d",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "DEX PROPERTY 35 SUTHERLAND RM 1",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "SO DEX PROPERTY 35 SUTHERLAND RM 1",
+                  "amount": -480,
+                  "id": "ce0a64e4-6afd-407e-a5a8-b6668b4b5e30",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "LEE CAJ Freckle tattoo",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "CR LEE CAJ Freckle tattoo",
+                  "amount": 70,
+                  "rolling_account_balance": 339.53,
+                  "id": "4131d8fd-f7ee-4800-b68e-c27fb2705d23",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "PROSPECT UNION",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "DD PROSPECT UNION",
+                  "amount": -13.33,
+                  "id": "e5341f24-0a2e-4406-88a7-d16e529689b5",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "NEST",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "DD NEST",
+                  "amount": -60,
+                  "id": "5b8ff667-131b-4ba0-aed5-291980cb8e16",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "STEWART S *HSM SAVE",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "SO STEWART S *HSM SAVE",
+                  "amount": -150,
+                  "id": "e284bb67-a3ad-435a-a905-0d4bbca9d4f6",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R CAR",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "SO Arch-Mo J R CAR",
+                  "amount": -70,
+                  "id": "7448df4b-aa91-47ae-be7b-4b956d921a25",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arc-McDo B VODAFONE",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "SO Arc-McDo B VODAFONE",
+                  "amount": -15,
+                  "id": "1b03f2ef-0ed0-4cca-9c45-38aba887e891",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "DEX PROPERTY 35 SUTHERLAND RM 1",
+                  "timestamp": "2025-10-01T00:00:00Z",
+                  "description": "SO DEX PROPERTY 35 SUTHERLAND RM 1",
+                  "amount": -480,
+                  "id": "3759fb39-56a7-4d12-9a1a-bfe4edd5091b",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "SO",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "DEX Property Manag 35 Sutherland RM 1",
+                  "timestamp": "2025-10-02T00:00:00Z",
+                  "description": "BP DEX Property Manag 35 Sutherland RM 1",
+                  "amount": -15,
+                  "rolling_account_balance": 324.53,
+                  "id": "f42e248f-2fda-4518-aaf7-6ed07c68212b",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-07T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -50,
+                  "rolling_account_balance": 274.53,
+                  "id": "59e39591-f2fc-4c00-b8d9-5389f8270196",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-08T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -50,
+                  "rolling_account_balance": 224.53,
+                  "id": "bebcc2a0-5d15-4387-99eb-bb2e3f6ccb98",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "LEE CAJ FRECKLE TATTOO",
+                  "timestamp": "2025-10-10T00:00:00Z",
+                  "description": "CR LEE CAJ FRECKLE TATTOO",
+                  "amount": 10,
+                  "rolling_account_balance": 234.53,
+                  "id": "a4b23fc4-a5ae-4d70-ab7e-c30133205a6e",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-13T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -60,
+                  "rolling_account_balance": 174.53,
+                  "id": "54dc95ca-9800-4ad3-a714-4c28f33f37af",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-14T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -70,
+                  "rolling_account_balance": 104.53,
+                  "id": "fd19c12b-0216-4b6d-a9f0-a0b665aac64c",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Katie Havanna Reen SPLITWISE-PAYMENT",
+                  "timestamp": "2025-10-15T00:00:00Z",
+                  "description": "OBP Katie Havanna Reen SPLITWISE-PAYMENT",
+                  "amount": -20.33,
+                  "rolling_account_balance": 84.2,
+                  "id": "2b685efc-1760-4766-90c5-4d63aceada7e",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "OBP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-18T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -60,
+                  "rolling_account_balance": 24.2,
+                  "id": "95931a81-3882-4cb3-9ec5-0ab69cd24280",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "402055 40163414 INTERNET TRANSFER",
+                  "timestamp": "2025-10-19T00:00:00Z",
+                  "description": "TFR 402055 40163414 INTERNET TRANSFER",
+                  "amount": 130,
+                  "id": "eb750cf4-4c76-4d98-bd84-0b2ae818d74a",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "TFR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-19T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -130,
+                  "id": "1c4fd3f0-5278-4a89-91fa-95d2542afeaa",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "402055 40163414 INTERNET TRANSFER",
+                  "timestamp": "2025-10-19T00:00:00Z",
+                  "description": "TFR 402055 40163414 INTERNET TRANSFER",
+                  "amount": 20,
+                  "id": "16a7f942-5ebc-4401-9a6d-867175a74ce4",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "TFR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-19T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -30,
+                  "rolling_account_balance": 14.2,
+                  "id": "4db514fe-e4e3-42c2-af0d-5d6bc2949101",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "402055 40163414 INTERNET TRANSFER",
+                  "timestamp": "2025-10-19T00:00:00Z",
+                  "description": "TFR 402055 40163414 INTERNET TRANSFER",
+                  "amount": 130,
+                  "id": "b2a8cced-3227-462b-9033-f3e8d2c9a83d",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "TFR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-19T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -130,
+                  "id": "40139453-6f93-40d0-b3a3-eac2092734b0",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "402055 40163414 INTERNET TRANSFER",
+                  "timestamp": "2025-10-19T00:00:00Z",
+                  "description": "TFR 402055 40163414 INTERNET TRANSFER",
+                  "amount": 20,
+                  "id": "b05e63bd-685f-43b0-a7f7-7fa07104f222",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "TFR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "NHSBSA PPC 2",
+                  "timestamp": "2025-10-20T00:00:00Z",
+                  "description": "DD NHSBSA PPC 2",
+                  "amount": -11.45,
+                  "id": "c477abc3-feb0-4ccc-b174-51d508b1a90e",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "LEE CAJ Kailab bday",
+                  "timestamp": "2025-10-20T00:00:00Z",
+                  "description": "CR LEE CAJ Kailab bday",
+                  "amount": 150,
+                  "rolling_account_balance": 152.75,
+                  "id": "80758dde-2044-49c9-ab33-1d7303c44d44",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "NHSBSA PPC 2",
+                  "timestamp": "2025-10-20T00:00:00Z",
+                  "description": "DD NHSBSA PPC 2",
+                  "amount": -11.45,
+                  "id": "60a43bf0-43b4-4cf4-9d47-e361d2ca9911",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "DD",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "JACOB ARCHER-MORAN work",
+                  "timestamp": "2025-10-22T00:00:00Z",
+                  "description": "CR JACOB ARCHER-MORAN work",
+                  "amount": 150,
+                  "id": "a1f1e471-6ba2-4743-9bfd-ff4403f80c1d",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-22T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -110,
+                  "rolling_account_balance": 192.75,
+                  "id": "fc2994d5-d240-4c2a-b008-dee999d416a8",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "JACOB ARCHER-MORAN work",
+                  "timestamp": "2025-10-22T00:00:00Z",
+                  "description": "CR JACOB ARCHER-MORAN work",
+                  "amount": 150,
+                  "id": "e3999d67-c175-4e01-a8d1-acd910ffe838",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "CR",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-24T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -180,
+                  "rolling_account_balance": 12.75,
+                  "id": "3c1fa2b5-57f1-4004-83a6-8d46fb2c4c87",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R Iou",
+                  "timestamp": "2025-10-27T00:00:00Z",
+                  "description": "B Arch-Mo J R Iou",
+                  "amount": 100,
+                  "id": "075db203-c337-4556-9bb8-cf8154302c15",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "B",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-27T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -100,
+                  "rolling_account_balance": 12.75,
+                  "id": "9d014384-7b11-46f8-8403-861fe1f85256",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R Iou",
+                  "timestamp": "2025-10-27T00:00:00Z",
+                  "description": "B Arch-Mo J R Iou",
+                  "amount": 100,
+                  "id": "17f858bc-f4e6-43e9-aabf-f04b866ed506",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "B",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R Iou",
+                  "timestamp": "2025-10-28T00:00:00Z",
+                  "description": "BP Arch-Mo J R Iou",
+                  "amount": 110,
+                  "id": "9e7184c1-0dc7-42eb-99d0-13d09ef43241",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-28T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -110,
+                  "rolling_account_balance": 12.75,
+                  "id": "57ad9380-ce62-44e3-a0e3-eeead29322f6",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                },
+                {
+                  "merchant_name": "Arch-Mo J R Iou",
+                  "timestamp": "2025-10-28T00:00:00Z",
+                  "description": "BP Arch-Mo J R Iou",
+                  "amount": 110,
+                  "id": "537b3bdc-3585-4073-9d14-cb3bd076c738",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "CREDIT"
+                },
+                {
+                  "merchant_name": "Se Stewart Monzo-CLGNP",
+                  "timestamp": "2025-10-30T00:00:00Z",
+                  "description": "BP Se Stewart Monzo-CLGNP",
+                  "amount": -10,
+                  "rolling_account_balance": 2.75,
+                  "id": "9d21a764-3b6a-4241-bbb5-94346b6d9926",
+                  "account_id": "40163406",
+                  "currency": "GBP",
+                  "category": "BP",
+                  "classification": null,
+                  "type": "DEBIT"
+                }
+              ]
+            }
+          },
+          "documents": [
+            {
+              "id": "d472vf523amg030w7vr0",
+              "type": "bank-statement"
+            },
+            {
+              "id": "d472vfd23amg030w7vrg",
+              "type": "bank-statement"
+            },
+            {
+              "id": "d472vfn23amg030w7vs0",
+              "type": "bank-statement"
+            },
+            {
+              "id": "d472vfx23amg030w7vt0",
+              "type": "bank-statement"
+            },
+            {
+              "id": "d472vg623amg030w7vtg",
+              "type": "bank-statement"
+            },
+            {
+              "id": "d472vge23amg030w7vv0",
+              "type": "bank-statement"
+            }
+          ],
+          "analysis": {
+            "id": "4151814620",
+            "repeating_transactions": [
+              {
+                "sort_score": 2575.24,
+                "items": [
+                  "07bc1b6b-0abd-4d79-81fa-7e20e1de4bdc",
+                  "2d466586-2717-4bd0-bc2e-d2bf20993242",
+                  "d8ce6a43-3cc1-4549-8b49-49f05ee6ce97"
+                ]
+              },
+              {
+                "sort_score": 480,
+                "items": [
+                  "091a1417-6f9d-4301-834a-893776f70189",
+                  "3759fb39-56a7-4d12-9a1a-bfe4edd5091b",
+                  "ce0a64e4-6afd-407e-a5a8-b6668b4b5e30",
+                  "dac04f2b-9549-467e-a684-fcd7167741d0"
+                ]
+              },
+              {
+                "sort_score": 400,
+                "items": [
+                  "090ecd3a-c3c8-4b23-92b3-49e2ce9614b4",
+                  "0dc3d8bc-f23f-440b-876c-e419abaa4178",
+                  "1158f471-8ff2-4458-b0b6-21e6ab13f1c3",
+                  "1c4fd3f0-5278-4a89-91fa-95d2542afeaa",
+                  "1fe221de-f3ba-48fe-9564-84cf0f2b95d2",
+                  "333bdd32-7bf2-4802-83f8-2d568d6ddca2",
+                  "3633bed0-2cfc-4db5-b1c7-d0757f514364",
+                  "3c1fa2b5-57f1-4004-83a6-8d46fb2c4c87",
+                  "40139453-6f93-40d0-b3a3-eac2092734b0",
+                  "4db514fe-e4e3-42c2-af0d-5d6bc2949101",
+                  "50daa6c9-82d6-4dc8-81a3-f68d0b81cc44",
+                  "54dc95ca-9800-4ad3-a714-4c28f33f37af",
+                  "550bc2cf-0cd6-416b-8a2a-7a72f876fb91",
+                  "57ad9380-ce62-44e3-a0e3-eeead29322f6",
+                  "59e39591-f2fc-4c00-b8d9-5389f8270196",
+                  "5d22cd18-a8e5-4c3d-ae5e-a7521cf60955",
+                  "5d27588c-4266-41be-8eb6-683123082255",
+                  "67dd0e12-7a71-433f-8a48-955fb47fa4e3",
+                  "6ac5bfa3-c855-45e4-8ef1-6bede326feb9",
+                  "71f05de8-1388-4207-ae5f-2ca8c68fcc3b",
+                  "74137577-187f-4463-9783-7c877fcce6d1",
+                  "7f7a993f-4b9c-4d91-9524-0e2d401d10ac",
+                  "82f70dd8-ed5c-467a-bf5f-ebdb199f68ca",
+                  "855a91b7-8f5c-4866-9bd7-fdc72b4af346",
+                  "8814461c-b7b1-4da5-be9a-ae93066ad667",
+                  "88be2410-9882-452c-bb63-cfdeefd1f7a2",
+                  "8fd28ae6-dc19-4e4b-b892-599bc8cfa5cf",
+                  "94c1ca78-ebbc-43fd-b325-60cae3035a8d",
+                  "95931a81-3882-4cb3-9ec5-0ab69cd24280",
+                  "9d014384-7b11-46f8-8403-861fe1f85256",
+                  "9d21a764-3b6a-4241-bbb5-94346b6d9926",
+                  "a156a3a3-fcf1-4c61-98ac-d0171fc784ac",
+                  "b1811952-4e81-4980-af93-c722de4756fa",
+                  "b6a6c8cb-d72d-4207-880e-3504367e04fa",
+                  "bebcc2a0-5d15-4387-99eb-bb2e3f6ccb98",
+                  "c78819f5-6e44-47c8-bd77-1575216314ea",
+                  "ca7caec7-f74f-4273-8cc1-a9a2a25fa912",
+                  "ce9f6978-3b3c-4551-8367-0c93dbd1cc89",
+                  "d1945c03-afa3-4877-8ba9-4a07398240b2",
+                  "d25d875c-1c2e-4ce3-b118-031cdc2d0393",
+                  "eba9dd8c-dd8f-4775-af86-cf104abfb659",
+                  "ec7d7c5a-1c65-4544-bffb-0a1bff52539c",
+                  "fb9432da-6d31-45bb-94ce-ba83e1337c39",
+                  "fc2994d5-d240-4c2a-b008-dee999d416a8",
+                  "fd19c12b-0216-4b6d-a9f0-a0b665aac64c"
+                ]
+              },
+              {
+                "sort_score": 300,
+                "items": [
+                  "0e16d88a-c79c-44d6-8fcb-c1bb6952724f",
+                  "10963733-05e5-405a-94c5-d7580b390d63",
+                  "27d47a64-4632-4973-8838-7b8b5ab85839",
+                  "467dcee0-769f-4f84-b710-fae215dbca63",
+                  "48b02a93-b68d-4384-9800-7053bc9a48d9",
+                  "4f98cc79-7d3b-4201-968f-dba556783460",
+                  "73171bb4-af3c-46d0-ab1e-f207b2d118e4",
+                  "79865522-6217-4bff-a470-723d0bee6d73",
+                  "7faa0e99-67c6-4d34-861d-3bcbddadeb10",
+                  "9099c841-dec8-4bec-8290-16d2f274bcf3",
+                  "942cadee-2578-4cb9-98e3-bc684d9fd184",
+                  "af6a348e-f528-4a58-af07-02fb91e9c9b1",
+                  "c5c8cc39-44dd-4467-ba8b-d115ee536ebd",
+                  "d98c90f8-49e8-4973-8884-d0f9d0cdddf2",
+                  "ddb0edbd-2d9a-4eb9-8c48-6f9b5646107d",
+                  "ff7861ec-d2ff-49bc-ad98-17c256abdddf"
+                ]
+              },
+              {
+                "sort_score": 245,
+                "items": [
+                  "150be101-6bb1-4b6c-909a-c8e9c533708c",
+                  "910911cd-2761-4e9c-b00f-e8bcfc05e260"
+                ]
+              },
+              {
+                "sort_score": 200,
+                "items": [
+                  "0132d86a-54ef-495f-b58a-3a87e865006f",
+                  "16a7f942-5ebc-4401-9a6d-867175a74ce4",
+                  "b05e63bd-685f-43b0-a7f7-7fa07104f222",
+                  "b2229847-7132-4733-a342-ba24b776fe16",
+                  "b2a8cced-3227-462b-9033-f3e8d2c9a83d",
+                  "bedb8a6c-956e-435d-b17f-51683b54e795",
+                  "eb750cf4-4c76-4d98-bd84-0b2ae818d74a",
+                  "eb8ede2b-24ec-4da9-84ce-989f5a42af1f",
+                  "fcaba9eb-490f-45e0-8dc3-c6dbec615496"
+                ]
+              },
+              {
+                "sort_score": 150,
+                "items": [
+                  "3acdac30-7262-4fd6-9e64-210b9ed9da7b",
+                  "6b7ff810-98ee-43b4-a0ef-29671e188261",
+                  "93cd5860-cb98-4be2-be2d-87dddf569c35",
+                  "db2b6b98-fb73-4827-aafe-e9fff5a83136",
+                  "e284bb67-a3ad-435a-a905-0d4bbca9d4f6"
+                ]
+              },
+              {
+                "sort_score": 150,
+                "items": [
+                  "a1f1e471-6ba2-4743-9bfd-ff4403f80c1d",
+                  "e3999d67-c175-4e01-a8d1-acd910ffe838"
+                ]
+              },
+              {
+                "sort_score": 110,
+                "items": [
+                  "309569df-91e5-4c73-a940-13e4843d534e",
+                  "537b3bdc-3585-4073-9d14-cb3bd076c738",
+                  "9e7184c1-0dc7-42eb-99d0-13d09ef43241",
+                  "a45ac5a4-c462-45a0-b71e-db4d284c9110"
+                ]
+              },
+              {
+                "sort_score": 110,
+                "items": [
+                  "3e5fdb0d-1823-4d6e-b451-f677efb5440f",
+                  "99d70e7d-a03e-429d-9d54-f025681505e2",
+                  "d5e8c0c1-b6b2-47a8-9711-cfaf68b926e2",
+                  "f4e64bf2-7561-4698-8a40-5c4c16561379"
+                ]
+              },
+              {
+                "sort_score": 100,
+                "items": [
+                  "075db203-c337-4556-9bb8-cf8154302c15",
+                  "17f858bc-f4e6-43e9-aabf-f04b866ed506"
+                ]
+              },
+              {
+                "sort_score": 70,
+                "items": [
+                  "23a7e4ba-ac19-42a1-ba6b-98118a8397a1",
+                  "5b0b4661-13bb-42c8-b0af-f6771995eba2",
+                  "7448df4b-aa91-47ae-be7b-4b956d921a25",
+                  "a6effef9-3137-4b3e-8fd5-a97d5c064e00",
+                  "cadb0d06-2792-40e1-b321-cc7969bfab91"
+                ]
+              },
+              {
+                "sort_score": 70,
+                "items": [
+                  "4131d8fd-f7ee-4800-b68e-c27fb2705d23",
+                  "a4b23fc4-a5ae-4d70-ab7e-c30133205a6e"
+                ]
+              },
+              {
+                "sort_score": 60,
+                "items": [
+                  "12404151-42fc-42cf-a102-d698dc9b1ab2",
+                  "444c1dbe-116b-4aab-839b-189cdb412e6e",
+                  "478ec493-655c-48b8-933b-577bb620fa42",
+                  "5b8ff667-131b-4ba0-aed5-291980cb8e16",
+                  "f0483bc5-8e4b-45b1-b8f9-b19bce9d4ee9"
+                ]
+              },
+              {
+                "sort_score": 20.33,
+                "items": [
+                  "2b685efc-1760-4766-90c5-4d63aceada7e",
+                  "3f15166a-574a-4f3a-8747-961e2c79d88b",
+                  "a99af3fb-a2e9-4600-8130-1378110476b3",
+                  "e1f3f7b8-5b53-4dbd-9ce0-89fcd8e65fbb"
+                ]
+              },
+              {
+                "sort_score": 15,
+                "items": [
+                  "0a92489f-47a6-4384-a38e-da9057fc95db",
+                  "12d8601d-9b0d-4aaa-be25-a2a2c07634d9",
+                  "1b03f2ef-0ed0-4cca-9c45-38aba887e891",
+                  "37a8b581-5045-4d3c-95df-a0c1444e9692",
+                  "5c210def-7546-4858-a309-ec6a8792360d"
+                ]
+              },
+              {
+                "sort_score": 15,
+                "items": [
+                  "f42e248f-2fda-4518-aaf7-6ed07c68212b",
+                  "f55d11b5-39d7-4d6e-a3c2-2bc4d46c7b0a"
+                ]
+              },
+              {
+                "sort_score": 13.33,
+                "items": [
+                  "37d6717f-7204-43ec-84bb-b276d2755ef7",
+                  "5cc88288-d369-4ebd-88c9-9a2cd75a69d5",
+                  "78ed938c-c5f4-4737-93df-bf0b8e085d8e",
+                  "dfb58b00-2eff-4215-912a-f0c78c8dcef0",
+                  "e5341f24-0a2e-4406-88a7-d16e529689b5"
+                ]
+              },
+              {
+                "sort_score": 11.45,
+                "items": [
+                  "21646963-a1b1-4935-8e8c-134622bc482f",
+                  "60a43bf0-43b4-4cf4-9d47-e361d2ca9911",
+                  "c477abc3-feb0-4ccc-b174-51d508b1a90e",
+                  "db0e1cec-5c5c-41e7-b61a-95b3cda1a98a",
+                  "ff155fa3-7558-4d9d-96b6-5a941ca7dabb"
+                ]
+              }
+            ],
+            "large_one_off_transactions": [
+              "89137c17-da6f-414b-b221-496551762f06",
+              "2ffd97ed-ce60-4fe4-bb86-53ce568a7a02",
+              "dc55407c-f7e7-4026-b815-53b69d1d1e85",
+              "fdc1f9f6-319a-4027-bd94-2c74afdbc070",
+              "03c57712-eab4-4574-b022-607336d5b059",
+              "39dd0f39-1cd7-4da0-92b7-dd4ef640b8d1",
+              "f82f3579-3024-44f6-a2f8-af19162b97ee",
+              "fe049d6e-cc8d-42b2-8e02-9fad81aef643",
+              "5e7a8546-cca8-46e5-8add-40a412b52ec6",
+              "18c9a740-dc6c-4eb9-8a5b-fdffd7a3564c",
+              "45c7dc04-1865-460f-a857-cfad071e6831",
+              "80758dde-2044-49c9-ab33-1d7303c44d44",
+              "ab5d57cd-b9cf-4475-99bd-88c08704adc3",
+              "fe2584da-a62a-4ba6-b342-23fbc6b0f97f",
+              "1444e1f2-3fac-4c78-a8a1-4e0dd3407bc8"
+            ],
+            "sof_matches": {
+              "salary_transactions": [
+                "07bc1b6b-0abd-4d79-81fa-7e20e1de4bdc",
+                "2d466586-2717-4bd0-bc2e-d2bf20993242",
+                "d8ce6a43-3cc1-4549-8b49-49f05ee6ce97"
+              ]
+            }
+          }
+        },
+        "data": {},
+        "result": "clear",
+        "documents": [
+          "d472vf523amg030w7vr0",
+          "d472vfd23amg030w7vrg",
+          "d472vfn23amg030w7vs0",
+          "d472vfx23amg030w7vt0",
+          "d472vg623amg030w7vtg",
+          "d472vge23amg030w7vv0"
+        ],
+        "id": "d472wpj23amg030w7xag",
+        "status": "closed",
+        "createdAt": "2025-11-07T17:37:29.988Z"
+      },
+      "bank:summary": {
+        "breakdown": {},
+        "data": {},
+        "result": "unknown",
+        "documents": [],
+        "id": "d472q1c23amg030w7vng",
+        "status": "rejected",
+        "createdAt": "2025-11-07T17:25:25.193Z"
+      },
+      "bank:statement": {
+        "breakdown": {},
+        "data": {},
+        "result": "unknown",
+        "documents": [],
+        "id": "d472q1423amg030w7vmg",
+        "status": "rejected",
+        "createdAt": "2025-11-07T17:25:24.971Z"
+      },
+      "address": {
+        "result": "fail",
+        "status": "closed",
+        "data": {
+          "quality": 0
+        }
+      },
+      "documents:sale-assets": {
+        "breakdown": {
+          "documents": [
+            {
+              "id": "d472wf923amg030w7wxg",
+              "type": "sale-assets"
+            }
+          ]
+        },
+        "data": {},
+        "result": "clear",
+        "documents": [
+          "d472wf923amg030w7wxg"
+        ],
+        "id": "d472wpa23amg030w7x5g",
+        "status": "closed",
+        "createdAt": "2025-11-07T17:37:29.352Z"
+      },
+      "biometrics": {
+        "result": "consider",
+        "status": "unobtainable",
+        "data": {}
+      },
+      "identity": {
+        "breakdown": {
+          "biometrics": {
+            "result": "consider",
+            "status": "unobtainable"
+          },
+          "document": {
+            "name": "document",
+            "breakdown": {
+              "compromised_document": {
+                "result": "clear"
+              },
+              "data_consistency": {
+                "breakdown": {
+                  "first_name": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "date_of_expiry": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "date_of_birth": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "last_name": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "nationality": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "issuing_country": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "document_numbers": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "document_type": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "gender": {
+                    "properties": {},
+                    "result": "clear"
+                  }
+                },
+                "result": "clear"
+              },
+              "data_comparison": {
+                "breakdown": {
+                  "first_name": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "date_of_expiry": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "date_of_birth": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "last_name": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "issuing_country": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "document_numbers": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "document_type": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "gender": {
+                    "properties": {},
+                    "result": "clear"
+                  }
+                },
+                "result": "clear"
+              },
+              "data_validation": {
+                "breakdown": {
+                  "mrz": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "date_of_birth": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "document_numbers": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "expiry_date": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "document_expiration": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "gender": {
+                    "properties": {},
+                    "result": "clear"
+                  }
+                },
+                "result": "clear"
+              },
+              "image_integrity": {
+                "breakdown": {
+                  "colour_picture": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "conclusive_document_quality": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "image_quality": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "supported_document": {
+                    "properties": {},
+                    "result": "clear"
+                  }
+                },
+                "result": "clear"
+              },
+              "visual_authenticity": {
+                "breakdown": {
+                  "face_detection": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "fonts": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "picture_face_integrity": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "original_document_present": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "security_features": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "digital_tampering": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "template": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "other": {
+                    "properties": {},
+                    "result": "clear"
+                  }
+                },
+                "result": "clear"
+              },
+              "age_validation": {
+                "breakdown": {
+                  "minimum_accepted_age": {
+                    "properties": {},
+                    "result": "clear"
+                  }
+                },
+                "result": "clear"
+              },
+              "police_record": {
+                "result": "clear"
+              }
+            },
+            "result": "clear",
+            "documents": [
+              {
+                "id": "fe4a1818-cdee-4352-bf68-f6984737cfc6"
+              },
+              {
+                "id": "763caf59-603c-4805-89d2-606db4b2b060"
+              }
+            ],
+            "id": "dd84fb2a-22ee-4198-9bb4-cc31181a29dc",
+            "properties": {
+              "first_name": "Sé",
+              "date_of_expiry": "2031-05-28",
+              "issuing_date": "2018-08-16",
+              "date_of_birth": "1990-01-01",
+              "last_name": "Stewart",
+              "issuing_country": "GBR",
+              "document_numbers": [
+                {
+                  "type": "document_number",
+                  "value": "999999999"
+                }
+              ],
+              "document_type": "passport"
+            },
+            "status": "complete",
+            "created_at": "2025-11-07T17:38:19Z",
+            "href": "/v3.6/reports/dd84fb2a-22ee-4198-9bb4-cc31181a29dc",
+            "sub_result": "clear"
+          },
+          "nfc": {
+            "result": "consider",
+            "status": "unobtainable"
+          },
+          "facial_similarity_video": {
+            "name": "facial_similarity_video",
+            "breakdown": {
+              "face_comparison": {
+                "breakdown": {
+                  "face_match": {
+                    "properties": {
+                      "document_id": "763caf59-603c-4805-89d2-606db4b2b060",
+                      "live_video_id": "20b40a92-2295-403e-af81-dcfb25f3a976",
+                      "score": 0.6512
+                    },
+                    "result": "clear"
+                  }
+                },
+                "result": "clear"
+              },
+              "image_integrity": {
+                "breakdown": {
+                  "face_detected": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "source_integrity": {
+                    "properties": {},
+                    "result": "clear"
+                  }
+                },
+                "result": "clear"
+              },
+              "visual_authenticity": {
+                "breakdown": {
+                  "liveness_detected": {
+                    "properties": {},
+                    "result": "clear"
+                  },
+                  "spoofing_detection": {
+                    "properties": {
+                      "score": 0.9512
+                    },
+                    "result": "clear"
+                  }
+                },
+                "result": "clear"
+              }
+            },
+            "result": "clear",
+            "documents": [
+              {
+                "id": "fe4a1818-cdee-4352-bf68-f6984737cfc6"
+              },
+              {
+                "id": "763caf59-603c-4805-89d2-606db4b2b060"
+              }
+            ],
+            "id": "2cd98de4-3996-48df-803c-da26b3efbd58",
+            "properties": {},
+            "status": "complete",
+            "created_at": "2025-11-07T17:38:26Z",
+            "href": "/v3.6/reports/2cd98de4-3996-48df-803c-da26b3efbd58"
+          }
+        },
+        "data": {
+          "dob": "2000-01-05T00:00:00.000Z",
+          "name": {
+            "first": "Sé",
+            "last": "Stewart",
+            "other": "Idris"
+          }
+        },
+        "result": "consider",
+        "documents": [
+          "d472x5w23amg030w7xtg"
+        ],
+        "id": "d472x5c23amg030w7xn0",
+        "status": "closed",
+        "createdAt": "2025-11-07T17:38:29.711Z"
+      },
+      "documents:selfie": {
+        "breakdown": {
+          "documents": [
+            {
+              "id": "d472x5m23amg030w7xq0",
+              "type": "selfie"
+            }
+          ]
+        },
+        "data": {},
+        "result": "unknown",
+        "documents": [
+          "d472x5m23amg030w7xq0"
+        ],
+        "id": "d472x5m23amg030w7xp0",
+        "status": "complete",
+        "createdAt": "2025-11-07T17:38:30.434Z"
+      },
+      "footprint": {
+        "breakdown": {
+          "data_count": {
+            "properties": {
+              "score": 0
+            },
+            "result": "consider"
+          },
+          "data_quality": {
+            "properties": {
+              "score": 0
+            },
+            "result": "consider"
+          },
+          "service_name": "Authenticateplus",
+          "documents": [
+            {
+              "id": "d472x2423amg030w7xf0",
+              "type": "poa"
+            }
+          ],
+          "rules": [
+            {
+              "id": "U000",
+              "name": "",
+              "score": 0,
+              "text": "No trace of supplied Address(es), or manual Authentication required by the Applicant"
+            }
+          ]
+        },
+        "data": {
+          "dob": "2000-01-05T00:00:00.000Z",
+          "name": {
+            "first": "Sé",
+            "last": "Stewart",
+            "other": "Idris"
+          },
+          "address": {
+            "postcode": "TR15 2ND",
+            "country": "GBR",
+            "street": "Southgate Street",
+            "building_number": "94",
+            "town": "Redruth"
+          }
+        },
+        "result": "fail",
+        "documents": [
+          "d472x2423amg030w7xf0"
+        ],
+        "id": "d472x2c23amg030w7xgg",
+        "status": "closed",
+        "createdAt": "2025-11-07T17:38:17.650Z"
+      }
+    },
+    "consumerPhone": "+447493580033",
+    "pdfReady": true,
+    "checkType": "electronic-id",
+    "initiatedAt": "2025-11-06T16:37:23.440Z",
+    "considerReasons": [
+      "address verification",
+      "digital footprint",
+      "document integrity"
+    ],
+    "pdfS3Key": "protected/zaRRkhW",
+    "consumerName": "Se Idris Stewart",
+    "tasks": [
+      "report:identity",
+      "report:footprint",
+      "report:peps",
+      "documents:poa",
+      "report:sof-v1",
+      "report:bank-statement",
+      "report:bank-summary"
+    ],
+    "updates": [
+      {
+        "timestamp": "2025-11-06T16:37:23.440Z",
+        "update": "Electronic ID check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
+      },
+      {
+        "timestamp": "2025-11-07T17:38:39.262Z",
+        "update": "PEPs & Sanctions task completed"
+      },
+      {
+        "timestamp": "2025-11-07T17:39:25.999Z",
+        "update": "PDF received and uploaded to S3 - CONSIDER: address verification, digital footprint, document integrity"
+      }
+    ],
+    "status": "closed",
+    "initiatedBy": "jacob.archer-moran@thurstanhoskin.co.uk",
+    "piiData": {
+      "name": {
+        "first": "Sé",
+        "last": "Stewart",
+        "other": "Idris"
+      },
+      "address": {
+        "postcode": "TR15 2ND",
+        "country": "GBR",
+        "street": "Southgate Street",
+        "building_number": "94",
+        "town": "Redruth"
+      },
+      "dob": "2000-01-05T00:00:00.000Z",
+      "document": {
+        "number": "999999999"
+      }
+    },
+    "hasMonitoring": true,
+    "thirdfortResponse": {
+      "name": "Purchase of 21 Green Lane",
+      "request": {
+        "actor": {
+          "name": "Se Idris Stewart",
+          "phone": "+447493580033"
+        },
+        "tasks": [
+          {
+            "opts": {
+              "nfc": "preferred"
+            },
+            "type": "report:identity"
+          },
+          {
+            "opts": {
+              "consent": false
+            },
+            "type": "report:footprint"
+          },
+          {
+            "opts": {
+              "monitored": true
+            },
+            "type": "report:peps"
+          },
+          {
+            "type": "documents:poa"
+          },
+          {
+            "type": "report:sof-v1"
+          },
+          {
+            "type": "report:bank-statement"
+          },
+          {
+            "type": "report:bank-summary"
+          }
+        ]
+      },
+      "ref": "21 Green Lane",
+      "id": "d46cxge23amg030rw7r0",
+      "reports": [],
+      "status": "open",
+      "metadata": {
+        "notify": {
+          "type": "http",
+          "data": {
+            "hmac_key": "0mF1p3cyDWZ51HIsGXPecer4a7uFQIXBk0JLO56Wr0U=",
+            "method": "POST",
+            "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+          }
+        },
+        "created_by": "d3t0auq9io6g00ak3kkg",
+        "print": {
+          "team": "Cashiers",
+          "tenant": "Thurstan Hoskin Solicitors LLP",
+          "user": "THS Bot"
+        },
+        "context": {
+          "gid": "d3t2k5a9io6g00ak3km0",
+          "uid": "d3t0auq9io6g00ak3kkg",
+          "team_id": "d3t2k5a9io6g00ak3km0",
+          "tenant_id": "d3t2ifa9io6g00ak3klg"
+        },
+        "ce": {
+          "uri": "/v1/checks/4151797877"
+        },
+        "created_at": "2025-11-06T16:37:19.858Z"
+      },
+      "type": "v2",
+      "opts": {
+        "peps": {
+          "monitored": true
+        }
+      }
+    },
+    "hasAlerts": true,
+    "redFlags": [
+      {
+        "description": "Gifts Received",
+        "supporting_data": "1 gift received - £5,000",
+        "threshold_amount": "Any gifts flagged",
+        "source": "Source of Funds"
+      },
+      {
+        "description": "Declared savings > actual savings",
+        "declared": "£5,000",
+        "actual": "£2.75",
+        "source": "Bank Linking"
+      }
+    ],
+    "pdfAddedAt": "2025-11-07T17:39:25.998Z",
+    "smsSent": true,
+    "transactionId": "d46cxge23amg030rw7r0"
+            },
+            // Mock Check 5: Jacob Robert Archer-Moran - Electronic ID - Additional Only
             {
                 "taskOutcomes": {
                   "sof:v1": {
@@ -10459,7 +14834,9 @@ class ThirdfortChecksManager {
                     "source": "Bank Linking"
                   }
                 ]
-            },{
+            },
+            // Mock Check 6: Benjamin David Jasper Meehan - Electronic ID - PENDING
+            {
                 "consumerPhone": "+447754241686",
                 "checkType": "electronic-id",
                 "initiatedAt": "2025-11-06T16:42:43.686Z",
@@ -10553,7 +14930,9 @@ class ThirdfortChecksManager {
                 },
                 "smsSent": true,
                 "transactionId": "d46d00g23amg030rw7s0"
-            },{
+            },
+            // Mock Check 7: Se Idris Stewart - Electronic ID - PENDING
+            {
                 "consumerPhone": "+447493580033",
                 "checkType": "electronic-id",
                 "initiatedAt": "2025-11-06T16:37:23.440Z",
@@ -10655,7 +15034,9 @@ class ThirdfortChecksManager {
                 },
                 "smsSent": true,
                 "transactionId": "d46cxge23amg030rw7r0"
-              },{
+            },
+            // Mock Check 8: Jacob Robert Archer-Moran - IDV - COMPLETED
+            {
                 "taskOutcomes": {
                   "identity:lite": {
                     "breakdown": {
@@ -10977,8 +15358,9 @@ class ThirdfortChecksManager {
                 "checkId": "d46az1c23amg030rw740",
                 "hasAlerts": false,
                 "pdfAddedAt": "2025-11-06T14:24:41.148Z"
-              },
-              {
+            },
+            // Mock Check 9: Jacob Robert Archer-Moran - Lite Screen - COMPLETED
+            {
                 "taskOutcomes": {
                   "address": {
                     "result": "fail",
@@ -11190,7 +15572,9 @@ class ThirdfortChecksManager {
                 "hasAlerts": true,
                 "pdfAddedAt": "2025-11-06T14:24:59.640Z",
                 "transactionId": "d46az0c23amg030rw73g"
-              },{
+            },
+            // Mock Check 10: Nigel Farage - Lite Screen - COMPLETED
+            {
                 "taskOutcomes": {
                   "screening:lite": {
                     "breakdown": {
@@ -12207,7 +16591,9 @@ class ThirdfortChecksManager {
                 "hasAlerts": true,
                 "pdfAddedAt": "2025-11-06T14:19:22.647Z",
                 "transactionId": "d46atjj23amg030rw6x0"
-              },{
+            },
+            // Mock Check 11: THURSTAN HOSKIN SOLICITORS LLP - KYB - COMPLETED
+            {
                 checkId: 'd45v1gy23amg0306599g',
                 checkType: 'kyb',
                 status: 'closed',
@@ -12533,7 +16919,7 @@ class ThirdfortChecksManager {
                     { timestamp: '2025-11-05T21:15:23.171Z', update: 'Refreshed from Thirdfort API - Status: closed' }
                 ]
             },
-            // Real IDV check data - Passport verification
+            // Mock Check 12: Jacob Robert Archer-Moran - IDV - COMPLETED
             {
                 checkId: 'd45zn1423amg03065a2g',
                 checkType: 'idv',
@@ -12659,963 +17045,12 @@ class ThirdfortChecksManager {
     }
 }
 
-// Removed below - keeping only the real THURSTAN HOSKIN SOLICITORS LLP check
-/*
-            {
-                transactionId: 'mock_eid_pep_002',
-                checkType: 'electronic-id',
-                status: 'closed',
-                consumerName: 'Michael Roberts',
-                consumerPhone: '+447987654321',
-                consumerEmail: 'michael.roberts@example.com',
-                tasks: ['report:identity', 'report:peps', 'report:address'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: weekAgo.toISOString(),
-                updatedAt: twoDaysAgo.toISOString(),
-                completedAt: twoDaysAgo.toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/xyz5678',
-                pdfAddedAt: twoDaysAgo.toISOString(),
-                hasMonitoring: true,
-                taskOutcomes: {
-                    nfc: { result: 'clear', status: 'closed', data: {} },
-                    identity: { result: 'clear', status: 'closed', data: {} },
-                    peps: { result: 'consider', status: 'closed', data: { total_hits: 2, monitored: true } },
-                    address: { result: 'clear', status: 'closed', data: { quality: 92, match_count: 2 } }
-                },
-                piiData: {
-                    name: { first: 'Michael', last: 'Roberts' },
-                    dob: '1975-03-20',
-                    address: {
-                        line1: '456 Park Avenue',
-                        town: 'Manchester',
-                        postcode: 'M1 1AA',
-                        country: 'GBR'
-                    }
-                },
-                hasAlerts: true,
-                considerReasons: ['PEP hits'],
-                pepSanctionsUpdates: [
-                    {
-                        timestamp: yesterday.toISOString(),
-                        type: 'peps',
-                        outcome: 'consider',
-                        s3Key: 'protected/pep9999',
-                        matchCount: 2,
-                        alertSeverity: 'high',
-                        taskOutcomes: {
-                            peps: {
-                                result: 'consider',
-                                status: 'closed',
-                                data: {
-                                    total_hits: 2,
-                                    matches: [
-                                        {
-                                            name: 'Michael Roberts',
-                                            position: 'City Councillor',
-                                            country: 'UK',
-                                            relationship: 'direct',
-                                            level: 'local'
-                                        },
-                                        {
-                                            name: 'M. Roberts',
-                                            position: 'Board Member',
-                                            country: 'UK',
-                                            relationship: 'possible',
-                                            level: 'corporate'
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                ],
-                updates: [
-                    { timestamp: weekAgo.toISOString(), update: 'Electronic ID check initiated' },
-                    { timestamp: twoDaysAgo.toISOString(), update: 'Transaction completed - awaiting PDF' },
-                    { timestamp: twoDaysAgo.toISOString(), update: 'PDF received and uploaded to S3 - CONSIDER: PEP hits' },
-                    { timestamp: yesterday.toISOString(), update: 'PEP monitoring alert - outstanding hits require review - CONSIDER' }
-                ]
-            },
-            
-            // 3. Original ID (Enhanced downgraded) - CLEAR
-            {
-                transactionId: 'mock_eid_orig_003',
-                checkType: 'electronic-id',
-                status: 'closed',
-                consumerName: 'David Wilson',
-                consumerPhone: '+447111222333',
-                tasks: ['report:identity', 'report:peps', 'report:address'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: weekAgo.toISOString(),
-                updatedAt: weekAgo.toISOString(),
-                completedAt: weekAgo.toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/def3456',
-                pdfAddedAt: weekAgo.toISOString(),
-                hasMonitoring: false,
-                taskOutcomes: {
-                    nfc: { result: 'fail', status: 'unobtainable', data: {} },
-                    identity: { result: 'clear', status: 'closed', data: {} },
-                    peps: { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: false } },
-                    address: { result: 'clear', status: 'closed', data: { quality: 88, match_count: 2 } }
-                },
-                piiData: {
-                    name: { first: 'David', last: 'Wilson' },
-                    dob: '1990-11-05',
-                    address: {
-                        line1: '789 Queen Street',
-                        town: 'Birmingham',
-                        postcode: 'B1 1AA',
-                        country: 'GBR'
-                    }
-                },
-                hasAlerts: false,
-                considerReasons: ['Enhanced Downgrade', 'Skipped SoF', 'Skipped Bank link'], // 3 hints (all info level)
-                updates: [
-                    { timestamp: weekAgo.toISOString(), update: 'Electronic ID check initiated' },
-                    { timestamp: weekAgo.toISOString(), update: 'Transaction completed - awaiting PDF' },
-                    { timestamp: weekAgo.toISOString(), update: 'PDF received and uploaded to S3 - CLEAR' }
-                ]
-            },
-            
-            // 4. Lite Screen - CONSIDER (Address quality issues)
-            {
-                transactionId: 'mock_lite_004',
-                checkType: 'lite-screen',
-                status: 'closed',
-                consumerName: 'Emma Davis',
-                tasks: ['report:footprint', 'report:peps'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: twoDaysAgo.toISOString(),
-                updatedAt: yesterday.toISOString(),
-                completedAt: yesterday.toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/lite001',
-                pdfAddedAt: yesterday.toISOString(),
-                hasMonitoring: true,
-                taskOutcomes: {
-                    footprint: { result: 'consider', status: 'closed', data: { quality: 65, match_count: 1 } },
-                    peps: { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: true } }
-                },
-                piiData: {
-                    name: { first: 'Emma', last: 'Davis' },
-                    dob: '1988-09-12',
-                    address: {
-                        line1: '321 Oak Road',
-                        town: 'Leeds',
-                        postcode: 'LS1 1AA',
-                        country: 'GBR'
-                    }
-                },
-                hasAlerts: true,
-                considerReasons: ['address verification', 'image quality not sufficient', 'facial similarity not sufficient', 'bank link flags'], // 4 hints (warnings)
-                updates: [
-                    { timestamp: twoDaysAgo.toISOString(), update: 'Lite Screen check initiated' },
-                    { timestamp: yesterday.toISOString(), update: 'Transaction completed - awaiting PDF' },
-                    { timestamp: yesterday.toISOString(), update: 'PDF received and uploaded to S3 - CONSIDER: address verification' }
-                ]
-            },
-            
-            // 5. IDV - PROCESSING
-            {
-                checkId: 'mock_idv_005',
-                checkType: 'idv',
-                status: 'processing',
-                consumerName: 'James Anderson',
-                tasks: ['report:identity'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: now.toISOString(),
-                updatedAt: now.toISOString(),
-                pdfReady: false,
-                hasMonitoring: false,
-                taskOutcomes: {},
-                piiData: {
-                    name: { first: 'James', last: 'Anderson' }
-                },
-                hasAlerts: false,
-                considerReasons: [],
-                updates: [
-                    { timestamp: now.toISOString(), update: 'IDV check initiated' },
-                    { timestamp: now.toISOString(), update: 'Documents uploaded - processing' }
-                ]
-            },
-            
-            // 6. KYB - CLEAR (6 hints - mix of info and warnings)
-            {
-                checkId: 'mock_kyb_006',
-                checkType: 'kyb',
-                status: 'closed',
-                companyName: 'ACME Corporation Ltd',
-                tasks: ['company:summary', 'company:sanctions', 'company:ubo'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: weekAgo.toISOString(),
-                updatedAt: twoDaysAgo.toISOString(),
-                completedAt: twoDaysAgo.toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/kyb0001',
-                pdfAddedAt: twoDaysAgo.toISOString(),
-                hasMonitoring: true,
-                taskOutcomes: {
-                    'company:summary': { result: 'clear', status: 'closed', data: {} },
-                    'company:sanctions': { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: true } },
-                    'company:ubo': { result: 'clear', status: 'closed', data: {} }
-                },
-                companyData: {
-                    name: 'ACME Corporation Ltd',
-                    number: '12345678',
-                    jurisdiction: 'UK'
-                },
-                hasAlerts: false,
-                considerReasons: ['Complex ownership structure', 'UBO in high-risk jurisdiction', 'Inactive company status', 'Multiple name changes', 'Recent director changes', 'Missing financial data'], // 6 hints
-                updates: [
-                    { timestamp: weekAgo.toISOString(), update: 'KYB check initiated' },
-                    { timestamp: twoDaysAgo.toISOString(), update: 'Check completed - awaiting PDF' },
-                    { timestamp: twoDaysAgo.toISOString(), update: 'PDF received and uploaded to S3 - CLEAR' }
-                ]
-            },
-            
-            // 7. KYB - CONSIDER (7 hints - sanctions + warnings)
-            {
-                checkId: 'mock_kyb_sanc_007',
-                checkType: 'kyb',
-                status: 'closed',
-                companyName: 'Global Trade Partners LLP',
-                tasks: ['company:summary', 'company:sanctions'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: weekAgo.toISOString(),
-                updatedAt: yesterday.toISOString(),
-                completedAt: twoDaysAgo.toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/kyb0002',
-                pdfAddedAt: twoDaysAgo.toISOString(),
-                hasMonitoring: true,
-                taskOutcomes: {
-                    'company:summary': { result: 'clear', status: 'closed', data: {} },
-                    'company:sanctions': { result: 'consider', status: 'closed', data: { total_hits: 1, monitored: true } }
-                },
-                companyData: {
-                    name: 'Global Trade Partners LLP',
-                    number: '87654321',
-                    jurisdiction: 'UK'
-                },
-                hasAlerts: true,
-                considerReasons: ['sanctions hits', 'UBO in high-risk jurisdiction', 'Adverse media', 'Complex ownership structure', 'Missing beneficial owner data', 'Offshore entities', 'Recent incorporation'], // 7 hints
-                pepSanctionsUpdates: [
-                    {
-                        timestamp: yesterday.toISOString(),
-                        type: 'sanctions',
-                        outcome: 'consider',
-                        s3Key: 'protected/sanc001',
-                        matchCount: 1,
-                        alertSeverity: 'medium',
-                        taskOutcomes: {
-                            sanctions: {
-                                result: 'consider',
-                                status: 'closed',
-                                data: {
-                                    total_hits: 1,
-                                    matches: [
-                                        {
-                                            name: 'Global Trade Partners',
-                                            sanctions_list: 'OFAC',
-                                            country: 'US',
-                                            reason: 'Financial sanctions - possible match',
-                                            severity: 'medium'
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                ],
-                updates: [
-                    { timestamp: weekAgo.toISOString(), update: 'KYB check initiated' },
-                    { timestamp: twoDaysAgo.toISOString(), update: 'Check completed - awaiting PDF' },
-                    { timestamp: twoDaysAgo.toISOString(), update: 'PDF received and uploaded to S3 - CONSIDER' },
-                    { timestamp: yesterday.toISOString(), update: 'Sanctions monitoring alert - outstanding hits require review - CONSIDER' }
-                ]
-            },
-            
-            // 8. Electronic ID - OPEN (waiting for consumer)
-            {
-                transactionId: 'mock_eid_open_008',
-                checkType: 'electronic-id',
-                status: 'open',
-                consumerName: 'Lisa Martinez',
-                consumerPhone: '+447555666777',
-                consumerEmail: 'lisa.martinez@example.com',
-                tasks: ['report:identity', 'report:peps'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: now.toISOString(),
-                updatedAt: now.toISOString(),
-                pdfReady: false,
-                hasMonitoring: false,
-                taskOutcomes: {},
-                piiData: {
-                    name: { first: 'Lisa', last: 'Martinez' }
-                },
-                hasAlerts: false,
-                considerReasons: [],
-                updates: [
-                    { timestamp: now.toISOString(), update: 'Electronic ID check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
-                    { timestamp: now.toISOString(), update: 'Transaction confirmed by Thirdfort' }
-                ]
-            },
-            
-            // 9. Lite Screen - ABORTED
-            {
-                transactionId: 'mock_lite_abort_009',
-                checkType: 'lite-screen',
-                status: 'aborted',
-                consumerName: 'Robert Taylor',
-                tasks: ['report:footprint', 'report:peps'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: twoDaysAgo.toISOString(),
-                updatedAt: yesterday.toISOString(),
-                pdfReady: false,
-                hasMonitoring: false,
-                taskOutcomes: {},
-                piiData: {
-                    name: { first: 'Robert', last: 'Taylor' },
-                    dob: '1992-07-18'
-                },
-                hasAlerts: false,
-                considerReasons: [],
-                updates: [
-                    { timestamp: twoDaysAgo.toISOString(), update: 'Lite Screen check initiated' },
-                    { timestamp: yesterday.toISOString(), update: 'Transaction aborted' }
-                ]
-            },
-            
-            // 10. Enhanced ID - Document integrity issues (9 hints - alerts + warnings)
-            {
-                transactionId: 'mock_eid_doc_010',
-                checkType: 'electronic-id',
-                status: 'closed',
-                consumerName: 'Jennifer White',
-                tasks: ['report:identity', 'report:peps', 'report:address'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: weekAgo.toISOString(),
-                updatedAt: twoDaysAgo.toISOString(),
-                completedAt: twoDaysAgo.toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/doc0010',
-                pdfAddedAt: twoDaysAgo.toISOString(),
-                hasMonitoring: false,
-                taskOutcomes: {
-                    nfc: { result: 'clear', status: 'closed', data: { chip_read: true } },
-                    identity: { result: 'fail', status: 'closed', data: { verified: false } },
-                    document: { result: 'fail', status: 'closed', data: { 
-                        authenticity: 'questionable', 
-                        integrity: 'failed',
-                        compromised: 'possible',
-                        consistency: 'inconsistent',
-                        validation: 'invalid'
-                    }},
-                    facial_similarity: { result: 'consider', status: 'closed', data: {
-                        comparison: 'partial_match',
-                        authenticity: 'genuine',
-                        integrity: 'passed'
-                    }},
-                    peps: { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: false } },
-                    address: { result: 'consider', status: 'closed', data: { sources: 1, quality: 72 } },
-                    'documents:poa': { result: 'clear', status: 'closed', data: { document_count: 2 } },
-                    'documents:poo': { result: 'consider', status: 'closed', data: { document_count: 0 } }
-                },
-                piiData: {
-                    name: { first: 'Jennifer', last: 'White' },
-                    dob: '1995-02-28',
-                    address: {
-                        line1: '159 Elm Street',
-                        town: 'Bristol',
-                        postcode: 'BS1 1AA',
-                        country: 'GBR'
-                    }
-                },
-                hasAlerts: true,
-                considerReasons: ['document integrity', 'NFC mismatch', 'document expired', 'PEP/Sanction hits', 'address quality not sufficient', 'facial similarity not sufficient', 'mortality hit', 'no DOB match', 'bank link flags'], // 9 hints (max display)
-                updates: [
-                    { timestamp: weekAgo.toISOString(), update: 'Electronic ID check initiated' },
-                    { timestamp: twoDaysAgo.toISOString(), update: 'Transaction completed - awaiting PDF' },
-                    { timestamp: twoDaysAgo.toISOString(), update: 'PDF received and uploaded to S3 - CONSIDER: document integrity' }
-                ]
-            },
-            
-            // 11. KYB - PROCESSING
-            {
-                checkId: 'mock_kyb_proc_011',
-                checkType: 'kyb',
-                status: 'processing',
-                companyName: 'TechStart Innovations Ltd',
-                tasks: ['company:summary', 'company:sanctions', 'company:ubo'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: yesterday.toISOString(),
-                updatedAt: yesterday.toISOString(),
-                pdfReady: false,
-                hasMonitoring: true,
-                taskOutcomes: {},
-                companyData: {
-                    name: 'TechStart Innovations Ltd',
-                    number: '11223344',
-                    jurisdiction: 'UK'
-                },
-                hasAlerts: false,
-                considerReasons: [],
-                updates: [
-                    { timestamp: yesterday.toISOString(), update: 'KYB check initiated' },
-                    { timestamp: yesterday.toISOString(), update: 'Thirdfort processing KYB check' }
-                ]
-            },
-            
-            // 12. IDV - CLOSED - CLEAR
-            {
-                checkId: 'mock_idv_closed_012',
-                checkType: 'idv',
-                status: 'closed',
-                consumerName: 'Thomas Brown',
-                tasks: ['report:identity'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: twoDaysAgo.toISOString(),
-                updatedAt: yesterday.toISOString(),
-                completedAt: yesterday.toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/idv0012',
-                pdfAddedAt: yesterday.toISOString(),
-                hasMonitoring: false,
-                taskOutcomes: {
-                    identity: { result: 'clear', status: 'closed', data: {} },
-                    document: { result: 'clear', status: 'closed', data: { authenticity: 'genuine' } }
-                },
-                piiData: {
-                    name: { first: 'Thomas', last: 'Brown' },
-                    dob: '1982-04-30'
-                },
-                hasAlerts: false,
-                considerReasons: [],
-                updates: [
-                    { timestamp: twoDaysAgo.toISOString(), update: 'IDV check initiated' },
-                    { timestamp: yesterday.toISOString(), update: 'Check completed - awaiting PDF' },
-                    { timestamp: yesterday.toISOString(), update: 'PDF received and uploaded to S3 - CLEAR' }
-                ]
-            },
-            
-            // 13. Enhanced ID - PEP hits then CLEARED (12 hints total, only 9 shown prioritized)
-            {
-                transactionId: 'mock_eid_pep_clear_013',
-                checkType: 'electronic-id',
-                status: 'closed',
-                consumerName: 'Patricia Johnson',
-                consumerPhone: '+447444555666',
-                consumerEmail: 'patricia.johnson@example.com',
-                tasks: ['report:identity', 'report:peps', 'report:address'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: new Date(now - 10 * 24 * 60 * 60 * 1000).toISOString(),
-                updatedAt: yesterday.toISOString(),
-                completedAt: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/pep0013',
-                pdfAddedAt: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(),
-                hasMonitoring: true,
-                taskOutcomes: {
-                    nfc: { result: 'clear', status: 'closed', data: {} },
-                    identity: { result: 'clear', status: 'closed', data: {} },
-                    peps: { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: true } },
-                    address: { result: 'clear', status: 'closed', data: { quality: 93, match_count: 2 } }
-                },
-                piiData: {
-                    name: { first: 'Patricia', last: 'Johnson' },
-                    dob: '1980-12-05',
-                    address: {
-                        line1: '77 Station Road',
-                        town: 'Edinburgh',
-                        postcode: 'EH1 1AA',
-                        country: 'GBR'
-                    }
-                },
-                hasAlerts: false,
-                considerReasons: ['document integrity', 'NFC chip error', 'document expired', 'PEP hits (cleared)', 'address quality', 'facial similarity', 'mortality hit', 'no DOB match', 'bank link flags', 'Enhanced Downgrade', 'Skipped SoF', 'Skipped PoO'], // 12 hints - only top 9 will show
-                pepSanctionsUpdates: [
-                    {
-                        timestamp: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString(),
-                        type: 'peps',
-                        outcome: 'consider',
-                        s3Key: 'protected/pep0013a',
-                        matchCount: 3,
-                        alertSeverity: 'high',
-                        taskOutcomes: {
-                            peps: {
-                                result: 'consider',
-                                status: 'closed',
-                                data: {
-                                    total_hits: 3,
-                                    matches: [
-                                        {
-                                            name: 'Patricia Johnson',
-                                            position: 'Director of Public Health',
-                                            country: 'UK',
-                                            relationship: 'direct',
-                                            level: 'national'
-                                        },
-                                        {
-                                            name: 'P. Johnson',
-                                            position: 'NHS Executive',
-                                            country: 'UK',
-                                            relationship: 'possible',
-                                            level: 'regional'
-                                        },
-                                        {
-                                            name: 'Patricia A Johnson',
-                                            position: 'Government Advisor',
-                                            country: 'UK',
-                                            relationship: 'indirect',
-                                            level: 'national'
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    {
-                        timestamp: yesterday.toISOString(),
-                        type: 'peps',
-                        outcome: 'clear',
-                        s3Key: 'protected/pep0013b',
-                        matchCount: 0,
-                        alertSeverity: 'low',
-                        detailedReason: 'All hits dismissed - no matches found',
-                        taskOutcomes: {
-                            peps: {
-                                result: 'clear',
-                                status: 'closed',
-                                data: {
-                                    total_hits: 0,
-                                    matches: []
-                                }
-                            }
-                        }
-                    }
-                ],
-                updates: [
-                    { timestamp: new Date(now - 10 * 24 * 60 * 60 * 1000).toISOString(), update: 'Electronic ID check initiated' },
-                    { timestamp: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(), update: 'Transaction completed - awaiting PDF' },
-                    { timestamp: new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString(), update: 'PDF received and uploaded to S3 - CLEAR' },
-                    { timestamp: new Date(now - 5 * 24 * 60 * 60 * 1000).toISOString(), update: 'PEP monitoring alert - outstanding hits require review - CONSIDER' },
-                    { timestamp: yesterday.toISOString(), update: 'PEP monitoring update - all hits dismissed or cleared - CLEAR' }
-                ]
-            },
-            
-            // 14. Enhanced ID - Additional documents uploaded post-completion
-            {
-                transactionId: 'mock_eid_addoc_014',
-                checkType: 'electronic-id',
-                status: 'closed',
-                consumerName: 'Andrew Mitchell',
-                consumerPhone: '+447333444555',
-                consumerEmail: 'andrew.mitchell@example.com',
-                tasks: ['report:identity', 'report:peps', 'documents:poa', 'documents:other'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: weekAgo.toISOString(),
-                updatedAt: yesterday.toISOString(),
-                completedAt: twoDaysAgo.toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/addoc014',
-                pdfAddedAt: twoDaysAgo.toISOString(),
-                hasMonitoring: false,
-                taskOutcomes: {
-                    nfc: { result: 'clear', status: 'closed', data: {} },
-                    identity: { result: 'clear', status: 'closed', data: {} },
-                    peps: { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: false } },
-                    'documents:poa': { result: 'clear', status: 'closed', data: {} },
-                    'documents:other': { result: 'clear', status: 'closed', data: {} }
-                },
-                piiData: {
-                    name: { first: 'Andrew', last: 'Mitchell' },
-                    dob: '1978-08-22',
-                    address: {
-                        line1: '88 Bridge Street',
-                        town: 'Liverpool',
-                        postcode: 'L1 1AA',
-                        country: 'GBR'
-                    }
-                },
-                hasAlerts: false,
-                considerReasons: [],
-                updates: [
-                    { timestamp: weekAgo.toISOString(), update: 'Electronic ID check initiated' },
-                    { timestamp: twoDaysAgo.toISOString(), update: 'Transaction completed - awaiting PDF' },
-                    { timestamp: twoDaysAgo.toISOString(), update: 'PDF received and uploaded to S3 - CLEAR' },
-                    { timestamp: yesterday.toISOString(), update: 'Additional documents uploaded by consumer' }
-                ]
-            },
-            
-            // 15. Lite Screen - Multiple PEP updates (CONSIDER → CLEAR → CONSIDER again)
-            {
-                transactionId: 'mock_lite_multi_015',
-                checkType: 'lite-screen',
-                status: 'closed',
-                consumerName: 'Catherine Harris',
-                tasks: ['report:footprint', 'report:peps'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString(),
-                updatedAt: now.toISOString(),
-                completedAt: new Date(now - 28 * 24 * 60 * 60 * 1000).toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/multi015',
-                pdfAddedAt: new Date(now - 28 * 24 * 60 * 60 * 1000).toISOString(),
-                hasMonitoring: true,
-                taskOutcomes: {
-                    footprint: { result: 'clear', status: 'closed', data: { quality: 88, match_count: 2 } },
-                    peps: { result: 'consider', status: 'closed', data: { total_hits: 1, monitored: true } }
-                },
-                piiData: {
-                    name: { first: 'Catherine', last: 'Harris' },
-                    dob: '1970-05-14',
-                    address: {
-                        line1: '234 Castle Street',
-                        town: 'Cardiff',
-                        postcode: 'CF1 1AA',
-                        country: 'GBR'
-                    }
-                },
-                hasAlerts: true,
-                considerReasons: ['PEP hits'],
-                pepSanctionsUpdates: [
-                    {
-                        timestamp: new Date(now - 20 * 24 * 60 * 60 * 1000).toISOString(),
-                        type: 'peps',
-                        outcome: 'consider',
-                        s3Key: 'protected/pep015a',
-                        matchCount: 2,
-                        alertSeverity: 'medium',
-                        detailedReason: '2 new PEP matches found',
-                        taskOutcomes: {
-                            peps: {
-                                result: 'consider',
-                                status: 'closed',
-                                data: {
-                                    total_hits: 2,
-                                    matches: [
-                                        {
-                                            name: 'Catherine Harris',
-                                            position: 'Hospital Trust Director',
-                                            country: 'UK',
-                                            relationship: 'direct',
-                                            level: 'local'
-                                        },
-                                        {
-                                            name: 'C Harris',
-                                            position: 'Charity Trustee',
-                                            country: 'UK',
-                                            relationship: 'possible',
-                                            level: 'local'
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    {
-                        timestamp: new Date(now - 10 * 24 * 60 * 60 * 1000).toISOString(),
-                        type: 'peps',
-                        outcome: 'clear',
-                        s3Key: 'protected/pep015b',
-                        matchCount: 0,
-                        alertSeverity: 'low',
-                        detailedReason: 'All hits dismissed - false positives confirmed',
-                        taskOutcomes: {
-                            peps: {
-                                result: 'clear',
-                                status: 'closed',
-                                data: {
-                                    total_hits: 0,
-                                    matches: []
-                                }
-                            }
-                        }
-                    },
-                    {
-                        timestamp: now.toISOString(),
-                        type: 'peps',
-                        outcome: 'consider',
-                        s3Key: 'protected/pep015c',
-                        matchCount: 1,
-                        alertSeverity: 'high',
-                        detailedReason: '1 new PEP match found - NHS Wales Board Member',
-                        taskOutcomes: {
-                            peps: {
-                                result: 'consider',
-                                status: 'closed',
-                                data: {
-                                    total_hits: 1,
-                                    matches: [
-                                        {
-                                            name: 'Dr Catherine Harris',
-                                            position: 'NHS Wales Board Member',
-                                            country: 'UK',
-                                            relationship: 'direct',
-                                            level: 'national'
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                ],
-                updates: [
-                    { timestamp: new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString(), update: 'Lite Screen check initiated' },
-                    { timestamp: new Date(now - 28 * 24 * 60 * 60 * 1000).toISOString(), update: 'Transaction completed - awaiting PDF' },
-                    { timestamp: new Date(now - 28 * 24 * 60 * 60 * 1000).toISOString(), update: 'PDF received and uploaded to S3 - CLEAR' },
-                    { timestamp: new Date(now - 20 * 24 * 60 * 60 * 1000).toISOString(), update: 'PEP monitoring alert - outstanding hits require review - CONSIDER' },
-                    { timestamp: new Date(now - 10 * 24 * 60 * 60 * 1000).toISOString(), update: 'PEP monitoring update - all hits dismissed or cleared - CLEAR' },
-                    { timestamp: now.toISOString(), update: 'PEP monitoring alert - outstanding hits require review - CONSIDER' }
-                ]
-            },
-            
-            // 16. KYB - Sanctions cleared after review
-            {
-                checkId: 'mock_kyb_sanc_clear_016',
-                checkType: 'kyb',
-                status: 'closed',
-                companyName: 'Meridian Holdings plc',
-                tasks: ['company:summary', 'company:sanctions', 'company:ubo'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: new Date(now - 15 * 24 * 60 * 60 * 1000).toISOString(),
-                updatedAt: yesterday.toISOString(),
-                completedAt: new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/kyb0016',
-                pdfAddedAt: new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString(),
-                hasMonitoring: true,
-                taskOutcomes: {
-                    'company:summary': { result: 'clear', status: 'closed', data: {} },
-                    'company:sanctions': { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: true } },
-                    'company:ubo': { result: 'clear', status: 'closed', data: {} }
-                },
-                companyData: {
-                    name: 'Meridian Holdings plc',
-                    number: '55667788',
-                    jurisdiction: 'UK'
-                },
-                hasAlerts: false,
-                considerReasons: [],
-                pepSanctionsUpdates: [
-                    {
-                        timestamp: weekAgo.toISOString(),
-                        type: 'sanctions',
-                        outcome: 'consider',
-                        s3Key: 'protected/sanc016a',
-                        matchCount: 2,
-                        alertSeverity: 'critical',
-                        detailedReason: '2 sanctions matches found - OFAC and EU lists',
-                        taskOutcomes: {
-                            sanctions: {
-                                result: 'consider',
-                                status: 'closed',
-                                data: {
-                                    total_hits: 2,
-                                    matches: [
-                                        {
-                                            name: 'Meridian Holdings',
-                                            sanctions_list: 'OFAC',
-                                            country: 'US',
-                                            reason: 'Financial sanctions - trade restrictions',
-                                            severity: 'high'
-                                        },
-                                        {
-                                            name: 'Meridian Holdings PLC',
-                                            sanctions_list: 'EU Sanctions',
-                                            country: 'EU',
-                                            reason: 'Export control violations',
-                                            severity: 'critical'
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    {
-                        timestamp: yesterday.toISOString(),
-                        type: 'sanctions',
-                        outcome: 'clear',
-                        s3Key: 'protected/sanc016b',
-                        matchCount: 0,
-                        alertSeverity: 'low',
-                        detailedReason: 'All sanctions hits dismissed - different entity confirmed',
-                        taskOutcomes: {
-                            sanctions: {
-                                result: 'clear',
-                                status: 'closed',
-                                data: {
-                                    total_hits: 0,
-                                    matches: []
-                                }
-                            }
-                        }
-                    }
-                ],
-                updates: [
-                    { timestamp: new Date(now - 15 * 24 * 60 * 60 * 1000).toISOString(), update: 'KYB check initiated' },
-                    { timestamp: new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString(), update: 'Check completed - awaiting PDF' },
-                    { timestamp: new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString(), update: 'PDF received and uploaded to S3 - CLEAR' },
-                    { timestamp: weekAgo.toISOString(), update: 'Sanctions monitoring alert - outstanding hits require review - CONSIDER' },
-                    { timestamp: yesterday.toISOString(), update: 'Sanctions monitoring update - all hits dismissed or cleared - CLEAR' }
-                ]
-            },
-            
-            // 17. KYB - CONSIDER (UBO and Beneficial Ownership issues) - Real data example
-            {
-                checkId: 'mock_kyb_ubo_017',
-                checkType: 'kyb',
-                status: 'closed',
-                companyName: 'THURSTAN HOSKIN SOLICITORS LLP',
-                tasks: ['company:summary', 'company:sanctions', 'company:ubo', 'company:beneficial-check', 'company:shareholders'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString(),
-                updatedAt: yesterday.toISOString(),
-                completedAt: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/JmXPHqr',
-                pdfAddedAt: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(),
-                hasMonitoring: true,
-                taskOutcomes: {
-                    'company:summary': { result: 'clear', status: 'closed', data: { 
-                        people: [
-                            { name: 'Barbara Archer', position: 'Designated LLP Member', nationality: 'British' },
-                            { name: 'Stephen John Duncan Morrison', position: 'Designated LLP Member', nationality: 'British' }
-                        ]
-                    }},
-                    'company:sanctions': { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: true } },
-                    'company:ubo': { result: 'consider', status: 'unobtainable', data: { uboUnavailable: true } },
-                    'company:beneficial-check': { result: 'consider', status: 'unobtainable', data: {} },
-                    'company:shareholders': { result: 'clear', status: 'closed', data: { document_count: 1 } }
-                },
-                companyData: {
-                    name: 'THURSTAN HOSKIN SOLICITORS LLP',
-                    number: 'OC421980',
-                    jurisdiction: 'UK',
-                    incorporation_date: '2018-04-12',
-                    address: {
-                        line1: 'Chynoweth, Chapel Street',
-                        town: 'Redruth',
-                        county: 'Cornwall',
-                        postcode: 'TR15 2BY',
-                        country: 'United Kingdom'
-                    },
-                    status: 'Active',
-                    legal_form: 'Limited Partnership',
-                    sic_code: '69100 - Legal activities',
-                    employees: 20
-                },
-                hasAlerts: true,
-                considerReasons: ['beneficial ownership issues', 'UBO concerns'],
-                updates: [
-                    { timestamp: new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString(), update: 'KYB check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
-                    { timestamp: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(), update: 'Check completed - awaiting PDF' },
-                    { timestamp: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(), update: 'PDF received and uploaded to S3 - CONSIDER: beneficial ownership issues' },
-                    { timestamp: yesterday.toISOString(), update: 'Refreshed from Thirdfort API - Status: closed' }
-                ]
-            },
-            
-            // 18. IDV - OPEN (Documents uploaded, awaiting processing) - Real data example
-            {
-                checkId: 'mock_idv_open_018',
-                checkType: 'idv',
-                status: 'open',
-                consumerName: 'Jacob Robert Moran',
-                tasks: ['report:identity'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: yesterday.toISOString(),
-                updatedAt: now.toISOString(),
-                pdfReady: false,
-                hasMonitoring: false,
-                documentsUploaded: true,
-                documentType: 'passport',
-                taskOutcomes: {
-                    'identity:lite': { status: 'pending', data: {} }
-                },
-                piiData: {
-                    name: { first: 'Jacob', last: 'Moran', other: 'Robert' }
-                },
-                hasAlerts: false,
-                considerReasons: [],
-                updates: [
-                    { timestamp: yesterday.toISOString(), update: 'IDV check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
-                    { timestamp: yesterday.toISOString(), update: 'Documents uploaded by consumer' },
-                    { timestamp: now.toISOString(), update: 'Refreshed from Thirdfort API - Status: open' }
-                ]
-            },
-            
-            // 19. Enhanced ID - OPEN (Multiple tasks including SoF and Bank Statement) - Real data example
-            {
-                transactionId: 'mock_eid_open_019',
-                checkType: 'electronic-id',
-                status: 'open',
-                consumerName: 'Jacob Robert Archer-Moran',
-                consumerPhone: '+447506430094',
-                consumerEmail: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                tasks: ['report:identity', 'report:footprint', 'report:peps', 'documents:poa', 'report:sof-v1', 'report:bank-statement', 'report:bank-summary'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: weekAgo.toISOString(),
-                updatedAt: now.toISOString(),
-                pdfReady: false,
-                hasMonitoring: true,
-                smsSent: true,
-                taskOutcomes: {},
-                piiData: {
-                    name: { first: 'Jacob Robert', last: 'Archer-Moran' }
-                },
-                hasAlerts: false,
-                considerReasons: [],
-                updates: [
-                    { timestamp: weekAgo.toISOString(), update: 'Electronic ID check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
-                    { timestamp: weekAgo.toISOString(), update: 'Transaction confirmed by Thirdfort' },
-                    { timestamp: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(), update: 'Refreshed from Thirdfort API - Status: open' },
-                    { timestamp: yesterday.toISOString(), update: 'Refreshed from Thirdfort API - Status: open' },
-                    { timestamp: now.toISOString(), update: 'Refreshed from Thirdfort API - Status: open' }
-                ]
-            },
-            
-            // 20. Lite Screen - CLOSED with PDF (Minimal consumer data) - Real data example
-            {
-                transactionId: 'mock_lite_020',
-                checkType: 'lite-screen',
-                status: 'closed',
-                consumerName: 'Test Consumer',
-                tasks: ['report:footprint', 'report:peps'],
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: yesterday.toISOString(),
-                updatedAt: yesterday.toISOString(),
-                completedAt: yesterday.toISOString(),
-                pdfReady: true,
-                pdfS3Key: 'protected/fX6hWC1',
-                pdfAddedAt: yesterday.toISOString(),
-                hasMonitoring: true,
-                taskOutcomes: {
-                    footprint: { result: 'clear', status: 'closed', data: { quality: 85, match_count: 2 } },
-                    peps: { result: 'clear', status: 'closed', data: { total_hits: 0, monitored: true } }
-                },
-                piiData: {
-                    name: { first: 'Test', last: 'Consumer' }
-                },
-                hasAlerts: false,
-                considerReasons: [],
-                updates: [
-                    { timestamp: yesterday.toISOString(), update: 'Lite Screen check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
-                    { timestamp: yesterday.toISOString(), update: 'Transaction completed - awaiting PDF' },
-                    { timestamp: yesterday.toISOString(), update: 'PDF received and uploaded to S3 - CLEAR' },
-                    { timestamp: yesterday.toISOString(), update: 'Refreshed from Thirdfort API - Status: closed' }
-                ]
-            }
-*/
-// ===================================================================
-// INITIALIZE
-// ===================================================================
 
 let manager;
 
 document.addEventListener('DOMContentLoaded', () => {
     manager = new ThirdfortChecksManager();
-    window.thirdfortManager = manager; // Make accessible globally for inline onclick handlers
+    window.manager = manager; // Make accessible globally for inline onclick handlers
+    window.thirdfortManager = manager; // Keep for backwards compatibility
 });
 

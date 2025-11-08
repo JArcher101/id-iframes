@@ -697,10 +697,36 @@ window.frames[0].postMessage({
         thirdfortResponse: { /* raw API response */ }  // Optional - full Thirdfort API response
       }
       // ... more checks
-    ]
+    ],
+    
+    // Optional: Access mode control
+    mode: 'edit',           // 'edit' | 'view' (default: 'edit')
+    
+    // Optional: Thirdfort environment for portal links
+    thirdfortEnv: 'sandbox' // 'sandbox' | 'production' (default: 'sandbox')
   }
 }, '*');
 ```
+
+#### Message Parameters
+
+**`checks`** *(Array, required)*  
+Array of check objects to display. See structure above.
+
+**`mode`** *(String, optional)*  
+Access control for the iframe. Defaults to `'edit'`.
+- `'edit'`: Full access - can toggle monitoring, abort checks, and open in Thirdfort portal
+- `'view'`: Read-only - can view all details and PDFs, but cannot modify checks or open portal
+
+**`thirdfortEnv`** *(String, optional)*  
+Thirdfort environment for the "Expand" button (opens transaction in Thirdfort portal). Defaults to `'sandbox'`.
+- `'production'`: Opens transactions at `https://app.thirdfort.com`
+- `'sandbox'`: Opens transactions at `https://sandbox.app.thirdfort.com`
+
+The expand button uses different URL paths based on check type:
+- **IDV**: `/documents/{transactionId}`
+- **KYB**: `/know-your-business/{transactionId}`
+- **Electronic ID / Lite Screen**: `/activities/{transactionId}`
 
 #### Check Type Identification
 - **Electronic ID / Lite Screen**: Use `transactionId` property
