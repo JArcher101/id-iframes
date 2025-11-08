@@ -17768,12 +17768,16 @@ class ThirdfortChecksManager {
             const addr = property.address;
             const fullAddress = `${addr.building_number || ''} ${addr.street || ''}, ${addr.town || ''}, ${addr.postcode || ''}`.trim();
             const price = property.price ? `£${(property.price / 100).toLocaleString()}` : 'Not specified';
+            const sdlt = property.stamp_duty ? `£${(property.stamp_duty / 100).toLocaleString()}` : 'Not specified';
+            const newBuild = property.new_build ? 'Yes' : 'No';
             
             overlayHTML += '<div class="sof-section">';
             overlayHTML += '<h3>Property Details</h3>';
-            overlayHTML += '<div class="property-info-grid">';
-            overlayHTML += `<div class="property-info-item">📍 <strong>Address:</strong> ${fullAddress}</div>`;
-            overlayHTML += `<div class="property-info-item">💷 <strong>Purchase Price:</strong> ${price}</div>`;
+            overlayHTML += '<div class="sof-property-details">';
+            overlayHTML += `<div class="property-bullet">📍 <strong>Property:</strong> ${fullAddress}</div>`;
+            overlayHTML += `<div class="property-bullet">💷 <strong>Purchase Price:</strong> ${price}</div>`;
+            overlayHTML += `<div class="property-bullet">📋 <strong>Stamp Duty:</strong> ${sdlt}</div>`;
+            overlayHTML += `<div class="property-bullet">🏗️ <strong>New Build:</strong> ${newBuild}</div>`;
             overlayHTML += '</div></div>';
         }
         
@@ -17855,175 +17859,148 @@ class ThirdfortChecksManager {
     }
     
     createSofFundingCard(fund, fundIdx, sofMatches, accounts, check) {
+        // Use the EXACT same structure as task card but add investigation features
         const type = fund.type || 'unknown';
         const data = fund.data || {};
         const amount = data.amount ? `£${(data.amount / 100).toLocaleString()}` : 'Not specified';
         
-        let html = '<div class="sof-funding-card">';
+        // Get matched transactions
+        const matchedTxIds = this.getMatchedTransactions(type, sofMatches);
         
-        // Card header with type and amount
-        const typeLabel = this.getFundingTypeLabel(type);
-        html += '<div class="sof-card-header">';
-        html += `<div class="sof-card-title">${typeLabel}</div>`;
-        html += `<div class="sof-card-amount">${amount}</div>`;
+        // Map funding type to display name
+        const cleanType = type.replace('fund:', '').replace(/:/g, '-');
+        const typeNames = {
+            'mortgage': 'Mortgage',
+            'savings': 'Savings',
+            'gift': 'Gift',
+            'sale-property': 'Property Sale',
+            'sale-assets': 'Asset Sale',
+            'inheritance': 'Inheritance',
+            'htb': 'Help to Buy / LISA',
+            'htb_lisa': 'Help to Buy / LISA',
+            'investment': 'Investment',
+            'business': 'Business Income',
+            'loan': 'Loan',
+            'other': 'Other',
+            'income': 'Income'
+        };
+        const typeName = typeNames[cleanType] || cleanType;
+        
+        let html = '<div class="funding-source-card sof-funding-card">';
+        
+        // Card header with type, amount (same as task card)
+        html += '<div class="funding-card-header">';
+        html += `<div class="funding-card-type">${typeName}</div>`;
+        html += `<div class="funding-card-amount">${amount}</div>`;
         html += '</div>';
         
-        // Card body
-        html += '<div class="sof-card-body">';
+        // Card body with all the same details as task card
+        html += '<div class="funding-card-body">';
         
-        // Type-specific info and verification checkboxes
-        html += this.createFundingTypeSection(fund, sofMatches, accounts);
+        // Type-specific details (same as task card)
+        html += this.createFundingDetailsSection(fund, data, type);
+        
+        // Matched transactions (same as task card)
+        if (matchedTxIds.length > 0) {
+            html += this.createFundingMatchedTxSection(matchedTxIds, accounts, type);
+        }
+        
+        // INVESTIGATION FEATURES (NEW)
+        html += '<div class="investigation-section">';
+        
+        // Verification checkboxes
+        html += this.createFundingVerificationChecks(type, data, matchedTxIds);
         
         // Notes textarea
         html += '<div class="form-group">';
-        html += `<label>Investigation Notes</label>`;
+        html += '<label><strong>Investigation Notes</strong></label>';
         html += `<textarea class="sof-note-input" data-fund-idx="${fundIdx}" data-fund-type="${type}" rows="3" placeholder="Add investigation notes..."></textarea>`;
         html += '</div>';
         
-        html += '</div></div>';
+        html += '</div>'; // Close investigation-section
+        html += '</div>'; // Close card-body
+        html += '</div>'; // Close card
         
         return html;
     }
     
-    getFundingTypeLabel(type) {
-        const labels = {
-            'fund:savings': '💰 Savings',
-            'fund:gift': '🎁 Gift',
-            'fund:mortgage': '🏦 Mortgage',
-            'fund:property_sale': '🏠 Property Sale',
-            'fund:sale:property': '🏠 Property Sale',
-            'fund:asset_sale': '💎 Asset Sale',
-            'fund:sale:assets': '💎 Asset Sale',
-            'fund:htb': '🏡 Help to Buy/LISA',
-            'fund:htb_lisa': '🏡 Help to Buy/LISA',
-            'fund:inheritance': '👴 Inheritance',
-            'fund:income': '💼 Income',
-            'fund:loan': '💳 Loan',
-            'fund:investment': '📈 Investment',
-            'fund:business': '🏢 Business',
-            'fund:other': '📋 Other'
-        };
-        return labels[type] || '📋 Unknown Funding Source';
-    }
-    
-    createFundingTypeSection(fund, sofMatches, accounts) {
-        const type = fund.type || 'unknown';
-        const data = fund.data || {};
+    createFundingDetailsSection(fund, data, type) {
         let html = '';
         
-        // Get matched transactions for this funding type
-        const matchedTxIds = this.getMatchedTransactions(type, sofMatches);
-        
-        // Type-specific content
-        if (type === 'fund:gift') {
-            // Gift details
-            const giftor = data.giftor || {};
-            html += '<div class="fund-details">';
-            if (giftor.name) html += `<p><strong>Giftor:</strong> ${giftor.name}</p>`;
-            if (giftor.relationship) html += `<p><strong>Relationship:</strong> ${giftor.relationship}</p>`;
-            if (giftor.phone) html += `<p><strong>Phone:</strong> ${giftor.phone}</p>`;
-            html += '</div>';
-            
-            // Verification checkboxes
-            html += '<div class="verification-checks">';
-            html += '<label><input type="checkbox" name="gift_verified" value="relationship"> Giftor relationship confirmed</label>';
-            html += '<label><input type="checkbox" name="gift_verified" value="checks"> Giftor checks completed</label>';
-            if (matchedTxIds.length > 0) {
-                html += '<label><input type="checkbox" name="gift_verified" value="transactions"> Transactions reviewed and linked</label>';
-            }
-            html += '</div>';
-            
-            // Matched transactions
-            if (matchedTxIds.length > 0) {
-                html += this.createMatchedTransactionsSection(matchedTxIds, accounts, 'gift');
-            }
-        }
+        if (type === 'fund:mortgage') {
+            if (data.lender) html += `<div class="funding-detail"><strong>Lender:</strong> ${data.lender}</div>`;
+            if (data.location) html += `<div class="funding-detail"><strong>Location:</strong> ${data.location}</div>`;
+        } 
         else if (type === 'fund:savings') {
-            // Savings details
-            html += '<div class="fund-details">';
-            if (data.account_name) html += `<p><strong>Account:</strong> ${data.account_name}</p>`;
-            if (data.balance) html += `<p><strong>Balance:</strong> £${(data.balance / 100).toLocaleString()}</p>`;
-            html += '</div>';
-            
-            // Verification checkboxes
-            html += '<div class="verification-checks">';
-            html += '<label><input type="checkbox" name="savings_verified" value="statements"> Account statements reviewed</label>';
-            html += '<label><input type="checkbox" name="savings_verified" value="balance"> Balance verified via Bank Summary</label>';
-            html += '</div>';
-        }
-        else if (type.includes('sale')) {
-            // Asset/Property sale
-            const documents = data.documents || [];
-            html += '<div class="fund-details">';
-            if (data.description) html += `<p>${data.description}</p>`;
-            if (documents.length > 0) {
-                html += `<p><strong>Documents uploaded:</strong> ${documents.length}</p>`;
+            if (data.people && data.people.length > 0) {
+                html += '<div class="funding-section-title">Income & Employment Details:</div>';
+                html += `<div class="people-grid people-grid-${data.people.length}">`;
+                
+                data.people.forEach(person => {
+                    const isActor = person.actor ? 'Primary' : 'Joint';
+                    const employmentStatus = person.employment_status === 'independent' ? 'Self-employed' : 
+                                            person.employment_status ? person.employment_status.charAt(0).toUpperCase() + person.employment_status.slice(1) : '';
+                    
+                    html += '<div class="person-card">';
+                    html += `<div class="person-card-name">${person.name}</div>`;
+                    html += `<div class="person-card-role">${isActor}</div>`;
+                    if (employmentStatus) html += `<div class="person-card-item"><strong>Status:</strong> ${employmentStatus}</div>`;
+                    
+                    if (person.incomes && person.incomes.length > 0) {
+                        person.incomes.forEach(income => {
+                            const annualAmount = income.annual_total ? `£${(income.annual_total / 100).toLocaleString()}` : 'N/A';
+                            html += `<div class="person-card-item"><strong>Source:</strong> ${income.source || 'N/A'}</div>`;
+                            html += `<div class="person-card-item"><strong>Annual:</strong> ${annualAmount}</div>`;
+                            html += `<div class="person-card-item"><strong>Frequency:</strong> ${income.frequency || 'N/A'}</div>`;
+                            if (income.reference) html += `<div class="person-card-item"><strong>Payslip:</strong> ${income.reference}</div>`;
+                        });
+                    }
+                    html += '</div>';
+                });
+                
+                html += '</div>';
             }
-            html += '</div>';
-            
-            // Verification checkboxes
-            html += '<div class="verification-checks">';
-            html += '<label><input type="checkbox" name="sale_verified" value="documents"> Documents reviewed and verified</label>';
-            html += '<label><input type="checkbox" name="sale_verified" value="proceeds"> Sale proceeds confirmed</label>';
-            html += '</div>';
-        }
-        else if (type === 'fund:mortgage') {
-            // Mortgage details
-            html += '<div class="fund-details">';
-            if (data.lender) html += `<p><strong>Lender:</strong> ${data.lender}</p>`;
-            if (data.ltv) html += `<p><strong>LTV:</strong> ${data.ltv}%</p>`;
-            html += '</div>';
-            
-            // Verification checkboxes
-            html += '<div class="verification-checks">';
-            html += '<label><input type="checkbox" name="mortgage_verified" value="offer"> Mortgage offer reviewed</label>';
-            html += '<label><input type="checkbox" name="mortgage_verified" value="affordability"> Affordability confirmed</label>';
-            html += '</div>';
-        }
-        else {
-            // Generic funding source
-            html += '<div class="fund-details">';
-            if (data.description) html += `<p>${data.description}</p>`;
-            html += '</div>';
-            
-            html += '<div class="verification-checks">';
-            html += '<label><input type="checkbox" name="generic_verified" value="verified"> Source verified</label>';
-            html += '</div>';
+        } 
+        else if (type === 'fund:gift') {
+            if (data.giftor) {
+                html += '<div class="funding-section-title">Gift Details:</div>';
+                if (data.giftor.name) html += `<div class="funding-detail"><strong>From:</strong> ${data.giftor.name}</div>`;
+                if (data.giftor.relationship) html += `<div class="funding-detail"><strong>Relationship:</strong> ${data.giftor.relationship}</div>`;
+                if (data.giftor.phone) html += `<div class="funding-detail"><strong>Phone:</strong> ${data.giftor.phone}</div>`;
+                if (typeof data.giftor.contactable !== 'undefined') html += `<div class="funding-detail"><strong>Contactable:</strong> ${data.giftor.contactable ? 'Yes' : 'No'}</div>`;
+                if (typeof data.repayable !== 'undefined') html += `<div class="funding-detail"><strong>Repayable:</strong> ${data.repayable ? 'Yes' : 'No'}</div>`;
+            }
+        } 
+        else if (type === 'fund:sale:property' || type === 'fund:property_sale') {
+            html += '<div class="funding-section-title">Property Sale Details:</div>';
+            if (data.date) {
+                const saleDate = new Date(data.date).toLocaleDateString('en-GB');
+                html += `<div class="funding-detail"><strong>Completion Date:</strong> ${saleDate}</div>`;
+            }
+            if (data.status) html += `<div class="funding-detail"><strong>Status:</strong> ${data.status}</div>`;
+            if (data.lawyer) html += `<div class="funding-detail"><strong>Lawyer:</strong> ${data.lawyer}</div>`;
+        } 
+        else if (type === 'fund:sale:assets' || type === 'fund:asset_sale') {
+            html += '<div class="funding-section-title">Asset Sale Details:</div>';
+            if (data.description) html += `<div class="funding-detail"><strong>Asset:</strong> ${data.description}</div>`;
+            if (data.location) html += `<div class="funding-detail"><strong>Location:</strong> ${data.location}</div>`;
         }
         
         return html;
     }
     
-    getMatchedTransactions(fundType, sofMatches) {
-        const fundTypeMap = {
-            'fund:gift': ['gift', 'gift_transactions'],
-            'fund:mortgage': ['mortgage', 'mortgage_transactions'],
-            'fund:savings': ['savings', 'savings_transactions', 'salary_transactions'],
-            'fund:property_sale': ['property_sale', 'property_sale_transactions'],
-            'fund:sale:property': ['property_sale', 'property_sale_transactions'],
-            'fund:asset_sale': ['asset_sale', 'asset_sale_transactions'],
-            'fund:sale:assets': ['asset_sale', 'asset_sale_transactions']
+    createFundingMatchedTxSection(matchedTxIds, accounts, type) {
+        const labelMap = {
+            'fund:gift': 'Potential Gift Deposits:',
+            'fund:mortgage': 'Potential Mortgage Deposits:',
+            'fund:savings': 'Verified Salary Deposits:',
+            'fund:income': 'Verified Salary Deposits:'
         };
+        const matchLabel = labelMap[type] || 'Potential Matched Transactions:';
         
-        const matchKeys = fundTypeMap[fundType] || [];
-        let matchedTxIds = [];
+        let html = '<div class="matched-transactions-section"><div class="matched-tx-label">' + matchLabel + '</div>';
         
-        for (const key of matchKeys) {
-            if (sofMatches[key] && Array.isArray(sofMatches[key])) {
-                matchedTxIds = [...matchedTxIds, ...sofMatches[key]];
-            }
-        }
-        
-        return [...new Set(matchedTxIds)];
-    }
-    
-    createMatchedTransactionsSection(matchedTxIds, accounts, fundType) {
-        let html = '<div class="matched-tx-section">';
-        html += '<p class="matched-tx-label">Potential Matched Transactions (' + matchedTxIds.length + '):</p>';
-        html += '<div class="matched-tx-list">';
-        
-        matchedTxIds.slice(0, 5).forEach(txId => {
-            // Find transaction in accounts
+        matchedTxIds.forEach(txId => {
             let tx = null;
             let accountName = '';
             for (const [accountId, accountData] of Object.entries(accounts)) {
@@ -18036,30 +18013,81 @@ class ThirdfortChecksManager {
             }
             
             if (tx) {
-                const txDate = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-                const txAmount = Math.abs(tx.amount).toFixed(2);
-                const txDesc = tx.description || tx.merchant_name || 'Transaction';
+                const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                const currencySymbol = this.getCurrencyFlag(tx.currency || 'GBP');
+                const txAmount = tx.amount >= 0 ? '+' : '';
                 
-                html += '<div class="matched-tx-item">';
-                html += `<span class="tx-date">${txDate}</span>`;
-                html += `<span class="tx-desc">${txDesc}</span>`;
-                html += `<span class="tx-amount">£${txAmount}</span>`;
-                html += '<div class="tx-actions">';
-                html += '<button type="button" class="tx-action-btn verified" title="Mark as verified">✓</button>';
-                html += '<button type="button" class="tx-action-btn reject" title="Mark as unrelated">✗</button>';
-                html += '<button type="button" class="tx-action-btn question" title="Needs review">?</button>';
-                html += '</div>';
+                html += '<div class="matched-tx-row">';
+                html += `<span class="matched-tx-date">${date}</span>`;
+                html += `<span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>`;
+                html += `<span class="matched-tx-account">${accountName}</span>`;
+                html += `<span class="matched-tx-amount">${txAmount}${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>`;
                 html += '</div>';
             }
         });
         
-        if (matchedTxIds.length > 5) {
-            html += `<p class="text-muted">+${matchedTxIds.length - 5} more transactions</p>`;
-        }
-        
-        html += '</div></div>';
+        html += '</div>';
         
         return html;
+    }
+    
+    createFundingVerificationChecks(type, data, matchedTxIds) {
+        let html = '<div class="verification-checks">';
+        
+        if (type === 'fund:gift') {
+            html += '<label><input type="checkbox" name="verification" value="gift_relationship"> Giftor relationship confirmed</label>';
+            html += '<label><input type="checkbox" name="verification" value="gift_checks"> Giftor ID and AML checks completed</label>';
+            if (matchedTxIds.length > 0) {
+                html += '<label><input type="checkbox" name="verification" value="gift_transactions"> Transactions reviewed and linked</label>';
+            }
+        } 
+        else if (type === 'fund:savings') {
+            html += '<label><input type="checkbox" name="verification" value="savings_statements"> Account statements reviewed</label>';
+            html += '<label><input type="checkbox" name="verification" value="savings_balance"> Balance verified via Bank Summary</label>';
+            html += '<label><input type="checkbox" name="verification" value="savings_income"> Income sources verified</label>';
+        } 
+        else if (type.includes('sale')) {
+            html += '<label><input type="checkbox" name="verification" value="sale_documents"> Supporting documents reviewed</label>';
+            html += '<label><input type="checkbox" name="verification" value="sale_proceeds"> Sale proceeds confirmed</label>';
+        } 
+        else if (type === 'fund:mortgage') {
+            html += '<label><input type="checkbox" name="verification" value="mortgage_offer"> Mortgage offer reviewed</label>';
+            html += '<label><input type="checkbox" name="verification" value="mortgage_affordability"> Affordability assessment completed</label>';
+        } 
+        else {
+            html += '<label><input type="checkbox" name="verification" value="generic_verified"> Source verified and documented</label>';
+        }
+        
+        html += '</div>';
+        
+        return html;
+    }
+    
+    getMatchedTransactions(fundType, sofMatches) {
+        const fundTypeMap = {
+            'fund:gift': ['gift', 'gift_transactions'],
+            'fund:mortgage': ['mortgage', 'mortgage_transactions'],
+            'fund:savings': ['savings', 'savings_transactions', 'salary_transactions'],
+            'fund:property_sale': ['property_sale', 'property_sale_transactions'],
+            'fund:sale:property': ['property_sale', 'property_sale_transactions'],
+            'fund:asset_sale': ['asset_sale', 'asset_sale_transactions'],
+            'fund:sale:assets': ['asset_sale', 'asset_sale_transactions'],
+            'fund:htb': ['htb_lisa', 'htb_transactions', 'htb_lisa_transactions'],
+            'fund:htb_lisa': ['htb_lisa', 'htb_transactions', 'htb_lisa_transactions'],
+            'fund:inheritance': ['inheritance', 'inheritance_transactions'],
+            'fund:income': ['salary_transactions', 'income_transactions']
+        };
+        
+        const matchKeys = fundTypeMap[fundType] || [];
+        let matchedTxIds = [];
+        
+        for (const key of matchKeys) {
+            if (sofMatches[key] && Array.isArray(sofMatches[key])) {
+                matchedTxIds = [...matchedTxIds, ...sofMatches[key]];
+            }
+        }
+        
+        return [...new Set(matchedTxIds)];
     }
     
     createSofChainCard(chain, chainIdx) {

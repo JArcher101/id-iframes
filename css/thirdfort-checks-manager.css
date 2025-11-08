@@ -4307,20 +4307,22 @@ body {
     border-bottom: 2px solid #e5e5e5;
 }
 
-.property-info-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+.sof-property-details {
     padding: 15px;
     background: #f8f9fa;
     border-radius: 6px;
     margin-bottom: 10px;
 }
 
-.property-info-item {
+.property-bullet {
     font-family: 'RotisRegular', sans-serif;
-    font-size: 13px;
+    font-size: 14px;
     color: #333;
+    margin: 8px 0;
+}
+
+.property-bullet strong {
+    color: #003c71;
 }
 
 .sof-funding-card {
@@ -4331,29 +4333,18 @@ body {
     margin-bottom: 15px;
 }
 
-.sof-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #e5e5e5;
+.investigation-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 2px solid #e5e5e5;
 }
 
-.sof-card-title {
+.investigation-section label {
     font-family: 'RotisBold', sans-serif;
-    font-size: 16px;
+    font-size: 13px;
     color: #003c71;
-}
-
-.sof-card-amount {
-    font-family: 'RotisBold', sans-serif;
-    font-size: 18px;
-    color: #388e3c;
-}
-
-.sof-card-body {
-    font-family: 'RotisRegular', sans-serif;
+    margin-bottom: 8px;
+    display: block;
 }
 
 .fund-details {
