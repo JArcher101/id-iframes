@@ -16984,6 +16984,7 @@ class ThirdfortChecksManager {
     
     /**
      * Find all consider/fail items in task outcomes (recursive)
+     * Only returns nested objectives, not top-level tasks
      */
     findConsiderFailItems(taskOutcomes) {
         const items = [];
@@ -16992,25 +16993,32 @@ class ThirdfortChecksManager {
             // Skip if no outcome or status
             if (!outcome) continue;
             
-            // Check main task result
-            if (outcome.result === 'consider' || outcome.result === 'fail') {
+            // Get reason text for this task
+            const reasonText = this.getTaskConsiderReason(taskType, outcome);
+            
+            // Only add top-level task if it has no nested items but has consider/fail
+            const hasNested = (outcome.data && Object.keys(outcome.data).length > 0) || 
+                             (outcome.breakdown && Object.keys(outcome.breakdown).length > 0);
+            
+            if (!hasNested && (outcome.result === 'consider' || outcome.result === 'fail')) {
                 items.push({
                     taskType,
                     path: taskType,
                     label: this.getTaskTitle(taskType),
                     status: outcome.result,
-                    level: 0
+                    level: 0,
+                    reasonText
                 });
             }
             
             // Recursively check nested data and breakdown
             if (outcome.data) {
-                const nested = this.findNestedConsiderFail(outcome.data, taskType, taskType, 1);
+                const nested = this.findNestedConsiderFail(outcome.data, taskType, taskType, 1, outcome);
                 items.push(...nested);
             }
             
             if (outcome.breakdown) {
-                const nestedBreakdown = this.findNestedConsiderFail(outcome.breakdown, taskType, taskType, 1);
+                const nestedBreakdown = this.findNestedConsiderFail(outcome.breakdown, taskType, taskType, 1, outcome);
                 items.push(...nestedBreakdown);
             }
         }
@@ -17019,9 +17027,48 @@ class ThirdfortChecksManager {
     }
     
     /**
+     * Get consider/fail reason text for display
+     */
+    getTaskConsiderReason(taskType, outcome) {
+        // Handle different task types and their specific reasons
+        
+        // Skipped tasks
+        if (outcome.status === 'skipped') {
+            return 'Client skipped in app';
+        }
+        
+        // Unobtainable tasks
+        if (outcome.status === 'unobtainable') {
+            if (taskType === 'nfc' || taskType === 'biometrics') {
+                return 'NFC unobtainable - Original ID completed instead';
+            }
+            return 'Information unobtainable';
+        }
+        
+        // Address/footprint specific
+        if (taskType === 'address' || taskType === 'footprint') {
+            const rules = outcome.breakdown?.rules || [];
+            if (rules.length > 0 && rules[0].text) {
+                return rules[0].text;
+            }
+            return 'Address verification issues';
+        }
+        
+        // Default based on status
+        if (outcome.result === 'fail') {
+            return 'Failed verification';
+        }
+        if (outcome.result === 'consider') {
+            return 'Requires review';
+        }
+        
+        return '';
+    }
+    
+    /**
      * Recursively find consider/fail in nested objects
      */
-    findNestedConsiderFail(obj, taskType, parentPath, level) {
+    findNestedConsiderFail(obj, taskType, parentPath, level, parentOutcome = null) {
         const items = [];
         
         if (!obj || typeof obj !== 'object') return items;
@@ -17033,17 +17080,28 @@ class ThirdfortChecksManager {
             
             // Check if this object has a result field
             if (value.result === 'consider' || value.result === 'fail') {
+                // Get reason text - try from this object or parent
+                let reasonText = '';
+                if (value.text) {
+                    reasonText = value.text;
+                } else if (value.status === 'unobtainable') {
+                    reasonText = 'Information unobtainable';
+                } else if (parentOutcome) {
+                    reasonText = this.getTaskConsiderReason(taskType, parentOutcome);
+                }
+                
                 items.push({
                     taskType,
                     path: currentPath,
                     label: this.formatObjectivePath(currentPath),
                     status: value.result,
-                    level
+                    level,
+                    reasonText
                 });
             }
             
             // Recurse deeper
-            const deeper = this.findNestedConsiderFail(value, taskType, currentPath, level + 1);
+            const deeper = this.findNestedConsiderFail(value, taskType, currentPath, level + 1, parentOutcome || value);
             items.push(...deeper);
         }
         
@@ -17150,16 +17208,21 @@ class ThirdfortChecksManager {
                 groupedItems[item.taskType].push(item);
             });
             
-            // Radio buttons for objectives
+            // Checkboxes for objectives
             overlayHTML += '<div class="objectives-grid">';
             for (const [taskType, taskItems] of Object.entries(groupedItems)) {
                 overlayHTML += '<div class="objective-column">';
                 overlayHTML += `<h4>${this.getTaskTitle(taskType)}</h4>`;
                 
+                // Show reason text once for the task group
+                if (taskItems[0].reasonText) {
+                    overlayHTML += '<p class="task-reason-text">' + taskItems[0].reasonText + '</p>';
+                }
+                
                 taskItems.forEach(item => {
                     overlayHTML += '<label class="objective-radio">';
                     overlayHTML += `<input type="checkbox" name="objectives" value="${item.path}" data-task="${taskType}" data-status="${item.status}" data-label="${item.label}">`;
-                    overlayHTML += `<span>${item.label}</span>`;
+                    overlayHTML += '<span>' + item.label + '</span>';
                     overlayHTML += '</label>';
                 });
                 
@@ -17268,7 +17331,7 @@ class ThirdfortChecksManager {
     }
     
     /**
-     * Render pending updates queue
+     * Render pending updates queue (styled like task cards)
      */
     renderPendingUpdates() {
         const queueContainer = document.getElementById('updatesQueue');
@@ -17282,16 +17345,43 @@ class ThirdfortChecksManager {
         let queueHTML = '';
         this.pendingUpdates.forEach(update => {
             const taskTitle = this.getTaskTitle(update.objectives[0].taskType);
-            const objectivesList = update.objectives.map(obj => '* ' + obj.label).join(' ');
             
-            queueHTML += '<div class="update-queue-card">';
-            queueHTML += '<div class="update-queue-header">';
-            queueHTML += '<span>✓ ' + taskTitle + ' <span class="status-badge ' + update.status + '">[' + update.status.toUpperCase() + ']</span></span>';
+            // Get status icon based on new status
+            let statusIcon = '';
+            let borderClass = '';
+            
+            if (update.status === 'clear') {
+                borderClass = 'clear';
+                statusIcon = '<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+            } else if (update.status === 'consider') {
+                borderClass = 'consider';
+                statusIcon = '<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+            } else if (update.status === 'fail') {
+                borderClass = 'alert';
+                statusIcon = '<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>';
+            }
+            
+            // Build objectives list with check icons
+            let objectivesHTML = '<div class="task-checks-grid">';
+            update.objectives.forEach(obj => {
+                objectivesHTML += '<div class="task-check-item">';
+                objectivesHTML += this.getTaskCheckIcon('CL');  // Always show tick for selected objectives
+                objectivesHTML += '<span class="task-check-text">' + obj.label + '</span>';
+                objectivesHTML += '</div>';
+            });
+            objectivesHTML += '</div>';
+            
+            // Render as task card
+            queueHTML += '<div class="task-card update-queue-card ' + borderClass + '">';
+            queueHTML += '<div class="task-header">';
+            queueHTML += '<div class="task-title">' + taskTitle + '</div>';
+            queueHTML += '<div class="task-header-right">';
+            queueHTML += statusIcon;
             queueHTML += '<button class="remove-update-btn" onclick="manager.removeUpdateFromQueue(' + update.id + ')">×</button>';
-            queueHTML += '</div>';
-            queueHTML += '<div class="update-queue-body">';
-            queueHTML += '<p>' + update.reason + '</p>';
-            queueHTML += '<p class="objectives-list">' + objectivesList + '</p>';
+            queueHTML += '</div></div>';
+            queueHTML += '<div class="task-details" style="display: block;">';
+            queueHTML += '<div class="update-reason-text">' + update.reason + '</div>';
+            queueHTML += objectivesHTML;
             queueHTML += '</div></div>';
         });
         
