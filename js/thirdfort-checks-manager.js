@@ -1456,16 +1456,16 @@ class ThirdfortChecksManager {
             }
         });
         
-        // Wrap in task card format (with orange consider status icon)
-        const considerStatusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+        // Wrap in task card format (with RED consider status icon)
+        const redConsiderIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
         
         let flagsHtml = `
             <div class="task-card consider" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
                     <div class="task-title">Red Flags</div>
-                    ${considerStatusIcon}
+                    ${redConsiderIcon}
                 </div>
-                <div class="task-summary-inline task-summary-inline-red">${totalFlags} Red ${flagWord} identified</div>
+                <div class="task-summary-inline">${totalFlags} Red ${flagWord} identified</div>
                 <div class="task-details">
                     ${flagsContent}
                 </div>
@@ -3169,6 +3169,15 @@ class ThirdfortChecksManager {
             statusIcon = `<svg class="task-status-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>`;
         }
         
+        // Get accounts count for header display
+        let accounts = {};
+        if (hasStatement && bankStatement.breakdown && bankStatement.breakdown.accounts) {
+            accounts = bankStatement.breakdown.accounts;
+        } else if (hasSummary && bankSummary.breakdown && bankSummary.breakdown.accounts) {
+            accounts = bankSummary.breakdown.accounts;
+        }
+        const accountCount = Object.keys(accounts).length;
+        
         // Build header checks (visible when collapsed)
         let headerChecksHtml = '<div class="task-header-checks">';
         
@@ -3193,6 +3202,14 @@ class ThirdfortChecksManager {
                     <span class="task-check-text">Bank linking completed via Open Banking</span>
                 </div>
             `;
+            if (accountCount > 0) {
+                headerChecksHtml += `
+                    <div class="task-check-item">
+                        ${this.getTaskCheckIcon('CL')}
+                        <span class="task-check-text">${accountCount} account${accountCount !== 1 ? 's' : ''} linked</span>
+                    </div>
+                `;
+            }
         } else if (hasStatement && !hasSummary) {
             // PDF upload only
             headerChecksHtml += `
@@ -3202,11 +3219,11 @@ class ThirdfortChecksManager {
                 </div>
             `;
         } else if (!hasSummary && !hasStatement) {
-            // Neither provided
+            // Neither provided - task skipped
             headerChecksHtml += `
                 <div class="task-check-item">
                     ${this.getTaskCheckIcon('AL')}
-                    <span class="task-check-text">Bank information not provided</span>
+                    <span class="task-check-text">Task skipped</span>
                 </div>
             `;
         }
@@ -4192,12 +4209,12 @@ class ThirdfortChecksManager {
             const isSkipped = status === 'skipped';
             
             // Determine status based on document count
-            // 0 docs = fail/alert, 1 doc = consider, 2+ docs = clear
+            // 0 docs or skipped = fail/alert, 1 doc = consider, 2+ docs = clear
             let docStatus = 'AL';
             let docText = '';
             
             if (isSkipped) {
-                docStatus = 'CO';
+                docStatus = 'AL';
                 docText = 'Consumer skipped in app';
             } else if (docCount === 0) {
                 docStatus = 'AL';
@@ -5492,19 +5509,32 @@ class ThirdfortChecksManager {
             const nfcTask = breakdown.nfc;
             const biometricsTask = breakdown.biometrics;
             
-            if (nfcTask?.status === 'unobtainable') {
-                // Check if Enhanced ID was requested
-                const requestTasks = check.thirdfortResponse?.request?.tasks || [];
-                const identityRequest = requestTasks.find(t => t.type === 'report:identity');
-                const nfcPreferred = identityRequest?.opts?.nfc === 'preferred';
+            // Check if Enhanced ID was requested
+            const requestTasks = check.thirdfortResponse?.request?.tasks || [];
+            const identityRequest = requestTasks.find(t => t.type === 'report:identity');
+            const nfcPreferred = identityRequest?.opts?.nfc === 'preferred';
+            
+            // If Enhanced ID was requested, show NFC status and Original ID status
+            if (nfcPreferred) {
+                // Show NFC status
+                if (nfcTask?.status === 'unobtainable') {
+                    checks.push({
+                        status: 'CO',
+                        text: 'NFC Scan unobtainable'
+                    });
+                } else if (nfcTask?.result === 'consider') {
+                    checks.push({
+                        status: 'CO',
+                        text: 'NFC verification requires review'
+                    });
+                } else if (nfcTask?.result === 'clear') {
+                    checks.push({
+                        status: 'CL',
+                        text: 'NFC Scan completed'
+                    });
+                }
                 
-                // Show NFC unobtainable status
-                checks.push({
-                    status: 'CO',
-                    text: 'NFC Scan unobtainable'
-                });
-                
-                // If Biometrics also unobtainable, show it
+                // Show Biometrics status if unobtainable
                 if (biometricsTask?.status === 'unobtainable') {
                     checks.push({
                         status: 'CO',
@@ -5512,8 +5542,8 @@ class ThirdfortChecksManager {
                     });
                 }
                 
-                // Show Original ID completion status (if Enhanced was requested)
-                if (nfcPreferred && breakdown.document) {
+                // Always show Original ID completion status when Enhanced was requested
+                if (breakdown.document) {
                     const docResult = breakdown.document.result || 'clear';
                     const docStatus = docResult === 'clear' ? 'CL' : (docResult === 'fail' ? 'AL' : 'CO');
                     checks.push({
@@ -5521,11 +5551,6 @@ class ThirdfortChecksManager {
                         text: 'Original ID completed'
                     });
                 }
-            } else if (nfcTask?.result === 'consider') {
-                checks.push({
-                    status: 'CO',
-                    text: 'NFC verification requires review'
-                });
             }
             
             // 1. Document Verification (nested collapsible card)
@@ -6146,15 +6171,26 @@ class ThirdfortChecksManager {
             });
         }
         else if (taskType === 'company:summary') {
-            // Company Summary - Show people as profile cards
+            // Company Summary - Show people count in header, profile cards in details
             const breakdown = outcome.breakdown || {};
+            const people = breakdown.people || [];
+            const peopleCount = people.length;
             
-            // Officers/People as profile cards
-            if (breakdown.people && Array.isArray(breakdown.people) && breakdown.people.length > 0) {
-                breakdown.people.forEach(person => {
+            // Header check: people count
+            const peopleStatus = peopleCount === 0 ? 'AL' : 'CL';
+            const peopleText = peopleCount === 0 ? '0 people found' : `${peopleCount} ${peopleCount === 1 ? 'person' : 'people'} found`;
+            checks.push({
+                status: peopleStatus,
+                text: peopleText
+            });
+            
+            // Officers/People as profile cards (indented - show in details only)
+            if (peopleCount > 0) {
+                people.forEach(person => {
                     checks.push({
                         isPersonCard: true,
-                        personData: person
+                        personData: person,
+                        indented: true  // Mark as detail-only
                         // NO status or text field - only isPersonCard and personData
                     });
                 });
@@ -6164,15 +6200,33 @@ class ThirdfortChecksManager {
             // Ultimate Beneficial Owners
             const breakdown = outcome.breakdown || {};
             
-            // Show unobtainable message if applicable
+            // Show unobtainable message if applicable (header check)
             if (breakdown.uboUnavailable && outcome.status === 'unobtainable') {
                 checks.push({
                     status: 'CO',
-                    text: 'UBO information unobtainable - available PSC/ownership data shown below'
+                    text: 'UBO information unobtainable'
                 });
             }
             
-            // PSCs (Persons with Significant Control) as profile cards
+            // Count all people found
+            const pscsCount = breakdown.pscs?.length || 0;
+            const beneficialOwnersCount = breakdown.beneficialOwners?.length || 0;
+            const totalPeopleCount = pscsCount + beneficialOwnersCount;
+            
+            // Show people count in header
+            if (totalPeopleCount > 0) {
+                checks.push({
+                    status: 'CL',
+                    text: `${totalPeopleCount} ${totalPeopleCount === 1 ? 'person' : 'people'} found`
+                });
+            } else {
+                checks.push({
+                    status: 'AL',
+                    text: '0 people found'
+                });
+            }
+            
+            // PSCs (Persons with Significant Control) as profile cards (indented - details only)
             if (breakdown.pscs && Array.isArray(breakdown.pscs) && breakdown.pscs.length > 0) {
                 breakdown.pscs.forEach(psc => {
                     const person = psc.person || {};
@@ -6185,18 +6239,20 @@ class ThirdfortChecksManager {
                     
                     checks.push({
                         isPersonCard: true,
-                        personData: personWithControls
+                        personData: personWithControls,
+                        indented: true  // Mark as detail-only
                         // NO status or text field
                     });
                 });
             }
             
-            // Beneficial Owners as profile cards
+            // Beneficial Owners as profile cards (indented - details only)
             if (breakdown.beneficialOwners && Array.isArray(breakdown.beneficialOwners) && breakdown.beneficialOwners.length > 0) {
                 breakdown.beneficialOwners.forEach(owner => {
                     checks.push({
                         isPersonCard: true,
-                        personData: owner
+                        personData: owner,
+                        indented: true  // Mark as detail-only
                         // NO status or text field
                     });
                 });
