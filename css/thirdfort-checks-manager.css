@@ -1430,6 +1430,15 @@ body {
     color: #333;
 }
 
+/* Header checks - visible when collapsed */
+.task-header-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px 8px;
+    border-top: 1px solid #e5e5e5;
+}
+
 /* Indented items (for sub-items like people, shareholders) */
 .task-check-item.indented {
     margin-left: 24px;

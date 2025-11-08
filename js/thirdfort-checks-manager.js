@@ -4239,10 +4239,29 @@ class ThirdfortChecksManager {
             taskSummary = `<span style="color: #f7931e;">Unobtainable</span> - Some information may still be available`;
         }
         
+        // Separate header checks (show when collapsed) from detail checks (show when expanded)
+        const headerChecks = taskChecks.filter(c => !c.indented && !c.isPersonCard && !c.isHitCard && !c.isNestedCard);
+        const detailChecks = taskChecks.filter(c => c.indented || c.isPersonCard || c.isHitCard || c.isNestedCard);
+        
+        let headerChecksHtml = '';
+        if (headerChecks.length > 0) {
+            headerChecksHtml = '<div class="task-header-checks">';
+            headerChecks.forEach(check => {
+                const checkIcon = this.getTaskCheckIcon(check.status);
+                headerChecksHtml += `
+                    <div class="task-check-item">
+                        ${checkIcon}
+                        <span class="task-check-text">${check.text}</span>
+                    </div>
+                `;
+            });
+            headerChecksHtml += '</div>';
+        }
+        
         let checksHtml = '';
-        if (taskChecks.length > 0) {
+        if (detailChecks.length > 0) {
             checksHtml = '<div class="task-checks-grid">';
-            taskChecks.forEach((check, index) => {
+            detailChecks.forEach((check, index) => {
                 // Handle person profile cards - NO ICONS
                 if (check.isPersonCard === true && check.personData) {
                     console.log(`Rendering person card ${index}:`, check.personData.name || check.personData.fullName);
@@ -4289,6 +4308,7 @@ class ThirdfortChecksManager {
                     ${statusIcon}
                 </div>
                 ${inlineStatus}
+                ${headerChecksHtml}
                 ${outcome.status === 'closed' || outcome.status === 'unobtainable' ? `
                 <div class="task-details">
                     ${outcome.status !== 'unobtainable' ? `<div class="task-summary">${taskSummary}</div>` : ''}
@@ -5839,21 +5859,16 @@ class ThirdfortChecksManager {
                 inlineWarning = 'No address verification data available';
             }
             
+            // Add inline warning to outcome for display in minimized card
+            if (inlineWarning) {
+                outcome.inlineWarning = inlineWarning;
+            }
+            
             // Check if Proof of Address documents exist when address fails/consider
             const poaTask = check?.taskOutcomes?.['documents:poa'];
             const poaDocs = poaTask?.documents || poaTask?.breakdown?.documents || [];
             
-            // Build inline warning for collapsed header
-            if (inlineWarning) {
-                outcome.inlineWarning = inlineWarning;
-                
-                // Append PoA review prompt if applicable
-                if (poaDocs.length > 0 && (outcome.result === 'consider' || outcome.result === 'fail')) {
-                    outcome.inlineWarning += ` - Review ${poaDocs.length} uploaded Proof of Address document${poaDocs.length > 1 ? 's' : ''} to verify address`;
-                }
-            }
-            
-            // Show main warning in expanded details
+            // Show main warning as header check (visible when collapsed)
             if (inlineWarning) {
                 checks.push({
                     status: overallStatus === 'AL' ? 'AL' : 'CO',
@@ -5861,7 +5876,7 @@ class ThirdfortChecksManager {
                 });
             }
             
-            // Show PoA review prompt in expanded details
+            // Show PoA review prompt as header check (visible when collapsed)
             if (poaDocs.length > 0 && (outcome.result === 'consider' || outcome.result === 'fail')) {
                 checks.push({
                     status: 'CO',
