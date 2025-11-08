@@ -14,7 +14,7 @@
             <p style="margin-top: 20px; font-family: 'RotisRegular', sans-serif; color: #666;">
                 Waiting for data...
             </p>
-            <button class="mock-btn" onclick="manager?.loadMockData()" style="margin-top: 20px;">
+            <button class="mock-btn" onclick="if(window.manager) manager.loadMockData()" style="margin-top: 20px;">
                 Load Mock Data
             </button>
         </div>
@@ -94,7 +94,8 @@
         </div>
     </div>
 
-    <script src="js/thirdfort-checks-manager.js?v=10.7"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="js/thirdfort-checks-manager.js?v=10.8"></script>
 </body>
 </html>
 

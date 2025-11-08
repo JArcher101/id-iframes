@@ -826,6 +826,100 @@ User toggled PEP/Sanctions monitoring on/off for a check.
 
 Parent should update monitoring status via Thirdfort API.
 
+#### `save-consider-annotations`
+User added annotations to consider/fail task items.
+
+```javascript
+// iframe sends
+{
+  type: 'save-consider-annotations',
+  data: {
+    checkId: 'd3x4y3023amg0301hms0',
+    annotations: [
+      {
+        taskType: 'identity',
+        objectivePath: 'identity.nfc.comparison.name',
+        originalStatus: 'consider',
+        newStatus: 'clear',
+        reason: 'Name mismatch explained - hyphenated surname vs passport',
+        timestamp: '2025-11-08T12:34:56.789Z'
+      }
+      // ... more annotations
+    ]
+  }
+}
+```
+
+Parent should save annotations to database and update entry logs. Each annotation includes:
+- `taskType`: Top-level task (e.g., 'identity', 'address', 'peps')
+- `objectivePath`: Full path to specific objective (e.g., 'identity.nfc.comparison.name')
+- `originalStatus`: Original Thirdfort result ('consider' or 'fail')
+- `newStatus`: User's updated status ('clear', 'consider', or 'fail')
+- `reason`: Explanation for the status change
+- `timestamp`: ISO timestamp of annotation
+
+#### `save-sof-annotations`
+User added investigation notes to Source of Funds tasks.
+
+```javascript
+// iframe sends
+{
+  type: 'save-sof-annotations',
+  data: {
+    checkId: 'd3x4y3023amg0301hms0',
+    notes: [
+      {
+        category: 'funding',  // 'funding' or 'redFlag'
+        fundingMethod: 'fund:gift',
+        note: 'Gift verified with donor bank statement and signed declaration',
+        timestamp: '2025-11-08T12:34:56.789Z'
+      },
+      {
+        category: 'redFlag',
+        redFlagType: 'large_cash_deposit',
+        note: 'Cash deposit explained - sale of vehicle with receipt provided',
+        timestamp: '2025-11-08T12:35:12.456Z'
+      }
+      // ... more notes
+    ]
+  }
+}
+```
+
+Parent should save notes to database and update entry logs. Notes available in both edit and view modes.
+
+#### `dismiss-pep-hits`
+User dismissed PEP/Sanctions hits with reasoning.
+
+```javascript
+// iframe sends
+{
+  type: 'dismiss-pep-hits',
+  data: {
+    checkId: 'd3x4y3023amg0301hms0',
+    transactionId: 'd3x4y3023amg0301hms0',
+    reportId: 'd3x4vrf23amg0301hm9g',
+    reportType: 'peps',  // 'peps' or 'sanctions'
+    dismissals: [
+      {
+        id: 'MBCV344J0BV3UD0',
+        reason: 'Confirmed different person - client DOB is 1990, hit shows 1964'
+      },
+      {
+        id: 'D655PR5UHW408JL',
+        reason: 'Different spelling - client surname is "Smith" not "Smyth"'
+      }
+    ]
+  }
+}
+```
+
+Parent should:
+1. Call Thirdfort API `POST /v2/transactions/{id}/reports/{reportId}/hits` with dismissals
+2. Save dismissal records to database (non-editable once submitted)
+3. Wait for Thirdfort webhook with updated task outcomes
+4. Update entry logs
+
 ### Integration Notes
 
 1. **Check Status Flow**:

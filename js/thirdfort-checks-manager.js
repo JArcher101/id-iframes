@@ -455,8 +455,8 @@ class ThirdfortChecksManager {
         // Render client/company details
         this.renderDetailsCard(check);
         
-        // Render document details (IDV only)
-        if (check.checkType === 'idv') {
+        // Render document details (IDV and electronic-id with detailed properties)
+        if (check.checkType === 'idv' || check.checkType === 'electronic-id') {
             this.renderDocumentDetailsCard(check);
         }
         
@@ -881,13 +881,27 @@ class ThirdfortChecksManager {
                     <div class="detail-value">${fullAddress}</div>
                 </div>
                 ` : ''}
-                ${(docNumber !== '—' || mrz) && check.checkType !== 'idv' && !isScreeningLite ? `
-                <div class="detail-item" style="margin-top: 12px;">
-                    <div class="detail-label">Document Number</div>
-                    <div class="detail-value">${docNumber}</div>
-                    ${mrz ? `<div class="detail-value" style="font-size: 11px; font-family: monospace; margin-top: 4px; white-space: pre;">${mrz}</div>` : ''}
-                </div>
-                ` : ''}
+                ${(() => {
+                    // Check if detailed document properties exist (like Se/Jacob have)
+                    const identityTask = check.taskOutcomes?.identity;
+                    const docTask = identityTask?.breakdown?.document;
+                    const hasDetailedDocProps = docTask?.properties && Object.keys(docTask.properties).length > 3;
+                    
+                    // If detailed properties exist, skip showing document number here (will show in document card)
+                    if (hasDetailedDocProps) return '';
+                    
+                    // Otherwise show document number in client details
+                    if ((docNumber !== '—' || mrz) && check.checkType !== 'idv' && !isScreeningLite) {
+                        return `
+                            <div class="detail-item" style="margin-top: 12px;">
+                                <div class="detail-label">Document Number</div>
+                                <div class="detail-value">${docNumber}</div>
+                                ${mrz ? `<div class="detail-value" style="font-size: 11px; font-family: monospace; margin-top: 4px; white-space: pre;">${mrz}</div>` : ''}
+                            </div>
+                        `;
+                    }
+                    return '';
+                })()}
             `;
         } else {
             // KYB Check - Get data from companyData and company:summary if available
@@ -1029,20 +1043,65 @@ class ThirdfortChecksManager {
     }
     
     renderDocumentDetailsCard(check) {
-        // Only for IDV checks - show document-specific information
-        if (!this.documentDetailsCard || check.checkType !== 'idv') {
-            if (this.documentDetailsCard) {
-                this.documentDetailsCard.classList.add('hidden');
+        // For IDV and electronic-id checks with detailed properties
+        if (!this.documentDetailsCard) return;
+        
+        let docProperties = {};
+        let nfcData = {};
+        
+        if (check.checkType === 'idv') {
+            // IDV check - get from identity:lite
+            docProperties = check.taskOutcomes?.['identity:lite']?.breakdown?.document?.properties || {};
+        } else if (check.checkType === 'electronic-id') {
+            // Electronic ID check - get from identity.breakdown.document
+            const identityTask = check.taskOutcomes?.identity;
+            const docTask = identityTask?.breakdown?.document;
+            
+            // Check for detailed document properties (Se's structure)
+            if (docTask?.properties) {
+                docProperties = docTask.properties;
             }
+            
+            // Also check for NFC data (Jacob's structure) - has additional fields
+            nfcData = identityTask?.data?.nfc || {};
+            
+            // If no detailed properties, hide the card
+            if (Object.keys(docProperties).length <= 1 && Object.keys(nfcData).length === 0) {
+                this.documentDetailsCard.classList.add('hidden');
+                return;
+            }
+        } else {
+            this.documentDetailsCard.classList.add('hidden');
             return;
         }
         
         this.documentDetailsCard.classList.remove('hidden');
         
-        // Extract document properties from identity:lite task outcomes
-        const idvProperties = check.taskOutcomes?.['identity:lite']?.breakdown?.document?.properties || {};
+        // Use docProperties as main source (Se's structure)
+        const idvProperties = docProperties;
         
         const gridItems = [];
+        
+        // Name (from NFC chip if available - Jacob's structure)
+        if (nfcData.name) {
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Name (as per chip)</div>
+                    <div class="detail-value">${nfcData.name}</div>
+                </div>
+            `);
+        } else if (idvProperties.first_name || idvProperties.last_name) {
+            // Se's structure - build from first/last
+            const fullName = [idvProperties.first_name, idvProperties.last_name].filter(Boolean).join(' ');
+            if (fullName) {
+                gridItems.push(`
+                    <div class="detail-item">
+                        <div class="detail-label">Name</div>
+                        <div class="detail-value">${fullName}</div>
+                    </div>
+                `);
+            }
+        }
         
         // Document Type
         const documentType = check.documentType || idvProperties.document_type || '';
@@ -1055,10 +1114,16 @@ class ThirdfortChecksManager {
             `);
         }
         
-        // Document Number
+        // Document Number (from properties or fallback to piiData)
         const docNumbers = idvProperties.document_numbers || [];
+        let docNumber = '';
         if (docNumbers.length > 0) {
-            const docNumber = docNumbers[0].value || '—';
+            docNumber = docNumbers[0].value || '';
+        } else if (check.piiData?.document?.number) {
+            docNumber = check.piiData.document.number;
+        }
+        
+        if (docNumber) {
             gridItems.push(`
                 <div class="detail-item">
                     <div class="detail-label">Document Number</div>
@@ -1098,13 +1163,40 @@ class ThirdfortChecksManager {
             `);
         }
         
-        // Expiry Date
+        // Expiry Date (handle different formats)
+        let expiryDate = '';
         if (idvProperties.date_of_expiry) {
-            const expiryDate = new Date(idvProperties.date_of_expiry).toLocaleDateString('en-GB');
+            // Se's format: "2031-05-28" (ISO date)
+            expiryDate = new Date(idvProperties.date_of_expiry).toLocaleDateString('en-GB');
+        } else if (nfcData.date_of_expiry) {
+            // Jacob's format: "22.08.2033" (already formatted)
+            expiryDate = nfcData.date_of_expiry;
+        }
+        
+        if (expiryDate) {
             gridItems.push(`
                 <div class="detail-item">
                     <div class="detail-label">Expiry Date</div>
                     <div class="detail-value">${expiryDate}</div>
+                </div>
+            `);
+        }
+        
+        // Date of Birth (handle different formats)
+        let dob = '';
+        if (idvProperties.date_of_birth) {
+            // Se's format: "1990-01-01" (ISO date)
+            dob = new Date(idvProperties.date_of_birth).toLocaleDateString('en-GB');
+        } else if (nfcData.dob) {
+            // Jacob's format: "11.01.2001" (already formatted)
+            dob = nfcData.dob;
+        }
+        
+        if (dob) {
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Date of Birth</div>
+                    <div class="detail-value">${dob}</div>
                 </div>
             `);
         }
@@ -1366,36 +1458,80 @@ class ThirdfortChecksManager {
                 html += `</div>`;
             }
             
-            // Check for matched bank transactions in BOTH bank:summary and bank:statement
+            // Check for matched bank transactions in bank:summary, bank:statement, and documents:bank-statement
             const bankSummary = taskOutcomes['bank:summary'];
             const bankStatement = taskOutcomes['bank:statement'];
+            const docsBankStatement = taskOutcomes['documents:bank-statement'];
             
-            // Try bank:summary first (Open Banking - most likely to have transaction matching)
-            let giftMatches = null;
-            if (bankSummary?.breakdown?.analysis?.sof_matches) {
-                const sofMatches = bankSummary.breakdown.analysis.sof_matches;
-                if (Array.isArray(sofMatches)) {
-                    giftMatches = sofMatches.filter(m => m.fund_type === 'fund:gift');
-                }
-            }
+            // Get sof_matches from any source
+            const sofMatches = bankSummary?.breakdown?.analysis?.sof_matches ||
+                              bankStatement?.breakdown?.analysis?.sof_matches ||
+                              docsBankStatement?.breakdown?.analysis?.sof_matches ||
+                              {};
             
-            // Fallback to bank:statement if no matches in bank:summary
-            if ((!giftMatches || giftMatches.length === 0) && bankStatement?.breakdown?.analysis?.sof_matches) {
-                const sofMatches = bankStatement.breakdown.analysis.sof_matches;
-                if (Array.isArray(sofMatches)) {
-                    giftMatches = sofMatches.filter(m => m.fund_type === 'fund:gift');
-                }
-            }
+            // Get accounts for transaction lookup
+            const accounts = bankStatement?.breakdown?.accounts || 
+                           bankSummary?.breakdown?.accounts || 
+                           docsBankStatement?.breakdown?.accounts || 
+                           {};
             
-            // Display matched transactions if found
-            if (giftMatches && giftMatches.length > 0 && giftMatches[0].transactions?.length > 0) {
-                html += `<div class="red-flag-detail-section">`;
-                html += `<div class="red-flag-detail-title">Potential Matched Transactions</div>`;
-                giftMatches[0].transactions.slice(0, 3).forEach(tx => {
-                    const txAmount = Math.abs(tx.amount);
-                    html += `<div class="red-flag-detail-item">${new Date(tx.timestamp).toLocaleDateString('en-GB')} - ${tx.description} - £${txAmount.toLocaleString()}</div>`;
+            // Check for gift transaction matches (gift key contains array of transaction IDs)
+            if (sofMatches.gift && sofMatches.gift.length > 0) {
+                html += `<div class="matched-transactions-section" style="margin-top: 16px;">`;
+                html += `<div class="matched-tx-label">Potential Gift Deposits:</div>`;
+                
+                // Helper to get transaction details from ID
+                const getTransactionById = (txId) => {
+                    for (const [accountId, accountData] of Object.entries(accounts)) {
+                        const statement = accountData.statement || [];
+                        const tx = statement.find(t => t.id === txId);
+                        if (tx) {
+                            const accountInfo = accountData.info || accountData;
+                            return { ...tx, accountName: accountInfo.name || 'Account', accountId };
+                        }
+                    }
+                    return null;
+                };
+                
+                // Show matched gift transactions using same format as SOF cards
+                sofMatches.gift.forEach(txId => {
+                    const tx = getTransactionById(txId);
+                    if (tx) {
+                        const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                        const currencySymbol = '£';
+                        const txAmount = tx.amount >= 0 ? '+' : '';
+                        
+                        html += `
+                            <div class="matched-tx-row">
+                                <span class="matched-tx-date">${date}</span>
+                                <span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Gift'}</span>
+                                <span class="matched-tx-account">${tx.accountName}</span>
+                                <span class="matched-tx-amount">${txAmount}${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
+                            </div>
+                        `;
+                    }
                 });
+                
                 html += `</div>`;
+            } else if (Object.keys(accounts).length > 0) {
+                // No matched transactions but we have bank data - check if gift document uploaded
+                const hasGiftDocument = check.taskOutcomes && check.taskOutcomes['documents:gift'] && 
+                                       check.taskOutcomes['documents:gift'].status === 'closed';
+                
+                // Only show hint if no gift document uploaded
+                if (!hasGiftDocument) {
+                    const considerIcon = `<svg class="task-status-icon" viewBox="0 0 300 300" style="width: 20px; height: 20px; margin-right: 8px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+                    
+                    html += `
+                        <div class="matched-transactions-section" style="margin-top: 16px;">
+                            <div class="matched-tx-label">Potential Gift Deposits:</div>
+                            <div class="no-matches-hint">
+                                ${considerIcon}
+                                <span>No linked bank transactions detected, manual review required</span>
+                            </div>
+                        </div>
+                    `;
+                }
             }
         });
         
@@ -1407,6 +1543,7 @@ class ThirdfortChecksManager {
         const sofTask = taskOutcomes['sof:v1'];
         const bankStatement = taskOutcomes['bank:statement'];
         const bankSummary = taskOutcomes['bank:summary'];
+        const docsBankStatement = taskOutcomes['documents:bank-statement'];
         
         if (!sofTask?.breakdown?.funds) return '';
         
@@ -1465,7 +1602,10 @@ class ThirdfortChecksManager {
         html += `<div class="red-flag-subsection">`;
         html += `<div class="red-flag-detail-title">Actual Savings</div>`;
         
-        const accounts = bankStatement?.breakdown?.accounts || bankSummary?.breakdown?.accounts || {};
+        const accounts = bankStatement?.breakdown?.accounts || 
+                        bankSummary?.breakdown?.accounts || 
+                        docsBankStatement?.breakdown?.accounts || 
+                        {};
         let totalActual = 0;
         const providerTotals = {};
         
@@ -1526,6 +1666,66 @@ class ThirdfortChecksManager {
             
             html += `</div>`;
         });
+        
+        // Check for matched salary transactions (from SOF analysis)
+        const sofMatches = bankStatement?.breakdown?.analysis?.sof_matches ||
+                          bankSummary?.breakdown?.analysis?.sof_matches ||
+                          docsBankStatement?.breakdown?.analysis?.sof_matches ||
+                          {};
+        
+        if (sofMatches.salary_transactions && sofMatches.salary_transactions.length > 0) {
+            html += `<div class="matched-transactions-section" style="margin-top: 16px;">`;
+            html += `<div class="matched-tx-label">Verified Salary Deposits:</div>`;
+            
+            // Helper to get transaction details from ID
+            const getTransactionById = (txId) => {
+                for (const [accountId, accountData] of Object.entries(accounts)) {
+                    const statement = accountData.statement || [];
+                    const tx = statement.find(t => t.id === txId);
+                    if (tx) {
+                        const accountInfo = accountData.info || accountData;
+                        return { ...tx, accountName: accountInfo.name || 'Account', accountId };
+                    }
+                }
+                return null;
+            };
+            
+            // Show matched salary transactions using same format as SOF cards
+            sofMatches.salary_transactions.forEach(txId => {
+                const tx = getTransactionById(txId);
+                if (tx) {
+                    const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    const currencySymbol = '£'; // Use GBP symbol
+                    const txAmount = tx.amount >= 0 ? '+' : '';
+                    
+                    html += `
+                        <div class="matched-tx-row">
+                            <span class="matched-tx-date">${date}</span>
+                            <span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Salary'}</span>
+                            <span class="matched-tx-account">${tx.accountName}</span>
+                            <span class="matched-tx-amount">${txAmount}${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            html += `</div>`;
+        } else if (Object.keys(accounts).length > 0) {
+            // No matched salary transactions but we have bank data
+            // For savings, always show hint when no matches (even if savings document uploaded)
+            // because we need to verify the income SOURCE, not just the balance
+            const considerIcon = `<svg class="task-status-icon" viewBox="0 0 300 300" style="width: 20px; height: 20px; margin-right: 8px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+            
+            html += `
+                <div class="matched-transactions-section" style="margin-top: 16px;">
+                    <div class="matched-tx-label">Verified Salary Deposits:</div>
+                    <div class="no-matches-hint">
+                        ${considerIcon}
+                        <span>No linked bank transactions detected, manual review required</span>
+                    </div>
+                </div>
+            `;
+        }
         
         html += `</div>`;
         html += `</div>`;
@@ -1688,6 +1888,10 @@ class ThirdfortChecksManager {
             if (taskOutcomes['facial_similarity'] && !breakdown.facial_similarity) {
                 breakdown.facial_similarity = taskOutcomes['facial_similarity'];
             }
+            // Also handle facial_similarity_video (same as facial_similarity)
+            if (taskOutcomes['facial_similarity_video'] && !breakdown.facial_similarity_video) {
+                breakdown.facial_similarity_video = taskOutcomes['facial_similarity_video'];
+            }
             if (taskOutcomes['nfc'] && !breakdown.nfc) {
                 breakdown.nfc = taskOutcomes['nfc'];
             }
@@ -1701,6 +1905,7 @@ class ThirdfortChecksManager {
             // Delete top-level tasks after moving (they're now in breakdown)
             delete taskOutcomes['document'];
             delete taskOutcomes['facial_similarity'];
+            delete taskOutcomes['facial_similarity_video'];
             delete taskOutcomes['nfc'];
             delete taskOutcomes['biometrics'];
             delete taskOutcomes['liveness'];
@@ -1774,7 +1979,7 @@ class ThirdfortChecksManager {
                 }
                 
                 if (bankSummary || bankStatement) {
-                    tasksHtml += this.createBankTaskCard(bankSummary, bankStatement, sofTask);
+                    tasksHtml += this.createBankTaskCard(bankSummary, bankStatement, sofTask, check);
                 }
             } else if (taskOutcomes[taskKey]) {
                 tasksHtml += this.createTaskCard(taskKey, taskOutcomes[taskKey], check);
@@ -2881,7 +3086,7 @@ class ThirdfortChecksManager {
         `;
     }
     
-    createBankTaskCard(bankSummary, bankStatement, sofTask = null) {
+    createBankTaskCard(bankSummary, bankStatement, sofTask = null, check = null) {
         // Combined bank task card - handles both linking (summary) and PDF upload (statement)
         const hasSummary = bankSummary && bankSummary.status === 'closed';
         const hasStatement = bankStatement && bankStatement.status === 'closed';
@@ -3008,6 +3213,9 @@ class ThirdfortChecksManager {
             analysisHtml = this.createBankAnalysisSections(bankStatement.breakdown.analysis, accounts, sofTask);
         }
         
+        // Add annotations display if check provided
+        const annotationsHtml = check ? this.renderTaskAnnotations('bank', check) : '';
+        
         return `
             <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
@@ -3020,6 +3228,7 @@ class ThirdfortChecksManager {
                     ${accountsHtml}
                     ${biggestTransactionsHtml}
                     ${analysisHtml}
+                    ${annotationsHtml}
                 </div>
             </div>
         `;
@@ -3542,30 +3751,34 @@ class ThirdfortChecksManager {
         // Remove duplicates
         matchedTxIds = [...new Set(matchedTxIds)];
         
+        // Map funding type to display name (handle fund: prefix) - needed for cleanType later
+        const cleanType = type.replace('fund:', '').replace(/:/g, '-');
+        
         // Build matched transactions HTML
         let matchedTxHtml = '';
+        
+        // Determine label based on funding type
+        const labelMap = {
+            'fund:gift': 'Potential Gift Deposits:',
+            'fund:mortgage': 'Potential Mortgage Deposits:',
+            'fund:savings': 'Verified Salary Deposits:',
+            'fund:income': 'Verified Salary Deposits:',
+            'fund:property_sale': 'Potential Property Sale Proceeds:',
+            'fund:sale:property': 'Potential Property Sale Proceeds:',
+            'fund:asset_sale': 'Potential Asset Sale Proceeds:',
+            'fund:sale:assets': 'Potential Asset Sale Proceeds:',
+            'fund:htb': 'Potential HTB/LISA Deposits:',
+            'fund:htb_lisa': 'Potential HTB/LISA Deposits:',
+            'fund:inheritance': 'Potential Inheritance Deposits:',
+            'fund:loan': 'Potential Loan Deposits:',
+            'fund:investment': 'Potential Investment Deposits:',
+            'fund:business': 'Potential Business Income:',
+            'fund:other': 'Potential Matched Transactions:'
+        };
+        
+        const matchLabel = labelMap[type] || 'Potential Matched Transactions:';
+        
         if (matchedTxIds.length > 0) {
-            // Determine label based on funding type
-            const labelMap = {
-                'fund:gift': 'Potential Gift Deposits:',
-                'fund:mortgage': 'Potential Mortgage Deposits:',
-                'fund:savings': 'Verified Salary Deposits:',
-                'fund:income': 'Verified Salary Deposits:',
-                'fund:property_sale': 'Potential Property Sale Proceeds:',
-                'fund:sale:property': 'Potential Property Sale Proceeds:',
-                'fund:asset_sale': 'Potential Asset Sale Proceeds:',
-                'fund:sale:assets': 'Potential Asset Sale Proceeds:',
-                'fund:htb': 'Potential HTB/LISA Deposits:',
-                'fund:htb_lisa': 'Potential HTB/LISA Deposits:',
-                'fund:inheritance': 'Potential Inheritance Deposits:',
-                'fund:loan': 'Potential Loan Deposits:',
-                'fund:investment': 'Potential Investment Deposits:',
-                'fund:business': 'Potential Business Income:',
-                'fund:other': 'Potential Matched Transactions:'
-            };
-            
-            const matchLabel = labelMap[type] || 'Potential Matched Transactions:';
-            
             matchedTxHtml = `<div class="matched-transactions-section"><div class="matched-tx-label">${matchLabel}</div>`;
             
             matchedTxIds.forEach(txId => {
@@ -3597,10 +3810,32 @@ class ThirdfortChecksManager {
             });
             
             matchedTxHtml += '</div>';
+        } else {
+            // No matched transactions - check if document was uploaded
+            const docTaskKey = `documents:${cleanType}`;
+            const hasDocument = check.taskOutcomes && check.taskOutcomes[docTaskKey] && 
+                               check.taskOutcomes[docTaskKey].status === 'closed';
+            
+            // For savings/income, always show hint when no matches (document only proves balance, not income source)
+            // For other funding types, only show hint if no document uploaded
+            const isSavingsType = type === 'fund:savings' || type === 'fund:income';
+            
+            if (isSavingsType || !hasDocument) {
+                const considerIcon = `<svg class="task-status-icon" viewBox="0 0 300 300" style="width: 20px; height: 20px; margin-right: 8px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+                
+                matchedTxHtml = `
+                    <div class="matched-transactions-section" style="margin-top: 16px;">
+                        <div class="matched-tx-label">${matchLabel}</div>
+                        <div class="no-matches-hint">
+                            ${considerIcon}
+                            <span>No linked bank transactions detected, manual review required</span>
+                        </div>
+                    </div>
+                `;
+            }
         }
         
-        // Map funding type to display name (handle fund: prefix)
-        const cleanType = type.replace('fund:', '').replace(/:/g, '-');
+        // Map funding type display names
         const typeNames = {
             'mortgage': 'Mortgage',
             'savings': 'Savings',
@@ -3839,7 +4074,26 @@ class ThirdfortChecksManager {
         // Recalculate identity result BEFORE reading it
         if (taskType === 'identity' && outcome.breakdown) {
             const breakdown = outcome.breakdown;
-            const docResult = breakdown.document?.result || '';
+            
+            // First, recalculate document result if it has breakdown categories
+            let docResult = breakdown.document?.result || '';
+            if (breakdown.document?.breakdown) {
+                const docBreakdown = breakdown.document.breakdown;
+                let hasConsider = false;
+                let hasFail = false;
+                Object.values(docBreakdown).forEach(category => {
+                    const catResult = category?.result || '';
+                    if (catResult === 'fail') hasFail = true;
+                    if (catResult === 'consider') hasConsider = true;
+                });
+                if (hasFail) docResult = 'fail';
+                else if (hasConsider) docResult = 'consider';
+                // Update the document result
+                if (breakdown.document) {
+                    breakdown.document.result = docResult;
+                }
+            }
+            
             const faceResult = breakdown.facial_similarity?.result || breakdown.facial_similarity_video?.result || '';
             
             // Clear if document + facial_similarity are both clear (Original standard)
@@ -3980,6 +4234,9 @@ class ThirdfortChecksManager {
             inlineStatus = `<div class="task-summary-inline ${warningClass}">${outcome.inlineWarning}</div>`;
         }
         
+        // Add annotations display
+        const annotationsHtml = this.renderTaskAnnotations(taskType, check);
+        
         return `
             <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
@@ -3991,6 +4248,7 @@ class ThirdfortChecksManager {
                 <div class="task-details">
                     ${outcome.status !== 'unobtainable' ? `<div class="task-summary">${taskSummary}</div>` : ''}
                     ${checksHtml}
+                    ${annotationsHtml}
                 </div>
                 ` : ''}
             </div>
@@ -4023,8 +4281,10 @@ class ThirdfortChecksManager {
         if (hasItems) {
             items.forEach(item => {
                 const itemIcon = this.getTaskCheckIcon(item.status);
+                const parentClass = item.isParent ? ' nested-parent' : '';
+                const indentedClass = item.isIndented ? ' nested-indented' : '';
                 itemsHtml += `
-                    <div class="nested-item">
+                    <div class="nested-item${parentClass}${indentedClass}">
                         ${itemIcon}
                         <span>${item.text}</span>
                     </div>
@@ -5148,61 +5408,81 @@ class ThirdfortChecksManager {
             if (breakdown.document) {
                 const docData = breakdown.document.data || {};
                 const docBreakdown = breakdown.document.breakdown || {};
-                const docResult = breakdown.document.result || '';
+                let docResult = breakdown.document.result || '';
+                
+                // Recalculate document result based on breakdown categories
+                if (Object.keys(docBreakdown).length > 0) {
+                    let hasConsider = false;
+                    let hasFail = false;
+                    Object.values(docBreakdown).forEach(category => {
+                        const catResult = category.result || '';
+                        if (catResult === 'fail') hasFail = true;
+                        if (catResult === 'consider') hasConsider = true;
+                    });
+                    if (hasFail) docResult = 'fail';
+                    else if (hasConsider) docResult = 'consider';
+                }
                 
                 const docObjectives = [];
                 
                 // Check for detailed breakdown structure (like Se's check)
                 if (Object.keys(docBreakdown).length > 0) {
-                    // Detailed breakdown with categories
-                    if (docBreakdown.visual_authenticity) {
-                        docObjectives.push({ 
-                            status: docBreakdown.visual_authenticity.result === 'clear' ? 'CL' : 'AL', 
-                            text: 'Visual Authenticity' 
-                        });
-                    }
-                    if (docBreakdown.image_integrity) {
-                        docObjectives.push({ 
-                            status: docBreakdown.image_integrity.result === 'clear' ? 'CL' : 'AL', 
-                            text: 'Image Integrity' 
-                        });
-                    }
-                    if (docBreakdown.data_validation) {
-                        docObjectives.push({ 
-                            status: docBreakdown.data_validation.result === 'clear' ? 'CL' : 'AL', 
-                            text: 'Data Validation' 
-                        });
-                    }
-                    if (docBreakdown.data_consistency) {
-                        docObjectives.push({ 
-                            status: docBreakdown.data_consistency.result === 'clear' ? 'CL' : 'CO', 
-                            text: 'Data Consistency' 
-                        });
-                    }
-                    if (docBreakdown.data_comparison) {
-                        docObjectives.push({ 
-                            status: docBreakdown.data_comparison.result === 'clear' ? 'CL' : 'CO', 
-                            text: 'Data Comparison' 
-                        });
-                    }
-                    if (docBreakdown.compromised_document) {
-                        docObjectives.push({ 
-                            status: docBreakdown.compromised_document.result === 'clear' ? 'CL' : 'AL', 
-                            text: 'Compromised Check' 
-                        });
-                    }
-                    if (docBreakdown.age_validation) {
-                        docObjectives.push({ 
-                            status: docBreakdown.age_validation.result === 'clear' ? 'CL' : 'AL', 
-                            text: 'Age Validation' 
-                        });
-                    }
-                    if (docBreakdown.police_record) {
-                        docObjectives.push({ 
-                            status: docBreakdown.police_record.result === 'clear' ? 'CL' : 'AL', 
-                            text: 'Police Record' 
-                        });
-                    }
+                    // Helper function to process category and show nested items when needed
+                    const processCategory = (category, categoryName) => {
+                        if (!category) return;
+                        
+                        const catBreakdown = category.breakdown || {};
+                        const catResult = category.result || '';
+                        
+                        // If category has nested breakdown
+                        if (Object.keys(catBreakdown).length > 0) {
+                            // If parent category is consider/fail, show parent + ALL nested items indented
+                            if (catResult !== 'clear') {
+                                // Add parent category header
+                                docObjectives.push({
+                                    status: catResult === 'fail' ? 'AL' : 'CO',
+                                    text: categoryName,
+                                    isParent: true
+                                });
+                                
+                                // Add all nested items indented
+                                Object.entries(catBreakdown).forEach(([key, subCheck]) => {
+                                    const subResult = subCheck.result || '';
+                                    const formattedKey = key.replace(/_/g, ' ')
+                                        .split(' ')
+                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                        .join(' ');
+                                    docObjectives.push({
+                                        status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'),
+                                        text: formattedKey,
+                                        isIndented: true
+                                    });
+                                });
+                            } else {
+                                // Parent is clear - just show the category name
+                                docObjectives.push({
+                                    status: 'CL',
+                                    text: categoryName
+                                });
+                            }
+                        } else {
+                            // No nested breakdown, show the category itself
+                            docObjectives.push({
+                                status: catResult === 'clear' ? 'CL' : (catResult === 'fail' ? 'AL' : 'CO'),
+                                text: categoryName
+                            });
+                        }
+                    };
+                    
+                    // Process all document categories
+                    processCategory(docBreakdown.visual_authenticity, 'Visual Authenticity');
+                    processCategory(docBreakdown.image_integrity, 'Image Integrity');
+                    processCategory(docBreakdown.data_validation, 'Data Validation');
+                    processCategory(docBreakdown.data_consistency, 'Data Consistency');
+                    processCategory(docBreakdown.data_comparison, 'Data Comparison');
+                    processCategory(docBreakdown.compromised_document, 'Compromised Check');
+                    processCategory(docBreakdown.age_validation, 'Age Validation');
+                    processCategory(docBreakdown.police_record, 'Police Record');
                 } else if (Object.keys(docData).length > 0) {
                     // Simple data structure (like Benjamin's check)
                     if (docData.authenticity) {
@@ -5232,7 +5512,8 @@ class ThirdfortChecksManager {
             
             // 2. Facial Similarity (nested collapsible card)
             if (breakdown.facial_similarity || breakdown.facial_similarity_video) {
-                const faceTask = breakdown.facial_similarity || breakdown.facial_similarity_video;
+                // Prioritize facial_similarity_video if both exist (has more detailed breakdown)
+                const faceTask = breakdown.facial_similarity_video || breakdown.facial_similarity;
                 const faceData = faceTask.data || {};
                 const faceBreakdown = faceTask.breakdown || {};
                 const faceResult = faceTask.result || '';
@@ -5241,24 +5522,81 @@ class ThirdfortChecksManager {
                 
                 // Check for detailed breakdown structure (like Se's check)
                 if (Object.keys(faceBreakdown).length > 0) {
-                    // Detailed breakdown with categories
+                    // Detailed breakdown with categories and sub-checks
+                    
+                    // Face Comparison (with score if available)
                     if (faceBreakdown.face_comparison) {
-                        faceObjectives.push({ 
-                            status: faceBreakdown.face_comparison.result === 'clear' ? 'CL' : 'CO', 
-                            text: 'Face Comparison' 
-                        });
+                        const faceCompBreakdown = faceBreakdown.face_comparison.breakdown || {};
+                        const faceCompResult = faceBreakdown.face_comparison.result || '';
+                        
+                        // Check for face_match with score
+                        if (faceCompBreakdown.face_match) {
+                            const score = faceCompBreakdown.face_match.properties?.score;
+                            const scoreText = score ? ` (${(score * 100).toFixed(1)}% match)` : '';
+                            faceObjectives.push({ 
+                                status: faceCompBreakdown.face_match.result === 'clear' ? 'CL' : 'CO', 
+                                text: `Face Match${scoreText}` 
+                            });
+                        } else {
+                            faceObjectives.push({ 
+                                status: faceCompResult === 'clear' ? 'CL' : 'CO', 
+                                text: 'Face Comparison' 
+                            });
+                        }
                     }
+                    
+                    // Image Integrity (with sub-checks)
                     if (faceBreakdown.image_integrity) {
-                        faceObjectives.push({ 
-                            status: faceBreakdown.image_integrity.result === 'clear' ? 'CL' : 'AL', 
-                            text: 'Image Integrity' 
-                        });
+                        const imgIntBreakdown = faceBreakdown.image_integrity.breakdown || {};
+                        
+                        if (imgIntBreakdown.face_detected) {
+                            faceObjectives.push({ 
+                                status: imgIntBreakdown.face_detected.result === 'clear' ? 'CL' : 'AL', 
+                                text: 'Face Detected' 
+                            });
+                        }
+                        if (imgIntBreakdown.source_integrity) {
+                            faceObjectives.push({ 
+                                status: imgIntBreakdown.source_integrity.result === 'clear' ? 'CL' : 'AL', 
+                                text: 'Source Integrity' 
+                            });
+                        }
+                        
+                        // If no sub-checks, show overall
+                        if (Object.keys(imgIntBreakdown).length === 0) {
+                            faceObjectives.push({ 
+                                status: faceBreakdown.image_integrity.result === 'clear' ? 'CL' : 'AL', 
+                                text: 'Image Integrity' 
+                            });
+                        }
                     }
+                    
+                    // Visual Authenticity (with sub-checks and scores)
                     if (faceBreakdown.visual_authenticity) {
-                        faceObjectives.push({ 
-                            status: faceBreakdown.visual_authenticity.result === 'clear' ? 'CL' : 'AL', 
-                            text: 'Visual Authenticity' 
-                        });
+                        const visAuthBreakdown = faceBreakdown.visual_authenticity.breakdown || {};
+                        
+                        if (visAuthBreakdown.liveness_detected) {
+                            faceObjectives.push({ 
+                                status: visAuthBreakdown.liveness_detected.result === 'clear' ? 'CL' : 'AL', 
+                                text: 'Liveness Detected' 
+                            });
+                        }
+                        if (visAuthBreakdown.spoofing_detection) {
+                            const spoofScore = visAuthBreakdown.spoofing_detection.properties?.score;
+                            const spoofText = spoofScore ? ` (${(spoofScore * 100).toFixed(1)}% confidence)` : '';
+                            faceObjectives.push({ 
+                                status: visAuthBreakdown.spoofing_detection.result === 'clear' ? 'CL' : 'AL', 
+                                text: `Spoofing Detection${spoofText}` 
+                            });
+                        }
+                        
+                        // If no sub-checks, show overall
+                        if (Object.keys(visAuthBreakdown).length === 0) {
+                            faceObjectives.push({ 
+                                status: faceBreakdown.visual_authenticity.result === 'clear' ? 'CL' : 'AL', 
+                                text: 'Visual Authenticity' 
+                            });
+                        }
                     }
                 } else if (Object.keys(faceData).length > 0) {
                     // Simple data structure (like Benjamin's check)
@@ -9092,10 +9430,10 @@ class ThirdfortChecksManager {
                   },
                   "gender": {
                     "properties": {},
-                    "result": "clear"
+                    "result": "consider"
                   }
                 },
-                "result": "clear"
+                "result": "consider"
               },
               "data_comparison": {
                 "breakdown": {
@@ -14835,102 +15173,6 @@ class ThirdfortChecksManager {
                   }
                 ]
             },
-            // Mock Check 6: Benjamin David Jasper Meehan - Electronic ID - PENDING
-            {
-                "consumerPhone": "+447754241686",
-                "checkType": "electronic-id",
-                "initiatedAt": "2025-11-06T16:42:43.686Z",
-                "consumerName": "Benjamin David Jasper Meehan",
-                "tasks": [
-                  "report:identity",
-                  "report:footprint",
-                  "report:peps",
-                  "documents:poa",
-                  "documents:poo"
-                ],
-                "updates": [
-                  {
-                    "timestamp": "2025-11-06T16:42:43.686Z",
-                    "update": "Electronic ID check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
-                  }
-                ],
-                "status": "open",
-                "initiatedBy": "jacob.archer-moran@thurstanhoskin.co.uk",
-                "hasMonitoring": true,
-                "thirdfortResponse": {
-                  "name": "Sale of 21 Green Lane",
-                  "request": {
-                    "actor": {
-                      "name": "Benjamin David Jasper Meehan",
-                      "phone": "+447754241686"
-                    },
-                    "tasks": [
-                      {
-                        "opts": {
-                          "nfc": "preferred"
-                        },
-                        "type": "report:identity"
-                      },
-                      {
-                        "opts": {
-                          "consent": false
-                        },
-                        "type": "report:footprint"
-                      },
-                      {
-                        "opts": {
-                          "monitored": true
-                        },
-                        "type": "report:peps"
-                      },
-                      {
-                        "type": "documents:poa"
-                      },
-                      {
-                        "type": "documents:poo"
-                      }
-                    ]
-                  },
-                  "ref": "21 Green Lane",
-                  "id": "d46d00g23amg030rw7s0",
-                  "reports": [],
-                  "status": "open",
-                  "metadata": {
-                    "notify": {
-                      "type": "http",
-                      "data": {
-                        "hmac_key": "XZ9PtCPxkpoVkiKRx0KPOIz/tVztJB7bYtE1pBRbvhs=",
-                        "method": "POST",
-                        "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
-                      }
-                    },
-                    "created_by": "d3t0auq9io6g00ak3kkg",
-                    "print": {
-                      "team": "Cashiers",
-                      "tenant": "Thurstan Hoskin Solicitors LLP",
-                      "user": "THS Bot"
-                    },
-                    "context": {
-                      "gid": "d3t2k5a9io6g00ak3km0",
-                      "uid": "d3t0auq9io6g00ak3kkg",
-                      "team_id": "d3t2k5a9io6g00ak3km0",
-                      "tenant_id": "d3t2ifa9io6g00ak3klg"
-                    },
-                    "ce": {
-                      "uri": "/v1/checks/4151797878"
-                    },
-                    "created_at": "2025-11-06T16:42:42.371Z"
-                  },
-                  "type": "v2",
-                  "opts": {
-                    "peps": {
-                      "monitored": true
-                    }
-                  }
-                },
-                "smsSent": true,
-                "transactionId": "d46d00g23amg030rw7s0"
-            },
             // Mock Check 7: Se Idris Stewart - Electronic ID - PENDING
             {
                 "consumerPhone": "+447493580033",
@@ -16591,457 +16833,998 @@ class ThirdfortChecksManager {
                 "hasAlerts": true,
                 "pdfAddedAt": "2025-11-06T14:19:22.647Z",
                 "transactionId": "d46atjj23amg030rw6x0"
-            },
-            // Mock Check 11: THURSTAN HOSKIN SOLICITORS LLP - KYB - COMPLETED
-            {
-                checkId: 'd45v1gy23amg0306599g',
-                checkType: 'kyb',
-                status: 'closed',
-                companyName: 'THURSTAN HOSKIN SOLICITORS LLP',
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: '2025-11-05T20:17:10.220Z',
-                updatedAt: '2025-11-05T21:15:23.171Z',
-                completedAt: '2025-11-05T20:17:29.568Z',
-                pdfReady: true,
-                pdfS3Key: 'protected/V0QcMFD',
-                pdfAddedAt: '2025-11-05T20:21:46.714Z',
-                hasMonitoring: true,
-                hasAlerts: false,
-                companyData: {
-                    jurisdiction: 'UK',
-                    number: 'OC421980',
-                    name: 'THURSTAN HOSKIN SOLICITORS LLP',
-                    numbers: ['OC421980'],
-                    id: '223822293'
-                },
-                thirdfortResponse: {
-                    request: {
-                        data: {
-                            jurisdiction: 'UK',
-                            number: 'OC421980',
-                            name: 'THURSTAN HOSKIN SOLICITORS LLP',
-                            numbers: ['OC421980'],
-                            id: '223822293'
-                        },
-                        reports: [
-                            { type: 'company:summary' },
-                            { type: 'company:sanctions', opts: { monitored: true } },
-                            { type: 'company:ubo' },
-                            { type: 'company:beneficial-check' },
-                            { type: 'company:shareholders' }
-                        ]
-                    },
-                    ref: '21 Green Lane',
-                    id: 'd45v1gy23amg0306599g',
-                    reports: [],
-                    status: 'open',
-                    type: 'company'
-                },
-                tasks: [],
-                taskOutcomes: {
-                    'company:beneficial-check': {
-                        breakdown: {},
-                        result: 'consider',
-                        documents: [],
-                        id: 'd45v1ke23amg030659dg',
-                        status: 'unobtainable',
-                        createdAt: '2025-11-05T20:17:17.370Z'
-                    },
-                    'company:summary': {
-                        breakdown: {
-                            vat: '',
-                            people: [
-                                {
-                                    associations: null,
-                                    name: 'Barbara Archer',
-                                    start_date: '2018-04-12',
-                                    dob: '1974-07',
-                                    country: '',
-                                    id: 'd45r1k29io6g00db42dg',
-                                    is_disqualified_director: false,
-                                    end_date: '',
-                                    nationality: 'British',
-                                    has_bankruptcy_history: false,
-                                    address: 'Redruth, Cornwall, TR15 2BY',
-                                    category: 'Member',
-                                    position: 'Designated LLP Member'
-                                },
-                                {
-                                    associations: null,
-                                    name: 'Stephen John Duncan Morrison',
-                                    start_date: '2018-04-12',
-                                    dob: '1972-07',
-                                    country: '',
-                                    id: 'd45r1k29io6g00db42e0',
-                                    is_disqualified_director: false,
-                                    end_date: '',
-                                    nationality: 'British',
-                                    has_bankruptcy_history: false,
-                                    address: 'Redruth, Cornwall, TR15 2BY',
-                                    category: 'Member',
-                                    position: 'Designated LLP Member'
-                                }
-                            ],
-                            is_exporter: false,
-                            sic_nace_codes: '69100',
-                            is_agent: false,
-                            email: '',
-                            is_importer: false,
-                            shareOwnership: [
-                                {
-                                    natureOfControlStartDate: '2018-04-12',
-                                    natureOfControl: '',
-                                    isOutOfBusiness: false,
-                                    is_ubo: true,
-                                    indirectOwnershipPercentage: 0,
-                                    stockDetails: null,
-                                    fullName: 'Barbara Archer',
-                                    natureOfControlTypes: [
-                                        'Right to share 25% to 50% of surplus assets of a limited liability partnership',
-                                        'Ownership of 25% to 50% of voting rights of a limited liability partnership'
-                                    ],
-                                    dateOfBirth: '1974-07',
-                                    organizationName: '',
-                                    ownershipPercentage: 0,
-                                    subjectType: { description: '' },
-                                    beneficiaryType: 'Individual',
-                                    duns: '',
-                                    id: 'd45r1k29io6g00db42cg',
-                                    votingPercentageHigh: 0,
-                                    nationality: 'British',
-                                    address: null,
-                                    category: '',
-                                    residenceCountryName: 'United Kingdom'
-                                },
-                                {
-                                    natureOfControlStartDate: '2018-04-12',
-                                    natureOfControl: '',
-                                    isOutOfBusiness: false,
-                                    is_ubo: true,
-                                    indirectOwnershipPercentage: 0,
-                                    stockDetails: null,
-                                    fullName: 'Stephen John Duncan Morrison',
-                                    natureOfControlTypes: [
-                                        'Right to share 25% to 50% of surplus assets of a limited liability partnership',
-                                        'Ownership of 25% to 50% of voting rights of a limited liability partnership'
-                                    ],
-                                    dateOfBirth: '1972-07',
-                                    organizationName: '',
-                                    ownershipPercentage: 0,
-                                    subjectType: { description: '' },
-                                    beneficiaryType: 'Individual',
-                                    duns: '',
-                                    id: 'd45r1k29io6g00db42d0',
-                                    votingPercentageHigh: 0,
-                                    nationality: 'British',
-                                    address: null,
-                                    category: '',
-                                    residenceCountryName: 'United Kingdom'
-                                }
-                            ],
-                            url: 'www.thurstanhoskin.co.uk',
-                            description: '',
-                            provided_status_start_date: '2018-04-13',
-                            lei: '',
-                            share_capital: '',
-                            legal_form: 'Limited Partnership',
-                            formatted_address: {
-                                po_box: '',
-                                city: 'REDRUTH',
-                                zip: 'TR15 2BY',
-                                country: 'United Kingdom',
-                                cc: 'GB',
-                                street: 'CHYNOWETH, CHAPEL STREET',
-                                district: 'CORNWALL'
-                            },
-                            country: 'United Kingdom',
-                            detailed_operating_status: 'active',
-                            last_update: '',
-                            id: '',
-                            date_of_incorporation: '2018-04-12',
-                            sic_nace_codes_des: 'Legal activities',
-                            business_trust_index: {
-                                trust_index: 0,
-                                investigation_date: '',
-                                data_provider: '',
-                                national_percentile: 0,
-                                tsrReport_date: '',
-                                trust_class: ''
-                            },
-                            status: 'active',
-                            share_currency: '',
-                            number_of_employees: 20,
-                            provided_status: 'Active',
-                            trading_address: {
-                                po_box: '',
-                                city: 'REDRUTH',
-                                zip: 'TR15 2BY',
-                                country: 'United Kingdom',
-                                cc: 'GB',
-                                street: 'Chynoweth Chapel Street',
-                                district: 'Cornwall'
-                            },
-                            tax_code: '',
-                            address: 'CHYNOWETH, CHAPEL STREET, CORNWALL, REDRUTH, United Kingdom, GB, TR15 2BY',
-                            dissolution_date: '',
-                            registration_number: 'OC421980',
-                            paidup_capital: '',
-                            phone: ''
-                        },
-                        result: 'clear',
-                        documents: [],
-                        id: 'd45v1m623amg030659hg',
-                        status: 'closed',
-                        createdAt: '2025-11-05T20:17:20.796Z'
-                    },
-                    'company:shareholders': {
-                        breakdown: {
-                            documents: [
-                                {
-                                    id: '49621b12-655b-4fee-8715-3daefb7f9ca8',
-                                    type: 'shareholders',
-                                    provider: 'documents-api'
-                                }
-                            ]
-                        },
-                        result: 'clear',
-                        documents: ['49621b12-655b-4fee-8715-3daefb7f9ca8'],
-                        id: 'd45v1my23amg030659m0',
-                        status: 'closed',
-                        createdAt: '2025-11-05T20:17:23.522Z'
-                    },
-                    'company:sanctions': {
-                        breakdown: {
-                            total_hits: 0,
-                            hits: []
-                        },
-                        result: 'clear',
-                        documents: ['d45v3ed23amg030659pg'],
-                        id: 'd45v1jy23amg030659b0',
-                        status: 'closed',
-                        createdAt: '2025-11-05T20:17:15.660Z'
-                    },
-                    'company:ubo': {
-                        breakdown: {
-                            uboUnavailable: true,
-                            relationships: [],
-                            pscs: [
-                                {
-                                    natureOfControl: '',
-                                    natureOfControlStartDate: '2018-04-12',
-                                    natureOfControlTypes: [
-                                        'Right to share 25% to 50% of surplus assets of a limited liability partnership',
-                                        'Ownership of 25% to 50% of voting rights of a limited liability partnership'
-                                    ],
-                                    person: {
-                                        name: 'Barbara Archer',
-                                        beneficialOwnershipPercentage: 0,
-                                        businessEntityType: '',
-                                        isOutOfBusiness: false,
-                                        indirectOwnershipPercentage: 0,
-                                        country: '',
-                                        beneficiaryType: 'Individual',
-                                        duns: '',
-                                        isBeneficiary: false,
-                                        birthDate: '1974-07',
-                                        nationality: 'British',
-                                        address: null,
-                                        memberID: 2079789992,
-                                        residenceCountryName: 'United Kingdom',
-                                        directOwnershipPercentage: 0
-                                    }
-                                },
-                                {
-                                    natureOfControl: '',
-                                    natureOfControlStartDate: '2018-04-12',
-                                    natureOfControlTypes: [
-                                        'Right to share 25% to 50% of surplus assets of a limited liability partnership',
-                                        'Ownership of 25% to 50% of voting rights of a limited liability partnership'
-                                    ],
-                                    person: {
-                                        name: 'Stephen John Duncan Morrison',
-                                        beneficialOwnershipPercentage: 0,
-                                        businessEntityType: '',
-                                        isOutOfBusiness: false,
-                                        indirectOwnershipPercentage: 0,
-                                        country: '',
-                                        beneficiaryType: 'Individual',
-                                        duns: '',
-                                        isBeneficiary: false,
-                                        birthDate: '1972-07',
-                                        nationality: 'British',
-                                        address: null,
-                                        memberID: 2079789993,
-                                        residenceCountryName: 'United Kingdom',
-                                        directOwnershipPercentage: 0
-                                    }
-                                }
-                            ],
-                            beneficialOwners: [
-                                {
-                                    name: 'THURSTAN HOSKIN SOLICITORS LLP',
-                                    beneficialOwnershipPercentage: 0,
-                                    businessEntityType: 'Limited Liability Partnership',
-                                    isOutOfBusiness: false,
-                                    indirectOwnershipPercentage: 0,
-                                    country: 'GB',
-                                    beneficiaryType: 'Business',
-                                    duns: '223822293',
-                                    isBeneficiary: false,
-                                    birthDate: '',
-                                    nationality: '',
-                    address: {
-                                        po_box: '',
-                                        city: 'REDRUTH',
-                                        zip: 'TR15 2BY',
-                                        country: 'United Kingdom',
-                                        cc: 'GB',
-                                        street: '',
-                                        district: ''
-                                    },
-                                    memberID: 287723562,
-                                    residenceCountryName: '',
-                                    directOwnershipPercentage: 0
-                                }
-                            ]
-                        },
-                        result: 'consider',
-                        documents: [],
-                        id: 'd45v1kp23amg030659fg',
-                        status: 'unobtainable',
-                        createdAt: '2025-11-05T20:17:18.266Z'
-                    }
-                },
-                updates: [
-                    { timestamp: '2025-11-05T20:17:10.220Z', update: 'KYB check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
-                    { timestamp: '2025-11-05T20:17:29.568Z', update: 'Check completed - awaiting PDF' },
-                    { timestamp: '2025-11-05T20:21:46.714Z', update: 'PDF received and uploaded to S3 - CLEAR' },
-                    { timestamp: '2025-11-05T21:15:23.171Z', update: 'Refreshed from Thirdfort API - Status: closed' }
-                ]
-            },
-            // Mock Check 12: Jacob Robert Archer-Moran - IDV - COMPLETED
-            {
-                checkId: 'd45zn1423amg03065a2g',
-                checkType: 'idv',
-                status: 'closed',
-                consumerName: 'Jacob Robert Moran',
-                initiatedBy: 'jacob.archer-moran@thurstanhoskin.co.uk',
-                initiatedAt: '2025-11-06T01:31:50.378Z',
-                updatedAt: '2025-11-06T01:32:09.461Z',
-                completedAt: '2025-11-06T01:32:09.461Z',
-                pdfReady: true,
-                pdfS3Key: 'protected/YwyAoiy',
-                pdfAddedAt: '2025-11-06T01:32:18.033Z',
-                hasMonitoring: false,
-                hasAlerts: false,
-                documentType: 'passport',
-                documentsUploaded: true,
-                taskOutcomes: {
-                    'identity:lite': {
-                        result: 'clear',
-                        status: 'closed',
-                        id: 'd45zn4c23amg03065a40',
-                        createdAt: '2025-11-06T01:32:01.642Z',
-                        data: {
-                            name: {
-                                first: 'Jacob',
-                                last: 'Moran',
-                                other: 'Robert'
-                            }
-                        },
-                        documents: ['d45zn4m23amg03065a50'],
-                        breakdown: {
-                            document: {
-                                name: 'document',
-                                result: 'clear',
-                                breakdown: {
-                                    compromised_document: { result: 'clear' },
-                                    data_consistency: { result: 'clear' },
-                                    data_comparison: { result: 'clear' },
-                                    data_validation: { result: 'clear' },
-                                    image_integrity: { result: 'clear' },
-                                    visual_authenticity: { result: 'clear' },
-                                    age_validation: { result: 'clear' },
-                                    police_record: { result: 'clear' }
-                                },
-                                properties: {
-                                    first_name: 'Jacob',
-                                    last_name: 'Moran',
-                                    date_of_birth: '1990-01-01',
-                                    date_of_expiry: '2031-05-28',
-                                    issuing_date: '2018-08-16',
-                                    issuing_country: 'GBR',
-                                    document_type: 'passport',
-                                    document_numbers: [{ type: 'document_number', value: '999999999' }],
-                                    nationality: null,
-                                    gender: null
-                                }
-                            }
-                        }
-                    }
-                },
-                companyData: {
-                    name: {
-                        first: 'Jacob',
-                        last: 'Moran',
-                        other: 'Robert'
-                    },
-                    numbers: []
-                },
-                thirdfortResponse: {
-                    name: 'Jacob Robert Moran - Document Verification',
-                    type: 'document',
-                    ref: '50/999',
-                    id: 'd45zn1423amg03065a2g',
-                    status: 'open',
-                    reports: [],
-                    request: {
-                        data: {
-                            name: {
-                                first: 'Jacob',
-                                last: 'Moran',
-                                other: 'Robert'
-                            }
-                        },
-                        reports: [
-                            { type: 'identity:lite' }
-                        ]
-                    },
-                    metadata: {
-                        notify: {
-                            type: 'http',
-                            data: {
-                                hmac_key: 'GgUi5IyCFm4TOsMy3Q4cvq6bnQEBJq/0uRqECCRoz+4=',
-                                method: 'POST',
-                                uri: 'https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook'
-                            }
-                        },
-                        created_by: 'd3t0auq9io6g00ak3kkg',
-                        print: {
-                            team: 'Cashiers',
-                            tenant: 'Thurstan Hoskin Solicitors LLP',
-                            user: 'THS Bot'
-                        },
-                        context: {
-                            gid: 'd3t2k5a9io6g00ak3km0',
-                            uid: 'd3t0auq9io6g00ak3kkg',
-                            team_id: 'd3t2k5a9io6g00ak3km0',
-                            tenant_id: 'd3t2ifa9io6g00ak3klg'
-                        },
-                        ce: {
-                            uri: '/v1/checks/4151797853'
-                        },
-                        created_at: '2025-11-06T01:31:47.945Z'
-                    }
-                },
-                updates: [
-                    { timestamp: '2025-11-06T01:31:50.378Z', update: 'IDV check initiated by jacob.archer-moran@thurstanhoskin.co.uk' },
-                    { timestamp: '2025-11-06T01:31:54.869Z', update: 'Documents uploaded by jacob.archer-moran@thurstanhoskin.co.uk' },
-                    { timestamp: '2025-11-06T01:32:09.461Z', update: 'Check completed - awaiting PDF' },
-                    { timestamp: '2025-11-06T01:32:18.033Z', update: 'PDF received and uploaded to S3 - CLEAR' }
-                ]
             }
         ];
+    }
+    
+    // ===================================================================
+    // ANNOTATION OVERLAYS
+    // ===================================================================
+    
+    /**
+     * Render annotations for a specific task
+     */
+    renderTaskAnnotations(taskType, check) {
+        const annotations = check.considerAnnotations || [];
+        const sofNotes = check.sofAnnotations || [];
+        const pepDismissals = check.pepDismissals || [];
+        
+        // Filter annotations for this task
+        const taskAnnotations = annotations.filter(ann => ann.taskType === taskType);
+        
+        // Check for SoF notes if this is an SoF task
+        const isSofTask = taskType === 'sof:v1';
+        
+        // Check for PEP dismissals if this is a screening task
+        const isPepTask = taskType === 'screening' || taskType === 'peps' || taskType === 'screening:lite';
+        
+        if (taskAnnotations.length === 0 && (!isSofTask || sofNotes.length === 0) && (!isPepTask || pepDismissals.length === 0)) {
+            return '';
+        }
+        
+        let html = '<div class="task-annotations-section">';
+        
+        // Show consider annotations
+        if (taskAnnotations.length > 0) {
+            html += '<div class="task-annotations-header">User Annotations</div>';
+            taskAnnotations.forEach(ann => {
+                const date = new Date(ann.timestamp).toLocaleString('en-GB', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                html += '<div class="task-annotation-card ' + ann.newStatus + '">';
+                html += '<div class="task-annotation-header">';
+                html += '<span class="status-badge ' + ann.originalStatus + '">' + ann.originalStatus.toUpperCase() + '</span>';
+                html += '<span class="arrow">→</span>';
+                html += '<span class="status-badge ' + ann.newStatus + '">' + ann.newStatus.toUpperCase() + '</span>';
+                html += '</div>';
+                html += '<div class="task-annotation-body">';
+                html += '<p class="annotation-objective-path">' + this.formatObjectivePath(ann.objectivePath) + '</p>';
+                html += '<p class="annotation-reason">' + ann.reason + '</p>';
+                html += '<p class="annotation-meta">' + (ann.userName || ann.user) + ' • ' + date + '</p>';
+                html += '</div></div>';
+            });
+        }
+        
+        // Show SoF notes
+        if (isSofTask && sofNotes.length > 0) {
+            html += '<div class="task-annotations-header">Investigation Notes</div>';
+            sofNotes.forEach(note => {
+                const date = new Date(note.timestamp).toLocaleString('en-GB', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                const label = note.category === 'funding' ? note.fundingMethod : note.redFlagType;
+                html += '<div class="task-annotation-card sof-note">';
+                html += '<div class="task-annotation-header">';
+                html += '<strong>' + label + '</strong>';
+                html += '</div>';
+                html += '<div class="task-annotation-body">';
+                html += '<p class="annotation-reason">' + note.note + '</p>';
+                html += '<p class="annotation-meta">' + (note.userName || note.user) + ' • ' + date + '</p>';
+                html += '</div></div>';
+            });
+        }
+        
+        // Show PEP dismissals
+        if (isPepTask && pepDismissals.length > 0) {
+            html += '<div class="task-annotations-header">Dismissed Hits</div>';
+            pepDismissals.forEach(dismissal => {
+                const date = new Date(dismissal.timestamp).toLocaleString('en-GB', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                html += '<div class="task-annotation-card dismissed">';
+                html += '<div class="task-annotation-header">';
+                html += '<span class="hit-type-badge ' + dismissal.reportType + '">' + dismissal.reportType.toUpperCase() + '</span>';
+                html += '<strong>' + dismissal.hitName + '</strong>';
+                html += '</div>';
+                html += '<div class="task-annotation-body">';
+                html += '<p class="annotation-reason">' + dismissal.reason + '</p>';
+                html += '<p class="annotation-meta">Dismissed by ' + (dismissal.userName || dismissal.user) + ' • ' + date + '</p>';
+                html += '</div></div>';
+            });
+        }
+        
+        html += '</div>';
+        
+        return html;
+    }
+    
+    /**
+     * Find all consider/fail items in task outcomes (recursive)
+     */
+    findConsiderFailItems(taskOutcomes) {
+        const items = [];
+        
+        for (const [taskType, outcome] of Object.entries(taskOutcomes)) {
+            // Skip if no outcome or status
+            if (!outcome) continue;
+            
+            // Check main task result
+            if (outcome.result === 'consider' || outcome.result === 'fail') {
+                items.push({
+                    taskType,
+                    path: taskType,
+                    label: this.getTaskTitle(taskType),
+                    status: outcome.result,
+                    level: 0
+                });
+            }
+            
+            // Recursively check nested data and breakdown
+            if (outcome.data) {
+                const nested = this.findNestedConsiderFail(outcome.data, taskType, taskType, 1);
+                items.push(...nested);
+            }
+            
+            if (outcome.breakdown) {
+                const nestedBreakdown = this.findNestedConsiderFail(outcome.breakdown, taskType, taskType, 1);
+                items.push(...nestedBreakdown);
+            }
+        }
+        
+        return items;
+    }
+    
+    /**
+     * Recursively find consider/fail in nested objects
+     */
+    findNestedConsiderFail(obj, taskType, parentPath, level) {
+        const items = [];
+        
+        if (!obj || typeof obj !== 'object') return items;
+        
+        for (const [key, value] of Object.entries(obj)) {
+            if (!value || typeof value !== 'object') continue;
+            
+            const currentPath = `${parentPath}.${key}`;
+            
+            // Check if this object has a result field
+            if (value.result === 'consider' || value.result === 'fail') {
+                items.push({
+                    taskType,
+                    path: currentPath,
+                    label: this.formatObjectivePath(currentPath),
+                    status: value.result,
+                    level
+                });
+            }
+            
+            // Recurse deeper
+            const deeper = this.findNestedConsiderFail(value, taskType, currentPath, level + 1);
+            items.push(...deeper);
+        }
+        
+        return items;
+    }
+    
+    /**
+     * Format objective path for display
+     */
+    formatObjectivePath(path) {
+        return path
+            .split('.')
+            .map(part => {
+                // Convert snake_case to Title Case
+                return part
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, l => l.toUpperCase());
+            })
+            .join(' → ');
+    }
+    
+    /**
+     * Check if check has consider/fail items
+     */
+    hasConsiderFailItems(check) {
+        if (!check.taskOutcomes || check.status !== 'closed') return false;
+        const items = this.findConsiderFailItems(check.taskOutcomes);
+        return items.length > 0;
+    }
+    
+    /**
+     * Check if check has SoF/Bank tasks
+     */
+    hasSofBankTasks(check) {
+        if (check.status !== 'closed') return false;
+        const outcomes = check.taskOutcomes || {};
+        return outcomes['sof:v1'] || outcomes['bank:summary'] || outcomes['bank:statement'];
+    }
+    
+    /**
+     * Check if check has PEP/Sanctions hits
+     */
+    hasPepSanctionsHits(check) {
+        if (check.status !== 'closed') return false;
+        const outcomes = check.taskOutcomes || {};
+        const peps = outcomes['peps'] || outcomes['screening:lite'];
+        const sanctions = outcomes['sanctions'];
+        
+        const pepHits = peps?.breakdown?.total_hits || 0;
+        const sanctionHits = sanctions?.breakdown?.total_hits || 0;
+        
+        return (pepHits + sanctionHits) > 0;
+    }
+    
+    /**
+     * Render Consider Overlay
+     */
+    renderConsiderOverlay(check) {
+        const items = this.findConsiderFailItems(check.taskOutcomes);
+        const existingAnnotations = check.considerAnnotations || [];
+        
+        // Build overlay HTML
+        let overlayHTML = '<div class="annotation-overlay" id="considerOverlay">';
+        overlayHTML += '<div class="annotation-overlay-backdrop" onclick="manager.closeConsiderOverlay()"></div>';
+        overlayHTML += '<div class="annotation-overlay-content">';
+        overlayHTML += '<div class="annotation-overlay-header">';
+        overlayHTML += '<h2>Consider & Fail Items</h2>';
+        overlayHTML += '<button class="overlay-close-btn" onclick="manager.closeConsiderOverlay()">✕</button>';
+        overlayHTML += '</div>';
+        overlayHTML += '<div class="annotation-overlay-body">';
+        
+        // Group items by task type
+        const groupedItems = {};
+        items.forEach(item => {
+            if (!groupedItems[item.taskType]) {
+                groupedItems[item.taskType] = [];
+            }
+            groupedItems[item.taskType].push(item);
+        });
+        
+        // Start form if in edit mode
+        if (this.mode === 'edit') {
+            overlayHTML += '<form id="considerAnnotationForm">';
+            overlayHTML += '<div class="annotation-section">';
+            overlayHTML += '<h3>Select Items to Annotate</h3>';
+            overlayHTML += '<div class="annotation-checkbox-group">';
+        }
+        
+        // Render checkboxes grouped by task
+        for (const [taskType, taskItems] of Object.entries(groupedItems)) {
+            overlayHTML += '<div class="annotation-task-group">';
+            overlayHTML += `<h4>${this.getTaskTitle(taskType)}</h4>`;
+            
+            taskItems.forEach(item => {
+                const indent = item.level * 20;
+                overlayHTML += `<label class="annotation-checkbox" style="padding-left: ${indent}px">`;
+                overlayHTML += `<input type="checkbox" name="objectives" value="${item.path}" data-status="${item.status}">`;
+                overlayHTML += `<span class="status-badge ${item.status}">${item.status.toUpperCase()}</span>`;
+                overlayHTML += `<span>${item.label}</span>`;
+                overlayHTML += '</label>';
+            });
+            
+            overlayHTML += '</div>';
+        }
+        
+        if (this.mode === 'edit') {
+            overlayHTML += '</div></div>';  // Close checkbox-group and section
+            overlayHTML += '<div class="annotation-section">';
+            overlayHTML += '<h3>Annotation Details</h3>';
+            overlayHTML += '<div class="form-group">';
+            overlayHTML += '<label for="considerStatus">New Status</label>';
+            overlayHTML += '<select id="considerStatus" required>';
+            overlayHTML += '<option value="clear">Clear</option>';
+            overlayHTML += '<option value="consider">Consider</option>';
+            overlayHTML += '<option value="fail">Fail</option>';
+            overlayHTML += '</select></div>';
+            overlayHTML += '<div class="form-group">';
+            overlayHTML += '<label for="considerReason">Reason / Notes</label>';
+            overlayHTML += '<textarea id="considerReason" rows="4" required placeholder="Explain the reason for this status update..."></textarea>';
+            overlayHTML += '</div></div>';
+            overlayHTML += '<div class="annotation-actions">';
+            overlayHTML += '<button type="button" class="btn-secondary" onclick="manager.closeConsiderOverlay()">Cancel</button>';
+            overlayHTML += '<button type="button" class="btn-secondary" onclick="manager.generateConsiderPDF()">Generate PDF</button>';
+            overlayHTML += '<button type="submit" class="btn-primary">Save Annotation</button>';
+            overlayHTML += '</div></form>';
+        } else {
+            overlayHTML += '</div></div>';  // Close checkbox-group and section
+            overlayHTML += '<div class="annotation-actions">';
+            overlayHTML += '<button type="button" class="btn-secondary" onclick="manager.closeConsiderOverlay()">Close</button>';
+            overlayHTML += '<button type="button" class="btn-secondary" onclick="manager.generateConsiderPDF()">Generate PDF</button>';
+            overlayHTML += '</div>';
+        }
+        
+        // Show existing annotations
+        if (existingAnnotations.length > 0) {
+            overlayHTML += '<div class="annotation-section annotation-history">';
+            overlayHTML += '<h3>Annotation History</h3>';
+            
+            existingAnnotations.forEach(ann => {
+                const date = new Date(ann.timestamp).toLocaleString('en-GB');
+                overlayHTML += `<div class="annotation-card ${ann.newStatus}">`;
+                overlayHTML += '<div class="annotation-card-header">';
+                overlayHTML += `<span class="annotation-objective">${this.formatObjectivePath(ann.objectivePath)}</span>`;
+                overlayHTML += `<span class="annotation-date">${date}</span>`;
+                overlayHTML += '</div>';
+                overlayHTML += '<div class="annotation-card-body">';
+                overlayHTML += '<div class="status-change">';
+                overlayHTML += `<span class="status-badge ${ann.originalStatus}">${ann.originalStatus.toUpperCase()}</span>`;
+                overlayHTML += '<span class="arrow">→</span>';
+                overlayHTML += `<span class="status-badge ${ann.newStatus}">${ann.newStatus.toUpperCase()}</span>`;
+                overlayHTML += '</div>';
+                overlayHTML += `<p class="annotation-reason">${ann.reason}</p>`;
+                overlayHTML += `<p class="annotation-user">By: ${ann.userName || ann.user}</p>`;
+                overlayHTML += '</div></div>';
+            });
+            
+            overlayHTML += '</div>';
+        }
+        
+        overlayHTML += '</div></div></div>';  // Close body, content, overlay
+        
+        // Add to DOM
+        document.body.insertAdjacentHTML('beforeend', overlayHTML);
+        
+        // Add form submit handler
+        if (this.mode === 'edit') {
+            const form = document.getElementById('considerAnnotationForm');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveConsiderAnnotations(check);
+            });
+        }
+    }
+    
+    closeConsiderOverlay() {
+        const overlay = document.getElementById('considerOverlay');
+        if (overlay) overlay.remove();
+    }
+    
+    /**
+     * Save consider annotations
+     */
+    saveConsiderAnnotations(check) {
+        const form = document.getElementById('considerAnnotationForm');
+        const selectedObjectives = Array.from(form.querySelectorAll('input[name="objectives"]:checked'));
+        
+        if (selectedObjectives.length === 0) {
+            alert('Please select at least one item to annotate');
+            return;
+        }
+        
+        const newStatus = document.getElementById('considerStatus').value;
+        const reason = document.getElementById('considerReason').value.trim();
+        
+        if (!reason) {
+            alert('Please provide a reason for this annotation');
+            return;
+        }
+        
+        // Build annotations array
+        const annotations = selectedObjectives.map(checkbox => ({
+            taskType: checkbox.value.split('.')[0],
+            objectivePath: checkbox.value,
+            originalStatus: checkbox.dataset.status,
+            newStatus,
+            reason,
+            timestamp: new Date().toISOString()
+        }));
+        
+        // Send to parent
+        this.sendMessage('save-consider-annotations', {
+            checkId: check.checkId || check.transactionId,
+            annotations
+        });
+        
+        this.closeConsiderOverlay();
+    }
+    
+    /**
+     * Render SoF Overlay
+     */
+    renderSofOverlay(check) {
+        const outcomes = check.taskOutcomes || {};
+        const sofTask = outcomes['sof:v1'];
+        const bankSummary = outcomes['bank:summary'];
+        const bankStatement = outcomes['bank:statement'];
+        const existingNotes = check.sofAnnotations || [];
+        
+        // Extract funding methods
+        const fundingMethods = [];
+        if (sofTask?.data?.funds) {
+            sofTask.data.funds.forEach(fund => {
+                fundingMethods.push({
+                    type: fund.type || fund.fund_type,
+                    amount: fund.amount,
+                    description: fund.description
+                });
+            });
+        }
+        
+        // Extract red flags
+        const redFlags = [];
+        if (bankSummary?.breakdown?.red_flags) {
+            bankSummary.breakdown.red_flags.forEach(flag => {
+                redFlags.push({ source: 'bank:summary', text: flag });
+            });
+        }
+        if (bankStatement?.breakdown?.red_flags) {
+            bankStatement.breakdown.red_flags.forEach(flag => {
+                redFlags.push({ source: 'bank:statement', text: flag });
+            });
+        }
+        
+        let overlayHTML = `
+            <div class="annotation-overlay" id="sofOverlay">
+                <div class="annotation-overlay-backdrop" onclick="manager.closeSofOverlay()"></div>
+                <div class="annotation-overlay-content">
+                    <div class="annotation-overlay-header">
+                        <h2>Source of Funds Investigation</h2>
+                        <button class="overlay-close-btn" onclick="manager.closeSofOverlay()">✕</button>
+                    </div>
+                    
+                    <div class="annotation-overlay-body">
+                        <form id="sofAnnotationForm">
+        `;
+        
+        // Funding methods section
+        if (fundingMethods.length > 0) {
+            overlayHTML += `
+                            <div class="annotation-section">
+                                <h3>Funding Methods</h3>
+            `;
+            
+            fundingMethods.forEach((fund, idx) => {
+                overlayHTML += `
+                                <div class="sof-item">
+                                    <h4>${fund.type ? fund.type.replace('fund:', '').replace(/_/g, ' ').toUpperCase() : 'Unknown'}</h4>
+                                    ${fund.amount ? `<p>Amount: £${fund.amount.toLocaleString()}</p>` : ''}
+                                    ${fund.description ? `<p>${fund.description}</p>` : ''}
+                                    <div class="form-group">
+                                        <label for="sofNote${idx}">Investigation Notes</label>
+                                        <textarea id="sofNote${idx}" data-category="funding" data-method="${fund.type}" 
+                                            rows="3" placeholder="Add investigation notes for this funding source..."></textarea>
+                                    </div>
+                                </div>
+                `;
+            });
+            
+            overlayHTML += `</div>`;
+        }
+        
+        // Red flags section
+        if (redFlags.length > 0) {
+            overlayHTML += `
+                            <div class="annotation-section">
+                                <h3>Red Flags</h3>
+            `;
+            
+            redFlags.forEach((flag, idx) => {
+                overlayHTML += `
+                                <div class="sof-item red-flag">
+                                    <h4>⚠ ${flag.text}</h4>
+                                    <p class="text-muted">Source: ${flag.source}</p>
+                                    <div class="form-group">
+                                        <label for="flagNote${idx}">Investigation Notes</label>
+                                        <textarea id="flagNote${idx}" data-category="redFlag" data-flag="${flag.text}" 
+                                            rows="3" placeholder="Add investigation notes for this red flag..."></textarea>
+                                    </div>
+                                </div>
+                `;
+            });
+            
+            overlayHTML += `</div>`;
+        }
+        
+        overlayHTML += `
+                            <div class="annotation-actions">
+                                <button type="button" class="btn-secondary" onclick="manager.closeSofOverlay()">Close</button>
+                                <button type="button" class="btn-secondary" onclick="manager.generateSofPDF()">Generate PDF</button>
+                                <button type="submit" class="btn-primary">Save Notes</button>
+                            </div>
+                        </form>
+        `;
+        
+        // Show existing notes
+        if (existingNotes.length > 0) {
+            overlayHTML += `
+                        <div class="annotation-section annotation-history">
+                            <h3>Previous Notes</h3>
+            `;
+            
+            existingNotes.forEach(note => {
+                const date = new Date(note.timestamp).toLocaleString('en-GB');
+                overlayHTML += `
+                    <div class="annotation-card sof-note">
+                        <div class="annotation-card-header">
+                            <span class="annotation-objective">${note.category === 'funding' ? note.fundingMethod : note.redFlagType}</span>
+                            <span class="annotation-date">${date}</span>
+                        </div>
+                        <div class="annotation-card-body">
+                            <p class="annotation-reason">${note.note}</p>
+                            <p class="annotation-user">By: ${note.userName || note.user}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            overlayHTML += `</div>`;
+        }
+        
+        overlayHTML += `
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add to DOM
+        document.body.insertAdjacentHTML('beforeend', overlayHTML);
+        
+        // Add form submit handler
+        const form = document.getElementById('sofAnnotationForm');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveSofAnnotations(check);
+        });
+    }
+    
+    closeSofOverlay() {
+        const overlay = document.getElementById('sofOverlay');
+        if (overlay) overlay.remove();
+    }
+    
+    /**
+     * Save SoF annotations
+     */
+    saveSofAnnotations(check) {
+        const form = document.getElementById('sofAnnotationForm');
+        const textareas = form.querySelectorAll('textarea');
+        
+        const notes = [];
+        textareas.forEach(textarea => {
+            const note = textarea.value.trim();
+            if (note) {
+                notes.push({
+                    category: textarea.dataset.category,
+                    fundingMethod: textarea.dataset.method,
+                    redFlagType: textarea.dataset.flag,
+                    note,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        });
+        
+        if (notes.length === 0) {
+            alert('Please add at least one note');
+            return;
+        }
+        
+        // Send to parent
+        this.sendMessage('save-sof-annotations', {
+            checkId: check.checkId || check.transactionId,
+            notes
+        });
+        
+        this.closeSofOverlay();
+    }
+    
+    /**
+     * Render PEP Dismissal Overlay
+     */
+    renderPepDismissalOverlay(check) {
+        const outcomes = check.taskOutcomes || {};
+        const pepsTask = outcomes['peps'] || outcomes['screening:lite'];
+        const sanctionsTask = outcomes['sanctions'];
+        const existingDismissals = check.pepDismissals || [];
+        
+        const dismissedIds = new Set(existingDismissals.map(d => d.hitId));
+        
+        // Collect all hits
+        const hits = [];
+        
+        if (pepsTask?.breakdown?.hits) {
+            pepsTask.breakdown.hits.forEach(hit => {
+                if (!dismissedIds.has(hit.id)) {
+                    hits.push({
+                        id: hit.id,
+                        name: hit.name,
+                        type: 'peps',
+                        reportId: pepsTask.id,
+                        dob: hit.dob?.main || hit.dob,
+                        score: hit.score,
+                        flagTypes: hit.flag_types || []
+                    });
+                }
+            });
+        }
+        
+        if (sanctionsTask?.breakdown?.hits) {
+            sanctionsTask.breakdown.hits.forEach(hit => {
+                if (!dismissedIds.has(hit.id)) {
+                    hits.push({
+                        id: hit.id,
+                        name: hit.name,
+                        type: 'sanctions',
+                        reportId: sanctionsTask.id,
+                        score: hit.score,
+                        flagTypes: hit.flag_types || []
+                    });
+                }
+            });
+        }
+        
+        let overlayHTML = `
+            <div class="annotation-overlay" id="pepOverlay">
+                <div class="annotation-overlay-backdrop" onclick="manager.closePepOverlay()"></div>
+                <div class="annotation-overlay-content">
+                    <div class="annotation-overlay-header">
+                        <h2>PEP & Sanctions Dismissal</h2>
+                        <button class="overlay-close-btn" onclick="manager.closePepOverlay()">✕</button>
+                    </div>
+                    
+                    <div class="annotation-overlay-body">
+        `;
+        
+        if (this.mode === 'edit' && hits.length > 0) {
+            overlayHTML += `
+                        <form id="pepDismissalForm">
+                            <div class="annotation-section">
+                                <h3>Undismissed Hits</h3>
+                                <div class="annotation-checkbox-group">
+            `;
+            
+            hits.forEach(hit => {
+                overlayHTML += `
+                                <label class="annotation-checkbox pep-hit">
+                                    <input type="checkbox" name="hits" value="${hit.id}" 
+                                        data-name="${hit.name}" data-type="${hit.type}" data-report-id="${hit.reportId}">
+                                    <div class="hit-details">
+                                        <strong>${hit.name}</strong>
+                                        <span class="hit-type-badge ${hit.type}">${hit.type.toUpperCase()}</span>
+                                        ${hit.dob ? `<p>DOB: ${hit.dob}</p>` : ''}
+                                        ${hit.score ? `<p>Match Score: ${hit.score}</p>` : ''}
+                                        ${hit.flagTypes.length > 0 ? `<p class="flag-types">${hit.flagTypes.slice(0, 3).join(', ')}</p>` : ''}
+                                    </div>
+                                </label>
+                `;
+            });
+            
+            overlayHTML += `
+                                </div>
+                            </div>
+                            
+                            <div class="annotation-section">
+                                <h3>Dismissal Reason</h3>
+                                <div class="form-group">
+                                    <label for="pepReason">Reason for Dismissal</label>
+                                    <textarea id="pepReason" rows="4" required 
+                                        placeholder="Explain why these hits should be dismissed (e.g., 'Confirmed different person - different DOB', 'Different spelling of name')..."></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="annotation-actions">
+                                <button type="button" class="btn-secondary" onclick="manager.closePepOverlay()">Cancel</button>
+                                <button type="button" class="btn-secondary" onclick="manager.generatePepPDF()">Generate PDF</button>
+                                <button type="submit" class="btn-primary">Dismiss Selected</button>
+                            </div>
+                        </form>
+            `;
+        } else if (hits.length === 0 && this.mode === 'edit') {
+            overlayHTML += `
+                        <div class="annotation-section">
+                            <p class="text-muted">All hits have been dismissed.</p>
+                        </div>
+                        <div class="annotation-actions">
+                            <button type="button" class="btn-secondary" onclick="manager.closePepOverlay()">Close</button>
+                            <button type="button" class="btn-secondary" onclick="manager.generatePepPDF()">Generate PDF</button>
+                        </div>
+            `;
+        } else {
+            overlayHTML += `
+                        <div class="annotation-actions">
+                            <button type="button" class="btn-secondary" onclick="manager.closePepOverlay()">Close</button>
+                            <button type="button" class="btn-secondary" onclick="manager.generatePepPDF()">Generate PDF</button>
+                        </div>
+            `;
+        }
+        
+        // Show dismissed hits
+        if (existingDismissals.length > 0) {
+            overlayHTML += `
+                        <div class="annotation-section annotation-history">
+                            <h3>Dismissed Hits</h3>
+            `;
+            
+            existingDismissals.forEach(dismissal => {
+                const date = new Date(dismissal.timestamp).toLocaleString('en-GB');
+                overlayHTML += `
+                    <div class="annotation-card dismissed-hit">
+                        <div class="annotation-card-header">
+                            <span class="annotation-objective">${dismissal.hitName}</span>
+                            <span class="hit-type-badge ${dismissal.reportType}">${dismissal.reportType.toUpperCase()}</span>
+                            <span class="annotation-date">${date}</span>
+                        </div>
+                        <div class="annotation-card-body">
+                            <p class="annotation-reason">${dismissal.reason}</p>
+                            <p class="annotation-user">Dismissed by: ${dismissal.userName || dismissal.user}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            overlayHTML += `</div>`;
+        }
+        
+        overlayHTML += `
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add to DOM
+        document.body.insertAdjacentHTML('beforeend', overlayHTML);
+        
+        // Add form submit handler
+        if (this.mode === 'edit' && hits.length > 0) {
+            const form = document.getElementById('pepDismissalForm');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.dismissPepHits(check);
+            });
+        }
+    }
+    
+    closePepOverlay() {
+        const overlay = document.getElementById('pepOverlay');
+        if (overlay) overlay.remove();
+    }
+    
+    /**
+     * Dismiss PEP/Sanctions hits
+     */
+    dismissPepHits(check) {
+        const form = document.getElementById('pepDismissalForm');
+        const selectedHits = Array.from(form.querySelectorAll('input[name="hits"]:checked'));
+        
+        if (selectedHits.length === 0) {
+            alert('Please select at least one hit to dismiss');
+            return;
+        }
+        
+        const reason = document.getElementById('pepReason').value.trim();
+        
+        if (!reason) {
+            alert('Please provide a reason for dismissal');
+            return;
+        }
+        
+        // Build dismissals array
+        const dismissals = selectedHits.map(checkbox => ({
+            id: checkbox.value,
+            reason
+        }));
+        
+        // Get report info from first selected hit
+        const firstHit = selectedHits[0];
+        const reportType = firstHit.dataset.type;
+        const reportId = firstHit.dataset.reportId;
+        
+        // Send to parent
+        this.sendMessage('dismiss-pep-hits', {
+            checkId: check.checkId || check.transactionId,
+            transactionId: check.transactionId,
+            reportId,
+            reportType,
+            dismissals
+        });
+        
+        this.closePepOverlay();
+    }
+    
+    // ===================================================================
+    // PDF GENERATION
+    // ===================================================================
+    
+    generateConsiderPDF() {
+        const check = this.currentCheck;
+        if (!check) return;
+        
+        const annotations = check.considerAnnotations || [];
+        const checkName = check.consumerName || check.companyName || 'Unknown';
+        const checkRef = check.transactionId || check.checkId;
+        
+        let htmlContent = `
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h1 style="color: #112F5B;">Consider & Fail Annotations</h1>
+                <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                    <p><strong>Check:</strong> ${checkName}</p>
+                    <p><strong>Reference:</strong> ${checkRef}</p>
+                    <p><strong>Generated:</strong> ${new Date().toLocaleString('en-GB')}</p>
+                </div>
+                
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                    <thead>
+                        <tr style="background: #112F5B; color: white;">
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Objective</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Original</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Updated</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Reason</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">User</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        annotations.forEach(ann => {
+            const date = new Date(ann.timestamp).toLocaleDateString('en-GB');
+            htmlContent += `
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${this.formatObjectivePath(ann.objectivePath)}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${ann.originalStatus.toUpperCase()}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${ann.newStatus.toUpperCase()}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${ann.reason}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${ann.userName || ann.user}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${date}</td>
+                </tr>
+            `;
+        });
+        
+        htmlContent += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        const element = document.createElement('div');
+        element.innerHTML = htmlContent;
+        
+        const opt = {
+            margin: 10,
+            filename: `consider-annotations-${checkRef}-${Date.now()}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        if (typeof html2pdf !== 'undefined') {
+            html2pdf().set(opt).from(element).save();
+        } else {
+            alert('PDF library not loaded. Please refresh the page.');
+        }
+    }
+    
+    generateSofPDF() {
+        const check = this.currentCheck;
+        if (!check) return;
+        
+        const notes = check.sofAnnotations || [];
+        const checkName = check.consumerName || check.companyName || 'Unknown';
+        const checkRef = check.transactionId || check.checkId;
+        
+        let htmlContent = `
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h1 style="color: #112F5B;">Source of Funds Investigation</h1>
+                <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                    <p><strong>Check:</strong> ${checkName}</p>
+                    <p><strong>Reference:</strong> ${checkRef}</p>
+                    <p><strong>Generated:</strong> ${new Date().toLocaleString('en-GB')}</p>
+                </div>
+                
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                    <thead>
+                        <tr style="background: #112F5B; color: white;">
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Type</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Notes</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">User</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        notes.forEach(note => {
+            const date = new Date(note.timestamp).toLocaleDateString('en-GB');
+            const item = note.category === 'funding' ? note.fundingMethod : note.redFlagType;
+            htmlContent += `
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${note.category.toUpperCase()}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${item}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${note.note}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${note.userName || note.user}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${date}</td>
+                </tr>
+            `;
+        });
+        
+        htmlContent += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        const element = document.createElement('div');
+        element.innerHTML = htmlContent;
+        
+        const opt = {
+            margin: 10,
+            filename: `sof-investigation-${checkRef}-${Date.now()}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        if (typeof html2pdf !== 'undefined') {
+            html2pdf().set(opt).from(element).save();
+        } else {
+            alert('PDF library not loaded. Please refresh the page.');
+        }
+    }
+    
+    generatePepPDF() {
+        const check = this.currentCheck;
+        if (!check) return;
+        
+        const dismissals = check.pepDismissals || [];
+        const checkName = check.consumerName || check.companyName || 'Unknown';
+        const checkRef = check.transactionId || check.checkId;
+        
+        let htmlContent = `
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h1 style="color: #112F5B;">PEP & Sanctions Dismissals</h1>
+                <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                    <p><strong>Check:</strong> ${checkName}</p>
+                    <p><strong>Reference:</strong> ${checkRef}</p>
+                    <p><strong>Generated:</strong> ${new Date().toLocaleString('en-GB')}</p>
+                </div>
+                
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                    <thead>
+                        <tr style="background: #112F5B; color: white;">
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Hit Name</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Type</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Reason</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Dismissed By</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        dismissals.forEach(dismissal => {
+            const date = new Date(dismissal.timestamp).toLocaleDateString('en-GB');
+            htmlContent += `
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${dismissal.hitName}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${dismissal.reportType.toUpperCase()}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${dismissal.reason}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${dismissal.userName || dismissal.user}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${date}</td>
+                </tr>
+            `;
+        });
+        
+        htmlContent += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        const element = document.createElement('div');
+        element.innerHTML = htmlContent;
+        
+        const opt = {
+            margin: 10,
+            filename: `pep-dismissals-${checkRef}-${Date.now()}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        if (typeof html2pdf !== 'undefined') {
+            html2pdf().set(opt).from(element).save();
+        } else {
+            alert('PDF library not loaded. Please refresh the page.');
+        }
     }
 }
 

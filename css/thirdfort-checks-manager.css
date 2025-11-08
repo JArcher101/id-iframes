@@ -1316,6 +1316,105 @@ body {
     font-family: 'RotisBold', sans-serif;
 }
 
+.identity-hint {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 13px;
+    margin-top: 8px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    line-height: 1.4;
+}
+
+.identity-hint.orange {
+    background-color: #fff3e0;
+    color: #f7931e;
+    border-left: 3px solid #f7931e;
+}
+
+.identity-hint.blue {
+    background-color: #e3f2fd;
+    color: #1d71b8;
+    border-left: 3px solid #1d71b8;
+}
+
+/* Nested Task Cards (for Identity sub-tasks) */
+.nested-task-card {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.nested-task-card.expandable {
+    cursor: pointer;
+}
+
+.nested-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    font-family: 'RotisSemiBold', sans-serif;
+    font-size: 13px;
+    color: var(--navy);
+}
+
+.nested-title {
+    flex: 1;
+}
+
+.nested-status-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.nested-unobtainable {
+    padding: 0 12px 8px 12px;
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+    color: #f7931e;
+}
+
+.nested-items {
+    display: none;
+    padding: 0 12px 10px 12px;
+    gap: 6px;
+    flex-direction: column;
+}
+
+.nested-task-card.expanded .nested-items {
+    display: flex;
+}
+
+.nested-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+    color: var(--grey);
+}
+
+.nested-item.nested-parent {
+    font-family: 'RotisBold', sans-serif;
+    font-size: 11px;
+    color: var(--dark-grey);
+    margin-bottom: 4px;
+}
+
+.nested-item.nested-indented {
+    padding-left: 24px;
+    font-size: 11px;
+}
+
+.nested-item svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
 .task-checks-grid {
     display: flex;
     flex-direction: column;
@@ -1989,6 +2088,19 @@ body {
     font-size: 10px;
     color: #666;
     text-align: right;
+}
+
+.no-matches-hint {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: #fff8e6;
+    border: 1px solid #ffd966;
+    border-radius: 4px;
+    font-family: 'Rotis', sans-serif;
+    font-size: 11px;
+    color: #856404;
+    margin-top: 6px;
 }
 
 .matched-tx-amount {
@@ -3106,5 +3218,553 @@ body {
 
 .sof-match-amount.negative {
     color: #d32f2f;
+}
+
+
+/* ===================================================================
+   ANNOTATION OVERLAYS
+   =================================================================== */
+
+.annotation-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.annotation-overlay-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.annotation-overlay-content {
+    position: relative;
+    background: white;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.annotation-overlay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 2px solid #e1e4e8;
+}
+
+.annotation-overlay-header h2 {
+    font-family: 'Transport', sans-serif;
+    font-size: 20px;
+    color: #112F5B;
+    margin: 0;
+}
+
+.overlay-close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.overlay-close-btn:hover {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.annotation-overlay-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.annotation-section {
+    margin-bottom: 30px;
+}
+
+.annotation-section h3 {
+    font-family: 'Transport', sans-serif;
+    font-size: 16px;
+    color: #112F5B;
+    margin: 0 0 15px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e1e4e8;
+}
+
+.annotation-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.annotation-task-group {
+    margin-bottom: 20px;
+}
+
+.annotation-task-group h4 {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 14px;
+    color: #112F5B;
+    margin: 0 0 10px 0;
+}
+
+.annotation-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.annotation-checkbox:hover {
+    background: #e9ecef;
+}
+
+.annotation-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.annotation-checkbox .status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'Transport', sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.status-badge.consider {
+    background: #f7931e;
+    color: white;
+}
+
+.status-badge.fail {
+    background: #dc3545;
+    color: white;
+}
+
+.status-badge.clear {
+    background: #39b549;
+    color: white;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #1d71b8;
+}
+
+.annotation-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px;
+    border-top: 1px solid #e1e4e8;
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-family: 'Transport', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #1d71b8;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #155a93;
+}
+
+.btn-secondary {
+    background: #e9ecef;
+    color: #333;
+}
+
+.btn-secondary:hover {
+    background: #dee2e6;
+}
+
+.annotation-history {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.annotation-card {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    border-left: 4px solid #ddd;
+}
+
+.annotation-card.clear {
+    border-left-color: #39b549;
+}
+
+.annotation-card.consider {
+    border-left-color: #f7931e;
+}
+
+.annotation-card.fail {
+    border-left-color: #dc3545;
+}
+
+.annotation-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.annotation-objective {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #112F5B;
+}
+
+.annotation-date {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+    color: #666;
+}
+
+.annotation-card-body {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 13px;
+}
+
+.status-change {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.status-change .arrow {
+    color: #999;
+}
+
+.annotation-reason {
+    color: #333;
+    line-height: 1.5;
+    margin: 10px 0;
+}
+
+.annotation-user {
+    color: #666;
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* SoF specific styles */
+.sof-item {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.sof-item h4 {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 14px;
+    color: #112F5B;
+    margin: 0 0 10px 0;
+}
+
+.sof-item.red-flag {
+    border-left: 4px solid #dc3545;
+}
+
+.text-muted {
+    color: #666;
+    font-size: 12px;
+}
+
+/* PEP hit styles */
+.annotation-checkbox.pep-hit {
+    padding: 15px;
+}
+
+.hit-details {
+    flex: 1;
+}
+
+.hit-details strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.hit-type-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.hit-type-badge.peps {
+    background: #1d71b8;
+    color: white;
+}
+
+.hit-type-badge.sanctions {
+    background: #dc3545;
+    color: white;
+}
+
+.flag-types {
+    font-size: 11px;
+    color: #666;
+    margin-top: 5px;
+}
+
+.dismissed-hit {
+    opacity: 0.7;
+}
+
+.dismissed-hit .annotation-objective {
+    text-decoration: line-through;
+}
+
+/* Annotation button in top bar */
+.top-action-btn.annotation-btn {
+    position: relative;
+}
+
+.top-action-btn.annotation-btn:hover {
+    transform: scale(1.1);
+}
+
+
+/* ===================================================================
+   IN-TASK ANNOTATION DISPLAY
+   =================================================================== */
+
+.task-annotations-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e1e4e8;
+}
+
+.task-annotations-header {
+    font-family: 'Transport', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #112F5B;
+    margin-bottom: 10px;
+}
+
+.task-annotation-card {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    border-left: 3px solid #ddd;
+}
+
+.task-annotation-card.clear {
+    border-left-color: #39b549;
+    background: #f1f8f4;
+}
+
+.task-annotation-card.consider {
+    border-left-color: #f7931e;
+    background: #fff7ed;
+}
+
+.task-annotation-card.fail {
+    border-left-color: #dc3545;
+    background: #fef2f2;
+}
+
+.task-annotation-card.sof-note {
+    border-left-color: #1d71b8;
+    background: #f0f7ff;
+}
+
+.task-annotation-card.dismissed {
+    border-left-color: #999;
+    background: #f5f5f5;
+    opacity: 0.85;
+}
+
+.task-annotation-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.task-annotation-body {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+}
+
+.annotation-objective-path {
+    font-size: 11px;
+    color: #666;
+    font-style: italic;
+    margin: 0 0 8px 0;
+}
+
+.annotation-reason {
+    color: #333;
+    margin: 0 0 8px 0;
+    line-height: 1.4;
+}
+
+.annotation-meta {
+    color: #999;
+    font-size: 11px;
+    margin: 0;
+}
+
+
+/* ===================================================================
+   IN-TASK ANNOTATION DISPLAY
+   =================================================================== */
+
+.task-annotations-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e1e4e8;
+}
+
+.task-annotations-header {
+    font-family: 'Transport', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #112F5B;
+    margin-bottom: 10px;
+}
+
+.task-annotation-card {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    border-left: 3px solid #ddd;
+}
+
+.task-annotation-card.clear {
+    border-left-color: #39b549;
+    background: #f1f8f4;
+}
+
+.task-annotation-card.consider {
+    border-left-color: #f7931e;
+    background: #fff7ed;
+}
+
+.task-annotation-card.fail {
+    border-left-color: #dc3545;
+    background: #fef2f2;
+}
+
+.task-annotation-card.sof-note {
+    border-left-color: #1d71b8;
+    background: #f0f7ff;
+}
+
+.task-annotation-card.dismissed {
+    border-left-color: #999;
+    background: #f5f5f5;
+    opacity: 0.85;
+}
+
+.task-annotation-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.task-annotation-body {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+}
+
+.annotation-objective-path {
+    font-size: 11px;
+    color: #666;
+    font-style: italic;
+    margin: 0 0 8px 0;
+}
+
+.annotation-reason {
+    color: #333;
+    margin: 0 0 8px 0;
+    line-height: 1.4;
+}
+
+.annotation-meta {
+    color: #999;
+    font-size: 11px;
+    margin: 0;
 }
 
