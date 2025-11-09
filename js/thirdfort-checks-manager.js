@@ -19515,6 +19515,46 @@ class ThirdfortChecksManager {
             }
         };
         
+        // Get unique task types that have annotations
+        const annotatedTaskTypes = [...new Set(annotations.map(ann => ann.taskType))];
+        
+        // Build original task outcomes HTML (for tasks with annotations)
+        let taskOutcomesHTML = '';
+        annotatedTaskTypes.forEach(taskType => {
+            const outcome = check.taskOutcomes?.[taskType];
+            if (!outcome) return;
+            
+            const taskTitle = this.getTaskTitle(taskType);
+            const taskColor = getTaskColor(taskType);
+            const taskLabel = getTaskLabel(taskType);
+            const checks = this.getTaskChecks(taskType, outcome, check);
+            
+            taskOutcomesHTML += `
+                <div class="task-outcomes-card" style="margin-bottom: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; page-break-inside: avoid;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid #dee2e6;">
+                        <div class="task-icon" style="background: ${taskColor}; flex-shrink: 0;">${taskLabel}</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #003c71;">${taskTitle}</div>
+                    </div>
+            `;
+            
+            // Show check items (objectives)
+            checks.forEach(checkItem => {
+                if (checkItem.isNestedCard || checkItem.isPersonCard || checkItem.isHitCard) return;
+                
+                const checkIcon = this.getTaskCheckIcon(checkItem.status);
+                const statusColor = checkItem.status === 'CL' ? '#388e3c' : (checkItem.status === 'FA' ? '#d32f2f' : '#f7931e');
+                
+                taskOutcomesHTML += `
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; ${checkItem.indented ? 'margin-left: 30px;' : ''}">
+                        <div style="width: 18px; height: 18px; flex-shrink: 0;">${checkIcon}</div>
+                        <span style="font-size: 12px; color: #333;">${checkItem.text}</span>
+                    </div>
+                `;
+            });
+            
+            taskOutcomesHTML += `</div>`;
+        });
+        
         // Group annotations by user + timestamp + newStatus (like in task card display)
         const groups = {};
         annotations.forEach(ann => {
@@ -19570,15 +19610,15 @@ class ThirdfortChecksManager {
                 const taskLabel = getTaskLabel(obj.taskType);
                 
                 annotationsHTML += `
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px;">
-                        <div class="task-icon" style="background: ${taskColor};">${taskLabel}</div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 13px; font-weight: 600; color: #003c71;">${taskTitle}</div>
-                            <div style="font-size: 11px; color: #666;">${objectivePath}</div>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; min-width: 0;">
+                        <div class="task-icon" style="background: ${taskColor}; flex-shrink: 0;">${taskLabel}</div>
+                        <div style="flex: 1; min-width: 0; overflow: hidden;">
+                            <div style="font-size: 13px; font-weight: 600; color: #003c71; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${taskTitle}</div>
+                            <div style="font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${objectivePath}</div>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: 12px;">
                             ${getStatusIcon(obj.newStatus)}
-                            <span style="font-size: 12px; font-weight: 600; color: ${obj.newStatus === 'clear' ? '#388e3c' : (obj.newStatus === 'fail' ? '#d32f2f' : '#f7931e')};">${obj.newStatus.toUpperCase()}</span>
+                            <span style="font-size: 12px; font-weight: 600; color: ${obj.newStatus === 'clear' ? '#388e3c' : (obj.newStatus === 'fail' ? '#d32f2f' : '#f7931e')}; white-space: nowrap;">${obj.newStatus.toUpperCase()}</span>
                         </div>
                     </div>
                 `;
@@ -19597,12 +19637,13 @@ class ThirdfortChecksManager {
                 <meta charset="UTF-8">
                 <style>
                     * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { font-family: Arial, sans-serif; padding: 30px; background: #fff; color: #333; line-height: 1.6; }
+                    body { font-family: Arial, sans-serif; padding: 20px 30px; background: #fff; color: #333; line-height: 1.6; width: 100%; max-width: 750px; }
                     .pdf-header { border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px; }
                     .pdf-title { font-size: 24px; font-weight: bold; color: #003c71; margin-bottom: 10px; }
                     .check-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 13px; color: #666; }
                     .check-info-item { display: flex; gap: 8px; }
                     .check-info-label { font-weight: 600; color: #333; }
+                    .task-outcomes-section { margin-top: 30px; }
                     .annotations-section { margin-top: 30px; }
                     .section-title { font-size: 18px; font-weight: bold; color: #003c71; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid #e5e5e5; }
                     .annotation-card { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 20px; margin-bottom: 20px; page-break-inside: avoid; }
@@ -19638,8 +19679,14 @@ class ThirdfortChecksManager {
                         <div class="check-info-item"><span class="check-info-label">Generated:</span><span>${generatedDate}, ${generatedTime}</span></div>
                     </div>
                 </div>
+                ${taskOutcomesHTML ? `
+                <div class="task-outcomes-section">
+                    <div class="section-title">Original Task Outcomes</div>
+                    ${taskOutcomesHTML}
+                </div>
+                ` : ''}
                 <div class="annotations-section">
-                    <div class="section-title">Annotations & Updates</div>
+                    <div class="section-title">Cashier Updates</div>
                     ${annotationsHTML}
                 </div>
                 <div class="pdf-footer">
@@ -19654,11 +19701,12 @@ class ThirdfortChecksManager {
         element.innerHTML = htmlContent;
         
         const opt = {
-            margin: 10,
-            filename: `consider-annotations-${checkRef}-${Date.now()}.pdf`,
+            margin: [10, 10, 10, 10],
+            filename: `cashier-updates-${checkRef}-${Date.now()}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            html2canvas: { scale: 2, useCORS: true, logging: false, width: 800 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
         
         console.log('📄 Checking for html2pdf library...');
