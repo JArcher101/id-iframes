@@ -84,7 +84,8 @@ class ThirdfortChecksManager {
         
         switch (type) {
             case 'checks-data':
-                // Set mode (default to 'edit' if not specified)
+                // Close any open overlays and load new data
+                this.closeAllOverlays();
                 this.mode = data.mode || 'edit';
                 console.log(`🔒 Mode set to: ${this.mode}`);
                 this.loadChecks(data.checks || []);
@@ -19650,13 +19651,30 @@ class ThirdfortChecksManager {
                     console.error('❌ Popup blocked by browser');
                     alert('PDF generated but popup was blocked. Please allow popups for this site.');
                 }
+                
+                // Notify parent that PDF is generated and opened
+                console.log('📤 Sending pdf-generated message to parent');
+                this.sendMessage('pdf-generated', { 
+                    type: 'consider',
+                    checkId: check.checkId || check.transactionId 
+                });
             }).catch(err => {
                 console.error('❌ Error generating PDF:', err);
                 alert('Error generating PDF: ' + err.message);
+                // Still notify parent even on error so data can refresh
+                this.sendMessage('pdf-generated', { 
+                    type: 'consider',
+                    error: err.message 
+                });
             });
         } else {
             console.error('❌ html2pdf library not loaded');
             alert('PDF library not loaded. Please refresh the page.');
+            // Notify parent so data can refresh
+            this.sendMessage('pdf-generated', { 
+                type: 'consider',
+                error: 'html2pdf not loaded' 
+            });
         }
     }
     
@@ -19722,9 +19740,41 @@ class ThirdfortChecksManager {
         };
         
         if (typeof html2pdf !== 'undefined') {
-            html2pdf().set(opt).from(element).save();
+            console.log('📄 Starting SoF PDF generation...');
+            // Generate PDF as blob and open in new window
+            html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
+                console.log('✅ SoF PDF blob generated:', pdfBlob.size, 'bytes');
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                console.log('📄 Opening SoF PDF in new window:', pdfUrl);
+                const popup = window.open(pdfUrl, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+                if (!popup) {
+                    console.error('❌ Popup blocked by browser');
+                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                }
+                
+                // Notify parent that PDF is generated and opened
+                console.log('📤 Sending pdf-generated message to parent');
+                this.sendMessage('pdf-generated', { 
+                    type: 'sof',
+                    checkId: check.checkId || check.transactionId 
+                });
+            }).catch(err => {
+                console.error('❌ Error generating SoF PDF:', err);
+                alert('Error generating SoF PDF: ' + err.message);
+                // Still notify parent even on error so data can refresh
+                this.sendMessage('pdf-generated', { 
+                    type: 'sof',
+                    error: err.message 
+                });
+            });
         } else {
+            console.error('❌ html2pdf library not loaded');
             alert('PDF library not loaded. Please refresh the page.');
+            // Notify parent so data can refresh
+            this.sendMessage('pdf-generated', { 
+                type: 'sof',
+                error: 'html2pdf not loaded' 
+            });
         }
     }
     
