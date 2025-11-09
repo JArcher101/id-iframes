@@ -3697,6 +3697,104 @@ body {
     margin: 0;
 }
 
+/* Annotation Count Badge in Task Header */
+.annotation-count-badge {
+    display: inline-block;
+    background: #b3d7ee; /* Pastel blue based on 0,60,113 (#003C71) */
+    color: #003C71;
+    font-family: 'Transport', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    margin-left: auto;
+    margin-right: 8px;
+    white-space: nowrap;
+}
+
+/* Badge color variants based on latest update status */
+.annotation-count-badge.badge-clear {
+    background: #d4edda;
+    color: #155724;
+}
+
+.annotation-count-badge.badge-consider {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.annotation-count-badge.badge-fail {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Annotation Mini Cards */
+.annotation-mini-card {
+    background: #f8f9fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.annotation-mini-card:last-child {
+    margin-bottom: 0;
+}
+
+.annotation-mini-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.annotation-mini-meta {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+    color: #666;
+}
+
+.annotation-mini-meta strong {
+    font-family: 'RotisSemiBold', sans-serif;
+    color: #112F5B;
+}
+
+.annotation-mini-body {
+    font-family: 'RotisRegular', sans-serif;
+}
+
+.annotation-mini-reason {
+    font-size: 13px;
+    color: #333;
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+}
+
+.annotation-mini-objectives {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.annotation-objective-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #333;
+}
+
+.annotation-status-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.annotation-objective-label {
+    font-family: 'RotisRegular', sans-serif;
+    color: #555;
+}
+
 
 /* ===================================================================
    IN-TASK ANNOTATION DISPLAY

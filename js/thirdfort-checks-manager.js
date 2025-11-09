@@ -106,8 +106,35 @@ class ThirdfortChecksManager {
         // Handle successful save based on what was saved
         if (this.pendingSave) {
             const saveType = this.pendingSave.type;
+            const savedAnnotations = this.pendingSave.annotations; // Store annotations that were just saved
             
             if (saveType === 'consider') {
+                // Update local check object with new annotations before generating PDF
+                if (savedAnnotations && this.currentCheck) {
+                    if (!this.currentCheck.considerAnnotations) {
+                        this.currentCheck.considerAnnotations = [];
+                    }
+                    // Add user info and _id to annotations (matching backend format)
+                    const userEmail = data.userEmail || 'unknown';
+                    const userName = userEmail.split('@')[0];
+                    
+                    savedAnnotations.forEach(ann => {
+                        this.currentCheck.considerAnnotations.unshift({
+                            _id: 'temp_' + Date.now() + Math.random().toString(36).substr(2, 9),
+                            taskType: ann.taskType,
+                            objectivePath: ann.objectivePath,
+                            originalStatus: ann.originalStatus,
+                            newStatus: ann.newStatus,
+                            reason: ann.reason,
+                            timestamp: ann.timestamp,
+                            user: userEmail,
+                            userName: userName
+                        });
+                    });
+                    console.log(`✅ Added ${savedAnnotations.length} annotations to local check object`);
+                    console.log('📊 Total annotations now:', this.currentCheck.considerAnnotations.length);
+                }
+                
                 // Generate PDF and open in popup
                 console.log('📄 Generating consider annotations PDF...');
                 this.generateConsiderPDF();
@@ -4461,6 +4488,28 @@ class ThirdfortChecksManager {
             });
         }
         
+        // Count annotation GROUPS (cards) for this task, not individual annotations
+        const taskAnnotations = (check.considerAnnotations || []).filter(ann => ann.taskType === taskType);
+        const annotationGroups = {};
+        taskAnnotations.forEach(ann => {
+            const groupKey = `${ann.user}_${ann.timestamp}_${ann.newStatus}`;
+            if (!annotationGroups[groupKey]) {
+                annotationGroups[groupKey] = true;
+            }
+        });
+        const taskAnnotationCount = Object.keys(annotationGroups).length;
+        
+        // Get latest annotation status (first in array since we use unshift) for badge color
+        let badgeClass = '';
+        if (taskAnnotations.length > 0) {
+            const latestStatus = taskAnnotations[0].newStatus;
+            if (latestStatus === 'clear') badgeClass = ' badge-clear';
+            else if (latestStatus === 'consider') badgeClass = ' badge-consider';
+            else if (latestStatus === 'fail') badgeClass = ' badge-fail';
+        }
+        
+        const annotationBadge = taskAnnotationCount > 0 ? `<span class="annotation-count-badge${badgeClass}">${taskAnnotationCount} Update${taskAnnotationCount > 1 ? 's' : ''}</span>` : '';
+        
         // Add annotations display
         const annotationsHtml = this.renderTaskAnnotations(taskType, check);
         
@@ -4468,6 +4517,7 @@ class ThirdfortChecksManager {
             <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
                     <div class="task-title">${taskTitle}</div>
+                    ${annotationBadge}
                     ${statusIcon}
                 </div>
                 ${headerChecksHtml}
@@ -5031,6 +5081,22 @@ class ThirdfortChecksManager {
         } else if (status === 'AL' || status === 'FA') {
             // Red circle with X
             return `<svg class="objective-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>`;
+        }
+        return '';
+    }
+    
+    getStatusIconSVG(status) {
+        // Return smaller circular status icons for annotation objectives
+        // Matches the status result strings: 'clear', 'consider', 'fail'
+        if (status === 'clear') {
+            // Green circle with checkmark
+            return `<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>`;
+        } else if (status === 'consider') {
+            // Orange circle with minus
+            return `<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
+        } else if (status === 'fail') {
+            // Red circle with X
+            return `<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>`;
         }
         return '';
     }
@@ -6805,6 +6871,63 @@ class ThirdfortChecksManager {
                   }
                 },
                 "updatedAt": "2025-11-07T14:29:17.960Z",
+                "considerAnnotations": [
+                  {
+                    "timestamp": "2025-11-09T13:27:20.862Z",
+                    "_id": "79kieI9",
+                    "newStatus": "consider",
+                    "reason": "Requested further ID from client as failed address task and didnt upload any PoA",
+                    "originalStatus": "consider",
+                    "taskType": "address",
+                    "objectivePath": "address.data_count",
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  },
+                  {
+                    "timestamp": "2025-11-09T13:27:20.862Z",
+                    "_id": "ykBZIn0",
+                    "newStatus": "consider",
+                    "reason": "Requested further ID from client as failed address task and didnt upload any PoA",
+                    "originalStatus": "consider",
+                    "taskType": "address",
+                    "objectivePath": "address.data_quality",
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  },
+                  {
+                    "timestamp": "2025-11-09T13:27:20.862Z",
+                    "_id": "NqKHVUI",
+                    "newStatus": "consider",
+                    "reason": "Requested further ID from client as failed address task and didnt upload any PoA",
+                    "originalStatus": "fail",
+                    "taskType": "documents:poa",
+                    "objectivePath": "documents:poa",
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  },
+                  {
+                    "timestamp": "2025-11-09T13:27:20.862Z",
+                    "_id": "Vb0qqvj",
+                    "newStatus": "clear",
+                    "reason": "Original ID Completed and passed instead of Enhanced ID",
+                    "originalStatus": "consider",
+                    "taskType": "identity",
+                    "objectivePath": "identity.nfc",
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  },
+                  {
+                    "timestamp": "2025-11-09T13:27:20.862Z",
+                    "_id": "NGoX9bN",
+                    "newStatus": "clear",
+                    "reason": "Original ID Completed and passed instead of Enhanced ID",
+                    "originalStatus": "consider",
+                    "taskType": "identity",
+                    "objectivePath": "identity.biometrics",
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  }
+                ],
                 "consumerPhone": "+447754241686",
                 "pdfReady": true,
                 "checkType": "electronic-id",
@@ -15914,37 +16037,238 @@ class ThirdfortChecksManager {
                     "result": "fail",
                     "status": "closed",
                     "data": {
-                      "quality": 0,
-                      "sources": 0
+                      "quality": 0
                     }
                   },
                   "peps": {
                     "breakdown": {
-                      "total_hits": 0,
-                      "hits": []
+                      "total_hits": 2,
+                      "hits": [
+                        {
+                          "name": "Jake Moran",
+                          "assets": [],
+                          "dob": {
+                            "main": "",
+                            "other": []
+                          },
+                          "score": 0.1,
+                          "flag_types": [
+                            "adverse-media",
+                            "adverse-media-violent-crime"
+                          ],
+                          "source_notes": {
+                            "complyadvantage-adverse-media": {
+                              "aml_types": [
+                                "adverse-media",
+                                "adverse-media-violent-crime"
+                              ],
+                              "country_codes": [
+                                "US"
+                              ],
+                              "name": "ComplyAdvantage Adverse Media"
+                            }
+                          },
+                          "institutions": [],
+                          "spouses": [],
+                          "political_positions": [],
+                          "countries": [
+                            "United States"
+                          ],
+                          "aka": [
+                            "Jake Moran"
+                          ],
+                          "id": "CPPFOJFI8OCU4PE",
+                          "match_types": [
+                            "equivalent_name",
+                            "name_variations_removal"
+                          ],
+                          "roles": [],
+                          "fields": [
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "United States"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "United States"
+                            },
+                            {
+                              "name": "Countries",
+                              "source": "",
+                              "value": "United States"
+                            }
+                          ],
+                          "media": [
+                            {
+                              "date": "2014-05-21T00:00:00Z",
+                              "snippet": "But after suffering a gut-wrenching 29-27, 20-25, 29-27 setback to the Redwings, the RedHawks rebounded to take down St. Patrick (25-19, 25-22) in another conference clash. Spearheading Marist's winning effort was Jake Moran, who registered five kills and six digs. Tom Inzinga equaled Moran's kill total, while Nick O'Gorman chipped in four kills and a service ace.",
+                              "title": "Community sports news - Southwest Community Publishing",
+                              "url": "https://www.southwestregionalpublishing.com/2014/05/21/community-sports-news-05-21-14-2/"
+                            },
+                            {
+                              "date": "2016-05-21T00:00:00Z",
+                              "snippet": "The best challenge to the Patriot stronghold, as evidenced this weekend, is O'Gorman, which took four of six heads-up championship matches against Lincoln. Sam Heckman (Flight 3), Jake Moran (Flight 4) and Michael Yousef (Flight 6) all racked up singles titles, while Flight 2 runner-up Wil McDowell and Heckman took home the Flight 2 doubles crown. \"They performed like I thought they would, and also expected,\" said Coach Don Barnes.",
+                              "title": "Lincoln caps third straight tennis title",
+                              "url": "https://www.argusleader.com/story/sports/high-school-sports/2016/05/21/midst-dynasty---lincoln-caps-third-straight-title/84666134/"
+                            }
+                          ],
+                          "associates": []
+                        },
+                        {
+                          "name": "Jacob Moran",
+                          "assets": [],
+                          "dob": {
+                            "main": "",
+                            "other": []
+                          },
+                          "score": 0.1,
+                          "flag_types": [
+                            "adverse-media",
+                            "adverse-media-general",
+                            "adverse-media-violent-crime"
+                          ],
+                          "source_notes": {
+                            "complyadvantage-adverse-media": {
+                              "aml_types": [
+                                "adverse-media",
+                                "adverse-media-general",
+                                "adverse-media-violent-crime"
+                              ],
+                              "country_codes": [
+                                "CA",
+                                "US"
+                              ],
+                              "name": "ComplyAdvantage Adverse Media"
+                            }
+                          },
+                          "institutions": [],
+                          "spouses": [],
+                          "political_positions": [],
+                          "countries": [
+                            "Canada",
+                            "United States"
+                          ],
+                          "aka": [
+                            "Jacob Benning Moran",
+                            "Jacob Moran"
+                          ],
+                          "id": "5F0CGJUQGD3KXR6",
+                          "match_types": [
+                            "aka_exact",
+                            "name_variations_removal"
+                          ],
+                          "roles": [],
+                          "fields": [
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Canada"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Canada, United States"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "United States"
+                            },
+                            {
+                              "name": "Countries",
+                              "source": "",
+                              "value": "Canada, United States"
+                            }
+                          ],
+                          "media": [
+                            {
+                              "date": "0001-01-01T00:00:00Z",
+                              "snippet": "GPD is in direct communication with the Michigan State Police and are working with them on the case following his capture, the agency said.<\\/p>\\n Shortly after GPD announced that Jacob Moran was in custody, the Johnson County Coroner\\u2019s Office formally identified Shaun Moran as the man who was killed in the shooting. The office ruled his death as homicide caused by a single gunshot wound.<\\/p>\\n",
+                              "title": "(no title)",
+                              "url": "https://dailyjournal.net/wp-json/wp/v2/posts/1816390"
+                            },
+                            {
+                              "date": "2021-03-01T00:00:00Z",
+                              "snippet": "They detained Moran and learned he had urinated on a tire of the car. \"Moran was heavily intoxicated on marijuana. He was arrested for prowling, public urination and public intoxication,\" police said.",
+                              "title": "530 Crime Watch: Man tried to rob bank across street from police station",
+                              "url": "https://www.usatoday.com/story/news/local/2021/03/01/530-crime-watch-arrest-jail-redding-police-shasta-sheriff/6870286002/?gnt-cfr=1"
+                            },
+                            {
+                              "date": "2023-08-29T00:00:00Z",
+                              "snippet": "Court documents show that Jacob Moran had allegedly assaulted his father twice in the hours before the shooting. Jacob Moran was charged Tuesday with residential entry, a Level 6 felony, and two counts of domestic battery both as a Level 6 felony and a misdemeanor, for the incidents. Charges for the shooting have not yet been filed.",
+                              "title": "Greenwood domestic dispute ends in fatal shooting - Daily Journal",
+                              "url": "https://dailyjournal.net/2023/08/29/greenwood-domestic-dispute-ends-in-fatal-shooting/"
+                            },
+                            {
+                              "date": "2024-11-15T00:00:00Z",
+                              "snippet": "Jacob Moran had been staying at his father's home but had reportedly been causing issues and been asked to leave the home. After being asked to leave the first time, Jacob Moran allegedly assaulted his father, leading to police being called. Later that day, he returned and again allegedly assaulted Shaun Moran, according to court documents.",
+                              "title": "Greenwood man convicted of murder of father following domestic dispute - Daily Journal",
+                              "url": "https://dailyjournal.net/2024/11/15/greenwood-man-convicted-of-murder-of-father-following-domestic-dispute/"
+                            },
+                            {
+                              "date": "2023-09-07T00:00:00Z",
+                              "snippet": "The gun's serial number was a match to the gun box that was found in the garage, court documents show. Jacob Moran was then arrested and taken to a Sturgis, Michigan jail on a charge of possession of an unregistered handgun. The BMW was impounded, court documents say.",
+                              "title": "Greenwood man, 22, charged with his father's murder - Daily Journal",
+                              "url": "https://dailyjournal.net/2023/09/07/greenwood-man-22-charged-with-his-fathers-murder/"
+                            },
+                            {
+                              "date": "0001-01-01T00:00:00Z",
+                              "snippet": "As deputies attempted to place Moran into custody for his warrant, Moran began to physically resist deputies. While resisting, Moran twice attempted to unholster a deputy's service firearm. After a brief struggle, Moran was arrested and then booked into the Humboldt County Correctional Facility on fresh charges of attempting to remove a peace officer's firearm (PC 148(d)) and resisting a peace officer (PC 148(a)(1)), in addition to his warrant charges of assault (PC 240) and battery (PC 242).",
+                              "title": "News Flash • County of Humboldt • CivicEngage",
+                              "url": "https://humboldtgov.org/CivicAlerts.aspx?AID=4279"
+                            },
+                            {
+                              "date": "2021-03-26T00:00:00Z",
+                              "snippet": "They immediately detained Moran and learned he urinated on a tire of the same car. Moran was \"heavily intoxicated on marijuana,\" and was ultimately arrested for public intoxication, public urination, and prowling.",
+                              "title": "Officers arrest prowler looking inside, and urinating on, a vehicle in Redding on Friday",
+                              "url": "https://krcrtv.com/news/local/bicycle-officers-catch-prowler-looking-inside-cars-in-redding-on-friday"
+                            },
+                            {
+                              "date": "2015-04-01T00:00:00Z",
+                              "snippet": "Moran then emerged, ran toward the plaintiff, and punched him. The officers arrested Moran. The plaintiff commenced this action against, among others, the defendant City of New York, alleging that the officers were negligent in failing to protect the plaintiff.",
+                              "title": "PHILIP v. MORAN | 127 A.D.3d 717 (2015) | 20150401440 | Leagle.com",
+                              "url": "https://www.leagle.com/decision/innyco20150401440"
+                            },
+                            {
+                              "date": "2023-08-29T00:00:00Z",
+                              "snippet": "When they arrived they found, Shaun Moran dead of an apparent gunshot wound in the home's garage, police say. Police say Jacob Moran is suspect in the shooting. It was reported that he was angry with Shaun Moran about being told to move out of the home, according to the news release.",
+                              "title": "UPDATE: Suspect in custody after deadly Greenwood shooting - Daily Journal",
+                              "url": "https://dailyjournal.net/2023/08/29/update-suspect-in-custody-after-deadly-greenwood-shooting/"
+                            },
+                            {
+                              "date": "2021-10-13T00:00:00Z",
+                              "snippet": "16 p.m., Humboldt County Sheriff's deputies on patrol in the 2400 block of Myrtle Avenue observed a suspicious male exhibiting behavior consistent with attempting a car burglary. Deputies contacted the man, 20-year-old Jacob Benning Moran, and learned that Moran had an outstanding misdemeanor warrant for his arrest. As deputies attempted to place Moran into custody for his warrant, Moran began to physically resist deputies.",
+                              "title": "Warrant suspect tries to grab deputy's gun during arrest in Myrtletown, HCSO says",
+                              "url": "https://krcrtv.com/north-coast-news/eureka-local-news/warrant-suspect-tries-to-grab-deputys-gun-during-arrest-in-myrtletown-hcso-says"
+                            }
+                          ],
+                          "associates": []
+                        }
+                      ]
                     },
                     "data": {
                       "dob": "2001-01-11T00:00:00.000Z",
                       "name": {
                         "first": "Jacob",
-                        "last": "Archer-Moran",
+                        "last": "Moran",
                         "other": "Robert"
                       },
                       "address": {
                         "postcode": "TR15 2ND",
                         "country": "GBR",
+                        "building_name": "94",
                         "street": "Southgate Street",
                         "building_number": "94",
                         "town": "Redruth"
                       }
                     },
-                    "result": "clear",
-                    "documents": [
-                      "d46az3w23amg030rw79g"
-                    ],
-                    "id": "d46az3c23amg030rw77g",
+                    "result": "consider",
+                    "documents": [],
+                    "id": "d46dq0m23amg030rw7y0",
                     "status": "closed",
-                    "createdAt": "2025-11-06T14:24:13.923Z"
+                    "createdAt": "2025-11-06T17:31:46.879Z"
                   },
                   "footprint": {
                     "breakdown": {
@@ -15974,6 +16298,7 @@ class ThirdfortChecksManager {
                       "address": {
                         "postcode": "TR15 2ND",
                         "country": "GBR",
+                        "building_name": "94",
                         "street": "Southgate Street",
                         "building_number": "94",
                         "town": "Redruth"
@@ -15981,42 +16306,76 @@ class ThirdfortChecksManager {
                       "dob": "2001-01-11T00:00:00.000Z",
                       "name": {
                         "first": "Jacob",
-                        "last": "Archer-Moran",
+                        "last": "Moran",
                         "other": "Robert"
                       }
                     },
                     "result": "fail",
                     "documents": [],
-                    "id": "d46az2c23amg030rw75g",
+                    "id": "d46dpzv23amg030rw7w0",
                     "status": "closed",
-                    "createdAt": "2025-11-06T14:24:09.471Z"
+                    "createdAt": "2025-11-06T17:31:43.354Z"
                   }
                 },
+                "updatedAt": "2025-11-06T17:31:53.390Z",
+                "considerAnnotations": [
+                  {
+                    "timestamp": "2025-11-09T12:37:02.558Z",
+                    "_id": "g22U9bn",
+                    "newStatus": "clear",
+                    "reason": "2 proof of address provided by client",
+                    "originalStatus": "consider",
+                    "taskType": "address",
+                    "objectivePath": "address.data_count",
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  },
+                  {
+                    "timestamp": "2025-11-09T12:37:02.558Z",
+                    "_id": "lglLjO5",
+                    "newStatus": "clear",
+                    "reason": "2 proof of address provided by client",
+                    "originalStatus": "consider",
+                    "taskType": "address",
+                    "objectivePath": "address.data_quality",
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  }
+                ],
                 "pdfReady": true,
                 "checkType": "lite-screen",
-                "initiatedAt": "2025-11-06T14:24:03.509Z",
+                "completedAt": "2025-11-06T17:31:53.390Z",
+                "initiatedAt": "2025-11-06T17:31:35.205Z",
                 "considerReasons": [
                   "address verification",
-                  "digital footprint"
+                  "digital footprint",
+                  "PEP hits"
                 ],
-                "pdfS3Key": "protected/UNXOQyZ",
-                "consumerName": "Jacob Archer-Moran",
+                "pdfS3Key": "protected/EOk8JBq",
+                "consumerName": "Jacob Moran",
                 "tasks": [
                   "report:footprint",
                   "report:peps"
                 ],
                 "updates": [
                   {
-                    "timestamp": "2025-11-06T14:24:03.509Z",
+                    "timestamp": "2025-11-06T17:31:35.205Z",
                     "update": "Lite Screen check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
                   },
                   {
-                    "timestamp": "2025-11-06T14:24:21.661Z",
-                    "update": "PEPs & Sanctions task completed"
+                    "timestamp": "2025-11-06T17:31:53.390Z",
+                    "update": "Transaction completed - awaiting PDF"
                   },
                   {
-                    "timestamp": "2025-11-06T14:24:59.640Z",
-                    "update": "PDF received and uploaded to S3 - CONSIDER: address verification, digital footprint"
+                    "timestamp": "2025-11-06T17:35:50.369Z",
+                    "update": "PDF received and uploaded to S3 - CONSIDER: address verification, digital footprint, PEP hits"
+                  },
+                  {
+                    "timestamp": "2025-11-06T17:35:52.182Z",
+                    "update": "PEPs & Sanctions task completed"
+                  },{
+                    "timestamp": "2025-11-09T12:37:02.558Z",
+                    "update": "2 consider annotations added by jacob.archer-moran"
                   }
                 ],
                 "status": "closed",
@@ -16024,12 +16383,13 @@ class ThirdfortChecksManager {
                 "piiData": {
                   "name": {
                     "first": "Jacob",
-                    "last": "Archer-Moran",
+                    "last": "Moran",
                     "other": "Robert"
                   },
                   "address": {
                     "postcode": "TR15 2ND",
                     "country": "GBR",
+                    "building_name": "94",
                     "street": "Southgate Street",
                     "building_number": "94",
                     "town": "Redruth"
@@ -16039,7 +16399,7 @@ class ThirdfortChecksManager {
                 },
                 "hasMonitoring": true,
                 "thirdfortResponse": {
-                  "name": "Jacob Archer-Moran - Lite Screening",
+                  "name": "Jacob Moran - Lite Screening",
                   "request": {
                     "tasks": [
                       {
@@ -16057,34 +16417,34 @@ class ThirdfortChecksManager {
                     ]
                   },
                   "ref": "21 Green Lane",
-                  "id": "d46az0c23amg030rw73g",
+                  "id": "d46dpx323amg030rw7tg",
                   "reports": [],
                   "status": "open",
                   "metadata": {
                     "notify": {
                       "type": "http",
                       "data": {
-                        "hmac_key": "Ues4QT63f9iE7YP6/AEgfV0oAxPz9ewWRrBNN2+XrfI=",
+                        "hmac_key": "GgUi5IyCFm4TOsMy3Q4cvq6bnQEBJq/0uRqECCRoz+4=",
                         "method": "POST",
                         "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
                       }
                     },
-                    "created_by": "d3t2m5q9io6g00ak3kmg",
+                    "created_by": "d3t0auq9io6g00ak3kkg",
                     "print": {
                       "team": "Cashiers",
                       "tenant": "Thurstan Hoskin Solicitors LLP",
-                      "user": "Jacob Archer-Moran"
+                      "user": "THS Bot"
                     },
                     "context": {
                       "gid": "d3t2k5a9io6g00ak3km0",
-                      "uid": "d3t2m5q9io6g00ak3kmg",
+                      "uid": "d3t0auq9io6g00ak3kkg",
                       "team_id": "d3t2k5a9io6g00ak3km0",
                       "tenant_id": "d3t2ifa9io6g00ak3klg"
                     },
                     "ce": {
-                      "uri": "/v1/checks/4151797871"
+                      "uri": "/v1/checks/4151797879"
                     },
-                    "created_at": "2025-11-06T14:24:01.434Z"
+                    "created_at": "2025-11-06T17:31:31.840Z"
                   },
                   "type": "v2",
                   "opts": {
@@ -16097,7 +16457,7 @@ class ThirdfortChecksManager {
                   "name": {
                     "data": {
                       "first": "Jacob",
-                      "last": "Archer-Moran",
+                      "last": "Moran",
                       "other": "Robert"
                     }
                   },
@@ -16108,7 +16468,7 @@ class ThirdfortChecksManager {
                     "data": {
                       "postcode": "TR15 2ND",
                       "country": "GBR",
-                      "building_name": "",
+                      "building_name": "94",
                       "flat_number": "",
                       "street": "Southgate Street",
                       "building_number": "94",
@@ -16118,8 +16478,8 @@ class ThirdfortChecksManager {
                   }
                 },
                 "hasAlerts": true,
-                "pdfAddedAt": "2025-11-06T14:24:59.640Z",
-                "transactionId": "d46az0c23amg030rw73g"
+                "pdfAddedAt": "2025-11-06T17:35:50.369Z",
+                "transactionId": "d46dpx323amg030rw7tg"
             },
             // Mock Check 10: Nigel Farage - Lite Screen - COMPLETED
             {
@@ -17170,27 +17530,60 @@ class ThirdfortChecksManager {
         
         let html = '<div class="task-annotations-section">';
         
-        // Show consider annotations
+        // Show consider annotations - grouped by user + timestamp + newStatus
         if (taskAnnotations.length > 0) {
-            html += '<div class="task-annotations-header">User Annotations</div>';
+            html += '<div class="task-annotations-header">Cashier Updates</div>';
+            
+            // Group annotations by user + timestamp + newStatus
+            const groups = {};
             taskAnnotations.forEach(ann => {
-                const date = new Date(ann.timestamp).toLocaleString('en-GB', { 
+                // Create a unique key for grouping: user_timestamp_newStatus
+                const groupKey = `${ann.user}_${ann.timestamp}_${ann.newStatus}`;
+                if (!groups[groupKey]) {
+                    groups[groupKey] = {
+                        user: ann.userName || ann.user,
+                        timestamp: ann.timestamp,
+                        newStatus: ann.newStatus,
+                        reason: ann.reason,
+                        objectives: []
+                    };
+                }
+                groups[groupKey].objectives.push({
+                    path: ann.objectivePath,
+                    originalStatus: ann.originalStatus,
+                    newStatus: ann.newStatus
+                });
+            });
+            
+            // Render each group as a mini card
+            Object.values(groups).forEach(group => {
+                const date = new Date(group.timestamp).toLocaleString('en-GB', { 
                     day: '2-digit', 
                     month: 'short', 
                     hour: '2-digit', 
                     minute: '2-digit' 
                 });
-                html += '<div class="task-annotation-card ' + ann.newStatus + '">';
-                html += '<div class="task-annotation-header">';
-                html += '<span class="status-badge ' + ann.originalStatus + '">' + ann.originalStatus.toUpperCase() + '</span>';
-                html += '<span class="arrow">→</span>';
-                html += '<span class="status-badge ' + ann.newStatus + '">' + ann.newStatus.toUpperCase() + '</span>';
+                
+                html += '<div class="annotation-mini-card">';
+                html += '<div class="annotation-mini-header">';
+                html += '<div class="annotation-mini-meta">';
+                html += '<strong>' + group.user + '</strong> • ' + date;
                 html += '</div>';
-                html += '<div class="task-annotation-body">';
-                html += '<p class="annotation-objective-path">' + this.formatObjectivePath(ann.objectivePath) + '</p>';
-                html += '<p class="annotation-reason">' + ann.reason + '</p>';
-                html += '<p class="annotation-meta">' + (ann.userName || ann.user) + ' • ' + date + '</p>';
-                html += '</div></div>';
+                html += '</div>';
+                html += '<div class="annotation-mini-body">';
+                html += '<p class="annotation-mini-reason">' + group.reason + '</p>';
+                html += '<div class="annotation-mini-objectives">';
+                
+                // Show all affected objectives with their status icons
+                group.objectives.forEach(obj => {
+                    const statusIcon = this.getStatusIconSVG(obj.newStatus);
+                    html += '<div class="annotation-objective-item">';
+                    html += statusIcon;
+                    html += '<span class="annotation-objective-label">' + this.formatObjectivePath(obj.path) + '</span>';
+                    html += '</div>';
+                });
+                
+                html += '</div></div></div>';
             });
         }
         
@@ -17775,10 +18168,11 @@ class ThirdfortChecksManager {
             annotations
         });
         
-        // Store context for success handler
+        // Store context for success handler (including annotations for PDF generation)
         this.pendingSave = {
             type: 'consider',
-            check: check
+            check: check,
+            annotations: annotations
         };
         
         // Clear pending updates
@@ -19040,9 +19434,23 @@ class ThirdfortChecksManager {
     
     generateConsiderPDF() {
         const check = this.currentCheck;
-        if (!check) return;
+        if (!check) {
+            console.error('❌ No current check for PDF generation');
+            return;
+        }
         
         const annotations = check.considerAnnotations || [];
+        
+        console.log('📄 Generating PDF with annotations:', annotations.length);
+        console.log('📄 Annotations:', annotations);
+        
+        // If no annotations exist, there's nothing to generate
+        if (annotations.length === 0) {
+            console.error('❌ No annotations to generate PDF for');
+            alert('No annotations found to generate PDF');
+            return;
+        }
+        
         const checkName = check.consumerName || check.companyName || 'Unknown';
         const checkRef = check.thirdfortResponse?.ref || check.transactionId || check.checkId;
         const checkType = this.getElectronicIDType(check) || check.checkType || 'Thirdfort Check';
@@ -19081,49 +19489,76 @@ class ThirdfortChecksManager {
             }
         };
         
-        // Build annotation cards HTML
-        let annotationsHTML = '';
+        // Group annotations by user + timestamp + newStatus (like in task card display)
+        const groups = {};
         annotations.forEach(ann => {
-            const taskColor = getTaskColor(ann.taskType);
-            const taskLabel = getTaskLabel(ann.taskType);
-            const taskTitle = this.getTaskTitle(ann.taskType);
-            const objectivePath = this.formatObjectivePath(ann.objectivePath);
-            const date = new Date(ann.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-            const time = new Date(ann.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            const groupKey = `${ann.user}_${ann.timestamp}_${ann.newStatus}`;
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    user: ann.userName || ann.user,
+                    timestamp: ann.timestamp,
+                    newStatus: ann.newStatus,
+                    reason: ann.reason,
+                    objectives: []
+                };
+            }
+            groups[groupKey].objectives.push({
+                taskType: ann.taskType,
+                path: ann.objectivePath,
+                originalStatus: ann.originalStatus,
+                newStatus: ann.newStatus
+            });
+        });
+        
+        // Build annotation cards HTML (one card per group)
+        let annotationsHTML = '';
+        Object.values(groups).forEach(group => {
+            const date = new Date(group.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            const time = new Date(group.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
             
-            const originalStatusClass = ann.originalStatus === 'clear' ? 'clear' : (ann.originalStatus === 'fail' ? 'fail' : 'consider');
-            const newStatusClass = ann.newStatus === 'clear' ? 'clear' : (ann.newStatus === 'fail' ? 'fail' : 'consider');
+            const newStatusClass = group.newStatus === 'clear' ? 'clear' : (group.newStatus === 'fail' ? 'fail' : 'consider');
             
             annotationsHTML += `
                 <div class="annotation-card">
                     <div class="annotation-header">
-                        <div class="task-icon" style="background: ${taskColor};">${taskLabel}</div>
                         <div class="annotation-task-info">
-                            <div class="annotation-task-title">${taskTitle}</div>
-                            <div class="annotation-objective">${objectivePath}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="status-change">
-                        <div class="status-box ${originalStatusClass}">
-                            ${getStatusIcon(ann.originalStatus)}
-                            <span>${ann.originalStatus.charAt(0).toUpperCase() + ann.originalStatus.slice(1)}</span>
-                        </div>
-                        <span class="status-arrow">→</span>
-                        <div class="status-box ${newStatusClass}">
-                            ${getStatusIcon(ann.newStatus)}
-                            <span>${ann.newStatus.charAt(0).toUpperCase() + ann.newStatus.slice(1)}</span>
+                            <div class="annotation-task-title">Update by ${group.user}</div>
+                            <div class="annotation-objective">${date}, ${time}</div>
                         </div>
                     </div>
                     
                     <div class="reason-box">
                         <div class="reason-label">Reason</div>
-                        <div class="reason-text">${ann.reason}</div>
+                        <div class="reason-text">${group.reason}</div>
                     </div>
                     
-                    <div class="annotation-footer">
-                        <span class="annotation-user">Updated by: ${ann.userName || ann.user}</span>
-                        <span class="annotation-date">${date}, ${time}</span>
+                    <div class="status-change" style="display: block;">
+                        <div class="reason-label" style="margin-bottom: 8px;">Affected Objectives</div>
+            `;
+            
+            // Show all affected objectives with their status icons
+            group.objectives.forEach(obj => {
+                const taskTitle = this.getTaskTitle(obj.taskType);
+                const objectivePath = this.formatObjectivePath(obj.path);
+                const taskColor = getTaskColor(obj.taskType);
+                const taskLabel = getTaskLabel(obj.taskType);
+                
+                annotationsHTML += `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px;">
+                        <div class="task-icon" style="background: ${taskColor};">${taskLabel}</div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 13px; font-weight: 600; color: #003c71;">${taskTitle}</div>
+                            <div style="font-size: 11px; color: #666;">${objectivePath}</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${getStatusIcon(obj.newStatus)}
+                            <span style="font-size: 12px; font-weight: 600; color: ${obj.newStatus === 'clear' ? '#388e3c' : (obj.newStatus === 'fail' ? '#d32f2f' : '#f7931e')};">${obj.newStatus.toUpperCase()}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            annotationsHTML += `
                     </div>
                 </div>
             `;
@@ -19167,14 +19602,14 @@ class ThirdfortChecksManager {
             </head>
             <body>
                 <div class="pdf-header">
-                    <div class="pdf-title">Consider Annotations Report</div>
+                    <div class="pdf-title">Cashier Updates Report</div>
                     <div class="check-info">
                         <div class="check-info-item"><span class="check-info-label">Check Type:</span><span>${checkType}</span></div>
-                        <div class="check-info-item"><span class="check-info-label">Consumer:</span><span>${checkName}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Client:</span><span>${checkName}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Transaction ID:</span><span>${check.transactionId || check.checkId}</span></div>
                         <div class="check-info-item"><span class="check-info-label">Check Reference:</span><span>${checkRef}</span></div>
                         <div class="check-info-item"><span class="check-info-label">Matter:</span><span>${matterName}</span></div>
                         <div class="check-info-item"><span class="check-info-label">Generated:</span><span>${generatedDate}, ${generatedTime}</span></div>
-                        <div class="check-info-item"><span class="check-info-label">Status:</span><span>${checkStatus}</span></div>
                     </div>
                 </div>
                 <div class="annotations-section">
@@ -19200,13 +19635,27 @@ class ThirdfortChecksManager {
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         
+        console.log('📄 Checking for html2pdf library...');
+        console.log('📄 html2pdf available:', typeof html2pdf !== 'undefined');
+        
         if (typeof html2pdf !== 'undefined') {
+            console.log('📄 Starting PDF generation...');
             // Generate PDF as blob and open in new window
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
+                console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
                 const pdfUrl = URL.createObjectURL(pdfBlob);
-                window.open(pdfUrl, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+                console.log('📄 Opening PDF in new window:', pdfUrl);
+                const popup = window.open(pdfUrl, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+                if (!popup) {
+                    console.error('❌ Popup blocked by browser');
+                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                }
+            }).catch(err => {
+                console.error('❌ Error generating PDF:', err);
+                alert('Error generating PDF: ' + err.message);
             });
         } else {
+            console.error('❌ html2pdf library not loaded');
             alert('PDF library not loaded. Please refresh the page.');
         }
     }
