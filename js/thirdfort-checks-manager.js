@@ -17946,7 +17946,9 @@ class ThirdfortChecksManager {
                 }
                 
                 taskItems.forEach(item => {
-                    overlayHTML += '<label class="objective-radio">';
+                    // Apply indentation based on nesting level (level 1+ = nested)
+                    const indent = item.level > 0 ? `style="padding-left: ${item.level * 20}px;"` : '';
+                    overlayHTML += `<label class="objective-radio" ${indent}>`;
                     overlayHTML += `<input type="checkbox" name="objectives" value="${item.path}" data-task="${taskType}" data-status="${item.status}" data-label="${item.label}">`;
                     overlayHTML += '<span>' + item.label + '</span>';
                     overlayHTML += '</label>';
