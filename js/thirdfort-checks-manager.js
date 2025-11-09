@@ -298,6 +298,8 @@ class ThirdfortChecksManager {
     }
     
     showListView() {
+        // Close any open overlays when going back to list
+        this.closeAllOverlays();
         this.switchView('list');
     }
     
@@ -19425,6 +19427,29 @@ class ThirdfortChecksManager {
         if (overlay) overlay.remove();
         // Clear pending dismissals when closing (unless we're just re-rendering)
         if (clearQueue) {
+            this.pendingDismissals = [];
+        }
+    }
+    
+    /**
+     * Close all overlays (used when loading new checks data)
+     */
+    closeAllOverlays() {
+        // Close consider overlay
+        const considerOverlay = document.getElementById('considerOverlay');
+        if (considerOverlay) {
+            considerOverlay.remove();
+            this.pendingUpdates = [];
+        }
+        
+        // Close SoF overlay
+        const sofOverlay = document.getElementById('sofOverlay');
+        if (sofOverlay) sofOverlay.remove();
+        
+        // Close PEP overlay
+        const pepOverlay = document.getElementById('pepOverlay');
+        if (pepOverlay) {
+            pepOverlay.remove();
             this.pendingDismissals = [];
         }
     }
