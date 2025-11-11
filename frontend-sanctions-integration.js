@@ -5,8 +5,8 @@
 import { callWithTimeout } from 'public/functions/backend-timeout.js';
 import wixWindowFrontend from 'wix-window-frontend';
 
-// Import your backend functions
-import { getSanctionsXML, generateSanctionsPutLink, updateEntryWithSanctionsPDF } from 'backend/sanctions';
+// Import your backend functions (adjust path as needed)
+import { getSanctionsXML, generateSanctionsPutLink, updateEntryWithSanctionsPDF } from 'backend/sanctions-integration.web.js';
 
 /**
  * Initialize sanctions checker iframe
@@ -27,6 +27,10 @@ export async function initiateSanctionsChecker(context) {
     let sanctionsRes;
     try {
         sanctionsRes = await callWithTimeout(getSanctionsXML());
+        
+        if (!sanctionsRes.success || !sanctionsRes.xml) {
+            throw new Error(sanctionsRes.result || 'Failed to fetch sanctions data');
+        }
     } catch (error) {
         console.error('❌ Failed to fetch sanctions XML:', error);
         $w('#sanctions-iframe').postMessage({
@@ -76,6 +80,11 @@ export function setupSanctionsMessageListener() {
                 console.log('📥 Iframe requesting sanctions XML...');
                 try {
                     const sanctionsRes = await callWithTimeout(getSanctionsXML());
+                    
+                    if (!sanctionsRes.success || !sanctionsRes.xml) {
+                        throw new Error(sanctionsRes.result || 'Failed to fetch sanctions data');
+                    }
+                    
                     $w('#sanctions-iframe').postMessage({
                         type: 'sanctions-xml',
                         xml: sanctionsRes.xml
@@ -120,6 +129,10 @@ async function handleFileDataRequest(message) {
             generateSanctionsPutLink(fileMetadata, entryId)
         );
         
+        if (!putLinkRes.success || !putLinkRes.url) {
+            throw new Error(putLinkRes.result || 'Failed to generate PUT link');
+        }
+        
         // Send PUT link back to iframe
         $w('#sanctions-iframe').postMessage({
             type: 'put-links',
@@ -153,11 +166,16 @@ async function handleUploadSuccess(message) {
     try {
         const fileObject = message.files[0];
         const entryId = message._id;
+        const uploader = message.uploader;
         
         // Update entry with sanctions PDF
-        await callWithTimeout(
-            updateEntryWithSanctionsPDF(entryId, fileObject)
+        const updateRes = await callWithTimeout(
+            updateEntryWithSanctionsPDF(fileObject, entryId, uploader)
         );
+        
+        if (!updateRes.success) {
+            throw new Error(updateRes.result || 'Failed to update entry');
+        }
         
         console.log('✅ Entry updated with sanctions PDF');
         

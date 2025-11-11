@@ -10,7 +10,7 @@ import {
     getSanctionsXML, 
     generateSanctionsPutLink, 
     updateEntryWithSanctionsPDF 
-} from 'backend/sanctions';
+} from 'backend/sanctions-integration.web.js';
 
 /**
  * INITIALIZATION FUNCTION
@@ -27,6 +27,10 @@ export async function initiateSanctions(context) {
     let sanctionsRes;
     try {
         sanctionsRes = await callWithTimeout(getSanctionsXML());
+        
+        if (!sanctionsRes.success || !sanctionsRes.xml) {
+            throw new Error(sanctionsRes.result || 'Failed to fetch sanctions data');
+        }
     } catch (error) {
         console.error('❌ Failed to fetch sanctions XML:', error);
         $w('#html17').postMessage({
@@ -78,6 +82,11 @@ $w('#html17').onMessage(async (event) => {
             console.log('📥 Iframe requesting sanctions XML...');
             try {
                 const sanctionsRes = await callWithTimeout(getSanctionsXML());
+                
+                if (!sanctionsRes.success || !sanctionsRes.xml) {
+                    throw new Error(sanctionsRes.result || 'Failed to fetch sanctions data');
+                }
+                
                 $w('#html17').postMessage({
                     type: 'sanctions-xml',
                     xml: sanctionsRes.xml
@@ -102,6 +111,10 @@ $w('#html17').onMessage(async (event) => {
                 const putLinkRes = await callWithTimeout(
                     generateSanctionsPutLink(fileMetadata, entryId)
                 );
+                
+                if (!putLinkRes.success || !putLinkRes.url) {
+                    throw new Error(putLinkRes.result || 'Failed to generate PUT link');
+                }
                 
                 // Send PUT link back to iframe
                 $w('#html17').postMessage({
@@ -132,10 +145,15 @@ $w('#html17').onMessage(async (event) => {
             try {
                 const fileObject = message.files[0];
                 const entryId = message._id;
+                const uploader = message.uploader;
                 
-                await callWithTimeout(
-                    updateEntryWithSanctionsPDF(entryId, fileObject)
+                const updateRes = await callWithTimeout(
+                    updateEntryWithSanctionsPDF(fileObject, entryId, uploader)
                 );
+                
+                if (!updateRes.success) {
+                    throw new Error(updateRes.result || 'Failed to update entry');
+                }
                 
                 console.log('✅ Entry updated with sanctions PDF');
                 
@@ -199,6 +217,11 @@ export async function onManualSanctionsSearchClick() {
     // Just fetch and send XML, no client data
     try {
         const sanctionsRes = await callWithTimeout(getSanctionsXML());
+        
+        if (!sanctionsRes.success || !sanctionsRes.xml) {
+            throw new Error(sanctionsRes.result || 'Failed to fetch sanctions data');
+        }
+        
         $w('#html17').postMessage({
             type: 'sanctions-xml',
             xml: sanctionsRes.xml
