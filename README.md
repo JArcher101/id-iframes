@@ -16,6 +16,17 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Full Thirdfort API compliance and validation
   - Parent communication: client-data, request-thirdfort-check
 
+- **`uk-sanctions-checker.html`** - UK Sanctions List Search ⭐ NEW
+  - Search FCDO UK Sanctions List for individuals and entities
+  - Live XML data fetching with session caching
+  - Exact and fuzzy name matching (Levenshtein distance)
+  - Year of birth filtering for individuals
+  - Comprehensive result display with expandable details
+  - PDF report generation with jsPDF
+  - Optional S3 upload integration for client entries
+  - Matches Thirdfort design system styling
+  - Parent communication: init-sanctions-search, file-data, upload-success
+
 ### Audit & Logging
 - **`audit-log.html`** - Audit Log Viewer
   - Timeline-based audit trail display

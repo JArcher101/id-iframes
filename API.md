@@ -6,20 +6,21 @@ This document describes the communication interface for each iframe component. A
 
 1. [Thirdfort Check Manager](#thirdfort-check-manager) ⭐ NEW
 2. [Thirdfort Checks Manager](#thirdfort-checks-manager) ⭐ NEW
-3. [Audit Log Viewer](#audit-log-viewer)
-4. [Wallboard Dashboard](#wallboard-dashboard)
-5. [Single Image Viewer](#single-image-viewer)
-6. [Image Viewer](#image-viewer)
-7. [Migration Tagger](#migration-tagger) ⭐ NEW
-8. [Image Uploader](#image-uploader)
-9. [Document Viewer](#document-viewer)
-10. [Message iframe](#message-iframe)
-11. [Report Uploader](#report-uploader)
-12. [Cashiers Log](#cashiers-log)
-13. [Chart Viewer](#chart-viewer)
-14. [Request Form](#request-form)
-15. [Client Details Form](#client-details-form)
-16. [General Integration Guide](#general-integration-guide)
+3. [UK Sanctions Checker](#uk-sanctions-checker) ⭐ NEW
+4. [Audit Log Viewer](#audit-log-viewer)
+5. [Wallboard Dashboard](#wallboard-dashboard)
+6. [Single Image Viewer](#single-image-viewer)
+7. [Image Viewer](#image-viewer)
+8. [Migration Tagger](#migration-tagger) ⭐ NEW
+9. [Image Uploader](#image-uploader)
+10. [Document Viewer](#document-viewer)
+11. [Message iframe](#message-iframe)
+12. [Report Uploader](#report-uploader)
+13. [Cashiers Log](#cashiers-log)
+14. [Chart Viewer](#chart-viewer)
+15. [Request Form](#request-form)
+16. [Client Details Form](#client-details-form)
+17. [General Integration Guide](#general-integration-guide)
 
 ---
 
@@ -953,6 +954,281 @@ Parent should:
    - "Load Mock Data" button generates 20 test checks
    - Useful for development and UI testing
    - Covers all check types, statuses, and edge cases
+
+---
+
+## UK Sanctions Checker
+
+**File:** `uk-sanctions-checker.html`
+
+### Description
+Search and query the UK FCDO Sanctions List for individuals and entities. Fetches live XML data from the official FCDO source, supports exact and fuzzy name matching, displays comprehensive sanction details, and generates PDF reports with optional S3 upload integration for client entries.
+
+### Features
+- **Live Data**: Fetches XML directly from https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml
+- **Session Caching**: XML parsed once on page load, cached for session duration
+- **Search Types**: Individual or Entity (Ships excluded)
+- **Match Modes**: Exact string matching or Fuzzy matching (Levenshtein distance with 70%+ similarity)
+- **Year of Birth Filter**: Optional filtering for individuals by birth year
+- **Comprehensive Results**: Shows names, aliases, nationalities, regimes, sanctions, addresses, statements
+- **Expandable Cards**: Collapsible details with full information on demand
+- **PDF Generation**: Professional reports with jsPDF including all search results
+- **S3 Upload**: Conditional upload when connected to client entry (using document-viewer pattern)
+- **Thirdfort Styling**: Matches existing iframe design system
+
+### Parent → iframe (Incoming Messages)
+
+#### `init-sanctions-search`
+Initialize the sanctions checker with optional pre-populated data and client entry context.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'init-sanctions-search',
+  clientName: 'John Smith',           // Optional: pre-fill name field
+  yearOfBirth: '1985',                // Optional: pre-fill year filter
+  searchType: 'individual',           // Optional: 'individual' | 'entity'
+  clientEntryId: 'bd8bee6a-465b-...',// Optional: enables S3 upload
+  userEmail: 'user@example.com'       // Optional: for audit trail
+}, '*');
+```
+
+**Parameters:**
+- `clientName` (string, optional): Pre-populates the search name field
+- `yearOfBirth` (string, optional): Pre-populates year of birth filter (individuals only)
+- `searchType` (string, optional): Pre-selects search type radio button ('individual' or 'entity')
+- `clientEntryId` (string, optional): If provided, enables S3 upload flow for PDF reports
+- `userEmail` (string, optional): User email for upload metadata
+
+**Behavior:**
+- If `clientEntryId` is provided, "Generate PDF" button becomes "Generate PDF & Upload"
+- PDF will be uploaded to S3 and added to client's `idDocuments` array
+- If `clientEntryId` is NOT provided, PDF is downloaded to user's device
+
+#### `put-links`
+Response from parent with S3 presigned upload URLs (same as document-viewer.html pattern).
+
+```javascript
+window.frames[0].postMessage({
+  type: 'put-links',
+  putLinks: [
+    {
+      url: 'https://s3.amazonaws.com/...',
+      s3Key: 'protected/xyz123',
+      contentType: 'application/pdf'
+    }
+  ],
+  images: ['protected/xyz123'],
+  _id: 'bd8bee6a-465b-...'
+}, '*');
+```
+
+Parent receives this after iframe sends `file-data` request.
+
+#### `put-error`
+Error response when presigned URL generation fails.
+
+```javascript
+window.frames[0].postMessage({
+  type: 'put-error',
+  message: 'Failed to generate upload link',
+  _id: 'bd8bee6a-465b-...'
+}, '*');
+```
+
+### iframe → Parent (Outgoing Messages)
+
+#### `file-data`
+Request for S3 presigned upload URLs before PDF upload (only sent if `clientEntryId` provided).
+
+```javascript
+// iframe sends
+{
+  type: 'file-data',
+  files: [
+    {
+      name: 'UK_Sanctions_Search_John_Smith_1730123456789.pdf',
+      size: 245678,
+      type: 'application/pdf',
+      documentType: 'sanctions-search-report',
+      documentSubType: 'uk-sanctions-list'
+    }
+  ],
+  _id: 'bd8bee6a-465b-...'
+}
+```
+
+**Parent should:**
+1. Generate S3 key and presigned PUT URL
+2. Store file metadata
+3. Respond with `put-links` message
+
+#### `upload-success`
+Confirmation after successful S3 upload.
+
+```javascript
+// iframe sends
+{
+  type: 'upload-success',
+  files: ['protected/xyz123'],
+  _id: 'bd8bee6a-465b-...',
+  userEmail: 'user@example.com'
+}
+```
+
+**Parent should:**
+1. Add S3 key to client entry's `idDocuments` array
+2. Update database
+3. Optionally show success notification
+
+### Search Functionality
+
+#### Exact Match Mode
+- Case-insensitive string matching
+- Searches across:
+  - Primary names (`<Name6>` with `NameType` = "Primary Name")
+  - All aliases (`<Name6>` with `NameType` = "Alias", "Also known as", etc.)
+  - Non-Latin script names (`<NameNonLatinScript>`)
+- Returns results where search term is contained in any name field
+
+#### Fuzzy Match Mode
+- Levenshtein distance algorithm
+- Calculates similarity score (0-100%)
+- Threshold: 70% similarity required
+- Searches same fields as exact match
+- Results sorted by match score (highest first)
+- Displays match percentage badge on results
+
+#### Year of Birth Filter
+- Only applicable to individuals
+- Searches `<DateOfBirth>` field
+- Supports formats: `dd/mm/yyyy` or `yyyy`
+- Extracts year and matches against search parameter
+
+### Result Display
+
+Each result card shows:
+- **Primary name** with individual/entity badge
+- **Match score** (fuzzy mode only)
+- **Key aliases** (first 4)
+- **Nationality** (individuals)
+- **Date of birth** (if available)
+- **Regime name**
+- **Date designated**
+- **Sanctions imposed** (asset freeze, travel ban, etc.)
+- **Primary address**
+- **Expand button** for full details
+
+Expanded details include:
+- All names (primary + aliases)
+- Non-Latin script names
+- Positions held (individuals)
+- All addresses
+- Other information
+- UK Statement of Reasons
+- Unique ID, source, last updated date
+
+### PDF Report Structure
+
+Generated PDF includes:
+1. **Header**: "UK Sanctions List Search Report"
+2. **Search Parameters**: Date, name, type, match mode, YOB (if used), result count
+3. **For Each Result**:
+   - Result number and primary name
+   - Type and match score
+   - Aliases (bulleted list)
+   - Nationality, DOB (if applicable)
+   - Regime name
+   - Date designated
+   - Sanctions imposed (bulleted list)
+   - Addresses (up to 3)
+   - Other information (condensed, first 8 lines)
+   - UK Statement of Reasons (full text)
+4. **Footer**: Data source disclaimer
+
+### Data Source
+
+**XML URL:** https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml
+
+**Data Structure:**
+- Root element: `<Designations>`
+- Each entry: `<Designation>`
+- Entry types: Individual, Entity, Ship (Ships filtered out)
+- Key fields parsed:
+  - `<UniqueID>`, `<IndividualEntityShip>`, `<RegimeName>`
+  - `<DateDesignated>`, `<LastUpdated>`
+  - `<Names><Name><Name6>`, `<NameType>`
+  - `<NonLatinNames><NonLatinName><NameNonLatinScript>`
+  - `<Addresses><Address>` (6 line fields + country)
+  - `<SanctionsImposed>` (pipe-separated)
+  - `<IndividualDetails>` (nationalities, DOB, positions)
+  - `<OtherInformation>`, `<UKStatementofReasons>`
+
+### Integration Example
+
+```javascript
+// Open sanctions checker in iframe
+const iframe = document.getElementById('sanctions-iframe');
+iframe.src = 'uk-sanctions-checker.html';
+
+// Listen for upload success
+window.addEventListener('message', (event) => {
+  if (event.data.type === 'file-data') {
+    // Generate S3 presigned URL
+    const s3Key = generateS3Key();
+    const putUrl = await generatePresignedPutUrl(s3Key);
+    
+    // Send put-links to iframe
+    iframe.contentWindow.postMessage({
+      type: 'put-links',
+      putLinks: [{
+        url: putUrl,
+        s3Key: s3Key,
+        contentType: 'application/pdf'
+      }],
+      images: [s3Key],
+      _id: event.data._id
+    }, '*');
+  }
+  
+  if (event.data.type === 'upload-success') {
+    // Update database
+    await wixData.update('ClientEntries', {
+      _id: event.data._id,
+      idDocuments: [...existingDocs, {
+        s3Key: event.data.files[0],
+        type: 'sanctions-search-report',
+        subType: 'uk-sanctions-list',
+        uploadedBy: event.data.userEmail,
+        uploadedAt: new Date()
+      }]
+    });
+    
+    console.log('✅ Sanctions report uploaded');
+  }
+});
+
+// Initialize with client data
+iframe.addEventListener('load', () => {
+  iframe.contentWindow.postMessage({
+    type: 'init-sanctions-search',
+    clientName: 'John Smith',
+    yearOfBirth: '1985',
+    searchType: 'individual',
+    clientEntryId: 'bd8bee6a-...',
+    userEmail: 'solicitor@example.com'
+  }, '*');
+});
+```
+
+### Notes
+
+- XML fetch happens once on page load, not on every search
+- Large XML file (~19MB) - allow 2-5 seconds for initial load
+- Session cache means fast subsequent searches
+- No backend proxy required - fetches directly from FCDO
+- CORS-enabled endpoint (public access)
+- Ships automatically filtered out during parsing
+- Results limited to exact type selected (individual OR entity, not both)
 
 ---
 

@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UK Sanctions List Search</title>
+  
+  <!-- jsPDF library for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <style>
+    /*
+    =====================================================================
+    CUSTOM FONTS - Base64 Embedded
+    =====================================================================
+    Transport Medium → for headings and buttons
+    Rotis fonts → for body text
+    =====================================================================
+    */
+    
+    /* Transport Medium - for headings and buttons */
+    @font-face {
+      font-family: 'Transport';
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+      unicode-range: U+0000-003F, U+0041-FFFF;
+      src: url(data:font/truetype;charset=utf-8;base64,/* COPY FROM thirdfort-checks-manager.css */) format('truetype');
+    }
+    
+    /* Rotis Sans Serif Regular - for body text */
+    @font-face {
+      font-family: 'RotisRegular';
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
+      src: url(data:font/truetype;charset=utf-8;base64,/* COPY FROM thirdfort-checks-manager.css */) format('opentype');
+    }
+    
+    /* Rotis Sans Serif Italic - for timestamps */
+    @font-face {
+      font-family: 'RotisItalic';
+      font-weight: 400;
+      font-style: italic;
+      font-display: swap;
+      src: url(data:font/truetype;charset=utf-8;base64,/* COPY FROM thirdfort-checks-manager.css */) format('opentype');
+    }
+    
+    /* Rotis Sans Serif Bold - for emphasis */
+    @font-face {
+      font-family: 'RotisBold';
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+      src: url(data:font/truetype;charset=utf-8;base64,/* COPY FROM thirdfort-checks-manager.css */) format('truetype');
+    }
+    
+    /*
+    =====================================================================
+    UK SANCTIONS CHECKER IFRAME
+    =====================================================================
+    Searches the live FCDO UK Sanctions List for individuals/entities.
+    Supports exact and fuzzy matching, PDF generation, and S3 upload.
+    =====================================================================
+    */
+    
+    /* CSS Variables */
+    :root { 
+      --primary-blue: #003C71;
+      --light-blue: #1d71b8;
+      --tan: #D4A574;
+      --green: #39b549;
+      --orange: #f7931e;
+      --red: #ff0000;
+      --grey: #6c757d;
+      --light-grey: #f5f5f5;
+      --border-grey: #e5e5e5;
+      --gap: 10px;
+    }
+    
+    /* Global reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body { 
+      font-family: 'RotisRegular', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+      background: #fff;
+      color: #111; 
+      padding: 20px; 
+      margin: 0; 
+      line-height: 1.6;
+      overflow-y: auto;
+    }
+    
+    /* Loading State */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .loading-overlay.hidden {
+      display: none;
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid var(--border-grey);
+      border-top-color: var(--primary-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      margin-top: 20px;
+      font-family: 'Transport', sans-serif;
+      font-size: 16px;
+      color: var(--grey);
+    }
+    
+    /* Header */
+    .header {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-family: 'Transport', sans-serif;
+      font-size: 28px;
+      color: var(--primary-blue);
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      font-size: 14px;
+      color: var(--grey);
+    }
+    
+    /* Search Form */
+    .search-form {
+      background: #fff;
+      border: 1px solid var(--border-grey);
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .form-group label {
+      display: block;
+      font-family: 'RotisBold', sans-serif;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      font-family: 'RotisRegular', sans-serif;
+      font-size: 14px;
+      border: 1px solid var(--border-grey);
+      border-radius: 6px;
+      transition: border-color 0.3s;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--light-blue);
+    }
+    
+    .form-group input::placeholder {
+      color: #999;
+    }
+    
+    /* Radio Buttons */
+    .radio-group {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+    
+    .radio-option {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .radio-option input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      margin-right: 8px;
+      cursor: pointer;
+      accent-color: var(--primary-blue);
+    }
+    
+    .radio-option label {
+      margin: 0;
+      cursor: pointer;
+      font-family: 'RotisRegular', sans-serif;
+      font-size: 14px;
+    }
+    
+    /* Toggle Switch */
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 26px;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: var(--primary-blue);
+    }
+    
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+    
+    .toggle-label {
+      font-family: 'RotisBold', sans-serif;
+      font-size: 14px;
+      color: #333;
+    }
+    
+    /* Button */
+    .btn {
+      padding: 12px 30px;
+      font-family: 'Transport', sans-serif;
+      font-size: 16px;
+      color: #fff;
+      background: var(--primary-blue);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.1s;
+      width: 100%;
+    }
+    
+    .btn:hover {
+      background: var(--light-blue);
+    }
+    
+    .btn:active {
+      transform: scale(0.98);
+    }
+    
+    .btn:disabled {
+      background: var(--grey);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    
+    .btn-secondary {
+      background: var(--tan);
+      margin-top: 10px;
+    }
+    
+    .btn-secondary:hover {
+      background: #c49563;
+    }
+    
+    /* Results Summary */
+    .results-summary {
+      background: var(--light-grey);
+      border: 1px solid var(--border-grey);
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .results-summary.hidden {
+      display: none;
+    }
+    
+    .results-count {
+      font-family: 'Transport', sans-serif;
+      font-size: 18px;
+      color: var(--primary-blue);
+    }
+    
+    .results-count .count {
+      font-family: 'RotisBold', sans-serif;
+      font-size: 22px;
+    }
+    
+    /* No Results */
+    .no-results {
+      background: #fff;
+      border: 2px dashed var(--border-grey);
+      border-radius: 8px;
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--grey);
+    }
+    
+    .no-results.hidden {
+      display: none;
+    }
+    
+    .no-results-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    .no-results h3 {
+      font-family: 'Transport', sans-serif;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    
+    .no-results p {
+      font-size: 14px;
+    }
+    
+    /* Result Cards */
+    .results-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .results-container.hidden {
+      display: none;
+    }
+    
+    .result-card {
+      background: #fff;
+      border: 1px solid var(--border-grey);
+      border-left: 4px solid var(--primary-blue);
+      border-radius: 8px;
+      padding: 20px;
+      transition: box-shadow 0.3s;
+    }
+    
+    .result-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 15px;
+      gap: 15px;
+    }
+    
+    .result-title {
+      flex: 1;
+    }
+    
+    .result-name {
+      font-family: 'Transport', sans-serif;
+      font-size: 20px;
+      color: var(--primary-blue);
+      margin-bottom: 5px;
+    }
+    
+    .result-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      font-family: 'RotisBold', sans-serif;
+      font-size: 11px;
+      text-transform: uppercase;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+    
+    .badge-individual {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    
+    .badge-entity {
+      background: #f3e5f5;
+      color: #7b1fa2;
+    }
+    
+    .badge-match {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+    
+    .result-details {
+      display: grid;
+      gap: 12px;
+    }
+    
+    .detail-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 10px;
+      font-size: 14px;
+    }
+    
+    .detail-label {
+      font-family: 'RotisBold', sans-serif;
+      color: #666;
+    }
+    
+    .detail-value {
+      color: #333;
+    }
+    
+    .aliases-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .alias-item {
+      background: var(--light-grey);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    
+    .sanctions-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    
+    .sanction-badge {
+      background: #ffebee;
+      color: #c62828;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'RotisBold', sans-serif;
+    }
+    
+    .expand-btn {
+      margin-top: 15px;
+      padding: 8px 20px;
+      font-family: 'Transport', sans-serif;
+      font-size: 14px;
+      color: var(--primary-blue);
+      background: transparent;
+      border: 1px solid var(--primary-blue);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+    }
+    
+    .expand-btn:hover {
+      background: var(--primary-blue);
+      color: #fff;
+    }
+    
+    .expanded-details {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-grey);
+      display: none;
+    }
+    
+    .expanded-details.visible {
+      display: block;
+    }
+    
+    .expanded-section {
+      margin-bottom: 20px;
+    }
+    
+    .expanded-section:last-child {
+      margin-bottom: 0;
+    }
+    
+    .section-title {
+      font-family: 'Transport', sans-serif;
+      font-size: 16px;
+      color: var(--primary-blue);
+      margin-bottom: 10px;
+    }
+    
+    .address-item {
+      background: var(--light-grey);
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    
+    .address-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .other-info {
+      background: #fffef0;
+      padding: 15px;
+      border-left: 3px solid var(--tan);
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    
+    .statement-of-reasons {
+      background: #fff9f9;
+      padding: 15px;
+      border-left: 3px solid var(--red);
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    
+    /* Error Message */
+    .error-message {
+      background: #ffebee;
+      border: 1px solid #ef5350;
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin-bottom: 20px;
+      color: #c62828;
+      font-size: 14px;
+    }
+    
+    .error-message.hidden {
+      display: none;
+    }
+    
+    /* Uploading Overlay */
+    .uploading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .uploading-overlay.show {
+      display: flex;
+    }
+    
+    .uploading-text {
+      margin-top: 20px;
+      font-family: 'Transport', sans-serif;
+      font-size: 18px;
+      color: var(--primary-blue);
+    }
+    
+    /* Responsive */
+    @media (max-width: 600px) {
+      body {
+        padding: 15px;
+      }
+      
+      .header h1 {
+        font-size: 24px;
+      }
+      
+      .search-form {
+        padding: 20px;
+      }
+      
+      .radio-group {
+        gap: 20px;
+      }
+      
+      .detail-row {
+        grid-template-columns: 1fr;
+      }
+      
+      .detail-label {
+        margin-bottom: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading UK Sanctions List...</div>
+  </div>
+  
+  <!-- Uploading Overlay -->
+  <div id="uploading-overlay" class="uploading-overlay">
+    <div class="spinner"></div>
+    <div class="uploading-text">Uploading PDF to S3...</div>
+  </div>
+  
+  <!-- Main Content -->
+  <div id="main-content" class="hidden">
+    <!-- Header -->
+    <div class="header">
+      <h1>UK Sanctions List Search</h1>
+      <p>Search the FCDO UK Sanctions List for individuals and entities</p>
+    </div>
+    
+    <!-- Search Form -->
+    <div class="search-form">
+      <div class="form-group">
+        <label for="search-name">Name *</label>
+        <input type="text" id="search-name" placeholder="Enter name to search" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="search-yob">Year of Birth (Optional)</label>
+        <input type="number" id="search-yob" placeholder="e.g. 1985" min="1900" max="2025">
+      </div>
+      
+      <div class="form-group">
+        <label>Search Type *</label>
+        <div class="radio-group">
+          <div class="radio-option">
+            <input type="radio" id="type-individual" name="search-type" value="individual" checked>
+            <label for="type-individual">Individual</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="type-entity" name="search-type" value="entity">
+            <label for="type-entity">Entity</label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div class="toggle-group">
+          <span class="toggle-label">Exact Match</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="fuzzy-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label">Fuzzy Match</span>
+        </div>
+      </div>
+      
+      <button id="search-btn" class="btn">Search Sanctions List</button>
+    </div>
+    
+    <!-- Error Message -->
+    <div id="error-message" class="error-message hidden"></div>
+    
+    <!-- Results Summary -->
+    <div id="results-summary" class="results-summary hidden">
+      <div class="results-count">
+        Found <span class="count" id="results-count">0</span> match(es)
+      </div>
+      <button id="generate-pdf-btn" class="btn btn-secondary" style="width: auto; margin: 0;">Generate PDF Report</button>
+    </div>
+    
+    <!-- No Results -->
+    <div id="no-results" class="no-results hidden">
+      <div class="no-results-icon">🔍</div>
+      <h3>No Matches Found</h3>
+      <p>No sanctions entries match your search criteria. Try adjusting your search terms or using fuzzy match.</p>
+    </div>
+    
+    <!-- Results Container -->
+    <div id="results-container" class="results-container hidden">
+      <!-- Results will be dynamically inserted here -->
+    </div>
+  </div>
+
+  <script>
+    /*
+    =====================================================================
+    UK SANCTIONS CHECKER - MAIN APPLICATION
+    =====================================================================
+    */
+    
+    // Global state
+    let sanctionsData = [];
+    let currentSearchResults = [];
+    let clientEntryId = null;
+    let userEmail = '';
+    let searchParams = {};
+    
+    // DOM elements
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const uploadingOverlay = document.getElementById('uploading-overlay');
+    const mainContent = document.getElementById('main-content');
+    const searchNameInput = document.getElementById('search-name');
+    const searchYOBInput = document.getElementById('search-yob');
+    const fuzzyToggle = document.getElementById('fuzzy-toggle');
+    const searchBtn = document.getElementById('search-btn');
+    const errorMessage = document.getElementById('error-message');
+    const resultsSummary = document.getElementById('results-summary');
+    const resultsCount = document.getElementById('results-count');
+    const noResults = document.getElementById('no-results');
+    const resultsContainer = document.getElementById('results-container');
+    const generatePdfBtn = document.getElementById('generate-pdf-btn');
+    
+    /*
+    =====================================================================
+    INITIALIZATION & DATA LOADING
+    =====================================================================
+    */
+    
+    // Initialize on page load
+    async function init() {
+      console.log('🚀 Initializing UK Sanctions Checker...');
+      
+      try {
+        await fetchSanctionsData();
+        mainContent.classList.remove('hidden');
+        loadingOverlay.classList.add('hidden');
+        console.log('✅ Initialization complete');
+      } catch (error) {
+        console.error('❌ Initialization failed:', error);
+        showError('Failed to load sanctions data. Please refresh the page.');
+        loadingOverlay.classList.add('hidden');
+      }
+    }
+    
+    // Fetch XML data from FCDO
+    async function fetchSanctionsData() {
+      console.log('📥 Fetching sanctions XML from FCDO...');
+      
+      try {
+        const response = await fetch('https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml', {
+          mode: 'cors',
+          cache: 'default'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const xmlText = await response.text();
+        console.log('✅ XML fetched successfully');
+        console.log(`📊 XML size: ${(xmlText.length / 1024 / 1024).toFixed(2)} MB`);
+        
+        parseSanctionsXML(xmlText);
+        console.log(`✅ Parsed ${sanctionsData.length} sanctions entries`);
+        
+      } catch (error) {
+        console.error('❌ Error fetching sanctions data:', error);
+        
+        // Check if this is a local file protocol issue
+        if (window.location.protocol === 'file:') {
+          console.warn('⚠️ Cannot fetch from file:// protocol. Please test on a web server.');
+          throw new Error('Cannot fetch data when opened as local file. Please host on a web server to test.');
+        }
+        
+        throw error;
+      }
+    }
+    
+    // Parse XML and extract designation data
+    function parseSanctionsXML(xmlText) {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+      
+      // Check for parsing errors
+      const parserError = xmlDoc.querySelector('parsererror');
+      if (parserError) {
+        throw new Error('XML parsing error');
+      }
+      
+      const designations = xmlDoc.querySelectorAll('Designation');
+      console.log(`📊 Found ${designations.length} total designations`);
+      
+      sanctionsData = [];
+      
+      designations.forEach(designation => {
+        const type = getTextContent(designation, 'IndividualEntityShip');
+        
+        // Skip ships - only process individuals and entities
+        if (type === 'Ship') {
+          return;
+        }
+        
+        const entry = {
+          uniqueId: getTextContent(designation, 'UniqueID'),
+          type: type,
+          dateDesignated: getTextContent(designation, 'DateDesignated'),
+          lastUpdated: getTextContent(designation, 'LastUpdated'),
+          regimeName: getTextContent(designation, 'RegimeName'),
+          designationSource: getTextContent(designation, 'DesignationSource'),
+          sanctionsImposed: getTextContent(designation, 'SanctionsImposed'),
+          otherInformation: getTextContent(designation, 'OtherInformation'),
+          ukStatement: getTextContent(designation, 'UKStatementofReasons'),
+          
+          // Names
+          names: [],
+          nonLatinNames: [],
+          
+          // Addresses
+          addresses: [],
+          
+          // Individual-specific
+          nationality: [],
+          dateOfBirth: '',
+          placeOfBirth: '',
+          positions: [],
+          
+          // Entity-specific
+          businessType: ''
+        };
+        
+        // Extract all names
+        const nameNodes = designation.querySelectorAll('Names > Name');
+        nameNodes.forEach(nameNode => {
+          const name = {
+            fullName: getTextContent(nameNode, 'Name6'),
+            type: getTextContent(nameNode, 'NameType'),
+            parts: {
+              name1: getTextContent(nameNode, 'Name1'),
+              name2: getTextContent(nameNode, 'Name2'),
+              name3: getTextContent(nameNode, 'Name3'),
+              name4: getTextContent(nameNode, 'Name4'),
+              name5: getTextContent(nameNode, 'Name5'),
+              name6: getTextContent(nameNode, 'Name6')
+            }
+          };
+          entry.names.push(name);
+        });
+        
+        // Extract non-Latin names
+        const nonLatinNodes = designation.querySelectorAll('NonLatinNames > NonLatinName');
+        nonLatinNodes.forEach(node => {
+          entry.nonLatinNames.push(getTextContent(node, 'NameNonLatinScript'));
+        });
+        
+        // Extract addresses
+        const addressNodes = designation.querySelectorAll('Addresses > Address');
+        addressNodes.forEach(addrNode => {
+          const address = {
+            line1: getTextContent(addrNode, 'AddressLine1'),
+            line2: getTextContent(addrNode, 'AddressLine2'),
+            line3: getTextContent(addrNode, 'AddressLine3'),
+            line4: getTextContent(addrNode, 'AddressLine4'),
+            line5: getTextContent(addrNode, 'AddressLine5'),
+            line6: getTextContent(addrNode, 'AddressLine6'),
+            country: getTextContent(addrNode, 'AddressCountry')
+          };
+          
+          // Build formatted address string
+          const parts = [
+            address.line1, address.line2, address.line3,
+            address.line4, address.line5, address.line6, address.country
+          ].filter(p => p);
+          
+          if (parts.length > 0) {
+            entry.addresses.push(parts.join(', '));
+          }
+        });
+        
+        // Extract individual details
+        if (type === 'Individual') {
+          const individualNode = designation.querySelector('IndividualDetails > Individual');
+          if (individualNode) {
+            // Nationalities
+            const nationalityNodes = individualNode.querySelectorAll('Nationalities > Nationality');
+            nationalityNodes.forEach(node => {
+              entry.nationality.push(node.textContent.trim());
+            });
+            
+            // Positions
+            const positionNodes = individualNode.querySelectorAll('Positions > Position');
+            positionNodes.forEach(node => {
+              entry.positions.push(node.textContent.trim());
+            });
+            
+            // Date of birth
+            entry.dateOfBirth = getTextContent(individualNode, 'DateOfBirth');
+            entry.placeOfBirth = getTextContent(individualNode, 'PlaceOfBirth');
+          }
+        }
+        
+        sanctionsData.push(entry);
+      });
+      
+      console.log(`✅ Processed ${sanctionsData.length} entries (excluding ships)`);
+    }
+    
+    // Helper to get text content from XML node
+    function getTextContent(parent, tagName) {
+      const element = parent.querySelector(tagName);
+      return element ? element.textContent.trim() : '';
+    }
+    
+    /*
+    =====================================================================
+    SEARCH FUNCTIONALITY
+    =====================================================================
+    */
+    
+    // Execute search
+    function performSearch() {
+      const searchName = searchNameInput.value.trim();
+      const searchYOB = searchYOBInput.value.trim();
+      const searchType = document.querySelector('input[name="search-type"]:checked').value;
+      const isFuzzy = fuzzyToggle.checked;
+      
+      if (!searchName) {
+        showError('Please enter a name to search');
+        return;
+      }
+      
+      console.log('🔍 Searching:', { searchName, searchYOB, searchType, isFuzzy });
+      
+      // Store search params for PDF generation
+      searchParams = { searchName, searchYOB, searchType, isFuzzy };
+      
+      // Filter by type
+      let filtered = sanctionsData.filter(entry => 
+        entry.type.toLowerCase() === searchType.toLowerCase()
+      );
+      
+      // Filter by year of birth if provided
+      if (searchYOB && searchType === 'individual') {
+        filtered = filtered.filter(entry => {
+          if (entry.dateOfBirth) {
+            // DOB format could be dd/mm/yyyy or yyyy
+            const year = entry.dateOfBirth.includes('/') 
+              ? entry.dateOfBirth.split('/').pop()
+              : entry.dateOfBirth;
+            return year === searchYOB;
+          }
+          return false;
+        });
+      }
+      
+      // Search by name
+      currentSearchResults = [];
+      
+      filtered.forEach(entry => {
+        let matchScore = 0;
+        let matchedName = '';
+        
+        // Check primary names and aliases
+        entry.names.forEach(name => {
+          const fullName = name.fullName || '';
+          
+          if (isFuzzy) {
+            const score = fuzzyMatchScore(searchName, fullName);
+            if (score > matchScore) {
+              matchScore = score;
+              matchedName = fullName;
+            }
+          } else {
+            if (fullName.toLowerCase().includes(searchName.toLowerCase())) {
+              matchScore = 100;
+              matchedName = fullName;
+            }
+          }
+        });
+        
+        // Check non-Latin names
+        entry.nonLatinNames.forEach(name => {
+          if (isFuzzy) {
+            const score = fuzzyMatchScore(searchName, name);
+            if (score > matchScore) {
+              matchScore = score;
+              matchedName = name;
+            }
+          } else {
+            if (name.toLowerCase().includes(searchName.toLowerCase())) {
+              matchScore = 100;
+              matchedName = name;
+            }
+          }
+        });
+        
+        // Add to results if match found
+        if ((isFuzzy && matchScore >= 70) || (!isFuzzy && matchScore > 0)) {
+          currentSearchResults.push({
+            ...entry,
+            matchScore: Math.round(matchScore),
+            matchedName: matchedName
+          });
+        }
+      });
+      
+      // Sort by match score (highest first)
+      currentSearchResults.sort((a, b) => b.matchScore - a.matchScore);
+      
+      console.log(`✅ Found ${currentSearchResults.length} matches`);
+      
+      // Display results
+      displayResults();
+    }
+    
+    // Fuzzy matching using Levenshtein distance
+    function fuzzyMatchScore(str1, str2) {
+      const s1 = str1.toLowerCase();
+      const s2 = str2.toLowerCase();
+      
+      // Quick check for exact match
+      if (s2.includes(s1)) {
+        return 100;
+      }
+      
+      const distance = levenshteinDistance(s1, s2);
+      const maxLength = Math.max(s1.length, s2.length);
+      const similarity = ((maxLength - distance) / maxLength) * 100;
+      
+      return similarity;
+    }
+    
+    // Levenshtein distance algorithm
+    function levenshteinDistance(str1, str2) {
+      const matrix = [];
+      
+      for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i];
+      }
+      
+      for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j;
+      }
+      
+      for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+          if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1,
+              matrix[i][j - 1] + 1,
+              matrix[i - 1][j] + 1
+            );
+          }
+        }
+      }
+      
+      return matrix[str2.length][str1.length];
+    }
+    
+    /*
+    =====================================================================
+    RESULTS DISPLAY
+    =====================================================================
+    */
+    
+    function displayResults() {
+      // Hide error
+      errorMessage.classList.add('hidden');
+      
+      if (currentSearchResults.length === 0) {
+        // No results
+        resultsSummary.classList.add('hidden');
+        resultsContainer.classList.add('hidden');
+        noResults.classList.remove('hidden');
+      } else {
+        // Show results
+        noResults.classList.add('hidden');
+        resultsSummary.classList.remove('hidden');
+        resultsContainer.classList.remove('hidden');
+        
+        resultsCount.textContent = currentSearchResults.length;
+        
+        // Clear previous results
+        resultsContainer.innerHTML = '';
+        
+        // Render each result
+        currentSearchResults.forEach((entry, index) => {
+          const card = createResultCard(entry, index);
+          resultsContainer.appendChild(card);
+        });
+      }
+    }
+    
+    function createResultCard(entry, index) {
+      const card = document.createElement('div');
+      card.className = 'result-card';
+      
+      // Get primary name
+      const primaryName = entry.names.find(n => n.type === 'Primary Name');
+      const displayName = primaryName ? primaryName.fullName : entry.matchedName;
+      
+      // Get aliases (excluding primary)
+      const aliases = entry.names
+        .filter(n => n.type !== 'Primary Name' && n.fullName)
+        .slice(0, 4)
+        .map(n => n.fullName);
+      
+      // Parse sanctions
+      const sanctions = entry.sanctionsImposed
+        .split('|')
+        .map(s => s.trim())
+        .filter(s => s);
+      
+      card.innerHTML = `
+        <div class="result-header">
+          <div class="result-title">
+            <div class="result-name">${escapeHtml(displayName)}</div>
+            <div class="result-badges">
+              <span class="badge ${entry.type === 'Individual' ? 'badge-individual' : 'badge-entity'}">
+                ${entry.type}
+              </span>
+              ${searchParams.isFuzzy ? `<span class="badge badge-match">${entry.matchScore}% Match</span>` : ''}
+            </div>
+          </div>
+        </div>
+        
+        <div class="result-details">
+          ${aliases.length > 0 ? `
+            <div class="detail-row">
+              <div class="detail-label">Aliases:</div>
+              <div class="detail-value">
+                <div class="aliases-list">
+                  ${aliases.map(a => `<span class="alias-item">${escapeHtml(a)}</span>`).join('')}
+                </div>
+              </div>
+            </div>
+          ` : ''}
+          
+          ${entry.nationality.length > 0 ? `
+            <div class="detail-row">
+              <div class="detail-label">Nationality:</div>
+              <div class="detail-value">${entry.nationality.join(', ')}</div>
+            </div>
+          ` : ''}
+          
+          ${entry.dateOfBirth ? `
+            <div class="detail-row">
+              <div class="detail-label">Date of Birth:</div>
+              <div class="detail-value">${entry.dateOfBirth}</div>
+            </div>
+          ` : ''}
+          
+          <div class="detail-row">
+            <div class="detail-label">Regime:</div>
+            <div class="detail-value">${escapeHtml(entry.regimeName)}</div>
+          </div>
+          
+          <div class="detail-row">
+            <div class="detail-label">Date Designated:</div>
+            <div class="detail-value">${entry.dateDesignated}</div>
+          </div>
+          
+          ${sanctions.length > 0 ? `
+            <div class="detail-row">
+              <div class="detail-label">Sanctions:</div>
+              <div class="detail-value">
+                <div class="sanctions-list">
+                  ${sanctions.map(s => `<span class="sanction-badge">${escapeHtml(s)}</span>`).join('')}
+                </div>
+              </div>
+            </div>
+          ` : ''}
+          
+          ${entry.addresses.length > 0 ? `
+            <div class="detail-row">
+              <div class="detail-label">Address:</div>
+              <div class="detail-value">${escapeHtml(entry.addresses[0])}</div>
+            </div>
+          ` : ''}
+        </div>
+        
+        <button class="expand-btn" onclick="toggleExpand(${index})">
+          <span id="expand-text-${index}">View Full Details</span>
+        </button>
+        
+        <div id="expanded-${index}" class="expanded-details">
+          ${entry.names.length > 0 ? `
+            <div class="expanded-section">
+              <div class="section-title">All Names</div>
+              ${entry.names.map(n => `
+                <div class="alias-item" style="margin-bottom: 5px;">
+                  ${escapeHtml(n.fullName)} <em>(${n.type})</em>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+          
+          ${entry.nonLatinNames.length > 0 ? `
+            <div class="expanded-section">
+              <div class="section-title">Non-Latin Names</div>
+              ${entry.nonLatinNames.map(n => `<div class="alias-item" style="margin-bottom: 5px;">${escapeHtml(n)}</div>`).join('')}
+            </div>
+          ` : ''}
+          
+          ${entry.positions.length > 0 ? `
+            <div class="expanded-section">
+              <div class="section-title">Positions</div>
+              ${entry.positions.map(p => `<div class="alias-item" style="margin-bottom: 5px;">${escapeHtml(p)}</div>`).join('')}
+            </div>
+          ` : ''}
+          
+          ${entry.addresses.length > 1 ? `
+            <div class="expanded-section">
+              <div class="section-title">All Addresses</div>
+              ${entry.addresses.map(a => `<div class="address-item">${escapeHtml(a)}</div>`).join('')}
+            </div>
+          ` : ''}
+          
+          ${entry.otherInformation ? `
+            <div class="expanded-section">
+              <div class="section-title">Other Information</div>
+              <div class="other-info">${escapeHtml(entry.otherInformation)}</div>
+            </div>
+          ` : ''}
+          
+          ${entry.ukStatement ? `
+            <div class="expanded-section">
+              <div class="section-title">UK Statement of Reasons</div>
+              <div class="statement-of-reasons">${escapeHtml(entry.ukStatement)}</div>
+            </div>
+          ` : ''}
+          
+          <div class="expanded-section">
+            <div class="section-title">Additional Details</div>
+            <div class="detail-row" style="margin-bottom: 8px;">
+              <div class="detail-label">Unique ID:</div>
+              <div class="detail-value">${entry.uniqueId}</div>
+            </div>
+            <div class="detail-row" style="margin-bottom: 8px;">
+              <div class="detail-label">Source:</div>
+              <div class="detail-value">${entry.designationSource}</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Last Updated:</div>
+              <div class="detail-value">${entry.lastUpdated}</div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      return card;
+    }
+    
+    // Toggle expand/collapse details
+    window.toggleExpand = function(index) {
+      const expandedDiv = document.getElementById(`expanded-${index}`);
+      const expandText = document.getElementById(`expand-text-${index}`);
+      
+      if (expandedDiv.classList.contains('visible')) {
+        expandedDiv.classList.remove('visible');
+        expandText.textContent = 'View Full Details';
+      } else {
+        expandedDiv.classList.add('visible');
+        expandText.textContent = 'Hide Details';
+      }
+    };
+    
+    /*
+    =====================================================================
+    PDF GENERATION
+    =====================================================================
+    */
+    
+    async function generatePDF() {
+      console.log('📄 Generating PDF...');
+      
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        let yPos = 20;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 15;
+        const maxWidth = pageWidth - (margin * 2);
+        
+        // Helper to check if we need a new page
+        const checkPageBreak = (requiredSpace) => {
+          if (yPos + requiredSpace > pageHeight - margin) {
+            doc.addPage();
+            yPos = 20;
+            return true;
+          }
+          return false;
+        };
+        
+        // Title
+        doc.setFontSize(18);
+        doc.setFont(undefined, 'bold');
+        doc.text('UK Sanctions List Search Report', margin, yPos);
+        yPos += 10;
+        
+        // Search parameters
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Search Date: ${new Date().toLocaleString()}`, margin, yPos);
+        yPos += 6;
+        doc.text(`Search Name: ${searchParams.searchName}`, margin, yPos);
+        yPos += 6;
+        doc.text(`Search Type: ${searchParams.searchType.charAt(0).toUpperCase() + searchParams.searchType.slice(1)}`, margin, yPos);
+        yPos += 6;
+        doc.text(`Match Mode: ${searchParams.isFuzzy ? 'Fuzzy' : 'Exact'}`, margin, yPos);
+        yPos += 6;
+        if (searchParams.searchYOB) {
+          doc.text(`Year of Birth: ${searchParams.searchYOB}`, margin, yPos);
+          yPos += 6;
+        }
+        doc.text(`Results Found: ${currentSearchResults.length}`, margin, yPos);
+        yPos += 10;
+        
+        // Separator line
+        doc.setDrawColor(0, 60, 113);
+        doc.setLineWidth(0.5);
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 10;
+        
+        // Results
+        currentSearchResults.forEach((entry, index) => {
+          checkPageBreak(40);
+          
+          // Result number
+          doc.setFontSize(14);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(0, 60, 113);
+          doc.text(`Result ${index + 1}`, margin, yPos);
+          yPos += 8;
+          
+          // Primary name
+          const primaryName = entry.names.find(n => n.type === 'Primary Name');
+          const displayName = primaryName ? primaryName.fullName : entry.matchedName;
+          
+          doc.setFontSize(12);
+          doc.setTextColor(0, 0, 0);
+          const nameLines = doc.splitTextToSize(displayName, maxWidth);
+          doc.text(nameLines, margin, yPos);
+          yPos += nameLines.length * 6;
+          
+          // Type and match score
+          doc.setFontSize(9);
+          doc.setFont(undefined, 'normal');
+          let badge = `Type: ${entry.type}`;
+          if (searchParams.isFuzzy) {
+            badge += ` | Match: ${entry.matchScore}%`;
+          }
+          doc.text(badge, margin, yPos);
+          yPos += 8;
+          
+          // Details
+          doc.setFontSize(10);
+          
+          // Aliases
+          const aliases = entry.names
+            .filter(n => n.type !== 'Primary Name' && n.fullName)
+            .map(n => n.fullName);
+          
+          if (aliases.length > 0) {
+            checkPageBreak(15);
+            doc.setFont(undefined, 'bold');
+            doc.text('Aliases:', margin, yPos);
+            yPos += 5;
+            doc.setFont(undefined, 'normal');
+            aliases.forEach(alias => {
+              checkPageBreak(6);
+              const aliasLines = doc.splitTextToSize(`• ${alias}`, maxWidth - 5);
+              doc.text(aliasLines, margin + 3, yPos);
+              yPos += aliasLines.length * 5;
+            });
+            yPos += 3;
+          }
+          
+          // Nationality
+          if (entry.nationality.length > 0) {
+            checkPageBreak(7);
+            doc.setFont(undefined, 'bold');
+            doc.text('Nationality: ', margin, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.text(entry.nationality.join(', '), margin + 25, yPos);
+            yPos += 6;
+          }
+          
+          // Date of Birth
+          if (entry.dateOfBirth) {
+            checkPageBreak(7);
+            doc.setFont(undefined, 'bold');
+            doc.text('Date of Birth: ', margin, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.text(entry.dateOfBirth, margin + 28, yPos);
+            yPos += 6;
+          }
+          
+          // Regime
+          checkPageBreak(7);
+          doc.setFont(undefined, 'bold');
+          doc.text('Regime: ', margin, yPos);
+          doc.setFont(undefined, 'normal');
+          const regimeLines = doc.splitTextToSize(entry.regimeName, maxWidth - 20);
+          doc.text(regimeLines, margin + 18, yPos);
+          yPos += regimeLines.length * 5 + 1;
+          
+          // Date Designated
+          checkPageBreak(7);
+          doc.setFont(undefined, 'bold');
+          doc.text('Date Designated: ', margin, yPos);
+          doc.setFont(undefined, 'normal');
+          doc.text(entry.dateDesignated, margin + 35, yPos);
+          yPos += 6;
+          
+          // Sanctions
+          const sanctions = entry.sanctionsImposed.split('|').map(s => s.trim()).filter(s => s);
+          if (sanctions.length > 0) {
+            checkPageBreak(10);
+            doc.setFont(undefined, 'bold');
+            doc.text('Sanctions Imposed:', margin, yPos);
+            yPos += 5;
+            doc.setFont(undefined, 'normal');
+            sanctions.forEach(sanction => {
+              checkPageBreak(6);
+              const sanctionLines = doc.splitTextToSize(`• ${sanction}`, maxWidth - 5);
+              doc.text(sanctionLines, margin + 3, yPos);
+              yPos += sanctionLines.length * 5;
+            });
+            yPos += 3;
+          }
+          
+          // Addresses
+          if (entry.addresses.length > 0) {
+            checkPageBreak(10);
+            doc.setFont(undefined, 'bold');
+            doc.text('Addresses:', margin, yPos);
+            yPos += 5;
+            doc.setFont(undefined, 'normal');
+            entry.addresses.slice(0, 3).forEach(addr => {
+              checkPageBreak(10);
+              const addrLines = doc.splitTextToSize(`• ${addr}`, maxWidth - 5);
+              doc.text(addrLines, margin + 3, yPos);
+              yPos += addrLines.length * 5;
+            });
+            yPos += 3;
+          }
+          
+          // Other Information (condensed)
+          if (entry.otherInformation) {
+            checkPageBreak(15);
+            doc.setFont(undefined, 'bold');
+            doc.text('Other Information:', margin, yPos);
+            yPos += 5;
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            const otherLines = doc.splitTextToSize(entry.otherInformation, maxWidth);
+            const condensedLines = otherLines.slice(0, 8); // Limit to first 8 lines
+            doc.text(condensedLines, margin, yPos);
+            yPos += condensedLines.length * 4 + 3;
+            doc.setFontSize(10);
+          }
+          
+          // UK Statement
+          if (entry.ukStatement) {
+            checkPageBreak(15);
+            doc.setFont(undefined, 'bold');
+            doc.text('UK Statement of Reasons:', margin, yPos);
+            yPos += 5;
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            const statementLines = doc.splitTextToSize(entry.ukStatement, maxWidth);
+            doc.text(statementLines, margin, yPos);
+            yPos += statementLines.length * 4 + 3;
+            doc.setFontSize(10);
+          }
+          
+          // Separator
+          yPos += 5;
+          checkPageBreak(10);
+          doc.setDrawColor(200, 200, 200);
+          doc.setLineWidth(0.3);
+          doc.line(margin, yPos, pageWidth - margin, yPos);
+          yPos += 10;
+        });
+        
+        // Footer on last page
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.setFont(undefined, 'italic');
+        const footerText = 'Data source: FCDO UK Sanctions List (https://sanctionslist.fcdo.gov.uk/)';
+        doc.text(footerText, margin, pageHeight - 15);
+        const disclaimer = 'This report is for informational purposes only. Verify all information with official sources.';
+        doc.text(disclaimer, margin, pageHeight - 10);
+        
+        console.log('✅ PDF generated');
+        
+        // Handle PDF - either upload to S3 or download
+        if (clientEntryId) {
+          await uploadPDFToS3(doc);
+        } else {
+          // Just download
+          const filename = `UK_Sanctions_Search_${searchParams.searchName.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+          doc.save(filename);
+          console.log('✅ PDF downloaded');
+        }
+        
+      } catch (error) {
+        console.error('❌ Error generating PDF:', error);
+        showError('Failed to generate PDF. Please try again.');
+      }
+    }
+    
+    /*
+    =====================================================================
+    S3 UPLOAD (using document-viewer.html pattern)
+    =====================================================================
+    */
+    
+    async function uploadPDFToS3(pdfDoc) {
+      console.log('📤 Preparing PDF for S3 upload...');
+      uploadingOverlay.classList.add('show');
+      
+      try {
+        // Generate PDF as blob
+        const pdfBlob = pdfDoc.output('blob');
+        const filename = `UK_Sanctions_Search_${searchParams.searchName.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+        
+        // Store file in window for later upload
+        window.pendingUploadFile = {
+          blob: pdfBlob,
+          filename: filename
+        };
+        
+        // Create file metadata
+        const fileMetadata = {
+          name: filename,
+          size: pdfBlob.size,
+          type: 'application/pdf',
+          documentType: 'sanctions-search-report',
+          documentSubType: 'uk-sanctions-list'
+        };
+        
+        console.log('📤 Sending file-data to parent:', fileMetadata);
+        
+        // Send file-data to parent (same as document-viewer.html)
+        window.parent.postMessage({
+          type: 'file-data',
+          files: [fileMetadata],
+          _id: clientEntryId
+        }, '*');
+        
+      } catch (error) {
+        console.error('❌ Error preparing PDF upload:', error);
+        uploadingOverlay.classList.remove('show');
+        showError('Failed to prepare PDF for upload. Please try again.');
+      }
+    }
+    
+    // Handle put-links from parent
+    async function handlePutLinks(data) {
+      console.log('📥 Received put-links from parent:', data);
+      
+      try {
+        const file = window.pendingUploadFile;
+        if (!file) {
+          throw new Error('No pending file to upload');
+        }
+        
+        const putLink = data.putLinks[0];
+        
+        // Upload to S3
+        console.log('⬆️ Uploading to S3...');
+        const uploadResponse = await fetch(putLink.url, {
+          method: 'PUT',
+          body: file.blob,
+          headers: {
+            'Content-Type': 'application/pdf'
+          }
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error(`S3 upload failed: ${uploadResponse.status}`);
+        }
+        
+        console.log('✅ S3 upload complete');
+        
+        // Send upload-success to parent
+        window.parent.postMessage({
+          type: 'upload-success',
+          files: data.images || [putLink.s3Key],
+          _id: clientEntryId,
+          userEmail: userEmail
+        }, '*');
+        
+        uploadingOverlay.classList.remove('show');
+        
+        // Show success message
+        showSuccess('PDF uploaded successfully!');
+        
+        // Clean up
+        delete window.pendingUploadFile;
+        
+      } catch (error) {
+        console.error('❌ Error uploading to S3:', error);
+        uploadingOverlay.classList.remove('show');
+        showError(`Upload failed: ${error.message}`);
+      }
+    }
+    
+    // Handle put-error from parent
+    function handlePutError(data) {
+      console.error('❌ PUT error from parent:', data);
+      uploadingOverlay.classList.remove('show');
+      showError(data.message || 'Failed to generate upload link');
+    }
+    
+    /*
+    =====================================================================
+    POST MESSAGE HANDLERS
+    =====================================================================
+    */
+    
+    window.addEventListener('message', (event) => {
+      if (!event.data || !event.data.type) return;
+      
+      console.log('📨 Received message:', event.data.type);
+      
+      switch (event.data.type) {
+        case 'init-sanctions-search':
+          handleInitMessage(event.data);
+          break;
+          
+        case 'put-links':
+          handlePutLinks(event.data);
+          break;
+          
+        case 'put-error':
+          handlePutError(event.data);
+          break;
+      }
+    });
+    
+    function handleInitMessage(data) {
+      console.log('📥 Received init data:', data);
+      
+      // Store client entry ID and user email
+      clientEntryId = data.clientEntryId || null;
+      userEmail = data.userEmail || '';
+      
+      // Pre-populate name
+      if (data.clientName) {
+        searchNameInput.value = data.clientName;
+      }
+      
+      // Pre-populate year of birth
+      if (data.yearOfBirth) {
+        searchYOBInput.value = data.yearOfBirth;
+      }
+      
+      // Preset search type
+      if (data.searchType) {
+        const radio = document.getElementById(`type-${data.searchType.toLowerCase()}`);
+        if (radio) {
+          radio.checked = true;
+        }
+      }
+      
+      // Update PDF button text based on whether we have a client entry
+      if (clientEntryId) {
+        generatePdfBtn.textContent = 'Generate PDF & Upload';
+      } else {
+        generatePdfBtn.textContent = 'Generate PDF Report';
+      }
+      
+      console.log('✅ Form pre-populated');
+    }
+    
+    /*
+    =====================================================================
+    UTILITY FUNCTIONS
+    =====================================================================
+    */
+    
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.classList.remove('hidden');
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function showSuccess(message) {
+      // Create temporary success popup
+      const popup = document.createElement('div');
+      popup.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--green);
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-family: 'Transport', sans-serif;
+        font-size: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        z-index: 10001;
+        animation: slideDown 0.3s ease;
+      `;
+      popup.textContent = message;
+      document.body.appendChild(popup);
+      
+      setTimeout(() => {
+        popup.style.animation = 'slideUp 0.3s ease';
+        setTimeout(() => popup.remove(), 300);
+      }, 3000);
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    /*
+    =====================================================================
+    EVENT LISTENERS
+    =====================================================================
+    */
+    
+    searchBtn.addEventListener('click', performSearch);
+    
+    searchNameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        performSearch();
+      }
+    });
+    
+    generatePdfBtn.addEventListener('click', generatePDF);
+    
+    /*
+    =====================================================================
+    INITIALIZE APPLICATION
+    =====================================================================
+    */
+    
+    init();
+    
+    console.log('✅ UK Sanctions Checker loaded');
+  </script>
+</body>
+</html>
+

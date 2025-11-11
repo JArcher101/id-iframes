@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`uk-sanctions-checker.html`** - UK Sanctions List Search ⭐ NEW FEATURE
+  - Search and query the UK FCDO Sanctions List for individuals and entities
+  - Live XML data fetching from https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml
+  - Session-based caching (XML parsed once on load, cached for session duration)
+  - Two search modes: Exact match (case-insensitive substring) and Fuzzy match (Levenshtein distance with 70%+ threshold)
+  - Search types: Individual or Entity (Ships automatically filtered out)
+  - Year of birth filtering for individuals with support for dd/mm/yyyy and yyyy formats
+  - Comprehensive result cards with expandable details
+  - Result display: Primary name, aliases, nationality, DOB, regime, sanctions, addresses
+  - Expandable full details: All names (Latin + non-Latin), positions, addresses, other information, UK Statement of Reasons
+  - Professional PDF report generation with jsPDF including all search results
+  - Conditional S3 upload integration when connected to client entry (using document-viewer pattern)
+  - Download-only mode when no client entry provided
+  - Matches Thirdfort design system with Transport/Rotis fonts and blue/tan color scheme
+  - Loading states, error handling, success notifications
+  - Parent communication: init-sanctions-search, file-data, put-links, upload-success
+  - Pre-population of search fields from parent (client name, year of birth, search type)
+  - Automatic button text change based on upload context ("Generate PDF" vs "Generate PDF & Upload")
 - **`migration-tagger.html`** - ID Image Migration Tool ⭐ NEW FEATURE
   - Migrate existing Wix Media Gallery images to S3 storage
   - Hotkey-based tagging system (P, DF, DB, OS, OF, OB, A)
