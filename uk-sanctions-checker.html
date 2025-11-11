@@ -1645,6 +1645,13 @@
       showError(data.message || 'Failed to generate upload link');
     }
     
+    // Handle upload-error from parent (database update failed)
+    function handleUploadError(data) {
+      console.error('❌ Upload error from parent:', data);
+      uploadingOverlay.classList.remove('show');
+      showError(data.message || 'Upload succeeded but failed to update record');
+    }
+    
     /*
     =====================================================================
     POST MESSAGE HANDLERS
@@ -1671,6 +1678,10 @@
           
         case 'put-error':
           handlePutError(event.data);
+          break;
+          
+        case 'upload-error':
+          handleUploadError(event.data);
           break;
       }
     });

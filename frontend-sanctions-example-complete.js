@@ -155,9 +155,6 @@ $w('#html17').onMessage(async (event) => {
                 
                 console.log('✅ Entry updated with sanctions PDF');
                 
-                // Show success notification
-                wixWindowFrontend.showNotification('Sanctions report uploaded successfully', 'success');
-                
                 // Optionally refresh document viewer if it's open
                 if ($w('#document-viewer-iframe')) {
                     $w('#document-viewer-iframe').postMessage({
@@ -167,7 +164,13 @@ $w('#html17').onMessage(async (event) => {
                 
             } catch (error) {
                 console.error('❌ Failed to update entry:', error);
-                wixWindowFrontend.showNotification('Upload succeeded but failed to update record', 'error');
+                
+                // Send error to iframe to display to user
+                $w('#html17').postMessage({
+                    type: 'upload-error',
+                    message: error.message || 'Upload succeeded but failed to update record',
+                    _id: message._id
+                });
             }
             break;
     }
