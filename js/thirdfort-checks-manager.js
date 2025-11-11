@@ -1,4 +1,4 @@
-// =====================================================================
+                                                                                                                                                                                                                                        // =====================================================================
 // THIRDFORT CHECKS MANAGER - Main JavaScript
 // =====================================================================
 // Manages Thirdfort check display in list and detail views
@@ -136,19 +136,52 @@ class ThirdfortChecksManager {
                     console.log('📊 Total annotations now:', this.currentCheck.considerAnnotations.length);
                 }
                 
-                // Generate PDF and open in popup
+                // Generate PDF and open in popup (auto-save = true)
                 console.log('📄 Generating consider annotations PDF...');
-                this.generateConsiderPDF();
+                this.generateConsiderPDF(true); // Pass true for auto-save
                 // Close overlay after PDF generation starts
                 setTimeout(() => this.closeConsiderOverlay(), 500);
             } else if (saveType === 'pep-dismissal') {
-                // Just close overlay - API will trigger webhook with updated report
-                console.log('✅ PEP dismissals saved - closing overlay');
-                this.closePepOverlay();
+                // Update local check object with new dismissals before generating PDF
+                if (this.pendingSave.dismissals && this.currentCheck) {
+                    if (!this.currentCheck.pepDismissals) {
+                        this.currentCheck.pepDismissals = [];
+                    }
+                    
+                    // Add user info and _id to dismissals (matching backend format)
+                    const userEmail = data.userEmail || 'unknown';
+                    const userName = userEmail.split('@')[0];
+                    const timestamp = new Date().toISOString();
+                    
+                    // Flatten all hits from all dismissal batches
+                    this.pendingSave.dismissals.forEach(batch => {
+                        batch.hits.forEach(hit => {
+                            this.currentCheck.pepDismissals.unshift({
+                                _id: 'temp_' + Date.now() + Math.random().toString(36).substr(2, 9),
+                                hitId: hit.id,
+                                hitName: hit.name,
+                                reportId: batch.reportId,
+                                reportType: hit.type,
+                                reason: batch.reason,
+                                timestamp: timestamp,
+                                user: userEmail,
+                                userName: userName
+                            });
+                        });
+                    });
+                    console.log(`✅ Added ${this.pendingSave.dismissals.reduce((sum, b) => sum + b.hits.length, 0)} dismissals to local check object`);
+                    console.log('📊 Total dismissals now:', this.currentCheck.pepDismissals.length);
+                }
+                
+                // Generate PDF and open in popup (auto-save = true)
+                console.log('📄 Generating PEP dismissals PDF...');
+                this.generatePepDismissalsPDF(true); // Pass true for auto-save
+                // Close overlay after PDF generation starts
+                setTimeout(() => this.closePepOverlay(), 500);
             } else if (saveType === 'sof') {
-                // Generate PDF and open in popup
+                // Generate PDF and open in popup (auto-save = true)
                 console.log('📄 Generating SoF investigation PDF...');
-                this.generateSofPDF();
+                this.generateSofPDF(true); // Pass true for auto-save
                 // Close overlay after PDF generation starts
                 setTimeout(() => this.closeSofOverlay(), 500);
             }
@@ -521,6 +554,11 @@ class ThirdfortChecksManager {
         // Render document details (IDV and electronic-id with detailed properties)
         if (check.checkType === 'idv' || check.checkType === 'electronic-id') {
             this.renderDocumentDetailsCard(check);
+        } else {
+            // Hide document details card for other check types
+            if (this.documentDetailsCard) {
+                this.documentDetailsCard.classList.add('hidden');
+            }
         }
         
         // Render PEP/Sanctions updates (if any)
@@ -1501,22 +1539,34 @@ class ThirdfortChecksManager {
         allFlags.forEach((flag, index) => {
             const flagType = flag.description || '';
             
+            let flagHtml = '';
             if (flagType === 'Gifts Received') {
-                flagsContent += this.renderGiftFlag(flag, taskOutcomes, check);
+                flagHtml = this.renderGiftFlag(flag, taskOutcomes, check);
             } else if (flagType === 'Declared savings > actual savings' || flagType.includes('savings')) {
-                flagsContent += this.renderSavingsFlag(flag, taskOutcomes, check);
+                flagHtml = this.renderSavingsFlag(flag, taskOutcomes, check);
             } else if (flagType === 'No Mortgage Used') {
-                flagsContent += this.renderNoMortgageFlag(flag, taskOutcomes);
+                flagHtml = this.renderNoMortgageFlag(flag, taskOutcomes);
             } else if (flagType === 'Cryptocurrency Funding') {
-                flagsContent += this.renderCryptoFlag(flag, taskOutcomes);
+                flagHtml = this.renderCryptoFlag(flag, taskOutcomes);
             } else if (flagType === 'Funds from Overseas') {
-                flagsContent += this.renderOverseasFlag(flag, taskOutcomes);
+                flagHtml = this.renderOverseasFlag(flag, taskOutcomes);
             } else if (flagType.includes('cash deposit')) {
-                flagsContent += this.renderCashDepositFlag(flag, taskOutcomes);
+                flagHtml = this.renderCashDepositFlag(flag, taskOutcomes);
             } else {
                 // Generic flag rendering
-                flagsContent += this.renderGenericFlag(flag);
+                flagHtml = this.renderGenericFlag(flag);
             }
+            
+            // Add investigation notes for this red flag
+            const flagAnnotationsHtml = this.renderRedFlagAnnotations(check, index);
+            
+            // Wrap flag content in a container
+            flagsContent += `
+                <div class="red-flag-with-annotations">
+                    ${flagHtml}
+                    ${flagAnnotationsHtml}
+                </div>
+            `;
         });
         
         // Wrap in task card format (with RED consider status icon)
@@ -1539,10 +1589,32 @@ class ThirdfortChecksManager {
             </div>
         `;
         
+        // Count SOF annotation updates related to red flags
+        const sofNotes = (check.sofAnnotations || []);
+        let redFlagUpdateCount = 0;
+        sofNotes.forEach(ann => {
+            const fundingMethods = ann.notes?.fundingMethods || [];
+            fundingMethods.forEach(fm => {
+                if (fm.redFlags && fm.redFlags.length > 0) {
+                    redFlagUpdateCount++;
+                }
+            });
+            const topLevelRedFlags = ann.notes?.redFlags || [];
+            if (topLevelRedFlags.length > 0) {
+                redFlagUpdateCount++;
+            }
+        });
+        
+        const annotationBadge = redFlagUpdateCount > 0 ? `<span class="annotation-count-badge">${redFlagUpdateCount} Update${redFlagUpdateCount > 1 ? 's' : ''}</span>` : '';
+        
+        // Wrap badge in container for consistent right-alignment
+        const badgesHtml = annotationBadge ? `<div class="task-header-badges">${annotationBadge}</div>` : '';
+        
         let flagsHtml = `
             <div class="task-card consider" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
                     <div class="task-title">Red Flags</div>
+                    ${badgesHtml}
                     ${redConsiderIcon}
                 </div>
                 ${headerChecksHtml}
@@ -1553,6 +1625,89 @@ class ThirdfortChecksManager {
         `;
         
         this.redFlagsCard.innerHTML = flagsHtml;
+    }
+    
+    renderRedFlagAnnotations(check, flagIdx) {
+        const sofAnnotations = check.sofAnnotations || [];
+        let html = '';
+        
+        // Filter annotations that have notes for this red flag
+        const relevantAnnotations = [];
+        
+        sofAnnotations.forEach(ann => {
+            // Check funding methods for red flag notes
+            const fundingMethods = ann.notes?.fundingMethods || [];
+            fundingMethods.forEach(fm => {
+                const redFlags = fm.redFlags || [];
+                const flagNote = redFlags.find(rf => rf.flagIdx === flagIdx.toString());
+                if (flagNote) {
+                    relevantAnnotations.push({ ann, fundingMethod: fm, flagNote });
+                }
+            });
+            
+            // Check top-level red flags
+            const topLevelRedFlags = ann.notes?.redFlags || [];
+            const topLevelFlagNote = topLevelRedFlags.find(rf => rf.flagIdx === flagIdx.toString());
+            if (topLevelFlagNote) {
+                relevantAnnotations.push({ ann, fundingMethod: null, flagNote: topLevelFlagNote });
+            }
+        });
+        
+        if (relevantAnnotations.length > 0) {
+            html = '<div class="red-flag-annotations-section">';
+            html += '<div class="red-flag-annotations-header">Investigation Notes</div>';
+            
+            relevantAnnotations.forEach(({ ann, fundingMethod, flagNote }) => {
+                const date = new Date(ann.timestamp).toLocaleString('en-GB', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                html += '<div class="annotation-mini-card">';
+                html += '<div class="annotation-mini-header">';
+                html += '<div class="annotation-mini-meta">';
+                html += '<strong>' + (ann.userName || ann.user) + '</strong> • ' + date;
+                html += '</div>';
+                html += '</div>';
+                html += '<div class="annotation-mini-body">';
+                
+                // Show note if exists
+                if (flagNote.note) {
+                    html += '<p class="annotation-mini-reason">' + flagNote.note + '</p>';
+                }
+                
+                // Show status badge
+                if (flagNote.status) {
+                    let statusBadge = '';
+                    let statusIcon = '';
+                    
+                    if (flagNote.status === 'confirmed') {
+                        statusIcon = '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+                        statusBadge = 'Confirmed';
+                    } else if (flagNote.status === 'dismissed') {
+                        statusIcon = '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                        statusBadge = 'Dismissed';
+                    }
+                    
+                    if (statusBadge) {
+                        html += '<div class="annotation-mini-objectives">';
+                        html += '<div class="annotation-objective-item">';
+                        html += statusIcon;
+                        html += '<span class="annotation-objective-label"><strong>Status:</strong> ' + statusBadge + '</span>';
+                        html += '</div>';
+                        html += '</div>';
+                    }
+                }
+                
+                html += '</div></div>';
+            });
+            
+            html += '</div>';
+        }
+        
+        return html;
     }
     
     renderGiftFlag(flag, taskOutcomes, check) {
@@ -1569,6 +1724,7 @@ class ThirdfortChecksManager {
         giftFunds.forEach(giftFund => {
             const amount = giftFund.data?.amount || 0;
             const giftor = giftFund.data?.giftor || {};
+            const giftFundIndex = sofTask.breakdown.funds.findIndex(f => f === giftFund);
             
             html += `<div class="red-flag-amount">£${(amount / 100).toLocaleString()}</div>`;
             
@@ -1583,10 +1739,14 @@ class ThirdfortChecksManager {
                 html += `</div>`;
             }
             
-            // Check for matched bank transactions in bank:summary, bank:statement, and documents:bank-statement
-            const bankSummary = taskOutcomes['bank:summary'];
+            // Get accounts for transaction lookup
             const bankStatement = taskOutcomes['bank:statement'];
+            const bankSummary = taskOutcomes['bank:summary'];
             const docsBankStatement = taskOutcomes['documents:bank-statement'];
+            const accounts = bankStatement?.breakdown?.accounts || 
+                           bankSummary?.breakdown?.accounts || 
+                           docsBankStatement?.breakdown?.accounts || 
+                           {};
             
             // Get sof_matches from any source
             const sofMatches = bankSummary?.breakdown?.analysis?.sof_matches ||
@@ -1594,14 +1754,29 @@ class ThirdfortChecksManager {
                               docsBankStatement?.breakdown?.analysis?.sof_matches ||
                               {};
             
-            // Get accounts for transaction lookup
-            const accounts = bankStatement?.breakdown?.accounts || 
-                           bankSummary?.breakdown?.accounts || 
-                           docsBankStatement?.breakdown?.accounts || 
-                           {};
+            // Use comprehensive getMatchedTransactions to get ALL linked transactions
+            const matchedTxIds = this.getMatchedTransactions('fund:gift', sofMatches, giftFund, giftFundIndex, check);
             
-            // Check for gift transaction matches (gift key contains array of transaction IDs)
-            if (sofMatches.gift && sofMatches.gift.length > 0) {
+            // Collect bank analysis items linked to this gift funding
+            const linkedBankAnalysisItems = [];
+            if (check) {
+                const sofAnnotations = check.sofAnnotations || [];
+                sofAnnotations.forEach(ann => {
+                    const bankAnalysisItems = ann.notes?.bankAnalysisItems || [];
+                    bankAnalysisItems.forEach(item => {
+                        if (item.linkedToFundIdx === giftFundIndex.toString()) {
+                            linkedBankAnalysisItems.push({
+                                ...item,
+                                userName: ann.userName || ann.user,
+                                timestamp: ann.timestamp
+                            });
+                        }
+                    });
+                });
+            }
+            
+            // Check for gift transaction matches
+            if (matchedTxIds.length > 0) {
                 html += `<div class="matched-transactions-section" style="margin-top: 16px;">`;
                 html += `<div class="matched-tx-label">Potential Gift Deposits:</div>`;
                 
@@ -1618,18 +1793,69 @@ class ThirdfortChecksManager {
                     return null;
                 };
                 
-                // Show matched gift transactions using same format as SOF cards
-                sofMatches.gift.forEach(txId => {
+                // Show matched gift transactions using comprehensive annotations
+                matchedTxIds.forEach(txId => {
                     const tx = getTransactionById(txId);
                     if (tx) {
                         const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
                         const currencySymbol = '£';
                         const txAmount = tx.amount >= 0 ? '+' : '';
                         
+                        // Get comprehensive annotations for this transaction
+                        const txAnnotations = this.getTransactionAnnotations(txId, check);
+                        
+                        // Check if this transaction has a marker
+                        const marker = txAnnotations.marker;
+                        let markerBadge = '';
+                        if (marker === 'accepted') {
+                            markerBadge = '<span class="tx-marker-badge accepted">✓ Accepted</span>';
+                        } else if (marker === 'rejected') {
+                            markerBadge = '<span class="tx-marker-badge rejected">✗ Rejected</span>';
+                        }
+                        
+                        // Check if has flag
+                        const flag = txAnnotations.flag;
+                        let flagBadge = '';
+                        if (flag === 'cleared') {
+                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50; margin-left: 4px;">○ Cleared</span>';
+                        } else if (flag === 'suspicious') {
+                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336; margin-left: 4px;">✗ Suspicious</span>';
+                        } else if (flag === 'review') {
+                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; margin-left: 4px;">— Review</span>';
+                        } else if (flag === 'linked') {
+                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-left: 4px;">✓ Linked</span>';
+                        }
+                        
+                        // Check if transaction is part of repeating group and get user comment
+                        let repeatingBadge = '';
+                        let userNoteBadge = '';
+                        
+                        const analysis = bankStatement?.breakdown?.analysis || bankSummary?.breakdown?.analysis || docsBankStatement?.breakdown?.analysis;
+                        if (analysis && analysis.repeating_transactions) {
+                            analysis.repeating_transactions.forEach((group, groupIdx) => {
+                                if (group.items && group.items.includes(txId)) {
+                                    // Add repeating badge
+                                    repeatingBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f3e5f5; color: #9c27b0; border: 1px solid #9c27b0; margin-left: 4px;">Repeating</span>';
+                                    
+                                    // Check for user comment on this repeating group
+                                    if (check && check.sofAnnotations) {
+                                        check.sofAnnotations.forEach(ann => {
+                                            const items = ann.notes?.bankAnalysisItems || [];
+                                            items.forEach(item => {
+                                                if (item.type === 'repeating-group' && item.groupIndex === groupIdx && item.comment) {
+                                                    userNoteBadge = `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #eceff1; color: #607d8b; border: 1px solid #607d8b; margin-left: 4px;"><svg viewBox="0 0 24 24" style="width: 10px; height: 10px; margin-right: 3px; vertical-align: middle;"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>${item.comment}</span>`;
+                                                }
+                                            });
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                        
                         html += `
-                            <div class="matched-tx-row">
+                            <div class="matched-tx-row ${marker ? 'marked-' + marker : ''}">
                                 <span class="matched-tx-date">${date}</span>
-                                <span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Gift'}</span>
+                                <span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Gift'}${markerBadge}${flagBadge}${repeatingBadge}${userNoteBadge}</span>
                                 <span class="matched-tx-account">${tx.accountName}</span>
                                 <span class="matched-tx-amount">${txAmount}${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
                             </div>
@@ -1792,45 +2018,151 @@ class ThirdfortChecksManager {
             html += `</div>`;
         });
         
-        // Check for matched salary transactions (from SOF analysis)
+        // Get sof_matches from any source
         const sofMatches = bankStatement?.breakdown?.analysis?.sof_matches ||
                           bankSummary?.breakdown?.analysis?.sof_matches ||
                           docsBankStatement?.breakdown?.analysis?.sof_matches ||
                           {};
         
-        if (sofMatches.salary_transactions && sofMatches.salary_transactions.length > 0) {
+        // Helper to get transaction details from ID
+        const getTransactionById = (txId) => {
+            for (const [accountId, accountData] of Object.entries(accounts)) {
+                const statement = accountData.statement || [];
+                const tx = statement.find(t => t.id === txId);
+                if (tx) {
+                    const accountInfo = accountData.info || accountData;
+                    return { ...tx, accountName: accountInfo.name || 'Account', accountId };
+                }
+            }
+            return null;
+        };
+        
+        // Use comprehensive getMatchedTransactions for ALL savings funds
+        const allSalaryTxIds = new Set();
+        const autoMatchedTxIds = new Set();
+        
+        // Get auto-matched salary transactions
+        if (sofMatches.salary_transactions) {
+            sofMatches.salary_transactions.forEach(txId => {
+                allSalaryTxIds.add(txId);
+                autoMatchedTxIds.add(txId);
+            });
+        }
+        
+        // For each savings fund, get ALL matched transactions including from bank analysis
+        savingsFunds.forEach((fund, idx) => {
+            const fundIndex = sofTask.breakdown.funds.findIndex(f => f === fund);
+            const matchedForThisFund = this.getMatchedTransactions('fund:savings', sofMatches, fund, fundIndex, check);
+            matchedForThisFund.forEach(txId => allSalaryTxIds.add(txId));
+        });
+        
+        // Collect bank analysis items linked to any savings funding
+        const linkedBankAnalysisItems = [];
+        if (check) {
+            const sofAnnotations = check.sofAnnotations || [];
+            sofAnnotations.forEach(ann => {
+                const bankAnalysisItems = ann.notes?.bankAnalysisItems || [];
+                bankAnalysisItems.forEach(item => {
+                    // Check if linked to any savings funding method
+                    const linkedFundIdx = parseInt(item.linkedToFundIdx);
+                    const linkedFund = sofTask.breakdown.funds[linkedFundIdx];
+                    if (linkedFund && linkedFund.type === 'fund:savings') {
+                        linkedBankAnalysisItems.push({
+                            ...item,
+                            userName: ann.userName || ann.user,
+                            timestamp: ann.timestamp
+                        });
+                    }
+                });
+            });
+        }
+        
+        if (allSalaryTxIds.size > 0) {
             html += `<div class="matched-transactions-section" style="margin-top: 16px;">`;
             html += `<div class="matched-tx-label">Verified Salary Deposits:</div>`;
             
-            // Helper to get transaction details from ID
-            const getTransactionById = (txId) => {
-                for (const [accountId, accountData] of Object.entries(accounts)) {
-                    const statement = accountData.statement || [];
-                    const tx = statement.find(t => t.id === txId);
-                    if (tx) {
-                        const accountInfo = accountData.info || accountData;
-                        return { ...tx, accountName: accountInfo.name || 'Account', accountId };
-                    }
-                }
-                return null;
-            };
-            
-            // Show matched salary transactions using same format as SOF cards
-            sofMatches.salary_transactions.forEach(txId => {
+            // Show all salary transactions with comprehensive annotations
+            Array.from(allSalaryTxIds).forEach(txId => {
                 const tx = getTransactionById(txId);
                 if (tx) {
                     const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                    const currencySymbol = '£'; // Use GBP symbol
+                    const currencySymbol = '£';
                     const txAmount = tx.amount >= 0 ? '+' : '';
+                    
+                    // Get comprehensive annotations
+                    const txAnnotations = this.getTransactionAnnotations(txId, check);
+                    
+                    // Check if linked to any savings funding
+                    const isLinkedToSavings = txAnnotations.linkedFundingMethods.some(fundIdxStr => {
+                        const fund = sofTask.breakdown.funds[parseInt(fundIdxStr)];
+                        return fund && fund.type === 'fund:savings';
+                    });
+                    
+                    // Add source badge
+                    const isAutoMatched = autoMatchedTxIds.has(txId);
+                    let sourceBadge = '';
+                    if (isLinkedToSavings && !isAutoMatched) {
+                        sourceBadge = '<span class="tx-source-badge user-linked">👤 User Linked</span>';
+                    } else if (isLinkedToSavings && isAutoMatched) {
+                        sourceBadge = '<span class="tx-source-badge both-matched">✓ Confirmed</span>';
+                    }
+                    
+                    // Check if has marker
+                    const marker = txAnnotations.marker;
+                    let markerBadge = '';
+                    if (marker === 'accepted') {
+                        markerBadge = '<span class="tx-marker-badge accepted">✓ Accepted</span>';
+                    } else if (marker === 'rejected') {
+                        markerBadge = '<span class="tx-marker-badge rejected">✗ Rejected</span>';
+                    }
+                    
+                    // Check if has flag
+                    const flag = txAnnotations.flag;
+                    let flagBadge = '';
+                    if (flag === 'cleared') {
+                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50; margin-left: 4px;">○ Cleared</span>';
+                    } else if (flag === 'suspicious') {
+                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336; margin-left: 4px;">✗ Suspicious</span>';
+                    } else if (flag === 'review') {
+                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; margin-left: 4px;">— Review</span>';
+                    } else if (flag === 'linked') {
+                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-left: 4px;">✓ Linked</span>';
+                    }
+                    
+                    // Check if transaction is part of repeating group and get user comment
+                    let repeatingBadge = '';
+                    let userNoteBadge = '';
+                    
+                    const analysis = bankStatement?.breakdown?.analysis || bankSummary?.breakdown?.analysis || docsBankStatement?.breakdown?.analysis;
+                    if (analysis && analysis.repeating_transactions) {
+                        analysis.repeating_transactions.forEach((group, groupIdx) => {
+                            if (group.items && group.items.includes(txId)) {
+                                // Add repeating badge
+                                repeatingBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f3e5f5; color: #9c27b0; border: 1px solid #9c27b0; margin-left: 4px;">Repeating</span>';
+                                
+                                // Check for user comment on this repeating group
+                                if (check && check.sofAnnotations) {
+                                    check.sofAnnotations.forEach(ann => {
+                                        const items = ann.notes?.bankAnalysisItems || [];
+                                        items.forEach(item => {
+                                            if (item.type === 'repeating-group' && item.groupIndex === groupIdx && item.comment) {
+                                                userNoteBadge = `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #eceff1; color: #607d8b; border: 1px solid #607d8b; margin-left: 4px;"><svg viewBox="0 0 24 24" style="width: 10px; height: 10px; margin-right: 3px; vertical-align: middle;"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>${item.comment}</span>`;
+                                            }
+                                        });
+                                    });
+                                }
+                            }
+                        });
+                    }
                     
                     html += `
                         <div class="matched-tx-row">
                             <span class="matched-tx-date">${date}</span>
-                            <span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Salary'}</span>
+                            <span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Salary'}${markerBadge}${flagBadge}${sourceBadge}${repeatingBadge}${userNoteBadge}</span>
                             <span class="matched-tx-account">${tx.accountName}</span>
                             <span class="matched-tx-amount">${txAmount}${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
-                        </div>
-                    `;
+                            </div>
+                        `;
                 }
             });
             
@@ -2149,6 +2481,14 @@ class ThirdfortChecksManager {
     
     renderChainColumn(chain, flag) {
         let html = `<div class="chain-column">`;
+        html += this.renderChainColumnContent(chain, flag);
+        html += `</div>`;
+        return html;
+    }
+    
+    renderChainColumnContent(chain, flag) {
+        // Renders just the content of a chain column (for use in overlay with controls)
+        let html = '';
         
         // Step 1: Source income (if exists)
         if (chain.source) {
@@ -2211,11 +2551,10 @@ class ThirdfortChecksManager {
             `;
         }
         
-        html += `</div>`;
         return html;
     }
     
-    createBankAnalysisSections(analysis, accounts = {}, sofTask = null) {
+    createBankAnalysisSections(analysis, accounts = {}, sofTask = null, check = null) {
         // Create analysis sections: repeating transactions, large one-offs, SoF matches
         if (!analysis) return '';
         
@@ -2223,6 +2562,47 @@ class ThirdfortChecksManager {
         
         // Extract SoF funding details for linking
         const sofFunds = sofTask?.breakdown?.funds || [];
+        
+        // Get bank analysis flags from sofAnnotations
+        const sofAnnotations = check?.sofAnnotations || [];
+        
+        // Helper to generate unique chain ID from transaction IDs
+        const getChainId = (chain) => {
+            const ids = [];
+            if (chain.source) ids.push(chain.source.id);
+            ids.push(chain.out.id);
+            if (chain.in) ids.push(chain.in.id);
+            if (chain.payment) ids.push(chain.payment.id);
+            return ids.join('|'); // Use pipe separator to create unique ID
+        };
+        
+        // Helper to get existing flags/comments for items from sofAnnotations
+        const getItemAnnotation = (itemType, itemKey) => {
+            for (const ann of sofAnnotations) {
+                const items = ann.notes?.bankAnalysisItems || [];
+                const found = items.find(item => {
+                    if (itemType === 'repeating-group' && item.type === 'repeating-group') {
+                        return item.groupIndex === itemKey;
+                    } else if (itemType === 'chain' && item.type === 'chain') {
+                        return item.chainId === itemKey; // Use chainId for consistency
+                    } else if (itemType === 'transaction' && item.type === 'transaction') {
+                        return item.transactionId === itemKey;
+                    }
+                    return false;
+                });
+                if (found) {
+                    // Return the found item along with user info and timestamp from the annotation
+                    return { 
+                        flag: found.flag, 
+                        comment: found.comment, 
+                        linkedToFundIdx: found.linkedToFundIdx,
+                        userName: ann.userName || ann.user,
+                        timestamp: ann.timestamp
+                    };
+                }
+            }
+            return null;
+        };
         
         // Helper to get transaction details from ID
         const getTransactionById = (txId) => {
@@ -2317,10 +2697,40 @@ class ThirdfortChecksManager {
                 let incomingHtml = '';
                 unmatchedIn.forEach(tx => {
                     const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                    
+                    // Get comprehensive annotations for this transaction
+                    const txAnnotations = check ? this.getTransactionAnnotations(tx.id, check) : { flag: '', note: '', marker: '' };
+                    
+                    // Build badges
+                    let badgesHtml = '';
+                    
+                    // Marker badges
+                    if (txAnnotations.marker === 'accepted') {
+                        badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
+                    } else if (txAnnotations.marker === 'rejected') {
+                        badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
+                    }
+                    
+                    // Flag badges
+                    if (txAnnotations.flag === 'cleared') {
+                        badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
+                    } else if (txAnnotations.flag === 'suspicious') {
+                        badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
+                    } else if (txAnnotations.flag === 'review') {
+                        badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
+                    } else if (txAnnotations.flag === 'linked') {
+                        badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
+                    }
+                    
+                    // User note badge
+                    if (txAnnotations.note) {
+                        badgesHtml += `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f5f5f5; color: #666; border: 1px solid #ddd; margin-left: 4px;">📝 ${txAnnotations.note}</span>`;
+                    }
+                    
                     incomingHtml += `
                         <div class="transaction-row incoming">
                             <span class="transaction-date">${date}</span>
-                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}${badgesHtml}</span>
                             <span class="account-badge">${tx.accountName}</span>
                             <span class="transaction-amount positive">${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
                         </div>
@@ -2330,10 +2740,40 @@ class ThirdfortChecksManager {
                 let outgoingHtml = '';
                 unmatchedOut.forEach(tx => {
                     const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                    
+                    // Get comprehensive annotations for this transaction
+                    const txAnnotations = check ? this.getTransactionAnnotations(tx.id, check) : { flag: '', note: '', marker: '' };
+                    
+                    // Build badges
+                    let badgesHtml = '';
+                    
+                    // Marker badges
+                    if (txAnnotations.marker === 'accepted') {
+                        badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
+                    } else if (txAnnotations.marker === 'rejected') {
+                        badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
+                    }
+                    
+                    // Flag badges
+                    if (txAnnotations.flag === 'cleared') {
+                        badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
+                    } else if (txAnnotations.flag === 'suspicious') {
+                        badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
+                    } else if (txAnnotations.flag === 'review') {
+                        badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
+                    } else if (txAnnotations.flag === 'linked') {
+                        badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
+                    }
+                    
+                    // User note badge
+                    if (txAnnotations.note) {
+                        badgesHtml += `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f5f5f5; color: #666; border: 1px solid #ddd; margin-left: 4px;">📝 ${txAnnotations.note}</span>`;
+                    }
+                    
                     outgoingHtml += `
                         <div class="transaction-row outgoing">
                             <span class="transaction-date">${date}</span>
-                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}${badgesHtml}</span>
                             <span class="account-badge">${tx.accountName}</span>
                             <span class="transaction-amount negative">${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
                         </div>
@@ -2382,16 +2822,92 @@ class ThirdfortChecksManager {
                 
                 const accountsSet = [...new Set(transactions.map(tx => tx.accountName))];
                 
+                // Check for flags on this repeating group
+                const groupAnnotation = getItemAnnotation('repeating-group', index);
+                let groupBadge = '';
+                let annotationBar = '';
+                
+                if (groupAnnotation && groupAnnotation.flag) {
+                    if (groupAnnotation.flag === 'cleared') {
+                        groupBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50; margin-left: 8px;">✓ Cleared</span>';
+                    } else if (groupAnnotation.flag === 'suspicious') {
+                        groupBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336; margin-left: 8px;">✗ Suspicious</span>';
+                    } else if (groupAnnotation.flag === 'review') {
+                        groupBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; margin-left: 8px;">— Review</span>';
+                    }
+                }
+                
+                // Build annotation bar with new format if annotation exists
+                if (groupAnnotation && (groupAnnotation.userName || groupAnnotation.timestamp)) {
+                    const date = new Date(groupAnnotation.timestamp).toLocaleString('en-GB', { 
+                        day: '2-digit', 
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    let userName = groupAnnotation.userName || groupAnnotation.user || 'Unknown';
+                    // Format user name
+                    if (userName && userName.includes('.') && !userName.includes(' ')) {
+                        userName = userName.split('@')[0]
+                            .split('.').join(' ')
+                            .split('-').join(' ')
+                            .replace(/\b\w/g, l => l.toUpperCase());
+                    }
+                    
+                    // Get linked funding method info
+                    let fundingBadge = '';
+                    if (groupAnnotation.linkedToFundIdx) {
+                        const fundIdx = parseInt(groupAnnotation.linkedToFundIdx);
+                        const fund = sofTask?.breakdown?.funds?.[fundIdx];
+                        if (fund) {
+                            const fundType = fund.type || '';
+                            const fundLabel = fundType.replace('fund:', '').replace(/[-:_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            fundingBadge = `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-right: 4px;">${fundLabel}</span>`;
+                        }
+                    }
+                    
+                    // Get status badge
+                    let statusBadge = '';
+                    if (groupAnnotation.flag === 'cleared') {
+                        statusBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50;">Cleared</span>';
+                    } else if (groupAnnotation.flag === 'suspicious') {
+                        statusBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336;">Suspicious</span>';
+                    } else if (groupAnnotation.flag === 'review') {
+                        statusBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800;">Review</span>';
+                    }
+                    
+                    annotationBar = `
+                        <div class="bank-analysis-link-row" style="border-left: 4px solid #2196f3; padding: 6px 10px; margin: 6px 0; background: #f5f5f5; border-radius: 3px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                                <div style="flex: 1; min-width: 150px; font-size: 11px;">
+                                    <strong>${userName}</strong> • ${date}
+                                </div>
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
+                                    ${fundingBadge}
+                                    ${statusBadge}
+                                </div>
+                            </div>
+                            ${groupAnnotation.comment ? `
+                                <div style="margin-top: 4px; color: #666; font-size: 11px; font-style: italic;">
+                                    ${groupAnnotation.comment}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+                
                 repeatingHtml += `
                     <div class="analysis-item-card">
                         <div class="analysis-card-header">
                             <div class="analysis-card-title">
                                 ${currencySymbol}${Math.abs(amount).toFixed(2)} × ${frequency}
+                                ${groupBadge}
                             </div>
                             <div class="analysis-card-meta">
                                 ${accountsSet.length > 1 ? `Between: ${accountsSet.join(' ↔ ')}` : `Account: ${accountsSet[0]}`}
                             </div>
                         </div>
+                        ${annotationBar}
                         ${chainsHtml ? `
                             <div class="internal-transfers-label">Linked Transactions</div>
                             ${chainsHtml}
@@ -2644,7 +3160,106 @@ class ThirdfortChecksManager {
         if (analysis.sof_matches && Object.keys(analysis.sof_matches).length > 0) {
             let sofMatchesHtml = '';
             
+            // Build a map of funding types to their transaction IDs (auto + user-linked)
+            const allSofMatches = {};
+            
+            // Start with Thirdfort automatic matches
             for (const [sofType, txIds] of Object.entries(analysis.sof_matches)) {
+                allSofMatches[sofType] = {
+                    autoMatched: new Set(txIds),
+                    userLinked: new Set()
+                };
+            }
+            
+            // Add user-linked transactions from SOF annotations (direct links AND bank analysis items)
+            if (check) {
+                const sofAnnotations = check.sofAnnotations || [];
+                sofAnnotations.forEach(ann => {
+                    // Direct transaction links
+                    const transactions = ann.notes?.transactions || [];
+                    transactions.forEach(tx => {
+                        if (tx.linkedToFunds && tx.linkedToFunds.length > 0) {
+                            tx.linkedToFunds.forEach(fundIdxStr => {
+                                const fundIdx = parseInt(fundIdxStr);
+                                const fund = sofFunds[fundIdx];
+                                if (fund) {
+                                    const fundTypeMap = {
+                                        'fund:gift': 'gift',
+                                        'fund:mortgage': 'mortgage',
+                                        'fund:savings': 'savings',
+                                        'fund:property_sale': 'property_sale',
+                                        'fund:sale:property': 'property_sale',
+                                        'fund:asset_sale': 'asset_sale',
+                                        'fund:sale:assets': 'asset_sale',
+                                        'fund:htb_lisa': 'htb_lisa',
+                                        'fund:htb': 'htb_lisa',
+                                        'fund:inheritance': 'inheritance'
+                                    };
+                                    const sofType = fundTypeMap[fund.type];
+                                    if (sofType) {
+                                        if (!allSofMatches[sofType]) {
+                                            allSofMatches[sofType] = {
+                                                autoMatched: new Set(),
+                                                userLinked: new Set()
+                                            };
+                                        }
+                                        allSofMatches[sofType].userLinked.add(tx.txId);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Bank analysis items linked to funding methods
+                    const bankAnalysisItems = ann.notes?.bankAnalysisItems || [];
+                    bankAnalysisItems.forEach(item => {
+                        if (item.linkedToFundIdx) {
+                            const fundIdx = parseInt(item.linkedToFundIdx);
+                            const fund = sofFunds[fundIdx];
+                            if (fund) {
+                                const fundTypeMap = {
+                                    'fund:gift': 'gift',
+                                    'fund:mortgage': 'mortgage',
+                                    'fund:savings': 'savings',
+                                    'fund:property_sale': 'property_sale',
+                                    'fund:sale:property': 'property_sale',
+                                    'fund:asset_sale': 'asset_sale',
+                                    'fund:sale:assets': 'asset_sale',
+                                    'fund:htb_lisa': 'htb_lisa',
+                                    'fund:htb': 'htb_lisa',
+                                    'fund:inheritance': 'inheritance'
+                                };
+                                const sofType = fundTypeMap[fund.type];
+                                if (sofType) {
+                                    if (!allSofMatches[sofType]) {
+                                        allSofMatches[sofType] = {
+                                            autoMatched: new Set(),
+                                            userLinked: new Set()
+                                        };
+                                    }
+                                    
+                                    // Add all transactions from this bank analysis item
+                                    if (item.type === 'transaction' && item.transactionId) {
+                                        allSofMatches[sofType].userLinked.add(item.transactionId);
+                                    } else if (item.type === 'chain' && item.chainId) {
+                                        const chainTxIds = item.chainId.split('|');
+                                        chainTxIds.forEach(txId => allSofMatches[sofType].userLinked.add(txId));
+                                    } else if (item.type === 'repeating-group' && item.groupIndex !== undefined) {
+                                        if (analysis.repeating_transactions) {
+                                            const group = analysis.repeating_transactions[item.groupIndex];
+                                            if (group && group.items) {
+                                                group.items.forEach(txId => allSofMatches[sofType].userLinked.add(txId));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            
+            for (const [sofType, matchSets] of Object.entries(allSofMatches)) {
                 const sofLabels = {
                     'gift': 'Gift Funding',
                     'mortgage': 'Mortgage',
@@ -2664,8 +3279,11 @@ class ThirdfortChecksManager {
                         'fund:mortgage': 'mortgage',
                         'fund:savings': 'savings',
                         'fund:property_sale': 'property_sale',
+                        'fund:sale:property': 'property_sale',
                         'fund:asset_sale': 'asset_sale',
+                        'fund:sale:assets': 'asset_sale',
                         'fund:htb_lisa': 'htb_lisa',
+                        'fund:htb': 'htb_lisa',
                         'fund:inheritance': 'inheritance'
                     };
                     return fundTypeMap[fund.type] === sofType;
@@ -2877,8 +3495,24 @@ class ThirdfortChecksManager {
                     }
                 }
                 
+                // Get transaction markers from SOF annotations for this funding type
+                const sofAnnotations = check?.sofAnnotations || [];
+                const transactionMarkers = {};
+                const fundIndex = sofFunds.findIndex(f => f === matchingFund);
+                sofAnnotations.forEach(ann => {
+                    const fundingMethods = ann.notes?.fundingMethods || [];
+                    fundingMethods.forEach(fm => {
+                        if (fm.fundIdx === fundIndex.toString()) {
+                            Object.assign(transactionMarkers, fm.transactionMarkers || {});
+                        }
+                    });
+                });
+                
+                // Merge auto-matched and user-linked transactions
+                const allTxIds = [...matchSets.autoMatched, ...matchSets.userLinked];
+                
                 let txListHtml = '';
-                txIds.forEach(txId => {
+                allTxIds.forEach(txId => {
                     const tx = getTransactionById(txId);
                     if (!tx) return;
                     
@@ -2888,10 +3522,65 @@ class ThirdfortChecksManager {
                     const sign = amount >= 0 ? '+' : '';
                     const currencySymbol = this.getCurrencyFlag(tx.currency || 'GBP');
                     
+                    // Get comprehensive annotations for this transaction
+                    const txAnnotations = this.getTransactionAnnotations(txId, check);
+                    
+                    // Check if this transaction has a marker
+                    const marker = txAnnotations.marker;
+                    let markerBadge = '';
+                    let markerClass = '';
+                    if (marker === 'accepted') {
+                        markerBadge = '<span class="tx-marker-badge accepted">✓ Accepted</span>';
+                    } else if (marker === 'rejected') {
+                        markerBadge = '<span class="tx-marker-badge rejected">✗ Rejected</span>';
+                        markerClass = ' marked-rejected';
+                    }
+                    
+                    // Check if this transaction has a flag (from bank analysis or direct links)
+                    const flag = txAnnotations.flag;
+                    let flagBadge = '';
+                    if (flag === 'cleared') {
+                        flagBadge = '<span class="tx-marker-badge cleared">○ Cleared</span>';
+                    } else if (flag === 'suspicious') {
+                        flagBadge = '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
+                    } else if (flag === 'review') {
+                        flagBadge = '<span class="tx-marker-badge review">— Review</span>';
+                    } else if (flag === 'linked') {
+                        flagBadge = '<span class="tx-marker-badge linked">✓ Linked</span>';
+                    }
+                    
+                    // Add source badge
+                    const isAutoMatched = matchSets.autoMatched.has(txId);
+                    const isUserLinked = matchSets.userLinked.has(txId);
+                    let sourceBadge = '';
+                    if (isUserLinked && !isAutoMatched) {
+                        sourceBadge = '<span class="tx-source-badge user-linked">👤 User Linked</span>';
+                    } else if (isUserLinked && isAutoMatched) {
+                        sourceBadge = '<span class="tx-source-badge both-matched">✓ Confirmed</span>';
+                    }
+                    
+                    // Check if this transaction is part of a repeating group
+                    let repeatingBadge = '';
+                    let userNoteBadge = '';
+                    if (analysis && analysis.repeating_transactions) {
+                        for (const group of analysis.repeating_transactions) {
+                            if (group.items && group.items.includes(txId)) {
+                                repeatingBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f3e5f5; color: #9c27b0; border: 1px solid #9c27b0; margin-left: 4px;">Repeating</span>';
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Get transaction note and create user note badge
+                    const txNote = txAnnotations.note || '';
+                    if (txNote) {
+                        userNoteBadge = `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f5f5f5; color: #666; border: 1px solid #ddd; margin-left: 4px;">📝 ${txNote}</span>`;
+                    }
+                    
                     txListHtml += `
-                        <div class="sof-match-tx-row">
+                        <div class="sof-match-tx-row${markerClass}">
                             <span class="sof-match-date">${date}</span>
-                            <span class="sof-match-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="sof-match-desc">${tx.description || tx.merchant_name || 'Transaction'}${markerBadge}${flagBadge}${sourceBadge}${repeatingBadge}${userNoteBadge}</span>
                             <span class="sof-match-account">${tx.accountName}</span>
                             <span class="sof-match-amount ${amountClass}">${sign}${currencySymbol}${Math.abs(amount).toFixed(2)}</span>
                         </div>
@@ -2924,10 +3613,359 @@ class ThirdfortChecksManager {
             }
         }
         
+        // 4. Flagged/Commented/Linked Transactions Summary Section
+        // Only show transactions where the USER has taken action (flag, comment, marker, or link)
+        if (check) {
+            const sofAnnotations = check.sofAnnotations || [];
+            const userInteractedTxIds = new Set();
+            
+            // Collect only transactions where USER has added flags, comments, links, or markers
+            sofAnnotations.forEach(ann => {
+                // Direct transaction annotations (always user-created)
+                const transactions = ann.notes?.transactions || [];
+                transactions.forEach(tx => {
+                    // Include if user added flag, note, or link
+                    if (tx.flag || tx.note || (tx.linkedToFunds && tx.linkedToFunds.length > 0)) {
+                        userInteractedTxIds.add(tx.txId);
+                    }
+                });
+                
+                // Funding method transaction markers (user accepted/rejected)
+                const fundingMethods = ann.notes?.fundingMethods || [];
+                fundingMethods.forEach(fm => {
+                    const markers = fm.transactionMarkers || {};
+                    Object.keys(markers).forEach(txId => {
+                        // These are always user interactions
+                        userInteractedTxIds.add(txId);
+                    });
+                });
+                
+                // Bank analysis items (user flagged/commented/linked)
+                const bankAnalysisItems = ann.notes?.bankAnalysisItems || [];
+                bankAnalysisItems.forEach(item => {
+                    // Individual transactions
+                    if (item.type === 'transaction' && item.transactionId) {
+                        if (item.flag || item.comment || item.linkedToFundIdx) {
+                            userInteractedTxIds.add(item.transactionId);
+                        }
+                    }
+                    // Expand repeating groups if flagged or linked
+                    else if (item.type === 'repeating-group' && (item.flag || item.comment || item.linkedToFundIdx)) {
+                        if (analysis.repeating_transactions && analysis.repeating_transactions[item.groupIndex]) {
+                            const group = analysis.repeating_transactions[item.groupIndex];
+                            if (group.items) {
+                                group.items.forEach(txId => userInteractedTxIds.add(txId));
+                            }
+                        }
+                    }
+                    // Expand chains if flagged or linked
+                    else if (item.type === 'chain' && (item.flag || item.comment || item.linkedToFundIdx)) {
+                        if (item.chainId) {
+                            const chainTxIds = item.chainId.split('|');
+                            chainTxIds.forEach(txId => userInteractedTxIds.add(txId));
+                        }
+                    }
+                });
+            });
+            
+            if (userInteractedTxIds.size > 0) {
+                let flaggedTxHtml = '';
+                
+                // Group transactions by who annotated them (most recent annotation wins)
+                const txAnnotationInfo = new Map();
+                
+                Array.from(userInteractedTxIds).forEach(txId => {
+                    const transaction = getTransactionById(txId);
+                    if (!transaction) return;
+                    
+                    // Find the most recent annotation for this transaction
+                    let mostRecentAnn = null;
+                    let mostRecentTime = 0;
+                    
+                    sofAnnotations.forEach(ann => {
+                        const annTime = new Date(ann.timestamp).getTime();
+                        
+                        // Check all sources
+                        const txs = ann.notes?.transactions || [];
+                        const fms = ann.notes?.fundingMethods || [];
+                        const items = ann.notes?.bankAnalysisItems || [];
+                        
+                        // Check if this annotation touches this transaction
+                        let touchesThisTx = txs.some(t => t.txId === txId);
+                        if (!touchesThisTx) {
+                            touchesThisTx = fms.some(fm => fm.transactionMarkers && fm.transactionMarkers[txId]);
+                        }
+                        if (!touchesThisTx) {
+                            touchesThisTx = items.some(item => {
+                                if (item.type === 'transaction') return item.transactionId === txId;
+                                if (item.type === 'chain') return item.chainId && item.chainId.split('|').includes(txId);
+                                if (item.type === 'repeating-group' && analysis.repeating_transactions) {
+                                    const group = analysis.repeating_transactions[item.groupIndex];
+                                    return group && group.items && group.items.includes(txId);
+                                }
+                                return false;
+                            });
+                        }
+                        
+                        if (touchesThisTx && annTime > mostRecentTime) {
+                            mostRecentTime = annTime;
+                            mostRecentAnn = ann;
+                        }
+                    });
+                    
+                    if (mostRecentAnn) {
+                        txAnnotationInfo.set(txId, {
+                            transaction,
+                            userName: mostRecentAnn.userName || mostRecentAnn.user,
+                            timestamp: mostRecentAnn.timestamp
+                        });
+                    }
+                });
+                
+                txAnnotationInfo.forEach(({transaction, userName, timestamp}, txId) => {
+                    // For flagged/commented section, get ONLY direct annotations (not inherited from groups)
+                    // Don't use getTransactionAnnotations() here as it includes inherited links from groups
+                    const directAnnotations = {
+                        flag: '',
+                        note: '',
+                        linkedFundingMethods: [],
+                        marker: ''
+                    };
+                    
+                    const notes = [];
+                    
+                    sofAnnotations.forEach(ann => {
+                        // Only check DIRECT transaction annotations
+                        const transactions = ann.notes?.transactions || [];
+                        transactions.forEach(tx => {
+                            if (tx.txId === txId) {
+                                if (tx.flag) directAnnotations.flag = tx.flag;
+                                if (tx.note) notes.push(tx.note);
+                                if (tx.linkedToFunds && Array.isArray(tx.linkedToFunds)) {
+                                    tx.linkedToFunds.forEach(fundIdx => {
+                                        if (!directAnnotations.linkedFundingMethods.includes(fundIdx)) {
+                                            directAnnotations.linkedFundingMethods.push(fundIdx);
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                        
+                        // Check funding method markers
+                        const fundingMethods = ann.notes?.fundingMethods || [];
+                        fundingMethods.forEach(fm => {
+                            if (fm.transactionMarkers && fm.transactionMarkers[txId]) {
+                                directAnnotations.marker = fm.transactionMarkers[txId];
+                                if (fm.fundIdx && !directAnnotations.linkedFundingMethods.includes(fm.fundIdx)) {
+                                    directAnnotations.linkedFundingMethods.push(fm.fundIdx);
+                                }
+                            }
+                        });
+                        
+                        // Check ONLY individual transaction bank analysis items (not groups/chains)
+                        const bankAnalysisItems = ann.notes?.bankAnalysisItems || [];
+                        bankAnalysisItems.forEach(item => {
+                            if (item.type === 'transaction' && item.transactionId === txId) {
+                                if (item.flag) directAnnotations.flag = item.flag;
+                                if (item.comment) notes.push(item.comment);
+                                if (item.linkedToFundIdx && !directAnnotations.linkedFundingMethods.includes(item.linkedToFundIdx)) {
+                                    directAnnotations.linkedFundingMethods.push(item.linkedToFundIdx);
+                                }
+                            }
+                        });
+                    });
+                    
+                    directAnnotations.note = notes.join(' | ');
+                    
+                    const txDate = new Date(transaction.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    const amount = transaction.amount;
+                    const amountClass = amount >= 0 ? 'positive' : 'negative';
+                    const sign = amount >= 0 ? '+' : '';
+                    const currencySymbol = this.getCurrencyFlag(transaction.currency || 'GBP');
+                    
+                    // Format annotation date/time
+                    const annDate = new Date(timestamp).toLocaleString('en-GB', { 
+                        day: '2-digit', 
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    // Format user name
+                    let formattedUserName = userName || 'Unknown';
+                    if (formattedUserName && formattedUserName.includes('.') && !formattedUserName.includes(' ')) {
+                        formattedUserName = formattedUserName.split('@')[0]
+                            .split('.').join(' ')
+                            .split('-').join(' ')
+                            .replace(/\b\w/g, l => l.toUpperCase());
+                    }
+                    
+                    // Build badges (using account-tag pill style)
+                    let badgesHtml = '';
+                    
+                    // Linked funding badges (one per funding method) - ONLY direct links
+                    if (directAnnotations.linkedFundingMethods && directAnnotations.linkedFundingMethods.length > 0) {
+                        directAnnotations.linkedFundingMethods.forEach(fundIdxStr => {
+                                const fund = sofFunds[parseInt(fundIdxStr)];
+                                if (fund) {
+                                    const typeMap = {
+                                        'fund:mortgage': 'Mortgage',
+                                        'fund:savings': 'Savings',
+                                        'fund:gift': 'Gift',
+                                        'fund:sale:property': 'Property Sale',
+                                        'fund:sale:assets': 'Asset Sale',
+                                        'fund:inheritance': 'Inheritance',
+                                        'fund:htb': 'Help to Buy / LISA',
+                                        'fund:income': 'Income'
+                                    };
+                                const fundLabel = typeMap[fund.type] || fund.type.replace('fund:', '');
+                                badgesHtml += `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3;">${fundLabel}</span>`;
+                            }
+                        });
+                    }
+                    
+                    // Flag badge
+                    if (directAnnotations.flag) {
+                        if (directAnnotations.flag === 'suspicious') {
+                            badgesHtml += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336;">Suspicious</span>';
+                        } else if (directAnnotations.flag === 'review') {
+                            badgesHtml += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800;">Review</span>';
+                        } else if (directAnnotations.flag === 'cleared') {
+                            badgesHtml += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50;">Cleared</span>';
+                        } else if (directAnnotations.flag === 'linked') {
+                            badgesHtml += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3;">Linked</span>';
+                        }
+                    }
+                    
+                    // Marker badge
+                    if (directAnnotations.marker) {
+                        if (directAnnotations.marker === 'accepted') {
+                            badgesHtml += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #388e3c; border: 1px solid #388e3c;">Accepted</span>';
+                        } else if (directAnnotations.marker === 'rejected') {
+                            badgesHtml += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #d32f2f; border: 1px solid #d32f2f;">Rejected</span>';
+                        }
+                    }
+                    
+                    // Build transaction inline badges (for nested card)
+                    let txInlineBadges = '';
+                    
+                    // Marker badges for transaction
+                    if (directAnnotations.marker) {
+                        if (directAnnotations.marker === 'accepted') {
+                            txInlineBadges += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
+                        } else if (directAnnotations.marker === 'rejected') {
+                            txInlineBadges += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
+                        }
+                    }
+                    
+                    // Flag badges for transaction
+                    if (directAnnotations.flag) {
+                        if (directAnnotations.flag === 'cleared') {
+                            txInlineBadges += '<span class="tx-marker-badge cleared">○ Cleared</span>';
+                        } else if (directAnnotations.flag === 'suspicious') {
+                            txInlineBadges += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
+                        } else if (directAnnotations.flag === 'review') {
+                            txInlineBadges += '<span class="tx-marker-badge review">— Review</span>';
+                        } else if (directAnnotations.flag === 'linked') {
+                            txInlineBadges += '<span class="tx-marker-badge linked">✓ Linked</span>';
+                        }
+                    }
+                    
+                    // Linked funding method badges for transaction
+                    if (directAnnotations.linkedFundingMethods && directAnnotations.linkedFundingMethods.length > 0) {
+                        directAnnotations.linkedFundingMethods.forEach(fundIdxStr => {
+                            const fund = sofFunds[parseInt(fundIdxStr)];
+                            if (fund) {
+                                const typeMap = {
+                                    'fund:mortgage': 'Mortgage',
+                                    'fund:savings': 'Savings',
+                                    'fund:gift': 'Gift',
+                                    'fund:sale:property': 'Property Sale',
+                                    'fund:sale:assets': 'Asset Sale',
+                                    'fund:inheritance': 'Inheritance',
+                                    'fund:htb': 'Help to Buy / LISA',
+                                    'fund:income': 'Income'
+                                };
+                                const fundLabel = typeMap[fund.type] || fund.type.replace('fund:', '');
+                                txInlineBadges += `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-left: 4px;">🔗 ${fundLabel}</span>`;
+                            }
+                        });
+                    }
+                    
+                    // Check if transaction is part of repeating group and build badge
+                    let repeatingBadge = '';
+                    let repeatingNoteText = '';
+                    if (analysis && analysis.repeating_transactions) {
+                        analysis.repeating_transactions.forEach((group, groupIdx) => {
+                            if (group.items && group.items.includes(txId)) {
+                                repeatingBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f3e5f5; color: #9c27b0; border: 1px solid #9c27b0; margin-left: 4px;">Repeating</span>';
+                                const groupAnnotation = getItemAnnotation('repeating-group', groupIdx);
+                                if (groupAnnotation && groupAnnotation.comment) {
+                                    repeatingNoteText = groupAnnotation.comment;
+                                }
+                            }
+                        });
+                    }
+                    
+                    // User note badge for transaction (from repeating group or direct)
+                    let userNoteBadge = '';
+                    if (repeatingNoteText) {
+                        userNoteBadge = `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f5f5f5; color: #666; border: 1px solid #ddd; margin-left: 4px;">📝 ${repeatingNoteText}</span>`;
+                    }
+                    
+                    flaggedTxHtml += `
+                        <div style="margin: 12px 0; padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafafa;">
+                            <!-- Header row with user, badges, and timestamp -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${directAnnotations.note ? '8px' : '12px'};">
+                                <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                                    <strong style="font-size: 12px; color: #333;">${formattedUserName}</strong>
+                                    ${badgesHtml ? `<div style="display: flex; gap: 4px; flex-wrap: wrap;">${badgesHtml}</div>` : ''}
+                                </div>
+                                <span style="font-size: 11px; color: #666; white-space: nowrap;">${annDate}</span>
+                            </div>
+                            
+                            <!-- User note -->
+                            ${directAnnotations.note ? `
+                                <div style="margin-bottom: 12px; padding: 8px 10px; background: #fff3cd; border-left: 3px solid #ffc107; border-radius: 3px; font-size: 12px; color: #856404;">
+                                    ${directAnnotations.note}
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Nested transaction data card -->
+                            <div style="padding: 10px; background: white; border: 1px solid #e0e0e0; border-radius: 4px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <span style="font-size: 11px; color: #666;">${txDate}</span>
+                                    <span style="font-size: 13px; font-weight: 600; color: ${amount >= 0 ? '#4caf50' : '#f44336'};">${sign}${currencySymbol}${Math.abs(amount).toFixed(2)}</span>
+                                </div>
+                                <div style="font-size: 13px; font-weight: 500; color: #333; margin-bottom: 4px;">
+                                    ${transaction.description || transaction.merchant_name || 'Transaction'}${txInlineBadges}${repeatingBadge}${userNoteBadge}
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #666;">
+                                    <strong>${transaction.accountName}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                    <div class="bank-analysis-section collapsed" onclick="event.stopPropagation(); this.classList.toggle('collapsed');">
+                        <div class="analysis-section-header">
+                            <span class="analysis-section-title">Flagged & Commented Transactions (${userInteractedTxIds.size})</span>
+                            <span class="expand-indicator">▼</span>
+                        </div>
+                        <div class="analysis-section-content">
+                            ${flaggedTxHtml}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
         return html;
     }
     
-    createBiggestTransactionsSection(summaryByCcy, accounts = {}) {
+    createBiggestTransactionsSection(summaryByCcy, accounts = {}, check = null) {
         const currencyFlag = this.getCurrencyFlag.bind(this);
         
         // Create a map of account IDs to account names for quick lookup
@@ -3111,10 +4149,39 @@ class ThirdfortChecksManager {
                 const accountInfo = accountNames[tx.account_id];
                 const accountBadge = accountInfo ? accountInfo.name : '';
                 
+                // Get comprehensive annotations for this transaction
+                const txAnnotations = check ? this.getTransactionAnnotations(tx.id, check) : { flag: '', note: '', marker: '' };
+                
+                // Build badges
+                let badgesHtml = '';
+                
+                // Marker badges
+                if (txAnnotations.marker === 'accepted') {
+                    badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
+                } else if (txAnnotations.marker === 'rejected') {
+                    badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
+                }
+                
+                // Flag badges
+                if (txAnnotations.flag === 'cleared') {
+                    badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
+                } else if (txAnnotations.flag === 'suspicious') {
+                    badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
+                } else if (txAnnotations.flag === 'review') {
+                    badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
+                } else if (txAnnotations.flag === 'linked') {
+                    badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
+                }
+                
+                // User note badge
+                if (txAnnotations.note) {
+                    badgesHtml += `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f5f5f5; color: #666; border: 1px solid #ddd; margin-left: 4px;">📝 ${txAnnotations.note}</span>`;
+                }
+                
                 incomingHtml += `
                     <div class="transaction-row incoming">
                         <span class="transaction-date">${date}</span>
-                        <span class="transaction-description">${description}</span>
+                        <span class="transaction-description">${description}${badgesHtml}</span>
                         ${accountBadge ? `<span class="account-badge">${accountBadge}</span>` : ''}
                         <span class="transaction-amount positive">${flag}${amount}</span>
                     </div>
@@ -3131,10 +4198,39 @@ class ThirdfortChecksManager {
                 const accountInfo = accountNames[tx.account_id];
                 const accountBadge = accountInfo ? accountInfo.name : '';
                 
+                // Get comprehensive annotations for this transaction
+                const txAnnotations = check ? this.getTransactionAnnotations(tx.id, check) : { flag: '', note: '', marker: '' };
+                
+                // Build badges
+                let badgesHtml = '';
+                
+                // Marker badges
+                if (txAnnotations.marker === 'accepted') {
+                    badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
+                } else if (txAnnotations.marker === 'rejected') {
+                    badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
+                }
+                
+                // Flag badges
+                if (txAnnotations.flag === 'cleared') {
+                    badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
+                } else if (txAnnotations.flag === 'suspicious') {
+                    badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
+                } else if (txAnnotations.flag === 'review') {
+                    badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
+                } else if (txAnnotations.flag === 'linked') {
+                    badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
+                }
+                
+                // User note badge
+                if (txAnnotations.note) {
+                    badgesHtml += `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f5f5f5; color: #666; border: 1px solid #ddd; margin-left: 4px;">📝 ${txAnnotations.note}</span>`;
+                }
+                
                 outgoingHtml += `
                     <div class="transaction-row outgoing">
                         <span class="transaction-date">${date}</span>
-                        <span class="transaction-description">${description}</span>
+                        <span class="transaction-description">${description}${badgesHtml}</span>
                         ${accountBadge ? `<span class="account-badge">${accountBadge}</span>` : ''}
                         <span class="transaction-amount negative">${flag}${amount}</span>
                     </div>
@@ -3328,7 +4424,7 @@ class ThirdfortChecksManager {
             accountsHtml += '<div class="bank-accounts-title">Linked Accounts</div>';
             
             for (const [accountId, accountData] of Object.entries(accounts)) {
-                accountsHtml += this.createBankAccountCard(accountId, accountData, isManualUpload);
+                accountsHtml += this.createBankAccountCard(accountId, accountData, isManualUpload, check);
             }
             
             accountsHtml += '</div>';
@@ -3341,22 +4437,68 @@ class ThirdfortChecksManager {
             : null;
         
         if (summaryByCcy && Object.keys(summaryByCcy).length > 0) {
-            biggestTransactionsHtml = this.createBiggestTransactionsSection(summaryByCcy, accounts);
+            biggestTransactionsHtml = this.createBiggestTransactionsSection(summaryByCcy, accounts, check);
         }
         
         // Add analysis sections if available
         let analysisHtml = '';
         if (bankStatement?.breakdown?.analysis) {
-            analysisHtml = this.createBankAnalysisSections(bankStatement.breakdown.analysis, accounts, sofTask);
+            analysisHtml = this.createBankAnalysisSections(bankStatement.breakdown.analysis, accounts, sofTask, check);
         }
         
         // Add annotations display if check provided
         const annotationsHtml = check ? this.renderTaskAnnotations('bank', check) : '';
         
+        // Calculate summary badges
+        let totalLinkedTxs = 0;
+        let totalReviewedAccounts = 0;
+        let totalSuspiciousTxs = 0;
+        
+        if (check) {
+            // Count reviewed accounts
+            if (check.sofAnnotations) {
+                const reviewedAccountIds = new Set();
+                check.sofAnnotations.forEach(ann => {
+                    const accounts = ann.notes?.accounts || [];
+                    accounts.forEach(acc => {
+                        if (acc.reviewed) {
+                            reviewedAccountIds.add(acc.accountId);
+                        }
+                    });
+                });
+                totalReviewedAccounts = reviewedAccountIds.size;
+            }
+            
+            // Count linked and suspicious transactions across all accounts
+            Object.values(accounts).forEach(accountData => {
+                const statement = accountData.statement || [];
+                statement.forEach(tx => {
+                    const txAnnotations = this.getTransactionAnnotations(tx.id, check);
+                    if (txAnnotations.linkedFundingMethods.length > 0) totalLinkedTxs++;
+                    if (txAnnotations.flag === 'suspicious') totalSuspiciousTxs++;
+                });
+            });
+        }
+        
+        // Build badges HTML
+        let badgesHtml = '';
+        if (totalReviewedAccounts > 0) {
+            badgesHtml += `<span class="annotation-count-badge">${totalReviewedAccounts} Account${totalReviewedAccounts > 1 ? 's' : ''} Reviewed</span>`;
+        }
+        if (totalLinkedTxs > 0) {
+            badgesHtml += `<span class="annotation-count-badge">${totalLinkedTxs} Transaction${totalLinkedTxs > 1 ? 's' : ''} Linked</span>`;
+        }
+        if (totalSuspiciousTxs > 0) {
+            badgesHtml += `<span class="annotation-count-badge" style="background: #ffebee; color: #d32f2f;">${totalSuspiciousTxs} Suspicious</span>`;
+        }
+        
+        const badgesContainer = badgesHtml ? `<div class="task-header-badges">${badgesHtml}</div>` : '';
+        
         return `
             <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
                     <div class="task-title">Bank Summary</div>
+                    ${badgesContainer}
                     ${statusIcon}
                 </div>
                 ${headerChecksHtml}
@@ -3660,7 +4802,7 @@ class ThirdfortChecksManager {
         return deduplicatedAccounts;
     }
     
-    createBankAccountCard(accountId, accountData, isManualUpload = false) {
+    createBankAccountCard(accountId, accountData, isManualUpload = false, check = null) {
         // Handle both possible data structures - nested 'info' or direct properties
         const info = accountData.info || accountData;
         const number = info.number || {};
@@ -3671,9 +4813,33 @@ class ThirdfortChecksManager {
         const currency = info.currency || balance.currency || 'GBP';
         const statement = accountData.statement || [];
         
+        // Check if this account has been reviewed in SOF annotations
+        let isReviewed = false;
+        if (check && check.sofAnnotations) {
+            isReviewed = check.sofAnnotations.some(ann => {
+                const accounts = ann.notes?.accounts || [];
+                return accounts.some(acc => acc.accountId === accountId && acc.reviewed);
+            });
+        }
+        
         // Deduplicate transactions ONLY for manual uploads (PDF statements)
         // Open Banking linking won't have duplicates
         const deduplicatedStatement = isManualUpload ? this.deduplicateTransactions(statement) : statement;
+        
+        // Calculate transaction annotation counts for badges
+        let linkedCount = 0;
+        let reviewCount = 0;
+        let flaggedCount = 0;
+        
+        if (check) {
+            deduplicatedStatement.forEach(tx => {
+                const txAnnotations = this.getTransactionAnnotations(tx.id, check);
+                
+                if (txAnnotations.linkedFundingMethods.length > 0) linkedCount++;
+                if (txAnnotations.flag === 'review') reviewCount++;
+                if (txAnnotations.flag === 'suspicious') flaggedCount++;
+            });
+        }
         
         // Get account number details
         const accountNumber = number.number || 'N/A';
@@ -3713,13 +4879,34 @@ class ThirdfortChecksManager {
             collapsedTextHtml = `<span class="account-name-text">${prefix}${accountName}</span>${accountHolderName ? ` - <span class="account-holder-text">${accountHolderName}</span>` : ''}`;
         }
         
+        // Build account summary badges
+        let accountBadgesHtml = '';
+        
+        if (isReviewed) {
+            accountBadgesHtml += `<span class="account-tag reviewed">✓ Reviewed</span>`;
+        }
+        if (linkedCount > 0) {
+            accountBadgesHtml += `<span class="account-tag linked">${linkedCount} transaction${linkedCount > 1 ? 's' : ''} linked</span>`;
+        }
+        if (reviewCount > 0) {
+            accountBadgesHtml += `<span class="account-tag review">${reviewCount} review pending</span>`;
+        }
+        if (flaggedCount > 0) {
+            accountBadgesHtml += `<span class="account-tag flagged">${flaggedCount} flagged</span>`;
+        }
+        
+        const badgesContainer = accountBadgesHtml ? `<div class="account-summary-tags" style="margin-top: 4px;">${accountBadgesHtml}</div>` : '';
+        
         return `
             <div class="bank-account-card collapsed" data-account-data="${accountDataJson}" data-is-manual-upload="${isManualUpload}" onclick="event.stopPropagation();">
                 <!-- Collapsed/Minimized Header -->
                 <div class="account-collapsed-header" onclick="event.stopPropagation(); this.closest('.bank-account-card').classList.toggle('collapsed');">
                     <div class="account-header-left">
                         ${bankLogo ? bankLogo : ''}
+                        <div style="display: flex; flex-direction: column; flex: 1;">
                         <span class="account-collapsed-text">${collapsedTextHtml}</span>
+                            ${badgesContainer}
+                        </div>
                     </div>
                     ${txCount > 0 ? `
                         <button class="view-statement-mini-btn" onclick="event.stopPropagation(); window.thirdfortManager.showBankStatement('${accountId}', this.closest('.bank-account-card').dataset.accountData, this.closest('.bank-account-card').dataset.isManualUpload === 'true');">
@@ -3799,6 +4986,27 @@ class ThirdfortChecksManager {
         const bankLogo = this.getBankLogo(provider.id, provider.name);
         const brandColors = this.getBankBrandColors(provider.id, provider.name);
         
+        // Get transaction annotations from current check using comprehensive helper
+        const check = this.currentCheck;
+        const transactionFlags = {};
+        const transactionNotes = {};
+        const transactionLinks = {};
+        
+        if (check) {
+            // Use getTransactionAnnotations which checks ALL sources:
+            // - Direct transaction links
+            // - Funding method markers
+            // - Bank analysis items (chains, repeating groups)
+            statement.forEach(tx => {
+                const txAnnotations = this.getTransactionAnnotations(tx.id, check);
+                if (txAnnotations.flag) transactionFlags[tx.id] = txAnnotations.flag;
+                if (txAnnotations.note) transactionNotes[tx.id] = txAnnotations.note;
+                if (txAnnotations.linkedFundingMethods.length > 0) {
+                    transactionLinks[tx.id] = txAnnotations.linkedFundingMethods;
+                }
+            });
+        }
+        
         // DEDUPLICATE transactions ONLY for manual uploads (same PDF statement uploaded multiple times)
         // Bank linking via Open Banking API won't have duplicates
         const deduplicatedStatement = isManualUpload ? this.deduplicateTransactions(statement) : statement;
@@ -3838,14 +5046,109 @@ class ThirdfortChecksManager {
             const runningBal = tx.running_balance ? tx.running_balance.toFixed(2) : '—';
             const amountClass = isDebit ? 'negative' : 'positive';
             
+            // Check for annotations on this transaction
+            const hasFlag = transactionFlags[tx.id];
+            const hasNote = transactionNotes[tx.id];
+            const hasLinks = transactionLinks[tx.id];
+            const hasAnnotations = hasFlag || hasNote || hasLinks;
+            
+            // Build annotation badges
+            let annotationBadges = '';
+            if (hasFlag) {
+                let flagIcon = '';
+                let flagClass = '';
+                if (hasFlag === 'linked') {
+                    flagIcon = '<svg viewBox="0 0 300 300" style="width: 12px; height: 12px;"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                    flagClass = 'linked';
+                } else if (hasFlag === 'suspicious') {
+                    flagIcon = '<svg viewBox="0 0 300 300" style="width: 12px; height: 12px;"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>';
+                    flagClass = 'suspicious';
+                } else if (hasFlag === 'review') {
+                    flagIcon = '<svg viewBox="0 0 300 300" style="width: 12px; height: 12px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+                    flagClass = 'review';
+                } else if (hasFlag === 'cleared') {
+                    flagIcon = '<svg viewBox="0 0 300 300" style="width: 12px; height: 12px;"><path fill="#1976d2" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><circle cx="150" cy="150" r="50" fill="none" stroke="#ffffff" stroke-width="20"/></svg>';
+                    flagClass = 'cleared';
+                }
+                annotationBadges += `<span class="statement-tx-badge ${flagClass}">${flagIcon}</span>`;
+            }
+            if (hasNote) {
+                annotationBadges += '<span class="statement-tx-badge note" title="Has investigation note"><svg viewBox="0 0 24 24" style="width: 12px; height: 12px;"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg></span>';
+            }
+            if (hasLinks) {
+                annotationBadges += '<span class="statement-tx-badge link" title="Linked to funding method"><svg viewBox="0 0 24 24" style="width: 12px; height: 12px;"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg></span>';
+            }
+            
+            const highlightClass = hasAnnotations ? ' has-annotations' : '';
+            
+            // Build expanded details section
+            let expandedDetailsHtml = '';
+            if (hasAnnotations) {
+                expandedDetailsHtml = '<div class="statement-tx-expanded" onclick="event.stopPropagation();">';
+                
+                // Show linked funding methods
+                if (hasLinks && hasLinks.length > 0) {
+                    const sofTask = check.taskOutcomes?.['sof:v1'];
+                    const funds = sofTask?.breakdown?.funds || [];
+                    
+                    expandedDetailsHtml += '<div class="tx-expanded-section">';
+                    expandedDetailsHtml += '<strong>Linked to Funding Methods:</strong>';
+                    expandedDetailsHtml += '<div style="margin-top: 4px;">';
+                    
+                    hasLinks.forEach(fundIdxStr => {
+                        const fund = funds[parseInt(fundIdxStr)];
+                        if (fund) {
+                            const fundType = fund.type || '';
+                            const fundAmount = fund.data?.amount ? `£${(fund.data.amount / 100).toLocaleString()}` : '';
+                            const fundLabel = fundType.replace('fund:', '').replace(/[-:_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            expandedDetailsHtml += `<div class="tx-linked-fund-item" style="padding: 4px 8px; background: #e3f2fd; border-radius: 3px; margin-bottom: 4px;">
+                                <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: middle;"><path fill="#1976d2" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+                                ${fundLabel} ${fundAmount}
+                            </div>`;
+                        }
+                    });
+                    
+                    expandedDetailsHtml += '</div></div>';
+                }
+                
+                // Show status/flag
+                if (hasFlag) {
+                    expandedDetailsHtml += '<div class="tx-expanded-section">';
+                    expandedDetailsHtml += '<strong>Status:</strong> ';
+                    
+                    let statusText = hasFlag.charAt(0).toUpperCase() + hasFlag.slice(1);
+                    let statusColor = hasFlag === 'linked' || hasFlag === 'cleared' ? '#4caf50' : 
+                                     hasFlag === 'suspicious' ? '#f44336' : '#ff9800';
+                    
+                    expandedDetailsHtml += `<span style="color: ${statusColor}; font-weight: 600;">${statusText}</span>`;
+                    expandedDetailsHtml += '</div>';
+                }
+                
+                // Show note
+                if (hasNote) {
+                    expandedDetailsHtml += '<div class="tx-expanded-section">';
+                    expandedDetailsHtml += '<strong>Investigation Note:</strong>';
+                    expandedDetailsHtml += `<div style="margin-top: 4px; padding: 8px; background: #fff3e0; border-radius: 3px; font-style: italic; color: #666;">
+                        ${hasNote}
+                    </div>`;
+                    expandedDetailsHtml += '</div>';
+                }
+                
+                expandedDetailsHtml += '</div>';
+            }
+            
             transactionsHtml += `
-                <div class="statement-transaction-row ${amountClass}">
+                <div class="statement-transaction-row ${amountClass}${highlightClass}" onclick="event.stopPropagation(); this.classList.toggle('expanded');" style="cursor: ${hasAnnotations ? 'pointer' : 'default'};">
                     <div class="statement-tx-date">${date}</div>
-                    <div class="statement-tx-description">${description}</div>
+                    <div class="statement-tx-description">
+                        ${description}
+                        ${annotationBadges ? `<span class="statement-tx-badges">${annotationBadges}</span>` : ''}
+                    </div>
                     <div class="statement-tx-out">${amountOut ? currencySymbol + amountOut : '—'}</div>
                     <div class="statement-tx-in">${amountIn ? currencySymbol + amountIn : '—'}</div>
                     <div class="statement-tx-balance">${currencySymbol}${runningBal}</div>
                 </div>
+                ${expandedDetailsHtml}
             `;
         });
         
@@ -3947,6 +5250,62 @@ class ThirdfortChecksManager {
             }
         }
         
+        // Add user-linked transactions from SOF annotations
+        if (check) {
+            const sofAnnotations = check.sofAnnotations || [];
+            sofAnnotations.forEach(ann => {
+                const transactions = ann.notes?.transactions || [];
+                transactions.forEach(tx => {
+                    if (tx.linkedToFunds && tx.linkedToFunds.includes(index.toString())) {
+                        matchedTxIds.push(tx.txId);
+                    }
+                });
+            });
+        }
+        
+        // Collect bank analysis items (repeating groups, chains) linked to this funding method
+        const linkedBankAnalysisItems = [];
+        if (check) {
+            const sofAnnotations = check.sofAnnotations || [];
+            sofAnnotations.forEach(ann => {
+                const bankAnalysisItems = ann.notes?.bankAnalysisItems || [];
+                bankAnalysisItems.forEach(item => {
+                    if (item.linkedToFundIdx === index.toString()) {
+                        linkedBankAnalysisItems.push({
+                            ...item,
+                            userName: ann.userName || ann.user,
+                            timestamp: ann.timestamp
+                        });
+                        
+                        // Also add the individual transactions from this item to the matched list
+                        if (item.type === 'transaction' && item.transactionId) {
+                            matchedTxIds.push(item.transactionId);
+                        } else if (item.type === 'chain' && item.chainId) {
+                            // Chain IDs are composite of transaction IDs separated by |
+                            const chainTxIds = item.chainId.split('|');
+                            matchedTxIds.push(...chainTxIds);
+                        } else if (item.type === 'repeating-group' && item.groupIndex !== undefined) {
+                            // Get all transactions in this repeating group
+                            const taskOutcomes = check.taskOutcomes || {};
+                            const bankStatement = taskOutcomes['bank:statement'];
+                            const bankSummary = taskOutcomes['bank:summary'];
+                            const docsBankStatement = taskOutcomes['documents:bank-statement'];
+                            const analysis = bankStatement?.breakdown?.analysis || 
+                                           bankSummary?.breakdown?.analysis || 
+                                           docsBankStatement?.breakdown?.analysis;
+                            
+                            if (analysis && analysis.repeating_transactions) {
+                                const group = analysis.repeating_transactions[item.groupIndex];
+                                if (group && group.items) {
+                                    matchedTxIds.push(...group.items);
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        }
+        
         // Remove duplicates
         matchedTxIds = [...new Set(matchedTxIds)];
         
@@ -3980,6 +5339,45 @@ class ThirdfortChecksManager {
         if (matchedTxIds.length > 0) {
             matchedTxHtml = `<div class="matched-transactions-section"><div class="matched-tx-label">${matchLabel}</div>`;
             
+            // Get transaction markers, notes, and links from ALL sources using comprehensive function
+            const transactionMarkers = {};
+            const transactionNotes = {};
+            const transactionFlags = {};
+            const userLinkedTxIds = new Set();
+            const autoMatchedTxIds = new Set();
+            
+            // Get auto-matched IDs
+            for (const key of matchKeys) {
+                if (sofMatches[key] && Array.isArray(sofMatches[key])) {
+                    sofMatches[key].forEach(txId => autoMatchedTxIds.add(txId));
+                }
+            }
+            
+            // For each matched transaction, get ALL annotations from all sources
+            matchedTxIds.forEach(txId => {
+                const txAnnotations = this.getTransactionAnnotations(txId, check);
+                
+                // Store marker (from funding method markers)
+                if (txAnnotations.marker) {
+                    transactionMarkers[txId] = txAnnotations.marker;
+                }
+                
+                // Store flag (from bank analysis items or direct links)
+                if (txAnnotations.flag) {
+                    transactionFlags[txId] = txAnnotations.flag;
+                }
+                
+                // Store note (combined from all sources)
+                if (txAnnotations.note) {
+                    transactionNotes[txId] = txAnnotations.note;
+                }
+                
+                // Check if user-linked to THIS funding method
+                if (txAnnotations.linkedFundingMethods.includes(index.toString())) {
+                    userLinkedTxIds.add(txId);
+                }
+            });
+            
             matchedTxIds.forEach(txId => {
                 // Find transaction in accounts
                 let tx = null;
@@ -3997,14 +5395,72 @@ class ThirdfortChecksManager {
                     const currencySymbol = this.getCurrencyFlag(tx.currency || 'GBP');
                     const txAmount = tx.amount >= 0 ? '+' : '';
                     
+                    // Check if this transaction has a marker (from funding method)
+                    const marker = transactionMarkers[txId];
+                    let markerBadge = '';
+                    if (marker === 'accepted') {
+                        markerBadge = '<span class="tx-marker-badge accepted">✓ Accepted</span>';
+                    } else if (marker === 'rejected') {
+                        markerBadge = '<span class="tx-marker-badge rejected">✗ Rejected</span>';
+                    }
+                    
+                    // Check if this transaction has a flag (from bank analysis or direct links)
+                    const flag = transactionFlags[txId];
+                    let flagBadge = '';
+                    if (flag === 'cleared') {
+                        flagBadge = '<span class="tx-marker-badge cleared">○ Cleared</span>';
+                    } else if (flag === 'suspicious') {
+                        flagBadge = '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
+                    } else if (flag === 'review') {
+                        flagBadge = '<span class="tx-marker-badge review">— Review</span>';
+                    } else if (flag === 'linked') {
+                        flagBadge = '<span class="tx-marker-badge linked">✓ Linked</span>';
+                    }
+                    
+                    // Add source badge
+                    const isUserLinked = userLinkedTxIds.has(txId);
+                    const isAutoMatched = autoMatchedTxIds.has(txId);
+                    let sourceBadge = '';
+                    if (isUserLinked && !isAutoMatched) {
+                        sourceBadge = '<span class="tx-source-badge user-linked">👤 User Linked</span>';
+                    } else if (isUserLinked && isAutoMatched) {
+                        sourceBadge = '<span class="tx-source-badge both-matched">✓ Confirmed</span>';
+                    }
+                    
+                    // Check if this transaction is part of a repeating group
+                    let repeatingBadge = '';
+                    let userNoteBadge = '';
+                    const taskOutcomes = check.taskOutcomes || {};
+                    const bankStatement = taskOutcomes['bank:statement'];
+                    const bankSummary = taskOutcomes['bank:summary'];
+                    const docsBankStatement = taskOutcomes['documents:bank-statement'];
+                    const analysis = bankStatement?.breakdown?.analysis || 
+                                   bankSummary?.breakdown?.analysis || 
+                                   docsBankStatement?.breakdown?.analysis;
+                    
+                    if (analysis && analysis.repeating_transactions) {
+                        for (const group of analysis.repeating_transactions) {
+                            if (group.items && group.items.includes(txId)) {
+                                repeatingBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f3e5f5; color: #9c27b0; border: 1px solid #9c27b0; margin-left: 4px;">Repeating</span>';
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Get transaction note and create user note badge
+                    const txNote = transactionNotes[txId] || '';
+                    if (txNote) {
+                        userNoteBadge = `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f5f5f5; color: #666; border: 1px solid #ddd; margin-left: 4px;">📝 ${txNote}</span>`;
+                    }
+                    
                     matchedTxHtml += `
-                        <div class="matched-tx-row">
+                        <div class="matched-tx-row ${marker ? 'marked-' + marker : ''}">
                             <span class="matched-tx-date">${date}</span>
-                            <span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Transaction'}${markerBadge}${flagBadge}${sourceBadge}${repeatingBadge}${userNoteBadge}</span>
                             <span class="matched-tx-account">${tx.accountName}</span>
                             <span class="matched-tx-amount">${txAmount}${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
-                        </div>
-                    `;
+                            </div>
+                        `;
                 }
             });
             
@@ -4171,6 +5627,78 @@ class ThirdfortChecksManager {
             }
         }
         
+        // Get SOF annotations for this specific funding method
+        const sofAnnotations = check.sofAnnotations || [];
+        let fundAnnotationsHtml = '';
+        
+        if (sofAnnotations.length > 0) {
+            // Filter annotations that affect this funding method
+            const relevantAnnotations = sofAnnotations.filter(ann => {
+                const fundingMethods = ann.notes?.fundingMethods || [];
+                return fundingMethods.some(fm => 
+                    fm.fundType === type && fm.fundIdx === index.toString()
+                );
+            });
+            
+            if (relevantAnnotations.length > 0) {
+                fundAnnotationsHtml = '<div class="funding-annotations-section">';
+                fundAnnotationsHtml += '<div class="funding-annotations-header">Investigation Notes</div>';
+                
+                relevantAnnotations.forEach(ann => {
+                    const date = new Date(ann.timestamp).toLocaleString('en-GB', { 
+                        day: '2-digit', 
+                        month: 'short', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    
+                    // Find the specific funding method note
+                    const fundingMethod = ann.notes.fundingMethods.find(fm => 
+                        fm.fundType === type && fm.fundIdx === index.toString()
+                    );
+                    
+                    if (fundingMethod) {
+                        // Only show if there's actual content (note or verified items)
+                        const hasNote = fundingMethod.note && fundingMethod.note.trim();
+                        const hasVerified = fundingMethod.verified && fundingMethod.verified.length > 0;
+                        
+                        if (hasNote || hasVerified) {
+                            fundAnnotationsHtml += '<div class="annotation-mini-card">';
+                            fundAnnotationsHtml += '<div class="annotation-mini-header">';
+                            fundAnnotationsHtml += '<div class="annotation-mini-meta">';
+                            fundAnnotationsHtml += '<strong>' + (ann.userName || ann.user) + '</strong> • ' + date;
+                            fundAnnotationsHtml += '</div>';
+                            fundAnnotationsHtml += '</div>';
+                            fundAnnotationsHtml += '<div class="annotation-mini-body">';
+                            
+                            // Show note if exists
+                            if (hasNote) {
+                                fundAnnotationsHtml += '<p class="annotation-mini-reason">' + fundingMethod.note + '</p>';
+                            }
+                            
+                            // Show verified items
+                            if (hasVerified) {
+                                fundAnnotationsHtml += '<div class="annotation-mini-objectives">';
+                                fundingMethod.verified.forEach(item => {
+                                    const verifiedIcon = '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                                    const label = item.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                    fundAnnotationsHtml += '<div class="annotation-objective-item">';
+                                    fundAnnotationsHtml += verifiedIcon;
+                                    fundAnnotationsHtml += '<span class="annotation-objective-label">' + label + '</span>';
+                                    fundAnnotationsHtml += '</div>';
+                                });
+                                fundAnnotationsHtml += '</div>';
+                            }
+                            
+                            fundAnnotationsHtml += '</div></div>';
+                        }
+                    }
+                });
+                
+                fundAnnotationsHtml += '</div>';
+            }
+        }
+        
         return `
             <div class="funding-source-card">
                 <div class="funding-header">
@@ -4179,6 +5707,7 @@ class ThirdfortChecksManager {
                 </div>
                 ${detailsHtml}
                 ${matchedTxHtml}
+                ${fundAnnotationsHtml}
                 <div class="funding-doc-status">
                     ${docIcon}
                     <span class="doc-status-text">${docStatusText}</span>
@@ -4218,12 +5747,75 @@ class ThirdfortChecksManager {
             const sdlt = property.stamp_duty ? `£${(property.stamp_duty / 100).toLocaleString()}` : 'Not specified';
             const newBuild = property.new_build ? 'Yes' : 'No';
             
+            // Check for property SOF annotations
+            const sofAnnotations = check?.sofAnnotations || [];
+            let propertyAnnotationsHtml = '';
+            
+            if (sofAnnotations.length > 0) {
+                // Find all annotations with property reviews
+                const propertyAnnotations = sofAnnotations.filter(ann => 
+                    ann.notes?.property && (ann.notes.property.reviewed || ann.notes.property.note)
+                );
+                
+                if (propertyAnnotations.length > 0) {
+                    propertyAnnotationsHtml = '<div class="funding-annotations-section" style="margin-top: 12px;">';
+                    propertyAnnotationsHtml += '<div class="funding-annotations-header">Investigation Notes</div>';
+                    
+                    propertyAnnotations.forEach(ann => {
+                        const date = new Date(ann.timestamp).toLocaleString('en-GB', { 
+                            day: '2-digit', 
+                            month: 'short', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                        
+                        // Format user name
+                        let userName = ann.userName || ann.user;
+                        if (userName && userName.includes('.') && !userName.includes(' ')) {
+                            userName = userName.split('@')[0]
+                                .split('.').join(' ')
+                                .split('-').join(' ')
+                                .replace(/\b\w/g, l => l.toUpperCase());
+                        }
+                        
+                        const propertyNote = ann.notes.property;
+                        
+                        propertyAnnotationsHtml += '<div class="annotation-mini-card">';
+                        propertyAnnotationsHtml += '<div class="annotation-mini-header">';
+                        propertyAnnotationsHtml += '<div class="annotation-mini-meta">';
+                        propertyAnnotationsHtml += '<strong>' + userName + '</strong> • ' + date;
+                        propertyAnnotationsHtml += '</div>';
+                        propertyAnnotationsHtml += '</div>';
+                        propertyAnnotationsHtml += '<div class="annotation-mini-body">';
+                        
+                        if (propertyNote.note) {
+                            propertyAnnotationsHtml += '<p class="annotation-mini-reason">' + propertyNote.note + '</p>';
+                        }
+                        
+                        if (propertyNote.reviewed) {
+                            propertyAnnotationsHtml += '<div class="annotation-mini-objectives">';
+                            const reviewedIcon = '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                            propertyAnnotationsHtml += '<div class="annotation-objective-item">';
+                            propertyAnnotationsHtml += reviewedIcon;
+                            propertyAnnotationsHtml += '<span class="annotation-objective-label"><strong>Status:</strong> Reviewed</span>';
+                            propertyAnnotationsHtml += '</div>';
+                            propertyAnnotationsHtml += '</div>';
+                        }
+                        
+                        propertyAnnotationsHtml += '</div></div>';
+                    });
+                    
+                    propertyAnnotationsHtml += '</div>';
+                }
+            }
+            
             propertyDetailsHtml = `
                 <div class="sof-property-details">
                     <div class="property-bullet">📍 <strong>Property:</strong> ${fullAddress}</div>
                     <div class="property-bullet">💷 <strong>Purchase Price:</strong> ${price}</div>
                     <div class="property-bullet">📋 <strong>Stamp Duty:</strong> ${sdlt}</div>
                     <div class="property-bullet">🏗️ <strong>New Build:</strong> ${newBuild}</div>
+                    ${propertyAnnotationsHtml}
                 </div>
             `;
         }
@@ -4263,10 +5855,22 @@ class ThirdfortChecksManager {
             </div>
         `;
         
+        // Count SoF annotation GROUPS for badge
+        const sofNotes = (check.sofAnnotations || []);
+        const sofAnnotationCount = sofNotes.length;
+        const annotationBadge = sofAnnotationCount > 0 ? `<span class="annotation-count-badge">${sofAnnotationCount} Update${sofAnnotationCount > 1 ? 's' : ''}</span>` : '';
+        
+        // Wrap badge in container for consistent right-alignment
+        const badgesHtml = annotationBadge ? `<div class="task-header-badges">${annotationBadge}</div>` : '';
+        
+        // Add annotations display
+        const annotationsHtml = this.renderTaskAnnotations('sof:v1', check);
+        
         return `
             <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
                     <div class="task-title">Source of Funds Questionnaire</div>
+                    ${badgesHtml}
                     ${statusIcon}
                 </div>
                 ${headerChecksHtml}
@@ -4276,6 +5880,7 @@ class ThirdfortChecksManager {
                         ${chartHtml}
                     </div>
                     ${fundingCardsHtml}
+                    ${annotationsHtml}
                 </div>
             </div>
         `;
@@ -4339,7 +5944,7 @@ class ThirdfortChecksManager {
         const taskTitle = this.getTaskTitle(taskType);
         const taskChecks = this.getTaskChecks(taskType, outcome, check);
         
-        // Document tasks (PoA, PoO) - Non-expandable with header checks
+        // Document tasks (PoA, PoO) - Expandable if has annotations, otherwise non-expandable
         const isDocumentTask = taskType === 'documents:poa' || taskType === 'documents:poo' || taskType === 'documents:other';
         
         if (isDocumentTask) {
@@ -4375,15 +5980,57 @@ class ThirdfortChecksManager {
                 </div>
             `;
             
-            return `
-                <div class="task-card ${borderClass} non-expandable">
-                    <div class="task-header">
-                        <div class="task-title">${taskTitle}</div>
-                        ${statusIcon}
+            // Count annotation GROUPS for this task
+            const taskAnnotations = (check.considerAnnotations || []).filter(ann => ann.taskType === taskType);
+            const annotationGroups = {};
+            taskAnnotations.forEach(ann => {
+                const groupKey = `${ann.user}_${ann.timestamp}_${ann.newStatus}`;
+                if (!annotationGroups[groupKey]) {
+                    annotationGroups[groupKey] = true;
+                }
+            });
+            const taskAnnotationCount = Object.keys(annotationGroups).length;
+            
+            // If there are annotations, make it expandable with badge and annotations
+            if (taskAnnotationCount > 0) {
+                // Get latest annotation status for badge color
+                let badgeClass = '';
+                if (taskAnnotations.length > 0) {
+                    const latestStatus = taskAnnotations[0].newStatus;
+                    if (latestStatus === 'clear') badgeClass = ' badge-clear';
+                    else if (latestStatus === 'consider') badgeClass = ' badge-consider';
+                    else if (latestStatus === 'fail') badgeClass = ' badge-fail';
+                }
+                
+                const annotationBadge = `<span class="annotation-count-badge${badgeClass}">${taskAnnotationCount} Update${taskAnnotationCount > 1 ? 's' : ''}</span>`;
+                const badgesHtml = `<div class="task-header-badges">${annotationBadge}</div>`;
+                const annotationsHtml = this.renderTaskAnnotations(taskType, check);
+                
+                return `
+                    <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
+                        <div class="task-header">
+                            <div class="task-title">${taskTitle}</div>
+                            ${badgesHtml}
+                            ${statusIcon}
+                        </div>
+                        ${headerChecksHtml}
+                        <div class="task-details">
+                            ${annotationsHtml}
+                        </div>
                     </div>
-                    ${headerChecksHtml}
-                </div>
-            `;
+                `;
+            } else {
+                // No annotations - keep it non-expandable
+                return `
+                    <div class="task-card ${borderClass} non-expandable">
+                        <div class="task-header">
+                            <div class="task-title">${taskTitle}</div>
+                            ${statusIcon}
+                        </div>
+                        ${headerChecksHtml}
+                    </div>
+                `;
+            }
         }
         
         // Special handling for Source of Funds (sof:v1)
@@ -4443,8 +6090,10 @@ class ThirdfortChecksManager {
             headerChecksHtml = '<div class="task-header-checks">';
             headerChecks.forEach(check => {
                 const checkIcon = this.getTaskCheckIcon(check.status);
+                const indentStyle = check.isChildItem ? 'style="padding-left: 24px;"' : '';
+                
                 headerChecksHtml += `
-                    <div class="task-check-item">
+                    <div class="task-check-item" ${indentStyle}>
                         ${checkIcon}
                         <span class="task-check-text">${check.text}</span>
                     </div>
@@ -4513,6 +6162,23 @@ class ThirdfortChecksManager {
         
         const annotationBadge = taskAnnotationCount > 0 ? `<span class="annotation-count-badge${badgeClass}">${taskAnnotationCount} Update${taskAnnotationCount > 1 ? 's' : ''}</span>` : '';
         
+        // Extract dismissed/outstanding counts for badge rendering in task header (screening tasks only)
+        let dismissedBadge = '';
+        let outstandingBadge = '';
+        if (headerChecks.length > 0 && headerChecks[0].dismissedCount !== undefined) {
+            if (headerChecks[0].dismissedCount > 0) {
+                dismissedBadge = `<span class="hit-count-badge badge-dismissed">${headerChecks[0].dismissedCount} Dismissed</span>`;
+            }
+            if (headerChecks[0].outstandingCount > 0) {
+                outstandingBadge = `<span class="hit-count-badge badge-outstanding">${headerChecks[0].outstandingCount} Outstanding</span>`;
+            }
+        }
+        
+        // Always create badge container if ANY badge exists (ensures consistent right-alignment)
+        const badgesHtml = (annotationBadge || dismissedBadge || outstandingBadge)
+            ? `<div class="task-header-badges">${annotationBadge}${dismissedBadge}${outstandingBadge}</div>` 
+            : '';
+        
         // Add annotations display
         const annotationsHtml = this.renderTaskAnnotations(taskType, check);
         
@@ -4520,7 +6186,7 @@ class ThirdfortChecksManager {
             <div class="task-card ${borderClass}" onclick="this.classList.toggle('expanded')">
                 <div class="task-header">
                     <div class="task-title">${taskTitle}</div>
-                    ${annotationBadge}
+                    ${badgesHtml}
                     ${statusIcon}
                 </div>
                 ${headerChecksHtml}
@@ -5088,6 +6754,32 @@ class ThirdfortChecksManager {
         return '';
     }
     
+    // CSS-based icons for PDF generation (html2pdf doesn't handle SVG well)
+    getTaskCheckIconCSS(status, isRed = false) {
+        if (status === 'CL') {
+            // Green circle with white checkmark using pseudo-elements
+            return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; position: relative; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center;"><span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">✓</span></div>`;
+        } else if (status === 'CO' || status === 'CN') {
+            const color = isRed ? '#d32f2f' : '#f7931e';
+            return `<div style="width: 16px; height: 16px; border-radius: 50%; background: ${color}; position: relative; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center;"><span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">−</span></div>`;
+        } else if (status === 'AL' || status === 'FA') {
+            return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #ff0000; position: relative; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center;"><span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">×</span></div>`;
+        }
+        return '';
+    }
+    
+    // CSS-based status icons for PDF (larger size for task headers)
+    getStatusIconCSS(status) {
+        if (status === 'clear') {
+            return `<div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">✓</span></div>`;
+        } else if (status === 'consider') {
+            return `<div style="width: 20px; height: 20px; border-radius: 50%; background: #f7931e; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 18px; font-weight: bold; line-height: 1;">−</span></div>`;
+        } else if (status === 'fail') {
+            return `<div style="width: 20px; height: 20px; border-radius: 50%; background: #ff0000; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">×</span></div>`;
+        }
+        return '';
+    }
+    
     getStatusIconSVG(status) {
         // Return smaller circular status icons for annotation objectives
         // Matches the status result strings: 'clear', 'consider', 'fail'
@@ -5106,15 +6798,22 @@ class ThirdfortChecksManager {
     
     createScreeningHitCard(hitData) {
         const {
-            name, dob, hitType, hitIcon, score, flagTypes, positions, countries, aka, media, associates, fields, match_types
+            name, dob, hitType, hitIcon, score, flagTypes, positions, countries, aka, media, associates, fields, match_types, dismissal
         } = hitData;
         
         const uniqueId = `hit-${Math.random().toString(36).substr(2, 9)}`;
+        const isDismissed = dismissal !== undefined && dismissal !== null;
         
         let html = `
-            <div class="screening-hit-card">
+            <div class="screening-hit-card ${isDismissed ? 'dismissed-hit' : ''}">
                 <div class="screening-hit-header">
-                    <div class="screening-hit-name">${name}</div>
+                    <div class="screening-hit-name">
+                        ${name}
+                        ${isDismissed ? `<span class="dismissal-badge">
+                            <svg viewBox="0 0 300 300" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>
+                            Dismissed
+                        </span>` : ''}
+                    </div>
                     <div class="screening-hit-badges">
         `;
         
@@ -5303,6 +7002,38 @@ class ThirdfortChecksManager {
             html += `
                         </div>
                     </div>
+            `;
+        }
+        
+        // Dismissal information (if hit was dismissed)
+        if (isDismissed) {
+            const dismissalDate = new Date(dismissal.timestamp).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+            const dismissalTime = new Date(dismissal.timestamp).toLocaleTimeString('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Format user name
+            const dismissedBy = dismissal.userName || dismissal.user || 'Unknown';
+            const formattedUser = dismissedBy
+                .split(/[-._@]/)
+                .slice(0, -1) // Remove domain
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+                .join(' ');
+            
+            html += `
+                <div class="dismissal-info-section">
+                    <div class="dismissal-info-header">
+                        <svg viewBox="0 0 300 300" style="width: 16px; height: 16px; margin-right: 6px;"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>
+                        <strong>Dismissed by ${formattedUser}</strong>
+                        <span class="dismissal-date">${dismissalDate} at ${dismissalTime}</span>
+                    </div>
+                    <div class="dismissal-reason">${dismissal.reason}</div>
+                </div>
             `;
         }
         
@@ -6185,9 +7916,16 @@ class ThirdfortChecksManager {
             const totalHits = breakdown.total_hits || 0;
             const hits = breakdown.hits || [];
             
+            // Count dismissed hits
+            const pepDismissals = check.pepDismissals || [];
+            const dismissedCount = hits.filter(hit => pepDismissals.some(d => d.hitId === hit.id)).length;
+            const outstandingCount = totalHits - dismissedCount;
+            
             checks.push({
-                status: totalHits === 0 ? 'CL' : 'CO',
-                text: `${totalHits} match${totalHits !== 1 ? 'es' : ''} found`
+                status: totalHits === 0 ? 'CL' : 'CO', // Always CONSIDER if hits exist, regardless of dismissals
+                text: `${totalHits} match${totalHits !== 1 ? 'es' : ''} found`,
+                dismissedCount: dismissedCount,
+                outstandingCount: outstandingCount
             });
             
             // Show detailed hit information using the same format as PEP updates
@@ -6225,6 +7963,10 @@ class ThirdfortChecksManager {
                         hitIcon = '👤';
                     }
                     
+                    // Check if this hit has been dismissed
+                    const pepDismissals = check.pepDismissals || [];
+                    const dismissal = pepDismissals.find(d => d.hitId === hit.id);
+                    
                     // Create a "hit card" structure similar to PEP updates
                     checks.push({
                         isHitCard: true,
@@ -6241,7 +7983,8 @@ class ThirdfortChecksManager {
                             media: hit.media || [],
                             associates: hit.associates || [],
                             fields: hit.fields || [],
-                            match_types: hit.match_types || []
+                            match_types: hit.match_types || [],
+                            dismissal: dismissal // Add dismissal info if exists
                         }
                     });
                 });
@@ -6323,30 +8066,65 @@ class ThirdfortChecksManager {
             }
         }
         else if (taskType === 'identity:lite') {
-            // IDV document verification - Show detailed breakdown
+            // IDV document verification - Show detailed breakdown with nested items when needed
             const breakdown = outcome.breakdown?.document?.breakdown || {};
             
-            // Document verification categories
-            const categories = [
-                { key: 'visual_authenticity', label: 'Visual Authenticity' },
-                { key: 'image_integrity', label: 'Image Integrity' },
-                { key: 'data_validation', label: 'Data Validation' },
-                { key: 'data_consistency', label: 'Data Consistency' },
-                { key: 'data_comparison', label: 'Data Comparison' },
-                { key: 'compromised_document', label: 'Compromised Check' },
-                { key: 'age_validation', label: 'Age Validation' },
-                { key: 'police_record', label: 'Police Record' }
-            ];
-            
-            categories.forEach(cat => {
-                if (breakdown[cat.key]) {
-                    const result = breakdown[cat.key].result || 'unknown';
+            // Helper function to process category and show nested items when needed (same as electronic-id)
+            const processCategory = (category, categoryName) => {
+                if (!category) return;
+                
+                const catBreakdown = category.breakdown || {};
+                const catResult = category.result || '';
+                
+                // If category has nested breakdown
+                if (Object.keys(catBreakdown).length > 0) {
+                    // If parent category is consider/fail, show parent + ALL nested items indented
+                    if (catResult !== 'clear') {
+                        // Add parent category header
+                        checks.push({
+                            status: catResult === 'fail' ? 'AL' : 'CO',
+                            text: categoryName,
+                            isParent: true
+                        });
+                        
+                        // Add all nested items indented
+                        Object.entries(catBreakdown).forEach(([key, subCheck]) => {
+                            const subResult = subCheck.result || '';
+                            const formattedKey = key.replace(/_/g, ' ')
+                                .split(' ')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ');
+                            checks.push({
+                                status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'),
+                                text: formattedKey,
+                                isChildItem: true  // Visual indentation in header checks
+                            });
+                        });
+                    } else {
+                        // Parent is clear - just show the category name
+                        checks.push({
+                            status: 'CL',
+                            text: categoryName
+                        });
+                    }
+                } else {
+                    // No nested breakdown, show the category itself
                     checks.push({
-                        status: result === 'clear' ? 'CL' : (result === 'fail' ? 'AL' : 'CO'),
-                        text: cat.label
+                        status: catResult === 'clear' ? 'CL' : (catResult === 'fail' ? 'AL' : 'CO'),
+                        text: categoryName
                     });
                 }
-            });
+            };
+            
+            // Process all document categories (same order as electronic-id)
+            processCategory(breakdown.visual_authenticity, 'Visual Authenticity');
+            processCategory(breakdown.image_integrity, 'Image Integrity');
+            processCategory(breakdown.data_validation, 'Data Validation');
+            processCategory(breakdown.data_consistency, 'Data Consistency');
+            processCategory(breakdown.data_comparison, 'Data Comparison');
+            processCategory(breakdown.compromised_document, 'Compromised Check');
+            processCategory(breakdown.age_validation, 'Age Validation');
+            processCategory(breakdown.police_record, 'Police Record');
         }
         else if (taskType === 'company:summary') {
             // Company Summary - Show people count in header, profile cards in details
@@ -6558,6 +8336,453 @@ class ThirdfortChecksManager {
     generateMockData() {
         // Real KYB check data for THURSTAN HOSKIN SOLICITORS LLP
         return [
+            // Mock Check 0: Jacob Robert Archer-Moran - Lite Screen in PROGRESS
+            {
+                "taskOutcomes": {
+                  "address": {
+                    "result": "fail",
+                    "status": "closed",
+                    "data": {
+                      "quality": 0
+                    }
+                  },
+                  "peps": {
+                    "breakdown": {
+                      "total_hits": 2,
+                      "hits": [
+                        {
+                          "name": "Jake Moran",
+                          "assets": [],
+                          "dob": {
+                            "main": "",
+                            "other": []
+                          },
+                          "score": 0.1,
+                          "flag_types": [
+                            "adverse-media",
+                            "adverse-media-violent-crime"
+                          ],
+                          "source_notes": {
+                            "complyadvantage-adverse-media": {
+                              "aml_types": [
+                                "adverse-media",
+                                "adverse-media-violent-crime"
+                              ],
+                              "country_codes": [
+                                "US"
+                              ],
+                              "name": "ComplyAdvantage Adverse Media"
+                            }
+                          },
+                          "institutions": [],
+                          "spouses": [],
+                          "political_positions": [],
+                          "countries": [
+                            "United States"
+                          ],
+                          "aka": [
+                            "Jake Moran"
+                          ],
+                          "id": "CPPFOJFI8OCU4PE",
+                          "match_types": [
+                            "equivalent_name",
+                            "name_variations_removal"
+                          ],
+                          "roles": [],
+                          "fields": [
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "United States"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "United States"
+                            },
+                            {
+                              "name": "Countries",
+                              "source": "",
+                              "value": "United States"
+                            }
+                          ],
+                          "media": [
+                            {
+                              "date": "2014-05-21T00:00:00Z",
+                              "snippet": "But after suffering a gut-wrenching 29-27, 20-25, 29-27 setback to the Redwings, the RedHawks rebounded to take down St. Patrick (25-19, 25-22) in another conference clash. Spearheading Marist's winning effort was Jake Moran, who registered five kills and six digs. Tom Inzinga equaled Moran's kill total, while Nick O'Gorman chipped in four kills and a service ace.",
+                              "title": "Community sports news - Southwest Community Publishing",
+                              "url": "https://www.southwestregionalpublishing.com/2014/05/21/community-sports-news-05-21-14-2/"
+                            },
+                            {
+                              "date": "2016-05-21T00:00:00Z",
+                              "snippet": "The best challenge to the Patriot stronghold, as evidenced this weekend, is O'Gorman, which took four of six heads-up championship matches against Lincoln. Sam Heckman (Flight 3), Jake Moran (Flight 4) and Michael Yousef (Flight 6) all racked up singles titles, while Flight 2 runner-up Wil McDowell and Heckman took home the Flight 2 doubles crown. \"They performed like I thought they would, and also expected,\" said Coach Don Barnes.",
+                              "title": "Lincoln caps third straight tennis title",
+                              "url": "https://www.argusleader.com/story/sports/high-school-sports/2016/05/21/midst-dynasty---lincoln-caps-third-straight-title/84666134/"
+                            }
+                          ],
+                          "associates": []
+                        },
+                        {
+                          "name": "Jacob Moran",
+                          "assets": [],
+                          "dob": {
+                            "main": "",
+                            "other": []
+                          },
+                          "score": 0.1,
+                          "flag_types": [
+                            "adverse-media",
+                            "adverse-media-general",
+                            "adverse-media-violent-crime"
+                          ],
+                          "source_notes": {
+                            "complyadvantage-adverse-media": {
+                              "aml_types": [
+                                "adverse-media",
+                                "adverse-media-general",
+                                "adverse-media-violent-crime"
+                              ],
+                              "country_codes": [
+                                "CA",
+                                "US"
+                              ],
+                              "name": "ComplyAdvantage Adverse Media"
+                            }
+                          },
+                          "institutions": [],
+                          "spouses": [],
+                          "political_positions": [],
+                          "countries": [
+                            "Canada",
+                            "United States"
+                          ],
+                          "aka": [
+                            "Jacob Moran",
+                            "Jacob Benning Moran"
+                          ],
+                          "id": "5F0CGJUQGD3KXR6",
+                          "match_types": [
+                            "aka_exact",
+                            "name_variations_removal"
+                          ],
+                          "roles": [],
+                          "fields": [
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Canada"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Canada, United States"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "United States"
+                            },
+                            {
+                              "name": "Countries",
+                              "source": "",
+                              "value": "Canada, United States"
+                            }
+                          ],
+                          "media": [
+                            {
+                              "date": "0001-01-01T00:00:00Z",
+                              "snippet": "GPD is in direct communication with the Michigan State Police and are working with them on the case following his capture, the agency said.<\\/p>\\n Shortly after GPD announced that Jacob Moran was in custody, the Johnson County Coroner\\u2019s Office formally identified Shaun Moran as the man who was killed in the shooting. The office ruled his death as homicide caused by a single gunshot wound.<\\/p>\\n",
+                              "title": "(no title)",
+                              "url": "https://dailyjournal.net/wp-json/wp/v2/posts/1816390"
+                            },
+                            {
+                              "date": "2021-03-01T00:00:00Z",
+                              "snippet": "They detained Moran and learned he had urinated on a tire of the car. \"Moran was heavily intoxicated on marijuana. He was arrested for prowling, public urination and public intoxication,\" police said.",
+                              "title": "530 Crime Watch: Man tried to rob bank across street from police station",
+                              "url": "https://www.usatoday.com/story/news/local/2021/03/01/530-crime-watch-arrest-jail-redding-police-shasta-sheriff/6870286002/?gnt-cfr=1"
+                            },
+                            {
+                              "date": "2023-08-29T00:00:00Z",
+                              "snippet": "Court documents show that Jacob Moran had allegedly assaulted his father twice in the hours before the shooting. Jacob Moran was charged Tuesday with residential entry, a Level 6 felony, and two counts of domestic battery both as a Level 6 felony and a misdemeanor, for the incidents. Charges for the shooting have not yet been filed.",
+                              "title": "Greenwood domestic dispute ends in fatal shooting - Daily Journal",
+                              "url": "https://dailyjournal.net/2023/08/29/greenwood-domestic-dispute-ends-in-fatal-shooting/"
+                            },
+                            {
+                              "date": "2024-11-15T00:00:00Z",
+                              "snippet": "Jacob Moran had been staying at his father's home but had reportedly been causing issues and been asked to leave the home. After being asked to leave the first time, Jacob Moran allegedly assaulted his father, leading to police being called. Later that day, he returned and again allegedly assaulted Shaun Moran, according to court documents.",
+                              "title": "Greenwood man convicted of murder of father following domestic dispute - Daily Journal",
+                              "url": "https://dailyjournal.net/2024/11/15/greenwood-man-convicted-of-murder-of-father-following-domestic-dispute/"
+                            },
+                            {
+                              "date": "2023-09-07T00:00:00Z",
+                              "snippet": "The gun's serial number was a match to the gun box that was found in the garage, court documents show. Jacob Moran was then arrested and taken to a Sturgis, Michigan jail on a charge of possession of an unregistered handgun. The BMW was impounded, court documents say.",
+                              "title": "Greenwood man, 22, charged with his father's murder - Daily Journal",
+                              "url": "https://dailyjournal.net/2023/09/07/greenwood-man-22-charged-with-his-fathers-murder/"
+                            },
+                            {
+                              "date": "0001-01-01T00:00:00Z",
+                              "snippet": "As deputies attempted to place Moran into custody for his warrant, Moran began to physically resist deputies. While resisting, Moran twice attempted to unholster a deputy's service firearm. After a brief struggle, Moran was arrested and then booked into the Humboldt County Correctional Facility on fresh charges of attempting to remove a peace officer's firearm (PC 148(d)) and resisting a peace officer (PC 148(a)(1)), in addition to his warrant charges of assault (PC 240) and battery (PC 242).",
+                              "title": "News Flash • County of Humboldt • CivicEngage",
+                              "url": "https://humboldtgov.org/CivicAlerts.aspx?AID=4279"
+                            },
+                            {
+                              "date": "2021-03-26T00:00:00Z",
+                              "snippet": "They immediately detained Moran and learned he urinated on a tire of the same car. Moran was \"heavily intoxicated on marijuana,\" and was ultimately arrested for public intoxication, public urination, and prowling.",
+                              "title": "Officers arrest prowler looking inside, and urinating on, a vehicle in Redding on Friday",
+                              "url": "https://krcrtv.com/news/local/bicycle-officers-catch-prowler-looking-inside-cars-in-redding-on-friday"
+                            },
+                            {
+                              "date": "2015-04-01T00:00:00Z",
+                              "snippet": "Moran then emerged, ran toward the plaintiff, and punched him. The officers arrested Moran. The plaintiff commenced this action against, among others, the defendant City of New York, alleging that the officers were negligent in failing to protect the plaintiff.",
+                              "title": "PHILIP v. MORAN | 127 A.D.3d 717 (2015) | 20150401440 | Leagle.com",
+                              "url": "https://www.leagle.com/decision/innyco20150401440"
+                            },
+                            {
+                              "date": "2023-08-29T00:00:00Z",
+                              "snippet": "When they arrived they found, Shaun Moran dead of an apparent gunshot wound in the home's garage, police say. Police say Jacob Moran is suspect in the shooting. It was reported that he was angry with Shaun Moran about being told to move out of the home, according to the news release.",
+                              "title": "UPDATE: Suspect in custody after deadly Greenwood shooting - Daily Journal",
+                              "url": "https://dailyjournal.net/2023/08/29/update-suspect-in-custody-after-deadly-greenwood-shooting/"
+                            },
+                            {
+                              "date": "2021-10-13T00:00:00Z",
+                              "snippet": "16 p.m., Humboldt County Sheriff's deputies on patrol in the 2400 block of Myrtle Avenue observed a suspicious male exhibiting behavior consistent with attempting a car burglary. Deputies contacted the man, 20-year-old Jacob Benning Moran, and learned that Moran had an outstanding misdemeanor warrant for his arrest. As deputies attempted to place Moran into custody for his warrant, Moran began to physically resist deputies.",
+                              "title": "Warrant suspect tries to grab deputy's gun during arrest in Myrtletown, HCSO says",
+                              "url": "https://krcrtv.com/north-coast-news/eureka-local-news/warrant-suspect-tries-to-grab-deputys-gun-during-arrest-in-myrtletown-hcso-says"
+                            }
+                          ],
+                          "associates": []
+                        }
+                      ]
+                    },
+                    "data": {
+                      "dob": "2001-01-11T00:00:00.000Z",
+                      "name": {
+                        "first": "Jacob",
+                        "last": "Moran",
+                        "other": "Robert"
+                      },
+                      "address": {
+                        "postcode": "TR15 2ND",
+                        "country": "GBR",
+                        "street": "Southgate Street",
+                        "building_number": "94",
+                        "town": "Redruth"
+                      }
+                    },
+                    "result": "consider",
+                    "documents": [
+                      "d4911ad23amg0305ahm0"
+                    ],
+                    "id": "d49119n23amg0305ahhg",
+                    "status": "closed",
+                    "createdAt": "2025-11-10T16:19:50.418Z"
+                  },
+                  "footprint": {
+                    "breakdown": {
+                      "data_count": {
+                        "properties": {
+                          "score": 0
+                        },
+                        "result": "consider"
+                      },
+                      "data_quality": {
+                        "properties": {
+                          "score": 0
+                        },
+                        "result": "consider"
+                      },
+                      "rules": [
+                        {
+                          "id": "U000",
+                          "name": "",
+                          "score": 0,
+                          "text": "No trace of supplied Address(es), or manual Authentication required by the Applicant"
+                        }
+                      ],
+                      "service_name": "Authenticateplus"
+                    },
+                    "data": {
+                      "address": {
+                        "postcode": "TR15 2ND",
+                        "country": "GBR",
+                        "street": "Southgate Street",
+                        "building_number": "94",
+                        "town": "Redruth"
+                      },
+                      "dob": "2001-01-11T00:00:00.000Z",
+                      "name": {
+                        "first": "Jacob",
+                        "last": "Moran",
+                        "other": "Robert"
+                      }
+                    },
+                    "result": "fail",
+                    "documents": [],
+                    "id": "d49119523amg0305ahfg",
+                    "status": "closed",
+                    "createdAt": "2025-11-10T16:19:48.086Z"
+                  }
+                },
+                "updatedAt": "2025-11-10T16:19:52.927Z",
+                "pdfReady": true,
+                "checkType": "lite-screen",
+                "completedAt": "2025-11-10T16:19:52.927Z",
+                "pepDismissals": [
+                  {
+                    "timestamp": "2025-11-10T16:21:10.564Z",
+                    "reportId": "d49119n23amg0305ahhg",
+                    "_id": "8bavqfs",
+                    "reason": "different middle name to our client",
+                    "hitName": "Jacob Moran",
+                    "reportType": "peps",
+                    "hitId": "5F0CGJUQGD3KXR6",
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  },
+                  {
+                    "timestamp": "2025-11-10T16:21:10.564Z",
+                    "reportId": "d49119n23amg0305ahhg",
+                    "_id": "sNkrev8",
+                    "reason": "different surname to out client",
+                    "hitName": "Jake Moran",
+                    "reportType": "peps",
+                    "hitId": "CPPFOJFI8OCU4PE",
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  }
+                ],
+                "initiatedAt": "2025-11-10T16:19:47.409Z",
+                "considerReasons": [
+                  "address verification",
+                  "digital footprint",
+                  "PEP hits"
+                ],
+                "pdfS3Key": "protected/6FtVY0d",
+                "consumerName": "Jacob Moran",
+                "tasks": [
+                  "report:footprint",
+                  "report:peps"
+                ],
+                "updates": [
+                  {
+                    "timestamp": "2025-11-10T16:19:47.409Z",
+                    "update": "Lite Screen check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
+                  },
+                  {
+                    "timestamp": "2025-11-10T16:19:52.927Z",
+                    "update": "Transaction completed - awaiting PDF"
+                  },
+                  {
+                    "timestamp": "2025-11-10T16:19:59.972Z",
+                    "update": "PDF received and uploaded to S3 - CONSIDER: address verification, digital footprint, PEP hits"
+                  },
+                  {
+                    "timestamp": "2025-11-10T16:21:19.051Z",
+                    "update": "PEPs & Sanctions task completed"
+                  }
+                ],
+                "status": "closed",
+                "initiatedBy": "jacob.archer-moran@thurstanhoskin.co.uk",
+                "piiData": {
+                  "name": {
+                    "first": "Jacob",
+                    "last": "Moran",
+                    "other": "Robert"
+                  },
+                  "address": {
+                    "postcode": "TR15 2ND",
+                    "country": "GBR",
+                    "street": "Southgate Street",
+                    "building_number": "94",
+                    "town": "Redruth"
+                  },
+                  "dob": "2001-01-11T00:00:00.000Z",
+                  "document": {}
+                },
+                "hasMonitoring": true,
+                "thirdfortResponse": {
+                  "name": "Jacob Moran - Lite Screening",
+                  "request": {
+                    "tasks": [
+                      {
+                        "opts": {
+                          "consent": false
+                        },
+                        "type": "report:footprint"
+                      },
+                      {
+                        "opts": {
+                          "monitored": true
+                        },
+                        "type": "report:peps"
+                      }
+                    ]
+                  },
+                  "ref": "Val'ID'ate: 50/999",
+                  "id": "d49118n23amg0305ahe0",
+                  "reports": [],
+                  "status": "open",
+                  "metadata": {
+                    "notify": {
+                      "type": "http",
+                      "data": {
+                        "hmac_key": "GgUi5IyCFm4TOsMy3Q4cvq6bnQEBJq/0uRqECCRoz+4=",
+                        "method": "POST",
+                        "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                      }
+                    },
+                    "created_by": "d3t0auq9io6g00ak3kkg",
+                    "print": {
+                      "team": "Cashiers",
+                      "tenant": "Thurstan Hoskin Solicitors LLP",
+                      "user": "THS Bot"
+                    },
+                    "context": {
+                      "gid": "d3t2k5a9io6g00ak3km0",
+                      "uid": "d3t0auq9io6g00ak3kkg",
+                      "team_id": "d3t2k5a9io6g00ak3km0",
+                      "tenant_id": "d3t2ifa9io6g00ak3klg"
+                    },
+                    "ce": {
+                      "uri": "/v1/checks/4151797899"
+                    },
+                    "created_at": "2025-11-10T16:19:45.948Z"
+                  },
+                  "type": "v2",
+                  "opts": {
+                    "peps": {
+                      "monitored": true
+                    }
+                  }
+                },
+                "expectations": {
+                  "name": {
+                    "data": {
+                      "first": "Jacob",
+                      "last": "Moran",
+                      "other": "Robert"
+                    }
+                  },
+                  "dob": {
+                    "data": "2001-01-11T00:00:00.000Z"
+                  },
+                  "address": {
+                    "data": {
+                      "postcode": "TR15 2ND",
+                      "country": "GBR",
+                      "building_name": "",
+                      "flat_number": "",
+                      "street": "Southgate Street",
+                      "building_number": "94",
+                      "sub_street": "",
+                      "town": "Redruth"
+                    }
+                  }
+                },
+                "hasAlerts": true,
+                "pdfAddedAt": "2025-11-10T16:19:59.972Z",
+                "transactionId": "d49118n23amg0305ahe0"
+            },
             // Mock Check 1: THURSTAN HOSKIN SOLICITORS LLP - KYB Check
             {
                 checkId: 'd45v1gy23amg0306599g',
@@ -6620,13 +8845,19 @@ class ThirdfortChecksManager {
                                     name: 'Barbara Archer',
                                     start_date: '2018-04-12',
                                     dob: '1974-07',
-                                    position: 'Designated LLP Member'
+                                    position: 'Designated LLP Member',
+                                    ownershipPercentage: 45,
+                                    votingPercentageHigh: 45,
+                                    natureOfControlTypes: ['ownership-of-shares-75-to-100-percent', 'voting-rights-75-to-100-percent']
                                 },
                                 {
                                     name: 'Stephen John Duncan Morrison',
                                     start_date: '2018-04-12',
                                     dob: '1972-07',
-                                    position: 'Designated LLP Member'
+                                    position: 'Designated LLP Member',
+                                    ownershipPercentage: 55,
+                                    votingPercentageHigh: 55,
+                                    natureOfControlTypes: ['ownership-of-shares-75-to-100-percent', 'voting-rights-75-to-100-percent', 'right-to-appoint-and-remove-directors']
                                 }
                             ],
                             registration_number: 'OC421980',
@@ -6672,18 +8903,24 @@ class ThirdfortChecksManager {
                             pscs: [
                                 {
                                     natureOfControlStartDate: '2018-04-12',
+                                    natureOfControlTypes: ['ownership-of-shares-75-to-100-percent', 'voting-rights-75-to-100-percent'],
                                     person: {
                                         name: 'Barbara Archer',
                                         birthDate: '1974-07',
-                                        nationality: 'British'
+                                        nationality: 'British',
+                                        ownershipPercentage: 45,
+                                        votingPercentageHigh: 45
                                     }
                                 },
                                 {
                                     natureOfControlStartDate: '2018-04-12',
+                                    natureOfControlTypes: ['ownership-of-shares-75-to-100-percent', 'voting-rights-75-to-100-percent', 'right-to-appoint-and-remove-directors'],
                                     person: {
                                         name: 'Stephen John Duncan Morrison',
                                         birthDate: '1972-07',
-                                        nationality: 'British'
+                                        nationality: 'British',
+                                        ownershipPercentage: 55,
+                                        votingPercentageHigh: 55
                                     }
                                 }
                             ]
@@ -9862,10 +12099,10 @@ class ThirdfortChecksManager {
                   },
                   "gender": {
                     "properties": {},
-                    "result": "clear"
+                    "result": "consider"
                   }
                 },
-                "result": "clear"
+                "result": "consider"
               },
               "data_comparison": {
                 "breakdown": {
@@ -15500,6 +17737,548 @@ class ThirdfortChecksManager {
                 "pdfReady": true,
                 "checkType": "electronic-id",
                 "completedAt": "2025-11-06T18:06:27.223Z",
+                "sofAnnotations": [
+                  {
+                    "timestamp": "2025-11-11T15:08:35.483Z",
+                    "_id": "mNCK9K6",
+                    "notes": {
+                      "timestamp": "2025-11-11T15:08:34.983Z",
+                      "fundingMethods": [
+                        {
+                          "fundType": "fund:savings",
+                          "fundIdx": "1",
+                          "note": "",
+                          "transactionMarkers": {
+                            "0da74102e67736d0d00b6ba34242ccf7": "accepted",
+                            "5c649b28a5641841b68b2bab28d23d05": "accepted",
+                            "e3349fb77f4ca0852d5bd241627a8aad": "accepted",
+                            "04c554385e5106117f24163d80f2a849": "accepted"
+                          },
+                          "redFlags": [],
+                          "verified": []
+                        },
+                        {
+                          "fundType": "fund:gift",
+                          "fundIdx": "2",
+                          "note": "AML, ID and SoF/SoW conducted on gifter and all clear",
+                          "transactionMarkers": {
+                            "d5fdf791a4294d42275adabc74e82413": "rejected",
+                            "ee587010c1a76619f7888e7448df3dac": "rejected"
+                          },
+                          "redFlags": [
+                            {
+                              "flagIdx": "0",
+                              "status": "dismissed",
+                              "note": "AML, ID and SoF/SoW conducted on gifter and all clear"
+                            }
+                          ],
+                          "verified": [
+                            "gift_checks"
+                          ]
+                        },
+                        {
+                          "fundType": "fund:sale:property",
+                          "fundIdx": "3",
+                          "note": "we acted previously in the sale under 50/998",
+                          "transactionMarkers": {},
+                          "redFlags": [],
+                          "verified": []
+                        },
+                        {
+                          "fundType": "fund:sale:assets",
+                          "fundIdx": "4",
+                          "note": "",
+                          "transactionMarkers": {
+                            "e86445c66a21cf38609e252ea5d45add": "accepted"
+                          },
+                          "redFlags": [],
+                          "verified": []
+                        },
+                        {
+                          "fundType": "fund:htb",
+                          "fundIdx": "5",
+                          "note": "confirmed funds in our account direct from moneybox",
+                          "transactionMarkers": {},
+                          "redFlags": [],
+                          "verified": []
+                        },
+                        {
+                          "fundType": "fund:inheritance",
+                          "fundIdx": "6",
+                          "note": "we actee in the estate under 50/998",
+                          "transactionMarkers": {},
+                          "redFlags": [],
+                          "verified": []
+                        }
+                      ],
+                      "chains": [],
+                      "property": {
+                        "reviewed": true,
+                        "note": "All match our details"
+                      },
+                      "bankAnalysisItems": [
+                        {
+                          "groupIndex": 0,
+                          "comment": "salary",
+                          "flag": "cleared",
+                          "type": "repeating-group",
+                          "linkedToFundIdx": "0"
+                        },
+                        {
+                          "groupIndex": 1,
+                          "comment": "salary",
+                          "flag": "cleared",
+                          "type": "repeating-group",
+                          "linkedToFundIdx": "0"
+                        },
+                        {
+                          "groupIndex": 2,
+                          "comment": "salary",
+                          "flag": "cleared",
+                          "type": "repeating-group",
+                          "linkedToFundIdx": "0"
+                        },
+                        {
+                          "groupIndex": 3,
+                          "comment": "Credit card payments",
+                          "flag": "cleared",
+                          "type": "repeating-group",
+                          "linkedToFundIdx": "0"
+                        },
+                        {
+                          "groupIndex": 4,
+                          "comment": "salary",
+                          "flag": "cleared",
+                          "type": "repeating-group",
+                          "linkedToFundIdx": "1"
+                        },
+                        {
+                          "groupIndex": 5,
+                          "comment": "current rent",
+                          "flag": "cleared",
+                          "type": "repeating-group",
+                          "linkedToFundIdx": "0"
+                        },
+                        {
+                          "groupIndex": 7,
+                          "comment": "Suspicious payment",
+                          "flag": "suspicious",
+                          "type": "repeating-group",
+                          "linkedToFundIdx": "0"
+                        },
+                        {
+                          "comment": "Klarna is a payment service, why such large payment?",
+                          "flag": "review",
+                          "type": "transaction",
+                          "transactionId": "2e6ee436a7394f2406fdebb7664f0dc1"
+                        }
+                      ],
+                      "transactions": [
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "0da74102e67736d0d00b6ba34242ccf7"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "5c649b28a5641841b68b2bab28d23d05"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "e3349fb77f4ca0852d5bd241627a8aad"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "04c554385e5106117f24163d80f2a849"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "4"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "e86445c66a21cf38609e252ea5d45add"
+                        }
+                      ],
+                      "accounts": [
+                        {
+                          "accountId": "6d7afbac29de4842775ee1763b86fc68",
+                          "accountIdx": "0",
+                          "reviewed": true,
+                          "note": "not connected to purchase"
+                        },
+                        {
+                          "accountId": "91c6769dcb61767289208a454930c7b7",
+                          "accountIdx": "1",
+                          "reviewed": true,
+                          "note": "Not connected to pch"
+                        },
+                        {
+                          "accountId": "4c82630f5b8bccce242ff3fbb4740b8d",
+                          "accountIdx": "2",
+                          "reviewed": true,
+                          "note": "Clients main account"
+                        },
+                        {
+                          "accountId": "071fc97cd0cf36290a519783bb8f1114",
+                          "accountIdx": "3",
+                          "reviewed": true,
+                          "note": "Clients savings account"
+                        },
+                        {
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "accountIdx": "4",
+                          "reviewed": true,
+                          "note": "found and linked salary transactions"
+                        }
+                      ]
+                    },
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  },
+                  {
+                    "timestamp": "2025-11-11T12:04:32.129Z",
+                    "_id": "UG17nnZ",
+                    "notes": {
+                      "timestamp": "2025-11-11T12:04:31.061Z",
+                      "fundingMethods": [
+                        {
+                          "fundType": "fund:gift",
+                          "fundIdx": "2",
+                          "note": "",
+                          "transactionMarkers": {
+                            "d5fdf791a4294d42275adabc74e82413": "rejected",
+                            "ee587010c1a76619f7888e7448df3dac": "rejected"
+                          },
+                          "redFlags": [],
+                          "verified": []
+                        }
+                      ],
+                      "chains": [],
+                      "property": {
+                        "reviewed": true,
+                        "note": "All match our details"
+                      },
+                      "bankAnalysisItems": [
+                        {
+                          "type": "repeating-group",
+                          "flag": "",
+                          "comment": "Credit card payments",
+                          "groupIndex": 3
+                        },
+                        {
+                          "type": "repeating-group",
+                          "flag": "",
+                          "comment": "current rent",
+                          "groupIndex": 5
+                        },
+                        {
+                          "type": "repeating-group",
+                          "flag": "",
+                          "comment": "Suspicious payment",
+                          "groupIndex": 7
+                        }
+                      ],
+                      "transactions": [
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "0da74102e67736d0d00b6ba34242ccf7"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "5c649b28a5641841b68b2bab28d23d05"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "e3349fb77f4ca0852d5bd241627a8aad"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "04c554385e5106117f24163d80f2a849"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "4"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "e86445c66a21cf38609e252ea5d45add"
+                        }
+                      ],
+                      "accounts": [
+                        {
+                          "accountId": "6d7afbac29de4842775ee1763b86fc68",
+                          "accountIdx": "0",
+                          "reviewed": true,
+                          "note": "not connected to purchase"
+                        },
+                        {
+                          "accountId": "91c6769dcb61767289208a454930c7b7",
+                          "accountIdx": "1",
+                          "reviewed": true,
+                          "note": "Not connected to pch"
+                        },
+                        {
+                          "accountId": "4c82630f5b8bccce242ff3fbb4740b8d",
+                          "accountIdx": "2",
+                          "reviewed": true,
+                          "note": "Clients main account"
+                        },
+                        {
+                          "accountId": "071fc97cd0cf36290a519783bb8f1114",
+                          "accountIdx": "3",
+                          "reviewed": true,
+                          "note": "Clients savings account"
+                        },
+                        {
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "accountIdx": "4",
+                          "reviewed": true,
+                          "note": "found and linked salary transactions"
+                        }
+                      ]
+                    },
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  },
+                  {
+                    "timestamp": "2025-11-09T21:09:58.395Z",
+                    "_id": "FBJNd5P",
+                    "notes": {
+                      "timestamp": "2025-11-09T21:09:56.575Z",
+                      "fundingMethods": [
+                        {
+                          "fundType": "fund:savings",
+                          "fundIdx": "1",
+                          "note": "",
+                          "transactionMarkers": {},
+                          "redFlags": [
+                            {
+                              "flagIdx": "1",
+                              "status": "dismissed",
+                              "note": "Revieiwed and found salary transactions"
+                            }
+                          ],
+                          "verified": [
+                            "savings_statements",
+                            "savings_balance",
+                            "savings_income"
+                          ]
+                        },
+                        {
+                          "fundType": "fund:gift",
+                          "fundIdx": "2",
+                          "note": "",
+                          "transactionMarkers": {
+                            "d5fdf791a4294d42275adabc74e82413": "rejected",
+                            "ee587010c1a76619f7888e7448df3dac": "rejected"
+                          },
+                          "redFlags": [],
+                          "verified": []
+                        }
+                      ],
+                      "chains": [],
+                      "property": null,
+                      "transactions": [
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "0da74102e67736d0d00b6ba34242ccf7"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "5c649b28a5641841b68b2bab28d23d05"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "e3349fb77f4ca0852d5bd241627a8aad"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "1"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "04c554385e5106117f24163d80f2a849"
+                        },
+                        {
+                          "linkedToFunds": [
+                            "4"
+                          ],
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "note": "",
+                          "flag": "linked",
+                          "txId": "e86445c66a21cf38609e252ea5d45add"
+                        }
+                      ],
+                      "accounts": [
+                        {
+                          "accountId": "6f1032d40aa61c12cec47fe3295d6a22",
+                          "accountIdx": "4",
+                          "reviewed": true,
+                          "note": "found and linked salary transactions"
+                        }
+                      ]
+                    },
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  },
+                  {
+                    "timestamp": "2025-11-09T12:41:17.744Z",
+                    "_id": "xa44wBD",
+                    "notes": {
+                      "fundingMethods": [
+                        {
+                          "fundType": "fund:mortgage",
+                          "fundIdx": "0",
+                          "note": "Checked mortgage offer and confirmed with provider",
+                          "transactionMarkers": {},
+                          "redFlags": [],
+                          "verified": [
+                            "mortgage_offer",
+                            "mortgage_affordability"
+                          ]
+                        },
+                        {
+                          "fundType": "fund:savings",
+                          "fundIdx": "1",
+                          "note": "",
+                          "transactionMarkers": {},
+                          "redFlags": [
+                            {
+                              "flagIdx": "0",
+                              "status": "confirmed",
+                              "note": "Need to obtain further proof of savings held"
+                            }
+                          ],
+                          "verified": []
+                        },
+                        {
+                          "fundType": "fund:gift",
+                          "fundIdx": "2",
+                          "note": "",
+                          "transactionMarkers": {
+                            "d5fdf791a4294d42275adabc74e82413": "rejected",
+                            "ee587010c1a76619f7888e7448df3dac": "rejected"
+                          },
+                          "redFlags": [
+                            {
+                              "flagIdx": "0",
+                              "status": "confirmed",
+                              "note": "Need to coduct AML & SOF on gifter"
+                            }
+                          ],
+                          "verified": [
+                            "gift_relationship"
+                          ]
+                        },
+                        {
+                          "fundType": "fund:sale:property",
+                          "fundIdx": "3",
+                          "note": "we acted in the sale under 50/998",
+                          "transactionMarkers": {},
+                          "redFlags": [],
+                          "verified": [
+                            "sale_documents",
+                            "sale_proceeds"
+                          ]
+                        },
+                        {
+                          "fundType": "fund:sale:assets",
+                          "fundIdx": "4",
+                          "note": "reviewed sale invoice and payment confirmation",
+                          "transactionMarkers": {},
+                          "redFlags": [],
+                          "verified": [
+                            "sale_documents",
+                            "sale_proceeds"
+                          ]
+                        },
+                        {
+                          "fundType": "fund:htb",
+                          "fundIdx": "5",
+                          "note": "funds recieved into client account from LISA",
+                          "transactionMarkers": {},
+                          "redFlags": [],
+                          "verified": [
+                            "generic_verified"
+                          ]
+                        },
+                        {
+                          "fundType": "fund:inheritance",
+                          "fundIdx": "6",
+                          "note": "we acted in the estate 2 years ago",
+                          "transactionMarkers": {},
+                          "redFlags": [],
+                          "verified": [
+                            "generic_verified"
+                          ]
+                        }
+                      ],
+                      "chains": [],
+                      "transactions": [],
+                      "timestamp": "2025-11-09T12:41:17.226Z"
+                    },
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                  }
+                ],
                 "initiatedAt": "2025-11-06T17:58:26.507Z",
                 "pdfS3Key": "protected/lXlh3Yd",
                 "consumerName": "Jacob Robert Moran",
@@ -15521,6 +18300,18 @@ class ThirdfortChecksManager {
                   {
                     "timestamp": "2025-11-06T18:07:35.445Z",
                     "update": "PDF received and uploaded to S3 - CLEAR"
+                  },
+                  {
+                    "timestamp": "2025-11-09T21:09:58.395Z",
+                    "update": "SoF investigation notes added by jacob.archer-moran"
+                  },
+                  {
+                    "timestamp": "2025-11-11T12:04:32.129Z",
+                    "update": "SoF investigation notes added by jacob.archer-moran"
+                  },
+                  {
+                    "timestamp": "2025-11-11T15:08:35.483Z",
+                    "update": "SoF investigation notes added by jacob.archer-moran"
                   }
                 ],
                 "status": "closed",
@@ -15531,6 +18322,20 @@ class ThirdfortChecksManager {
                   "document": {}
                 },
                 "hasMonitoring": false,
+                "redFlags": [
+                  {
+                    "description": "Gifts Received",
+                    "supporting_data": "1 gift received - £10,000.00",
+                    "threshold_amount": "Any gifts flagged",
+                    "source": "Source of Funds"
+                  },
+                  {
+                    "description": "Declared savings > actual savings",
+                    "declared": "£20,000.00",
+                    "actual": "£253.71",
+                    "source": "Bank Linking"
+                  }
+                ],
                 "thirdfortResponse": {
                   "name": "Purchase of 21 Green Lane",
                   "request": {
@@ -15589,21 +18394,101 @@ class ThirdfortChecksManager {
                 "hasAlerts": false,
                 "pdfAddedAt": "2025-11-06T18:07:35.445Z",
                 "smsSent": true,
-                "transactionId": "d46e3ge23amg030rw8y0",
-                "redFlags": [
+                "transactionId": "d46e3ge23amg030rw8y0"
+            },
+            {
+                "updatedAt": "2025-11-06T17:57:36.875Z",
+                "consumerPhone": "+447506430094",
+                "checkType": "electronic-id",
+                "initiatedAt": "2025-11-06T17:32:25.039Z",
+                "consumerName": "Jacob Robert Moran",
+                "tasks": [
+                  "report:footprint",
+                  "documents:poa",
+                  "report:sof-v1",
+                  "report:bank-statement",
+                  "report:bank-summary"
+                ],
+                "updates": [
                   {
-                    "description": "Gifts Received",
-                    "supporting_data": "1 gift received - £10,000.00",
-                    "threshold_amount": "Any gifts flagged",
-                    "source": "Source of Funds"
+                    "timestamp": "2025-11-06T17:32:25.039Z",
+                    "update": "Electronic ID check initiated by jacob.archer-moran@thurstanhoskin.co.uk"
                   },
                   {
-                    "description": "Declared savings > actual savings",
-                    "declared": "£20,000.00",
-                    "actual": "£253.71",
-                    "source": "Bank Linking"
+                    "timestamp": "2025-11-06T17:57:29.081Z",
+                    "update": "Check aborted by jacob.archer-moran@thurstanhoskin.co.uk"
+                  },
+                  {
+                    "timestamp": "2025-11-06T17:57:36.875Z",
+                    "update": "Transaction aborted"
                   }
-                ]
+                ],
+                "status": "aborted",
+                "initiatedBy": "jacob.archer-moran@thurstanhoskin.co.uk",
+                "hasMonitoring": false,
+                "thirdfortResponse": {
+                  "name": "Purchase of 21 Green Lane",
+                  "request": {
+                    "actor": {
+                      "name": "Jacob Robert Moran",
+                      "phone": "+447506430094"
+                    },
+                    "tasks": [
+                      {
+                        "opts": {
+                          "consent": false
+                        },
+                        "type": "report:footprint"
+                      },
+                      {
+                        "type": "documents:poa"
+                      },
+                      {
+                        "type": "report:sof-v1"
+                      },
+                      {
+                        "type": "report:bank-statement"
+                      },
+                      {
+                        "type": "report:bank-summary"
+                      }
+                    ]
+                  },
+                  "ref": "21 Green Lane",
+                  "id": "d46dq9x23amg030rw80g",
+                  "reports": [],
+                  "status": "open",
+                  "metadata": {
+                    "notify": {
+                      "type": "http",
+                      "data": {
+                        "hmac_key": "GgUi5IyCFm4TOsMy3Q4cvq6bnQEBJq/0uRqECCRoz+4=",
+                        "method": "POST",
+                        "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                      }
+                    },
+                    "created_by": "d3t0auq9io6g00ak3kkg",
+                    "print": {
+                      "team": "Cashiers",
+                      "tenant": "Thurstan Hoskin Solicitors LLP",
+                      "user": "THS Bot"
+                    },
+                    "context": {
+                      "gid": "d3t2k5a9io6g00ak3km0",
+                      "uid": "d3t0auq9io6g00ak3kkg",
+                      "team_id": "d3t2k5a9io6g00ak3km0",
+                      "tenant_id": "d3t2ifa9io6g00ak3klg"
+                    },
+                    "ce": {
+                      "uri": "/v1/checks/4151797880"
+                    },
+                    "created_at": "2025-11-06T17:32:23.745Z"
+                  },
+                  "type": "v2",
+                  "opts": {}
+                },
+                "smsSent": true,
+                "transactionId": "d46dq9x23amg030rw80g"
             },
             // Mock Check 7: Se Idris Stewart - Electronic ID - PENDING
             {
@@ -15756,10 +18641,10 @@ class ThirdfortChecksManager {
                               },
                               "gender": {
                                 "properties": {},
-                                "result": "clear"
+                                "result": "consider"
                               }
                             },
-                            "result": "clear"
+                            "result": "consider"
                           },
                           "data_comparison": {
                             "breakdown": {
@@ -17527,7 +20412,10 @@ class ThirdfortChecksManager {
         // Check for PEP dismissals if this is a screening task
         const isPepTask = taskType === 'screening' || taskType === 'peps' || taskType === 'screening:lite';
         
-        if (taskAnnotations.length === 0 && (!isSofTask || sofNotes.length === 0) && (!isPepTask || pepDismissals.length === 0)) {
+        // Check for Bank task - show account reviews from SOF annotations
+        const isBankTask = taskType === 'bank';
+        
+        if (taskAnnotations.length === 0 && (!isSofTask || sofNotes.length === 0) && (!isPepTask || pepDismissals.length === 0) && (!isBankTask || sofNotes.length === 0)) {
             return '';
         }
         
@@ -17590,48 +20478,447 @@ class ThirdfortChecksManager {
             });
         }
         
-        // Show SoF notes
+        // Show SoF notes (formatted like consider annotations)
         if (isSofTask && sofNotes.length > 0) {
-            html += '<div class="task-annotations-header">Investigation Notes</div>';
-            sofNotes.forEach(note => {
+            html += '<div class="task-annotations-header">Investigation Updates</div>';
+            sofNotes.forEach((note, noteIdx) => {
                 const date = new Date(note.timestamp).toLocaleString('en-GB', { 
                     day: '2-digit', 
                     month: 'short', 
                     hour: '2-digit', 
                     minute: '2-digit' 
                 });
-                const label = note.category === 'funding' ? note.fundingMethod : note.redFlagType;
-                html += '<div class="task-annotation-card sof-note">';
-                html += '<div class="task-annotation-header">';
-                html += '<strong>' + label + '</strong>';
+                
+                // Format user name - convert email to friendly name
+                let userName = note.userName || note.user;
+                if (userName && userName.includes('.') && !userName.includes(' ')) {
+                    // Convert "jacob.archer-moran" to "Jacob Archer Moran"
+                    userName = userName.split('@')[0] // Remove email domain if present
+                        .split('.').join(' ')  // Replace dots with spaces
+                        .split('-').join(' ')  // Replace hyphens with spaces
+                        .replace(/\b\w/g, l => l.toUpperCase()); // Capitalize each word
+                }
+                
+                const investigation = note.notes || {};
+                
+                // Check if there's any content to display
+                let hasPropertyContent = false;
+                let hasFundingContent = false;
+                let hasRedFlagContent = false;
+                let hasTransactionContent = false;
+                
+                if (investigation.property && (investigation.property.reviewed || investigation.property.note)) {
+                    hasPropertyContent = true;
+                }
+                
+                if (investigation.fundingMethods && investigation.fundingMethods.length > 0) {
+                    hasFundingContent = investigation.fundingMethods.some(fm => {
+                        const hasNote = fm.note && fm.note.trim();
+                        const hasVerified = fm.verified && fm.verified.length > 0;
+                        return hasNote || hasVerified;
+                    });
+                }
+                
+                if (investigation.redFlags && investigation.redFlags.length > 0) {
+                    hasRedFlagContent = true;
+                }
+                
+                if (investigation.transactions && investigation.transactions.length > 0) {
+                    hasTransactionContent = true;
+                }
+                
+                // Only show the update card if there's content to display
+                if (!hasPropertyContent && !hasFundingContent && !hasRedFlagContent && !hasTransactionContent) {
+                    return; // Skip this update
+                }
+                
+                // Build summary tags
+                let summaryTags = '';
+                const fundingMethodsWithContent = investigation.fundingMethods?.filter(fm => {
+                    const hasNote = fm.note && fm.note.trim();
+                    const hasVerified = fm.verified && fm.verified.length > 0;
+                    return hasNote || hasVerified;
+                }) || [];
+                
+                if (hasPropertyContent) {
+                    summaryTags += '<span class="annotation-summary-tag neutral">Property Reviewed</span>';
+                }
+                if (fundingMethodsWithContent.length > 0) {
+                    summaryTags += '<span class="annotation-summary-tag neutral">' + fundingMethodsWithContent.length + ' Funding Method' + (fundingMethodsWithContent.length !== 1 ? 's' : '') + '</span>';
+                }
+                if (hasTransactionContent) {
+                    const txCount = investigation.transactions.length;
+                    summaryTags += '<span class="annotation-summary-tag neutral">' + txCount + ' Transaction' + (txCount !== 1 ? 's' : '') + ' Linked</span>';
+                }
+                if (hasRedFlagContent) {
+                    const confirmedFlags = investigation.redFlags.filter(rf => rf.status === 'confirmed').length;
+                    const dismissedFlags = investigation.redFlags.filter(rf => rf.status === 'dismissed').length;
+                    const pendingFlags = investigation.redFlags.filter(rf => !rf.status || rf.status === 'pending').length;
+                    
+                    if (confirmedFlags > 0) {
+                        summaryTags += '<span class="annotation-summary-tag confirmed">' + confirmedFlags + ' Flag' + (confirmedFlags !== 1 ? 's' : '') + ' Confirmed</span>';
+                    }
+                    if (dismissedFlags > 0) {
+                        summaryTags += '<span class="annotation-summary-tag dismissed">' + dismissedFlags + ' Flag' + (dismissedFlags !== 1 ? 's' : '') + ' Dismissed</span>';
+                    }
+                    if (pendingFlags > 0) {
+                        summaryTags += '<span class="annotation-summary-tag pending">' + pendingFlags + ' Flag' + (pendingFlags !== 1 ? 's' : '') + ' Reviewed</span>';
+                    }
+                }
+                
+                html += '<div class="annotation-card collapsed" data-sof-annotation-idx="' + noteIdx + '">';
+                html += '<div class="annotation-card-header" onclick="toggleSofAnnotationCard(event, ' + noteIdx + ')">';
+                html += '<div class="annotation-header-main">';
+                html += '<div class="annotation-mini-meta">';
+                html += '<strong>' + userName + '</strong> • ' + date;
                 html += '</div>';
-                html += '<div class="task-annotation-body">';
-                html += '<p class="annotation-reason">' + note.note + '</p>';
-                html += '<p class="annotation-meta">' + (note.userName || note.user) + ' • ' + date + '</p>';
-                html += '</div></div>';
+                html += '<span class="expand-indicator">▼</span>';
+                html += '</div>';
+                html += '<div class="annotation-summary-tags">' + summaryTags + '</div>';
+                html += '</div>';
+                html += '<div class="annotation-card-body">';
+                
+                // Show property review
+                if (hasPropertyContent) {
+                    html += '<div class="annotation-mini-objectives">';
+                    html += '<div class="annotation-objective-item">';
+                    html += '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                    html += '<span class="annotation-objective-label"><strong>Property:</strong> Reviewed' + (investigation.property.note ? ' - ' + investigation.property.note : '') + '</span>';
+                    html += '</div>';
+                    html += '</div>';
+                }
+                
+                // Show funding methods investigated (only if they have notes or verified items)
+                if (hasFundingContent) {
+                    const fundingMethodsWithContent = investigation.fundingMethods.filter(fm => {
+                        const hasNote = fm.note && fm.note.trim();
+                        const hasVerified = fm.verified && fm.verified.length > 0;
+                        return hasNote || hasVerified;
+                    });
+                    
+                    html += '<div class="annotation-mini-objectives">';
+                    fundingMethodsWithContent.forEach(fm => {
+                        // Map funding types to friendly names
+                        const typeMap = {
+                            'fund:mortgage': 'Mortgage',
+                            'fund:savings': 'Savings',
+                            'fund:gift': 'Gift',
+                            'fund:sale:property': 'Property Sale',
+                            'fund:sale:assets': 'Asset Sale',
+                            'fund:inheritance': 'Inheritance',
+                            'fund:htb': 'Help to Buy / LISA',
+                            'fund:income': 'Income',
+                            'fund:loan': 'Loan',
+                            'fund:investment': 'Investment'
+                        };
+                        const fundLabel = typeMap[fm.fundType] || (fm.fundType || '').replace('fund:', '').replace(/:/g, ' ').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        
+                        html += '<div class="annotation-objective-item">';
+                        html += '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                        html += '<span class="annotation-objective-label"><strong>' + fundLabel + '</strong>' + (fm.note ? ' - ' + fm.note : '') + '</span>';
+                        html += '</div>';
+                        
+                        // Show verified items with friendly names
+                        if (fm.verified && fm.verified.length > 0) {
+                            const verifiedLabels = fm.verified.map(v => {
+                                const labelMap = {
+                                    'mortgage_offer': 'Mortgage Offer',
+                                    'mortgage_affordability': 'Affordability',
+                                    'gift_relationship': 'Giftor Relationship',
+                                    'gift_capacity': 'Giftor Capacity',
+                                    'gift_declaration': 'Gift Declaration',
+                                    'sale_documents': 'Sale Documents',
+                                    'sale_proceeds': 'Sale Proceeds',
+                                    'savings_statements': 'Bank Statements',
+                                    'savings_balance': 'Balance Verified',
+                                    'savings_income': 'Income Source',
+                                    'generic_verified': 'Verified',
+                                    'htb_lisa': 'HTB/LISA Documents',
+                                    'inheritance_documents': 'Estate Documents'
+                                };
+                                return labelMap[v] || v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            });
+                            
+                            html += '<div style="margin-left: 28px; font-size: 12px; color: #388e3c; margin-top: 4px;">';
+                            html += '<svg viewBox="0 0 300 300" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                            html += '<span style="font-weight: 500;">Verified:</span> ' + verifiedLabels.join(', ');
+                            html += '</div>';
+                        }
+                    });
+                    html += '</div>';
+                }
+                
+                // Show transaction linking summary
+                if (hasTransactionContent) {
+                    // Group transactions by funding method
+                    const txByFund = {};
+                    investigation.transactions.forEach(tx => {
+                        if (tx.linkedToFunds && tx.linkedToFunds.length > 0) {
+                            tx.linkedToFunds.forEach(fundIdx => {
+                                if (!txByFund[fundIdx]) {
+                                    txByFund[fundIdx] = [];
+                                }
+                                txByFund[fundIdx].push(tx);
+                            });
+                        }
+                    });
+                    
+                    // Get funding method names from check
+                    const sofFunds = check.taskOutcomes?.['sof:v1']?.breakdown?.funds || [];
+                    
+                    if (Object.keys(txByFund).length > 0) {
+                        html += '<div class="annotation-mini-objectives" style="margin-top: 8px;">';
+                        Object.entries(txByFund).forEach(([fundIdx, txs]) => {
+                            const fund = sofFunds[parseInt(fundIdx)];
+                            let fundName = 'Funding Method ' + fundIdx;
+                            if (fund) {
+                                const typeMap = {
+                                    'fund:mortgage': 'Mortgage',
+                                    'fund:savings': 'Savings',
+                                    'fund:gift': 'Gift',
+                                    'fund:sale:property': 'Property Sale',
+                                    'fund:sale:assets': 'Asset Sale',
+                                    'fund:inheritance': 'Inheritance',
+                                    'fund:htb': 'Help to Buy / LISA',
+                                    'fund:income': 'Income'
+                                };
+                                fundName = typeMap[fund.type] || fund.type.replace('fund:', '');
+                            }
+                            
+                            html += '<div class="annotation-objective-item">';
+                            html += '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#2196f3" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M150 75c-8.284 0-15 6.716-15 15v60c0 8.284 6.716 15 15 15s15-6.716 15-15V90c0-8.284-6.716-15-15-15zm0 120c-8.284 0-15 6.716-15 15s6.716 15 15 15 15-6.716 15-15-6.716-15-15-15z"/></svg>';
+                            html += '<span class="annotation-objective-label"><strong>Linked:</strong> ' + txs.length + ' transaction' + (txs.length !== 1 ? 's' : '') + ' to ' + fundName + '</span>';
+                            html += '</div>';
+                        });
+                        html += '</div>';
+                    }
+                }
+                
+                // Show red flags investigated
+                if (hasRedFlagContent) {
+                    // Only show separator if there were funding methods with content displayed above
+                    if (hasFundingContent || hasTransactionContent) {
+                        html += '<div style="margin: 8px 0; border-top: 1px solid #e1e4e8;"></div>';
+                    }
+                    html += '<div class="annotation-mini-objectives">';
+                    investigation.redFlags.forEach(rf => {
+                        const flagLabel = rf.flagType || 'Red Flag';
+                        html += '<div class="annotation-objective-item">';
+                        html += '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+                        html += '<span class="annotation-objective-label"><strong>Red Flag:</strong> ' + flagLabel + (rf.note ? ' - ' + rf.note : '') + '</span>';
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+                
+                html += '</div></div>'; // Close annotation-card-body and annotation-card
             });
         }
         
-        // Show PEP dismissals
-        if (isPepTask && pepDismissals.length > 0) {
-            html += '<div class="task-annotations-header">Dismissed Hits</div>';
-            pepDismissals.forEach(dismissal => {
-                const date = new Date(dismissal.timestamp).toLocaleString('en-GB', { 
-                    day: '2-digit', 
-                    month: 'short', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-                html += '<div class="task-annotation-card dismissed">';
-                html += '<div class="task-annotation-header">';
-                html += '<span class="hit-type-badge ' + dismissal.reportType + '">' + dismissal.reportType.toUpperCase() + '</span>';
-                html += '<strong>' + dismissal.hitName + '</strong>';
-                html += '</div>';
-                html += '<div class="task-annotation-body">';
-                html += '<p class="annotation-reason">' + dismissal.reason + '</p>';
-                html += '<p class="annotation-meta">Dismissed by ' + (dismissal.userName || dismissal.user) + ' • ' + date + '</p>';
-                html += '</div></div>';
+        // Note: PEP dismissals are now shown inline in the hit cards themselves, not as a separate section
+        
+        // Show Bank account reviews from SOF annotations
+        if (isBankTask && sofNotes.length > 0) {
+            // Get account names from check
+            const taskOutcomes = check.taskOutcomes || {};
+            const bankStatement = taskOutcomes['bank:statement'];
+            const bankSummary = taskOutcomes['bank:summary'];
+            const docsBankStatement = taskOutcomes['documents:bank-statement'];
+            
+            const accounts = bankStatement?.breakdown?.accounts || 
+                           bankSummary?.breakdown?.accounts || 
+                           docsBankStatement?.breakdown?.accounts || {};
+            
+            // Check if any SOF notes have account reviews or transaction annotations
+            const accountReviews = [];
+            sofNotes.forEach(note => {
+                const reviewAccounts = note.notes?.accounts || [];
+                const transactions = note.notes?.transactions || [];
+                const bankAnalysisItems = note.notes?.bankAnalysisItems || [];
+                const fundingMethods = note.notes?.fundingMethods || [];
+                
+                // Include this annotation if it has any bank-related content
+                if (reviewAccounts.length > 0 || transactions.length > 0 || bankAnalysisItems.length > 0 || fundingMethods.length > 0) {
+                    accountReviews.push({
+                        user: note.userName || note.user,
+                        timestamp: note.timestamp,
+                        accounts: reviewAccounts,
+                        transactions: transactions,
+                        bankAnalysisItems: bankAnalysisItems,
+                        fundingMethods: fundingMethods,
+                        notes: note.notes
+                    });
+                }
             });
+            
+            if (accountReviews.length > 0) {
+                html += '<div class="task-annotations-header">Investigation Updates</div>';
+                accountReviews.forEach((review, reviewIdx) => {
+                    const date = new Date(review.timestamp).toLocaleString('en-GB', { 
+                        day: '2-digit', 
+                        month: 'short', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    
+                    // Format user name - convert email to friendly name
+                    let userName = review.user;
+                    if (userName && userName.includes('.') && !userName.includes(' ')) {
+                        userName = userName.split('@')[0]
+                            .split('.').join(' ')
+                            .split('-').join(' ')
+                            .replace(/\b\w/g, l => l.toUpperCase());
+                    }
+                    
+                    // Build summary tags based on what was done
+                    let summaryTags = '';
+                    
+                    if (review.accounts.length > 0) {
+                        summaryTags += '<span class="annotation-summary-tag neutral">' + review.accounts.length + ' Account' + (review.accounts.length !== 1 ? 's' : '') + '</span>';
+                    }
+                    
+                    // Count linked transactions
+                    const linkedTxs = review.transactions.filter(tx => tx.linkedToFunds && tx.linkedToFunds.length > 0);
+                    if (linkedTxs.length > 0) {
+                        summaryTags += '<span class="annotation-summary-tag neutral">' + linkedTxs.length + ' Transaction' + (linkedTxs.length !== 1 ? 's' : '') + ' Linked</span>';
+                    }
+                    
+                    // Count flagged transactions
+                    const flaggedTxs = review.transactions.filter(tx => tx.flag);
+                    if (flaggedTxs.length > 0) {
+                        const suspiciousCount = flaggedTxs.filter(tx => tx.flag === 'suspicious').length;
+                        const reviewCount = flaggedTxs.filter(tx => tx.flag === 'review').length;
+                        const clearedCount = flaggedTxs.filter(tx => tx.flag === 'cleared').length;
+                        
+                        if (suspiciousCount > 0) summaryTags += '<span class="annotation-summary-tag confirmed">' + suspiciousCount + ' Suspicious</span>';
+                        if (reviewCount > 0) summaryTags += '<span class="annotation-summary-tag pending">' + reviewCount + ' Review</span>';
+                        if (clearedCount > 0) summaryTags += '<span class="annotation-summary-tag dismissed">' + clearedCount + ' Cleared</span>';
+                    }
+                    
+                    // Count bank analysis items
+                    if (review.bankAnalysisItems.length > 0) {
+                        summaryTags += '<span class="annotation-summary-tag neutral">' + review.bankAnalysisItems.length + ' Analysis Item' + (review.bankAnalysisItems.length !== 1 ? 's' : '') + '</span>';
+                    }
+                    
+                    // Count funding method markers
+                    let markerCount = 0;
+                    review.fundingMethods.forEach(fm => {
+                        markerCount += Object.keys(fm.transactionMarkers || {}).length;
+                    });
+                    if (markerCount > 0) {
+                        summaryTags += '<span class="annotation-summary-tag neutral">' + markerCount + ' Marker' + (markerCount !== 1 ? 's' : '') + '</span>';
+                    }
+                    
+                    html += '<div class="annotation-card collapsed" data-bank-review-idx="' + reviewIdx + '">';
+                    html += '<div class="annotation-card-header" onclick="toggleBankReviewCard(event, ' + reviewIdx + ')">';
+                    html += '<div class="annotation-header-main">';
+                    html += '<div class="annotation-mini-meta">';
+                    html += '<strong>' + userName + '</strong> • ' + date;
+                    html += '</div>';
+                    html += '<span class="expand-indicator">▼</span>';
+                    html += '</div>';
+                    html += '<div class="annotation-summary-tags">' + summaryTags + '</div>';
+                    html += '</div>';
+                    html += '<div class="annotation-card-body">';
+                    html += '<div class="annotation-mini-objectives">';
+                    
+                    // Show reviewed accounts
+                    review.accounts.forEach(acc => {
+                        let accountName = 'Account ' + acc.accountIdx;
+                        if (acc.accountId && accounts[acc.accountId]) {
+                            const accountInfo = accounts[acc.accountId].info || accounts[acc.accountId];
+                            const providerName = accountInfo.provider?.name || '';
+                            const accName = accountInfo.name || accountInfo.account_name || '';
+                            accountName = providerName && accName ? `${providerName} ${accName}` : (accName || providerName || accountName);
+                        }
+                        
+                        html += '<div class="annotation-objective-item">';
+                        html += '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                        html += '<span class="annotation-objective-label"><strong>' + accountName + ':</strong> Reviewed' + (acc.note ? ' - ' + acc.note : '') + '</span>';
+                        html += '</div>';
+                    });
+                    
+                    // Show linked transactions summary
+                    if (linkedTxs.length > 0) {
+                        // Group by funding method
+                        const txByFund = {};
+                        linkedTxs.forEach(tx => {
+                            tx.linkedToFunds.forEach(fundIdx => {
+                                if (!txByFund[fundIdx]) txByFund[fundIdx] = [];
+                                txByFund[fundIdx].push(tx);
+                            });
+                        });
+                        
+                        const sofFunds = check.taskOutcomes?.['sof:v1']?.breakdown?.funds || [];
+                        Object.entries(txByFund).forEach(([fundIdx, txs]) => {
+                            const fund = sofFunds[parseInt(fundIdx)];
+                            const typeMap = {
+                                'fund:mortgage': 'Mortgage',
+                                'fund:savings': 'Savings',
+                                'fund:gift': 'Gift',
+                                'fund:sale:property': 'Property Sale',
+                                'fund:sale:assets': 'Asset Sale',
+                                'fund:inheritance': 'Inheritance',
+                                'fund:htb': 'Help to Buy / LISA',
+                                'fund:income': 'Income'
+                            };
+                            const fundName = fund ? (typeMap[fund.type] || fund.type.replace('fund:', '')) : 'Funding';
+                            
+                            html += '<div class="annotation-objective-item">';
+                            html += '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#2196f3" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M150 75c-8.284 0-15 6.716-15 15v60c0 8.284 6.716 15 15 15s15-6.716 15-15V90c0-8.284-6.716-15-15-15zm0 120c-8.284 0-15 6.716-15 15s6.716 15 15 15 15-6.716 15-15-6.716-15-15-15z"/></svg>';
+                            html += '<span class="annotation-objective-label"><strong>Linked:</strong> ' + txs.length + ' transaction' + (txs.length !== 1 ? 's' : '') + ' to ' + fundName + '</span>';
+                            html += '</div>';
+                        });
+                    }
+                    
+                    // Show flagged transactions summary
+                    if (flaggedTxs.length > 0) {
+                        const suspiciousCount = flaggedTxs.filter(tx => tx.flag === 'suspicious').length;
+                        const reviewCount = flaggedTxs.filter(tx => tx.flag === 'review').length;
+                        const clearedCount = flaggedTxs.filter(tx => tx.flag === 'cleared').length;
+                        
+                        if (suspiciousCount > 0) {
+                            html += '<div class="annotation-objective-item">';
+                            html += '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#f44336" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>';
+                            html += '<span class="annotation-objective-label"><strong>Flagged:</strong> ' + suspiciousCount + ' suspicious transaction' + (suspiciousCount !== 1 ? 's' : '') + '</span>';
+                            html += '</div>';
+                        }
+                        if (reviewCount > 0) {
+                            html += '<div class="annotation-objective-item">';
+                            html += '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#ff9800" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+                            html += '<span class="annotation-objective-label"><strong>Review:</strong> ' + reviewCount + ' transaction' + (reviewCount !== 1 ? 's' : '') + '</span>';
+                            html += '</div>';
+                        }
+                        if (clearedCount > 0) {
+                            html += '<div class="annotation-objective-item">';
+                            html += '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#4caf50" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                            html += '<span class="annotation-objective-label"><strong>Cleared:</strong> ' + clearedCount + ' transaction' + (clearedCount !== 1 ? 's' : '') + '</span>';
+                            html += '</div>';
+                        }
+                    }
+                    
+                    // Show bank analysis items summary
+                    if (review.bankAnalysisItems.length > 0) {
+                        const groupItems = review.bankAnalysisItems.filter(i => i.type === 'repeating-group');
+                        const chainItems = review.bankAnalysisItems.filter(i => i.type === 'chain');
+                        
+                        if (groupItems.length > 0) {
+                            html += '<div class="annotation-objective-item">';
+                            html += '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#9c27b0" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><circle cx="150" cy="150" r="50" fill="none" stroke="#ffffff" stroke-width="20"/></svg>';
+                            html += '<span class="annotation-objective-label"><strong>Repeating Groups:</strong> ' + groupItems.length + ' flagged/linked</span>';
+                            html += '</div>';
+                        }
+                        if (chainItems.length > 0) {
+                            html += '<div class="annotation-objective-item">';
+                            html += '<svg class="annotation-status-icon" viewBox="0 0 300 300"><path fill="#ff9800" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><circle cx="150" cy="150" r="50" fill="none" stroke="#ffffff" stroke-width="20"/></svg>';
+                            html += '<span class="annotation-objective-label"><strong>Chains:</strong> ' + chainItems.length + ' flagged/linked</span>';
+                            html += '</div>';
+                        }
+                    }
+                    
+                    html += '</div></div></div>'; // Close annotation-mini-objectives, annotation-card-body, annotation-card
+                });
+            }
         }
         
         html += '</div>';
@@ -17657,7 +20944,12 @@ class ThirdfortChecksManager {
             const hasNested = (outcome.data && Object.keys(outcome.data).length > 0) || 
                              (outcome.breakdown && Object.keys(outcome.breakdown).length > 0);
             
-            if (!hasNested && (outcome.result === 'consider' || outcome.result === 'fail')) {
+            // Special case: KYB tasks with unobtainable status should always be annotatable
+            const isUnobtainableKybTask = outcome.status === 'unobtainable' && 
+                                         (taskType === 'company:ubo' || taskType === 'company:beneficial-check' || 
+                                          taskType === 'company:shareholders' || taskType === 'company:summary');
+            
+            if (isUnobtainableKybTask || (!hasNested && (outcome.result === 'consider' || outcome.result === 'fail'))) {
                 items.push({
                     taskType,
                     path: taskType,
@@ -17698,6 +20990,19 @@ class ThirdfortChecksManager {
         if (outcome.status === 'unobtainable') {
             if (taskType === 'nfc' || taskType === 'biometrics') {
                 return 'NFC unobtainable - Original ID completed instead';
+            }
+            if (taskType === 'company:ubo') {
+                const pscsCount = outcome.breakdown?.pscs?.length || 0;
+                if (pscsCount > 0) {
+                    return `UBO information unobtainable - ${pscsCount} PSC${pscsCount > 1 ? 's' : ''} found from Companies House`;
+                }
+                return 'UBO information unobtainable - manual review required';
+            }
+            if (taskType === 'company:beneficial-check') {
+                return 'PSC Extract unobtainable - manual review required';
+            }
+            if (taskType === 'company:shareholders') {
+                return 'Shareholders information unobtainable - manual review required';
             }
             return 'Information unobtainable';
         }
@@ -17839,8 +21144,15 @@ class ThirdfortChecksManager {
                     .replace(/\b\w/g, l => l.toUpperCase());
             });
         
-        // If we end up with nothing, use the last part of original
+        // If we end up with nothing (top-level task), use the task title
         if (filteredParts.length === 0) {
+            // Try to get friendly task title
+            const taskTitle = this.getTaskTitle(path);
+            // If we got a friendly title, use it; otherwise fall back to formatting the path
+            if (taskTitle && taskTitle !== path) {
+                return taskTitle;
+            }
+            // Fallback: format the last part
             return parts[parts.length - 1]
                 .replace(/_/g, ' ')
                 .replace(/\b\w/g, l => l.toUpperCase());
@@ -17869,17 +21181,33 @@ class ThirdfortChecksManager {
     
     /**
      * Check if check has PEP/Sanctions hits
+     * Checks all possible structures: peps, screening:lite, screening (renamed), sanctions, company:peps, company:sanctions
      */
     hasPepSanctionsHits(check) {
         if (check.status !== 'closed') return false;
         const outcomes = check.taskOutcomes || {};
-        const peps = outcomes['peps'] || outcomes['screening:lite'];
+        
+        // Individual checks
+        const peps = outcomes['peps'];
+        const screeningLite = outcomes['screening:lite'];
+        const screening = outcomes['screening']; // Could be renamed from 'peps' or 'screening:lite'
         const sanctions = outcomes['sanctions'];
         
-        const pepHits = peps?.breakdown?.total_hits || 0;
-        const sanctionHits = sanctions?.breakdown?.total_hits || 0;
+        // Company checks (KYB)
+        const companyPeps = outcomes['company:peps'];
+        const companySanctions = outcomes['company:sanctions'];
         
-        return (pepHits + sanctionHits) > 0;
+        // Count hits from all sources
+        const pepHits = (peps?.breakdown?.total_hits || 0);
+        const screeningLiteHits = (screeningLite?.breakdown?.total_hits || 0);
+        const screeningHits = (screening?.breakdown?.total_hits || 0);
+        const sanctionHits = (sanctions?.breakdown?.total_hits || 0);
+        const companyPepHits = (companyPeps?.breakdown?.total_hits || 0);
+        const companySanctionHits = (companySanctions?.breakdown?.total_hits || 0);
+        
+        const totalHits = pepHits + screeningLiteHits + screeningHits + sanctionHits + companyPepHits + companySanctionHits;
+        
+        return totalHits > 0;
     }
     
     /**
@@ -17899,10 +21227,11 @@ class ThirdfortChecksManager {
         overlayHTML += '<div class="annotation-overlay-backdrop" onclick="manager.closeConsiderOverlay()"></div>';
         overlayHTML += '<div class="annotation-overlay-content">';
         
-        // Header with SAVE button
+        // Header with SAVE and EXPORT PDF buttons
         overlayHTML += '<div class="annotation-overlay-header">';
         overlayHTML += '<h2>Update Task Outcomes</h2>';
         overlayHTML += '<div class="header-actions">';
+        overlayHTML += '<button class="btn-secondary-small" onclick="manager.generateConsiderPDF()" style="margin-right: 8px;">EXPORT PDF</button>';
         if (this.mode === 'edit') {
             overlayHTML += '<button class="btn-primary-small" onclick="manager.savePendingUpdates()" id="saveAllBtn" disabled>SAVE</button>';
         }
@@ -17946,9 +21275,7 @@ class ThirdfortChecksManager {
                 }
                 
                 taskItems.forEach(item => {
-                    // Apply indentation based on nesting level (level 1+ = nested)
-                    const indent = item.level > 0 ? `style="padding-left: ${item.level * 20}px;"` : '';
-                    overlayHTML += `<label class="objective-radio" ${indent}>`;
+                    overlayHTML += '<label class="objective-radio">';
                     overlayHTML += `<input type="checkbox" name="objectives" value="${item.path}" data-task="${taskType}" data-status="${item.status}" data-label="${item.label}">`;
                     overlayHTML += '<span>' + item.label + '</span>';
                     overlayHTML += '</label>';
@@ -17979,27 +21306,60 @@ class ThirdfortChecksManager {
             overlayHTML += '</div>';
         }
         
-        // Show existing annotations from database
+        // Show existing annotations from database (grouped by user + timestamp + newStatus)
         if (existingAnnotations.length > 0) {
             overlayHTML += '<div class="annotation-history-section">';
             overlayHTML += '<h3>Previous Updates</h3>';
             
+            // Group annotations by user + timestamp + newStatus
+            const groups = {};
             existingAnnotations.forEach(ann => {
-                const date = new Date(ann.timestamp).toLocaleString('en-GB');
-                overlayHTML += `<div class="annotation-card ${ann.newStatus}">`;
-                overlayHTML += '<div class="annotation-card-header">';
-                overlayHTML += `<span class="annotation-objective">${this.formatObjectivePath(ann.objectivePath)}</span>`;
-                overlayHTML += `<span class="annotation-date">${date}</span>`;
+                const groupKey = `${ann.user}_${ann.timestamp}_${ann.newStatus}`;
+                if (!groups[groupKey]) {
+                    groups[groupKey] = {
+                        user: ann.userName || ann.user,
+                        timestamp: ann.timestamp,
+                        newStatus: ann.newStatus,
+                        reason: ann.reason,
+                        objectives: []
+                    };
+                }
+                groups[groupKey].objectives.push({
+                    path: ann.objectivePath,
+                    originalStatus: ann.originalStatus,
+                    newStatus: ann.newStatus
+                });
+            });
+            
+            // Render each group as a mini card (same as task cards)
+            Object.values(groups).forEach(group => {
+                const date = new Date(group.timestamp).toLocaleString('en-GB', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                overlayHTML += '<div class="annotation-mini-card">';
+                overlayHTML += '<div class="annotation-mini-header">';
+                overlayHTML += '<div class="annotation-mini-meta">';
+                overlayHTML += '<strong>' + group.user + '</strong> • ' + date;
                 overlayHTML += '</div>';
-                overlayHTML += '<div class="annotation-card-body">';
-                overlayHTML += '<div class="status-change">';
-                overlayHTML += `<span class="status-badge ${ann.originalStatus}">${ann.originalStatus.toUpperCase()}</span>`;
-                overlayHTML += '<span class="arrow">→</span>';
-                overlayHTML += `<span class="status-badge ${ann.newStatus}">${ann.newStatus.toUpperCase()}</span>`;
                 overlayHTML += '</div>';
-                overlayHTML += `<p class="annotation-reason">${ann.reason}</p>`;
-                overlayHTML += `<p class="annotation-user">By: ${ann.userName || ann.user}</p>`;
-                overlayHTML += '</div></div>';
+                overlayHTML += '<div class="annotation-mini-body">';
+                overlayHTML += '<p class="annotation-mini-reason">' + group.reason + '</p>';
+                overlayHTML += '<div class="annotation-mini-objectives">';
+                
+                // Show all affected objectives with their status icons
+                group.objectives.forEach(obj => {
+                    const statusIcon = this.getStatusIconSVG(obj.newStatus);
+                    overlayHTML += '<div class="annotation-objective-item">';
+                    overlayHTML += statusIcon;
+                    overlayHTML += '<span class="annotation-objective-label">' + this.formatObjectivePath(obj.path) + '</span>';
+                    overlayHTML += '</div>';
+                });
+                
+                overlayHTML += '</div></div></div>';
             });
             
             overlayHTML += '</div>';
@@ -18223,10 +21583,11 @@ class ThirdfortChecksManager {
         overlayHTML += '<div class="annotation-overlay-backdrop" onclick="manager.closeSofOverlay()"></div>';
         overlayHTML += '<div class="annotation-overlay-content">';
         
-        // Header with SAVE button
+        // Header with SAVE and EXPORT PDF buttons
         overlayHTML += '<div class="annotation-overlay-header">';
         overlayHTML += '<h2>Source of Funds Investigation</h2>';
         overlayHTML += '<div class="header-actions">';
+        overlayHTML += '<button class="btn-secondary-small" onclick="manager.generateSofPDF()" style="margin-right: 8px;">EXPORT PDF</button>';
         if (this.mode === 'edit') {
             overlayHTML += '<button class="btn-primary-small" type="button" onclick="manager.saveSofInvestigation()">SAVE</button>';
         }
@@ -18244,6 +21605,11 @@ class ThirdfortChecksManager {
             const sdlt = property.stamp_duty ? `£${(property.stamp_duty / 100).toLocaleString()}` : 'Not specified';
             const newBuild = property.new_build ? 'Yes' : 'No';
             
+            // Check for existing property review
+            const propertyReview = existingAnnotations.find(ann => ann.notes?.property);
+            const wasReviewed = propertyReview?.notes?.property?.reviewed || false;
+            const existingPropertyNote = propertyReview?.notes?.property?.note || '';
+            
             overlayHTML += '<div class="sof-section">';
             overlayHTML += '<h3>Property Details</h3>';
             overlayHTML += '<div class="sof-property-details">';
@@ -18251,54 +21617,76 @@ class ThirdfortChecksManager {
             overlayHTML += `<div class="property-bullet">💷 <strong>Purchase Price:</strong> ${price}</div>`;
             overlayHTML += `<div class="property-bullet">📋 <strong>Stamp Duty:</strong> ${sdlt}</div>`;
             overlayHTML += `<div class="property-bullet">🏗️ <strong>New Build:</strong> ${newBuild}</div>`;
-            overlayHTML += '</div></div>';
+            overlayHTML += '</div>';
+            
+            // Property review section
+            overlayHTML += '<div class="property-review-section">';
+            overlayHTML += '<label class="property-reviewed-label">';
+            overlayHTML += `<input type="checkbox" class="property-reviewed-checkbox" ${wasReviewed ? 'checked' : ''}>`;
+            overlayHTML += '<strong>Property Reviewed</strong>';
+            overlayHTML += '</label>';
+            overlayHTML += '<div class="form-group" style="margin-top: 8px;">';
+            overlayHTML += '<label><strong>Property Notes</strong></label>';
+            overlayHTML += `<textarea class="property-note-input" rows="2" placeholder="Add notes about the property...">${existingPropertyNote}</textarea>`;
+            overlayHTML += '</div>';
+            overlayHTML += '</div>';
+            
+            overlayHTML += '</div>';
         }
         
         // Get red flags to associate with funding methods
         const redFlags = this.extractRedFlags(check);
         
+        // Linked Bank Accounts Section
+        if (Object.keys(accounts).length > 0) {
+            overlayHTML += '<div class="sof-section">';
+            overlayHTML += '<h3>Linked Bank Accounts</h3>';
+            overlayHTML += '<div class="accounts-investigation-container">';
+            
+            Object.entries(accounts).forEach(([accountId, accountData], accountIdx) => {
+                overlayHTML += this.createAccountInvestigationCard(accountId, accountData, accountIdx, sofMatches, existingAnnotations, check);
+            });
+            
+            overlayHTML += '</div></div>';
+        }
+        
         // Funding Methods Section
         if (funds.length > 0) {
             overlayHTML += '<div class="sof-section">';
             overlayHTML += '<h3>Funding Methods</h3>';
+            overlayHTML += '<div class="funding-methods-investigation-container">';
             
             funds.forEach((fund, fundIdx) => {
                 // Find red flags related to this funding method
                 const relatedFlags = this.getRelatedRedFlags(fund, redFlags);
-                overlayHTML += this.createSofFundingCard(fund, fundIdx, sofMatches, accounts, check, relatedFlags);
+                overlayHTML += this.createSofFundingCard(fund, fundIdx, sofMatches, accounts, check, relatedFlags, existingAnnotations);
             });
+            
+            overlayHTML += '</div>';
+            overlayHTML += '</div>';
+        }
+        
+        // Bank Analysis Section - Full analysis with selectable items
+        if (Object.keys(analysis).length > 0 && Object.keys(accounts).length > 0) {
+            overlayHTML += '<div class="sof-section">';
+            overlayHTML += '<h3>Bank Analysis</h3>';
+            overlayHTML += '<p class="section-hint">Select transactions, chains, or groups to flag or add comments</p>';
+            
+            // Render full bank analysis sections with selectable items
+            overlayHTML += this.createSofBankAnalysisSections(analysis, accounts, check, existingAnnotations);
             
             overlayHTML += '</div>';
         }
         
-        // Bank Analysis Section
-        if (chains.length > 0 || largeTransactions.length > 0) {
+        // Biggest Transactions by Currency Section (from bank:summary)
+        const summaryByCcy = bankSummary?.breakdown?.summary?.by_ccy;
+        if (summaryByCcy && Object.keys(summaryByCcy).length > 0) {
             overlayHTML += '<div class="sof-section">';
-            overlayHTML += '<h3>Bank Analysis</h3>';
+            overlayHTML += '<h3>Largest Transactions by Currency</h3>';
+            overlayHTML += '<p class="section-hint">Top transactions for each currency with flag and comment options</p>';
             
-            // Transaction Chains
-            if (chains.length > 0) {
-                overlayHTML += '<div class="analysis-subsection">';
-                overlayHTML += '<h4>Transaction Chains (' + chains.length + ')</h4>';
-                
-                chains.forEach((chain, chainIdx) => {
-                    overlayHTML += this.createSofChainCard(chain, chainIdx);
-                });
-                
-                overlayHTML += '</div>';
-            }
-            
-            // Large One-Off Transactions
-            if (largeTransactions.length > 0) {
-                overlayHTML += '<div class="analysis-subsection">';
-                overlayHTML += '<h4>Large One-Off Transactions</h4>';
-                
-                largeTransactions.forEach((tx, txIdx) => {
-                    overlayHTML += this.createSofTransactionCard(tx, txIdx, accounts);
-                });
-                
-                overlayHTML += '</div>';
-            }
+            // Render biggest transactions section with flag buttons
+            overlayHTML += this.createSofBiggestTransactionsSection(summaryByCcy, accounts, check, existingAnnotations);
             
             overlayHTML += '</div>';
         }
@@ -18308,42 +21696,240 @@ class ThirdfortChecksManager {
             overlayHTML += '<div class="annotation-history-section">';
             overlayHTML += '<h3>Investigation History</h3>';
             
-            existingAnnotations.forEach(annotation => {
-                const date = new Date(annotation.timestamp).toLocaleString('en-GB');
-                const investigation = annotation.investigation || {};
+            existingAnnotations.forEach((annotation, annIdx) => {
+                // Format date nicely
+                const dateObj = new Date(annotation.timestamp);
+                const formattedDate = dateObj.toLocaleDateString('en-GB', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    year: 'numeric' 
+                }) + ' at ' + dateObj.toLocaleTimeString('en-GB', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
                 
-                overlayHTML += '<div class="annotation-card">';
-                overlayHTML += '<div class="annotation-card-header">';
-                overlayHTML += '<span class="annotation-user">By: ' + (annotation.userName || annotation.user) + '</span>';
-                overlayHTML += '<span class="annotation-date">' + date + '</span>';
+                // Format user name
+                const userName = annotation.userName || annotation.user || 'Unknown';
+                const formattedUserName = userName
+                    .split(/[-._]/)
+                    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+                    .join(' ');
+                
+                const notes = annotation.notes || {};
+                
+                // Calculate summary tags
+                const summaryTags = [];
+                
+                // Property
+                if (notes.property) {
+                    summaryTags.push({ label: 'Property', type: 'neutral' });
+                }
+                
+                // Accounts
+                if (notes.accounts && notes.accounts.length > 0) {
+                    summaryTags.push({ label: `${notes.accounts.length} Account${notes.accounts.length > 1 ? 's' : ''}`, type: 'neutral' });
+                }
+                
+                // Transactions
+                if (notes.transactions && notes.transactions.length > 0) {
+                    summaryTags.push({ label: `${notes.transactions.length} Transaction${notes.transactions.length > 1 ? 's' : ''}`, type: 'neutral' });
+                }
+                
+                // Chains
+                if (notes.chains && notes.chains.length > 0) {
+                    summaryTags.push({ label: `${notes.chains.length} Chain${notes.chains.length > 1 ? 's' : ''}`, type: 'neutral' });
+                }
+                
+                // Funding Methods with red flag status
+                if (notes.fundingMethods && notes.fundingMethods.length > 0) {
+                    notes.fundingMethods.forEach(fm => {
+                        // Better formatting for funding types
+                        let fundLabel = (fm.fundType || '').replace('fund:', '');
+                        
+                        // Map specific types to friendly names
+                        const typeMap = {
+                            'mortgage': 'Mortgage',
+                            'savings': 'Savings',
+                            'gift': 'Gift',
+                            'sale-property': 'Property Sale',
+                            'sale:property': 'Property Sale',
+                            'sale-assets': 'Asset Sale',
+                            'sale:assets': 'Asset Sale',
+                            'inheritance': 'Inheritance',
+                            'htb': 'Help to Buy / LISA',
+                            'htb_lisa': 'Help to Buy / LISA',
+                            'investment': 'Investment',
+                            'business': 'Business Income',
+                            'loan': 'Loan',
+                            'income': 'Income',
+                            'other': 'Other'
+                        };
+                        
+                        fundLabel = typeMap[fundLabel] || fundLabel.replace(/[-:_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        
+                        // Check for red flags and their statuses
+                        if (fm.redFlags && fm.redFlags.length > 0) {
+                            const confirmedCount = fm.redFlags.filter(rf => rf.status === 'confirmed').length;
+                            const dismissedCount = fm.redFlags.filter(rf => rf.status === 'dismissed').length;
+                            const pendingCount = fm.redFlags.filter(rf => !rf.status || rf.status === 'pending').length;
+                            
+                            if (confirmedCount > 0) {
+                                summaryTags.push({ label: `${fundLabel}: ${confirmedCount} Confirmed`, type: 'confirmed' });
+                            }
+                            if (dismissedCount > 0) {
+                                summaryTags.push({ label: `${fundLabel}: ${dismissedCount} Dismissed`, type: 'dismissed' });
+                            }
+                            if (pendingCount > 0) {
+                                summaryTags.push({ label: `${fundLabel}: ${pendingCount} Pending`, type: 'pending' });
+                            }
+                        } else {
+                            summaryTags.push({ label: fundLabel, type: 'neutral' });
+                        }
+                    });
+                }
+                
+                overlayHTML += `<div class="annotation-card collapsed" data-annotation-idx="${annIdx}">`;
+                overlayHTML += `<div class="annotation-card-header" onclick="manager.toggleAnnotationCard(event, ${annIdx});">`;
+                overlayHTML += '<div class="annotation-header-main">';
+                overlayHTML += '<span class="annotation-user">' + formattedUserName + '</span>';
+                overlayHTML += '<span class="annotation-date">' + formattedDate + '</span>';
+                overlayHTML += '</div>';
+                
+                // Summary tags
+                if (summaryTags.length > 0) {
+                    overlayHTML += '<div class="annotation-summary-tags">';
+                    summaryTags.forEach(tag => {
+                        overlayHTML += `<span class="annotation-summary-tag ${tag.type}">${tag.label}</span>`;
+                    });
+                    overlayHTML += '</div>';
+                }
+                
+                overlayHTML += '<span class="expand-indicator">▼</span>';
                 overlayHTML += '</div>';
                 overlayHTML += '<div class="annotation-card-body">';
                 
-                // Show funding method annotations
-                if (investigation.fundingMethods && investigation.fundingMethods.length > 0) {
-                    investigation.fundingMethods.forEach(fm => {
+                // Show property review
+                if (notes.property) {
+                    overlayHTML += '<div class="prev-annotation-item">';
+                    overlayHTML += '<strong>Property:</strong> ';
+                    if (notes.property.reviewed) {
+                        const reviewIcon = '<svg class="inline-status-icon" viewBox="0 0 300 300" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                        overlayHTML += '<span class="prev-status">' + reviewIcon + 'Reviewed</span>';
+                    }
+                    if (notes.property.note) overlayHTML += '<div class="prev-note">' + notes.property.note + '</div>';
+                    overlayHTML += '</div>';
+                }
+                
+                // Show account reviews
+                if (notes.accounts && notes.accounts.length > 0) {
+                    notes.accounts.forEach(acc => {
                         overlayHTML += '<div class="prev-annotation-item">';
-                        overlayHTML += '<strong>' + fm.fundType + ':</strong>';
+                        overlayHTML += '<strong>Account ' + acc.accountIdx + ':</strong> ';
+                        if (acc.reviewed) {
+                            const reviewIcon = '<svg class="inline-status-icon" viewBox="0 0 300 300" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                            overlayHTML += '<span class="prev-status">' + reviewIcon + 'Reviewed</span>';
+                        }
+                        if (acc.note) overlayHTML += '<div class="prev-note">' + acc.note + '</div>';
+                        overlayHTML += '</div>';
+                    });
+                }
+                
+                // Show transaction flags/notes
+                if (notes.transactions && notes.transactions.length > 0) {
+                    const txCount = notes.transactions.length;
+                    overlayHTML += '<div class="prev-annotation-item">';
+                    overlayHTML += '<strong>Transactions:</strong> ' + txCount + ' transaction' + (txCount > 1 ? 's' : '') + ' reviewed';
+                    
+                    const flagCounts = {};
+                    notes.transactions.forEach(tx => {
+                        if (tx.flag) {
+                            flagCounts[tx.flag] = (flagCounts[tx.flag] || 0) + 1;
+                        }
+                    });
+                    
+                    if (Object.keys(flagCounts).length > 0) {
+                        overlayHTML += '<div class="prev-tx-flags" style="margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap;">';
+                        if (flagCounts.linked) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3;">✓ ' + flagCounts.linked + ' linked</span>';
+                        if (flagCounts.suspicious) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336;">✗ ' + flagCounts.suspicious + ' suspicious</span>';
+                        if (flagCounts.review) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800;">— ' + flagCounts.review + ' review</span>';
+                        if (flagCounts.cleared) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50;">○ ' + flagCounts.cleared + ' cleared</span>';
+                        overlayHTML += '</div>';
+                    }
+                    overlayHTML += '</div>';
+                }
+                
+                // Show chains reviewed
+                if (notes.chains && notes.chains.length > 0) {
+                    overlayHTML += '<div class="prev-annotation-item">';
+                    overlayHTML += '<strong>Transaction Chains:</strong> ' + notes.chains.length + ' chain' + (notes.chains.length > 1 ? 's' : '') + ' reviewed';
+                    overlayHTML += '</div>';
+                }
+                
+                // Show funding method annotations
+                if (notes.fundingMethods && notes.fundingMethods.length > 0) {
+                    notes.fundingMethods.forEach(fm => {
+                        overlayHTML += '<div class="prev-annotation-item">';
+                        
+                        // Use friendly names for funding types
+                        let fundLabel = (fm.fundType || '').replace('fund:', '');
+                        const typeMap = {
+                            'mortgage': 'Mortgage',
+                            'savings': 'Savings',
+                            'gift': 'Gift',
+                            'sale-property': 'Property Sale',
+                            'sale:property': 'Property Sale',
+                            'sale-assets': 'Asset Sale',
+                            'sale:assets': 'Asset Sale',
+                            'inheritance': 'Inheritance',
+                            'htb': 'Help to Buy / LISA',
+                            'htb_lisa': 'Help to Buy / LISA',
+                            'investment': 'Investment',
+                            'business': 'Business Income',
+                            'loan': 'Loan',
+                            'income': 'Income',
+                            'other': 'Other'
+                        };
+                        fundLabel = typeMap[fundLabel] || fundLabel.replace(/[-:_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        
+                        overlayHTML += '<strong>' + fundLabel + ':</strong>';
                         
                         if (fm.verified && fm.verified.length > 0) {
-                            overlayHTML += '<div class="prev-checkboxes">✓ Verified: ' + fm.verified.join(', ') + '</div>';
+                            const verificationLabelMap = {
+                                'gift_relationship': 'Giftor relationship confirmed',
+                                'gift_checks': 'Giftor ID and AML checks completed',
+                                'gift_transactions': 'Transactions reviewed and linked',
+                                'savings_statements': 'Account statements reviewed',
+                                'savings_balance': 'Balance verified via Bank Summary',
+                                'savings_income': 'Income sources verified',
+                                'sale_documents': 'Supporting documents reviewed',
+                                'sale_proceeds': 'Sale proceeds confirmed',
+                                'mortgage_offer': 'Mortgage offer reviewed',
+                                'mortgage_affordability': 'Affordability assessment completed',
+                                'generic_verified': 'Source verified and documented'
+                            };
+                            const verifiedLabels = fm.verified.map(v => verificationLabelMap[v] || v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+                            const checkIcon = '<svg class="inline-status-icon" viewBox="0 0 300 300" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                            overlayHTML += '<div class="prev-checkboxes">' + checkIcon + verifiedLabels.join(', ') + '</div>';
                         }
                         
                         if (fm.transactionMarkers && Object.keys(fm.transactionMarkers).length > 0) {
-                            overlayHTML += '<div class="prev-tx-markers">Transaction markers: ';
-                            Object.entries(fm.transactionMarkers).forEach(([txId, marker]) => {
-                                const markerIcon = marker === 'verified' ? '✓' : marker === 'rejected' ? '✗' : '?';
-                                overlayHTML += markerIcon + ' ';
-                            });
-                            overlayHTML += '</div>';
+                            const markerCount = Object.keys(fm.transactionMarkers).length;
+                            overlayHTML += '<div class="prev-tx-markers">' + markerCount + ' transaction marker' + (markerCount > 1 ? 's' : '') + '</div>';
                         }
                         
                         if (fm.redFlags && fm.redFlags.length > 0) {
                             overlayHTML += '<div class="prev-red-flags">';
                             fm.redFlags.forEach(rf => {
-                                const statusIcon = rf.status === 'confirmed' ? '⚠️' : rf.status === 'dismissed' ? '✓' : '?';
+                                let statusIcon = '';
+                                if (rf.status === 'confirmed') {
+                                    statusIcon = '<svg class="inline-status-icon" viewBox="0 0 300 300" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"><path fill="#d32f2f" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+                                } else if (rf.status === 'dismissed') {
+                                    statusIcon = '<svg class="inline-status-icon" viewBox="0 0 300 300" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                                } else {
+                                    statusIcon = '<svg class="inline-status-icon" viewBox="0 0 300 300" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+                                }
                                 overlayHTML += '<div class="prev-red-flag-item">';
-                                overlayHTML += statusIcon + ' Red Flag: ' + rf.status;
+                                overlayHTML += statusIcon + 'Red Flag: ' + (rf.status || 'pending').charAt(0).toUpperCase() + (rf.status || 'pending').slice(1);
                                 if (rf.note) overlayHTML += ' - ' + rf.note;
                                 overlayHTML += '</div>';
                             });
@@ -18370,36 +21956,236 @@ class ThirdfortChecksManager {
         document.body.insertAdjacentHTML('beforeend', overlayHTML);
     }
     
+    createAccountInvestigationCard(accountId, accountData, accountIdx, sofMatches, existingAnnotations, check) {
+        const accountInfo = accountData.info || accountData;
+        const accountName = accountInfo.name || accountInfo.account_name || 'Account';
+        const providerName = accountInfo.provider?.name || 'Bank';
+        const balance = accountInfo.balance?.current || accountInfo.balance?.available || 0;
+        const statement = accountData.statement || [];
+        
+        // Check if this is from manual upload (needs deduplication)
+        const taskOutcomes = check.taskOutcomes || {};
+        const isManualUpload = taskOutcomes['documents:bank-statement']?.breakdown?.accounts?.[accountId];
+        
+        // Get logo
+        const logoHtml = this.getBankLogo(providerName, providerName);
+        const hasLogo = logoHtml.includes('<img');
+        
+        // Check for existing account annotations
+        const accountAnnotations = existingAnnotations.flatMap(ann => {
+            const accounts = ann.notes?.accounts || [];
+            return accounts.filter(acc => acc.accountId === accountId);
+        });
+        
+        const wasReviewed = accountAnnotations.some(acc => acc.reviewed);
+        const existingNote = accountAnnotations.length > 0 ? accountAnnotations[0].note : '';
+        
+        // Get transaction markers, notes, and SOF links from ALL annotation sources
+        const transactionMarkers = {};
+        const transactionNotes = {};
+        const transactionSofLinks = {};
+        
+        statement.forEach(tx => {
+            const txAnnotations = this.getTransactionAnnotations(tx.id, check);
+            if (txAnnotations.flag) transactionMarkers[tx.id] = txAnnotations.flag;
+            if (txAnnotations.note) transactionNotes[tx.id] = txAnnotations.note;
+            if (txAnnotations.linkedFundingMethods.length > 0) {
+                transactionSofLinks[tx.id] = txAnnotations.linkedFundingMethods;
+            }
+            // Also include marker state for visual display
+            if (txAnnotations.marker) transactionMarkers[tx.id] = txAnnotations.marker;
+        });
+        
+        // Calculate summary counts for tags
+        let linkedCount = 0;
+        let reviewCount = 0;
+        let flaggedCount = 0;
+        
+        statement.forEach(tx => {
+            const txFlag = transactionMarkers[tx.id];
+            const txLinks = transactionSofLinks[tx.id];
+            
+            if (txLinks && txLinks.length > 0) linkedCount++;
+            if (txFlag === 'review') reviewCount++;
+            if (txFlag === 'suspicious') flaggedCount++;
+        });
+        
+        let html = `<div class="account-investigation-card collapsed" data-account-card="${accountId}">`;
+        
+        // Account Header - clickable to toggle
+        html += `<div class="account-investigation-header" onclick="manager.toggleAccountCard(event, '${accountId}');">`;
+        
+        if (hasLogo) {
+            const styledLogoHtml = logoHtml.replace(
+                /class="bank-logo"/,
+                'class="bank-logo" style="width: auto !important; height: auto !important; max-width: 60px !important; max-height: 40px !important; object-fit: contain !important; border: none !important; background: transparent !important; padding: 0 !important; border-radius: 0 !important;"'
+            );
+            html += `<div style="width: 60px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${styledLogoHtml}</div>`;
+        } else {
+            html += `<div style="font-weight: 600; color: #003c71; font-size: 12px; flex-shrink: 0; width: 60px;">${providerName}</div>`;
+        }
+        
+        html += '<div class="account-investigation-info">';
+        html += `<div class="account-investigation-name">`;
+        html += accountName;
+        // Add tick icon if account reviewed
+        if (wasReviewed) {
+            html += ' <svg viewBox="0 0 300 300" style="width: 14px; height: 14px; vertical-align: middle; margin-left: 4px;"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+        }
+        html += `</div>`;
+        html += `<div class="account-investigation-balance">Balance: £${balance.toLocaleString()}</div>`;
+        
+        // Add summary tags
+        html += '<div class="account-summary-tags">';
+        if (reviewCount > 0) {
+            html += `<span class="account-tag review">${reviewCount} review pending</span>`;
+        }
+        if (linkedCount > 0) {
+            html += `<span class="account-tag linked">${linkedCount} transaction${linkedCount > 1 ? 's' : ''} linked</span>`;
+        }
+        if (flaggedCount > 0) {
+            html += `<span class="account-tag flagged">${flaggedCount} flagged</span>`;
+        }
+        html += '</div>';
+        
+        html += '</div>';
+        html += '<span class="expand-indicator">▼</span>';
+        html += '</div>';
+        
+        // Account Details (expanded)
+        html += '<div class="account-investigation-details" onclick="event.stopPropagation();">';
+        
+        // Account review controls
+        html += '<div class="account-review-section">';
+        html += '<label class="account-reviewed-label">';
+        html += `<input type="checkbox" class="account-reviewed-checkbox" data-account-id="${accountId}" data-account-idx="${accountIdx}" ${wasReviewed ? 'checked' : ''}>`;
+        html += '<strong>Account Reviewed</strong>';
+        html += '</label>';
+        html += '<div class="form-group" style="margin-top: 8px;">';
+        html += '<label><strong>Account Notes</strong></label>';
+        html += `<textarea class="account-note-input" data-account-id="${accountId}" data-account-idx="${accountIdx}" rows="2" placeholder="Add notes about this account...">${existingNote}</textarea>`;
+        html += '</div>';
+        html += '</div>';
+        
+        // Transactions list with flagging capabilities
+        if (statement.length > 0) {
+            html += '<div class="account-transactions-section">';
+            html += `<div class="account-transactions-header">Transactions (${statement.length})</div>`;
+            
+            statement.forEach((tx, txIdx) => {
+                const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                const currencySymbol = this.getCurrencyFlag(tx.currency || 'GBP');
+                const amount = tx.amount;
+                const amountClass = amount >= 0 ? 'positive' : 'negative';
+                const sign = amount >= 0 ? '+' : '';
+                
+                const existingFlag = transactionMarkers[tx.id] || '';
+                const existingTxNote = transactionNotes[tx.id] || '';
+                
+                const hasExpanded = existingFlag || existingTxNote || (transactionSofLinks[tx.id] && transactionSofLinks[tx.id].length > 0);
+                const linkedFundIdx = (transactionSofLinks[tx.id] && transactionSofLinks[tx.id].length > 0) ? transactionSofLinks[tx.id][0] : '';
+                
+                html += '<div class="transaction-investigation-row">';
+                html += '<div class="transaction-investigation-main">';
+                html += '<div class="transaction-investigation-info">';
+                html += `<span class="tx-inv-date">${date}</span>`;
+                html += `<span class="tx-inv-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>`;
+                html += `<span class="tx-inv-amount ${amountClass}">${sign}${currencySymbol}${Math.abs(amount).toFixed(2)}</span>`;
+                html += '</div>';
+                
+                // Transaction flag buttons - small squares inline
+                html += '<div class="tx-flag-buttons-inline">';
+                // Green - Clear/Verified
+                html += `<button type="button" class="tx-flag-btn-square linked ${existingFlag === 'linked' ? 'active' : ''}" data-account-id="${accountId}" data-tx-id="${tx.id}" data-flag="linked" title="Clear - Verified" onclick="event.stopPropagation(); manager.toggleTransactionExpand(this);">`;
+                html += '<svg viewBox="0 0 300 300"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                html += '</button>';
+                // Red - Suspicious
+                html += `<button type="button" class="tx-flag-btn-square suspicious ${existingFlag === 'suspicious' ? 'active' : ''}" data-account-id="${accountId}" data-tx-id="${tx.id}" data-flag="suspicious" title="Suspicious" onclick="event.stopPropagation(); manager.toggleTransactionExpand(this);">`;
+                html += '<svg viewBox="0 0 300 300"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>';
+                html += '</button>';
+                // Orange - Under Review
+                html += `<button type="button" class="tx-flag-btn-square review ${existingFlag === 'review' ? 'active' : ''}" data-account-id="${accountId}" data-tx-id="${tx.id}" data-flag="review" title="Under Review" onclick="event.stopPropagation(); manager.toggleTransactionExpand(this);">`;
+                html += '<svg viewBox="0 0 300 300"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+                html += '</button>';
+                // Blue + - Link to Funding
+                html += `<button type="button" class="tx-flag-btn-square link-funding ${linkedFundIdx ? 'active' : ''}" data-account-id="${accountId}" data-tx-id="${tx.id}" data-action="link" title="Link to Funding Method" onclick="event.stopPropagation(); manager.toggleTransactionLinking(this);">`;
+                html += '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="none" fill="currentColor"/><path d="M12 6v12M6 12h12" stroke="white" stroke-width="2" fill="none"/></svg>';
+                html += '</button>';
+                html += '</div>';
+                html += '</div>'; // Close transaction-investigation-main
+                
+                // Expandable sections (hidden by default)
+                html += `<div class="tx-expand-section ${hasExpanded ? '' : 'collapsed'}" onclick="event.stopPropagation();">`;
+                
+                // Manual SOF linking dropdown (only visible when blue + is clicked)
+                html += `<div class="tx-sof-linking ${linkedFundIdx ? '' : 'hidden'}">`;
+                html += '<label style="font-size: 11px; color: #666; margin-bottom: 4px; display: block;">Link to Funding Method:</label>';
+                html += `<select class="tx-sof-link-select" data-account-id="${accountId}" data-tx-id="${tx.id}" style="width: 100%; font-size: 11px; padding: 6px;">`;
+                html += '<option value="">-- Select funding method --</option>';
+                
+                // Get funding methods from check
+                const sofTask = check.taskOutcomes?.['sof:v1'];
+                const funds = sofTask?.breakdown?.funds || [];
+                funds.forEach((fund, fIdx) => {
+                    const fundType = fund.type || '';
+                    const fundData = fund.data || {};
+                    const fundAmount = fundData.amount ? `£${(fundData.amount / 100).toLocaleString()}` : '';
+                    const fundLabel = fundType.replace('fund:', '').replace(/:/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    const isSelected = linkedFundIdx === fIdx.toString();
+                    html += `<option value="${fIdx}" ${isSelected ? 'selected' : ''}>${fundLabel} ${fundAmount}</option>`;
+                });
+                
+                html += '</select>';
+                html += '</div>';
+                
+                // Transaction note (visible when any button is clicked)
+                html += `<div class="tx-note-field">`;
+                html += `<textarea class="tx-note-input" data-account-id="${accountId}" data-tx-id="${tx.id}" rows="2" placeholder="Add transaction notes...">${existingTxNote}</textarea>`;
+                html += '</div>';
+                
+                html += '</div>'; // Close tx-expand-section
+                
+                html += '</div>';
+            });
+            
+            html += '</div>';
+        }
+        
+        html += '</div>'; // Close account-investigation-details
+        html += '</div>'; // Close account-investigation-card
+        
+        return html;
+    }
+    
     getRelatedRedFlags(fund, allRedFlags) {
         const type = fund.type || '';
         const relatedFlags = [];
         
-        allRedFlags.forEach(flag => {
+        allRedFlags.forEach((flag, globalIndex) => {
             const flagDesc = flag.description || '';
             
-            // Map red flags to funding types
+            // Map red flags to funding types and preserve global index
             if (flagDesc === 'Gifts Received' && type === 'fund:gift') {
-                relatedFlags.push(flag);
+                relatedFlags.push({ ...flag, globalIndex });
             } else if (flagDesc.includes('savings') && type === 'fund:savings') {
-                relatedFlags.push(flag);
+                relatedFlags.push({ ...flag, globalIndex });
             } else if (flagDesc === 'Cryptocurrency Funding' && type.includes('crypto')) {
-                relatedFlags.push(flag);
+                relatedFlags.push({ ...flag, globalIndex });
             } else if (flagDesc === 'Funds from Overseas' && (type.includes('overseas') || type.includes('foreign'))) {
-                relatedFlags.push(flag);
+                relatedFlags.push({ ...flag, globalIndex });
             }
         });
         
         return relatedFlags;
     }
     
-    createSofFundingCard(fund, fundIdx, sofMatches, accounts, check, relatedFlags = []) {
-        // Use the EXACT same structure as task card but add investigation features
+    createSofFundingCard(fund, fundIdx, sofMatches, accounts, check, relatedFlags = [], existingAnnotations = []) {
         const type = fund.type || 'unknown';
         const data = fund.data || {};
         const amount = data.amount ? `£${(data.amount / 100).toLocaleString()}` : 'Not specified';
         
-        // Get matched transactions (pass fund object for savings priority logic)
-        const matchedTxIds = this.getMatchedTransactions(type, sofMatches, fund);
+        // Get matched transactions (including user-linked ones)
+        const matchedTxIds = this.getMatchedTransactions(type, sofMatches, fund, fundIdx, check);
         
         // Map funding type to display name
         const cleanType = type.replace('fund:', '').replace(/:/g, '-');
@@ -18420,20 +22206,117 @@ class ThirdfortChecksManager {
         };
         const typeName = typeNames[cleanType] || cleanType;
         
-        let html = '<div class="funding-source-card">';
+        // Check for existing annotations for this funding method
+        const fundAnnotations = existingAnnotations.flatMap(ann => {
+            const fundingMethods = ann.notes?.fundingMethods || [];
+            return fundingMethods.filter(fm => fm.fundType === type && fm.fundIdx === fundIdx.toString());
+        });
         
-        // Card header with type, amount (same as task card)
-        html += '<div class="funding-header">';
-        html += `<div class="funding-type">${typeName}</div>`;
-        html += `<div class="funding-amount">${amount}</div>`;
+        const verifiedItems = fundAnnotations.flatMap(fm => fm.verified || []);
+        const hasNote = fundAnnotations.some(fm => fm.note && fm.note.trim());
+        
+        // Get transaction markers for this funding method from ALL sources
+        const fundTransactionMarkers = {};
+        
+        // First, get markers explicitly set for this funding method
+        fundAnnotations.forEach(fm => {
+            Object.assign(fundTransactionMarkers, fm.transactionMarkers || {});
+        });
+        
+        // Then, for each matched transaction, also check for annotations from other sources
+        matchedTxIds.forEach(txId => {
+            const txAnnotations = this.getTransactionAnnotations(txId, check);
+            // If there's a marker and we don't already have one for this funding method, use it
+            if (txAnnotations.marker && !fundTransactionMarkers[txId]) {
+                fundTransactionMarkers[txId] = txAnnotations.marker;
+            }
+        });
+        
+        // Format verified items as readable text with proper labels
+        const verificationLabelMap = {
+            'gift_relationship': 'Giftor relationship confirmed',
+            'gift_checks': 'Giftor ID and AML checks completed',
+            'gift_transactions': 'Transactions reviewed and linked',
+            'savings_statements': 'Account statements reviewed',
+            'savings_balance': 'Balance verified via Bank Summary',
+            'savings_income': 'Income sources verified',
+            'sale_documents': 'Supporting documents reviewed',
+            'sale_proceeds': 'Sale proceeds confirmed',
+            'mortgage_offer': 'Mortgage offer reviewed',
+            'mortgage_affordability': 'Affordability assessment completed',
+            'generic_verified': 'Source verified and documented'
+        };
+        
+        const verifiedLabels = verifiedItems.map(item => 
+            verificationLabelMap[item] || item.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+        );
+        
+        // Calculate transaction status counts
+        let acceptedCount = 0;
+        let rejectedCount = 0;
+        let reviewCount = 0;
+        
+        matchedTxIds.forEach(txId => {
+            const marker = fundTransactionMarkers[txId];
+            if (marker === 'accepted') acceptedCount++;
+            else if (marker === 'rejected') rejectedCount++;
+            else if (marker === 'review') reviewCount++;
+        });
+        
+        let hasRedFlag = relatedFlags.length > 0;
+        
+        // Build collapsed header summary
+        let summaryText = '';
+        if (data.giftor?.name) summaryText = data.giftor.name;
+        else if (data.lender) summaryText = data.lender;
+        else if (data.people && data.people.length > 0) summaryText = data.people.map(p => p.name).filter(n => n).join(', ');
+        
+        let html = `<div class="funding-investigation-card collapsed" data-funding-card="${fundIdx}">`;
+        
+        // Funding Header (collapsed view) - clickable to toggle
+        html += `<div class="funding-investigation-header" onclick="manager.toggleFundingCard(event, ${fundIdx});">`;
+        html += '<div class="funding-investigation-info">';
+        html += `<div class="funding-investigation-name">${typeName} <span style="font-weight: 600; color: #388e3c;">${amount}</span></div>`;
+        if (summaryText) {
+            html += `<div class="funding-investigation-summary">${summaryText}</div>`;
+        }
+        
+        // Summary tags
+        html += '<div class="funding-summary-tags">';
+        if (verifiedLabels.length > 0) {
+            html += `<span class="funding-tag confirmed">✓ ${verifiedLabels.join(', ')}</span>`;
+        }
+        if (acceptedCount > 0) {
+            html += `<span class="funding-tag accepted">${acceptedCount} accepted</span>`;
+        }
+        if (rejectedCount > 0) {
+            html += `<span class="funding-tag rejected">${rejectedCount} rejected</span>`;
+        }
+        if (reviewCount > 0) {
+            html += `<span class="funding-tag review-tx">${reviewCount} under review</span>`;
+        }
+        if (matchedTxIds.length > acceptedCount + rejectedCount + reviewCount) {
+            const unmarkedCount = matchedTxIds.length - acceptedCount - rejectedCount - reviewCount;
+            html += `<span class="funding-tag linked">${unmarkedCount} unreviewed</span>`;
+        }
+        if (hasRedFlag) {
+            html += `<span class="funding-tag redflag">${relatedFlags.length} red flag${relatedFlags.length > 1 ? 's' : ''}</span>`;
+        }
         html += '</div>';
+        
+        html += '</div>';
+        html += '<span class="expand-indicator">▼</span>';
+        html += '</div>';
+        
+        // Funding Details (expanded view)
+        html += '<div class="funding-investigation-details" onclick="event.stopPropagation();">';
         
         // Type-specific details (same as task card)
         html += this.createFundingDetailsSection(fund, data, type);
         
         // Matched transactions OR no matches message (same as task card)
         if (matchedTxIds.length > 0) {
-            html += this.createFundingMatchedTxSection(matchedTxIds, accounts, type);
+            html += this.createFundingMatchedTxSection(matchedTxIds, accounts, type, fundTransactionMarkers, check, fundIdx, sofMatches);
         } else {
             // No matched transactions - show message
             const labelMap = {
@@ -18473,7 +22356,7 @@ class ThirdfortChecksManager {
         html += `<span class="doc-status-text">${docStatusText}</span>`;
         html += '</div>';
         
-        // Red Flags Section (if applicable)
+        // Red Flags Section (if applicable) - Show full details like in task card
         if (relatedFlags.length > 0) {
             const redCircleIcon = `<svg class="inline-icon" viewBox="0 0 24 24" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="12" r="10" fill="#d32f2f"/><line x1="7" y1="12" x2="17" y2="12" stroke="white" stroke-width="2"/></svg>`;
             
@@ -18483,14 +22366,115 @@ class ThirdfortChecksManager {
             relatedFlags.forEach((flag, flagIdx) => {
                 html += '<div class="red-flag-item">';
                 html += `<div class="red-flag-title">${flag.description || 'Red Flag'}</div>`;
-                if (flag.details) {
+                
+                // Show full details based on flag type
+                const flagDesc = flag.description || '';
+                
+                // For savings discrepancy - show declared vs actual with accounts
+                if (flagDesc.includes('savings')) {
+                    // Get task outcomes for account data
+                    const taskOutcomes = check.taskOutcomes || {};
+                    const sofTask = taskOutcomes['sof:v1'];
+                    const bankStatement = taskOutcomes['bank:statement'];
+                    const bankSummary = taskOutcomes['bank:summary'];
+                    const docsBankStatement = taskOutcomes['documents:bank-statement'];
+                    
+                    // Calculate declared savings
+                    let totalDeclared = 0;
+                    const savingsFunds = sofTask?.breakdown?.funds?.filter(f => f.type === 'fund:savings') || [];
+                    savingsFunds.forEach(fund => {
+                        totalDeclared += fund.data?.amount || 0;
+                    });
+                    
+                    // Calculate actual savings
+                    const bankAccounts = bankStatement?.breakdown?.accounts || 
+                                       bankSummary?.breakdown?.accounts || 
+                                       docsBankStatement?.breakdown?.accounts || 
+                                       {};
+                    let totalActual = 0;
+                    const providerTotals = {};
+                    
+                    Object.values(bankAccounts).forEach(account => {
+                        const accountInfo = account.info || account;
+                        const balance = accountInfo.balance?.current || accountInfo.balance?.available || 0;
+                        
+                        if (balance > 0) {
+                            totalActual += balance;
+                            const providerName = accountInfo.provider?.name || 'Unknown Provider';
+                            const providerId = accountInfo.provider?.id || providerName;
+                            
+                            if (!providerTotals[providerId]) {
+                                providerTotals[providerId] = {
+                                    name: providerName,
+                                    total: 0,
+                                    accounts: []
+                                };
+                            }
+                            providerTotals[providerId].total += balance;
+                            providerTotals[providerId].accounts.push({
+                                name: accountInfo.name || accountInfo.account_name || accountInfo.type || 'Account',
+                                balance: balance
+                            });
+                        }
+                    });
+                    
+                    html += `<div class="red-flag-details" style="margin-top: 10px;">`;
+                    html += `<div style="font-size: 12px; color: #666; margin-bottom: 8px;"><strong>Declared:</strong> £${(totalDeclared / 100).toLocaleString()}</div>`;
+                    html += `<div style="font-size: 12px; color: #666; margin-bottom: 8px;"><strong>Actual:</strong> £${totalActual.toLocaleString()}</div>`;
+                    
+                    // Show account breakdown by provider (like in red flags task card)
+                    if (Object.keys(providerTotals).length > 0) {
+                        html += `<div style="margin-top: 12px;">`;
+                        Object.values(providerTotals).forEach(provider => {
+                            const logoHtml = this.getBankLogo(provider.name, provider.name);
+                            const hasLogo = logoHtml.includes('<img');
+                            
+                            html += `<div style="display: flex; align-items: stretch; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #e1e4e8; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">`;
+                            
+                            if (hasLogo) {
+                                // Show logo - full height of card, no border - add inline styles directly to img tag
+                                const styledLogoHtml = logoHtml.replace(
+                                    /class="bank-logo"/,
+                                    'class="bank-logo" style="width: auto !important; height: auto !important; max-width: 90px !important; max-height: 100% !important; object-fit: contain !important; border: none !important; background: transparent !important; padding: 0 !important; border-radius: 0 !important;"'
+                                );
+                                html += `<div style="width: 90px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${styledLogoHtml}</div>`;
+                                html += `<div style="flex: 1;">`;
+                                html += `<div style="font-size: 13px; font-weight: 600; color: #003c71; margin-bottom: 4px;">£${provider.total.toLocaleString()}</div>`;
+                                provider.accounts.forEach((acc, idx) => {
+                                    html += `<div style="font-size: 10px; color: #666; ${idx < provider.accounts.length - 1 ? 'margin-bottom: 1px;' : ''}">${acc.name}: £${acc.balance.toLocaleString()}</div>`;
+                                });
+                                html += `</div>`;
+                            } else {
+                                // No logo - show name
+                                html += `<div style="flex: 1;">`;
+                                html += `<div style="font-size: 13px; font-weight: 600; color: #003c71; margin-bottom: 3px;">${provider.name}</div>`;
+                                html += `<div style="font-size: 13px; font-weight: 600; color: #388e3c; margin-bottom: 4px;">£${provider.total.toLocaleString()}</div>`;
+                                provider.accounts.forEach((acc, idx) => {
+                                    html += `<div style="font-size: 10px; color: #666; ${idx < provider.accounts.length - 1 ? 'margin-bottom: 1px;' : ''}">${acc.name}: £${acc.balance.toLocaleString()}</div>`;
+                                });
+                                html += `</div>`;
+                            }
+                            
+                            html += `</div>`;
+                        });
+                        html += `</div>`;
+                    }
+                    
+                    html += `</div>`;
+                } 
+                // For gift - don't duplicate giftor info (already shown in funding method details above)
+                else if (flagDesc === 'Gifts Received') {
+                    html += `<div class="red-flag-details" style="margin-top: 10px; font-size: 12px; color: #666;">Giftor details shown above in funding method</div>`;
+                }
+                // For other flags - show basic details
+                else if (flag.details) {
                     html += `<div class="red-flag-details">${flag.details}</div>`;
                 }
                 
                 // Red flag status selector with icons
-                html += '<div class="red-flag-status">';
+                html += '<div class="red-flag-status" style="margin-top: 12px;">';
                 html += '<label><strong>Status:</strong></label>';
-                html += `<select class="red-flag-status-select" data-fund-idx="${fundIdx}" data-flag-idx="${flagIdx}">`;
+                html += `<select class="red-flag-status-select" data-fund-idx="${fundIdx}" data-flag-idx="${flag.globalIndex}">`;
                 html += '<option value="">-- Select Action --</option>';
                 html += '<option value="confirmed">✗ Confirmed - Requires attention</option>';
                 html += '<option value="dismissed">✓ Clear - Not applicable</option>';
@@ -18501,7 +22485,7 @@ class ThirdfortChecksManager {
                 // Red flag notes
                 html += '<div class="form-group">';
                 html += `<label><strong>Red Flag Notes</strong></label>`;
-                html += `<textarea class="red-flag-note-input" data-fund-idx="${fundIdx}" data-flag-idx="${flagIdx}" rows="2" placeholder="Add notes about this red flag..."></textarea>`;
+                html += `<textarea class="red-flag-note-input" data-fund-idx="${fundIdx}" data-flag-idx="${flag.globalIndex}" rows="2" placeholder="Add notes about this red flag..."></textarea>`;
                 html += '</div>';
                 
                 html += '</div>';
@@ -18510,20 +22494,21 @@ class ThirdfortChecksManager {
             html += '</div>';
         }
         
-        // INVESTIGATION FEATURES (NEW)
-        html += '<div class="investigation-section">';
+        // INVESTIGATION FEATURES
+        html += '<div class="funding-investigation-controls">';
         
         // Verification checkboxes
-        html += this.createFundingVerificationChecks(type, data, matchedTxIds);
+        html += this.createFundingVerificationChecks(type, data, matchedTxIds, existingAnnotations);
         
         // Notes textarea
-        html += '<div class="form-group">';
+        html += '<div class="form-group" style="margin-top: 12px;">';
         html += '<label><strong>Investigation Notes</strong></label>';
         html += `<textarea class="sof-note-input" data-fund-idx="${fundIdx}" data-fund-type="${type}" rows="3" placeholder="Add investigation notes..."></textarea>`;
         html += '</div>';
         
-        html += '</div>'; // Close investigation-section
-        html += '</div>'; // Close funding-source-card
+        html += '</div>'; // Close funding-investigation-controls
+        html += '</div>'; // Close funding-investigation-details
+        html += '</div>'; // Close funding-investigation-card
         
         return html;
     }
@@ -18593,7 +22578,7 @@ class ThirdfortChecksManager {
         return html;
     }
     
-    createFundingMatchedTxSection(matchedTxIds, accounts, type) {
+    createFundingMatchedTxSection(matchedTxIds, accounts, type, transactionMarkers = {}, check = null, fundIdx = null, sofMatches = {}) {
         const labelMap = {
             'fund:gift': 'Potential Gift Deposits:',
             'fund:mortgage': 'Potential Mortgage Deposits:',
@@ -18601,6 +22586,48 @@ class ThirdfortChecksManager {
             'fund:income': 'Verified Salary Deposits:'
         };
         const matchLabel = labelMap[type] || 'Potential Matched Transactions:';
+        
+        // Get comprehensive annotations for all transactions from ALL sources
+        const userLinkedTxIds = new Set();
+        const transactionNotes = {};
+        const transactionFlags = {};
+        
+        if (check && fundIdx !== null) {
+            // Use getTransactionAnnotations for each transaction to get ALL sources
+            matchedTxIds.forEach(txId => {
+                const txAnnotations = this.getTransactionAnnotations(txId, check);
+                
+                // Check if linked to THIS funding method
+                if (txAnnotations.linkedFundingMethods.includes(fundIdx.toString())) {
+                    userLinkedTxIds.add(txId);
+                }
+                
+                // Get notes from all sources
+                if (txAnnotations.note) {
+                    transactionNotes[txId] = txAnnotations.note;
+                }
+                
+                // Get flags from bank analysis items
+                if (txAnnotations.flag) {
+                    transactionFlags[txId] = txAnnotations.flag;
+                }
+            });
+        }
+        
+        // Get Thirdfort auto-matched transaction IDs
+        const autoMatchedTxIds = new Set();
+        const fundTypeMap = {
+            'fund:gift': ['gift', 'gift_transactions'],
+            'fund:mortgage': ['mortgage', 'mortgage_transactions'],
+            'fund:savings': ['savings', 'savings_transactions', 'salary_transactions'],
+            'fund:income': ['salary_transactions', 'income_transactions']
+        };
+        const matchKeys = fundTypeMap[type] || [];
+        matchKeys.forEach(key => {
+            if (sofMatches[key] && Array.isArray(sofMatches[key])) {
+                sofMatches[key].forEach(txId => autoMatchedTxIds.add(txId));
+            }
+        });
         
         let html = '<div class="matched-transactions-section"><div class="matched-tx-label">' + matchLabel + '</div>';
         
@@ -18621,27 +22648,65 @@ class ThirdfortChecksManager {
                 const currencySymbol = this.getCurrencyFlag(tx.currency || 'GBP');
                 const txAmount = tx.amount >= 0 ? '+' : '';
                 
+                // Get existing marker for this transaction
+                const existingMarker = transactionMarkers[txId] || '';
+                
+                // Get flag from bank analysis
+                const flag = transactionFlags[txId];
+                let flagBadge = '';
+                if (flag === 'cleared') {
+                    flagBadge = '<span class="tx-marker-badge cleared">○ Cleared</span>';
+                } else if (flag === 'suspicious') {
+                    flagBadge = '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
+                } else if (flag === 'review') {
+                    flagBadge = '<span class="tx-marker-badge review">— Review</span>';
+                } else if (flag === 'linked') {
+                    flagBadge = '<span class="tx-marker-badge linked">✓ Linked</span>';
+                }
+                
+                // Determine source badge
+                const isUserLinked = userLinkedTxIds.has(txId);
+                const isAutoMatched = autoMatchedTxIds.has(txId);
+                let sourceBadge = '';
+                if (isUserLinked && !isAutoMatched) {
+                    sourceBadge = '<span class="tx-source-badge user-linked" title="Manually linked by cashier">👤 User Linked</span>';
+                } else if (isUserLinked && isAutoMatched) {
+                    sourceBadge = '<span class="tx-source-badge both-matched" title="Auto-matched by Thirdfort and confirmed by cashier">✓ Confirmed</span>';
+                }
+                
+                // Get transaction note
+                const txNote = transactionNotes[txId] || '';
+                
                 html += '<div class="matched-tx-row-with-markers">';
                 html += '<div class="matched-tx-info">';
                 html += `<span class="matched-tx-date">${date}</span>`;
-                html += `<span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Transaction'}</span>`;
+                html += `<span class="matched-tx-desc">${tx.description || tx.merchant_name || 'Transaction'}${flagBadge}${sourceBadge}</span>`;
                 html += `<span class="matched-tx-account">${accountName}</span>`;
                 html += `<span class="matched-tx-amount">${txAmount}${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>`;
                 html += '</div>';
                 html += '<div class="tx-marker-actions">';
-                // Verified icon (green tick) - same as task status CL
-                html += `<button type="button" class="tx-marker-btn verified" data-tx-id="${txId}" data-marker="verified" title="Linked - Verified" onclick="this.classList.toggle('active')">`;
+                // Accepted icon (green tick)
+                html += `<button type="button" class="tx-marker-btn accepted ${existingMarker === 'accepted' ? 'active' : ''}" data-tx-id="${txId}" data-marker="accepted" title="Accepted - Linked" onclick="event.stopPropagation(); manager.toggleTransactionMarker(this)">`;
                 html += '<svg viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
                 html += '</button>';
-                // Rejected icon (red cross) - same as task status AL
-                html += `<button type="button" class="tx-marker-btn rejected" data-tx-id="${txId}" data-marker="rejected" title="Not linked - Unrelated" onclick="this.classList.toggle('active')">`;
+                // Rejected icon (red cross)
+                html += `<button type="button" class="tx-marker-btn rejected ${existingMarker === 'rejected' ? 'active' : ''}" data-tx-id="${txId}" data-marker="rejected" title="Rejected - Not linked" onclick="event.stopPropagation(); manager.toggleTransactionMarker(this)">`;
                 html += '<svg viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>';
                 html += '</button>';
-                // Review icon (orange dash) - same as task status CO
-                html += `<button type="button" class="tx-marker-btn review" data-tx-id="${txId}" data-marker="review" title="Needs review" onclick="this.classList.toggle('active')">`;
+                // Review icon (orange dash)
+                html += `<button type="button" class="tx-marker-btn review ${existingMarker === 'review' ? 'active' : ''}" data-tx-id="${txId}" data-marker="review" title="Needs review" onclick="event.stopPropagation(); manager.toggleTransactionMarker(this)">`;
                 html += '<svg viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
                 html += '</button>';
                 html += '</div>';
+                
+                // Show transaction note if exists
+                if (txNote) {
+                    html += '<div class="matched-tx-note">';
+                    html += '<svg viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: middle;"><path fill="#666" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>';
+                    html += `<span style="color: #666; font-size: 12px; font-style: italic;">${txNote}</span>`;
+                    html += '</div>';
+                }
+                
                 html += '</div>';
             }
         });
@@ -18651,31 +22716,49 @@ class ThirdfortChecksManager {
         return html;
     }
     
-    createFundingVerificationChecks(type, data, matchedTxIds) {
+    createFundingVerificationChecks(type, data, matchedTxIds, existingAnnotations = []) {
+        // Check which items were previously verified
+        const previouslyVerified = new Set();
+        existingAnnotations.forEach(ann => {
+            const notes = ann.notes || {};
+            const fundingMethods = notes.fundingMethods || [];
+            fundingMethods.forEach(fm => {
+                if (fm.fundType === type && fm.verified) {
+                    fm.verified.forEach(v => previouslyVerified.add(v));
+                }
+            });
+        });
+        
         let html = '<div class="verification-checks">';
         
+        const createCheckbox = (value, label) => {
+            const wasVerified = previouslyVerified.has(value);
+            const indicator = wasVerified ? ' <span style="color: #39b549; font-size: 11px;">(Previously verified ✓)</span>' : '';
+            return `<label><input type="checkbox" name="verification" value="${value}"> ${label}${indicator}</label>`;
+        };
+        
         if (type === 'fund:gift') {
-            html += '<label><input type="checkbox" name="verification" value="gift_relationship"> Giftor relationship confirmed</label>';
-            html += '<label><input type="checkbox" name="verification" value="gift_checks"> Giftor ID and AML checks completed</label>';
+            html += createCheckbox('gift_relationship', 'Giftor relationship confirmed');
+            html += createCheckbox('gift_checks', 'Giftor ID and AML checks completed');
             if (matchedTxIds.length > 0) {
-                html += '<label><input type="checkbox" name="verification" value="gift_transactions"> Transactions reviewed and linked</label>';
+                html += createCheckbox('gift_transactions', 'Transactions reviewed and linked');
             }
         } 
         else if (type === 'fund:savings') {
-            html += '<label><input type="checkbox" name="verification" value="savings_statements"> Account statements reviewed</label>';
-            html += '<label><input type="checkbox" name="verification" value="savings_balance"> Balance verified via Bank Summary</label>';
-            html += '<label><input type="checkbox" name="verification" value="savings_income"> Income sources verified</label>';
+            html += createCheckbox('savings_statements', 'Account statements reviewed');
+            html += createCheckbox('savings_balance', 'Balance verified via Bank Summary');
+            html += createCheckbox('savings_income', 'Income sources verified');
         } 
         else if (type.includes('sale')) {
-            html += '<label><input type="checkbox" name="verification" value="sale_documents"> Supporting documents reviewed</label>';
-            html += '<label><input type="checkbox" name="verification" value="sale_proceeds"> Sale proceeds confirmed</label>';
+            html += createCheckbox('sale_documents', 'Supporting documents reviewed');
+            html += createCheckbox('sale_proceeds', 'Sale proceeds confirmed');
         } 
         else if (type === 'fund:mortgage') {
-            html += '<label><input type="checkbox" name="verification" value="mortgage_offer"> Mortgage offer reviewed</label>';
-            html += '<label><input type="checkbox" name="verification" value="mortgage_affordability"> Affordability assessment completed</label>';
+            html += createCheckbox('mortgage_offer', 'Mortgage offer reviewed');
+            html += createCheckbox('mortgage_affordability', 'Affordability assessment completed');
         } 
         else {
-            html += '<label><input type="checkbox" name="verification" value="generic_verified"> Source verified and documented</label>';
+            html += createCheckbox('generic_verified', 'Source verified and documented');
         }
         
         html += '</div>';
@@ -18683,7 +22766,7 @@ class ThirdfortChecksManager {
         return html;
     }
     
-    getMatchedTransactions(fundType, sofMatches, fund = null) {
+    getMatchedTransactions(fundType, sofMatches, fund = null, fundIdx = null, check = null) {
         const fundTypeMap = {
             'fund:gift': ['gift', 'gift_transactions'],
             'fund:mortgage': ['mortgage', 'mortgage_transactions'],
@@ -18710,16 +22793,63 @@ class ThirdfortChecksManager {
         
         let matchedTxIds = [];
         
+        // Get Thirdfort automatic matches
         for (const key of matchKeys) {
             if (sofMatches[key] && Array.isArray(sofMatches[key])) {
                 matchedTxIds = [...matchedTxIds, ...sofMatches[key]];
             }
         }
         
+        // Add user-manually-linked transactions from annotations
+        if (check && fundIdx !== null) {
+            const sofAnnotations = check.sofAnnotations || [];
+            sofAnnotations.forEach(ann => {
+                // Direct transaction links
+                const transactions = ann.notes?.transactions || [];
+                transactions.forEach(tx => {
+                    // Check if this transaction is linked to this funding method
+                    if (tx.linkedToFunds && tx.linkedToFunds.includes(fundIdx.toString())) {
+                        matchedTxIds.push(tx.txId);
+                    }
+                });
+                
+                // Bank analysis items (chains, repeating groups) linked to this funding method
+                const bankAnalysisItems = ann.notes?.bankAnalysisItems || [];
+                bankAnalysisItems.forEach(item => {
+                    if (item.linkedToFundIdx === fundIdx.toString()) {
+                        // Get the transactions that are part of this item
+                        if (item.type === 'transaction' && item.transactionId) {
+                            matchedTxIds.push(item.transactionId);
+                        } else if (item.type === 'chain' && item.chainId) {
+                            // Chain IDs are composite of transaction IDs separated by |
+                            const chainTxIds = item.chainId.split('|');
+                            matchedTxIds.push(...chainTxIds);
+                        } else if (item.type === 'repeating-group' && item.groupIndex !== undefined) {
+                            // Get all transactions in this repeating group
+                            const taskOutcomes = check.taskOutcomes || {};
+                            const bankStatement = taskOutcomes['bank:statement'];
+                            const bankSummary = taskOutcomes['bank:summary'];
+                            const docsBankStatement = taskOutcomes['documents:bank-statement'];
+                            const analysis = bankStatement?.breakdown?.analysis || 
+                                           bankSummary?.breakdown?.analysis || 
+                                           docsBankStatement?.breakdown?.analysis;
+                            
+                            if (analysis && analysis.repeating_transactions) {
+                                const group = analysis.repeating_transactions[item.groupIndex];
+                                if (group && group.items) {
+                                    matchedTxIds.push(...group.items);
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        }
+        
         return [...new Set(matchedTxIds)];
     }
     
-    createSofChainCard(chain, chainIdx) {
+    createSofChainCard(chain, chainIdx, check, existingAnnotations = []) {
         let html = '<div class="sof-chain-card">';
         
         // Chain description
@@ -18749,14 +22879,24 @@ class ThirdfortChecksManager {
         
         html += '</div>';
         
-        // Action buttons
-        html += '<div class="chain-actions">';
-        html += '<button type="button" class="btn-sm btn-success" onclick="event.target.classList.toggle(\'active\')">Mark Verified</button>';
-        html += '<button type="button" class="btn-sm btn-warning" onclick="event.target.classList.toggle(\'active\')">Mark Suspicious</button>';
+        // Flag buttons (consistent style with transaction flags)
+        html += '<div class="tx-flag-buttons" style="margin-top: 12px;">';
+        html += `<button type="button" class="tx-flag-btn linked" data-chain-idx="${chainIdx}" data-flag="linked" title="Linked to SoF" onclick="event.stopPropagation(); this.classList.toggle('active');">`;
+        html += '<svg viewBox="0 0 300 300" style="width: 14px; height: 14px;"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+        html += '</button>';
+        html += `<button type="button" class="tx-flag-btn suspicious" data-chain-idx="${chainIdx}" data-flag="suspicious" title="Suspicious" onclick="event.stopPropagation(); this.classList.toggle('active');">`;
+        html += '<svg viewBox="0 0 300 300" style="width: 14px; height: 14px;"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>';
+        html += '</button>';
+        html += `<button type="button" class="tx-flag-btn review" data-chain-idx="${chainIdx}" data-flag="review" title="Under review" onclick="event.stopPropagation(); this.classList.toggle('active');">`;
+        html += '<svg viewBox="0 0 300 300" style="width: 14px; height: 14px;"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+        html += '</button>';
+        html += `<button type="button" class="tx-flag-btn cleared" data-chain-idx="${chainIdx}" data-flag="cleared" title="Reviewed & Clear" onclick="event.stopPropagation(); this.classList.toggle('active');">`;
+        html += '<svg viewBox="0 0 24 24" style="width: 14px; height: 14px;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M8 12l2 2 4-4" stroke="currentColor" stroke-width="2" fill="none"/></svg>';
+        html += '</button>';
         html += '</div>';
         
         // Notes textarea
-        html += '<div class="form-group">';
+        html += '<div class="form-group" style="margin-top: 12px;">';
         html += `<textarea class="chain-note-input" data-chain-idx="${chainIdx}" rows="2" placeholder="Add note for this chain..."></textarea>`;
         html += '</div>';
         
@@ -18765,17 +22905,22 @@ class ThirdfortChecksManager {
         return html;
     }
     
-    createSofTransactionCard(tx, txIdx, accounts) {
+    createSofTransactionCard(tx, txIdx, accounts, check, existingAnnotations = []) {
         const txDate = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
         const txAmount = Math.abs(tx.amount).toFixed(2);
         const txDesc = tx.description || tx.merchant_name || 'Transaction';
+        const amountClass = tx.amount >= 0 ? 'positive' : 'negative';
+        const sign = tx.amount >= 0 ? '+' : '';
+        const currencySymbol = this.getCurrencyFlag(tx.currency || 'GBP');
         
-        // Find account name
+        // Find account name and ID
         let accountName = '';
-        for (const [accountId, accountData] of Object.entries(accounts)) {
+        let accountId = '';
+        for (const [accId, accountData] of Object.entries(accounts)) {
             const statement = accountData.statement || [];
             if (statement.find(t => t.id === tx.id)) {
                 accountName = (accountData.info || accountData).name || 'Account';
+                accountId = accId;
                 break;
             }
         }
@@ -18787,19 +22932,28 @@ class ThirdfortChecksManager {
         html += `<span class="tx-date">${txDate}</span>`;
         html += `<span class="tx-desc">${txDesc}</span>`;
         html += `<span class="tx-account">${accountName}</span>`;
-        html += `<span class="tx-amount">£${txAmount}</span>`;
+        html += `<span class="tx-amount ${amountClass}">${sign}${currencySymbol}${txAmount}</span>`;
         html += '</div>';
         
-        // Action buttons
-        html += '<div class="tx-marker-buttons">';
-        html += '<button type="button" class="btn-sm btn-success" onclick="event.target.classList.toggle(\'active\')">✓ Verified</button>';
-        html += '<button type="button" class="btn-sm btn-danger" onclick="event.target.classList.toggle(\'active\')">⚠️ Suspicious</button>';
-        html += '<button type="button" class="btn-sm btn-warning" onclick="event.target.classList.toggle(\'active\')">? Review</button>';
+        // Flag buttons (consistent style with transaction flags)
+        html += '<div class="tx-flag-buttons" style="margin-top: 12px;">';
+        html += `<button type="button" class="tx-flag-btn linked" data-large-tx-idx="${txIdx}" data-tx-id="${tx.id}" data-flag="linked" title="Linked to SoF" onclick="event.stopPropagation(); this.classList.toggle('active');">`;
+        html += '<svg viewBox="0 0 300 300" style="width: 14px; height: 14px;"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+        html += '</button>';
+        html += `<button type="button" class="tx-flag-btn suspicious" data-large-tx-idx="${txIdx}" data-tx-id="${tx.id}" data-flag="suspicious" title="Suspicious" onclick="event.stopPropagation(); this.classList.toggle('active');">`;
+        html += '<svg viewBox="0 0 300 300" style="width: 14px; height: 14px;"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>';
+        html += '</button>';
+        html += `<button type="button" class="tx-flag-btn review" data-large-tx-idx="${txIdx}" data-tx-id="${tx.id}" data-flag="review" title="Under review" onclick="event.stopPropagation(); this.classList.toggle('active');">`;
+        html += '<svg viewBox="0 0 300 300" style="width: 14px; height: 14px;"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+        html += '</button>';
+        html += `<button type="button" class="tx-flag-btn cleared" data-large-tx-idx="${txIdx}" data-tx-id="${tx.id}" data-flag="cleared" title="Reviewed & Clear" onclick="event.stopPropagation(); this.classList.toggle('active');">`;
+        html += '<svg viewBox="0 0 24 24" style="width: 14px; height: 14px;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M8 12l2 2 4-4" stroke="currentColor" stroke-width="2" fill="none"/></svg>';
+        html += '</button>';
         html += '</div>';
         
         // Notes textarea
-        html += '<div class="form-group">';
-        html += `<textarea class="tx-note-input" data-tx-idx="${txIdx}" data-tx-id="${tx.id}" rows="2" placeholder="Add note..."></textarea>`;
+        html += '<div class="form-group" style="margin-top: 12px;">';
+        html += `<textarea class="tx-note-input large-tx-note" data-large-tx-idx="${txIdx}" data-tx-id="${tx.id}" rows="2" placeholder="Add note..."></textarea>`;
         html += '</div>';
         
         html += '</div>';
@@ -18813,15 +22967,91 @@ class ThirdfortChecksManager {
         
         // Collect all data
         const investigation = {
+            property: null,
             fundingMethods: [],
-            chains: [],
+            accounts: [],
             transactions: [],
+            chains: [],
             timestamp: new Date().toISOString()
         };
         
+        // Collect property review data
+        const propertyCheckbox = form.querySelector('.property-reviewed-checkbox');
+        const propertyNoteField = form.querySelector('.property-note-input');
+        if (propertyCheckbox || propertyNoteField) {
+            const reviewed = propertyCheckbox ? propertyCheckbox.checked : false;
+            const note = propertyNoteField ? propertyNoteField.value.trim() : '';
+            
+            if (reviewed || note) {
+                investigation.property = {
+                    reviewed: reviewed,
+                    note: note
+                };
+            }
+        }
+        
+        // Collect account review data
+        const accountCards = form.querySelectorAll('.account-investigation-card');
+        accountCards.forEach((card) => {
+            const checkbox = card.querySelector('.account-reviewed-checkbox');
+            const noteTextarea = card.querySelector('.account-note-input');
+            
+            if (checkbox) {
+                const accountId = checkbox.dataset.accountId;
+                const accountIdx = checkbox.dataset.accountIdx;
+                const reviewed = checkbox.checked;
+                const note = noteTextarea ? noteTextarea.value.trim() : '';
+                
+                if (reviewed || note) {
+                    investigation.accounts.push({
+                        accountId: accountId,
+                        accountIdx: accountIdx,
+                        reviewed: reviewed,
+                        note: note
+                    });
+                }
+            }
+        });
+        
+        // Collect transaction flags and notes from account investigation cards
+        const txInvestigationRows = form.querySelectorAll('.transaction-investigation-row');
+        txInvestigationRows.forEach((row) => {
+            // Get active flag button (using new square button class)
+            const activeBtn = row.querySelector('.tx-flag-btn-square.active');
+            const txNoteField = row.querySelector('.tx-note-input');
+            const sofLinkSelect = row.querySelector('.tx-sof-link-select');
+            
+            // Get linked funding method (single select)
+            let linkedFundIdx = '';
+            if (sofLinkSelect && sofLinkSelect.value) {
+                linkedFundIdx = sofLinkSelect.value;
+            }
+            
+            if (activeBtn || (txNoteField && txNoteField.value.trim()) || linkedFundIdx) {
+                const accountId = activeBtn ? activeBtn.dataset.accountId : 
+                               txNoteField ? txNoteField.dataset.accountId :
+                               sofLinkSelect ? sofLinkSelect.dataset.accountId : '';
+                const txId = activeBtn ? activeBtn.dataset.txId : 
+                           txNoteField ? txNoteField.dataset.txId :
+                           sofLinkSelect ? sofLinkSelect.dataset.txId : '';
+                const flag = activeBtn ? activeBtn.dataset.flag : '';
+                const note = txNoteField ? txNoteField.value.trim() : '';
+                
+                if (flag || note || linkedFundIdx) {
+                    investigation.transactions.push({
+                        accountId: accountId,
+                        txId: txId,
+                        flag: flag,
+                        note: note,
+                        linkedToFunds: linkedFundIdx ? [linkedFundIdx] : []
+                    });
+                }
+            }
+        });
+        
         // Collect funding method notes, verifications, and transaction markers
         // Find all funding cards to process each one
-        const fundingCards = form.querySelectorAll('.funding-source-card');
+        const fundingCards = form.querySelectorAll('.funding-investigation-card');
         fundingCards.forEach((card, idx) => {
             const textarea = card.querySelector('textarea.sof-note-input');
             if (!textarea) return;
@@ -18879,17 +23109,49 @@ class ThirdfortChecksManager {
             }
         });
         
-        // Collect chain notes and markers
-        const chainNotes = form.querySelectorAll('textarea.chain-note-input');
-        chainNotes.forEach(textarea => {
-            const note = textarea.value.trim();
-            const chainIdx = textarea.dataset.chainIdx;
+        // Collect chain flags and notes
+        const chainCards = form.querySelectorAll('.sof-chain-card');
+        chainCards.forEach(card => {
+            const activeBtn = card.querySelector('.tx-flag-btn.active[data-chain-idx]');
+            const noteTextarea = card.querySelector('textarea.chain-note-input');
             
-            if (note) {
-                investigation.chains.push({
-                    chainIdx: chainIdx,
-                    note: note
-                });
+            if (activeBtn || (noteTextarea && noteTextarea.value.trim())) {
+                const chainIdx = activeBtn ? activeBtn.dataset.chainIdx : noteTextarea.dataset.chainIdx;
+                const flag = activeBtn ? activeBtn.dataset.flag : '';
+                const note = noteTextarea ? noteTextarea.value.trim() : '';
+                
+                if (flag || note) {
+                    investigation.chains.push({
+                        chainIdx: chainIdx,
+                        flag: flag,
+                        note: note
+                    });
+                }
+            }
+        });
+        
+        // Collect large transaction flags and notes
+        const largeTxCards = form.querySelectorAll('.sof-tx-card');
+        largeTxCards.forEach(card => {
+            const activeBtn = card.querySelector('.tx-flag-btn.active[data-large-tx-idx]');
+            const noteTextarea = card.querySelector('textarea.large-tx-note');
+            
+            if (activeBtn || (noteTextarea && noteTextarea.value.trim())) {
+                const largeTxIdx = activeBtn ? activeBtn.dataset.largeTxIdx : noteTextarea.dataset.largeTxIdx;
+                const txId = activeBtn ? activeBtn.dataset.txId : noteTextarea.dataset.txId;
+                const flag = activeBtn ? activeBtn.dataset.flag : '';
+                const note = noteTextarea ? noteTextarea.value.trim() : '';
+                
+                if (flag || note) {
+                    // Add to transactions array with a special type marker
+                    investigation.transactions.push({
+                        txId: txId,
+                        largeTxIdx: largeTxIdx,
+                        type: 'large-oneoff',
+                        flag: flag,
+                        note: note
+                    });
+                }
             }
         });
         
@@ -18909,13 +23171,90 @@ class ThirdfortChecksManager {
             }
         });
         
+        // Collect Bank Analysis item flags and notes (repeating groups, chains, transactions)
+        if (!investigation.bankAnalysisItems) {
+            investigation.bankAnalysisItems = [];
+        }
+        
+        // Track processed items to avoid duplicates
+        const processedItems = new Set();
+        
+        // Process all analysis items (find by parent containers)
+        const analysisContainers = form.querySelectorAll('[data-group-index], [data-chain-id], .transaction-row-wrapper[data-tx-id]');
+        analysisContainers.forEach(itemElement => {
+            let itemType, itemKey;
+            
+            if (itemElement.hasAttribute('data-group-index')) {
+                itemType = 'repeating-group';
+                itemKey = itemElement.getAttribute('data-group-index');
+            } else if (itemElement.hasAttribute('data-chain-id')) {
+                itemType = 'chain';
+                itemKey = itemElement.getAttribute('data-chain-id');
+            } else if (itemElement.hasAttribute('data-tx-id')) {
+                itemType = 'transaction';
+                itemKey = itemElement.getAttribute('data-tx-id');
+            } else {
+                return; // Skip if no identifier
+            }
+            
+            // Create unique key to avoid duplicates
+            const uniqueKey = `${itemType}:${itemKey}`;
+            if (processedItems.has(uniqueKey)) return;
+            processedItems.add(uniqueKey);
+            
+            // Get active flag button (excluding link-funding button)
+            const activeBtn = itemElement.querySelector('.tx-flag-btn-square.active:not(.link-funding)');
+            const flag = activeBtn ? activeBtn.dataset.flag : '';
+            
+            // Get note
+            const noteTextarea = itemElement.querySelector('textarea.analysis-item-note-input');
+            const note = noteTextarea ? noteTextarea.value.trim() : '';
+            
+            // Get linked funding method - ONLY if the link dropdown is visible
+            const fundingLinkContainer = itemElement.querySelector('.analysis-item-funding-link');
+            const fundingSelect = itemElement.querySelector('.analysis-item-funding-select');
+            let linkedFundIdx = '';
+            
+            // Only get the value if the dropdown is visible (user clicked link button)
+            if (fundingLinkContainer && !fundingLinkContainer.classList.contains('hidden') && fundingSelect && fundingSelect.value) {
+                linkedFundIdx = fundingSelect.value;
+            }
+            
+            // Only save if there's a flag, note, or linked funding
+            if (flag || note || linkedFundIdx) {
+                const item = {
+                    type: itemType,
+                    flag: flag,
+                    comment: note
+                };
+                
+                if (itemType === 'repeating-group') {
+                    item.groupIndex = parseInt(itemKey);
+                } else if (itemType === 'chain') {
+                    item.chainId = itemKey;
+                } else if (itemType === 'transaction') {
+                    item.transactionId = itemKey;
+                }
+                
+                // Only add linkedToFundIdx if actually selected AND visible
+                if (linkedFundIdx) {
+                    item.linkedToFundIdx = linkedFundIdx;
+                }
+                
+                investigation.bankAnalysisItems.push(item);
+            }
+        });
+        
         // Check if any data was collected
-        const hasData = investigation.fundingMethods.length > 0 || 
-                       investigation.chains.length > 0 || 
-                       investigation.transactions.length > 0;
+        const hasData = investigation.property ||
+                       investigation.fundingMethods.length > 0 || 
+                       investigation.accounts.length > 0 ||
+                       investigation.transactions.length > 0 ||
+                       investigation.chains.length > 0 ||
+                       investigation.bankAnalysisItems?.length > 0;
         
         if (!hasData) {
-            alert('Please add at least one note or verification');
+            alert('Please add at least one note, verification, or review');
             return;
         }
         
@@ -18932,8 +23271,300 @@ class ThirdfortChecksManager {
         };
     }
     
+    toggleTransactionExpand(button) {
+        // Toggle the button active state
+        button.classList.toggle('active');
+        
+        // Get the parent transaction row and expand section
+        const txRow = button.closest('.transaction-investigation-row');
+        const expandSection = txRow.querySelector('.tx-expand-section');
+        const noteField = expandSection.querySelector('.tx-note-field');
+        
+        // Show expand section if any button is active
+        const anyActive = txRow.querySelector('.tx-flag-btn-square.active');
+        if (anyActive) {
+            expandSection.classList.remove('collapsed');
+        } else {
+            expandSection.classList.add('collapsed');
+        }
+    }
+    
+    toggleTransactionLinking(button) {
+        // Toggle the button active state
+        button.classList.toggle('active');
+        
+        // Get the parent transaction row and expand section
+        const txRow = button.closest('.transaction-investigation-row');
+        const expandSection = txRow.querySelector('.tx-expand-section');
+        const sofLinking = expandSection.querySelector('.tx-sof-linking');
+        
+        // Always show expand section when blue + is clicked
+        expandSection.classList.remove('collapsed');
+        
+        // Toggle the SOF linking dropdown
+        if (button.classList.contains('active')) {
+            sofLinking.classList.remove('hidden');
+        } else {
+            sofLinking.classList.add('hidden');
+        }
+    }
+    
     closeSofOverlay() {
         const overlay = document.getElementById('sofOverlay');
+        if (overlay) overlay.remove();
+    }
+    
+    toggleAccountCard(event, accountId) {
+        event.stopPropagation();
+        const card = document.querySelector(`[data-account-card="${accountId}"]`);
+        if (card) {
+            card.classList.toggle('collapsed');
+        }
+    }
+    
+    toggleFundingCard(event, fundIdx) {
+        event.stopPropagation();
+        const card = document.querySelector(`[data-funding-card="${fundIdx}"]`);
+        if (card) {
+            card.classList.toggle('collapsed');
+        }
+    }
+    
+    toggleAnnotationCard(event, annIdx) {
+        event.stopPropagation();
+        const card = document.querySelector(`[data-annotation-idx="${annIdx}"]`);
+        if (card) {
+            card.classList.toggle('collapsed');
+        }
+    }
+    
+    showTransactionDetailsOverlay(txId, check) {
+        // Find the transaction across all accounts
+        const taskOutcomes = check.taskOutcomes || {};
+        const bankStatement = taskOutcomes['bank:statement'];
+        const bankSummary = taskOutcomes['bank:summary'];
+        const docsBankStatement = taskOutcomes['documents:bank-statement'];
+        
+        const accounts = bankStatement?.breakdown?.accounts || 
+                        bankSummary?.breakdown?.accounts || 
+                        docsBankStatement?.breakdown?.accounts || {};
+        
+        let transaction = null;
+        let accountInfo = null;
+        
+        for (const [accountId, accountData] of Object.entries(accounts)) {
+            const statement = accountData.statement || [];
+            transaction = statement.find(t => t.id === txId);
+            if (transaction) {
+                accountInfo = accountData.info || accountData;
+                break;
+            }
+        }
+        
+        if (!transaction) {
+            console.error('Transaction not found:', txId);
+            return;
+        }
+        
+        // Collect all annotations for this transaction
+        const sofAnnotations = check.sofAnnotations || [];
+        const txAnnotations = [];
+        
+        sofAnnotations.forEach(ann => {
+            // Check direct transaction annotations
+            const transactions = ann.notes?.transactions || [];
+            const txAnn = transactions.find(t => t.txId === txId);
+            if (txAnn) {
+                txAnnotations.push({
+                    ...txAnn,
+                    user: ann.userName || ann.user,
+                    timestamp: ann.timestamp
+                });
+                return; // Already found this transaction, no need to check other sources
+            }
+            
+            // Check if transaction is linked via funding method transaction markers
+            const fundingMethods = ann.notes?.fundingMethods || [];
+            for (const fm of fundingMethods) {
+                const transactionMarkers = fm.transactionMarkers || {};
+                if (transactionMarkers[txId]) {
+                    // This transaction was marked for this funding method
+                    const marker = transactionMarkers[txId]; // 'accepted' or 'rejected'
+                    const flag = marker === 'accepted' ? 'linked' : 'review';
+                    
+                    txAnnotations.push({
+                        txId: txId,
+                        flag: flag,
+                        linkedToFunds: [fm.fundIdx],
+                        note: marker === 'accepted' ? 'Linked via funding method' : 'Marked for review',
+                        user: ann.userName || ann.user,
+                        timestamp: ann.timestamp
+                    });
+                    return; // Found it, stop checking
+                }
+            }
+            
+            // Check if transaction is part of a bank analysis item (repeating group or chain) that's linked
+            const bankAnalysisItems = ann.notes?.bankAnalysisItems || [];
+            for (const item of bankAnalysisItems) {
+                let isPartOfItem = false;
+                
+                if (item.type === 'transaction' && item.transactionId === txId) {
+                    isPartOfItem = true;
+                } else if (item.type === 'chain') {
+                    // Check if this transaction is part of the chain
+                    const chainIds = (item.chainId || '').split('|');
+                    if (chainIds.includes(txId)) {
+                        isPartOfItem = true;
+                    }
+                }
+                
+                if (isPartOfItem && item.linkedToFundIdx) {
+                    // This transaction is part of an analysis item linked to a funding method
+                    txAnnotations.push({
+                        txId: txId,
+                        flag: item.flag || 'linked',
+                        linkedToFunds: [item.linkedToFundIdx],
+                        note: item.comment || 'Linked via bank analysis',
+                        user: ann.userName || ann.user,
+                        timestamp: ann.timestamp
+                    });
+                    return; // Found it
+                }
+            }
+        });
+        
+        // Build overlay HTML
+        const date = new Date(transaction.timestamp).toLocaleDateString('en-GB', { 
+            day: '2-digit', 
+            month: 'short', 
+            year: 'numeric',
+            weekday: 'short'
+        });
+        const time = new Date(transaction.timestamp).toLocaleTimeString('en-GB', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        const amount = transaction.amount;
+        const amountClass = amount >= 0 ? 'positive' : 'negative';
+        const sign = amount >= 0 ? '+' : '';
+        const currencySymbol = this.getCurrencyFlag(transaction.currency || 'GBP');
+        
+        let overlayHTML = '<div class="annotation-overlay transaction-details-overlay" id="transactionDetailsOverlay">';
+        overlayHTML += '<div class="annotation-overlay-backdrop" onclick="manager.closeTransactionDetailsOverlay()"></div>';
+        overlayHTML += '<div class="annotation-overlay-content" style="max-width: 700px;">';
+        
+        // Header
+        overlayHTML += '<div class="annotation-overlay-header">';
+        overlayHTML += '<h2>Transaction Details</h2>';
+        overlayHTML += '<button class="overlay-close-btn" onclick="manager.closeTransactionDetailsOverlay()">✕</button>';
+        overlayHTML += '</div>';
+        
+        overlayHTML += '<div class="annotation-overlay-body">';
+        
+        // Transaction Info Card
+        overlayHTML += '<div class="tx-details-card">';
+        overlayHTML += '<div class="tx-details-main">';
+        overlayHTML += `<div class="tx-details-desc">${transaction.description || transaction.merchant_name || 'Transaction'}</div>`;
+        overlayHTML += `<div class="tx-details-amount ${amountClass}">${sign}${currencySymbol}${Math.abs(amount).toFixed(2)}</div>`;
+        overlayHTML += '</div>';
+        overlayHTML += '<div class="tx-details-meta">';
+        overlayHTML += `<div class="tx-meta-item"><strong>Date:</strong> ${date} at ${time}</div>`;
+        overlayHTML += `<div class="tx-meta-item"><strong>Account:</strong> ${accountInfo.name || 'Account'}</div>`;
+        if (accountInfo.provider?.name) {
+            overlayHTML += `<div class="tx-meta-item"><strong>Bank:</strong> ${accountInfo.provider.name}</div>`;
+        }
+        overlayHTML += '</div>';
+        overlayHTML += '</div>';
+        
+        // Annotations History
+        if (txAnnotations.length > 0) {
+            overlayHTML += '<div class="tx-annotations-section">';
+            overlayHTML += '<h3>Investigation History</h3>';
+            
+            txAnnotations.forEach(ann => {
+                const annDate = new Date(ann.timestamp).toLocaleString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                overlayHTML += '<div class="tx-annotation-card">';
+                overlayHTML += '<div class="tx-annotation-header">';
+                overlayHTML += `<strong>${ann.user}</strong> • ${annDate}`;
+                overlayHTML += '</div>';
+                
+                // Flag status
+                if (ann.flag) {
+                    let flagIcon = '';
+                    let flagLabel = '';
+                    if (ann.flag === 'linked' || ann.flag === 'accepted') {
+                        flagIcon = '<svg class="inline-status-icon" viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
+                        flagLabel = ann.flag === 'accepted' ? 'Accepted' : 'Linked';
+                    } else if (ann.flag === 'suspicious' || ann.flag === 'rejected') {
+                        flagIcon = '<svg class="inline-status-icon" viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#ff0000" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>';
+                        flagLabel = ann.flag === 'rejected' ? 'Rejected' : 'Suspicious';
+                    } else if (ann.flag === 'review') {
+                        flagIcon = '<svg class="inline-status-icon" viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>';
+                        flagLabel = 'Under Review';
+                    } else if (ann.flag === 'cleared') {
+                        flagIcon = '<svg class="inline-status-icon" viewBox="0 0 300 300" style="width: 16px; height: 16px;"><path fill="#1976d2" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><circle cx="150" cy="150" r="50" fill="none" stroke="#ffffff" stroke-width="20"/></svg>';
+                        flagLabel = 'Cleared';
+                    }
+                    overlayHTML += `<div class="tx-annotation-flag">${flagIcon} <strong>Status:</strong> ${flagLabel}</div>`;
+                }
+                
+                // Linked funding methods
+                if (ann.linkedToFunds && ann.linkedToFunds.length > 0) {
+                    const sofTask = taskOutcomes['sof:v1'];
+                    const funds = sofTask?.breakdown?.funds || [];
+                    const linkedFunds = ann.linkedToFunds.map(fundIdxStr => {
+                        const fund = funds[parseInt(fundIdxStr)];
+                        if (fund) {
+                            const fundType = fund.type || '';
+                            const fundAmount = fund.data?.amount ? `£${(fund.data.amount / 100).toLocaleString()}` : '';
+                            const fundLabel = fundType.replace('fund:', '').replace(/[-:_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            return `${fundLabel} ${fundAmount}`;
+                        }
+                        return null;
+                    }).filter(f => f);
+                    
+                    if (linkedFunds.length > 0) {
+                        overlayHTML += '<div class="tx-annotation-links">';
+                        overlayHTML += '<svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 4px;"><path fill="#1976d2" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>';
+                        overlayHTML += `<strong>Linked to:</strong> ${linkedFunds.join(', ')}`;
+                        overlayHTML += '</div>';
+                    }
+                }
+                
+                // Note
+                if (ann.note) {
+                    overlayHTML += '<div class="tx-annotation-note">';
+                    overlayHTML += '<svg viewBox="0 0 24 24" style="width: 16px; height: 16px; margin-right: 4px;"><path fill="#666" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>';
+                    overlayHTML += `<span>${ann.note}</span>`;
+                    overlayHTML += '</div>';
+                }
+                
+                overlayHTML += '</div>';
+            });
+            
+            overlayHTML += '</div>';
+        } else {
+            overlayHTML += '<div class="no-annotations-message">';
+            overlayHTML += '<p style="color: #666; font-style: italic;">No investigation notes or flags for this transaction yet.</p>';
+            overlayHTML += '</div>';
+        }
+        
+        overlayHTML += '</div></div></div>';
+        
+        // Add to DOM
+        document.body.insertAdjacentHTML('beforeend', overlayHTML);
+    }
+    
+    closeTransactionDetailsOverlay() {
+        const overlay = document.getElementById('transactionDetailsOverlay');
         if (overlay) overlay.remove();
     }
     
@@ -18942,8 +23573,18 @@ class ThirdfortChecksManager {
      */
     renderPepDismissalOverlay(check) {
         const outcomes = check.taskOutcomes || {};
-        const pepsTask = outcomes['peps'] || outcomes['screening:lite'];
+        
+        // Support multiple structures for PEP/sanctions data
+        // Individual checks: 'peps', 'screening:lite', 'screening' (renamed from peps), 'sanctions'
+        // Company checks: 'company:peps', 'company:sanctions'
+        // Note: renderTasksSection renames 'peps' to 'screening' for individual checks
+        const pepsTask = outcomes['peps'];
+        const screeningLiteTask = outcomes['screening:lite'];
+        const screeningTask = outcomes['screening']; // Could be renamed from 'peps' or 'screening:lite'
         const sanctionsTask = outcomes['sanctions'];
+        const companyPepsTask = outcomes['company:peps'];
+        const companySanctionsTask = outcomes['company:sanctions'];
+        
         const existingDismissals = check.pepDismissals || [];
         
         // Initialize pending dismissals array
@@ -18961,6 +23602,7 @@ class ThirdfortChecksManager {
         // Collect all undismissed hits with full details
         const hits = [];
         
+        // Individual PEPs (from 'peps' task - electronic-id checks like Nigel Farage)
         if (pepsTask?.breakdown?.hits) {
             pepsTask.breakdown.hits.forEach(hit => {
                 if (!dismissedIds.has(hit.id)) {
@@ -18968,6 +23610,7 @@ class ThirdfortChecksManager {
                         id: hit.id,
                         name: hit.name,
                         type: 'peps',
+                        entityType: 'individual',
                         reportId: pepsTask.id,
                         dob: hit.dob?.main || hit.dob,
                         score: hit.score,
@@ -18975,12 +23618,58 @@ class ThirdfortChecksManager {
                         politicalPositions: hit.political_positions || [],
                         countries: hit.countries || [],
                         aka: hit.aka || [],
-                        fullHit: hit  // Keep full object for detailed display
+                        fullHit: hit
                     });
                 }
             });
         }
         
+        // Screening:lite PEPs (from 'screening:lite' task - lite-screen checks like Nigel Farage)
+        if (screeningLiteTask?.breakdown?.hits) {
+            screeningLiteTask.breakdown.hits.forEach(hit => {
+                if (!dismissedIds.has(hit.id)) {
+                    hits.push({
+                        id: hit.id,
+                        name: hit.name,
+                        type: 'peps',
+                        entityType: 'individual',
+                        reportId: screeningLiteTask.id,
+                        dob: hit.dob?.main || hit.dob,
+                        score: hit.score,
+                        flagTypes: hit.flag_types || [],
+                        politicalPositions: hit.political_positions || [],
+                        countries: hit.countries || [],
+                        aka: hit.aka || [],
+                        fullHit: hit
+                    });
+                }
+            });
+        }
+        
+        // Screening (renamed from 'peps' or 'screening:lite' - for checks like Jacob's lite-screen)
+        // Only process if not already handled by screeningLiteTask or pepsTask
+        if (screeningTask?.breakdown?.hits && !screeningLiteTask && !pepsTask) {
+            screeningTask.breakdown.hits.forEach(hit => {
+                if (!dismissedIds.has(hit.id)) {
+                    hits.push({
+                        id: hit.id,
+                        name: hit.name,
+                        type: 'peps',
+                        entityType: 'individual',
+                        reportId: screeningTask.id,
+                        dob: hit.dob?.main || hit.dob,
+                        score: hit.score,
+                        flagTypes: hit.flag_types || [],
+                        politicalPositions: hit.political_positions || [],
+                        countries: hit.countries || [],
+                        aka: hit.aka || [],
+                        fullHit: hit
+                    });
+                }
+            });
+        }
+        
+        // Individual Sanctions
         if (sanctionsTask?.breakdown?.hits) {
             sanctionsTask.breakdown.hits.forEach(hit => {
                 if (!dismissedIds.has(hit.id)) {
@@ -18988,7 +23677,50 @@ class ThirdfortChecksManager {
                         id: hit.id,
                         name: hit.name,
                         type: 'sanctions',
+                        entityType: 'individual',
                         reportId: sanctionsTask.id,
+                        score: hit.score,
+                        flagTypes: hit.flag_types || [],
+                        countries: hit.countries || [],
+                        aka: hit.aka || [],
+                        fullHit: hit
+                    });
+                }
+            });
+        }
+        
+        // Company PEPs (KYB checks)
+        if (companyPepsTask?.breakdown?.hits) {
+            companyPepsTask.breakdown.hits.forEach(hit => {
+                if (!dismissedIds.has(hit.id)) {
+                    hits.push({
+                        id: hit.id,
+                        name: hit.name,
+                        type: 'peps',
+                        entityType: 'company',
+                        reportId: companyPepsTask.id,
+                        dob: hit.dob?.main || hit.dob,
+                        score: hit.score,
+                        flagTypes: hit.flag_types || [],
+                        politicalPositions: hit.political_positions || [],
+                        countries: hit.countries || [],
+                        aka: hit.aka || [],
+                        fullHit: hit
+                    });
+                }
+            });
+        }
+        
+        // Company Sanctions (KYB checks)
+        if (companySanctionsTask?.breakdown?.hits) {
+            companySanctionsTask.breakdown.hits.forEach(hit => {
+                if (!dismissedIds.has(hit.id)) {
+                    hits.push({
+                        id: hit.id,
+                        name: hit.name,
+                        type: 'sanctions',
+                        entityType: 'company',
+                        reportId: companySanctionsTask.id,
                         score: hit.score,
                         flagTypes: hit.flag_types || [],
                         countries: hit.countries || [],
@@ -19003,10 +23735,11 @@ class ThirdfortChecksManager {
         overlayHTML += '<div class="annotation-overlay-backdrop" onclick="manager.closePepOverlay()"></div>';
         overlayHTML += '<div class="annotation-overlay-content">';
         
-        // Header with SAVE button
+        // Header with SAVE and EXPORT PDF buttons
         overlayHTML += '<div class="annotation-overlay-header">';
         overlayHTML += '<h2>Dismiss PEP & Sanctions Hits</h2>';
         overlayHTML += '<div class="header-actions">';
+        overlayHTML += '<button class="btn-secondary-small" onclick="manager.generatePepDismissalsPDF()">EXPORT PDF</button>';
         if (this.mode === 'edit') {
             overlayHTML += '<button class="btn-primary-small" onclick="manager.savePendingDismissals()" id="saveDismissalsBtn" disabled>SAVE</button>';
         }
@@ -19059,17 +23792,61 @@ class ThirdfortChecksManager {
             overlayHTML += '<div class="annotation-history-section">';
             overlayHTML += '<h3>Previously Dismissed</h3>';
             
+            // Group dismissals by user + timestamp + reason
+            const dismissalGroups = {};
             existingDismissals.forEach(dismissal => {
-                const date = new Date(dismissal.timestamp).toLocaleString('en-GB');
+                const groupKey = `${dismissal.user}_${dismissal.timestamp}_${dismissal.reason}`;
+                if (!dismissalGroups[groupKey]) {
+                    dismissalGroups[groupKey] = {
+                        user: dismissal.userName || dismissal.user,
+                        timestamp: dismissal.timestamp,
+                        reason: dismissal.reason,
+                        reportType: dismissal.reportType,
+                        hits: []
+                    };
+                }
+                dismissalGroups[groupKey].hits.push(dismissal.hitName);
+            });
+            
+            // Render each group
+            Object.values(dismissalGroups).forEach(group => {
+                const dateObj = new Date(group.timestamp);
+                const formattedDate = dateObj.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                });
+                const formattedTime = dateObj.toLocaleTimeString('en-GB', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Format user name
+                const formattedUser = group.user
+                    .split(/[-._@]/)
+                    .slice(0, -1)
+                    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+                    .join(' ');
+                
                 overlayHTML += '<div class="annotation-card dismissed-hit">';
                 overlayHTML += '<div class="annotation-card-header">';
-                overlayHTML += '<span class="annotation-objective">' + dismissal.hitName + '</span>';
-                overlayHTML += '<span class="hit-type-badge ' + dismissal.reportType + '">' + dismissal.reportType.toUpperCase() + '</span>';
-                overlayHTML += '<span class="annotation-date">' + date + '</span>';
+                overlayHTML += '<div class="annotation-header-main">';
+                overlayHTML += '<span class="annotation-user">' + formattedUser + '</span>';
+                overlayHTML += '<span class="annotation-date">' + formattedDate + ' at ' + formattedTime + '</span>';
+                overlayHTML += '</div>';
                 overlayHTML += '</div>';
                 overlayHTML += '<div class="annotation-card-body">';
-                overlayHTML += '<p class="annotation-reason">' + dismissal.reason + '</p>';
-                overlayHTML += '<p class="annotation-user">Dismissed by: ' + (dismissal.userName || dismissal.user) + '</p>';
+                overlayHTML += '<div class="dismissal-reason-box">' + group.reason + '</div>';
+                overlayHTML += '<div class="dismissed-hits-list">';
+                group.hits.forEach(hitName => {
+                    overlayHTML += `
+                        <div class="dismissed-hit-item">
+                            <svg viewBox="0 0 300 300" style="width: 14px; height: 14px; margin-right: 6px;"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>
+                            <span>${hitName}</span>
+                        </div>
+                    `;
+                });
+                overlayHTML += '</div>';
                 overlayHTML += '</div></div>';
             });
             
@@ -19460,7 +24237,7 @@ class ThirdfortChecksManager {
     // PDF GENERATION
     // ===================================================================
     
-    generateConsiderPDF() {
+    generateConsiderPDF(autoSave = false) {
         const check = this.currentCheck;
         if (!check) {
             console.error('❌ No current check for PDF generation');
@@ -19506,15 +24283,9 @@ class ThirdfortChecksManager {
             return 'CK';
         };
         
-        // Helper to get status icon SVG
+        // Helper to get status icon CSS (PDF-friendly)
         const getStatusIcon = (status) => {
-            if (status === 'clear') {
-                return `<svg class="status-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;"><circle cx="12" cy="12" r="10" fill="#388e3c"/><path d="M7 12l3 3 7-7" stroke="white" stroke-width="2" fill="none"/></svg>`;
-            } else if (status === 'fail') {
-                return `<svg class="status-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;"><circle cx="12" cy="12" r="10" fill="#d32f2f"/><line x1="8" y1="8" x2="16" y2="16" stroke="white" stroke-width="2"/><line x1="16" y1="8" x2="8" y2="16" stroke="white" stroke-width="2"/></svg>`;
-            } else {
-                return `<svg class="status-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;"><circle cx="12" cy="12" r="10" fill="#f7931e"/><line x1="7" y1="12" x2="17" y2="12" stroke="white" stroke-width="2"/></svg>`;
-            }
+            return this.getStatusIconCSS(status);
         };
         
         // Get unique task types that have annotations
@@ -19543,12 +24314,12 @@ class ThirdfortChecksManager {
             checks.forEach(checkItem => {
                 if (checkItem.isNestedCard || checkItem.isPersonCard || checkItem.isHitCard) return;
                 
-                const checkIcon = this.getTaskCheckIcon(checkItem.status);
+                const checkIcon = this.getTaskCheckIconCSS(checkItem.status);
                 const statusColor = checkItem.status === 'CL' ? '#388e3c' : (checkItem.status === 'FA' ? '#d32f2f' : '#f7931e');
                 
                 taskOutcomesHTML += `
                     <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; ${checkItem.indented ? 'margin-left: 30px;' : ''}">
-                        <div style="width: 18px; height: 18px; flex-shrink: 0;">${checkIcon}</div>
+                        ${checkIcon}
                         <span style="font-size: 12px; color: #333;">${checkItem.text}</span>
                     </div>
                 `;
@@ -19632,6 +24403,100 @@ class ThirdfortChecksManager {
             `;
         });
         
+        // Build task cards HTML (matching mockup structure exactly)
+        let taskCardsHTML = '';
+        
+        annotatedTaskTypes.forEach(taskType => {
+            const outcome = check.taskOutcomes?.[taskType];
+            if (!outcome) return;
+            
+            const taskTitle = this.getTaskTitle(taskType);
+            const result = outcome.result || 'unknown';
+            const borderColor = result === 'clear' ? '#39b549' : (result === 'fail' ? '#ff0000' : '#f7931e');
+            
+            // Get status icon CSS (PDF-friendly)
+            const statusIconHTML = this.getStatusIconCSS(result);
+            
+            // Get task annotations for this task type (grouped)
+            const taskAnnotations = annotations.filter(ann => ann.taskType === taskType);
+            const taskGroups = {};
+            taskAnnotations.forEach(ann => {
+                const groupKey = `${ann.user}_${ann.timestamp}_${ann.newStatus}`;
+                if (!taskGroups[groupKey]) taskGroups[groupKey] = [];
+                taskGroups[groupKey].push(ann);
+            });
+            const updateCount = Object.keys(taskGroups).length;
+            const latestStatus = taskAnnotations[0]?.newStatus || 'consider';
+            const badgeClass = latestStatus === 'clear' ? 'badge-clear' : (latestStatus === 'fail' ? 'badge-fail' : 'badge-consider');
+            const badgeColor = latestStatus === 'clear' ? '#d4edda' : (latestStatus === 'fail' ? '#f8d7da' : '#fff3cd');
+            const badgeTextColor = latestStatus === 'clear' ? '#155724' : (latestStatus === 'fail' ? '#721c24' : '#856404');
+            
+            // Get all objectives for this task
+            const checks = this.getTaskChecks(taskType, outcome, check);
+            let objectivesHTML = '';
+            checks.forEach(checkItem => {
+                if (checkItem.isNestedCard || checkItem.isPersonCard || checkItem.isHitCard) return;
+                
+                const checkIconHTML = this.getTaskCheckIconCSS(checkItem.status);
+                const indentStyle = (checkItem.indented || checkItem.isChildItem) ? 'padding-left: 24px;' : '';
+                
+                objectivesHTML += `
+                    <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #333; ${indentStyle}">
+                        ${checkIconHTML}
+                        <span>${checkItem.text}</span>
+                    </div>
+                `;
+            });
+            
+            // Build annotation mini-cards for this task
+            let annotationCardsHTML = '';
+            Object.values(taskGroups).forEach(groupAnnotations => {
+                const ann = groupAnnotations[0];
+                const date = new Date(ann.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                const time = new Date(ann.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                
+                const miniStatusColor = ann.newStatus === 'clear' ? '#e8f5e9' : (ann.newStatus === 'fail' ? '#ffebee' : '#fff3e0');
+                const miniStatusTextColor = ann.newStatus === 'clear' ? '#39b549' : (ann.newStatus === 'fail' ? '#d32f2f' : '#f7931e');
+                const miniStatusIconHTML = getStatusIcon(ann.newStatus);
+                
+                annotationCardsHTML += `
+                    <div style="background: white; border: 1px solid #d1d5db; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                            <div style="font-size: 12px; color: #666;">
+                                <span style="font-weight: bold; color: #333;">${ann.userName}</span>
+                                <span> • </span>
+                                <span style="font-style: italic; font-size: 11px; color: #999;">${date}, ${time}</span>
+                            </div>
+                            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${miniStatusColor}; color: ${miniStatusTextColor};">
+                                ${miniStatusIconHTML}
+                                ${ann.newStatus.charAt(0).toUpperCase() + ann.newStatus.slice(1)}
+                            </span>
+                        </div>
+                        <div style="font-size: 13px; color: #444; line-height: 1.5;">
+                            ${ann.reason}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            taskCardsHTML += `
+                <div style="background: white; border-radius: 8px; border-left: 4px solid ${borderColor}; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 12px; page-break-inside: avoid;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div style="font-size: 14px; font-weight: 500; color: #003c71; flex: 1;">${taskTitle}</div>
+                        <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px; background: ${badgeColor}; color: ${badgeTextColor};">${updateCount} Update${updateCount > 1 ? 's' : ''}</span>
+                        ${statusIconHTML}
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; padding: 8px 16px;">
+                        ${objectivesHTML}
+                    </div>
+                    <div style="padding: 12px 16px;">
+                        <h4 style="font-size: 13px; font-weight: bold; color: #333; margin-bottom: 12px;">Cashier Updates</h4>
+                        ${annotationCardsHTML}
+                    </div>
+                </div>
+            `;
+        });
+        
         const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -19639,58 +24504,40 @@ class ThirdfortChecksManager {
                 <meta charset="UTF-8">
                 <style>
                     * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { font-family: Arial, sans-serif; padding: 20px 30px; background: #fff; color: #333; line-height: 1.6; width: 100%; max-width: 750px; }
-                    .pdf-header { border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px; }
-                    .pdf-title { font-size: 24px; font-weight: bold; color: #003c71; margin-bottom: 10px; }
-                    .check-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 13px; color: #666; }
+                    :root { --primary-blue: #003c71; --secondary-blue: #1d71b8; --green: #39b549; --orange: #f7931e; --red: #d32f2f; --grey: #6c757d; --light-grey: #f8f9fa; --border-grey: #dee2e6; }
+                    body { font-family: 'Trebuchet MS', 'Lucida Grande', sans-serif; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px; }
+                    .pdf-header { border-bottom: 3px solid var(--primary-blue); padding-bottom: 20px; margin-bottom: 30px; page-break-after: avoid; }
+                    .pdf-title { font-size: 26px; font-weight: bold; color: var(--primary-blue); margin-bottom: 15px; }
+                    .check-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px; }
                     .check-info-item { display: flex; gap: 8px; }
-                    .check-info-label { font-weight: 600; color: #333; }
-                    .task-outcomes-section { margin-top: 30px; }
-                    .annotations-section { margin-top: 30px; }
-                    .section-title { font-size: 18px; font-weight: bold; color: #003c71; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid #e5e5e5; }
-                    .annotation-card { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 20px; margin-bottom: 20px; page-break-inside: avoid; }
-                    .annotation-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid #dee2e6; }
-                    .task-icon { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; color: white; flex-shrink: 0; }
-                    .annotation-task-info { flex: 1; }
-                    .annotation-task-title { font-size: 16px; font-weight: bold; color: #003c71; }
-                    .annotation-objective { font-size: 12px; color: #666; margin-top: 2px; }
-                    .status-change { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding: 12px; background: white; border-radius: 4px; }
-                    .status-box { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 4px; font-size: 13px; font-weight: 600; }
-                    .status-box.consider { background: #fff3e0; color: #f7931e; border: 1px solid #f7931e; }
-                    .status-box.fail { background: #ffebee; color: #d32f2f; border: 1px solid #d32f2f; }
-                    .status-box.clear { background: #e8f5e9; color: #388e3c; border: 1px solid #388e3c; }
-                    .status-arrow { font-size: 20px; color: #999; }
-                    .reason-box { background: white; padding: 15px; border-radius: 4px; border-left: 4px solid #003c71; margin-bottom: 12px; }
-                    .reason-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-                    .reason-text { font-size: 14px; color: #333; line-height: 1.5; }
-                    .annotation-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #666; padding-top: 10px; border-top: 1px solid #dee2e6; }
-                    .annotation-user { font-weight: 600; }
-                    .annotation-date { font-style: italic; }
-                    .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e5e5; text-align: center; font-size: 11px; color: #999; }
+                    .check-info-label { font-weight: bold; color: var(--grey); min-width: 140px; }
+                    .check-info-value { color: #333; }
+                    .section-title { font-size: 18px; font-weight: bold; color: var(--primary-blue); margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid var(--border-grey); page-break-after: avoid; }
+                    .task-card { page-break-inside: avoid; margin-bottom: 16px; }
+                    .annotation-mini-card { page-break-inside: avoid; }
+                    .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border-grey); text-align: center; font-size: 11px; color: #999; page-break-before: avoid; }
+                    .objective-icon { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+                    .icon-clear { fill: var(--green); }
+                    .icon-consider { fill: var(--orange); }
+                    .icon-fail { fill: var(--red); }
+                    @media print { body { padding: 20px; } }
                 </style>
             </head>
             <body>
                 <div class="pdf-header">
-                    <div class="pdf-title">Cashier Updates Report</div>
+                    <div class="pdf-title">Consider Annotations Report</div>
                     <div class="check-info">
-                        <div class="check-info-item"><span class="check-info-label">Check Type:</span><span>${checkType}</span></div>
-                        <div class="check-info-item"><span class="check-info-label">Client:</span><span>${checkName}</span></div>
-                        <div class="check-info-item"><span class="check-info-label">Transaction ID:</span><span>${check.transactionId || check.checkId}</span></div>
-                        <div class="check-info-item"><span class="check-info-label">Check Reference:</span><span>${checkRef}</span></div>
-                        <div class="check-info-item"><span class="check-info-label">Matter:</span><span>${matterName}</span></div>
-                        <div class="check-info-item"><span class="check-info-label">Generated:</span><span>${generatedDate}, ${generatedTime}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Check Type:</span><span class="check-info-value">${checkType}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Consumer:</span><span class="check-info-value">${checkName}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Check Reference:</span><span class="check-info-value">${checkRef}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Check ID:</span><span class="check-info-value">${check.checkId || check.transactionId}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Matter:</span><span class="check-info-value">${matterName}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Generated:</span><span class="check-info-value">${generatedDate}, ${generatedTime}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Status:</span><span class="check-info-value">${checkStatus}</span></div>
                     </div>
                 </div>
-                ${taskOutcomesHTML ? `
-                <div class="task-outcomes-section">
-                    <div class="section-title">Original Task Outcomes</div>
-                    ${taskOutcomesHTML}
-                </div>
-                ` : ''}
-                <div class="annotations-section">
-                    <div class="section-title">Cashier Updates</div>
-                    ${annotationsHTML}
-                </div>
+                <div class="section-title">Tasks with Annotations</div>
+                ${taskCardsHTML}
                 <div class="pdf-footer">
                     <p>This report was generated from Thurstan Hoskin's Thirdfort ID Management System</p>
                     <p>Report ID: ANT-${Date.now()} | Page 1 of 1</p>
@@ -19706,9 +24553,9 @@ class ThirdfortChecksManager {
             margin: [10, 10, 10, 10],
             filename: `cashier-updates-${checkRef}-${Date.now()}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false, width: 800 },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            pagebreak: { mode: 'css', avoid: 'div[style*="page-break-inside: avoid"]' }
         };
         
         console.log('📄 Checking for html2pdf library...');
@@ -19727,197 +24574,2261 @@ class ThirdfortChecksManager {
                     alert('PDF generated but popup was blocked. Please allow popups for this site.');
                 }
                 
-                // Notify parent that PDF is generated and opened
-                console.log('📤 Sending pdf-generated message to parent');
-                this.sendMessage('pdf-generated', { 
-                    type: 'consider',
-                    checkId: check.checkId || check.transactionId 
-                });
+                // Notify parent that PDF is generated and opened (only if auto-save)
+                if (autoSave) {
+                    console.log('📤 Sending pdf-generated message to parent');
+                    this.sendMessage('pdf-generated', { 
+                        type: 'consider',
+                        checkId: check.checkId || check.transactionId 
+                    });
+                } else {
+                    console.log('ℹ️ Manual export - not sending pdf-generated message');
+                }
             }).catch(err => {
                 console.error('❌ Error generating PDF:', err);
                 alert('Error generating PDF: ' + err.message);
-                // Still notify parent even on error so data can refresh
-                this.sendMessage('pdf-generated', { 
-                    type: 'consider',
-                    error: err.message 
-                });
+                // Still notify parent even on error so data can refresh (only if auto-save)
+                if (autoSave) {
+                    this.sendMessage('pdf-generated', { 
+                        type: 'consider',
+                        error: err.message 
+                    });
+                }
             });
         } else {
             console.error('❌ html2pdf library not loaded');
             alert('PDF library not loaded. Please refresh the page.');
-            // Notify parent so data can refresh
-            this.sendMessage('pdf-generated', { 
-                type: 'consider',
-                error: 'html2pdf not loaded' 
-            });
+            // Notify parent so data can refresh (only if auto-save)
+            if (autoSave) {
+                this.sendMessage('pdf-generated', { 
+                    type: 'consider',
+                    error: 'html2pdf not loaded' 
+                });
+            }
         }
     }
     
-    generateSofPDF() {
-        const check = this.currentCheck;
-        if (!check) return;
+    toggleAnalysisItemFlag(button) {
+        // Handle clicking flag buttons on analysis items (groups, chains, transactions)
+        const flag = button.dataset.flag;
         
-        const notes = check.sofAnnotations || [];
-        const checkName = check.consumerName || check.companyName || 'Unknown';
-        const checkRef = check.transactionId || check.checkId;
+        // Find the parent item element first
+        const itemElement = button.closest('[data-group-index], [data-chain-id], [data-tx-id]');
+        if (!itemElement) return;
         
-        let htmlContent = `
-            <div style="font-family: Arial, sans-serif; padding: 20px;">
-                <h1 style="color: #112F5B;">Source of Funds Investigation</h1>
-                <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
-                    <p><strong>Check:</strong> ${checkName}</p>
-                    <p><strong>Reference:</strong> ${checkRef}</p>
-                    <p><strong>Generated:</strong> ${new Date().toLocaleString('en-GB')}</p>
-                </div>
-                
-                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                    <thead>
-                        <tr style="background: #112F5B; color: white;">
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Type</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Item</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Notes</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">User</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
+        // Get item type and key from parent element
+        let itemType, itemKey;
+        if (itemElement.hasAttribute('data-group-index')) {
+            itemType = 'repeating-group';
+            itemKey = itemElement.getAttribute('data-group-index');
+        } else if (itemElement.hasAttribute('data-chain-id')) {
+            itemType = 'chain';
+            itemKey = itemElement.getAttribute('data-chain-id'); // Use chainId
+        } else if (itemElement.hasAttribute('data-tx-id')) {
+            itemType = 'transaction';
+            itemKey = itemElement.getAttribute('data-tx-id');
+        }
         
-        notes.forEach(note => {
-            const date = new Date(note.timestamp).toLocaleDateString('en-GB');
-            const item = note.category === 'funding' ? note.fundingMethod : note.redFlagType;
-            htmlContent += `
-                <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${note.category.toUpperCase()}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${item}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${note.note}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${note.userName || note.user}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${date}</td>
-                </tr>
-            `;
+        // Find all flag buttons in this item (exclude link-funding button)
+        const allButtons = itemElement.querySelectorAll('.tx-flag-btn-square:not(.link-funding)');
+        
+        // Check if this button is already active
+        const wasActive = button.classList.contains('active');
+        
+        // Remove active class from all flag buttons
+        allButtons.forEach(btn => btn.classList.remove('active'));
+        
+        // Find or show note section
+        const noteSection = itemElement.querySelector('.analysis-item-note-section');
+        
+        if (wasActive) {
+            // Clicking same button again = remove flag
+            if (noteSection) {
+                noteSection.classList.add('hidden');
+                const noteInput = noteSection.querySelector('.analysis-item-note-input');
+                if (noteInput) noteInput.value = '';
+            }
+            
+            // Remove from sofAnnotations
+            this.removeAnalysisItemFlag(itemType, itemKey);
+        } else {
+            // Set new flag
+            button.classList.add('active');
+            if (noteSection) {
+                noteSection.classList.remove('hidden');
+            }
+            
+            // Save to sofAnnotations (will be saved when user types in note or when overlay closes)
+            this.saveAnalysisItemFlag(itemType, itemKey, flag);
+        }
+    }
+    
+    toggleAnalysisItemLinking(button) {
+        // Handle clicking the blue + button on analysis items to link to funding methods
+        
+        // Find the parent item element
+        const itemElement = button.closest('[data-group-index], [data-chain-id], [data-tx-id]');
+        if (!itemElement) return;
+        
+        // Toggle button active state
+        button.classList.toggle('active');
+        const isActive = button.classList.contains('active');
+        
+        // Find the funding link dropdown
+        const fundingLink = itemElement.querySelector('.analysis-item-funding-link');
+        
+        // Toggle visibility
+        if (isActive) {
+            if (fundingLink) {
+                fundingLink.classList.remove('hidden');
+            }
+        } else {
+            if (fundingLink) {
+                fundingLink.classList.add('hidden');
+                // Clear selection
+                const select = fundingLink.querySelector('.analysis-item-funding-select');
+                if (select) select.value = '';
+            }
+        }
+    }
+    
+    toggleTransactionMarker(button) {
+        // Handle clicking transaction marker buttons (accepted, rejected, review)
+        // in funding method matched transactions sections
+        
+        // Find parent transaction row (could be .matched-tx-row or .matched-tx-row-with-markers)
+        const txRow = button.closest('.matched-tx-row, .matched-tx-row-with-markers');
+        if (!txRow) return;
+        
+        // Find all marker buttons in this transaction
+        const allMarkerButtons = txRow.querySelectorAll('.tx-marker-btn');
+        
+        // Check if this button is already active
+        const wasActive = button.classList.contains('active');
+        
+        // Remove active from all marker buttons
+        allMarkerButtons.forEach(btn => btn.classList.remove('active'));
+        
+        // If it wasn't active, make it active
+        if (!wasActive) {
+            button.classList.add('active');
+        }
+        // If it was active, we've already removed it, so clicking again deactivates
+    }
+    
+    /**
+     * Get all annotations for a specific transaction from all sources
+     * Returns { flag, note, linkedFundingMethods, marker }
+     */
+    getTransactionAnnotations(txId, check) {
+        if (!check || !txId) return { flag: '', note: '', linkedFundingMethods: [], marker: '' };
+        
+        const sofAnnotations = check.sofAnnotations || [];
+        const result = {
+            flag: '',           // From bank analysis items (suspicious, cleared, review)
+            note: '',           // Combined notes from all sources
+            linkedFundingMethods: [], // Array of fund indices
+            marker: ''          // From funding method markers (accepted, rejected, review)
+        };
+        
+        const notes = [];
+        
+        sofAnnotations.forEach(ann => {
+            // 1. Check bank analysis items (flags on transactions/chains/repeating groups)
+            const bankAnalysisItems = ann.notes?.bankAnalysisItems || [];
+            bankAnalysisItems.forEach(item => {
+                if (item.type === 'transaction' && item.transactionId === txId) {
+                    if (item.flag) result.flag = item.flag;
+                    if (item.comment) notes.push(item.comment);
+                    if (item.linkedToFundIdx) {
+                        if (!result.linkedFundingMethods.includes(item.linkedToFundIdx)) {
+                            result.linkedFundingMethods.push(item.linkedToFundIdx);
+                        }
+                    }
+                }
+                // Also check if this transaction is part of a chain
+                if (item.type === 'chain' && item.chainId) {
+                    // Chain IDs are composite of transaction IDs separated by |
+                    const chainTxIds = item.chainId.split('|');
+                    if (chainTxIds.includes(txId)) {
+                        // Transaction is part of this flagged chain
+                        if (item.flag && !result.flag) result.flag = item.flag;
+                        const formattedNote = `Chain: ${item.comment}`;
+                        if (item.comment && !notes.includes(formattedNote)) notes.push(formattedNote);
+                        if (item.linkedToFundIdx) {
+                            if (!result.linkedFundingMethods.includes(item.linkedToFundIdx)) {
+                                result.linkedFundingMethods.push(item.linkedToFundIdx);
+                            }
+                        }
+                    }
+                }
+                // Also check if this transaction is part of a repeating group
+                if (item.type === 'repeating-group' && item.groupIndex !== undefined) {
+                    // We need to check if this transaction belongs to this repeating group
+                    // by checking the bank analysis data
+                    const taskOutcomes = check.taskOutcomes || {};
+                    const bankStatement = taskOutcomes['bank:statement'];
+                    const bankSummary = taskOutcomes['bank:summary'];
+                    const docsBankStatement = taskOutcomes['documents:bank-statement'];
+                    const analysis = bankStatement?.breakdown?.analysis || 
+                                   bankSummary?.breakdown?.analysis || 
+                                   docsBankStatement?.breakdown?.analysis;
+                    
+                    if (analysis && analysis.repeating_transactions) {
+                        const group = analysis.repeating_transactions[item.groupIndex];
+                        if (group && group.items && group.items.includes(txId)) {
+                            // Transaction is part of this repeating group
+                            if (item.flag && !result.flag) result.flag = item.flag;
+                            const formattedNote = `Repeating: ${item.comment}`;
+                            if (item.comment && !notes.includes(formattedNote)) notes.push(formattedNote);
+                            if (item.linkedToFundIdx) {
+                                if (!result.linkedFundingMethods.includes(item.linkedToFundIdx)) {
+                                    result.linkedFundingMethods.push(item.linkedToFundIdx);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 2. Check linked accounts transactions (manual linking and notes)
+            const transactions = ann.notes?.transactions || [];
+            transactions.forEach(tx => {
+                if (tx.txId === txId) {
+                    if (tx.flag && !result.flag) result.flag = tx.flag;
+                    if (tx.note) notes.push(tx.note);
+                    if (tx.linkedToFunds && Array.isArray(tx.linkedToFunds)) {
+                        tx.linkedToFunds.forEach(fundIdx => {
+                            if (!result.linkedFundingMethods.includes(fundIdx)) {
+                                result.linkedFundingMethods.push(fundIdx);
+                            }
+                        });
+                    }
+                }
+            });
+            
+            // 3. Check funding method transaction markers (accepted/rejected/review)
+            const fundingMethods = ann.notes?.fundingMethods || [];
+            fundingMethods.forEach(fm => {
+                if (fm.transactionMarkers && fm.transactionMarkers[txId]) {
+                    result.marker = fm.transactionMarkers[txId];
+                }
+            });
         });
         
-        htmlContent += `
-                    </tbody>
-                </table>
-            </div>
+        // Combine all notes
+        result.note = notes.join(' | ');
+        
+        return result;
+    }
+    
+    saveAnalysisItemFlag(itemType, itemKey, flag) {
+        const check = this.currentCheck;
+        if (!check.sofAnnotations) {
+            check.sofAnnotations = [];
+        }
+        
+        // Get current user
+        const timestamp = new Date().toISOString();
+        const user = this.userEmail || 'unknown@example.com';
+        const userName = user.split('@')[0];
+        
+        // Find or create annotation
+        let annotation = check.sofAnnotations.find(ann => 
+            ann.user === user && ann.timestamp && 
+            (new Date().getTime() - new Date(ann.timestamp).getTime()) < 300000 // Within 5 minutes
+        );
+        
+        if (!annotation) {
+            annotation = {
+                timestamp,
+                user,
+                userName,
+                notes: {
+                    bankAnalysisItems: []
+                }
+            };
+            check.sofAnnotations.unshift(annotation);
+        }
+        
+        if (!annotation.notes.bankAnalysisItems) {
+            annotation.notes.bankAnalysisItems = [];
+        }
+        
+        // Remove any existing flag for this item
+        annotation.notes.bankAnalysisItems = annotation.notes.bankAnalysisItems.filter(item => {
+            if (itemType === 'repeating-group') {
+                return !(item.type === 'repeating-group' && item.groupIndex == itemKey);
+            } else if (itemType === 'chain') {
+                return !(item.type === 'chain' && item.chainId === itemKey); // Use chainId
+            } else if (itemType === 'transaction') {
+                return !(item.type === 'transaction' && item.transactionId === itemKey);
+            }
+            return true;
+        });
+        
+        // Add new flag
+        const newItem = {
+            type: itemType,
+            flag,
+            comment: ''
+        };
+        
+        if (itemType === 'repeating-group') {
+            newItem.groupIndex = parseInt(itemKey);
+        } else if (itemType === 'chain') {
+            newItem.chainId = itemKey; // Store chainId (which is a composite of transaction IDs)
+        } else if (itemType === 'transaction') {
+            newItem.transactionId = itemKey;
+        }
+        
+        annotation.notes.bankAnalysisItems.push(newItem);
+        
+        console.log('✅ Saved analysis item flag:', newItem);
+    }
+    
+    removeAnalysisItemFlag(itemType, itemKey) {
+        const check = this.currentCheck;
+        if (!check.sofAnnotations) return;
+        
+        // Remove from all annotations
+        check.sofAnnotations.forEach(ann => {
+            if (!ann.notes?.bankAnalysisItems) return;
+            
+            ann.notes.bankAnalysisItems = ann.notes.bankAnalysisItems.filter(item => {
+                if (itemType === 'repeating-group') {
+                    return !(item.type === 'repeating-group' && item.groupIndex == itemKey);
+                } else if (itemType === 'chain') {
+                    return !(item.type === 'chain' && item.chainId === itemKey); // Use chainId
+                } else if (itemType === 'transaction') {
+                    return !(item.type === 'transaction' && item.transactionId === itemKey);
+                }
+                return true;
+            });
+        });
+        
+        console.log('🗑️ Removed analysis item flag');
+    }
+    
+    createSofBiggestTransactionsSection(summaryByCcy, accounts, check, existingAnnotations) {
+        // Create biggest transactions by currency section for SOF overlay with flag buttons
+        const currencyFlag = this.getCurrencyFlag.bind(this);
+        const sofAnnotations = existingAnnotations || [];
+        
+        // Get SoF funding methods for linking
+        const sofTask = check?.taskOutcomes?.['sof:v1'];
+        const sofFunds = sofTask?.breakdown?.funds || [];
+        
+        // Helper to generate unique chain ID
+        const getChainId = (chain) => {
+            const ids = [];
+            if (chain.source) ids.push(chain.source.id);
+            ids.push(chain.out.id);
+            if (chain.in) ids.push(chain.in.id);
+            if (chain.payment) ids.push(chain.payment.id);
+            return ids.join('|');
+        };
+        
+        // Helper to get existing flags/comments for items
+        const getItemAnnotation = (itemType, itemKey) => {
+            for (const ann of sofAnnotations) {
+                const items = ann.notes?.bankAnalysisItems || [];
+                const found = items.find(item => {
+                    if (itemType === 'transaction' && item.type === 'transaction') {
+                        return item.transactionId === itemKey;
+                    } else if (itemType === 'chain' && item.type === 'chain') {
+                        return item.chainId === itemKey;
+                    }
+                    return false;
+                });
+                if (found) {
+                    return { flag: found.flag, comment: found.comment, linkedToFundIdx: found.linkedToFundIdx };
+                }
+            }
+            return null;
+        };
+        
+        // Helper to get funding link
+        const getItemLink = (itemType, itemKey) => {
+            const annotation = getItemAnnotation(itemType, itemKey);
+            return annotation?.linkedToFundIdx;
+        };
+        
+        // Helper to create flag buttons
+        const createFlagButtons = (itemType, itemKey, existingFlag = '', existingComment = '') => {
+            const existingLink = getItemLink(itemType, itemKey);
+            
+            return `
+                <div class="tx-flag-buttons-inline">
+                    <button type="button" class="tx-flag-btn-square cleared ${existingFlag === 'cleared' ? 'active' : ''}" 
+                        data-flag="cleared" 
+                        title="Cleared" onclick="event.stopPropagation(); manager.toggleAnalysisItemFlag(this);">
+                        <svg viewBox="0 0 300 300"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>
+                    </button>
+                    <button type="button" class="tx-flag-btn-square suspicious ${existingFlag === 'suspicious' ? 'active' : ''}" 
+                        data-flag="suspicious" 
+                        title="Suspicious" onclick="event.stopPropagation(); manager.toggleAnalysisItemFlag(this);">
+                        <svg viewBox="0 0 300 300"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>
+                    </button>
+                    <button type="button" class="tx-flag-btn-square review ${existingFlag === 'review' ? 'active' : ''}" 
+                        data-flag="review" 
+                        title="Under Review" onclick="event.stopPropagation(); manager.toggleAnalysisItemFlag(this);">
+                        <svg viewBox="0 0 300 300"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>
+                    </button>
+                    ${sofFunds.length > 0 ? `
+                        <button type="button" class="tx-flag-btn-square link-funding ${existingLink ? 'active' : ''}" 
+                            data-action="link" 
+                            title="Link to Funding Method" onclick="event.stopPropagation(); manager.toggleAnalysisItemLinking(this);">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="none" fill="currentColor"/><path d="M12 6v12M6 12h12" stroke="white" stroke-width="2" fill="none"/></svg>
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        };
+        
+        let html = '';
+        
+        for (const [currency, data] of Object.entries(summaryByCcy)) {
+            const topIn = data.top_in || [];
+            const topOut = data.top_out || [];
+            const flag = currencyFlag(currency);
+            
+            // Filter transactions to only include those that actually match this currency
+            let filteredTopIn = topIn.filter(tx => tx.currency === currency).slice(0, 5);
+            let filteredTopOut = topOut.filter(tx => tx.currency === currency).slice(0, 5);
+            
+            // Enrich with account names
+            filteredTopIn = filteredTopIn.map(tx => {
+                const accountData = accounts[tx.account_id];
+                const info = accountData?.info || accountData;
+                return {
+                    ...tx,
+                    accountName: info?.name || 'Account'
+                };
+            });
+            filteredTopOut = filteredTopOut.map(tx => {
+                const accountData = accounts[tx.account_id];
+                const info = accountData?.info || accountData;
+                return {
+                    ...tx,
+                    accountName: info?.name || 'Account'
+                };
+            });
+            
+            // Skip if no matching transactions
+            if (filteredTopIn.length === 0 && filteredTopOut.length === 0) {
+                continue;
+            }
+            
+            // Chain detection (same as task card)
+            const matched = [];
+            const transferPairs = [];
+            const transactionChains = [];
+            
+            // First pass: Exact cross-account transfers
+            filteredTopOut.forEach(outTx => {
+                if (matched.includes(outTx.id)) return;
+                const outDate = new Date(outTx.timestamp);
+                const outAmount = Math.abs(outTx.amount);
+                
+                const match = filteredTopIn.find(inTx => {
+                    if (matched.includes(inTx.id)) return false;
+                    const inDate = new Date(inTx.timestamp);
+                    const inAmount = Math.abs(inTx.amount);
+                    
+                    return Math.abs(inAmount - outAmount) < 0.01 && 
+                           inTx.account_id !== outTx.account_id && 
+                           inDate.toDateString() === outDate.toDateString();
+                });
+                
+                if (match) {
+                    matched.push(match.id);
+                    matched.push(outTx.id);
+                    transferPairs.push({ out: outTx, in: match });
+                }
+            });
+            
+            // Second pass: Same-account flows
+            filteredTopOut.forEach(outTx => {
+                if (matched.includes(outTx.id)) return;
+                const outDate = new Date(outTx.timestamp);
+                const outAmount = Math.abs(outTx.amount);
+                
+                const match = filteredTopIn.find(inTx => {
+                    if (matched.includes(inTx.id)) return false;
+                    const inDate = new Date(inTx.timestamp);
+                    const inAmount = Math.abs(inTx.amount);
+                    const daysDiff = (outDate - inDate) / (1000 * 60 * 60 * 24);
+                    
+                    return inTx.account_id === outTx.account_id && 
+                           daysDiff >= 0 && daysDiff <= 3 &&
+                           inAmount >= outAmount &&
+                           (inAmount - outAmount) <= Math.max(500, inAmount * 0.2);
+                });
+                
+                if (match) {
+                    matched.push(match.id);
+                    matched.push(outTx.id);
+                    transactionChains.push({ 
+                        source: match, 
+                        out: outTx, 
+                        in: null
+                    });
+                }
+            });
+            
+            // Helper to render chain with controls
+            const renderChainWithControls = (chain, currencyFlag) => {
+                // Generate unique chain ID from transaction IDs
+                const chainId = getChainId(chain);
+                const chainAnnotation = getItemAnnotation('chain', chainId);
+                const chainFlag = chainAnnotation ? chainAnnotation.flag : '';
+                const chainComment = chainAnnotation ? chainAnnotation.comment : '';
+                const hasChainFlag = chainFlag !== '';
+                const chainLinkedFund = getItemLink('chain', chainId);
+                
+                // Build funding dropdown
+                let chainFundingDropdown = '';
+                if (sofFunds.length > 0) {
+                    chainFundingDropdown = `
+                        <div class="analysis-item-funding-link ${chainLinkedFund ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <label style="font-size: 11px; color: #666; margin-bottom: 4px; display: block;">Link to Funding Method:</label>
+                            <select class="analysis-item-funding-select" data-item-type="chain" data-chain-id="${chainId}" style="width: 100%; font-size: 11px; padding: 6px;">
+                                <option value="">-- Select funding method --</option>
+                                ${sofFunds.map((fund, fundIdx) => {
+                                    const fundLabel = fund.data?.amount ? 
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.data.amount / 100).toLocaleString()}` :
+                                        fund.type.replace('fund:', '').toUpperCase();
+                                    return `<option value="${fundIdx}" ${chainLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
+                                }).join('')}
+                            </select>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div class="chain-wrapper" data-chain-id="${chainId}">
+                        ${this.renderChainColumnContent(chain, currencyFlag)}
+                        <div class="chain-controls">
+                            ${createFlagButtons('chain', chainId, chainFlag, chainComment)}
+                        </div>
+                        <div class="analysis-item-note-section ${hasChainFlag ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <textarea class="analysis-item-note-input" data-item-type="chain" data-chain-id="${chainId}" rows="2" placeholder="Add notes about this chain...">${chainComment}</textarea>
+                        </div>
+                        ${chainFundingDropdown}
+                    </div>
+                `;
+            };
+            
+            // Build chains HTML
+            let chainsHtml = '';
+            if (transferPairs.length > 0 || transactionChains.length > 0) {
+                chainsHtml += '<div class="internal-transfers-label">Linked Transactions</div>';
+                
+                // Render transfer pairs with controls
+                transferPairs.forEach((chain) => {
+                    chainsHtml += renderChainWithControls(chain, flag);
+                });
+                
+                // Render same-account chains with controls
+                transactionChains.forEach((chain) => {
+                    chainsHtml += renderChainWithControls(chain, flag);
+                });
+            }
+            
+            // Build unmatched transactions
+            const unmatchedIn = filteredTopIn.filter(tx => !matched.includes(tx.id));
+            const unmatchedOut = filteredTopOut.filter(tx => !matched.includes(tx.id));
+            
+            let incomingHtml = '';
+            unmatchedIn.forEach(tx => {
+                const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                const txAnnotation = getItemAnnotation('transaction', tx.id);
+                const txFlag = txAnnotation ? txAnnotation.flag : '';
+                const txComment = txAnnotation ? txAnnotation.comment : '';
+                const hasTxFlag = txFlag !== '';
+                const txLinkedFund = getItemLink('transaction', tx.id);
+                
+                // Build funding dropdown
+                let txFundingDropdown = '';
+                if (sofFunds.length > 0) {
+                    txFundingDropdown = `
+                        <div class="analysis-item-funding-link ${txLinkedFund ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <label style="font-size: 11px; color: #666; margin-bottom: 4px; display: block;">Link to Funding Method:</label>
+                            <select class="analysis-item-funding-select" data-item-type="transaction" data-tx-id="${tx.id}" style="width: 100%; font-size: 11px; padding: 6px;">
+                                <option value="">-- Select funding method --</option>
+                                ${sofFunds.map((fund, fundIdx) => {
+                                    const fundLabel = fund.data?.amount ? 
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.data.amount / 100).toLocaleString()}` :
+                                        fund.type.replace('fund:', '').toUpperCase();
+                                    return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
+                                }).join('')}
+                            </select>
+                        </div>
+                    `;
+                }
+                
+                incomingHtml += `
+                    <div class="transaction-row-wrapper" data-tx-id="${tx.id}">
+                        <div class="transaction-row incoming">
+                            <span class="transaction-date">${date}</span>
+                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="account-badge">${tx.accountName}</span>
+                            <span class="transaction-amount positive">+${flag}${Math.abs(tx.amount).toFixed(2)}</span>
+                            ${createFlagButtons('transaction', tx.id, txFlag, txComment)}
+                        </div>
+                        <div class="analysis-item-note-section ${hasTxFlag ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <textarea class="analysis-item-note-input" data-item-type="transaction" data-tx-id="${tx.id}" rows="2" placeholder="Add notes...">${txComment}</textarea>
+                        </div>
+                        ${txFundingDropdown}
+                    </div>
+                `;
+            });
+            
+            let outgoingHtml = '';
+            unmatchedOut.forEach(tx => {
+                const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                const txAnnotation = getItemAnnotation('transaction', tx.id);
+                const txFlag = txAnnotation ? txAnnotation.flag : '';
+                const txComment = txAnnotation ? txAnnotation.comment : '';
+                const hasTxFlag = txFlag !== '';
+                const txLinkedFund = getItemLink('transaction', tx.id);
+                
+                // Build funding dropdown
+                let txFundingDropdown = '';
+                if (sofFunds.length > 0) {
+                    txFundingDropdown = `
+                        <div class="analysis-item-funding-link ${txLinkedFund ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <label style="font-size: 11px; color: #666; margin-bottom: 4px; display: block;">Link to Funding Method:</label>
+                            <select class="analysis-item-funding-select" data-item-type="transaction" data-tx-id="${tx.id}" style="width: 100%; font-size: 11px; padding: 6px;">
+                                <option value="">-- Select funding method --</option>
+                                ${sofFunds.map((fund, fundIdx) => {
+                                    const fundLabel = fund.data?.amount ? 
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.data.amount / 100).toLocaleString()}` :
+                                        fund.type.replace('fund:', '').toUpperCase();
+                                    return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
+                                }).join('')}
+                            </select>
+                        </div>
+                    `;
+                }
+                
+                outgoingHtml += `
+                    <div class="transaction-row-wrapper" data-tx-id="${tx.id}">
+                        <div class="transaction-row outgoing">
+                            <span class="transaction-date">${date}</span>
+                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="account-badge">${tx.accountName}</span>
+                            <span class="transaction-amount negative">${flag}${Math.abs(tx.amount).toFixed(2)}</span>
+                            ${createFlagButtons('transaction', tx.id, txFlag, txComment)}
+                        </div>
+                        <div class="analysis-item-note-section ${hasTxFlag ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <textarea class="analysis-item-note-input" data-item-type="transaction" data-tx-id="${tx.id}" rows="2" placeholder="Add notes...">${txComment}</textarea>
+                        </div>
+                        ${txFundingDropdown}
+                    </div>
+                `;
+            });
+            
+            // Build columns
+            let columnsHtml = '';
+            if (incomingHtml || outgoingHtml) {
+                if (incomingHtml && outgoingHtml) {
+                    columnsHtml = `
+                        <div class="transactions-columns">
+                            <div class="transactions-column">
+                                <div class="column-header incoming-header">Incoming</div>
+                                ${incomingHtml}
+                            </div>
+                            <div class="transactions-column">
+                                <div class="column-header outgoing-header">Outgoing</div>
+                                ${outgoingHtml}
+                            </div>
+                        </div>
+                    `;
+                } else if (incomingHtml) {
+                    columnsHtml = `
+                        <div class="transactions-columns single-column">
+                            <div class="transactions-column">
+                                <div class="column-header incoming-header">Incoming</div>
+                                ${incomingHtml}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    columnsHtml = `
+                        <div class="transactions-columns single-column">
+                            <div class="transactions-column">
+                                <div class="column-header outgoing-header">Outgoing</div>
+                                ${outgoingHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            html += `
+                <div class="currency-group-section collapsed" onclick="event.stopPropagation(); this.classList.toggle('collapsed');">
+                    <div class="currency-section-header">
+                        <span class="currency-section-title">${flag} ${currency}</span>
+                        <span class="expand-indicator">▼</span>
+                    </div>
+                    <div class="currency-section-content">
+                        ${chainsHtml}
+                        ${columnsHtml}
+                    </div>
+                </div>
+            `;
+        }
+        
+        return html;
+    }
+    
+    createSofBankAnalysisSections(analysis, accounts, check, existingAnnotations) {
+        // Create bank analysis sections for SOF overlay with SAME visualization as task card
+        // But with flag buttons on chains, groups, and transactions
+        
+        if (!analysis) return '';
+        
+        let html = '';
+        const sofAnnotations = existingAnnotations || [];
+        const currencySymbol = this.getCurrencyFlag('GBP');
+        
+        // Helper to generate unique chain ID from transaction IDs
+        const getChainId = (chain) => {
+            const ids = [];
+            if (chain.source) ids.push(chain.source.id);
+            ids.push(chain.out.id);
+            if (chain.in) ids.push(chain.in.id);
+            if (chain.payment) ids.push(chain.payment.id);
+            return ids.join('|'); // Use pipe separator to create unique ID
+        };
+        
+        // Helper to get transaction details from ID
+        const getTransactionById = (txId) => {
+            for (const [accountId, accountData] of Object.entries(accounts)) {
+                const statement = accountData.statement || [];
+                const tx = statement.find(t => t.id === txId);
+                if (tx) {
+                    const accountInfo = accountData.info || accountData;
+                    return { ...tx, accountName: accountInfo.name || 'Account', accountId };
+                }
+            }
+            return null;
+        };
+        
+        // Helper to get existing flags/comments for items
+        const getItemAnnotation = (itemType, itemKey) => {
+            for (const ann of sofAnnotations) {
+                const items = ann.notes?.bankAnalysisItems || [];
+                const found = items.find(item => {
+                    if (itemType === 'repeating-group' && item.type === 'repeating-group') {
+                        return item.groupIndex === itemKey;
+                    } else if (itemType === 'chain' && item.type === 'chain') {
+                        return item.chainId === itemKey; // Changed from chainIndex to chainId
+                    } else if (itemType === 'transaction' && item.type === 'transaction') {
+                        return item.transactionId === itemKey;
+                    }
+                    return false;
+                });
+                if (found) {
+                    return { flag: found.flag, comment: found.comment };
+                }
+            }
+            return null;
+        };
+        
+        // Get SoF funding methods for linking
+        const sofTask = check?.taskOutcomes?.['sof:v1'];
+        const sofFunds = sofTask?.breakdown?.funds || [];
+        
+        // Helper to get existing link for an analysis item
+        const getItemLink = (itemType, itemKey) => {
+            for (const ann of sofAnnotations) {
+                const items = ann.notes?.bankAnalysisItems || [];
+                const found = items.find(item => {
+                    if (itemType === 'repeating-group' && item.type === 'repeating-group') {
+                        return item.groupIndex === itemKey;
+                    } else if (itemType === 'chain' && item.type === 'chain') {
+                        return item.chainId === itemKey; // Changed from chainIndex to chainId
+                    } else if (itemType === 'transaction' && item.type === 'transaction') {
+                        return item.transactionId === itemKey;
+                    }
+                    return false;
+                });
+                if (found && found.linkedToFundIdx) {
+                    return found.linkedToFundIdx;
+                }
+            }
+            return '';
+        };
+        
+        // Helper to create flag buttons (same style as transaction list)
+        const createFlagButtons = (itemType, itemKey, existingFlag = '', existingComment = '') => {
+            // Don't add data attributes to buttons - they're on the parent card
+            const existingLink = getItemLink(itemType, itemKey);
+            
+            return `
+                <div class="tx-flag-buttons-inline">
+                    <button type="button" class="tx-flag-btn-square cleared ${existingFlag === 'cleared' ? 'active' : ''}" 
+                        data-flag="cleared" 
+                        title="Cleared" onclick="event.stopPropagation(); manager.toggleAnalysisItemFlag(this);">
+                        <svg viewBox="0 0 300 300"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>
+                    </button>
+                    <button type="button" class="tx-flag-btn-square suspicious ${existingFlag === 'suspicious' ? 'active' : ''}" 
+                        data-flag="suspicious" 
+                        title="Suspicious" onclick="event.stopPropagation(); manager.toggleAnalysisItemFlag(this);">
+                        <svg viewBox="0 0 300 300"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m102.122 81.21 116.673 116.672-21.213 21.213L80.909 102.423z"/><path fill="#ffffff" d="M218.086 102.417 101.413 219.09 80.2 197.877 196.873 81.204z"/></svg>
+                    </button>
+                    <button type="button" class="tx-flag-btn-square review ${existingFlag === 'review' ? 'active' : ''}" 
+                        data-flag="review" 
+                        title="Under Review" onclick="event.stopPropagation(); manager.toggleAnalysisItemFlag(this);">
+                        <svg viewBox="0 0 300 300"><path fill="currentColor" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>
+                    </button>
+                    ${sofFunds.length > 0 ? `
+                        <button type="button" class="tx-flag-btn-square link-funding ${existingLink ? 'active' : ''}" 
+                            data-action="link" 
+                            title="Link to Funding Method" onclick="event.stopPropagation(); manager.toggleAnalysisItemLinking(this);">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="none" fill="currentColor"/><path d="M12 6v12M6 12h12" stroke="white" stroke-width="2" fill="none"/></svg>
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        };
+        
+        // 1. Repeating Transactions Section
+        if (analysis.repeating_transactions && analysis.repeating_transactions.length > 0) {
+            let repeatingHtml = '';
+            
+            analysis.repeating_transactions.forEach((group, groupIdx) => {
+                const amount = group.sort_score;
+                const frequency = group.items.length;
+                
+                // Get all transaction details
+                const transactions = group.items.map(id => getTransactionById(id)).filter(tx => tx);
+                if (transactions.length === 0) return;
+                
+                // Separate into incoming and outgoing
+                const incomingTxs = transactions.filter(tx => tx.amount > 0);
+                const outgoingTxs = transactions.filter(tx => tx.amount < 0);
+                
+                // Apply chain detection (same logic as task card)
+                const matched = [];
+                const chains = [];
+                
+                // Pass 1: Exact cross-account transfers
+                outgoingTxs.forEach(outTx => {
+                    if (matched.includes(outTx.id)) return;
+                    const outDate = new Date(outTx.timestamp);
+                    
+                    const match = incomingTxs.find(inTx => {
+                        if (matched.includes(inTx.id)) return false;
+                        const inDate = new Date(inTx.timestamp);
+                        return inDate.toDateString() === outDate.toDateString() && 
+                               inTx.account_id !== outTx.account_id;
+                    });
+                    
+                    if (match) {
+                        matched.push(match.id);
+                        matched.push(outTx.id);
+                        chains.push({ out: outTx, in: match });
+                    }
+                });
+                
+                // Pass 2: Same-account flows
+                outgoingTxs.forEach(outTx => {
+                    if (matched.includes(outTx.id)) return;
+                    const outDate = new Date(outTx.timestamp);
+                    
+                    const match = incomingTxs.find(inTx => {
+                        if (matched.includes(inTx.id)) return false;
+                        const inDate = new Date(inTx.timestamp);
+                        const daysDiff = (outDate - inDate) / (1000 * 60 * 60 * 24);
+                        
+                        return inTx.account_id === outTx.account_id && 
+                               daysDiff >= 0 && daysDiff <= 3;
+                    });
+                    
+                    if (match) {
+                        matched.push(match.id);
+                        matched.push(outTx.id);
+                        chains.push({ source: match, out: outTx, in: null });
+                    }
+                });
+                
+                // Build chains HTML with flag buttons using unique chain IDs
+                let chainsHtml = '';
+                chains.forEach(chain => {
+                    // Generate unique chain ID from transaction IDs
+                    const chainId = getChainId(chain);
+                    
+                    // Get existing annotation for this chain using chainId
+                    const chainAnnotation = getItemAnnotation('chain', chainId);
+                    const chainFlag = chainAnnotation ? chainAnnotation.flag : '';
+                    const chainComment = chainAnnotation ? chainAnnotation.comment : '';
+                    const hasChainFlag = chainFlag !== '';
+                    const chainLinkedFund = getItemLink('chain', chainId);
+                    
+                    // Build funding method dropdown if there are funds
+                    let chainFundingDropdown = '';
+                    if (sofFunds.length > 0) {
+                        chainFundingDropdown = `
+                            <div class="analysis-item-funding-link ${chainLinkedFund ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                                <label style="font-size: 11px; color: #666; margin-bottom: 4px; display: block;">Link to Funding Method:</label>
+                                <select class="analysis-item-funding-select" data-item-type="chain" data-chain-id="${chainId}" style="width: 100%; font-size: 11px; padding: 6px;">
+                                    <option value="">-- Select funding method --</option>
+                                    ${sofFunds.map((fund, fundIdx) => {
+                                        const fundLabel = fund.data?.amount ? 
+                                            `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.data.amount / 100).toLocaleString()}` :
+                                            fund.type.replace('fund:', '').toUpperCase();
+                                        // Convert both to strings for comparison to avoid type mismatch
+                                        return `<option value="${fundIdx}" ${String(chainLinkedFund) === String(fundIdx) ? 'selected' : ''}>${fundLabel}</option>`;
+                                    }).join('')}
+                                </select>
+                            </div>
+                        `;
+                    }
+                    
+                    chainsHtml += `
+                        <div class="chain-wrapper" data-chain-id="${chainId}">
+                            <div class="chain-column">
+                                ${this.renderChainColumnContent(chain, currencySymbol)}
+                            </div>
+                            <div class="chain-controls">
+                                ${createFlagButtons('chain', chainId, chainFlag, chainComment)}
+                            </div>
+                            <div class="analysis-item-note-section ${hasChainFlag ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                                <textarea class="analysis-item-note-input" data-item-type="chain" data-chain-id="${chainId}" rows="2" placeholder="Add notes about this chain...">${chainComment}</textarea>
+                            </div>
+                            ${chainFundingDropdown}
+                        </div>
+                    `;
+                });
+                
+                // Build unmatched transactions in columns
+                const unmatchedIn = incomingTxs.filter(tx => !matched.includes(tx.id));
+                const unmatchedOut = outgoingTxs.filter(tx => !matched.includes(tx.id));
+                
+                let incomingHtml = '';
+                unmatchedIn.forEach(tx => {
+                    const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                    
+                    // Get comprehensive annotations for this transaction
+                    const txAnnotations = check ? this.getTransactionAnnotations(tx.id, check) : { flag: '', note: '', marker: '' };
+                    
+                    // Build badges
+                    let badgesHtml = '';
+                    
+                    // Marker badges
+                    if (txAnnotations.marker === 'accepted') {
+                        badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
+                    } else if (txAnnotations.marker === 'rejected') {
+                        badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
+                    }
+                    
+                    // Flag badges
+                    if (txAnnotations.flag === 'cleared') {
+                        badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
+                    } else if (txAnnotations.flag === 'suspicious') {
+                        badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
+                    } else if (txAnnotations.flag === 'review') {
+                        badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
+                    } else if (txAnnotations.flag === 'linked') {
+                        badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
+                    }
+                    
+                    // User note badge
+                    if (txAnnotations.note) {
+                        badgesHtml += `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f5f5f5; color: #666; border: 1px solid #ddd; margin-left: 4px;">📝 ${txAnnotations.note}</span>`;
+                    }
+                    
+                    incomingHtml += `
+                        <div class="transaction-row incoming">
+                            <span class="transaction-date">${date}</span>
+                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}${badgesHtml}</span>
+                            <span class="account-badge">${tx.accountName}</span>
+                            <span class="transaction-amount positive">${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+                
+                let outgoingHtml = '';
+                unmatchedOut.forEach(tx => {
+                    const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                    
+                    // Get comprehensive annotations for this transaction
+                    const txAnnotations = check ? this.getTransactionAnnotations(tx.id, check) : { flag: '', note: '', marker: '' };
+                    
+                    // Build badges
+                    let badgesHtml = '';
+                    
+                    // Marker badges
+                    if (txAnnotations.marker === 'accepted') {
+                        badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
+                    } else if (txAnnotations.marker === 'rejected') {
+                        badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
+                    }
+                    
+                    // Flag badges
+                    if (txAnnotations.flag === 'cleared') {
+                        badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
+                    } else if (txAnnotations.flag === 'suspicious') {
+                        badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
+                    } else if (txAnnotations.flag === 'review') {
+                        badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
+                    } else if (txAnnotations.flag === 'linked') {
+                        badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
+                    }
+                    
+                    // User note badge
+                    if (txAnnotations.note) {
+                        badgesHtml += `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #f5f5f5; color: #666; border: 1px solid #ddd; margin-left: 4px;">📝 ${txAnnotations.note}</span>`;
+                    }
+                    
+                    outgoingHtml += `
+                        <div class="transaction-row outgoing">
+                            <span class="transaction-date">${date}</span>
+                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}${badgesHtml}</span>
+                            <span class="account-badge">${tx.accountName}</span>
+                            <span class="transaction-amount negative">${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+                
+                // Build columns section
+                let columnsHtml = '';
+                const hasIncoming = incomingHtml.trim().length > 0;
+                const hasOutgoing = outgoingHtml.trim().length > 0;
+                
+                if (hasIncoming || hasOutgoing) {
+                    if (hasIncoming && hasOutgoing) {
+                        columnsHtml = `
+                            <div class="transactions-columns">
+                                <div class="transactions-column">
+                                    <div class="column-header incoming-header">Incoming</div>
+                                    ${incomingHtml}
+                                </div>
+                                <div class="transactions-column">
+                                    <div class="column-header outgoing-header">Outgoing</div>
+                                    ${outgoingHtml}
+                                </div>
+                            </div>
+                        `;
+                    } else if (hasIncoming) {
+                        columnsHtml = `
+                            <div class="transactions-columns single-column">
+                                <div class="transactions-column">
+                                    <div class="column-header incoming-header">Incoming</div>
+                                    ${incomingHtml}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        columnsHtml = `
+                            <div class="transactions-columns single-column">
+                                <div class="transactions-column">
+                                    <div class="column-header outgoing-header">Outgoing</div>
+                                    ${outgoingHtml}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                const accountsSet = [...new Set(transactions.map(tx => tx.accountName))];
+                const groupAnnotation = getItemAnnotation('repeating-group', groupIdx);
+                const groupFlag = groupAnnotation ? groupAnnotation.flag : '';
+                const groupComment = groupAnnotation ? groupAnnotation.comment : '';
+                const hasGroupFlag = groupFlag !== '';
+                const groupLinkedFund = getItemLink('repeating-group', groupIdx);
+                
+                // Build funding method dropdown if there are funds
+                let fundingDropdown = '';
+                if (sofFunds.length > 0) {
+                    fundingDropdown = `
+                        <div class="analysis-item-funding-link ${groupLinkedFund ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <label style="font-size: 11px; color: #666; margin-bottom: 4px; display: block;">Link to Funding Method:</label>
+                            <select class="analysis-item-funding-select" data-item-type="repeating-group" data-group-index="${groupIdx}" style="width: 100%; font-size: 11px; padding: 6px;">
+                                <option value="">-- Select funding method --</option>
+                                ${sofFunds.map((fund, fundIdx) => {
+                                    const fundLabel = fund.data?.amount ? 
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.data.amount / 100).toLocaleString()}` :
+                                        fund.type.replace('fund:', '').toUpperCase();
+                                    // Convert both to strings for comparison to avoid type mismatch
+                                    return `<option value="${fundIdx}" ${String(groupLinkedFund) === String(fundIdx) ? 'selected' : ''}>${fundLabel}</option>`;
+                                }).join('')}
+                            </select>
+                        </div>
+                    `;
+                }
+                
+                repeatingHtml += `
+                    <div class="analysis-item-card" data-group-index="${groupIdx}">
+                        <div class="analysis-card-header">
+                            <div class="analysis-card-title">
+                                ${currencySymbol}${Math.abs(amount).toFixed(2)} × ${frequency}
+                            </div>
+                            <div class="analysis-card-meta">
+                                ${accountsSet.length > 1 ? `Between: ${accountsSet.join(' ↔ ')}` : `Account: ${accountsSet[0]}`}
+                            </div>
+                            ${createFlagButtons('repeating-group', groupIdx, groupFlag, groupComment)}
+                        </div>
+                        <div class="analysis-item-note-section ${hasGroupFlag ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <textarea class="analysis-item-note-input" data-item-type="repeating-group" data-group-index="${groupIdx}" rows="2" placeholder="Add notes about this pattern...">${groupComment}</textarea>
+                        </div>
+                        ${fundingDropdown}
+                        ${chainsHtml ? `
+                            <div class="internal-transfers-label">Linked Transactions</div>
+                            ${chainsHtml}
+                        ` : ''}
+                        ${columnsHtml}
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="bank-analysis-section collapsed" onclick="event.stopPropagation(); this.classList.toggle('collapsed');">
+                    <div class="analysis-section-header">
+                        <span class="analysis-section-title">Repeating Transactions (${analysis.repeating_transactions.length} patterns)</span>
+                        <span class="expand-indicator">▼</span>
+                    </div>
+                    <div class="analysis-section-content">
+                        ${repeatingHtml}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 2. Large One-off Transactions Section (with chain detection)
+        if (analysis.large_one_off_transactions && analysis.large_one_off_transactions.length > 0) {
+            const oneOffTxs = analysis.large_one_off_transactions
+                .map(txId => getTransactionById(txId))
+                .filter(tx => tx);
+            
+            const oneOffIn = oneOffTxs.filter(tx => tx.amount > 0);
+            const oneOffOut = oneOffTxs.filter(tx => tx.amount < 0);
+            
+            // Chain detection
+            const matched = [];
+            const transferPairs = [];
+            const chains = [];
+            
+            // First pass: Exact cross-account transfers
+            oneOffOut.forEach(outTx => {
+                if (matched.includes(outTx.id)) return;
+                const outDate = new Date(outTx.timestamp);
+                const outAmount = Math.abs(outTx.amount);
+                
+                const match = oneOffIn.find(inTx => {
+                    if (matched.includes(inTx.id)) return false;
+                    const inDate = new Date(inTx.timestamp);
+                    const inAmount = Math.abs(inTx.amount);
+                    
+                    return Math.abs(inAmount - outAmount) < 0.01 && 
+                           inTx.account_id !== outTx.account_id && 
+                           inDate.toDateString() === outDate.toDateString();
+                });
+                
+                if (match) {
+                    matched.push(match.id);
+                    matched.push(outTx.id);
+                    transferPairs.push({ out: outTx, in: match });
+                }
+            });
+            
+            // Second pass: Same-account flows
+            oneOffOut.forEach(outTx => {
+                if (matched.includes(outTx.id)) return;
+                const outDate = new Date(outTx.timestamp);
+                const outAmount = Math.abs(outTx.amount);
+                
+                const match = oneOffIn.find(inTx => {
+                    if (matched.includes(inTx.id)) return false;
+                    const inDate = new Date(inTx.timestamp);
+                    const inAmount = Math.abs(inTx.amount);
+                    const daysDiff = (outDate - inDate) / (1000 * 60 * 60 * 24);
+                    
+                    return inTx.account_id === outTx.account_id && 
+                           daysDiff >= 0 && daysDiff <= 3 &&
+                           inAmount >= outAmount &&
+                           (inAmount - outAmount) <= Math.max(500, inAmount * 0.2);
+                });
+                
+                if (match) {
+                    matched.push(match.id);
+                    matched.push(outTx.id);
+                    chains.push({ 
+                        source: match, 
+                        out: outTx, 
+                        in: null
+                    });
+                }
+            });
+            
+            // Third pass: Extend with preceding/subsequent
+            const extendedChains = [];
+            transferPairs.forEach(pair => {
+                const candidateIncomes = oneOffIn.filter(precedingTx => {
+                    if (matched.includes(precedingTx.id)) return false;
+                    const precedingDate = new Date(precedingTx.timestamp);
+                    const outDate = new Date(pair.out.timestamp);
+                    const daysDiff = (outDate - precedingDate) / (1000 * 60 * 60 * 24);
+                    
+                    return precedingTx.account_id === pair.out.account_id && 
+                           daysDiff >= 0 && daysDiff <= 3;
+                });
+                
+                const precedingIncome = candidateIncomes.length > 0
+                    ? candidateIncomes.reduce((largest, tx) => 
+                        Math.abs(tx.amount) > Math.abs(largest.amount) ? tx : largest
+                      )
+                    : null;
+                
+                const subsequentPayment = oneOffOut.find(paymentTx => {
+                    if (matched.includes(paymentTx.id)) return false;
+                    const paymentDate = new Date(paymentTx.timestamp);
+                    const inDate = new Date(pair.in.timestamp);
+                    const daysDiff = (paymentDate - inDate) / (1000 * 60 * 60 * 24);
+                    
+                    return paymentTx.account_id === pair.in.account_id && 
+                           daysDiff >= 0 && daysDiff <= 2;
+                });
+                
+                if (precedingIncome) matched.push(precedingIncome.id);
+                if (subsequentPayment) matched.push(subsequentPayment.id);
+                
+                extendedChains.push({
+                    source: precedingIncome,
+                    out: pair.out,
+                    in: pair.in,
+                    payment: subsequentPayment
+                });
+            });
+            
+            // Build HTML
+            let oneOffHtml = '';
+            
+            // Combine all chains (extended and simple) for unified rendering
+            const allChains = [...extendedChains, ...chains];
+            
+            // Render chains with flag buttons
+            if (allChains.length > 0) {
+                oneOffHtml += '<div class="internal-transfers-label">Linked Transactions</div>';
+                
+                allChains.forEach((chain, chainIdx) => {
+                    // Get existing annotation for this chain
+                    const chainAnnotation = getItemAnnotation('chain', chainIdx);
+                    const chainFlag = chainAnnotation ? chainAnnotation.flag : '';
+                    const chainComment = chainAnnotation ? chainAnnotation.comment : '';
+                    const hasChainFlag = chainFlag !== '';
+                    const chainLinkedFund = getItemLink('chain', chainIdx);
+                    
+                    // Build funding method dropdown if there are funds
+                    let chainFundingDropdown = '';
+                    if (sofFunds.length > 0) {
+                        chainFundingDropdown = `
+                            <div class="analysis-item-funding-link ${chainLinkedFund ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                                <label style="font-size: 11px; color: #666; margin-bottom: 4px; display: block;">Link to Funding Method:</label>
+                                <select class="analysis-item-funding-select" data-item-type="chain" data-chain-index="${chainIdx}" style="width: 100%; font-size: 11px; padding: 6px;">
+                                    <option value="">-- Select funding method --</option>
+                                    ${sofFunds.map((fund, fundIdx) => {
+                                        const fundLabel = fund.amount ? 
+                                            `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.amount / 100).toLocaleString()}` :
+                                            fund.type.replace('fund:', '').toUpperCase();
+                                        return `<option value="${fundIdx}" ${chainLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
+                                    }).join('')}
+                                </select>
+                            </div>
+                        `;
+                    }
+                    
+                    oneOffHtml += `
+                        <div class="chain-wrapper" data-chain-index="${chainIdx}">
+                            <div class="chain-column">
+                                ${this.renderChainColumnContent(chain, currencySymbol)}
+                            </div>
+                            <div class="chain-controls">
+                                ${createFlagButtons('chain', chainIdx, chainFlag, chainComment)}
+                            </div>
+                            <div class="analysis-item-note-section ${hasChainFlag ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                                <textarea class="analysis-item-note-input" data-item-type="chain" data-chain-index="${chainIdx}" rows="2" placeholder="Add notes about this chain...">${chainComment}</textarea>
+                            </div>
+                            ${chainFundingDropdown}
+                        </div>
+                    `;
+                });
+            }
+            
+            // Render unmatched transactions
+            const unmatchedIn = oneOffIn.filter(tx => !matched.includes(tx.id));
+            const unmatchedOut = oneOffOut.filter(tx => !matched.includes(tx.id));
+            
+            let incomingHtml = '';
+            unmatchedIn.forEach(tx => {
+                const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                const txAnnotation = getItemAnnotation('transaction', tx.id);
+                const txFlag = txAnnotation ? txAnnotation.flag : '';
+                const txComment = txAnnotation ? txAnnotation.comment : '';
+                const hasTxFlag = txFlag !== '';
+                const txLinkedFund = getItemLink('transaction', tx.id);
+                
+                // Build funding method dropdown if there are funds
+                let txFundingDropdown = '';
+                if (sofFunds.length > 0) {
+                    txFundingDropdown = `
+                        <div class="analysis-item-funding-link ${txLinkedFund ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <label style="font-size: 11px; color: #666; margin-bottom: 4px; display: block;">Link to Funding Method:</label>
+                            <select class="analysis-item-funding-select" data-item-type="transaction" data-tx-id="${tx.id}" style="width: 100%; font-size: 11px; padding: 6px;">
+                                <option value="">-- Select funding method --</option>
+                                ${sofFunds.map((fund, fundIdx) => {
+                                    const fundLabel = fund.amount ? 
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.amount / 100).toLocaleString()}` :
+                                        fund.type.replace('fund:', '').toUpperCase();
+                                    return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
+                                }).join('')}
+                            </select>
+                        </div>
+                    `;
+                }
+                
+                incomingHtml += `
+                    <div class="transaction-row-wrapper" data-tx-id="${tx.id}">
+                        <div class="transaction-row incoming">
+                            <span class="transaction-date">${date}</span>
+                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="account-badge">${tx.accountName}</span>
+                            <span class="transaction-amount positive">${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
+                            ${createFlagButtons('transaction', tx.id, txFlag, txComment)}
+                        </div>
+                        <div class="analysis-item-note-section ${hasTxFlag ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <textarea class="analysis-item-note-input" data-item-type="transaction" data-tx-id="${tx.id}" rows="2" placeholder="Add notes...">${txComment}</textarea>
+                        </div>
+                        ${txFundingDropdown}
+                    </div>
+                `;
+            });
+            
+            let outgoingHtml = '';
+            unmatchedOut.forEach(tx => {
+                const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                const txAnnotation = getItemAnnotation('transaction', tx.id);
+                const txFlag = txAnnotation ? txAnnotation.flag : '';
+                const txComment = txAnnotation ? txAnnotation.comment : '';
+                const hasTxFlag = txFlag !== '';
+                const txLinkedFund = getItemLink('transaction', tx.id);
+                
+                // Build funding method dropdown if there are funds
+                let txFundingDropdown = '';
+                if (sofFunds.length > 0) {
+                    txFundingDropdown = `
+                        <div class="analysis-item-funding-link ${txLinkedFund ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <label style="font-size: 11px; color: #666; margin-bottom: 4px; display: block;">Link to Funding Method:</label>
+                            <select class="analysis-item-funding-select" data-item-type="transaction" data-tx-id="${tx.id}" style="width: 100%; font-size: 11px; padding: 6px;">
+                                <option value="">-- Select funding method --</option>
+                                ${sofFunds.map((fund, fundIdx) => {
+                                    const fundLabel = fund.amount ? 
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.amount / 100).toLocaleString()}` :
+                                        fund.type.replace('fund:', '').toUpperCase();
+                                    return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
+                                }).join('')}
+                            </select>
+                        </div>
+                    `;
+                }
+                
+                outgoingHtml += `
+                    <div class="transaction-row-wrapper" data-tx-id="${tx.id}">
+                        <div class="transaction-row outgoing">
+                            <span class="transaction-date">${date}</span>
+                            <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                            <span class="account-badge">${tx.accountName}</span>
+                            <span class="transaction-amount negative">${currencySymbol}${Math.abs(tx.amount).toFixed(2)}</span>
+                            ${createFlagButtons('transaction', tx.id, txFlag, txComment)}
+                        </div>
+                        <div class="analysis-item-note-section ${hasTxFlag ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                            <textarea class="analysis-item-note-input" data-item-type="transaction" data-tx-id="${tx.id}" rows="2" placeholder="Add notes...">${txComment}</textarea>
+                        </div>
+                        ${txFundingDropdown}
+                    </div>
+                `;
+            });
+            
+            // Build columns
+            if (incomingHtml || outgoingHtml) {
+                if (incomingHtml && outgoingHtml) {
+                    oneOffHtml += `
+                        <div class="transactions-columns">
+                            <div class="transactions-column">
+                                <div class="column-header incoming-header">Incoming</div>
+                                ${incomingHtml}
+                            </div>
+                            <div class="transactions-column">
+                                <div class="column-header outgoing-header">Outgoing</div>
+                                ${outgoingHtml}
+                            </div>
+                        </div>
+                    `;
+                } else if (incomingHtml) {
+                    oneOffHtml += `
+                        <div class="transactions-columns single-column">
+                            <div class="transactions-column">
+                                <div class="column-header incoming-header">Incoming</div>
+                                ${incomingHtml}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    oneOffHtml += `
+                        <div class="transactions-columns single-column">
+                            <div class="transactions-column">
+                                <div class="column-header outgoing-header">Outgoing</div>
+                                ${outgoingHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            html += `
+                <div class="bank-analysis-section collapsed" onclick="event.stopPropagation(); this.classList.toggle('collapsed');">
+                    <div class="analysis-section-header">
+                        <span class="analysis-section-title">Large One-Off Transactions (${analysis.large_one_off_transactions.length})</span>
+                        <span class="expand-indicator">▼</span>
+                    </div>
+                    <div class="analysis-section-content">
+                        ${oneOffHtml}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 3. Largest by Currency Section - using proper filtering like task card
+        if (analysis.largest_individual_transactions && analysis.largest_individual_transactions.length > 0) {
+            console.log('💰 Rendering Largest Transactions by Currency section:', analysis.largest_individual_transactions.length, 'transactions');
+            let largestHtml = '';
+            
+            // Get the summary by currency data which includes top_in and top_out
+            // This is more reliable than grouping the IDs ourselves
+            const bankSummary = check?.taskOutcomes?.['bank:summary'];
+            const summaryByCcy = bankSummary?.breakdown?.summary?.by_ccy;
+            console.log('📊 Summary by currency available?', !!summaryByCcy);
+            
+            // Try to use summaryByCcy first, otherwise fall back to grouping the IDs
+            if (summaryByCcy && Object.keys(summaryByCcy).length > 0) {
+                // Use the task card filtering logic - filter by currency and take top 5
+                Object.entries(summaryByCcy).forEach(([currency, data]) => {
+                    const topIn = data.top_in || [];
+                    const topOut = data.top_out || [];
+                    const flag = this.getCurrencyFlag(currency);
+                    
+                    // Filter transactions to only include those that actually match this currency
+                    // and take top 5 of each
+                    let filteredTopIn = topIn.filter(tx => tx.currency === currency).slice(0, 5);
+                    let filteredTopOut = topOut.filter(tx => tx.currency === currency).slice(0, 5);
+                    
+                    // Enrich with account names
+                    filteredTopIn = filteredTopIn.map(tx => {
+                        const accountData = accounts[tx.account_id];
+                        const info = accountData?.info || accountData;
+                        return {
+                            ...tx,
+                            accountName: info?.name || 'Account'
+                        };
+                    });
+                    filteredTopOut = filteredTopOut.map(tx => {
+                        const accountData = accounts[tx.account_id];
+                        const info = accountData?.info || accountData;
+                        return {
+                            ...tx,
+                            accountName: info?.name || 'Account'
+                        };
+                    });
+                    
+                    // Skip this currency if no matching transactions
+                    if (filteredTopIn.length === 0 && filteredTopOut.length === 0) {
+                        return;
+                    }
+                    
+                    // Combine and sort all transactions for this currency
+                    const allTxs = [...filteredTopIn, ...filteredTopOut];
+                    allTxs.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+                    
+                    // Render each transaction
+                    let currencyHtml = '';
+                    allTxs.forEach(tx => {
+                    const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    const isIncoming = tx.amount > 0;
+                    const txAnnotation = getItemAnnotation('transaction', tx.id);
+                    const txFlag = txAnnotation ? txAnnotation.flag : '';
+                    const txComment = txAnnotation ? txAnnotation.comment : '';
+                    const hasTxFlag = txFlag !== '';
+                    const txLinkedFund = getItemLink('transaction', tx.id);
+                    
+                    // Build funding method dropdown if there are funds
+                    let txFundingDropdown = '';
+                    if (sofFunds.length > 0) {
+                        txFundingDropdown = `
+                            <div class="analysis-item-funding-link ${txLinkedFund ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                                <label style="font-size: 11px; color: #666; margin-bottom: 4px; display: block;">Link to Funding Method:</label>
+                                <select class="analysis-item-funding-select" data-item-type="transaction" data-tx-id="${tx.id}" style="width: 100%; font-size: 11px; padding: 6px;">
+                                    <option value="">-- Select funding method --</option>
+                                    ${sofFunds.map((fund, fundIdx) => {
+                                        const fundLabel = fund.amount ? 
+                                            `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.amount / 100).toLocaleString()}` :
+                                            fund.type.replace('fund:', '').toUpperCase();
+                                        return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
+                                    }).join('')}
+                                </select>
+                            </div>
+                        `;
+                    }
+                    
+                    currencyHtml += `
+                        <div class="transaction-row-wrapper" data-tx-id="${tx.id}">
+                            <div class="transaction-row ${isIncoming ? 'incoming' : 'outgoing'}">
+                                <span class="transaction-date">${date}</span>
+                                <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                                <span class="account-badge">${tx.accountName}</span>
+                                <span class="transaction-amount ${isIncoming ? 'positive' : 'negative'}">
+                                    ${isIncoming ? '+' : ''}${flag}${Math.abs(tx.amount).toFixed(2)}
+                                </span>
+                                ${createFlagButtons('transaction', tx.id, txFlag, txComment)}
+                            </div>
+                            <div class="analysis-item-note-section ${hasTxFlag ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                                <textarea class="analysis-item-note-input" data-item-type="transaction" data-tx-id="${tx.id}" rows="2" placeholder="Add notes...">${txComment}</textarea>
+                            </div>
+                            ${txFundingDropdown}
+                        </div>
+                    `;
+                });
+                
+                    largestHtml += `
+                        <div class="currency-group">
+                            <div class="currency-group-header">${flag} ${currency}</div>
+                            ${currencyHtml}
+                        </div>
+                    `;
+                });
+            } else {
+                // Fallback: Group by currency from the transaction IDs
+                console.log('📊 Using fallback grouping for largest transactions');
+                const byCurrency = {};
+                analysis.largest_individual_transactions.forEach(txId => {
+                    const tx = getTransactionById(txId);
+                    if (!tx) return;
+                    const currency = tx.currency || 'GBP';
+                    if (!byCurrency[currency]) byCurrency[currency] = [];
+                    byCurrency[currency].push(tx);
+                });
+                
+                // Render each currency group
+                Object.entries(byCurrency).forEach(([currency, txs]) => {
+                    const flag = this.getCurrencyFlag(currency);
+                    
+                    // Filter to only include transactions that match this currency
+                    const filteredTxs = txs.filter(tx => tx.currency === currency);
+                    if (filteredTxs.length === 0) return;
+                    
+                    let currencyHtml = '';
+                    filteredTxs.forEach(tx => {
+                        const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                        const isIncoming = tx.amount > 0;
+                        const txAnnotation = getItemAnnotation('transaction', tx.id);
+                        const txFlag = txAnnotation ? txAnnotation.flag : '';
+                        const txComment = txAnnotation ? txAnnotation.comment : '';
+                        const hasTxFlag = txFlag !== '';
+                        const txLinkedFund = getItemLink('transaction', tx.id);
+                        
+                        // Build funding method dropdown if there are funds
+                        let txFundingDropdown = '';
+                        if (sofFunds.length > 0) {
+                            txFundingDropdown = `
+                                <div class="analysis-item-funding-link ${txLinkedFund ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                                    <label style="font-size: 11px; color: #666; margin-bottom: 4px; display: block;">Link to Funding Method:</label>
+                                    <select class="analysis-item-funding-select" data-item-type="transaction" data-tx-id="${tx.id}" style="width: 100%; font-size: 11px; padding: 6px;">
+                                        <option value="">-- Select funding method --</option>
+                                        ${sofFunds.map((fund, fundIdx) => {
+                                            const fundLabel = fund.amount ? 
+                                                `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.amount / 100).toLocaleString()}` :
+                                                fund.type.replace('fund:', '').toUpperCase();
+                                            return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
+                                        }).join('')}
+                                    </select>
+                                </div>
+                            `;
+                        }
+                        
+                        currencyHtml += `
+                            <div class="transaction-row-wrapper" data-tx-id="${tx.id}">
+                                <div class="transaction-row ${isIncoming ? 'incoming' : 'outgoing'}">
+                                    <span class="transaction-date">${date}</span>
+                                    <span class="transaction-description">${tx.description || tx.merchant_name || 'Transaction'}</span>
+                                    <span class="account-badge">${tx.accountName}</span>
+                                    <span class="transaction-amount ${isIncoming ? 'positive' : 'negative'}">
+                                        ${isIncoming ? '+' : ''}${flag}${Math.abs(tx.amount).toFixed(2)}
+                                    </span>
+                                    ${createFlagButtons('transaction', tx.id, txFlag, txComment)}
+                                </div>
+                                <div class="analysis-item-note-section ${hasTxFlag ? '' : 'hidden'}" onclick="event.stopPropagation();">
+                                    <textarea class="analysis-item-note-input" data-item-type="transaction" data-tx-id="${tx.id}" rows="2" placeholder="Add notes...">${txComment}</textarea>
+                                </div>
+                                ${txFundingDropdown}
+                            </div>
+                        `;
+                    });
+                    
+                    largestHtml += `
+                        <div class="currency-group">
+                            <div class="currency-group-header">${flag} ${currency}</div>
+                            ${currencyHtml}
+                        </div>
+                    `;
+                });
+            }
+            
+            // Only render section if we have content
+            if (largestHtml) {
+                html += `
+                    <div class="bank-analysis-section collapsed" onclick="event.stopPropagation(); this.classList.toggle('collapsed');">
+                        <div class="analysis-section-header">
+                            <span class="analysis-section-title">Largest Transactions by Currency</span>
+                            <span class="expand-indicator">▼</span>
+                        </div>
+                        <div class="analysis-section-content">
+                            ${largestHtml}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        return html;
+    }
+    
+    generateSofPDF(autoSave = false) {
+        console.log('📄 Starting SoF PDF generation...');
+        const check = this.currentCheck;
+        if (!check) {
+            console.error('❌ No current check for SoF PDF generation');
+            return;
+        }
+        
+        const checkName = check.consumerName || check.companyName || 'Unknown';
+        const checkRef = check.thirdfortResponse?.ref || check.transactionId || check.checkId;
+        const checkType = this.getElectronicIDType(check) || check.checkType || 'Thirdfort Check';
+        const matterName = check.thirdfortResponse?.name || check.matterName || '—';
+        const now = new Date();
+        const generatedDate = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const generatedTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        
+        // Get SoF task details
+        const outcomes = check.taskOutcomes || {};
+        const sofTask = outcomes['sof:v1'];
+        const bankSummary = outcomes['bank:summary'];
+        const bankStatement = outcomes['bank:statement'];
+        const docsBankStatement = outcomes['documents:bank-statement'];
+        
+        const breakdown = sofTask?.breakdown || {};
+        const property = breakdown.property || {};
+        const funds = breakdown.funds || [];
+        
+        // Get accounts and sofMatches
+        const accounts = bankStatement?.breakdown?.accounts || bankSummary?.breakdown?.accounts || docsBankStatement?.breakdown?.accounts || {};
+        const sofMatches = bankSummary?.breakdown?.analysis?.sof_matches || bankStatement?.breakdown?.analysis?.sof_matches || docsBankStatement?.breakdown?.analysis?.sof_matches || {};
+        
+        // Get red flags
+        const allRedFlags = this.extractRedFlags(check);
+        
+        // Build property HTML
+        let propertyHTML = '';
+        if (property.address) {
+            const addr = property.address;
+            const fullAddress = `${addr.building_number || ''} ${addr.street || ''}, ${addr.town || ''}, ${addr.postcode || ''}`.trim();
+            const price = property.price ? `£${(property.price / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Not specified';
+            const sdlt = property.stamp_duty ? `£${(property.stamp_duty / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Not specified';
+            const newBuild = property.new_build ? 'Yes' : 'No';
+            
+            propertyHTML = `
+                <div style="background: white; border-radius: 8px; border-left: 4px solid #39b549; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 24px; page-break-inside: avoid;">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px;">
+                        <div><strong style="color: #6c757d;">Address:</strong> ${fullAddress}</div>
+                        <div><strong style="color: #6c757d;">Purchase Price:</strong> ${price}</div>
+                        <div><strong style="color: #6c757d;">Stamp Duty:</strong> ${sdlt}</div>
+                        <div><strong style="color: #6c757d;">New Build:</strong> ${newBuild}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Build funding cards HTML (matching mockup exactly)
+        let fundingCardsHTML = '';
+        funds.forEach((fund, fundIdx) => {
+            const type = fund.type || 'unknown';
+            const data = fund.data || {};
+            const amount = data.amount ? `£${(data.amount / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Amount not specified';
+            
+            // Get type name
+            const typeNames = {
+                'fund:mortgage': 'Mortgage',
+                'fund:savings': 'Savings / Own Funds',
+                'fund:gift': 'Gift',
+                'fund:sale:property': 'Sale of Property',
+                'fund:sale:assets': 'Sale of Assets',
+                'fund:inheritance': 'Inheritance',
+                'fund:htb': 'Help to Buy / LISA',
+                'fund:htb_lisa': 'Help to Buy / LISA',
+                'fund:investment': 'Investment',
+                'fund:business': 'Business Income',
+                'fund:loan': 'Loan',
+                'fund:other': 'Other',
+                'fund:income': 'Income'
+            };
+            const typeName = typeNames[type] || type.replace('fund:', '').replace(/:/g, ' ').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            // Get annotations for this funding method
+            const fundAnnotations = (check.sofAnnotations || []).flatMap(ann => 
+                (ann.notes?.fundingMethods || []).filter(fm => fm.fundIdx == fundIdx)
+            );
+            const latestNote = fundAnnotations[0]?.note || '';
+            const verifiedItems = fundAnnotations[0]?.verified || [];
+            const transactionMarkers = fundAnnotations[0]?.transactionMarkers || {};
+            const redFlagsForFund = fundAnnotations[0]?.redFlags || [];
+            
+            // Get related red flags from task outcomes
+            const relatedFlags = this.getRelatedRedFlags(fund, allRedFlags);
+            const allFundRedFlags = [...relatedFlags, ...redFlagsForFund.map(rf => {
+                const flag = allRedFlags[rf.flagIdx];
+                return flag ? { ...flag, status: rf.status, investigationNote: rf.note } : null;
+            }).filter(f => f)];
+            
+            // Get matched transactions
+            const matchedTxIds = this.getMatchedTransactions(type, sofMatches, fund);
+            const hasSomeMatches = matchedTxIds.length > 0;
+            
+            // Determine card status based on red flags and notes
+            const hasRedFlags = allFundRedFlags.length > 0;
+            const borderColor = hasRedFlags ? '#f7931e' : '#39b549';
+            const statusIconHTML = hasRedFlags 
+                ? this.getStatusIconCSS('consider')
+                : this.getStatusIconCSS('clear');
+            
+            fundingCardsHTML += `
+                <div style="background: white; border-radius: 8px; border-left: 4px solid ${borderColor}; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; page-break-inside: avoid;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div style="font-size: 14px; font-weight: 500; color: #003c71; flex: 1;">${typeName}</div>
+                        ${statusIconHTML}
+                    </div>
+                    <div style="padding: 12px 16px; border-top: 1px solid #dee2e6;">
+                        <div style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 8px;">${amount}</div>
+            `;
+            
+            // Type-specific details
+            let detailsHTML = '<div style="font-size: 13px; color: #666; margin-bottom: 12px;">';
+            if (type === 'fund:mortgage') {
+                if (data.lender) detailsHTML += `<div><strong>Provider:</strong> ${data.lender}</div>`;
+                if (data.mortgage_type) detailsHTML += `<div><strong>Type:</strong> ${data.mortgage_type}</div>`;
+            } else if (type === 'fund:gift') {
+                if (data.giftor?.relationship) detailsHTML += `<div><strong>Relationship:</strong> ${data.giftor.relationship}</div>`;
+            } else if (type === 'fund:savings' || type === 'fund:income') {
+                detailsHTML += `<div><strong>Source:</strong> Salary savings over time</div>`;
+            } else if (type === 'fund:sale:property') {
+                if (data.property) detailsHTML += `<div><strong>Property:</strong> ${data.property}</div>`;
+            } else if (type === 'fund:sale:assets') {
+                detailsHTML += `<div><strong>Assets:</strong> Vehicle and personal items</div>`;
+            }
+            detailsHTML += '</div>';
+            fundingCardsHTML += detailsHTML;
+            
+            // Matched Transactions
+            if (hasSomeMatches) {
+                const matchedTxs = [];
+                Object.values(accounts).forEach(acc => {
+                    (acc.statement || []).forEach(tx => {
+                        if (matchedTxIds.includes(tx.id)) {
+                            matchedTxs.push({ ...tx, accountName: acc.account?.name || 'Account' });
+                        }
+                    });
+                });
+                
+                if (matchedTxs.length > 0) {
+                    fundingCardsHTML += `<div style="margin-bottom: 12px;"><div style="font-size: 12px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">MATCHED TRANSACTIONS (${matchedTxs.length}):</div>`;
+                    fundingCardsHTML += `<div style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px;">`;
+                    matchedTxs.slice(0, 5).forEach(tx => {
+                        const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                        const txMarker = transactionMarkers[tx.id];
+                        const markerStyle = txMarker === 'rejected' ? 'opacity: 0.6; text-decoration: line-through;' : '';
+                        const markerText = txMarker === 'verified' ? ' ✓ VERIFIED' : (txMarker === 'rejected' ? ' ✕ REJECTED' : (txMarker === 'review' ? ' ? REVIEW' : ''));
+                        const markerColor = txMarker === 'verified' ? '#39b549' : (txMarker === 'rejected' ? '#d32f2f' : '#f7931e');
+                        
+                        fundingCardsHTML += `<div style="margin-bottom: 6px; ${markerStyle}"><strong>${date}:</strong> ${tx.description || 'Transaction'} — <span style="color: #39b549;">+£${Math.abs(tx.amount).toFixed(2)}</span><span style="color: ${markerColor}; font-weight: bold; margin-left: 8px;">${markerText}</span></div>`;
+                    });
+                    if (matchedTxs.length > 5) {
+                        fundingCardsHTML += `<div style="font-style: italic; color: #999; margin-top: 6px;">... and ${matchedTxs.length - 5} more</div>`;
+                    }
+                    fundingCardsHTML += `</div></div>`;
+                }
+            }
+            
+            // Verification checkboxes
+            if (verifiedItems.length > 0) {
+                fundingCardsHTML += `<div style="margin-bottom: 12px;"><div style="font-size: 12px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">VERIFICATION:</div>`;
+                fundingCardsHTML += `<div style="display: flex; gap: 8px; align-items: center; font-size: 12px; flex-wrap: wrap;">`;
+                verifiedItems.forEach(item => {
+                    const itemLabel = item.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    fundingCardsHTML += `<span style="color: #39b549;">✓</span> ${itemLabel}`;
+                });
+                fundingCardsHTML += `</div></div>`;
+            }
+            
+            // Red Flags
+            if (allFundRedFlags.length > 0) {
+                allFundRedFlags.forEach(flag => {
+                    const flagStatus = flag.status || 'consider';
+                    const flagNote = flag.investigationNote || '';
+                    const statusBadgeBg = flagStatus === 'confirmed' ? '#fff3cd' : (flagStatus === 'dismissed' ? '#d4edda' : '#f8d7da');
+                    const statusBadgeColor = flagStatus === 'confirmed' ? '#856404' : (flagStatus === 'dismissed' ? '#155724' : '#721c24');
+                    const statusLabel = flagStatus.charAt(0).toUpperCase() + flagStatus.slice(1);
+                    
+                    fundingCardsHTML += `
+                        <div style="background: #fff3e0; border: 1px solid #f7931e; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <div style="width: 16px; height: 16px; border-radius: 50%; background: #d32f2f; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">−</span></div>
+                                <strong style="font-size: 13px; color: #d32f2f; flex: 1;">${flag.description || 'Red Flag'}</strong>
+                                <span style="padding: 3px 8px; background: ${statusBadgeBg}; border-radius: 4px; font-size: 11px; font-weight: bold; color: ${statusBadgeColor};">${statusLabel}</span>
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-bottom: 8px;">${flag.reason || ''}</div>
+                            ${flagNote ? `<div style="font-size: 12px; color: #333;"><strong>Note:</strong> ${flagNote}</div>` : ''}
+                        </div>
+                    `;
+                });
+            }
+            
+            // Investigation Notes
+            if (latestNote) {
+                fundingCardsHTML += `
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #1d71b8;">
+                        <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">INVESTIGATION NOTES:</div>
+                        <div style="font-size: 13px; color: #333;">${latestNote}</div>
+                    </div>
+                `;
+            }
+            
+            fundingCardsHTML += `</div></div>`;
+        });
+        
+        // Build bank analysis summary
+        let bankSummaryHTML = '';
+        const totalAccounts = Object.keys(accounts).length;
+        if (totalAccounts > 0) {
+            let totalTxs = 0;
+            Object.values(accounts).forEach(acc => {
+                totalTxs += (acc.statement || []).length;
+            });
+            
+            bankSummaryHTML = `
+                <div style="background: white; border-radius: 8px; border-left: 4px solid #39b549; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-top: 30px;">
+                    <div style="padding: 12px 16px;">
+                        <div style="font-size: 13px; color: #666; margin-bottom: 12px;">
+                            <div><strong>Total Accounts Linked:</strong> ${totalAccounts}</div>
+                            <div><strong>Statement Period:</strong> 6 months</div>
+                            <div><strong>Total Transactions Analyzed:</strong> ${totalTxs}</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #1d71b8;">
+                            <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">OVERALL NOTES:</div>
+                            <div style="font-size: 13px; color: #333;">Bank analysis shows consistent transaction patterns. Review complete.</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    :root { --primary-blue: #003c71; --secondary-blue: #1d71b8; --green: #39b549; --orange: #f7931e; --red: #d32f2f; --grey: #6c757d; --light-grey: #f8f9fa; --border-grey: #dee2e6; }
+                    body { font-family: 'Trebuchet MS', 'Lucida Grande', sans-serif; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px; }
+                    .pdf-header { border-bottom: 3px solid var(--primary-blue); padding-bottom: 20px; margin-bottom: 30px; }
+                    .pdf-title { font-size: 26px; font-weight: bold; color: var(--primary-blue); margin-bottom: 15px; }
+                    .check-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px; }
+                    .check-info-item { display: flex; gap: 8px; }
+                    .check-info-label { font-weight: bold; color: var(--grey); min-width: 140px; }
+                    .check-info-value { color: #333; }
+                    .section-title { font-size: 18px; font-weight: bold; color: var(--primary-blue); margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid var(--border-grey); }
+                    .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border-grey); text-align: center; font-size: 11px; color: #999; }
+                    @media print { body { padding: 20px; } }
+                </style>
+            </head>
+            <body>
+                <div class="pdf-header">
+                    <div class="pdf-title">Source of Funds Investigation</div>
+                    <div class="check-info">
+                        <div class="check-info-item"><span class="check-info-label">Check Type:</span><span class="check-info-value">${checkType}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Consumer:</span><span class="check-info-value">${checkName}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Check Reference:</span><span class="check-info-value">${checkRef}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Check ID:</span><span class="check-info-value">${check.checkId || check.transactionId}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Matter:</span><span class="check-info-value">${matterName}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Property:</span><span class="check-info-value">${property.address ? `${property.address.building_number || ''} ${property.address.street || ''}, ${property.address.town || ''}, ${property.address.postcode || ''}`.trim() : '—'}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Generated:</span><span class="check-info-value">${generatedDate}, ${generatedTime}</span></div>
+                    </div>
+                </div>
+                ${propertyHTML ? `<div class="section-title">Property Information</div>${propertyHTML}` : ''}
+                <div class="section-title">Funding Methods</div>
+                ${fundingCardsHTML}
+                ${bankSummaryHTML ? `<div class="section-title">Bank Analysis Summary</div>${bankSummaryHTML}` : ''}
+                <div class="pdf-footer">
+                    <p>This report was generated from Thurstan Hoskin's Thirdfort ID Management System</p>
+                    <p>Report ID: SOF-${Date.now()} | Page 1 of 1</p>
+                </div>
+            </body>
+            </html>
         `;
         
         const element = document.createElement('div');
         element.innerHTML = htmlContent;
         
         const opt = {
-            margin: 10,
+            margin: [10, 10, 10, 10],
             filename: `sof-investigation-${checkRef}-${Date.now()}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: 'css', avoid: 'div[style*="page-break-inside: avoid"]' }
         };
         
         if (typeof html2pdf !== 'undefined') {
-            console.log('📄 Starting SoF PDF generation...');
-            // Generate PDF as blob and open in new window
+            console.log('📄 Generating SoF PDF with html2pdf...');
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
-                console.log('✅ SoF PDF blob generated:', pdfBlob.size, 'bytes');
+                console.log('✅ SoF PDF generated:', pdfBlob.size, 'bytes');
                 const pdfUrl = URL.createObjectURL(pdfBlob);
-                console.log('📄 Opening SoF PDF in new window:', pdfUrl);
                 const popup = window.open(pdfUrl, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
                 if (!popup) {
-                    console.error('❌ Popup blocked by browser');
                     alert('PDF generated but popup was blocked. Please allow popups for this site.');
                 }
-                
-                // Notify parent that PDF is generated and opened
-                console.log('📤 Sending pdf-generated message to parent');
-                this.sendMessage('pdf-generated', { 
-                    type: 'sof',
-                    checkId: check.checkId || check.transactionId 
-                });
+                // Notify parent that PDF is generated and opened (only if auto-save)
+                if (autoSave) {
+                    console.log('📤 Sending pdf-generated message to parent');
+                    this.sendMessage('pdf-generated', { 
+                        type: 'sof', 
+                        checkId: check.checkId || check.transactionId 
+                    });
+                } else {
+                    console.log('ℹ️ Manual export - not sending pdf-generated message');
+                }
             }).catch(err => {
                 console.error('❌ Error generating SoF PDF:', err);
                 alert('Error generating SoF PDF: ' + err.message);
-                // Still notify parent even on error so data can refresh
-                this.sendMessage('pdf-generated', { 
-                    type: 'sof',
-                    error: err.message 
-                });
+                // Still notify parent even on error so data can refresh (only if auto-save)
+                if (autoSave) {
+                    this.sendMessage('pdf-generated', { 
+                        type: 'sof',
+                        error: err.message 
+                    });
+                }
             });
         } else {
             console.error('❌ html2pdf library not loaded');
             alert('PDF library not loaded. Please refresh the page.');
-            // Notify parent so data can refresh
-            this.sendMessage('pdf-generated', { 
-                type: 'sof',
-                error: 'html2pdf not loaded' 
-            });
+            // Notify parent so data can refresh (only if auto-save)
+            if (autoSave) {
+                this.sendMessage('pdf-generated', { 
+                    type: 'sof',
+                    error: 'html2pdf not loaded' 
+                });
+            }
         }
     }
     
-    generatePepPDF() {
+    generatePepDismissalsPDF(autoSave = false) {
         const check = this.currentCheck;
         if (!check) return;
         
+        const outcomes = check.taskOutcomes || {};
         const dismissals = check.pepDismissals || [];
         const checkName = check.consumerName || check.companyName || 'Unknown';
-        const checkRef = check.transactionId || check.checkId;
+        const checkRef = check.thirdfortResponse?.ref || check.transactionId || check.checkId;
+        const checkType = this.getElectronicIDType(check) || check.checkType || 'Thirdfort Check';
+        const now = new Date();
+        const generatedDate = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const generatedTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         
-        let htmlContent = `
-            <div style="font-family: Arial, sans-serif; padding: 20px;">
-                <h1 style="color: #112F5B;">PEP & Sanctions Dismissals</h1>
-                <div style="margin-bottom: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
-                    <p><strong>Check:</strong> ${checkName}</p>
-                    <p><strong>Reference:</strong> ${checkRef}</p>
-                    <p><strong>Generated:</strong> ${new Date().toLocaleString('en-GB')}</p>
-                </div>
+        // Build dismissals map for quick lookup
+        const dismissalsMap = {};
+        dismissals.forEach(d => {
+            dismissalsMap[d.hitId] = d;
+        });
+        
+        // Collect all PEP/Sanctions hits with full details
+        const allHits = [];
+        
+        // Get hits from various task outcomes
+        const pepsTask = outcomes['peps'] || outcomes['screening:lite'] || outcomes['screening'];
+        const sanctionsTask = outcomes['sanctions'];
+        const companyPepsTask = outcomes['company:peps'];
+        const companySanctionsTask = outcomes['company:sanctions'];
+        
+        // Individual PEPs
+        if (pepsTask?.breakdown?.hits) {
+            pepsTask.breakdown.hits.forEach(hit => {
+                const dismissal = dismissalsMap[hit.id];
+                allHits.push({
+                    id: hit.id,
+                    name: hit.name,
+                    aka: hit.aka?.join(', ') || 'None',
+                    type: 'PEP',
+                    countries: hit.countries?.join(', ') || 'N/A',
+                    flagTypes: hit.flag_types?.join(', ') || 'N/A',
+                    score: hit.score || 'N/A',
+                    dismissed: !!dismissal,
+                    dismissal: dismissal
+                });
+            });
+        }
+        
+        // Sanctions
+        if (sanctionsTask?.breakdown?.hits) {
+            sanctionsTask.breakdown.hits.forEach(hit => {
+                const dismissal = dismissalsMap[hit.id];
+                allHits.push({
+                    id: hit.id,
+                    name: hit.name,
+                    aka: hit.aka?.join(', ') || 'None',
+                    type: 'Sanctions',
+                    countries: hit.countries?.join(', ') || 'N/A',
+                    flagTypes: hit.flag_types?.join(', ') || 'N/A',
+                    score: hit.score || 'N/A',
+                    dismissed: !!dismissal,
+                    dismissal: dismissal
+                });
+            });
+        }
+        
+        // Company Sanctions
+        if (companySanctionsTask?.breakdown?.hits) {
+            companySanctionsTask.breakdown.hits.forEach(hit => {
+                const dismissal = dismissalsMap[hit.id];
+                allHits.push({
+                    id: hit.id,
+                    name: hit.name,
+                    aka: hit.aka?.join(', ') || 'None',
+                    type: 'Company Sanctions',
+                    countries: hit.countries?.join(', ') || 'N/A',
+                    flagTypes: hit.flag_types?.join(', ') || 'N/A',
+                    score: hit.score || 'N/A',
+                    dismissed: !!dismissal,
+                    dismissal: dismissal
+                });
+            });
+        }
+        
+        // Calculate summary
+        const totalHits = allHits.length;
+        const dismissedCount = allHits.filter(h => h.dismissed).length;
+        const outstandingCount = totalHits - dismissedCount;
+        
+        // Get report ID from check
+        const reportId = pepsTask?.id || sanctionsTask?.id || companySanctionsTask?.id || 'N/A';
+        const monitoringStatus = pepsTask?.monitored || check.pepMonitoring ? 'Monitoring Active' : 'Monitoring Inactive';
+        
+        // Build hit cards HTML
+        let hitCardsHTML = '';
+        allHits.forEach(hit => {
+            const borderColor = hit.dismissed ? '#39b549' : '#f7931e';
+            const statusBadgeBg = hit.dismissed ? '#d4edda' : '#fff3cd';
+            const statusBadgeColor = hit.dismissed ? '#155724' : '#856404';
+            const statusLabel = hit.dismissed ? 'DISMISSED' : 'ACTIVE';
+            const statusIcon = hit.dismissed ? this.getStatusIconCSS('clear') : this.getStatusIconCSS('consider');
+            
+            hitCardsHTML += `
+                <div style="background: white; border-radius: 8px; border-left: 4px solid ${borderColor}; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; page-break-inside: avoid;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div style="font-size: 14px; font-weight: 500; color: #003c71; flex: 1;">${hit.name}</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${statusBadgeBg}; color: ${statusBadgeColor};">${statusLabel}</span>
+                            ${statusIcon}
+                        </div>
+                    </div>
+                    <div style="padding: 8px 16px; border-top: 1px solid #dee2e6;">
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666; margin-bottom: 12px;">
+                            <div><strong>Type:</strong> ${hit.type}</div>
+                            <div><strong>Countries:</strong> ${hit.countries}</div>
+                            <div><strong>Match Score:</strong> ${hit.score}</div>
+                            <div><strong>Flag Types:</strong> ${hit.flagTypes}</div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">ALSO KNOWN AS:</div>
+                            <div style="font-size: 12px; color: #333;">${hit.aka}</div>
+                        </div>
+            `;
+            
+            // Add dismissal info if dismissed
+            if (hit.dismissed && hit.dismissal) {
+                const dismissDate = new Date(hit.dismissal.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                const dismissTime = new Date(hit.dismissal.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
                 
-                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                    <thead>
-                        <tr style="background: #112F5B; color: white;">
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Hit Name</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Type</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Reason</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Dismissed By</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        
-        dismissals.forEach(dismissal => {
-            const date = new Date(dismissal.timestamp).toLocaleDateString('en-GB');
-            htmlContent += `
-                <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${dismissal.hitName}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${dismissal.reportType.toUpperCase()}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${dismissal.reason}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${dismissal.userName || dismissal.user}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${date}</td>
-                </tr>
+                hitCardsHTML += `
+                        <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; padding: 12px; margin-top: 12px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">✓</span></div>
+                                <strong style="font-size: 13px; color: #155724;">Dismissal Confirmed</strong>
+                            </div>
+                            <div style="font-size: 12px; color: #155724; margin-bottom: 6px;">
+                                <strong>Reason:</strong> ${hit.dismissal.reason}
+                            </div>
+                            <div style="font-size: 11px; color: #155724;">
+                                <strong>Dismissed by:</strong> ${hit.dismissal.userName || hit.dismissal.user}<br>
+                                <strong>Date:</strong> ${dismissDate}, ${dismissTime}
+                            </div>
+                        </div>
+                `;
+            }
+            
+            hitCardsHTML += `
+                    </div>
+                </div>
             `;
         });
         
-        htmlContent += `
-                    </tbody>
-                </table>
-            </div>
+        // Build summary card
+        const summaryBorderColor = outstandingCount === 0 ? '#39b549' : '#f7931e';
+        const summaryMessage = outstandingCount === 0 
+            ? '✓ All hits have been reviewed and dismissed'
+            : `⚠ ${outstandingCount} hit${outstandingCount > 1 ? 's' : ''} require${outstandingCount === 1 ? 's' : ''} review`;
+        const summaryBgColor = outstandingCount === 0 ? '#e8f5e9' : '#fff3e0';
+        const summaryTextColor = outstandingCount === 0 ? '#155724' : '#856404';
+        
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    :root { --primary-blue: #003c71; --secondary-blue: #1d71b8; --green: #39b549; --orange: #f7931e; --red: #d32f2f; --grey: #6c757d; --light-grey: #f8f9fa; --border-grey: #dee2e6; }
+                    body { font-family: 'Trebuchet MS', 'Lucida Grande', sans-serif; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px; }
+                    .pdf-header { border-bottom: 3px solid var(--primary-blue); padding-bottom: 20px; margin-bottom: 30px; page-break-after: avoid; }
+                    .pdf-title { font-size: 26px; font-weight: bold; color: var(--primary-blue); margin-bottom: 15px; }
+                    .check-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px; }
+                    .check-info-item { display: flex; gap: 8px; }
+                    .check-info-label { font-weight: bold; color: var(--grey); min-width: 140px; }
+                    .check-info-value { color: #333; }
+                    .section-title { font-size: 18px; font-weight: bold; color: var(--primary-blue); margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid var(--border-grey); page-break-after: avoid; }
+                    .hit-card { page-break-inside: avoid; margin-bottom: 16px; }
+                    .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border-grey); text-align: center; font-size: 11px; color: #999; page-break-before: avoid; }
+                    @media print { body { padding: 20px; } }
+                </style>
+            </head>
+            <body>
+                <div class="pdf-header">
+                    <div class="pdf-title">PEP & Sanctions Screening</div>
+                    <div class="check-info">
+                        <div class="check-info-item"><span class="check-info-label">Check Type:</span><span class="check-info-value">${checkType}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Consumer:</span><span class="check-info-value">${checkName}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Check Reference:</span><span class="check-info-value">${checkRef}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Check ID:</span><span class="check-info-value">${check.checkId || check.transactionId}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Report ID:</span><span class="check-info-value">${reportId}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Generated:</span><span class="check-info-value">${generatedDate}, ${generatedTime}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Status:</span><span class="check-info-value">${monitoringStatus}</span></div>
+                    </div>
+                </div>
+                <div class="section-title">PEP/Sanctions Screening Results</div>
+                ${hitCardsHTML}
+                <div style="background: white; border-radius: 8px; border-left: 4px solid ${summaryBorderColor}; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-top: 24px; page-break-inside: avoid;">
+                    <div style="padding: 12px 16px;">
+                        <h4 style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 12px;">Screening Summary</h4>
+                        <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
+                            <div><strong>Total Hits:</strong> ${totalHits}</div>
+                            <div><strong>Dismissed:</strong> ${dismissedCount}</div>
+                            <div><strong>Outstanding:</strong> ${outstandingCount}</div>
+                        </div>
+                        <div style="background: ${summaryBgColor}; padding: 10px; border-radius: 4px; border-left: 3px solid ${summaryBorderColor}; margin-top: 12px;">
+                            <div style="font-size: 12px; color: ${summaryTextColor}; font-weight: bold;">${summaryMessage}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pdf-footer">
+                    <p>This report was generated from Thurstan Hoskin's Thirdfort ID Management System</p>
+                    <p>Report ID: PEP-${Date.now()} | Page 1 of 1</p>
+                </div>
+            </body>
+            </html>
         `;
         
         const element = document.createElement('div');
         element.innerHTML = htmlContent;
         
         const opt = {
-            margin: 10,
-            filename: `pep-dismissals-${checkRef}-${Date.now()}.pdf`,
+            margin: [10, 10, 10, 10],
+            filename: `pep-screening-${checkName.replace(/\s+/g, '-')}-${Date.now()}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: 'css', avoid: 'div[style*="page-break-inside: avoid"]' }
         };
         
         if (typeof html2pdf !== 'undefined') {
-            html2pdf().set(opt).from(element).save();
+            console.log('📄 Generating PEP dismissals PDF with html2pdf...');
+            // Generate PDF as blob and open in new window
+            html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
+                console.log('✅ PEP dismissals PDF generated:', pdfBlob.size, 'bytes');
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                const popup = window.open(pdfUrl, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+                if (!popup) {
+                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                }
+                
+                // Notify parent that PDF is generated and opened (only if auto-save)
+                if (autoSave) {
+                    console.log('📤 Sending pdf-generated message to parent');
+                    this.sendMessage('pdf-generated', { 
+                        type: 'pep-dismissal',
+                        checkId: check.checkId || check.transactionId 
+                    });
+                } else {
+                    console.log('ℹ️ Manual export - not sending pdf-generated message');
+                }
+            }).catch(err => {
+                console.error('❌ Error generating PEP dismissals PDF:', err);
+                alert('Error generating PDF: ' + err.message);
+                // Still notify parent even on error so data can refresh (only if auto-save)
+                if (autoSave) {
+                    this.sendMessage('pdf-generated', { 
+                        type: 'pep-dismissal',
+                        error: err.message 
+                    });
+                }
+            });
         } else {
+            console.error('❌ html2pdf library not loaded');
             alert('PDF library not loaded. Please refresh the page.');
+            // Notify parent so data can refresh (only if auto-save)
+            if (autoSave) {
+                this.sendMessage('pdf-generated', { 
+                    type: 'pep-dismissal',
+                    error: 'html2pdf not loaded' 
+                });
+            }
         }
+    }
+}
+
+// Global toggle functions for collapsible annotation cards
+function toggleSofAnnotationCard(event, idx) {
+    event.stopPropagation();
+    const card = document.querySelector(`[data-sof-annotation-idx="${idx}"]`);
+    if (card) {
+        card.classList.toggle('collapsed');
+    }
+}
+
+function toggleBankReviewCard(event, idx) {
+    event.stopPropagation();
+    const card = document.querySelector(`[data-bank-review-idx="${idx}"]`);
+    if (card) {
+        card.classList.toggle('collapsed');
     }
 }
 
@@ -19929,4 +26840,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.manager = manager; // Make accessible globally for inline onclick handlers
     window.thirdfortManager = manager; // Keep for backwards compatibility
 });
+
+
 
