@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **`uk-sanctions-checker.html`** - UK Sanctions List Search ⭐ NEW FEATURE
   - Search and query the UK FCDO Sanctions List for individuals and entities
-  - Live XML data fetching from https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml
+  - Live XML data fetching from https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml via backend proxy (CORS required)
   - Session-based caching (XML parsed once on load, cached for session duration)
   - Two search modes: Exact match (case-insensitive substring) and Fuzzy match (Levenshtein distance with 70%+ threshold)
   - Search types: Individual or Entity (Ships automatically filtered out)
