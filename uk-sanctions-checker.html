@@ -767,53 +767,28 @@
     */
     
     // Initialize on page load
-    async function init() {
+    function init() {
       console.log('🚀 Initializing UK Sanctions Checker...');
+      console.log('📤 Requesting sanctions XML from parent...');
       
-      try {
-        await fetchSanctionsData();
-        mainContent.classList.remove('hidden');
-        loadingOverlay.classList.add('hidden');
-        console.log('✅ Initialization complete');
-      } catch (error) {
-        console.error('❌ Initialization failed:', error);
-        showError('Failed to load sanctions data. Please refresh the page.');
-        loadingOverlay.classList.add('hidden');
-      }
+      // Request XML data via parent (backend proxy)
+      fetchSanctionsData();
+      
+      // Parent will respond with 'sanctions-xml' message
+      // which will be handled by handleSanctionsXML()
     }
     
-    // Fetch XML data from FCDO
+    // Fetch XML data from FCDO via parent proxy
     async function fetchSanctionsData() {
-      console.log('📥 Fetching sanctions XML from FCDO...');
+      console.log('📥 Requesting sanctions XML from parent (backend proxy)...');
       
-      try {
-        const response = await fetch('https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml', {
-          mode: 'cors',
-          cache: 'default'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const xmlText = await response.text();
-        console.log('✅ XML fetched successfully');
-        console.log(`📊 XML size: ${(xmlText.length / 1024 / 1024).toFixed(2)} MB`);
-        
-        parseSanctionsXML(xmlText);
-        console.log(`✅ Parsed ${sanctionsData.length} sanctions entries`);
-        
-      } catch (error) {
-        console.error('❌ Error fetching sanctions data:', error);
-        
-        // Check if this is a local file protocol issue
-        if (window.location.protocol === 'file:') {
-          console.warn('⚠️ Cannot fetch from file:// protocol. Please test on a web server.');
-          throw new Error('Cannot fetch data when opened as local file. Please host on a web server to test.');
-        }
-        
-        throw error;
-      }
+      // Request XML from parent - parent will call backend to fetch from FCDO
+      window.parent.postMessage({
+        type: 'request-sanctions-xml'
+      }, '*');
+      
+      // Parent will respond with 'sanctions-xml' message containing the XML text
+      // Note: We don't throw here - we wait for the parent to respond
     }
     
     // Parse XML and extract designation data
@@ -1567,26 +1542,36 @@
       try {
         // Generate PDF as blob
         const pdfBlob = pdfDoc.output('blob');
-        const filename = `UK_Sanctions_Search_${searchParams.searchName.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+        const filename = `UK_Sanctions_Search_${searchParams.searchName.replace(/\s+/g, '_')}_${Date.now()}`;
         
-        // Store file in window for later upload
-        window.pendingUploadFile = {
-          blob: pdfBlob,
-          filename: filename
-        };
+        // Store blob in window for later upload (File objects can't be sent via postMessage)
+        window.pendingUploadFile = pdfBlob;
         
-        // Create file metadata
+        // Create file metadata following document-viewer.html pattern
         const fileMetadata = {
-          name: filename,
-          size: pdfBlob.size,
-          type: 'application/pdf',
-          documentType: 'sanctions-search-report',
-          documentSubType: 'uk-sanctions-list'
+          type: 'PEP & Sanctions Check',
+          document: 'UK Sanctions List Search',
+          uploader: userEmail,
+          date: new Date().toLocaleString('en-GB', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          }),
+          data: {
+            type: 'application/pdf',
+            size: pdfBlob.size,
+            name: filename,
+            lastModified: Date.now()
+          }
         };
         
         console.log('📤 Sending file-data to parent:', fileMetadata);
         
-        // Send file-data to parent (same as document-viewer.html)
+        // Send file-data to parent (following document-viewer.html pattern)
         window.parent.postMessage({
           type: 'file-data',
           files: [fileMetadata],
@@ -1605,18 +1590,20 @@
       console.log('📥 Received put-links from parent:', data);
       
       try {
-        const file = window.pendingUploadFile;
-        if (!file) {
+        const pdfBlob = window.pendingUploadFile;
+        if (!pdfBlob) {
           throw new Error('No pending file to upload');
         }
         
-        const putLink = data.putLinks[0];
+        // data.links is array of { url, contentType }
+        // data.s3Keys or data.images contains the s3Keys
+        const putLink = data.links[0];
         
         // Upload to S3
         console.log('⬆️ Uploading to S3...');
         const uploadResponse = await fetch(putLink.url, {
           method: 'PUT',
-          body: file.blob,
+          body: pdfBlob,
           headers: {
             'Content-Type': 'application/pdf'
           }
@@ -1628,12 +1615,12 @@
         
         console.log('✅ S3 upload complete');
         
-        // Send upload-success to parent
+        // Send upload-success to parent (using s3Keys or images from parent response)
         window.parent.postMessage({
           type: 'upload-success',
-          files: data.images || [putLink.s3Key],
+          files: data.s3Keys || data.images,
           _id: clientEntryId,
-          userEmail: userEmail
+          uploader: userEmail
         }, '*');
         
         uploadingOverlay.classList.remove('show');
@@ -1672,6 +1659,10 @@
       switch (event.data.type) {
         case 'init-sanctions-search':
           handleInitMessage(event.data);
+          break;
+          
+        case 'sanctions-xml':
+          handleSanctionsXML(event.data);
           break;
           
         case 'put-links':
@@ -1717,6 +1708,40 @@
       }
       
       console.log('✅ Form pre-populated');
+    }
+    
+    function handleSanctionsXML(data) {
+      console.log('📥 Received sanctions XML from parent');
+      
+      if (data.error) {
+        console.error('❌ Backend error:', data.error);
+        loadingOverlay.classList.add('hidden');
+        showError(`Failed to load sanctions data: ${data.error}`);
+        return;
+      }
+      
+      if (!data.xml) {
+        console.error('❌ No XML data received');
+        loadingOverlay.classList.add('hidden');
+        showError('Failed to load sanctions data. No data received from server.');
+        return;
+      }
+      
+      try {
+        console.log('✅ XML received from backend');
+        console.log(`📊 XML size: ${(data.xml.length / 1024 / 1024).toFixed(2)} MB`);
+        
+        parseSanctionsXML(data.xml);
+        console.log(`✅ Parsed ${sanctionsData.length} sanctions entries`);
+        
+        mainContent.classList.remove('hidden');
+        loadingOverlay.classList.add('hidden');
+        
+      } catch (error) {
+        console.error('❌ Error parsing XML:', error);
+        loadingOverlay.classList.add('hidden');
+        showError('Failed to parse sanctions data. Please try again.');
+      }
     }
     
     /*

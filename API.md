@@ -965,8 +965,9 @@ Parent should:
 Search and query the UK FCDO Sanctions List for individuals and entities. Fetches live XML data from the official FCDO source, supports exact and fuzzy name matching, displays comprehensive sanction details, and generates PDF reports with optional S3 upload integration for client entries.
 
 ### Features
-- **Live Data**: Fetches XML directly from https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml
+- **Live Data**: Fetches XML from https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml via backend proxy (CORS required)
 - **Session Caching**: XML parsed once on page load, cached for session duration
+- **Backend Proxy Required**: FCDO endpoint requires server-side fetch due to CORS restrictions
 - **Search Types**: Individual or Entity (Ships excluded)
 - **Match Modes**: Exact string matching or Fuzzy matching (Levenshtein distance with 70%+ similarity)
 - **Year of Birth Filter**: Optional filtering for individuals by birth year
@@ -1010,14 +1011,13 @@ Response from parent with S3 presigned upload URLs (same as document-viewer.html
 ```javascript
 window.frames[0].postMessage({
   type: 'put-links',
-  putLinks: [
+  links: [
     {
       url: 'https://s3.amazonaws.com/...',
-      s3Key: 'protected/xyz123',
       contentType: 'application/pdf'
     }
   ],
-  images: ['protected/xyz123'],
+  s3Keys: ['protected/xyz123'], // or images: ['protected/xyz123']
   _id: 'bd8bee6a-465b-...'
 }, '*');
 ```
@@ -1046,11 +1046,16 @@ Request for S3 presigned upload URLs before PDF upload (only sent if `clientEntr
   type: 'file-data',
   files: [
     {
-      name: 'UK_Sanctions_Search_John_Smith_1730123456789.pdf',
-      size: 245678,
-      type: 'application/pdf',
-      documentType: 'sanctions-search-report',
-      documentSubType: 'uk-sanctions-list'
+      type: 'PEP & Sanctions Check',
+      document: 'UK Sanctions List Search',
+      uploader: 'user@example.com',
+      date: '11/11/2025, 14:30:45',
+      data: {
+        type: 'application/pdf',
+        size: 245678,
+        name: 'UK_Sanctions_Search_John_Smith_1730123456789',
+        lastModified: 1730123456789
+      }
     }
   ],
   _id: 'bd8bee6a-465b-...'
@@ -1059,8 +1064,8 @@ Request for S3 presigned upload URLs before PDF upload (only sent if `clientEntr
 
 **Parent should:**
 1. Generate S3 key and presigned PUT URL
-2. Store file metadata
-3. Respond with `put-links` message
+2. Create file object with s3Key: `{ type, document, uploader, date, s3Key, data }`
+3. Respond with `put-links` message containing links array and s3Keys/images array
 
 #### `upload-success`
 Confirmation after successful S3 upload.
@@ -1069,9 +1074,9 @@ Confirmation after successful S3 upload.
 // iframe sends
 {
   type: 'upload-success',
-  files: ['protected/xyz123'],
+  files: ['protected/xyz123'], // or full document objects with s3Keys
   _id: 'bd8bee6a-465b-...',
-  userEmail: 'user@example.com'
+  uploader: 'user@example.com'
 }
 ```
 
