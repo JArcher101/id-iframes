@@ -6,11 +6,8 @@ import { callWithTimeout } from 'public/functions/backend-timeout.js';
 import wixWindowFrontend from 'wix-window-frontend';
 
 // Import backend functions
-import { 
-    getSanctionsXML, 
-    generateSanctionsPutLink, 
-    updateEntryWithSanctionsPDF 
-} from 'backend/sanctions-integration.web.js';
+import { getSanctionsXML, updateEntryWithSanctionsPDF } from 'backend/sanctions-integration.web.js';
+import { generateFilePUTsBackend } from 'backend/id-system/in-person-verification/upload.web.js';
 
 /**
  * INITIALIZATION FUNCTION
@@ -103,34 +100,35 @@ $w('#html17').onMessage(async (event) => {
             
         case 'file-data':
             // Request S3 presigned PUT URL for PDF upload
-            console.log('🔗 Generating S3 PUT link for sanctions PDF...');
+            console.log('🔗 Generating S3 PUT links for sanctions PDF...');
             try {
-                const fileMetadata = message.files[0];
+                const files = message.files;
                 const entryId = message._id;
                 
+                // Use existing generateFilePUTsBackend function
                 const putLinkRes = await callWithTimeout(
-                    generateSanctionsPutLink(fileMetadata, entryId)
+                    generateFilePUTsBackend(files)
                 );
                 
-                if (!putLinkRes.success || !putLinkRes.url) {
-                    throw new Error(putLinkRes.result || 'Failed to generate PUT link');
+                if (!putLinkRes.success || !putLinkRes.links) {
+                    throw new Error(putLinkRes.result || 'Failed to generate PUT links');
                 }
                 
-                // Send PUT link back to iframe
+                // Send PUT links back to iframe
                 $w('#html17').postMessage({
                     type: 'put-links',
-                    links: [{
-                        url: putLinkRes.url,
+                    links: putLinkRes.links.map((url, index) => ({
+                        url: url,
                         contentType: 'application/pdf'
-                    }],
-                    s3Keys: [putLinkRes.fileWithS3Key],
+                    })),
+                    s3Keys: putLinkRes.s3Keys,
                     _id: entryId
                 });
                 
-                console.log('✅ PUT link sent to iframe');
+                console.log('✅ PUT links sent to iframe');
                 
             } catch (error) {
-                console.error('❌ Failed to generate PUT link:', error);
+                console.error('❌ Failed to generate PUT links:', error);
                 $w('#html17').postMessage({
                     type: 'put-error',
                     message: error.message || 'Failed to generate upload link',

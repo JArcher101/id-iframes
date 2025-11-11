@@ -5,13 +5,9 @@
 import { fetch } from 'wix-fetch';
 import { Permissions, webMethod } from 'wix-web-module';
 import wixData from 'wix-data';
-import { getSecret } from 'wix-secrets-backend';
-import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-// Import your existing helper functions
-import { s3, documentsBucketName, generateRandomBase62 } from './s3-helpers.web.js'; // Adjust path as needed
-import { appendCashierLog, appendAuditLog } from './audit-helpers.web.js'; // Adjust path as needed
+// Import your existing helper functions (adjust paths as needed)
+import { appendCashierLog, appendAuditLog } from 'backend/id-system/in-person-verification/upload.web.js';
 
 // ============================================================================
 // UK SANCTIONS CHECKER FUNCTIONS
@@ -55,103 +51,6 @@ export const getSanctionsXML = webMethod(
         } catch (error) {
             console.error('❌ Error fetching sanctions XML:', error);
             response.result = 'Error fetching sanctions XML';
-            response.error = {
-                error,
-                errorMsg: error.message,
-                stack: error.stack
-            };
-        }
-
-        return response;
-    }
-);
-
-/**
- * Generates presigned PUT URL for sanctions PDF upload
- * 
- * Follows document-viewer.html pattern for file uploads
- * Creates S3 key and presigned URL for direct upload from iframe
- * 
- * @param {Object} fileMetadata - File metadata from iframe
- * @param {String} entryId - Client entry ID
- * @returns {Object} Response with PUT URL and file object with s3Key
- */
-export const generateSanctionsPutLink = webMethod(
-    Permissions.SiteMember,
-    async (fileMetadata, entryId) => {
-        let response = {
-            success: false,
-            result: undefined,
-            error: undefined,
-            url: undefined,
-            s3Key: undefined,
-            fileWithS3Key: undefined
-        };
-
-        try {
-            console.log('🔗 Generating S3 PUT link for sanctions PDF...');
-            
-            // Validate file type (PDF only)
-            if (fileMetadata.data.type !== 'application/pdf' && 
-                !fileMetadata.data.name.toLowerCase().endsWith('.pdf')) {
-                response.result = 'Only PDF files allowed';
-                response.error = {
-                    error: new Error('Only PDF files allowed'),
-                    errorMsg: 'Only PDF files allowed',
-                    stack: 'File type validation failed'
-                };
-                return response;
-            }
-
-            // Validate file size (15 MB max)
-            const MAX_SIZE = 15 * 1024 * 1024;
-            if (fileMetadata.data.size > MAX_SIZE) {
-                response.result = 'File too large (max 15MB)';
-                response.error = {
-                    error: new Error('File too large'),
-                    errorMsg: 'File too large (max 15MB)',
-                    stack: 'File size validation failed'
-                };
-                return response;
-            }
-
-            // Get documents bucket
-            const bucket = await documentsBucketName();
-            const client = await s3();
-
-            // Generate unique S3 key using base62 random string
-            const randomId = await generateRandomBase62(16);
-            const s3Key = `protected/${randomId}`;
-
-            // Generate presigned PUT URL (5 minute expiry)
-            const cmd = new PutObjectCommand({
-                Bucket: bucket,
-                Key: s3Key,
-                ContentType: 'application/pdf'
-            });
-            const putUrl = await getSignedUrl(client, cmd, { expiresIn: 300 });
-
-            // Create complete file object with s3Key
-            const fileWithS3Key = {
-                type: fileMetadata.type,
-                document: fileMetadata.document,
-                uploader: fileMetadata.uploader,
-                date: fileMetadata.date,
-                s3Key: s3Key,
-                data: fileMetadata.data
-            };
-
-            response.url = putUrl;
-            response.s3Key = s3Key;
-            response.fileWithS3Key = fileWithS3Key;
-            response.success = true;
-            response.result = 'PUT link generated successfully';
-            
-            console.log('✅ PUT link generated:', s3Key);
-            
-        } catch (error) {
-            console.error('❌ Error generating PUT link:', error);
-            response.result = 'Error generating PUT link';
             response.error = {
                 error,
                 errorMsg: error.message,
