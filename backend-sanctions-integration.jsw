@@ -1,0 +1,152 @@
+// backend-sanctions-integration.jsw
+// Backend functions for UK Sanctions Checker integration
+// Add these functions to your Wix backend
+
+import { fetch } from 'wix-fetch';
+import wixData from 'wix-data';
+import { getSecret } from 'wix-secrets-backend';
+
+/**
+ * Fetch UK Sanctions List XML from FCDO
+ * Called by frontend when iframe requests sanctions data
+ * 
+ * @returns {Promise<{xml: string}>} XML string from FCDO
+ */
+export async function getSanctionsXML() {
+    try {
+        console.log('📥 Fetching UK Sanctions List XML from FCDO...');
+        
+        const response = await fetch('https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const xml = await response.text();
+        
+        console.log(`✅ Fetched XML (${(xml.length / 1024 / 1024).toFixed(2)} MB)`);
+        
+        return { xml };
+        
+    } catch (error) {
+        console.error('❌ Error fetching sanctions XML:', error);
+        throw error;
+    }
+}
+
+/**
+ * Generate S3 presigned PUT URL for sanctions PDF upload
+ * Follows document-viewer.html pattern
+ * 
+ * @param {Object} fileMetadata - File metadata from iframe
+ * @param {string} entryId - Client entry ID
+ * @returns {Promise<{url: string, s3Key: string, fileWithS3Key: Object}>}
+ */
+export async function generateSanctionsPutLink(fileMetadata, entryId) {
+    try {
+        console.log('🔗 Generating S3 PUT link for sanctions PDF...');
+        
+        // Get Thirdfort environment (production/sandbox)
+        const tfEnv = await getSecret('THIRDFORT_ENV');
+        
+        // Generate S3 key using your existing pattern
+        // Format: protected/{randomString}
+        const s3Key = `protected/${generateRandomKey()}`;
+        
+        // Call your existing S3 presigned URL generator
+        // Replace with your actual S3 function
+        const putUrl = await generatePresignedPutUrl(s3Key, 'application/pdf', tfEnv);
+        
+        // Create complete file object with s3Key
+        const fileWithS3Key = {
+            type: fileMetadata.type,
+            document: fileMetadata.document,
+            uploader: fileMetadata.uploader,
+            date: fileMetadata.date,
+            s3Key: s3Key,
+            data: fileMetadata.data
+        };
+        
+        console.log('✅ PUT link generated:', s3Key);
+        
+        return {
+            url: putUrl,
+            s3Key: s3Key,
+            fileWithS3Key: fileWithS3Key
+        };
+        
+    } catch (error) {
+        console.error('❌ Error generating PUT link:', error);
+        throw error;
+    }
+}
+
+/**
+ * Update client entry with uploaded sanctions PDF
+ * Adds PDF to idDocuments array
+ * 
+ * @param {string} entryId - Client entry ID
+ * @param {Object} fileObject - File object with s3Key
+ * @returns {Promise<{success: boolean}>}
+ */
+export async function updateEntryWithSanctionsPDF(entryId, fileObject) {
+    try {
+        console.log('💾 Updating entry with sanctions PDF:', entryId);
+        
+        // Get current entry
+        const entry = await wixData.get('ClientEntries', entryId);
+        
+        if (!entry) {
+            throw new Error('Entry not found');
+        }
+        
+        // Add to idDocuments array (or create if doesn't exist)
+        const updatedDocuments = [
+            ...(entry.idDocuments || []),
+            fileObject
+        ];
+        
+        // Update entry
+        await wixData.update('ClientEntries', {
+            _id: entryId,
+            idDocuments: updatedDocuments
+        });
+        
+        console.log('✅ Entry updated with sanctions PDF');
+        
+        return { success: true };
+        
+    } catch (error) {
+        console.error('❌ Error updating entry:', error);
+        throw error;
+    }
+}
+
+/**
+ * Helper function to generate random S3 key
+ * @returns {string} Random alphanumeric string
+ */
+function generateRandomKey() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 16; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+/**
+ * PLACEHOLDER: Replace with your actual S3 presigned URL generator
+ * This should match your existing implementation
+ * 
+ * @param {string} s3Key - S3 key
+ * @param {string} contentType - MIME type
+ * @param {string} env - Thirdfort environment
+ * @returns {Promise<string>} Presigned PUT URL
+ */
+async function generatePresignedPutUrl(s3Key, contentType, env) {
+    // TODO: Replace with your actual S3 presigned URL generation
+    // This is a placeholder - use your existing S3 function
+    throw new Error('generatePresignedPutUrl not implemented - use your existing S3 function');
+}
+
