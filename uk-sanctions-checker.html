@@ -739,6 +739,19 @@
     <div id="results-container" class="results-container hidden">
       <!-- Results will be dynamically inserted here -->
     </div>
+    
+    <!-- Data Attribution Footer -->
+    <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+      <p style="font-size: 11px; color: #666; line-height: 1.6; margin-bottom: 8px;">
+        <strong>Data Source:</strong> FCDO UK Sanctions List
+      </p>
+      <p style="font-size: 11px; color: #666; line-height: 1.6; margin-bottom: 8px;">
+        Contains public sector information licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" style="color: #1d71b8; text-decoration: underline;">Open Government Licence v3.0</a>.
+      </p>
+      <p style="font-size: 11px; color: #666; line-height: 1.6; font-style: italic;">
+        This search tool is for informational purposes only. All matches should be independently verified with official sources.
+      </p>
+    </div>
   </div>
 
   <script>
@@ -1751,7 +1764,9 @@
         doc.setTextColor(100, 100, 100);
         doc.setFont(undefined, 'italic');
         const footerText = 'Data source: FCDO UK Sanctions List (https://sanctionslist.fcdo.gov.uk/)';
-        doc.text(footerText, margin, pageHeight - 15);
+        doc.text(footerText, margin, pageHeight - 20);
+        const licence = 'Contains public sector information licensed under the Open Government Licence v3.0.';
+        doc.text(licence, margin, pageHeight - 15);
         const disclaimer = 'This report is for informational purposes only. Verify all information with official sources.';
         doc.text(disclaimer, margin, pageHeight - 10);
         
