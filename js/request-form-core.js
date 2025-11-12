@@ -3903,12 +3903,13 @@ async function generateRequestPDF(messageData) {
     
     // Apply body styles to our container element so html2pdf can calculate dimensions
     // CRITICAL: Temporarily append to body so html2canvas can capture it
-    // Position below viewport so user doesn't see it (opacity:0 prevents capture!)
-    element.style.position = 'absolute';
+    // Use visibility:hidden instead of opacity:0 - element still renders but is invisible
+    element.style.position = 'fixed';
     element.style.left = '0';
-    element.style.top = '10000px'; // Far down the page, out of view
+    element.style.top = '0';
     element.style.width = '794px'; // A4 width in pixels at 96 DPI (210mm)
     element.style.zIndex = '-9999'; // Behind everything
+    element.style.visibility = 'hidden'; // Hidden but still rendered (unlike opacity:0)
     element.style.pointerEvents = 'none'; // Can't interact with it
     element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
     element.style.padding = '40px';
@@ -3917,7 +3918,7 @@ async function generateRequestPDF(messageData) {
     element.style.lineHeight = '1.5';
     element.style.fontSize = '14px';
     
-    // Append to body so html2canvas can capture it (must be visible, not opacity:0)
+    // Append to body so html2canvas can capture it
     document.body.appendChild(element);
     
     console.log('📄 Body children count:', bodyElement.children.length);
