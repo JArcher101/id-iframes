@@ -3379,23 +3379,65 @@ function buildRequestPDFHTML(messageData) {
   console.log('📤 Using request payload from parent:', requestPayload);
   console.log('📊 Client/matter data:', data);
   
-  // Determine badge class and title
-  let badgeClass, badgeText, title, borderColor;
+  // Determine badge class and title for all 7 request types
+  let badgeClass, badgeText, title, borderColor, messageLabel, badgeStyle;
   if (requestType === 'note') {
     badgeClass = 'badge-note';
     badgeText = 'Note';
     title = 'Note Added to Entry';
-    borderColor = '#1d71b8';
+    borderColor = '#f7931e';
+    messageLabel = 'Note Message:';
+    badgeStyle = 'background: #fff3e0; color: #e65100;';
   } else if (requestType === 'updatePep') {
     badgeClass = 'badge-pep-update';
     badgeText = 'PEP Update';
     title = 'PEP Status Change Notification';
     borderColor = '#7b1fa2';
-  } else {
+    messageLabel = 'PEP Status Update Message:';
+    badgeStyle = 'background: #f3e5f5; color: #7b1fa2;';
+  } else if (requestType === 'update') {
     badgeClass = 'badge-update';
-    badgeText = 'Update';
+    badgeText = 'Issue Update';
     title = 'Issue Update Submitted';
     borderColor = '#1d71b8';
+    messageLabel = 'Update Message:';
+    badgeStyle = 'background: #e3f2fd; color: #1976d2;';
+  } else if (requestType === 'formJ') {
+    badgeClass = 'badge-update';
+    badgeText = 'Form J Request';
+    title = 'Form J Request Submitted';
+    borderColor = '#1976d2';
+    messageLabel = 'Request Message:';
+    badgeStyle = 'background: #e3f2fd; color: #1976d2;';
+  } else if (requestType === 'formK') {
+    badgeClass = 'badge-update';
+    badgeText = 'Form K Request';
+    title = 'Form K Request Submitted';
+    borderColor = '#1976d2';
+    messageLabel = 'Request Message:';
+    badgeStyle = 'background: #e3f2fd; color: #1976d2;';
+  } else if (requestType === 'formE') {
+    badgeClass = 'badge-update';
+    badgeText = 'Form E Request';
+    title = 'Form E Request Submitted';
+    borderColor = '#1976d2';
+    messageLabel = 'Request Message:';
+    badgeStyle = 'background: #e3f2fd; color: #1976d2;';
+  } else if (requestType === 'esof') {
+    badgeClass = 'badge-update';
+    badgeText = 'eSoF Request';
+    title = 'eSoF Request Submitted';
+    borderColor = '#1976d2';
+    messageLabel = 'Request Message:';
+    badgeStyle = 'background: #e3f2fd; color: #1976d2;';
+  } else {
+    // Fallback for unknown types
+    badgeClass = 'badge-update';
+    badgeText = 'Request';
+    title = 'Request Submitted';
+    borderColor = '#1d71b8';
+    messageLabel = 'Request Message:';
+    badgeStyle = 'background: #e3f2fd; color: #1976d2;';
   }
   
   const submissionDate = new Date().toLocaleString('en-GB', {
@@ -3445,7 +3487,12 @@ function buildRequestPDFHTML(messageData) {
   console.log('  - matterDescription:', matterDescription);
   
   // Get message content from the stored request message
-  const messageContent = escapeHtml(requestMessage.message || '');
+  // Handle both nested structure (requestMessage.message) and direct structure (requestMessage is the message object)
+  const messageContent = escapeHtml(
+    (typeof requestMessage === 'string' ? requestMessage : requestMessage.message) || 
+    requestPayload.messageContent || 
+    ''
+  );
   
   // Get attached file info (if any)
   const attachedFile = requestMessage.file || null;
@@ -3457,28 +3504,45 @@ function buildRequestPDFHTML(messageData) {
     <head>
       <meta charset="UTF-8">
       <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { 
+          margin: 0; 
+          padding: 0; 
+          box-sizing: border-box; 
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
+        }
+        html { 
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
+        }
         body { 
-          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
-          padding: 40px; 
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; 
+          padding: 20px 40px; 
           background: white; 
           color: #111; 
           line-height: 1.5; 
           font-size: 14px; 
+          margin: 0;
+        }
+        div {
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
         }
         .request-card, .client-card { page-break-inside: avoid; }
         .badge-note { background: #fff3e0; color: #e65100; }
         .badge-update { background: #e3f2fd; color: #1976d2; }
         .badge-pep-update { background: #f3e5f5; color: #7b1fa2; }
-        @media print { body { padding: 20px; } }
+        @media print { 
+          body { 
+            padding: 10px 20px !important; 
+            margin: 0 !important;
+          } 
+        }
       </style>
     </head>
-    <body>
-    <div>
+    <body style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; margin: 0; padding: 20px 40px;">
+    <div style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">
       <!-- PDF Header -->
       <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
         <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">
-          ${requestType === 'note' ? 'Request Note' : requestType === 'updatePep' ? 'PEP Status Update' : 'Issue Update Request'}
+          ${title}
         </div>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px;">
           <div style="display: flex; gap: 8px;">
@@ -3492,9 +3556,16 @@ function buildRequestPDFHTML(messageData) {
           ${isEntity ? `
           <div style="display: flex; gap: 8px;">
             <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Entity Type:</span>
-            <span style="color: #333;">${requestData.cI?.bD?.type || 'Business'}</span>
+            <span style="color: #333;">${data.cI?.bD?.type || 'Business'}</span>
           </div>
           ` : ''}
+          <div style="display: flex; gap: 8px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Request Type:</span>
+            <span style="color: #333;">
+              <span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; ${badgeStyle}">${badgeText}</span>
+              ${requestPayload.eSoF ? `<span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32; margin-left: 6px;">+ eSoF</span>` : ''}
+            </span>
+          </div>
           <div style="display: flex; gap: 8px;">
             <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Entry ID:</span>
             <span style="color: #333;">${escapeHtml(entryId)}</span>
@@ -3607,7 +3678,7 @@ function buildRequestPDFHTML(messageData) {
           <!-- Message -->
           <div style="background: #f0f7ff; border: 1px solid #90caf9; border-radius: 6px; padding: 14px; margin-bottom: 12px;">
             <strong style="color: #1976d2; font-size: 13px; display: block; margin-bottom: 8px;">
-              ${requestType === 'updatePep' ? 'PEP Status Update Message:' : requestType === 'update' ? 'Update Message:' : requestType === 'note' ? 'Note Message:' : 'Request Message:'}
+              ${messageLabel}
             </strong>
             <div style="font-size: 13px; color: #333; line-height: 1.6; white-space: pre-wrap;">${messageContent}</div>
           </div>
@@ -3767,6 +3838,22 @@ function buildRequestPDFHTML(messageData) {
       </div>
       ` : ''}
       
+      <!-- Submission Confirmation -->
+      <div style="background: white; border-radius: 8px; border-left: 4px solid #39b549; padding: 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-top: 24px; margin-bottom: 16px; page-break-inside: avoid;">
+        <div style="padding: 12px 16px;">
+          <h4 style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center;">
+            <div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 8px;">
+              <span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">✓</span>
+            </div>
+            Request Successfully Submitted
+          </h4>
+          <div style="font-size: 13px; color: #666; line-height: 1.6;">
+            <p>This request has been submitted to the ID system and will be processed by cashiers.</p>
+            <p style="margin-top: 8px;">Keep this PDF for your records.</p>
+          </div>
+        </div>
+      </div>
+      
       <!-- PDF Footer -->
       <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #dee2e6; text-align: center; font-size: 11px; color: #999;">
         <p>Generated from Thurstan Hoskin's Thirdfort ID Management System</p>
@@ -3835,18 +3922,20 @@ async function generateRequestPDF(messageData) {
     }
     
     // Configure html2pdf options (same as checks manager and sanctions checker)
-    const requestType = messageData.requestType || 'note';
+    const requestType = messageData.request?.requestType || messageData.requestType || 'note';
+    const requestData = messageData.request?.data || messageData.request?.savedData?.data || {};
     const options = {
-      margin: [10, 10, 10, 10],
-      filename: `${requestType}_request_${requestData.cN?.replace(/\s+/g, '_')}_${Date.now()}.pdf`,
+      margin: [5, 5, 5, 5],  // Reduced margins to avoid blank first page
+      filename: `${requestType}_request_${Date.now()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
-        logging: false
+        logging: false,
+        backgroundColor: '#ffffff'
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'css', avoid: '.request-card, .client-card' }
+      pagebreak: { mode: 'css', avoid: ['.request-card', '.client-card', '.hit-card'] }
     };
     
     console.log('📄 Starting PDF generation with html2pdf...');
@@ -3854,7 +3943,7 @@ async function generateRequestPDF(messageData) {
     // CRITICAL FIX: Create isolated iframe to avoid custom font inheritance
     // This is the ONLY way to truly isolate from styles.css
     const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 794px; height: 1123px;';
+    iframe.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 794px; height: 1123px; border: none;';
     document.body.appendChild(iframe);
     
     // Write our clean HTML to the iframe
@@ -3862,21 +3951,37 @@ async function generateRequestPDF(messageData) {
     iframe.contentDocument.write(pdfHTML);
     iframe.contentDocument.close();
     
-    // Wait for iframe to fully load
+    // Wait for iframe to fully load and fonts to be ready
     await new Promise(resolve => {
       if (iframe.contentDocument.readyState === 'complete') {
-        resolve();
+        // Give fonts time to load
+        setTimeout(resolve, 100);
       } else {
-        iframe.onload = resolve;
+        iframe.onload = () => setTimeout(resolve, 100);
       }
     });
     
-    console.log('📄 HTML written to isolated iframe');
+    // Ensure fonts are explicitly set in iframe document
+    const iframeBody = iframe.contentDocument.body;
+    if (iframeBody) {
+      iframeBody.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
+      iframeBody.style.margin = '0';
+      iframeBody.style.padding = '20px 40px';
+      
+      // Set font on all elements
+      const allElements = iframeBody.querySelectorAll('*');
+      allElements.forEach(el => {
+        el.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
+      });
+    }
     
-    // Generate PDF from iframe's body
+    console.log('📄 HTML written to isolated iframe with Trebuchet MS font enforced');
+    
+    // Generate PDF from iframe's body (use the inner div, not body directly to avoid extra margins)
+    const contentDiv = iframe.contentDocument.body.querySelector('div');
     const pdfBlob = await html2pdf()
       .set(options)
-      .from(iframe.contentDocument.body)
+      .from(contentDiv || iframe.contentDocument.body)
       .outputPdf('blob');
     
     // Clean up iframe
