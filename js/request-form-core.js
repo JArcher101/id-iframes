@@ -3909,6 +3909,26 @@ async function generateRequestPDF(messageData) {
     console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
     console.log('📄 PDF footer found:', element.querySelectorAll('.pdf-footer').length);
     
+    // Log the actual HTML content being passed to html2pdf
+    console.log('📄 ===== FULL HTML CONTENT FOR PDF =====');
+    console.log(element.innerHTML);
+    console.log('📄 ===== END HTML CONTENT =====');
+    
+    // Log specific sections to verify they exist
+    const pdfHeader = element.querySelector('.pdf-header');
+    const clientMatterSection = element.querySelectorAll('.section-title')[0];
+    const requestDetailsSection = element.querySelectorAll('.section-title')[1];
+    const businessInfo = element.querySelector('.hit-card');
+    
+    console.log('📄 PDF Header exists:', !!pdfHeader);
+    console.log('📄 Client & Matter Details section exists:', !!clientMatterSection, clientMatterSection?.textContent);
+    console.log('📄 Request Details section exists:', !!requestDetailsSection, requestDetailsSection?.textContent);
+    console.log('📄 Business Info card exists:', !!businessInfo);
+    
+    if (businessInfo) {
+      console.log('📄 Business Info card HTML:', businessInfo.outerHTML.substring(0, 500));
+    }
+    
     // Configure html2pdf options (EXACTLY like thirdfort-checks-manager.js)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
     const options = {
