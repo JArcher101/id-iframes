@@ -3592,55 +3592,58 @@ function buildRequestPDFHTML(messageData) {
         ${isEntity ? `
           <!-- Business Details -->
           <div style="margin-bottom: 16px;">
-            <div style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 10px;">Business Information</div>
+            <div style="font-size: 16px; font-weight: bold; color: #003c71; margin-bottom: 12px;">Business Details</div>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666;">
               <div style="display: flex; gap: 4px;"><strong style="color: #333;">Business Name:</strong> ${escapeHtml(data.cI?.bD?.title || data.cI?.n?.b || '')}</div>
-              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Entity Number:</strong> ${escapeHtml(data.cI?.eN || data.cI?.bD?.company_number || '')}</div>
-              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Company Type:</strong> ${escapeHtml(data.cI?.bD?.company_type || 'Not provided')}</div>
-              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Registration Country:</strong> ${escapeHtml(data.cI?.bD?.address_snippet?.split(',').pop()?.trim() || 'Unknown')}</div>
+              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Registration:</strong> ${escapeHtml(data.cI?.bD?.address_snippet?.split(',').pop()?.trim() || 'United Kingdom')}</div>
+              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Company Number:</strong> ${escapeHtml(data.cI?.eN || data.cI?.bD?.company_number || 'Not provided')}</div>
+              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Business Type:</strong> ${escapeHtml(data.cI?.bD?.company_type || 'Not provided')}</div>
+              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(data.cI?.e || 'Not provided')}</div>
+              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(data.cI?.m || 'Not provided')}</div>
             </div>
+            
             ${data.cI?.a?.formattedAddress ? `
-              <div style="margin-top: 10px;">
-                <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">REGISTERED ADDRESS:</div>
-                <div style="font-size: 12px; color: #333; line-height: 1.6; background: #f8f9fa; padding: 8px; border-radius: 4px;">${escapeHtml(formatAddress(data.cI.a))}</div>
+            <div style="margin-top: 12px;">
+              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">REGISTERED ADDRESS:</div>
+              <div style="font-size: 12px; color: #333; line-height: 1.6;">
+                ${escapeHtml(formatAddress(data.cI.a))}
               </div>
+            </div>
             ` : ''}
           </div>
         ` : `
           <!-- Individual Details -->
           <div style="margin-bottom: 16px;">
-            <div style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 10px;">Personal Information</div>
+            <div style="font-size: 16px; font-weight: bold; color: #003c71; margin-bottom: 12px;">Personal Information</div>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666;">
               ${data.cI?.n?.t ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Title:</strong> ${escapeHtml(data.cI.n.t)}</div>` : ''}
               ${data.cI?.n?.f ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">First Name:</strong> ${escapeHtml(data.cI.n.f)}</div>` : ''}
               ${data.cI?.n?.m ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Middle Name:</strong> ${escapeHtml(data.cI.n.m)}</div>` : ''}
               ${data.cI?.n?.l ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Last Name:</strong> ${escapeHtml(data.cI.n.l)}</div>` : ''}
               ${data.cI?.b ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Date of Birth:</strong> ${escapeHtml(data.cI.b)}</div>` : ''}
+              ${data.cI?.e ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(data.cI.e)}</div>` : ''}
+              ${data.cI?.m ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(data.cI.m)}</div>` : ''}
               ${data.cI?.nC ? `<div style="display: flex; gap: 4px; grid-column: 1 / -1;"><strong style="color: #333;">Previous/Known As:</strong> ${escapeHtml(data.cI?.pN || '')} ${data.cI?.rNC ? `(${escapeHtml(data.cI.rNC)})` : ''}</div>` : ''}
             </div>
+            
+            ${data.cI?.a?.formattedAddress ? `
+            <div style="margin-top: 12px;">
+              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">CURRENT ADDRESS:</div>
+              <div style="font-size: 12px; color: #333; line-height: 1.6;">
+                ${escapeHtml(formatAddress(data.cI.a))}
+              </div>
+            </div>
+            ` : ''}
+            ${data.cI?.pA?.formattedAddress ? `
+            <div style="margin-top: 12px;">
+              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">PREVIOUS ADDRESS:</div>
+              <div style="font-size: 12px; color: #333; line-height: 1.6;">
+                ${escapeHtml(formatAddress(data.cI.pA))}
+              </div>
+            </div>
+            ` : ''}
           </div>
         `}
-        
-        <!-- Contact Details -->
-        <div style="margin-bottom: 16px; padding-top: 16px; border-top: 1px solid #dee2e6;">
-          <div style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 10px;">Contact Information</div>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666;">
-            ${data.cI?.e ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(data.cI.e)}</div>` : ''}
-            ${data.cI?.m ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(data.cI.m)}</div>` : ''}
-          </div>
-          ${data.cI?.a?.formattedAddress ? `
-            <div style="margin-top: 10px;">
-              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">CURRENT ADDRESS:</div>
-              <div style="font-size: 12px; color: #333; line-height: 1.6; background: #f8f9fa; padding: 8px; border-radius: 4px;">${escapeHtml(formatAddress(data.cI.a))}</div>
-            </div>
-          ` : ''}
-          ${data.cI?.pA?.formattedAddress ? `
-            <div style="margin-top: 10px;">
-              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">PREVIOUS ADDRESS:</div>
-              <div style="font-size: 12px; color: #333; line-height: 1.6; background: #f8f9fa; padding: 8px; border-radius: 4px;">${escapeHtml(formatAddress(data.cI.pA))}</div>
-            </div>
-          ` : ''}
-        </div>
         </div>
       </div>
       
@@ -3891,8 +3894,8 @@ async function generateRequestPDF(messageData) {
     }
     
     // Apply body styles to our container element so html2pdf can calculate dimensions
+    // NOTE: Do NOT apply padding here - the body padding from CSS will be used by html2pdf
     element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
-    element.style.padding = '40px';
     element.style.background = 'white';
     element.style.color = '#111';
     element.style.lineHeight = '1.5';
