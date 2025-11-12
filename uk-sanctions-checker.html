@@ -1660,10 +1660,28 @@
         minute: '2-digit'
       });
       
-      // CRITICAL: Override all custom fonts with system fonts for html2canvas
+      // Build full HTML document (like checks manager)
       let html = `
-        <div style="all: initial; display: block;">
-        <div style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px;">
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
+              padding: 40px; 
+              background: white; 
+              color: #111; 
+              line-height: 1.5; 
+              font-size: 14px; 
+            }
+            .hit-card { page-break-inside: avoid; }
+            @media print { body { padding: 20px; } }
+          </style>
+        </head>
+        <body>
+        <div>
           <!-- PDF Header -->
           <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
             <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">UK Sanctions List Search Report</div>
@@ -1801,7 +1819,8 @@
             <p style="margin-top: 8px; font-style: italic;">This report is for informational purposes only. Verify all information with official sources.</p>
           </div>
         </div>
-        </div>
+        </body>
+        </html>
       `;
       
       return html;
@@ -1819,20 +1838,14 @@
         // Build HTML template for PDF
         const pdfHTML = buildPDFHTML();
         
-        // Create temporary container for html2pdf
-        // CRITICAL: HTML has font isolation wrapper, container just needs positioning
-        const tempContainer = document.createElement('div');
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.left = '-9999px';
-        tempContainer.style.top = '0';
-        tempContainer.style.width = '210mm'; // A4 width
-        tempContainer.innerHTML = pdfHTML;
-        document.body.appendChild(tempContainer);
+        // Create element for html2pdf (like checks manager)
+        // CRITICAL: Do NOT add to document.body to avoid custom font inheritance!
+        const element = document.createElement('div');
+        element.innerHTML = pdfHTML;
         
         console.log('📄 HTML content length:', pdfHTML.length);
-        console.log('📄 HTML preview:', pdfHTML.substring(0, 500));
-        console.log('📄 Temp container created:', tempContainer);
-        console.log('📄 Temp container has children:', tempContainer.children.length);
+        console.log('📄 HTML preview:', pdfHTML.substring(0, 300));
+        console.log('📄 Element created with', element.children.length, 'children');
         
         // Configure html2pdf options (same as checks manager)
         const options = {
@@ -1842,11 +1855,7 @@
           html2canvas: { 
             scale: 2, 
             useCORS: true, 
-            logging: true, // Enable logging to debug
-            letterRendering: true,
-            allowTaint: false,
-            backgroundColor: '#ffffff',
-            removeContainer: false
+            logging: false
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: { mode: 'css', avoid: '.hit-card' }
@@ -1854,15 +1863,10 @@
         
         console.log('📄 Starting PDF generation with html2pdf...');
         
-        // Generate PDF blob using html2pdf (use outputPdf not output)
-        const pdfBlob = await html2pdf().set(options).from(tempContainer).outputPdf('blob');
+        // Generate PDF blob using html2pdf (exactly like checks manager)
+        const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
         
         console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
-        
-        // Clean up temp container
-        document.body.removeChild(tempContainer);
-        
-        console.log('✅ PDF generated using html2pdf');
         
         // Handle PDF - either upload to S3 or open in popup
         if (clientEntryId) {
