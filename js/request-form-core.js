@@ -3876,39 +3876,11 @@ async function generateRequestPDF(messageData) {
     console.log('📄 Element created with', element.children.length, 'children');
     console.log('📄 First 5 children:', Array.from(element.children).slice(0, 5).map(c => c.tagName));
     
-    // Extract style element and content (skip META tags)
-    const styleEl = element.querySelector('style');
-    const contentDivs = Array.from(element.children).filter(c => c.tagName === 'DIV');
-    
-    console.log('📄 Found', contentDivs.length, 'content divs');
-    console.log('📄 Content div classes:', contentDivs.map(d => d.className || 'no-class').join(', '));
-    
-    if (contentDivs.length === 0) {
-      console.error('❌ No content divs found!');
-      throw new Error('No content found in HTML');
-    }
-    
-    // Create clean element - FLAT structure, no wrappers
-    // Just: cleanElement > [style, div, div, div, ...]
-    const cleanElement = document.createElement('div');
-    
-    // Append style element first so CSS applies to siblings
-    if (styleEl) {
-      cleanElement.appendChild(styleEl.cloneNode(true));
-      console.log('📄 Added <style> element');
-    }
-    
-    // Append ALL content divs as direct children
-    contentDivs.forEach(div => {
-      cleanElement.appendChild(div);
-    });
-    
-    // Apply body styles to the cleanElement itself
-    cleanElement.setAttribute('style', 'font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", Arial, sans-serif; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px;');
-    
-    console.log('📄 Clean element ready for PDF with', contentDivs.length, 'content divs');
-    console.log('📄 Section titles found:', cleanElement.querySelectorAll('.section-title').length);
-    console.log('📄 Hit cards found:', cleanElement.querySelectorAll('.hit-card').length);
+    // Pass element DIRECTLY to html2pdf (EXACTLY like sanctions checker line 1844, 1867)
+    // NO manipulation, NO extraction - just use it as-is
+    console.log('📄 Using element AS-IS with', element.children.length, 'children');
+    console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
+    console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
     
     // Configure html2pdf options (EXACTLY like checks manager line 24552-24559)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
@@ -3927,8 +3899,8 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 Starting PDF generation with html2pdf...');
     
-    // Generate PDF blob from clean element (style + content only, no META tags)
-    const pdfBlob = await html2pdf().set(options).from(cleanElement).outputPdf('blob');
+    // Generate PDF blob (EXACTLY like sanctions checker - pass element directly)
+    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
     
