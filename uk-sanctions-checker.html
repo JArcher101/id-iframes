@@ -505,8 +505,34 @@
     }
     
     .badge-match {
-      background: #fff3e0;
-      color: #f57c00;
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    /* Confidence badge variants - match Thirdfort annotation badges */
+    .badge-confidence-very-high {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .badge-confidence-high {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .badge-confidence-medium {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .badge-confidence-low {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .badge-confidence-very-low {
+      background: #f8d7da;
+      color: #721c24;
     }
     
     .result-details {
@@ -1406,10 +1432,11 @@
       errorMessage.classList.add('hidden');
       
       if (currentSearchResults.length === 0) {
-        // No results
-        resultsSummary.classList.add('hidden');
+        // No results - but still show summary with PDF button
         resultsContainer.classList.add('hidden');
         noResults.classList.remove('hidden');
+        resultsSummary.classList.remove('hidden');  // Show summary even with 0 results
+        resultsCount.textContent = currentSearchResults.length;
       } else {
         // Show results
         noResults.classList.add('hidden');
@@ -1459,7 +1486,7 @@
               </span>
               ${searchParams.isFuzzy ? `
                 <span class="badge badge-match">${entry.matchScore}% Match</span>
-                <span class="badge badge-match" style="background: ${getConfidenceColor(entry.confidence)};">
+                <span class="badge badge-confidence-${entry.confidence.toLowerCase().replace(' ', '-')}">
                   ${entry.confidence} Confidence
                 </span>
               ` : ''}
@@ -1660,7 +1687,7 @@
         yPos += 6;
         doc.text(`Search Type: ${searchParams.searchType.charAt(0).toUpperCase() + searchParams.searchType.slice(1)}`, margin, yPos);
         yPos += 6;
-        doc.text(`Match Mode: ${searchParams.isFuzzy ? 'Fuzzy' : 'Exact'}`, margin, yPos);
+        doc.text(`Match Mode: ${searchParams.isFuzzy ? `Fuzzy (${searchParams.threshold}% threshold)` : 'Exact'}`, margin, yPos);
         yPos += 6;
         if (searchParams.searchYOB) {
           doc.text(`Year of Birth: ${searchParams.searchYOB}`, margin, yPos);
@@ -1674,6 +1701,36 @@
         doc.setLineWidth(0.5);
         doc.line(margin, yPos, pageWidth - margin, yPos);
         yPos += 10;
+        
+        // No results message
+        if (currentSearchResults.length === 0) {
+          checkPageBreak(40);
+          doc.setFontSize(14);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(0, 128, 0);
+          doc.text('No Sanctions Matches Found', margin, yPos);
+          yPos += 10;
+          
+          doc.setFontSize(11);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(0, 0, 0);
+          const clearMessage = doc.splitTextToSize(
+            'The search subject does not appear on the UK Sanctions List based on the provided criteria. This indicates a CLEAR result for this specific search.',
+            maxWidth
+          );
+          doc.text(clearMessage, margin, yPos);
+          yPos += clearMessage.length * 6 + 10;
+          
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'italic');
+          doc.setTextColor(100, 100, 100);
+          const disclaimer = doc.splitTextToSize(
+            'Note: This search is limited to the UK Sanctions List only and does not constitute a full PEP or sanctions screening.',
+            maxWidth
+          );
+          doc.text(disclaimer, margin, yPos);
+          yPos += disclaimer.length * 5 + 10;
+        }
         
         // Results
         currentSearchResults.forEach((entry, index) => {
