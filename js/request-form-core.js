@@ -70,6 +70,18 @@ function setupEventListeners() {
     elements.closeError.addEventListener('click', hideError);
   }
   
+  // OFSI required popup buttons
+  const ofsiCancelBtn = document.getElementById('ofsiRequiredCancel');
+  const ofsiSearchBtn = document.getElementById('ofsiRequiredSearch');
+  
+  if (ofsiCancelBtn) {
+    ofsiCancelBtn.addEventListener('click', handleOFSIPopupCancel);
+  }
+  
+  if (ofsiSearchBtn) {
+    ofsiSearchBtn.addEventListener('click', handleOFSIPopupSearch);
+  }
+  
   // Request tag selection
   elements.requestTags.forEach(tag => {
     tag.addEventListener('click', () => selectRequestType(tag.dataset.type));
@@ -300,6 +312,95 @@ function loadRequestTypeContent(type) {
     console.error(`Error loading request type ${type}:`, error);
     showError(`Failed to load request type: ${type}`);
   }
+  
+  // Check if OFSI is required for this type (after module initialization)
+  checkOFSIRequirement(type);
+}
+
+/**
+ * Check if selected request type requires OFSI screening
+ * If required and not present, show popup to prompt user
+ */
+function checkOFSIRequirement(type) {
+  // Types that require OFSI
+  const ofsiRequiredTypes = ['formJ', 'formK', 'formE', 'esof'];
+  
+  if (!ofsiRequiredTypes.includes(type)) {
+    return; // OFSI not required for this type
+  }
+  
+  // Check if OFSI document already exists
+  const hasOFSI = idDocuments.some(doc => doc.type === 'PEP & Sanctions Check');
+  
+  if (hasOFSI) {
+    console.log('✅ OFSI document found, proceeding with', type);
+    return; // OFSI exists, all good
+  }
+  
+  // OFSI required but not found - show popup
+  console.log('⚠️ OFSI required for', type, 'but not found - showing popup');
+  showOFSIRequiredPopup(type);
+}
+
+/**
+ * Show OFSI required popup modal
+ */
+function showOFSIRequiredPopup(requestType) {
+  const popup = document.getElementById('ofsiRequiredPopup');
+  if (!popup) return;
+  
+  // Store the request type that triggered this
+  popup.dataset.requestType = requestType;
+  
+  popup.classList.remove('hidden');
+}
+
+/**
+ * Hide OFSI required popup
+ */
+function hideOFSIRequiredPopup() {
+  const popup = document.getElementById('ofsiRequiredPopup');
+  if (popup) {
+    popup.classList.add('hidden');
+    delete popup.dataset.requestType;
+  }
+}
+
+/**
+ * Handle OFSI popup cancel - deselect the form type
+ */
+function handleOFSIPopupCancel() {
+  const popup = document.getElementById('ofsiRequiredPopup');
+  const requestType = popup?.dataset?.requestType;
+  
+  if (requestType) {
+    console.log('❌ User cancelled OFSI requirement - deselecting', requestType);
+    
+    // Deselect the tag
+    const tag = document.querySelector(`[data-type="${requestType}"]`);
+    if (tag) {
+      tag.classList.remove('selected');
+    }
+    
+    // Reset state
+    previousRequestType = currentRequestType;
+    currentRequestType = null;
+    elements.dynamicContentContainer.innerHTML = '';
+    resetFormUI(previousRequestType, null);
+  }
+  
+  hideOFSIRequiredPopup();
+}
+
+/**
+ * Handle OFSI popup search - open sanctions checker
+ */
+function handleOFSIPopupSearch() {
+  console.log('🔍 User chose to search UK Sanctions List');
+  hideOFSIRequiredPopup();
+  
+  // Call the existing openOFSISearch function
+  openOFSISearch();
 }
 
 // Register a request type module

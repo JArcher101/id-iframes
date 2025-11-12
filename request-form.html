@@ -657,6 +657,24 @@
     <!-- Dynamic Content Container -->
     <div id="dynamicContentContainer"></div>
 
+    <!-- OFSI Required Popup -->
+    <div id="ofsiRequiredPopup" class="modal-overlay hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>⚠️ OFSI Screening Required</h3>
+        </div>
+        <div class="modal-body">
+          <p>This request type requires a PEP & Sanctions screening document.</p>
+          <p style="margin-top: 10px; font-weight: 600;">Would you like to search the UK Sanctions List now?</p>
+          <p style="margin-top: 10px; font-size: 13px; color: #666;">This will open the OFSI search tool with your client's details pre-filled. After completing the search and uploading the PDF, you'll return to this form with your data intact.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="ofsiRequiredCancel" class="modal-btn modal-btn-secondary">Cancel</button>
+          <button type="button" id="ofsiRequiredSearch" class="modal-btn modal-btn-primary">Search UK Sanctions List</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Error Popup -->
   <div id="errorPopup" class="error-popup hidden">
       <div class="error-popup-header">Error</div>
