@@ -3407,13 +3407,26 @@ function buildRequestPDFHTML(messageData) {
   const entryId = lastSentRequestData._id || '';
   const userEmail = lastSentRequestData.user || '';
   
+  console.log('👤 Extracted client info:');
+  console.log('  - clientName:', clientName);
+  console.log('  - clientNumber:', clientNumber);
+  console.log('  - feeEarner:', feeEarner);
+  console.log('  - entryId:', entryId);
+  console.log('  - userEmail:', userEmail);
+  
   // Determine if entity or individual
   const isEntity = data.cI?.bD && Object.keys(data.cI.bD).length > 0;
+  console.log('  - isEntity:', isEntity);
   
   // Get matter details from data
   const workType = data.wT || '';
   const relation = data.r || '';
   const matterDescription = data.mD || '';
+  
+  console.log('📋 Matter details:');
+  console.log('  - workType:', workType);
+  console.log('  - relation:', relation);
+  console.log('  - matterDescription:', matterDescription);
   
   // Get message content from the stored request message
   const messageContent = escapeHtml(requestMessage.message || '');
