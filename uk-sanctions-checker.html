@@ -829,7 +829,7 @@
         <strong>Data Source:</strong> FCDO UK Sanctions List
       </p>
       <p style="font-size: 11px; color: #666; line-height: 1.6; margin-bottom: 8px;">
-        Contains public sector information licensed under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" style="color: #1d71b8; text-decoration: underline;">Open Government Licence v3.0</a>.
+        Contains public sector information licensed under the <a href="#" onclick="openOGLLicence(); return false;" style="color: #1d71b8; text-decoration: underline; cursor: pointer;">Open Government Licence v3.0</a>.
       </p>
       <p style="font-size: 11px; color: #666; line-height: 1.6; font-style: italic;">
         This search tool is for informational purposes only. All matches should be independently verified with official sources.
@@ -1641,6 +1641,17 @@
         expandedDiv.classList.add('visible');
         expandText.textContent = 'Hide Details';
       }
+    };
+    
+    // Open OGL licence in popup window
+    window.openOGLLicence = function() {
+      const width = 900;
+      const height = 700;
+      const left = (screen.width - width) / 2;
+      const top = (screen.height - height) / 2;
+      const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+      
+      window.open('https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/', 'oglLicence', features);
     };
     
     /*
