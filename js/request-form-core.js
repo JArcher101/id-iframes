@@ -3868,31 +3868,18 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     
-    // CRITICAL: Parse HTML and extract ONLY the body's innerHTML (includes wrapper div)
-    // This prevents html2pdf from trying to render html/body structure which causes cutoff
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(pdfHTML, 'text/html');
-    const bodyHTML = doc.body.innerHTML; // This includes our wrapper div and all content
-    const headStyles = doc.head.querySelector('style');
-    
-    // Create element but do NOT add to document.body to avoid custom font inheritance!
+    // CRITICAL: Use innerHTML directly like uk-sanctions-checker (it works perfectly there)
+    // The browser will parse the full HTML document and html2pdf will use the body content
+    // Do NOT extract body.innerHTML - that can cause cutoff issues
     const element = document.createElement('div');
-    
-    // Set body content first (wrapper div + all sections)
-    element.innerHTML = bodyHTML;
-    
-    // Prepend stylesheet from head if it exists (for CSS classes)
-    // Must be prepended AFTER setting innerHTML so it's not replaced
-    if (headStyles) {
-      const styleEl = document.createElement('style');
-      styleEl.textContent = headStyles.textContent;
-      element.insertBefore(styleEl, element.firstChild);
-    }
+    element.innerHTML = pdfHTML;
     
     console.log('📄 Element created with', element.children.length, 'children');
+    console.log('📄 First child:', element.firstChild?.tagName);
+    console.log('📄 Last child:', element.lastChild?.tagName);
     console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
     console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
-    console.log('📄 Body HTML length:', bodyHTML.length);
+    console.log('📄 PDF footer found:', element.querySelectorAll('.pdf-footer').length);
     
     // Configure html2pdf options (EXACTLY like thirdfort-checks-manager.js)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
