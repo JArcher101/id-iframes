@@ -3504,41 +3504,21 @@ function buildRequestPDFHTML(messageData) {
     <head>
       <meta charset="UTF-8">
       <style>
-        * { 
-          margin: 0; 
-          padding: 0; 
-          box-sizing: border-box; 
-          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
-        }
-        html { 
-          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; 
-          padding: 20px; 
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
+          padding: 40px; 
           background: white; 
           color: #111; 
           line-height: 1.5; 
           font-size: 14px; 
-          margin: 0;
         }
-        div {
-          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
-        }
-        .request-card, .client-card { page-break-inside: avoid; }
-        .badge-note { background: #fff3e0; color: #e65100; }
-        .badge-update { background: #e3f2fd; color: #1976d2; }
-        .badge-pep-update { background: #f3e5f5; color: #7b1fa2; }
-        @media print { 
-          body { 
-            padding: 10px !important; 
-            margin: 0 !important;
-          } 
-        }
+        .hit-card { page-break-inside: avoid; }
+        @media print { body { padding: 20px; } }
       </style>
     </head>
-    <body style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; margin: 0; padding: 20px;">
-    <div style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">
+    <body>
+    <div>
       <!-- PDF Header -->
       <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
         <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">
@@ -3887,96 +3867,33 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     console.log('📄 HTML preview (middle):', pdfHTML.substring(3000, 3300));
     
-    // Create element for html2pdf (don't add to DOM to avoid font inheritance)
+    // Create element for html2pdf (EXACTLY like sanctions checker - NO IFRAME!)
     const element = document.createElement('div');
     element.innerHTML = pdfHTML;
     
+    console.log('📄 HTML content length:', pdfHTML.length);
+    console.log('📄 HTML preview:', pdfHTML.substring(0, 300));
     console.log('📄 Element created with', element.children.length, 'children');
     
-    // Log the actual text content to see if there's any visible text
-    console.log('📄 Element text content length:', element.textContent?.length || 0);
-    console.log('📄 Element text preview:', element.textContent?.substring(0, 500));
-    
-    if (element.children.length === 0) {
-      console.error('❌ Element has no children - HTML may have parsing errors');
-      console.log('🔍 Full HTML:', pdfHTML);
-    }
-    
-    // Log the parsed body content
-    const bodyElement = element.querySelector('body');
-    if (bodyElement) {
-      console.log('📄 Body element found, text length:', bodyElement.textContent?.length || 0);
-      console.log('📄 Body first div:', bodyElement.querySelector('div')?.outerHTML?.substring(0, 500));
-    } else {
-      console.error('❌ No body element found in parsed HTML');
-    }
-    
-    // Configure html2pdf options (same as checks manager and sanctions checker)
+    // Configure html2pdf options (EXACTLY like sanctions checker)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
-    const requestData = messageData.request?.data || messageData.request?.savedData?.data || {};
     const options = {
-      margin: [10, 10, 10, 15],  // [top, right, bottom, left] - increased left margin to fix cut-off
+      margin: [10, 10, 10, 10],
       filename: `${requestType}_request_${Date.now()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: 794,  // A4 width in pixels at 96 DPI
-        windowHeight: 1123  // A4 height in pixels at 96 DPI
+        logging: false
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'css', avoid: ['.request-card', '.client-card', '.hit-card'] }
+      pagebreak: { mode: 'css', avoid: '.hit-card' }
     };
     
     console.log('📄 Starting PDF generation with html2pdf...');
     
-    // CRITICAL FIX: Create isolated iframe to avoid custom font inheritance
-    // This is the ONLY way to truly isolate from styles.css
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 794px; height: 1123px; border: none;';
-    document.body.appendChild(iframe);
-    
-    // Write our clean HTML to the iframe
-    iframe.contentDocument.open();
-    iframe.contentDocument.write(pdfHTML);
-    iframe.contentDocument.close();
-    
-    // Wait for iframe to fully load and fonts to be ready
-    await new Promise(resolve => {
-      if (iframe.contentDocument.readyState === 'complete') {
-        // Give fonts time to load
-        setTimeout(resolve, 100);
-      } else {
-        iframe.onload = () => setTimeout(resolve, 100);
-      }
-    });
-    
-    // Ensure fonts are explicitly set in iframe document
-    const iframeBody = iframe.contentDocument.body;
-    if (iframeBody) {
-      iframeBody.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
-      iframeBody.style.margin = '0';
-      iframeBody.style.padding = '10px 20px';
-      
-      // Set font on all elements
-      const allElements = iframeBody.querySelectorAll('*');
-      allElements.forEach(el => {
-        el.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
-      });
-    }
-    
-    console.log('📄 HTML written to isolated iframe with Trebuchet MS font enforced');
-    
-    // Generate PDF from iframe's body (contains ALL content sections)
-    const pdfBlob = await html2pdf()
-      .set(options)
-      .from(iframe.contentDocument.body)
-      .outputPdf('blob');
-    
-    // Clean up iframe
-    document.body.removeChild(iframe);
+    // Generate PDF blob (EXACTLY like sanctions checker - simple and clean!)
+    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
     
