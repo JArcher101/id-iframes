@@ -612,11 +612,15 @@ Sends request-data message to parent with:
       const isEntity = businessCheckbox?.checked || charityCheckbox?.checked;
       
       // ============================================
-      // CDF and OFSI validation (required for ALL Form K - both individuals and entities)
+      // OFSI validation (required for ALL Form K - both individuals and entities)
       // ============================================
       const idDocuments = window.RequestFormCore.idDocuments();
-      const hasCDF = idDocuments.some(doc => doc.type === 'Details form');
       const hasOFSI = idDocuments.some(doc => doc.type === 'PEP & Sanctions Check');
+      
+      // OFSI is always required
+      if (!hasOFSI) {
+        errors.push('You must upload an OFSI (Sanctions Check) or ensure one already exists');
+      }
       
       const cdfFileInput = document.getElementById('cdfFileInput');
       const cdfDocumentType = document.getElementById('cdfDocumentType');
@@ -626,23 +630,25 @@ Sends request-data message to parent with:
         errors.push('You have uploaded a CDF file, please select the document type from the dropdown');
       }
       
-      // Require BOTH CDF and OFSI
-      if (!hasCDF) {
-        errors.push('You must upload a CDF (Client Details Form) or ensure one already exists');
-      }
-      
-      if (!hasOFSI) {
-        errors.push('You must upload an OFSI (Sanctions Check) or ensure one already exists');
-      }
-      
       if (isEntity) {
         // ============================================
-        // ADDITIONAL ENTITY REQUIREMENTS (Business/Charity)
+        // ENTITY REQUIREMENTS (Business/Charity)
         // ============================================
         
-        // EITHER successful company/charity link OR business name + entity number
+        // Check if entity data is successfully linked
         const requestData = window.RequestFormCore.requestData();
         const hasBusinessData = requestData?.cI?.bD && Object.keys(requestData.cI.bD).length > 0;
+        
+        // CDF required ONLY if no successful business link
+        if (!hasBusinessData) {
+          const hasCDF = idDocuments.some(doc => doc.type === 'Details form');
+          
+          if (!hasCDF) {
+            errors.push('You must have a successful company/charity link or upload a CDF document');
+          }
+        } else {
+          console.log('✅ Entity has linked business data - CDF not required');
+        }
         
         // If no successful business link, require business name and entity number
         if (!hasBusinessData) {
@@ -660,8 +666,15 @@ Sends request-data message to parent with:
         
       } else {
         // ============================================
-        // ADDITIONAL INDIVIDUAL REQUIREMENTS
+        // INDIVIDUAL REQUIREMENTS
         // ============================================
+        
+        // CDF is always required for individuals
+        const hasCDF = idDocuments.some(doc => doc.type === 'Details form');
+        
+        if (!hasCDF) {
+          errors.push('You must upload a CDF (Client Details Form) or ensure one already exists');
+        }
         
         // First and Last Name
         const firstName = document.getElementById('firstName');
