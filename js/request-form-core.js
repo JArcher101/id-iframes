@@ -3666,9 +3666,9 @@ function buildRequestPDFHTML(messageData) {
             
             ${(() => {
               const hasCDF = requestPayload.newFiles?.some(f => f.type?.toLowerCase().includes('client details') || f.type?.toLowerCase().includes('cdf')) ||
-                            data.idD?.some(d => d.t?.toLowerCase().includes('client details') || d.t?.toLowerCase().includes('cdf'));
-              const hasOFSI = requestPayload.newFiles?.some(f => f.type?.toLowerCase().includes('pep') || f.type?.toLowerCase().includes('sanctions')) ||
-                             data.idD?.some(d => d.t?.toLowerCase().includes('pep') || d.t?.toLowerCase().includes('sanctions'));
+                            data.idD?.some(d => d.type?.toLowerCase().includes('client details') || d.type?.toLowerCase().includes('cdf'));
+              const hasOFSI = requestPayload.newFiles?.some(f => f.type === 'PEP & Sanctions Check') ||
+                             data.idD?.some(d => d.type === 'PEP & Sanctions Check');
               const cdfRequired = !(isEntity && data.cI?.bD); // CDF not required if entity has linked data
               
               return `
