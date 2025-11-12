@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK Sanctions Search Report - PDF Mockup</title>
+    <style>
+        /* ============================================
+           PDF EXPORT STYLES - MATCHES CHECKS MANAGER
+           Font: Trebuchet MS (system font)
+           ============================================ */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-blue: #003c71;
+            --secondary-blue: #1d71b8;
+            --green: #39b549;
+            --orange: #f7931e;
+            --red: #d32f2f;
+            --grey: #6c757d;
+            --light-grey: #f8f9fa;
+            --border-grey: #dee2e6;
+        }
+        
+        body {
+            font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', sans-serif;
+            padding: 40px;
+            background: white;
+            color: #111;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        
+        /* ============================================
+           PDF HEADER - SEARCH INFORMATION
+           ============================================ */
+        
+        .pdf-header {
+            border-bottom: 3px solid var(--primary-blue);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .pdf-title {
+            font-size: 26px;
+            font-weight: bold;
+            color: var(--primary-blue);
+            margin-bottom: 15px;
+        }
+        
+        .search-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            font-size: 13px;
+        }
+        
+        .search-info-item {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .search-info-label {
+            font-weight: bold;
+            color: var(--grey);
+            min-width: 140px;
+        }
+        
+        .search-info-value {
+            color: #333;
+        }
+        
+        /* ============================================
+           SECTION HEADERS
+           ============================================ */
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-blue);
+            margin: 30px 0 20px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border-grey);
+        }
+        
+        /* ============================================
+           HIT CARDS - MATCH THIRDFORT PEP STYLE
+           ============================================ */
+        
+        .hit-card {
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid var(--red);
+            padding: 12px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        
+        .hit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .hit-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary-blue);
+            flex: 1;
+        }
+        
+        .hit-badges {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .hit-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .badge-individual {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .badge-entity {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .badge-match {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        
+        /* Hit Details Grid */
+        .hit-details {
+            padding: 8px 16px;
+            border-top: 1px solid var(--border-grey);
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        
+        .detail-grid div {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .detail-grid strong {
+            color: #333;
+        }
+        
+        /* Aliases Section */
+        .aliases-section {
+            margin-bottom: 12px;
+        }
+        
+        .aliases-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--grey);
+            margin-bottom: 6px;
+        }
+        
+        .alias-tag {
+            display: inline-block;
+            background: var(--light-grey);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #333;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        
+        /* Sanctions Badges */
+        .sanctions-section {
+            margin-bottom: 12px;
+        }
+        
+        .sanction-tag {
+            display: inline-block;
+            background: #ffebee;
+            color: #c62828;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        
+        /* Match Details Box */
+        .match-details-box {
+            background: #f0f7ff;
+            border: 1px solid #90caf9;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .match-details-box strong {
+            color: #1976d2;
+            font-size: 12px;
+        }
+        
+        .match-details-box div {
+            font-size: 12px;
+            color: #1976d2;
+            line-height: 1.6;
+        }
+        
+        /* Statement Box */
+        .statement-box {
+            background: #fff9f9;
+            border-left: 3px solid var(--red);
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+        
+        .statement-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--grey);
+            margin-bottom: 6px;
+        }
+        
+        .statement-text {
+            font-size: 12px;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        /* PDF Footer */
+        .pdf-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-grey);
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+        }
+        
+        /* No Results Card */
+        .no-results-card {
+            background: #e8f5e9;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .no-results-card .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .no-results-card h3 {
+            font-size: 18px;
+            color: #155724;
+            margin-bottom: 8px;
+        }
+        
+        .no-results-card p {
+            font-size: 13px;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <!-- =================================================================
+         EXAMPLE 1: FUZZY SEARCH WITH MATCHES
+         ================================================================= -->
+    
+    <!-- PDF Header -->
+    <div class="pdf-header">
+        <div class="pdf-title">UK Sanctions List Search Report</div>
+        <div class="search-info">
+            <div class="search-info-item">
+                <span class="search-info-label">Search Name:</span>
+                <span class="search-info-value">Jacob Robert Moran</span>
+            </div>
+            <div class="search-info-item">
+                <span class="search-info-label">Year of Birth:</span>
+                <span class="search-info-value">2001</span>
+            </div>
+            <div class="search-info-item">
+                <span class="search-info-label">Search Type:</span>
+                <span class="search-info-value">Individual</span>
+            </div>
+            <div class="search-info-item">
+                <span class="search-info-label">Match Mode:</span>
+                <span class="search-info-value">Fuzzy (90% threshold)</span>
+            </div>
+            <div class="search-info-item">
+                <span class="search-info-label">Search Date:</span>
+                <span class="search-info-value">12 Nov 2025, 14:32</span>
+            </div>
+            <div class="search-info-item">
+                <span class="search-info-label">Results Found:</span>
+                <span class="search-info-value">7 matches</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    <div class="section-title">Search Results</div>
+    
+    <!-- Hit Card 1: Saab Moran -->
+    <div class="hit-card">
+        <div class="hit-header">
+            <div class="hit-name">Saab Moran Alex Nain</div>
+            <div class="hit-badges">
+                <span class="hit-badge badge-individual">Individual</span>
+                <span class="hit-badge badge-match">95% Match</span>
+                <div style="width: 20px; height: 20px; border-radius: 50%; background: #d32f2f; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">×</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="hit-details">
+            <!-- Match Details -->
+            <div class="match-details-box">
+                <strong>Match Details:</strong>
+                <div>"moran" matched "moran" (95%)</div>
+                <div style="font-size: 11px; color: #666; font-style: italic; margin-top: 4px;">
+                    Matched in: Primary Name • Very High Confidence
+                </div>
+            </div>
+            
+            <!-- Details Grid -->
+            <div class="detail-grid">
+                <div><strong>Unique ID:</strong> GAC0025</div>
+                <div><strong>Date of Birth:</strong> 21/12/1971</div>
+                <div><strong>Nationality:</strong> Colombia, Venezuela</div>
+                <div><strong>Date Designated:</strong> 22/07/2021</div>
+            </div>
+            
+            <!-- Aliases -->
+            <div class="aliases-section">
+                <div class="aliases-label">ALSO KNOWN AS:</div>
+                <span class="alias-tag">Alex Nain Saab Moran</span>
+                <span class="alias-tag">Saab Moran</span>
+            </div>
+            
+            <!-- Sanctions -->
+            <div class="sanctions-section">
+                <div class="aliases-label">SANCTIONS IMPOSED:</div>
+                <span class="sanction-tag">Asset freeze</span>
+                <span class="sanction-tag">Travel Ban</span>
+                <span class="sanction-tag">Director Disqualification</span>
+            </div>
+            
+            <!-- Regime -->
+            <div class="statement-box">
+                <div class="statement-label">REGIME:</div>
+                <div class="statement-text">The Global Anti-Corruption Sanctions Regulations 2021</div>
+            </div>
+            
+            <!-- UK Statement (if present) -->
+            <div class="statement-box" style="margin-top: 12px;">
+                <div class="statement-label">UK STATEMENT OF REASONS:</div>
+                <div class="statement-text">
+                    Saab Moran is or has been involved in serious corruption in Venezuela. He was involved in the 'Local Committees for Supply and Production' (CLAP) and the Great Housing Scheme Venezuela (GMVV). In both programs, contracts were improperly awarded to companies he owned or controlled.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hit Card 2: BUDUEV Nikolai Robertovich -->
+    <div class="hit-card">
+        <div class="hit-header">
+            <div class="hit-name">BUDUEV Nikolai Robertovich</div>
+            <div class="hit-badges">
+                <span class="hit-badge badge-individual">Individual</span>
+                <span class="hit-badge badge-match">90% Match</span>
+                <div style="width: 20px; height: 20px; border-radius: 50%; background: #d32f2f; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">×</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="hit-details">
+            <!-- Match Details -->
+            <div class="match-details-box">
+                <strong>Match Details:</strong>
+                <div>"robert" matched "robertovich" (90%)</div>
+                <div style="font-size: 11px; color: #666; font-style: italic; margin-top: 4px;">
+                    Matched in: Primary Name (patronymic) • Very High Confidence
+                </div>
+            </div>
+            
+            <!-- Details Grid -->
+            <div class="detail-grid">
+                <div><strong>Unique ID:</strong> RUS0324</div>
+                <div><strong>Date of Birth:</strong> Not provided</div>
+                <div><strong>Nationality:</strong> Russia</div>
+                <div><strong>Date Designated:</strong> 11/03/2022</div>
+            </div>
+            
+            <!-- Aliases -->
+            <div class="aliases-section">
+                <div class="aliases-label">ALSO KNOWN AS:</div>
+                <span class="alias-tag">Nikolai Robertovich BUDUEV</span>
+                <span class="alias-tag">BUDUYEV Nikolay Robertovich</span>
+            </div>
+            
+            <!-- Sanctions -->
+            <div class="sanctions-section">
+                <div class="aliases-label">SANCTIONS IMPOSED:</div>
+                <span class="sanction-tag">Asset freeze</span>
+                <span class="sanction-tag">Travel Ban</span>
+                <span class="sanction-tag">Director Disqualification</span>
+                <span class="sanction-tag">Trust Services Sanctions</span>
+            </div>
+            
+            <!-- Regime -->
+            <div class="statement-box">
+                <div class="statement-label">REGIME:</div>
+                <div class="statement-text">Russia</div>
+            </div>
+            
+            <!-- Address -->
+            <div class="statement-box" style="margin-top: 12px; background: #f8f9fa; border-left-color: #6c757d;">
+                <div class="statement-label">ADDRESS:</div>
+                <div class="statement-text">North Korea</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hit Card 3: Mora Salcedo (Entity Example) -->
+    <div class="hit-card">
+        <div class="hit-header">
+            <div class="hit-name">Mora Salcedo</div>
+            <div class="hit-badges">
+                <span class="hit-badge badge-individual">Individual</span>
+                <span class="hit-badge badge-match">90% Match</span>
+                <div style="width: 20px; height: 20px; border-radius: 50%; background: #d32f2f; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">×</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="hit-details">
+            <!-- Match Details -->
+            <div class="match-details-box">
+                <strong>Match Details:</strong>
+                <div>"moran" matched "mora" (90%)</div>
+                <div style="font-size: 11px; color: #666; font-style: italic; margin-top: 4px;">
+                    Matched in: Primary Name • Very High Confidence
+                </div>
+            </div>
+            
+            <!-- Details Grid -->
+            <div class="detail-grid">
+                <div><strong>Unique ID:</strong> VEN0123</div>
+                <div><strong>Date of Birth:</strong> Not provided</div>
+                <div><strong>Nationality:</strong> Venezuela</div>
+                <div><strong>Date Designated:</strong> 31/12/2020</div>
+            </div>
+            
+            <!-- No Aliases -->
+            
+            <!-- Sanctions -->
+            <div class="sanctions-section">
+                <div class="aliases-label">SANCTIONS IMPOSED:</div>
+                <span class="sanction-tag">Asset freeze</span>
+                <span class="sanction-tag">Travel Ban</span>
+                <span class="sanction-tag">Director Disqualification</span>
+            </div>
+            
+            <!-- Regime -->
+            <div class="statement-box">
+                <div class="statement-label">REGIME:</div>
+                <div class="statement-text">The Venezuela (Sanctions) (EU Exit) Regulations 2019</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Summary Card -->
+    <div class="hit-card" style="border-left-color: #1d71b8; margin-top: 24px;">
+        <div style="padding: 12px 16px;">
+            <h4 style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 12px;">Search Summary</h4>
+            <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
+                <div><strong>Total Hits:</strong> 7</div>
+                <div><strong>Individuals:</strong> 7</div>
+                <div><strong>Entities:</strong> 0</div>
+                <div><strong>Search Method:</strong> Fuzzy matching at 90% threshold</div>
+            </div>
+            <div style="background: #fff3e0; padding: 10px; border-radius: 4px; border-left: 3px solid #f7931e; margin-top: 12px;">
+                <div style="font-size: 12px; color: #856404; font-weight: bold;">⚠️ Review Required</div>
+                <div style="font-size: 12px; color: #856404; margin-top: 4px;">
+                    All matches should be reviewed to determine if they are the same person/entity as the search subject. Consider date of birth, nationality, and other identifying information.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PDF Footer -->
+    <div class="pdf-footer">
+        <p>Data source: FCDO UK Sanctions List (https://sanctionslist.fcdo.gov.uk/)</p>
+        <p>Generated by: jacob.archer-moran@thurstanhoskin.co.uk | Report ID: SANC-2025-11-12-1432</p>
+        <p style="margin-top: 8px; font-style: italic;">This report is for informational purposes only. Verify all information with official sources.</p>
+    </div>
+    
+    <!-- PAGE BREAK FOR SECOND EXAMPLE -->
+    <div style="page-break-before: always; margin-top: 60px; border-top: 4px solid #003c71; padding-top: 40px;"></div>
+    
+    <!-- =================================================================
+         EXAMPLE 2: EXACT SEARCH WITH NO MATCHES
+         ================================================================= -->
+    
+    <!-- PDF Header -->
+    <div class="pdf-header">
+        <div class="pdf-title">UK Sanctions List Search Report</div>
+        <div class="search-info">
+            <div class="search-info-item">
+                <span class="search-info-label">Search Name:</span>
+                <span class="search-info-value">John Smith</span>
+            </div>
+            <div class="search-info-item">
+                <span class="search-info-label">Year of Birth:</span>
+                <span class="search-info-value">1990</span>
+            </div>
+            <div class="search-info-item">
+                <span class="search-info-label">Search Type:</span>
+                <span class="search-info-value">Individual</span>
+            </div>
+            <div class="search-info-item">
+                <span class="search-info-label">Match Mode:</span>
+                <span class="search-info-value">Exact Match</span>
+            </div>
+            <div class="search-info-item">
+                <span class="search-info-label">Search Date:</span>
+                <span class="search-info-value">12 Nov 2025, 14:45</span>
+            </div>
+            <div class="search-info-item">
+                <span class="search-info-label">Results Found:</span>
+                <span class="search-info-value">0 matches</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Results -->
+    <div class="no-results-card">
+        <div class="icon">✓</div>
+        <h3>No Sanctions Matches Found</h3>
+        <p>The search subject does not appear on the UK Sanctions List based on the provided criteria.</p>
+        <p style="margin-top: 12px; font-weight: bold;">This does not constitute a full PEP or sanctions screening.</p>
+    </div>
+    
+    <!-- PDF Footer -->
+    <div class="pdf-footer">
+        <p>Data source: FCDO UK Sanctions List (https://sanctionslist.fcdo.gov.uk/)</p>
+        <p>Generated by: jacob.archer-moran@thurstanhoskin.co.uk | Report ID: SANC-2025-11-12-1445</p>
+        <p style="margin-top: 8px; font-style: italic;">This report is for informational purposes only. Verify all information with official sources.</p>
+    </div>
+</body>
+</html>
+
