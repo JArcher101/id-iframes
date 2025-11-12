@@ -3660,158 +3660,61 @@ function buildRequestPDFHTML(messageData) {
             </div>
           </div>
           
-          <!-- Attached File (if any) -->
-          ${attachedFile ? `
-          <div style="background: #e8f5e9; border: 1px solid #81c784; border-radius: 6px; padding: 12px;">
-            <div style="font-size: 11px; font-weight: bold; color: #2e7d32; margin-bottom: 6px; display: flex; align-items: center;">
-              <div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 6px;">
-                <span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">✓</span>
-              </div>
-              FILE ATTACHED
-            </div>
-            <div style="font-size: 12px; color: #333; margin-bottom: 4px;">
-              <strong>File Name:</strong> ${escapeHtml(attachedFile.name || 'Attachment')}
-            </div>
-            <div style="font-size: 11px; color: #666;">
-              <strong>Size:</strong> ${attachedFile.size ? formatFileSize(attachedFile.size) : 'Unknown'} | <strong>Type:</strong> ${escapeHtml(attachedFile.type || 'application/pdf')}
-            </div>
-          </div>
-          ` : `
-          <div style="background: #fff3e0; border: 1px solid #ffb74d; border-radius: 6px; padding: 12px;">
-            <div style="font-size: 11px; font-weight: bold; color: #e65100; margin-bottom: 6px; display: flex; align-items: center;">
-              <div style="width: 16px; height: 16px; border-radius: 50%; background: #f7931e; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 6px;">
-                <span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">−</span>
-              </div>
-              NO FILES ATTACHED
-            </div>
-            <div style="font-size: 12px; color: #e65100;">
-              No documents were uploaded with this request.
-            </div>
-          </div>
-          `}
-        </div>
-      </div>
-      
-      <!-- Form-Specific Requirements & Validation -->
-      ${['formJ', 'formK', 'formE', 'esof'].includes(requestType) ? `
-      <div class="section-title">Form Requirements & Validation</div>
-      
-      <div class="hit-card" style="border-left: 4px solid #1d71b8; page-break-inside: avoid;">
-        
-        ${requestType === 'formK' && messageContent ? `
-          <!-- Form K Selected Rule & Message -->
-          <div style="margin-bottom: 16px; padding: 12px; background: #e3f2fd; border-left: 3px solid #1976d2; border-radius: 4px;">
-            <div style="font-size: 13px; font-weight: bold; color: #0d47a1; margin-bottom: 6px;">SELECTED RULE & MESSAGE:</div>
-            <div style="font-size: 12px; color: #333; line-height: 1.6; white-space: pre-wrap;">${messageContent}</div>
-          </div>
-        ` : ''}
-        
-        <!-- ID Documents Checklist -->
-        <div style="margin-bottom: 12px;">
-          <div style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 10px;">ID Documents Checklist</div>
-          
-          ${(() => {
-            const hasCDF = requestPayload.newFiles?.some(f => f.type?.toLowerCase().includes('client details') || f.type?.toLowerCase().includes('cdf')) ||
-                          data.idD?.some(d => d.t?.toLowerCase().includes('client details') || d.t?.toLowerCase().includes('cdf'));
-            const hasOFSI = requestPayload.newFiles?.some(f => f.type?.toLowerCase().includes('pep') || f.type?.toLowerCase().includes('sanctions')) ||
-                           data.idD?.some(d => d.t?.toLowerCase().includes('pep') || d.t?.toLowerCase().includes('sanctions'));
-            const cdfRequired = !(isEntity && data.cI?.bD); // CDF not required if entity has linked data
-            
-            return `
-              <div style="display: grid; gap: 8px; font-size: 12px;">
-                ${cdfRequired ? `
-                <div style="display: flex; align-items: center; padding: 8px; background: ${hasCDF ? '#e8f5e9' : '#fff3e0'}; border-radius: 4px;">
-                  ${getValidationIcon(hasCDF)}
-                  <span style="color: #333;"><strong>Client Details Form (CDF):</strong> ${hasCDF ? (requestPayload.newFiles?.some(f => f.type?.toLowerCase().includes('client details')) ? 'Uploaded with this request' : 'Previously uploaded') : 'Not uploaded'}</span>
-                </div>
-                ` : `
-                <div style="display: flex; align-items: center; padding: 8px; background: #e8f5e9; border-radius: 4px;">
-                  ${getValidationIcon(true)}
-                  <span style="color: #333;"><strong>Client Details Form (CDF):</strong> Not required (entity data linked)</span>
-                </div>
-                `}
-                
-                <div style="display: flex; align-items: center; padding: 8px; background: ${hasOFSI ? '#e8f5e9' : '#fff3e0'}; border-radius: 4px;">
-                  ${getValidationIcon(hasOFSI)}
-                  <span style="color: #333;"><strong>OFSI Screening:</strong> ${hasOFSI ? (requestPayload.newFiles?.some(f => f.type?.toLowerCase().includes('pep') || f.type?.toLowerCase().includes('sanctions')) ? 'Uploaded with this request' : 'Previously uploaded') : 'Not uploaded'}</span>
-                </div>
-              </div>
-            `;
-          })()}
-        </div>
-        
-        ${requestType === 'formJ' ? `
-          <!-- Form J ID Images Validation -->
-          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #dee2e6;">
-            <div style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 10px;">ID Images Validation</div>
+          <!-- Document Requirements & Validation Checklist -->
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 10px;">Document Requirements</div>
             
             ${(() => {
-              const hasPhotoID = data.i?.p || false;
-              const hasAddressID = data.i?.a || false;
-              const likenessConfirmed = data.i?.l || false;
+              const hasCDF = requestPayload.newFiles?.some(f => f.type?.toLowerCase().includes('client details') || f.type?.toLowerCase().includes('cdf')) ||
+                            data.idD?.some(d => d.t?.toLowerCase().includes('client details') || d.t?.toLowerCase().includes('cdf'));
+              const hasOFSI = requestPayload.newFiles?.some(f => f.type?.toLowerCase().includes('pep') || f.type?.toLowerCase().includes('sanctions')) ||
+                             data.idD?.some(d => d.t?.toLowerCase().includes('pep') || d.t?.toLowerCase().includes('sanctions'));
+              const cdfRequired = !(isEntity && data.cI?.bD); // CDF not required if entity has linked data
               
               return `
                 <div style="display: grid; gap: 8px; font-size: 12px;">
-                  <div style="display: flex; align-items: center; padding: 8px; background: ${hasPhotoID ? '#e8f5e9' : '#ffebee'}; border-radius: 4px;">
-                    ${getValidationIcon(hasPhotoID)}
-                    <span style="color: #333;"><strong>Photo ID Uploaded:</strong> ${hasPhotoID ? 'Yes' : 'No'}</span>
+                  ${cdfRequired ? `
+                  <div style="display: flex; align-items: center; padding: 8px; background: ${hasCDF ? '#e8f5e9' : '#ffebee'}; border-radius: 4px;">
+                    ${getValidationIcon(hasCDF)}
+                    <span style="color: #333;"><strong>Client Details Form (CDF):</strong> ${hasCDF ? 'Already uploaded' : 'Not uploaded'}</span>
+                  </div>
+                  ` : `
+                  <div style="display: flex; align-items: center; padding: 8px; background: #e8f5e9; border-radius: 4px;">
+                    ${getValidationIcon(true)}
+                    <span style="color: #333;"><strong>Client Details Form (CDF):</strong> Not required (entity data linked)</span>
+                  </div>
+                  `}
+                  
+                  <div style="display: flex; align-items: center; padding: 8px; background: ${hasOFSI ? '#e8f5e9' : '#ffebee'}; border-radius: 4px;">
+                    ${getValidationIcon(hasOFSI)}
+                    <span style="color: #333;"><strong>PEP & Sanctions Screening:</strong> ${hasOFSI ? 'Already uploaded' : 'Not uploaded'}</span>
                   </div>
                   
-                  <div style="display: flex; align-items: center; padding: 8px; background: ${hasAddressID ? '#e8f5e9' : '#ffebee'}; border-radius: 4px;">
-                    ${getValidationIcon(hasAddressID)}
-                    <span style="color: #333;"><strong>Address ID Uploaded:</strong> ${hasAddressID ? 'Yes (2 required)' : 'No'}</span>
+                  ${attachedFile ? `
+                  <div style="display: flex; align-items: center; padding: 8px; background: #e8f5e9; border-radius: 4px;">
+                    ${getValidationIcon(true)}
+                    <span style="color: #333;"><strong>Additional File:</strong> ${escapeHtml(attachedFile.name || 'Attached with this request')}</span>
                   </div>
-                  
-                  <div style="display: flex; align-items: center; padding: 8px; background: ${likenessConfirmed ? '#e8f5e9' : '#ffebee'}; border-radius: 4px;">
-                    ${getValidationIcon(likenessConfirmed)}
-                    <span style="color: #333;"><strong>Likeness Confirmed:</strong> ${likenessConfirmed ? 'Yes' : 'No'}</span>
-                  </div>
+                  ` : ''}
                 </div>
               `;
             })()}
           </div>
           
+          ${['formJ', 'formK', 'formE', 'esof'].includes(requestType) ? `
+          <!-- Form Requirements Info -->
           <div style="margin-top: 12px; padding: 10px; background: #fff3e0; border-left: 3px solid #f7931e; border-radius: 4px; font-size: 12px; color: #856404; line-height: 1.6;">
-            <strong>Form J Standard Requirements:</strong><br>
-            • 2 forms of Address ID<br>
-            • 1 form of Photo ID (Front + Back or Single complete document)<br>
-            • Likeness confirmation<br>
-            • Client Details Form (CDF)<br>
-            • OFSI screening
+            <strong>${requestType === 'formJ' ? 'Form J' : requestType === 'formK' ? 'Form K' : requestType === 'formE' ? `Form E${requestPayload.eSoF ? ' + eSoF' : ''}` : 'eSoF'} Requirements:</strong><br>
+            ${requestType === 'formJ' ? '• 2 forms of Address ID<br>• 1 form of Photo ID<br>• Likeness confirmation<br>' : ''}
+            • OFSI screening${requestType === 'formK' ? ' (always required)' : ''}<br>
+            • ${(isEntity && data.cI?.bD && requestType === 'formK') ? 'CDF waived (entity data linked)' : 'Client Details Form (CDF)'}${requestType === 'formK' ? '<br>• Selected rule compliance' : ''}
+            ${requestType === 'formE' || requestType === 'esof' ? '<br>• Electronic verification via Thirdfort' : ''}
+            ${requestPayload.eSoF || requestType === 'esof' ? '<br>• Electronic Source of Funds questionnaire<br>• Source of Wealth bank linking' : ''}
           </div>
-        ` : ''}
-        
-        ${requestType === 'formK' ? `
-          <div style="margin-top: 12px; padding: 10px; background: #fff3e0; border-left: 3px solid #f7931e; border-radius: 4px; font-size: 12px; color: #856404; line-height: 1.6;">
-            <strong>Form K Requirements:</strong><br>
-            • OFSI screening (always required)<br>
-            • ${isEntity && data.cI?.bD ? 'CDF waived (entity data linked from Companies House/Charity Register)' : 'Client Details Form (CDF) required'}<br>
-            • Selected rule compliance
-          </div>
-        ` : ''}
-        
-        ${requestType === 'formE' ? `
-          <div style="margin-top: 12px; padding: 10px; background: #e3f2fd; border-left: 3px solid #1976d2; border-radius: 4px; font-size: 12px; color: #0d47a1; line-height: 1.6;">
-            <strong>Form E${requestPayload.eSoF ? ' + eSoF' : ''} Requirements:</strong><br>
-            • Client Details Form (CDF)<br>
-            • OFSI screening<br>
-            • Electronic verification via Thirdfort<br>
-            ${requestPayload.eSoF ? '• Electronic Source of Funds questionnaire<br>• Source of Wealth bank linking task' : ''}
-          </div>
-        ` : ''}
-        
-        ${requestType === 'esof' ? `
-          <div style="margin-top: 12px; padding: 10px; background: #e3f2fd; border-left: 3px solid #1976d2; border-radius: 4px; font-size: 12px; color: #0d47a1; line-height: 1.6;">
-            <strong>eSoF Requirements:</strong><br>
-            • Client Details Form (CDF)<br>
-            • OFSI screening<br>
-            • Electronic Source of Funds questionnaire<br>
-            • Source of Wealth bank linking task<br>
-            • Purchase transaction worktype
-          </div>
-        ` : ''}
+          ` : ''}
+        </div>
       </div>
-      ` : ''}
+
       
       <!-- Submission Confirmation -->
       <div class="hit-card" style="border-left: 4px solid #39b549; margin-top: 24px; page-break-inside: avoid;">
