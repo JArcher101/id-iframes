@@ -3592,16 +3592,29 @@ async function generateRequestPDF(messageData) {
   
   try {
     // Build HTML template
-    const pdfHTML = buildRequestPDFHTML(messageData);
+    let pdfHTML;
+    try {
+      pdfHTML = buildRequestPDFHTML(messageData);
+      console.log('✅ HTML template built successfully');
+    } catch (htmlError) {
+      console.error('❌ Error building HTML template:', htmlError);
+      throw htmlError;
+    }
     
     console.log('📄 HTML content length:', pdfHTML.length);
-    console.log('📄 HTML preview:', pdfHTML.substring(0, 500));
+    console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
+    console.log('📄 HTML preview (middle):', pdfHTML.substring(3000, 3300));
     
     // Create element for html2pdf (don't add to DOM to avoid font inheritance)
     const element = document.createElement('div');
     element.innerHTML = pdfHTML;
     
     console.log('📄 Element created with', element.children.length, 'children');
+    
+    if (element.children.length === 0) {
+      console.error('❌ Element has no children - HTML may have parsing errors');
+      console.log('🔍 Full HTML:', pdfHTML);
+    }
     
     // Configure html2pdf options (same as checks manager and sanctions checker)
     const requestType = messageData.requestType || 'note';
