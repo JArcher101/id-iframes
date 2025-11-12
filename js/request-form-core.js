@@ -3888,27 +3888,25 @@ async function generateRequestPDF(messageData) {
       throw new Error('No content found in HTML');
     }
     
-    // Create clean element with proper structure for CSS to apply
+    // Create clean element - FLAT structure, no wrappers
+    // Just: cleanElement > [style, div, div, div, ...]
     const cleanElement = document.createElement('div');
     
-    // Create a body-styled wrapper div
-    const bodyWrapper = document.createElement('div');
-    bodyWrapper.setAttribute('style', 'font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", Arial, sans-serif; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px;');
-    
-    // Append style element first
+    // Append style element first so CSS applies to siblings
     if (styleEl) {
-      bodyWrapper.appendChild(styleEl.cloneNode(true));
-      console.log('📄 Added <style> element inside body wrapper');
+      cleanElement.appendChild(styleEl.cloneNode(true));
+      console.log('📄 Added <style> element');
     }
     
-    // Append ALL content divs into the body wrapper
+    // Append ALL content divs as direct children
     contentDivs.forEach(div => {
-      bodyWrapper.appendChild(div);
+      cleanElement.appendChild(div);
     });
     
-    cleanElement.appendChild(bodyWrapper);
+    // Apply body styles to the cleanElement itself
+    cleanElement.setAttribute('style', 'font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", Arial, sans-serif; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px;');
     
-    console.log('📄 Clean element ready for PDF with', contentDivs.length, 'content sections');
+    console.log('📄 Clean element ready for PDF with', contentDivs.length, 'content divs');
     console.log('📄 Section titles found:', cleanElement.querySelectorAll('.section-title').length);
     console.log('📄 Hit cards found:', cleanElement.querySelectorAll('.hit-card').length);
     
