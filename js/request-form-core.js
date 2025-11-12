@@ -3625,7 +3625,10 @@ async function generateRequestPDF(messageData) {
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
-        logging: false
+        logging: true,  // Enable to debug blank PDF
+        letterRendering: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff'
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: 'css', avoid: '.request-card, .client-card' }
