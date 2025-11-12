@@ -3867,7 +3867,7 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     console.log('📄 HTML preview (middle):', pdfHTML.substring(3000, 3300));
     
-    // Create element for html2pdf (EXACTLY like sanctions checker line 1843-1844)
+    // Create element for html2pdf (EXACTLY like sanctions checker line 1843-1844)  
     const element = document.createElement('div');
     element.innerHTML = pdfHTML;
     
@@ -3877,6 +3877,14 @@ async function generateRequestPDF(messageData) {
     console.log('📄 Element.innerHTML length:', element.innerHTML.length);
     console.log('📄 First child:', element.firstElementChild?.tagName);
     console.log('📄 All sections count:', element.querySelectorAll('div[style*="font-size: 18px"]').length);
+    
+    // Add page-break-inside: avoid to all cards to prevent cut-off
+    const allCards = element.querySelectorAll('div[style*="border-radius: 8px"]');
+    allCards.forEach(card => {
+      card.style.pageBreakInside = 'avoid';
+      card.style.breakInside = 'avoid';
+    });
+    console.log('📄 Added page-break-inside: avoid to', allCards.length, 'cards');
     
     // Configure html2pdf options (EXACTLY like sanctions checker lines 1851-1862)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
