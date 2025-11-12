@@ -985,7 +985,8 @@
               matchedName = fullName;
             }
           } else {
-            if (fullName.toLowerCase().includes(searchName.toLowerCase())) {
+            // Exact match: ALL search words must be present in the name
+            if (exactMatch(searchName, fullName)) {
               matchScore = 100;
               matchedName = fullName;
             }
@@ -1001,14 +1002,17 @@
               matchedName = name;
             }
           } else {
-            if (name.toLowerCase().includes(searchName.toLowerCase())) {
+            // Exact match: ALL search words must be present
+            if (exactMatch(searchName, name)) {
               matchScore = 100;
               matchedName = name;
             }
           }
         });
         
-        // Add to results if match found (lowered threshold to 50% for better fuzzy results)
+        // Add to results if match found
+        // Fuzzy: 50% threshold for any word match
+        // Exact: matchScore > 0 means all words were found
         if ((isFuzzy && matchScore >= 50) || (!isFuzzy && matchScore > 0)) {
           currentSearchResults.push({
             ...entry,
@@ -1027,7 +1031,17 @@
       displayResults();
     }
     
+    // Exact match: ALL search words must be present in target
+    function exactMatch(searchTerm, targetName) {
+      const searchWords = searchTerm.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+      const targetLower = targetName.toLowerCase();
+      
+      // Check if ALL search words are present in the target name
+      return searchWords.every(word => targetLower.includes(word));
+    }
+    
     // Fuzzy matching using Levenshtein distance with word-level matching
+    // Returns best similarity score found across all word pairs
     function fuzzyMatchScore(str1, str2) {
       const s1 = str1.toLowerCase();
       const s2 = str2.toLowerCase();
@@ -1044,11 +1058,12 @@
       let bestScore = 0;
       
       // Check each word in search term against each word in target name
+      // If ANY word pair matches well, include this entry
       words1.forEach(searchWord => {
         words2.forEach(targetWord => {
           // Check for substring match first
           if (targetWord.includes(searchWord) || searchWord.includes(targetWord)) {
-            bestScore = Math.max(bestScore, 90);
+            bestScore = Math.max(bestScore, 95);
           } else {
             // Calculate Levenshtein similarity for this word pair
             const distance = levenshteinDistance(searchWord, targetWord);
@@ -1064,6 +1079,7 @@
       const fullMaxLength = Math.max(s1.length, s2.length);
       const fullSimilarity = ((fullMaxLength - fullDistance) / fullMaxLength) * 100;
       
+      // Return the best score found
       return Math.max(bestScore, fullSimilarity);
     }
     
