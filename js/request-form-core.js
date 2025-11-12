@@ -3332,6 +3332,16 @@ REQUEST NOTE/UPDATE PDF GENERATION
 */
 
 /**
+ * Escape HTML special characters for safe display in PDF
+ */
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
  * Build HTML template for request note/update PDF
  * Matching request-note-pdf-mockup.html design
  */
