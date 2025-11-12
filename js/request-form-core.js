@@ -3851,9 +3851,36 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 Starting PDF generation with html2pdf...');
     
-    // CRITICAL: Do NOT add to DOM to avoid font inheritance (like sanctions checker)
-    // Generate PDF blob directly from detached element
-    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+    // CRITICAL FIX: Create isolated iframe to avoid custom font inheritance
+    // This is the ONLY way to truly isolate from styles.css
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 794px; height: 1123px;';
+    document.body.appendChild(iframe);
+    
+    // Write our clean HTML to the iframe
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(pdfHTML);
+    iframe.contentDocument.close();
+    
+    // Wait for iframe to fully load
+    await new Promise(resolve => {
+      if (iframe.contentDocument.readyState === 'complete') {
+        resolve();
+      } else {
+        iframe.onload = resolve;
+      }
+    });
+    
+    console.log('📄 HTML written to isolated iframe');
+    
+    // Generate PDF from iframe's body
+    const pdfBlob = await html2pdf()
+      .set(options)
+      .from(iframe.contentDocument.body)
+      .outputPdf('blob');
+    
+    // Clean up iframe
+    document.body.removeChild(iframe);
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
     
