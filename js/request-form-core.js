@@ -3522,7 +3522,6 @@ function buildRequestPDFHTML(messageData) {
       </style>
     </head>
     <body>
-    <div>
     <!-- PDF Header -->
     <div class="pdf-header">
         <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">
@@ -3833,7 +3832,6 @@ function buildRequestPDFHTML(messageData) {
       <p>Report ID: ${requestType.toUpperCase()}-${Date.now()} | ${escapeHtml(userEmail)}</p>
       <p style="margin-top: 8px; font-style: italic;">This is a system-generated record of the request submission.</p>
     </div>
-    </div>
     </body>
     </html>`;
   
@@ -3892,15 +3890,21 @@ async function generateRequestPDF(messageData) {
       element.insertBefore(styleEl, element.firstChild);
     }
     
+    // Apply body styles to our container element so html2pdf can calculate dimensions
+    element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
+    element.style.padding = '40px';
+    element.style.background = 'white';
+    element.style.color = '#111';
+    element.style.lineHeight = '1.5';
+    element.style.fontSize = '14px';
+    
     console.log('📄 Body children count:', bodyElement.children.length);
-    console.log('📄 Element created with', element.children.length, 'children');
+    console.log('📄 Element created with', element.children.length, 'children (includes STYLE tag)');
     console.log('📄 First child:', element.firstChild?.tagName);
     console.log('📄 Last child:', element.lastChild?.tagName);
-    console.log('📄 Wrapper div children:', element.querySelector('div > div')?.children.length || 'N/A');
     console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
     console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
     console.log('📄 PDF footer found:', element.querySelectorAll('.pdf-footer').length);
-    console.log('📄 Total content height check:', element.scrollHeight, 'px');
     
     // Configure html2pdf options (EXACTLY like thirdfort-checks-manager.js)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
