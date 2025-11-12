@@ -3869,14 +3869,35 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     
-    // Create element for html2pdf (EXACTLY like uk-sanctions-checker.html)
-    // CRITICAL: Do NOT add to document.body to avoid custom font inheritance!
-    const element = document.createElement('div');
-    element.innerHTML = pdfHTML;
+    // Parse HTML and extract body content (to avoid nested HTML structure issues)
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(pdfHTML, 'text/html');
     
-    console.log('📄 Element created with', element.children.length, 'children');
-    console.log('📄 Element inner HTML length:', element.innerHTML.length);
-    console.log('📄 Element text content length:', element.textContent.length);
+    // Create element for html2pdf - use body content only, not full HTML
+    const element = document.createElement('div');
+    
+    // First, insert the styles from <head>
+    const headStyles = doc.head.querySelector('style');
+    if (headStyles) {
+      const styleEl = document.createElement('style');
+      styleEl.textContent = headStyles.textContent;
+      element.appendChild(styleEl);
+    }
+    
+    // Then, clone all body children (the actual PDF content)
+    Array.from(doc.body.children).forEach(child => {
+      element.appendChild(child.cloneNode(true));
+    });
+    
+    // Apply body styles to the container element
+    element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
+    element.style.padding = '40px';
+    element.style.background = 'white';
+    element.style.color = '#111';
+    element.style.lineHeight = '1.5';
+    element.style.fontSize = '14px';
+    
+    console.log('📄 Element created with', element.children.length, 'children (includes STYLE tag)');
     console.log('📄 Number of section-title divs:', element.querySelectorAll('.section-title').length);
     console.log('📄 Number of hit-card divs:', element.querySelectorAll('.hit-card').length);
     console.log('📄 PDF footer exists:', !!element.querySelector('.pdf-footer'));
