@@ -2148,6 +2148,8 @@
         parseSanctionsXML(data.xml);
         console.log(`✅ Parsed ${sanctionsData.length} sanctions entries`);
         
+        // Hide error message if it was showing from a previous failed attempt
+        errorMessage.classList.add('hidden');
         mainContent.classList.remove('hidden');
         loadingOverlay.classList.add('hidden');
         
