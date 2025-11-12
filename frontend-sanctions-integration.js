@@ -120,13 +120,8 @@ export function setupSanctionsMessageListener(iframeId = '#html17') {
                 const updateRes = await handleUploadSuccess(message, iframeId);
                 // Check if we need to return to request form
                 if (message.returnToRequest && updateRes?.uploadedFile) {
-                    console.log('🔄 File uploaded, returning data to page for request form reload...');
-                    // Return the data - page code will handle state switch and initiateRequest
-                    const returnData = await returnToRequest(updateRes.uploadedFile, message._id);
-                    // Dispatch custom event so page code can handle the state switch
-                    window.dispatchEvent(new CustomEvent('sanctions-return-to-request', { 
-                        detail: returnData 
-                    }));
+                    console.log('🔄 Returning to request form with uploaded file...');
+                    await returnToRequest(updateRes.uploadedFile, message._id);
                 }
                 break;
         }
@@ -230,24 +225,30 @@ export async function handleUploadSuccess(message, iframeId) {
  * Return to request form with uploaded file data
  * Switches view back to request form and passes file info
  * 
- * Note: Switching multi-state box causes iframe reload, so we need to:
- * 1. Store the file data temporarily
- * 2. Return the file data to caller so they can pass it to initiateRequest
+ * Note: This function is exported so page code can call initiateRequest
  * 
  * @param {Object} uploadedFile - The uploaded file object from backend
  * @param {string} entryId - The entry ID to reload
- * @returns {Object} - Returns uploaded file for caller to pass to initiateRequest
  */
 export async function returnToRequest(uploadedFile, entryId) {
-    console.log('🔄 Returning to request form with file:', uploadedFile);
+    console.log('🔄 Switching back to request form with file:', uploadedFile);
     console.log('🔄 Entry ID:', entryId);
     
-    // Return the file data so the caller can include it in initiateRequest context
-    // The initiateRequest function will handle reloading the form AND adding the file
-    return {
-        uploadedFile: uploadedFile,
-        entryId: entryId
-    };
+    $w('#loadingSwirl-v2-lightbox').show();
+    $w('#lightboxTitle').text = "New Note, Request or Update";
+    $w('#PreloaderStateBox').changeState("Request");
+    
+    // Call page's initiateRequest function with both entryId and uploadedFile
+    // The page code should implement: initiateRequest(entryId, uploadedFile)
+    // This will reload the form with entry data AND include the uploaded file
+    if (typeof window.initiateRequest === 'function') {
+        await window.initiateRequest(entryId, uploadedFile);
+    } else {
+        console.error('❌ window.initiateRequest function not found - page needs to define this');
+    }
+    
+    $w('#loadingSwirl-v2-lightbox').hide();
+    console.log('✅ Returned to request form');
 }
 
 /**
