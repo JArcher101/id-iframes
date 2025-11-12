@@ -2063,10 +2063,11 @@
     window.addEventListener('message', (event) => {
       if (!event.data || !event.data.type) return;
       
-      console.log('📨 Received message:', event.data.type);
+      console.log('📨 Received message:', event.data.type, event.data);
       
       switch (event.data.type) {
         case 'init-sanctions-search':
+          console.log('🎯 Processing init-sanctions-search message...');
           handleInitMessage(event.data);
           break;
           
@@ -2090,6 +2091,11 @@
     
     function handleInitMessage(data) {
       console.log('📥 Received init data:', data);
+      console.log('  - clientName:', data.clientName);
+      console.log('  - yearOfBirth:', data.yearOfBirth);
+      console.log('  - searchType:', data.searchType);
+      console.log('  - clientEntryId:', data.clientEntryId);
+      console.log('  - returnToRequest:', data.returnToRequest);
       
       // Store client entry ID and user email
       clientEntryId = data.clientEntryId || null;
@@ -2099,11 +2105,13 @@
       // Pre-populate name
       if (data.clientName) {
         searchNameInput.value = data.clientName;
+        console.log('✅ Name field populated:', searchNameInput.value);
       }
       
       // Pre-populate year of birth
       if (data.yearOfBirth) {
         searchYOBInput.value = data.yearOfBirth;
+        console.log('✅ YOB field populated:', searchYOBInput.value);
       }
       
       // Preset search type
@@ -2111,6 +2119,9 @@
         const radio = document.getElementById(`type-${data.searchType.toLowerCase()}`);
         if (radio) {
           radio.checked = true;
+          console.log('✅ Search type set:', data.searchType);
+        } else {
+          console.warn('⚠️ Radio button not found for type:', data.searchType);
         }
       }
       
@@ -2121,7 +2132,7 @@
         generatePdfBtn.textContent = 'Generate PDF Report';
       }
       
-      console.log('✅ Form pre-populated');
+      console.log('✅ Form pre-populated successfully');
     }
     
     function handleSanctionsXML(data) {
