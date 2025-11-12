@@ -3881,24 +3881,29 @@ async function generateRequestPDF(messageData) {
     const contentDivs = Array.from(element.children).filter(c => c.tagName === 'DIV');
     
     console.log('📄 Found', contentDivs.length, 'content divs');
+    console.log('📄 Content div classes:', contentDivs.map(d => d.className || 'no-class').join(', '));
     
     if (contentDivs.length === 0) {
       console.error('❌ No content divs found!');
       throw new Error('No content found in HTML');
     }
     
-    // Create clean element with style + content only
+    // There should be ONE main wrapper div that contains everything
+    // The first DIV should be the main wrapper from <body><div>...</div></body>
+    const mainWrapper = contentDivs[0];
+    console.log('📄 Main wrapper has', mainWrapper.children.length, 'children');
+    console.log('📄 Main wrapper child tags:', Array.from(mainWrapper.children).slice(0, 10).map(c => c.tagName + (c.className ? `.${c.className}` : '')));
+    
+    // Create clean element with style + main wrapper
     const cleanElement = document.createElement('div');
     if (styleEl) {
       cleanElement.appendChild(styleEl.cloneNode(true));
       console.log('📄 Added <style> element to clean element');
     }
-    contentDivs.forEach(div => {
-      cleanElement.appendChild(div);
-    });
+    cleanElement.appendChild(mainWrapper);
     
-    console.log('📄 Clean element has', cleanElement.children.length, 'children (style + content)');
-    console.log('📄 Section titles in clean element:', cleanElement.querySelectorAll('.section-title').length);
+    console.log('📄 Clean element ready for PDF with', mainWrapper.children.length, 'sections');
+    console.log('📄 Section titles found:', cleanElement.querySelectorAll('.section-title').length);
     
     // Configure html2pdf options (EXACTLY like checks manager line 24552-24559)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
