@@ -3915,7 +3915,7 @@ async function generateRequestPDF(messageData) {
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
     const requestData = messageData.request?.data || messageData.request?.savedData?.data || {};
     const options = {
-      margin: [10, 10, 10, 10],  // 10mm margins (matches sanctions checker)
+      margin: [10, 10, 10, 15],  // [top, right, bottom, left] - increased left margin to fix cut-off
       filename: `${requestType}_request_${Date.now()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
@@ -3969,11 +3969,10 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 HTML written to isolated iframe with Trebuchet MS font enforced');
     
-    // Generate PDF from iframe's body (use the inner div, not body directly to avoid extra margins)
-    const contentDiv = iframe.contentDocument.body.querySelector('div');
+    // Generate PDF from iframe's body (contains ALL content sections)
     const pdfBlob = await html2pdf()
       .set(options)
-      .from(contentDiv || iframe.contentDocument.body)
+      .from(iframe.contentDocument.body)
       .outputPdf('blob');
     
     // Clean up iframe
