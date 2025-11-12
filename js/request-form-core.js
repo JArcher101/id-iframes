@@ -3508,17 +3508,18 @@ function buildRequestPDFHTML(messageData) {
         :root { --primary-blue: #003c71; --secondary-blue: #1d71b8; --green: #39b549; --orange: #f7931e; --red: #d32f2f; --grey: #6c757d; --light-grey: #f8f9fa; --border-grey: #dee2e6; }
         body { 
           font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
-          padding: 40px; 
+          padding: 20px; 
           background: white; 
           color: #111; 
           line-height: 1.5; 
           font-size: 14px; 
+          margin: 0;
         }
-        .pdf-header { border-bottom: 3px solid var(--primary-blue); padding-bottom: 20px; margin-bottom: 30px; page-break-after: avoid; }
-        .section-title { font-size: 18px; font-weight: bold; color: var(--primary-blue); margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid var(--border-grey); page-break-after: avoid; }
+        .pdf-header { border-bottom: 3px solid var(--primary-blue); padding-bottom: 20px; margin-bottom: 20px; page-break-after: avoid; }
+        .section-title { font-size: 18px; font-weight: bold; color: var(--primary-blue); margin: 20px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid var(--border-grey); page-break-after: avoid; }
         .hit-card { page-break-inside: avoid; margin-bottom: 16px; background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); }
         .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border-grey); text-align: center; font-size: 11px; color: #999; page-break-before: avoid; }
-        @media print { body { padding: 20px; } }
+        @media print { body { padding: 20px; margin: 0; } }
       </style>
     </head>
     <body>
@@ -3866,26 +3867,13 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     
-    // CRITICAL: Parse HTML and extract ONLY the body content to avoid blank pages
-    // When innerHTML contains a full HTML document with DOCTYPE/html tags, html2pdf tries to render them
-    // We need to extract just the body's innerHTML content
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(pdfHTML, 'text/html');
-    const bodyHTML = doc.body.innerHTML;
-    const headStyles = doc.head.querySelector('style');
-    
-    // Create element but do NOT add to document.body to avoid custom font inheritance!
+    // CRITICAL: Create element but do NOT add to document.body to avoid custom font inheritance!
+    // This matches the EXACT pattern from uk-sanctions-checker.html which works perfectly
+    // When innerHTML contains a full HTML document, the browser parses it and html2pdf uses the body content
     const element = document.createElement('div');
+    element.innerHTML = pdfHTML;
     
-    // Add stylesheet from head if it exists (for CSS classes)
-    if (headStyles) {
-      const styleEl = document.createElement('style');
-      styleEl.textContent = headStyles.textContent;
-      element.appendChild(styleEl);
-    }
-    
-    // Set only the body content (not the body element itself)
-    element.innerHTML = bodyHTML;
+    // Note: Element is NOT appended to document.body - this prevents custom font inheritance
     
     console.log('📄 Element created with', element.children.length, 'children');
     console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
