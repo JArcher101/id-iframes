@@ -3667,7 +3667,10 @@ function buildRequestPDFHTML(messageData) {
             ${(() => {
               const hasCDF = requestPayload.newFiles?.some(f => f.type?.toLowerCase().includes('client details') || f.type?.toLowerCase().includes('cdf')) ||
                             data.idD?.some(d => d.type?.toLowerCase().includes('client details') || d.type?.toLowerCase().includes('cdf'));
-              const hasOFSI = requestPayload.newFiles?.some(f => f.type === 'PEP & Sanctions Check') ||
+              // OFSI is ALWAYS required for form submissions - if we're generating PDF, it must exist
+              const ofsiRequiredForms = ['formJ', 'formK', 'formE', 'esof'];
+              const hasOFSI = ofsiRequiredForms.includes(requestType) || 
+                             requestPayload.newFiles?.some(f => f.type === 'PEP & Sanctions Check') ||
                              data.idD?.some(d => d.type === 'PEP & Sanctions Check');
               const cdfRequired = !(isEntity && data.cI?.bD); // CDF not required if entity has linked data
               
