@@ -3883,40 +3883,18 @@ async function generateRequestPDF(messageData) {
     // Wait for iframe to finish rendering
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    // Extract the body element and style from iframe
+    // Extract the body element from iframe
     const iframeBody = iframeDoc.body;
-    const iframeStyle = iframeDoc.querySelector('style');
     
     console.log('📄 Iframe body has', iframeBody.children.length, 'children');
     console.log('📄 Section titles found:', iframeBody.querySelectorAll('.section-title').length);
     console.log('📄 Hit cards found:', iframeBody.querySelectorAll('.hit-card').length);
     
-    // Create a container with style + body content
-    const element = document.createElement('div');
+    // Pass iframe body DIRECTLY to html2pdf (don't clone, don't extract)
+    // The iframe ensures styles are applied correctly
+    const element = iframeBody;
     
-    // Add the style tag first
-    if (iframeStyle) {
-      element.appendChild(iframeStyle.cloneNode(true));
-      console.log('📄 Added style tag to element');
-    }
-    
-    // Add all body children
-    Array.from(iframeBody.children).forEach(child => {
-      element.appendChild(child.cloneNode(true));
-    });
-    
-    // Apply body styles to container
-    element.style.fontFamily = window.getComputedStyle(iframeBody).fontFamily;
-    element.style.padding = window.getComputedStyle(iframeBody).padding;
-    element.style.background = 'white';
-    element.style.color = '#111';
-    element.style.fontSize = '14px';
-    element.style.lineHeight = '1.5';
-    
-    // Remove temporary iframe
-    document.body.removeChild(iframe);
-    
-    console.log('📄 Element ready with style + body content:', element.children.length, 'children');
+    console.log('📄 Using iframe body directly for PDF');
     
     // Configure html2pdf options (EXACTLY like sanctions checker - NO width/height constraints)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
@@ -3935,10 +3913,14 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 Starting PDF generation with html2pdf...');
     
-    // Generate PDF blob (EXACTLY like sanctions checker - pass element directly)
+    // Generate PDF blob from iframe body
     const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
+    
+    // Remove temporary iframe after PDF is generated
+    document.body.removeChild(iframe);
+    console.log('📄 Cleaned up temporary iframe');
     
     // Open PDF in popup window
     const pdfUrl = URL.createObjectURL(pdfBlob);
