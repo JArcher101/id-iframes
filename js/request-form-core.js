@@ -3882,19 +3882,8 @@ async function generateRequestPDF(messageData) {
     console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
     console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
     
-    // Configure html2pdf options
+    // Configure html2pdf options (EXACTLY like sanctions checker - NO width/height constraints)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
-    
-    // Set explicit width and body styles on element to prevent cut-off
-    element.style.width = '210mm'; // A4 width
-    element.style.boxSizing = 'border-box';
-    element.style.padding = '20px';  // Reduced from 40px to fix large top gap
-    element.style.fontFamily = '"Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", Arial, sans-serif';
-    element.style.background = 'white';
-    element.style.color = '#111';
-    element.style.fontSize = '14px';
-    element.style.lineHeight = '1.5';
-    
     const options = {
       margin: [10, 10, 10, 10],
       filename: `${requestType}_request_${Date.now()}.pdf`,
@@ -3902,12 +3891,10 @@ async function generateRequestPDF(messageData) {
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
-        logging: true,  // Enable logging to see what's happening
-        width: 794,  // A4 width in pixels at 96 DPI (210mm)
-        height: null  // Auto height
+        logging: false
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'css', avoid: 'div[style*="page-break-inside: avoid"]' }
+      pagebreak: { mode: 'css', avoid: '.hit-card' }
     };
     
     console.log('📄 Starting PDF generation with html2pdf...');
