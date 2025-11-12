@@ -3868,15 +3868,36 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     
-    // CRITICAL: Use innerHTML directly like uk-sanctions-checker (it works perfectly there)
-    // The browser will parse the full HTML document and html2pdf will use the body content
-    // Do NOT extract body.innerHTML - that can cause cutoff issues
+    // CRITICAL: Parse HTML and extract the wrapper div from body (not body element itself)
+    // When you set innerHTML to full HTML doc, browser creates HTML element as first child
+    // html2pdf needs the wrapper div (first child of body), not the body or HTML element
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(pdfHTML, 'text/html');
+    const bodyElement = doc.body;
+    const wrapperDiv = bodyElement.firstElementChild; // Get the wrapper div inside body
+    
+    if (!wrapperDiv) {
+      throw new Error('Wrapper div not found in PDF HTML body');
+    }
+    
+    // Create wrapper div but do NOT add to document.body to avoid custom font inheritance!
     const element = document.createElement('div');
-    element.innerHTML = pdfHTML;
+    
+    // Clone the wrapper div and append it (this preserves all content including all sections)
+    const wrapperClone = wrapperDiv.cloneNode(true);
+    element.appendChild(wrapperClone);
+    
+    // Also need to preserve styles from head
+    const headStyles = doc.head.querySelector('style');
+    if (headStyles) {
+      const styleEl = document.createElement('style');
+      styleEl.textContent = headStyles.textContent;
+      element.insertBefore(styleEl, element.firstChild);
+    }
     
     console.log('📄 Element created with', element.children.length, 'children');
     console.log('📄 First child:', element.firstChild?.tagName);
-    console.log('📄 Last child:', element.lastChild?.tagName);
+    console.log('📄 Wrapper div children:', wrapperDiv.children.length);
     console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
     console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
     console.log('📄 PDF footer found:', element.querySelectorAll('.pdf-footer').length);
