@@ -3671,8 +3671,20 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 Starting PDF generation with html2pdf...');
     
+    // CRITICAL FIX: Temporarily add element to a hidden container to isolate from custom fonts
+    // This prevents html2canvas from trying to load base64 custom fonts from styles.css
+    const tempContainer = document.createElement('div');
+    tempContainer.style.cssText = 'position: absolute; left: -9999px; top: 0; font-family: "Trebuchet MS", "Lucida Grande", sans-serif !important;';
+    tempContainer.appendChild(element);
+    document.body.appendChild(tempContainer);
+    
+    console.log('📄 Element temporarily added to hidden container to bypass custom fonts');
+    
     // Generate PDF blob
     const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+    
+    // Clean up
+    document.body.removeChild(tempContainer);
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
     
