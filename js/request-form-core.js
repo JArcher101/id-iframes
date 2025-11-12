@@ -3878,6 +3878,26 @@ async function generateRequestPDF(messageData) {
     console.log('📄 First child:', element.firstElementChild?.tagName);
     console.log('📄 All sections count:', element.querySelectorAll('div[style*="font-size: 18px"]').length);
     
+    // DEBUG: Check what sections are actually in the element
+    const sectionTitles = element.querySelectorAll('div[style*="font-size: 18px"]');
+    console.log('📄 Section titles found:', Array.from(sectionTitles).map(s => s.textContent.trim()));
+    
+    // DEBUG: Check if there's a BODY element
+    const bodyEl = element.querySelector('body');
+    if (bodyEl) {
+      console.log('📄 BODY element found! Using body instead of div');
+      // Use body element which will have the CSS styles applied
+      const bodyDiv = bodyEl.querySelector('div');
+      if (bodyDiv) {
+        console.log('📄 Found div inside body, using that instead');
+        // Replace element with the actual content div from body
+        while (element.firstChild) {
+          element.removeChild(element.firstChild);
+        }
+        element.appendChild(bodyDiv);
+      }
+    }
+    
     // Add page-break-inside: avoid to all cards to prevent cut-off
     const allCards = element.querySelectorAll('div[style*="border-radius: 8px"]');
     allCards.forEach(card => {
@@ -3885,6 +3905,7 @@ async function generateRequestPDF(messageData) {
       card.style.breakInside = 'avoid';
     });
     console.log('📄 Added page-break-inside: avoid to', allCards.length, 'cards');
+    console.log('📄 Final element to pass to html2pdf has', element.children.length, 'children');
     
     // Configure html2pdf options (EXACTLY like sanctions checker lines 1851-1862)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
