@@ -117,7 +117,12 @@ export function setupSanctionsMessageListener(iframeId = '#html17') {
                 
             case 'upload-success':
                 // Update entry with uploaded sanctions PDF
-                await handleUploadSuccess(message, iframeId);
+                const updateRes = await handleUploadSuccess(message, iframeId);
+                // Check if we need to return to request form
+                if (message.returnToRequest && updateRes?.uploadedFile) {
+                    console.log('🔄 Returning to request form with uploaded file...');
+                    await returnToRequest(updateRes.uploadedFile);
+                }
                 break;
         }
     });
@@ -214,6 +219,32 @@ async function handleUploadSuccess(message, iframeId) {
         // Re-throw for caller to handle
         throw error;
     }
+}
+
+/**
+ * Return to request form with uploaded file data
+ * Switches view back to request form and passes file info
+ */
+async function returnToRequest(uploadedFile) {
+    console.log('🔄 Switching back to request form with file:', uploadedFile);
+    
+    $w('#loadingSwirl-v2-lightbox').show();
+    $w('#lightboxTitle').text = "New Note, Request or Update";
+    $w('#PreloaderStateBox').changeState("Request");
+    
+    // Send full file object to request form iframe
+    $w('#iframeRequest').postMessage({
+        type: 'sanctions-file-uploaded',
+        s3Key: uploadedFile.s3Key,
+        liveUrl: uploadedFile.liveUrl,
+        date: uploadedFile.date,
+        uploader: uploadedFile.uploader,
+        fileName: uploadedFile.fileName,
+        fileSize: uploadedFile.fileSize
+    });
+    
+    $w('#loadingSwirl-v2-lightbox').hide();
+    console.log('✅ Returned to request form with file data');
 }
 
 /**
