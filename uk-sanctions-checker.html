@@ -1088,21 +1088,33 @@
       
       // Check each word in search term against each word in target name
       words1.forEach(searchWord => {
-        // Skip very short search words (less than 3 characters)
-        if (searchWord.length < 3) {
+        // Skip single character words
+        if (searchWord.length < 2) {
           return;
         }
         
         let bestWordMatch = { score: 0, target: '', type: '' };
         
         words2.forEach(targetWord => {
-          // Skip very short target words (1-2 characters) as they cause false matches
-          if (targetWord.length < 3) {
+          // Skip single character target words
+          if (targetWord.length < 2) {
             return;
           }
           
           let wordScore = 0;
           let matchType = '';
+          
+          // For 2-character words, require EXACT match only
+          if (searchWord.length === 2 || targetWord.length === 2) {
+            if (searchWord === targetWord) {
+              wordScore = 100;
+              matchType = 'exact';
+            }
+            // Skip fuzzy matching for 2-char words
+            return;
+          }
+          
+          // For 3+ character words, allow fuzzy matching
           
           // Check for substring match
           if (targetWord.includes(searchWord)) {
