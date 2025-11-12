@@ -3457,7 +3457,12 @@ function buildRequestPDFHTML(messageData) {
     <head>
       <meta charset="UTF-8">
       <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { 
+          margin: 0; 
+          padding: 0; 
+          box-sizing: border-box; 
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
+        }
         body { 
           font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; 
           padding: 40px; 
@@ -3465,6 +3470,9 @@ function buildRequestPDFHTML(messageData) {
           color: #111; 
           line-height: 1.5; 
           font-size: 14px; 
+        }
+        div, span, p, strong, em { 
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
         }
         .request-card, .client-card { page-break-inside: avoid; }
         .badge-note { background: #fff3e0; color: #e65100; }
