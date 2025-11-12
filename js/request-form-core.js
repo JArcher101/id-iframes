@@ -3518,7 +3518,7 @@ function buildRequestPDFHTML(messageData) {
       </style>
     </head>
     <body>
-    <div>
+    <div style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px;">
       <!-- PDF Header -->
       <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
         <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">
