@@ -3909,24 +3909,37 @@ async function generateRequestPDF(messageData) {
     console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
     console.log('📄 PDF footer found:', element.querySelectorAll('.pdf-footer').length);
     
-    // Log the actual HTML content being passed to html2pdf
-    console.log('📄 ===== FULL HTML CONTENT FOR PDF =====');
-    console.log(element.innerHTML);
-    console.log('📄 ===== END HTML CONTENT =====');
-    
-    // Log specific sections to verify they exist
+    // Log specific sections to verify content completeness
     const pdfHeader = element.querySelector('.pdf-header');
     const clientMatterSection = element.querySelectorAll('.section-title')[0];
     const requestDetailsSection = element.querySelectorAll('.section-title')[1];
-    const businessInfo = element.querySelector('.hit-card');
+    const businessInfoCard = element.querySelector('.hit-card');
     
     console.log('📄 PDF Header exists:', !!pdfHeader);
     console.log('📄 Client & Matter Details section exists:', !!clientMatterSection, clientMatterSection?.textContent);
     console.log('📄 Request Details section exists:', !!requestDetailsSection, requestDetailsSection?.textContent);
-    console.log('📄 Business Info card exists:', !!businessInfo);
+    console.log('📄 Business Info card exists:', !!businessInfoCard);
     
-    if (businessInfo) {
-      console.log('📄 Business Info card HTML:', businessInfo.outerHTML.substring(0, 500));
+    // Check if Business Details section contains expected fields
+    if (businessInfoCard) {
+      const businessDetailsHTML = businessInfoCard.innerHTML;
+      console.log('📄 Business Details HTML length:', businessDetailsHTML.length);
+      console.log('📄 Contains "Business Details":', businessDetailsHTML.includes('Business Details'));
+      console.log('📄 Contains "Business Name":', businessDetailsHTML.includes('Business Name'));
+      console.log('📄 Contains "Company Number":', businessDetailsHTML.includes('Company Number'));
+      console.log('📄 Contains "Email":', businessDetailsHTML.includes('Email'));
+      console.log('📄 Contains "Phone":', businessDetailsHTML.includes('Phone'));
+      console.log('📄 Contains "REGISTERED ADDRESS":', businessDetailsHTML.includes('REGISTERED ADDRESS'));
+      
+      // Extract and log the Business Details section specifically
+      const businessDetailsMatch = businessDetailsHTML.match(/<div style="font-size: 16px[^>]*>Business Details<\/div>([\s\S]*?)(?=<\/div>\s*<\/div>|$)/);
+      if (businessDetailsMatch) {
+        console.log('📄 ===== BUSINESS DETAILS SECTION =====');
+        console.log(businessDetailsMatch[0]);
+        console.log('📄 ===== END BUSINESS DETAILS =====');
+      } else {
+        console.log('⚠️ Business Details section NOT FOUND in HTML!');
+      }
     }
     
     // Configure html2pdf options (EXACTLY like thirdfort-checks-manager.js)
