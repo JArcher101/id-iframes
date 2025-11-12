@@ -3,7 +3,6 @@
 // Add this code to your Wix frontend page
 
 import { callWithTimeout } from 'public/functions/backend-timeout.js';
-import wixWindowFrontend from 'wix-window-frontend';
 
 // Import backend functions
 import { getSanctionsXML, updateEntryWithSanctionsPDF } from 'backend/sanctions-integration.web.js';

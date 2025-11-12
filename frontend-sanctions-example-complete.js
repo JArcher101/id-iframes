@@ -3,7 +3,6 @@
 // This matches your existing Thirdfort integration pattern
 
 import { callWithTimeout } from 'public/functions/backend-timeout.js';
-import wixWindowFrontend from 'wix-window-frontend';
 
 // Import backend functions
 import { getSanctionsXML, updateEntryWithSanctionsPDF } from 'backend/sanctions-integration.web.js';
@@ -35,7 +34,6 @@ export async function initiateSanctions(context) {
             error: error.message || 'Failed to fetch sanctions data'
         });
         $w('#loadingSwirl-v2-lightbox').hide();
-        wixWindowFrontend.showNotification('Failed to load sanctions data', 'error');
         return;
     }
     
@@ -234,7 +232,10 @@ export async function onManualSanctionsSearchClick() {
     } catch (error) {
         console.error('❌ Failed to load sanctions:', error);
         $w('#loadingSwirl-v2-lightbox').hide();
-        wixWindowFrontend.showNotification('Failed to load sanctions data', 'error');
+        $w('#html17').postMessage({
+            type: 'sanctions-xml',
+            error: error.message || 'Failed to fetch sanctions data'
+        });
     }
 }
 
