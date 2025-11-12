@@ -704,6 +704,16 @@
         </div>
       </div>
       
+      <div class="form-group" id="fuzzy-threshold-group" style="display: none;">
+        <label for="fuzzy-threshold">Fuzzy Match Threshold: <span id="threshold-value">75</span>%</label>
+        <input type="range" id="fuzzy-threshold" min="50" max="95" value="75" step="5" 
+               style="width: 100%; cursor: pointer;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 5px;">
+          <span>More Results (50%)</span>
+          <span>Stricter (95%)</span>
+        </div>
+      </div>
+      
       <button id="search-btn" class="btn">Search Sanctions List</button>
     </div>
     
@@ -752,6 +762,9 @@
     const searchNameInput = document.getElementById('search-name');
     const searchYOBInput = document.getElementById('search-yob');
     const fuzzyToggle = document.getElementById('fuzzy-toggle');
+    const fuzzyThresholdGroup = document.getElementById('fuzzy-threshold-group');
+    const fuzzyThreshold = document.getElementById('fuzzy-threshold');
+    const thresholdValue = document.getElementById('threshold-value');
     const searchBtn = document.getElementById('search-btn');
     const errorMessage = document.getElementById('error-message');
     const resultsSummary = document.getElementById('results-summary');
@@ -937,16 +950,17 @@
       const searchYOB = searchYOBInput.value.trim();
       const searchType = document.querySelector('input[name="search-type"]:checked').value;
       const isFuzzy = fuzzyToggle.checked;
+      const threshold = parseInt(fuzzyThreshold.value);
       
       if (!searchName) {
         showError('Please enter a name to search');
         return;
       }
       
-      console.log('🔍 Searching:', { searchName, searchYOB, searchType, isFuzzy });
+      console.log('🔍 Searching:', { searchName, searchYOB, searchType, isFuzzy, threshold });
       
       // Store search params for PDF generation
-      searchParams = { searchName, searchYOB, searchType, isFuzzy };
+      searchParams = { searchName, searchYOB, searchType, isFuzzy, threshold };
       
       // Filter by type
       let filtered = sanctionsData.filter(entry => 
@@ -1021,9 +1035,10 @@
         });
         
         // Add to results if match found
-        // Fuzzy: 50% threshold for any word match
+        // Fuzzy: Use user-selected threshold
         // Exact: matchScore > 0 means all words were found
-        if ((isFuzzy && matchScore >= 50) || (!isFuzzy && matchScore > 0)) {
+        const fuzzyThreshold = searchParams.threshold || 75;
+        if ((isFuzzy && matchScore >= fuzzyThreshold) || (!isFuzzy && matchScore > 0)) {
           currentSearchResults.push({
             ...entry,
             matchScore: Math.round(matchScore),
@@ -2005,6 +2020,20 @@
     });
     
     generatePdfBtn.addEventListener('click', generatePDF);
+    
+    // Toggle fuzzy threshold slider visibility
+    fuzzyToggle.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        fuzzyThresholdGroup.style.display = 'block';
+      } else {
+        fuzzyThresholdGroup.style.display = 'none';
+      }
+    });
+    
+    // Update threshold value display
+    fuzzyThreshold.addEventListener('input', (e) => {
+      thresholdValue.textContent = e.target.value;
+    });
     
     /*
     =====================================================================
