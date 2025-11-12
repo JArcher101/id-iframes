@@ -710,24 +710,7 @@ Sends request-data message to parent with:
         
         this.formattedDOB = dobValidation.formatted;
         
-        // OFSI OR CDF (existing or uploaded)
-        const idDocuments = window.RequestFormCore.idDocuments();
-        const hasCDF = idDocuments.some(doc => doc.type === 'Details form');
-        const hasOFSI = idDocuments.some(doc => doc.type === 'PEP & Sanctions Check');
-        const cdfFileInput = document.getElementById('cdfFileInput');
-        const ofsiFileInput = document.getElementById('ofsiFileInput');
-        const cdfUploaded = cdfFileInput?.files[0];
-        const ofsiUploaded = ofsiFileInput?.files[0];
-        
-        if (!hasCDF && !hasOFSI && !cdfUploaded && !ofsiUploaded) {
-          errors.push('You must upload a CDF or OFSI document, or ensure at least one already exists');
-        }
-        
-        // If CDF uploaded, dropdown required
-        const cdfDocumentType = document.getElementById('cdfDocumentType');
-        if (cdfUploaded && !cdfDocumentType?.value) {
-          errors.push('You have uploaded a CDF file, please select the document type from the dropdown');
-        }
+        // Note: CDF and OFSI validation is handled above (lines 614-677) based on entity vs individual
       }
       
       return {
