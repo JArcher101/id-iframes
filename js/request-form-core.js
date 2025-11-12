@@ -3875,6 +3875,11 @@ async function generateRequestPDF(messageData) {
     element.innerHTML = pdfHTML;
     
     console.log('📄 Element created with', element.children.length, 'children');
+    console.log('📄 Element inner HTML length:', element.innerHTML.length);
+    console.log('📄 Element text content length:', element.textContent.length);
+    console.log('📄 Number of section-title divs:', element.querySelectorAll('.section-title').length);
+    console.log('📄 Number of hit-card divs:', element.querySelectorAll('.hit-card').length);
+    console.log('📄 PDF footer exists:', !!element.querySelector('.pdf-footer'));
     
     // Configure html2pdf options (EXACTLY like thirdfort-checks-manager.js)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
