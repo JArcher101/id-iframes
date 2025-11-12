@@ -1087,11 +1087,22 @@
             wordScore = 90;
             matchType = 'partial';
           } else {
+            // Check phonetic similarity for name matching
+            const phoneticScore = phoneticSimilarity(searchWord, targetWord);
+            
             // Calculate Levenshtein similarity for this word pair
             const distance = levenshteinDistance(searchWord, targetWord);
             const maxLength = Math.max(searchWord.length, targetWord.length);
-            wordScore = ((maxLength - distance) / maxLength) * 100;
-            matchType = 'similar';
+            const levenshteinScore = ((maxLength - distance) / maxLength) * 100;
+            
+            // Use the better of phonetic or Levenshtein
+            if (phoneticScore > levenshteinScore) {
+              wordScore = phoneticScore;
+              matchType = 'phonetic';
+            } else {
+              wordScore = levenshteinScore;
+              matchType = 'similar';
+            }
           }
           
           if (wordScore > bestWordMatch.score) {
@@ -1110,7 +1121,10 @@
       if (matchedWords.length > 0) {
         const matches = matchedWords
           .sort((a, b) => b.score - a.score)
-          .map(m => `"${m.search}" matched "${m.target}" (${Math.round(m.score)}%)`)
+          .map(m => {
+            const typeLabel = m.type === 'phonetic' ? 'sounds like' : 'similar to';
+            return `"${m.search}" ${m.type === 'contains' || m.type === 'partial' ? 'matched' : typeLabel} "${m.target}" (${Math.round(m.score)}%)`;
+          })
           .join(', ');
         details = matches;
       }
@@ -1126,6 +1140,63 @@
       }
       
       return { score: bestScore, details: details || 'Low similarity match' };
+    }
+    
+    // Phonetic similarity for name matching
+    // Handles common name spelling variations and misspellings
+    function phoneticSimilarity(word1, word2) {
+      // Apply phonetic normalization rules
+      const normalized1 = normalizePhonetic(word1);
+      const normalized2 = normalizePhonetic(word2);
+      
+      // If normalized forms match exactly, high score
+      if (normalized1 === normalized2) {
+        return 85;
+      }
+      
+      // Check Levenshtein on normalized forms
+      const distance = levenshteinDistance(normalized1, normalized2);
+      const maxLength = Math.max(normalized1.length, normalized2.length);
+      const similarity = ((maxLength - distance) / maxLength) * 100;
+      
+      // Boost score slightly for phonetic matches
+      return similarity > 70 ? similarity + 5 : similarity;
+    }
+    
+    // Normalize phonetic spelling for name matching
+    function normalizePhonetic(word) {
+      let normalized = word.toLowerCase();
+      
+      // Common name substitutions
+      normalized = normalized.replace(/ph/g, 'f');      // Philip → Filip
+      normalized = normalized.replace(/ck/g, 'k');      // Mick → Mik
+      normalized = normalized.replace(/c([eiy])/g, 's$1'); // Cecil → Sesil
+      normalized = normalized.replace(/c([aou])/g, 'k$1'); // Carl → Karl
+      normalized = normalized.replace(/qu/g, 'kw');     // Quentin → Kwentin
+      normalized = normalized.replace(/x/g, 'ks');      // Alex → Aleks
+      normalized = normalized.replace(/z/g, 's');       // Zachary → Sachary
+      normalized = normalized.replace(/gh/g, '');       // Hugh → Hu
+      normalized = normalized.replace(/kn/g, 'n');      // Knight → Night
+      normalized = normalized.replace(/wr/g, 'r');      // Wright → Right
+      normalized = normalized.replace(/ps/g, 's');      // Psalm → Salm
+      normalized = normalized.replace(/ae/g, 'e');      // Caelan → Celan
+      normalized = normalized.replace(/oe/g, 'e');      // Phoebe → Febe
+      normalized = normalized.replace(/ie/g, 'i');      // Katie → Kati
+      normalized = normalized.replace(/tion/g, 'shon'); // (rare in names)
+      normalized = normalized.replace(/ch/g, 'k');      // Michael → Mikel
+      normalized = normalized.replace(/sh/g, 's');      // Sharma → Sarma
+      normalized = normalized.replace(/th/g, 't');      // Matthew → Matew
+      
+      // Remove double letters
+      normalized = normalized.replace(/([a-z])\1+/g, '$1');
+      
+      // Remove vowels after first character (Soundex-like)
+      // Keep first char, then remove a,e,i,o,u
+      if (normalized.length > 1) {
+        normalized = normalized[0] + normalized.slice(1).replace(/[aeiou]/g, '');
+      }
+      
+      return normalized;
     }
     
     // Get confidence rating based on match score
