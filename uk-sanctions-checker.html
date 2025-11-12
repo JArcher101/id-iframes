@@ -1994,6 +1994,7 @@
           type: 'upload-success',
           files: data.s3Keys || data.images,
           _id: clientEntryId,
+          entryId: clientEntryId,  // Include both for compatibility
           uploader: userEmail,
           returnToRequest: returnToRequestFlag  // Pass flag for request form integration
         }, '*');
