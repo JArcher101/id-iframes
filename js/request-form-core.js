@@ -3846,14 +3846,7 @@ function buildRequestPDFHTML(messageData) {
  * Opens PDF in popup window and notifies parent
  */
 async function generateRequestPDF(messageData) {
-  console.log('📄 Generating request PDF using Print.js...');
-  
-  if (typeof printJS === 'undefined') {
-    console.error('❌ Print.js library not loaded');
-    showError('Print library not loaded. Please refresh the page.');
-    sendMessageToParent({ type: 'pdf-generated', success: false });
-    return;
-  }
+  console.log('📄 Generating request PDF in new window...');
   
   try {
     // Build HTML template
@@ -3868,31 +3861,45 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 HTML content length:', pdfHTML.length);
     
-    // Parse HTML to extract body content and styles
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(pdfHTML, 'text/html');
+    // Open in new window so user can control print dialog
+    const width = 900;
+    const height = 800;
+    const left = Math.max(0, (screen.width - width) / 2);
+    const top = Math.max(0, (screen.height - height) / 2);
     
-    // Extract inline styles
-    const headStyles = doc.head.querySelector('style');
-    const styleContent = headStyles ? headStyles.textContent : '';
+    const features = `width=${width},height=${height},left=${left},top=${top},resizable=1,scrollbars=1,status=1,menubar=1,toolbar=1,location=0`;
     
-    // Extract body HTML
-    const bodyHTML = doc.body.innerHTML;
+    const printWindow = window.open('', '_blank', features);
     
-    console.log('📄 Triggering print with Print.js...');
+    if (!printWindow) {
+      console.warn('⚠️ Popup blocked');
+      showError('Popup blocked. Please allow popups for this site.');
+      sendMessageToParent({ type: 'pdf-generated', success: false });
+      return;
+    }
     
-    // Use Print.js to print the HTML
-    printJS({
-      printable: bodyHTML,
-      type: 'raw-html',
-      style: styleContent,
-      scanStyles: false,
-      targetStyles: ['*']
-    });
+    // Write the HTML and add print button
+    printWindow.document.write(pdfHTML);
+    printWindow.document.close();
     
-    console.log('✅ Print dialog opened');
+    // Add a print button at the top for easy access
+    printWindow.onload = () => {
+      const printBtn = printWindow.document.createElement('div');
+      printBtn.innerHTML = `
+        <div style="position: fixed; top: 10px; right: 10px; z-index: 99999; background: #003c71; color: white; padding: 12px 24px; border-radius: 6px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-family: Arial, sans-serif; font-size: 14px; font-weight: bold;" onclick="window.print();">
+          🖨️ Print / Save as PDF
+        </div>
+        <style>
+          @media print {
+            div[onclick="window.print()"] { display: none !important; }
+          }
+        </style>
+      `;
+      printWindow.document.body.insertBefore(printBtn, printWindow.document.body.firstChild);
+      console.log('✅ PDF window opened - user can now print');
+    };
     
-    // Notify parent that PDF is ready
+    // Notify parent that PDF window is ready
     sendMessageToParent({ type: 'pdf-generated', success: true });
     
   } catch (error) {
