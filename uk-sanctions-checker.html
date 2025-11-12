@@ -1660,8 +1660,10 @@
         minute: '2-digit'
       });
       
+      // CRITICAL: Override all custom fonts with system fonts for html2canvas
       let html = `
-        <div style="font-family: 'Trebuchet MS', 'Lucida Grande', sans-serif; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px;">
+        <div style="all: initial; display: block;">
+        <div style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px;">
           <!-- PDF Header -->
           <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
             <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">UK Sanctions List Search Report</div>
@@ -1799,6 +1801,7 @@
             <p style="margin-top: 8px; font-style: italic;">This report is for informational purposes only. Verify all information with official sources.</p>
           </div>
         </div>
+        </div>
       `;
       
       return html;
@@ -1817,19 +1820,19 @@
         const pdfHTML = buildPDFHTML();
         
         // Create temporary container for html2pdf
-        // CRITICAL: Isolate from parent styles to prevent custom font inheritance
+        // CRITICAL: HTML has font isolation wrapper, container just needs positioning
         const tempContainer = document.createElement('div');
-        tempContainer.style.all = 'initial'; // Reset ALL inherited styles
         tempContainer.style.position = 'absolute';
         tempContainer.style.left = '-9999px';
         tempContainer.style.top = '0';
         tempContainer.style.width = '210mm'; // A4 width
-        tempContainer.style.fontFamily = 'Trebuchet MS, Arial, sans-serif'; // Force system fonts only
         tempContainer.innerHTML = pdfHTML;
         document.body.appendChild(tempContainer);
         
         console.log('📄 HTML content length:', pdfHTML.length);
+        console.log('📄 HTML preview:', pdfHTML.substring(0, 500));
         console.log('📄 Temp container created:', tempContainer);
+        console.log('📄 Temp container has children:', tempContainer.children.length);
         
         // Configure html2pdf options (same as checks manager)
         const options = {
