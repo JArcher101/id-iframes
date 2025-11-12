@@ -3867,25 +3867,13 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     console.log('📄 HTML preview (middle):', pdfHTML.substring(3000, 3300));
     
-    // Create temp container and parse full HTML document
-    const tempContainer = document.createElement('div');
-    tempContainer.innerHTML = pdfHTML;
+    // Create element for html2pdf (EXACTLY like sanctions checker line 1843-1844)
+    const element = document.createElement('div');
+    element.innerHTML = pdfHTML;
     
-    // Extract the styles and body content
-    const styleElement = tempContainer.querySelector('head style');
-    const bodyContent = tempContainer.querySelector('body > div');
-    
-    if (!bodyContent) {
-      console.error('❌ Failed to extract body content from HTML');
-      throw new Error('Failed to parse PDF HTML');
-    }
-    
-    // Add style element to the content so it has the CSS
-    if (styleElement) {
-      bodyContent.insertBefore(styleElement.cloneNode(true), bodyContent.firstChild);
-    }
-    
-    console.log('📄 Content extracted, contains', bodyContent.children.length, 'elements (including style)');
+    console.log('📄 HTML content length:', pdfHTML.length);
+    console.log('📄 HTML preview:', pdfHTML.substring(0, 300));
+    console.log('📄 Element created with', element.children.length, 'children');
     
     // Configure html2pdf options (EXACTLY like sanctions checker lines 1851-1862)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
@@ -3904,18 +3892,10 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 Starting PDF generation with html2pdf...');
     
-    // Generate PDF blob from the extracted content div
-    const pdfBlob = await html2pdf().set(options).from(bodyContent).outputPdf('blob');
+    // Generate PDF blob (EXACTLY like sanctions checker line 1867)
+    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
-    
-    // TEMP DEBUG: Also trigger download to test if PDF has actual content
-    const downloadLink = document.createElement('a');
-    downloadLink.href = URL.createObjectURL(pdfBlob);
-    downloadLink.download = `${requestType}_request_${Date.now()}.pdf`;
-    downloadLink.click();
-    URL.revokeObjectURL(downloadLink.href);
-    console.log('📥 PDF download triggered for testing');
     
     // Open PDF in popup window
     const pdfUrl = URL.createObjectURL(pdfBlob);
