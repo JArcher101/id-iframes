@@ -3534,7 +3534,7 @@ function buildRequestPDFHTML(messageData) {
           </div>
           <div style="display: flex; gap: 8px;">
             <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Client Number:</span>
-            <span style="color: #333;">${escapeHtml(clientNumber)}</span>
+            <span style="color: #333;">${feeEarner ? escapeHtml(feeEarner) + ' ' : ''}${escapeHtml(clientNumber)}</span>
           </div>
           ${isEntity ? `
           <div style="display: flex; gap: 8px;">
@@ -3573,7 +3573,7 @@ function buildRequestPDFHTML(messageData) {
           <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(clientName)}</div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="display: inline-block; padding: 4px 10px; border: 2px solid ${isEntity ? '#7b1fa2' : '#1976d2'}; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
-            <span style="display: inline-block; padding: 4px 10px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${escapeHtml(clientNumber)} ${feeEarner ? escapeHtml(feeEarner) : ''}</span>
+            <span style="display: inline-block; padding: 4px 10px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${feeEarner ? escapeHtml(feeEarner) + ' ' : ''}${escapeHtml(clientNumber)}</span>
           </div>
         </div>
         
