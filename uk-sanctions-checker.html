@@ -1195,6 +1195,20 @@
         }
       });
       
+      // Calculate word coverage penalty
+      // If only 1 out of 3 search words matched, penalize the score
+      const searchWordCount = words1.filter(w => w.length >= 2).length; // Count valid search words
+      const matchedWordCount = matchedWords.length;
+      const wordCoverage = searchWordCount > 0 ? matchedWordCount / searchWordCount : 0;
+      
+      // Apply coverage penalty to best score
+      // If only 1/3 words matched, reduce score by 67%
+      // If 2/3 words matched, reduce score by 33%
+      // If 3/3 words matched, no penalty
+      if (matchedWordCount > 0 && wordCoverage < 1.0) {
+        bestScore = bestScore * wordCoverage;
+      }
+      
       // Build match details string
       let details = '';
       if (matchedWords.length > 0) {
@@ -1205,7 +1219,13 @@
             return `"${m.search}" ${m.type === 'contains' || m.type === 'partial' ? 'matched' : typeLabel} "${m.target}" (${Math.round(m.score)}%)`;
           })
           .join(', ');
-        details = matches;
+        
+        // Add coverage info if not all words matched
+        if (wordCoverage < 1.0) {
+          details = `${matches} — ${matchedWordCount}/${searchWordCount} search words matched`;
+        } else {
+          details = matches;
+        }
       }
       
       // Also check full string similarity as fallback
