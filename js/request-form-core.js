@@ -3412,7 +3412,7 @@ function buildRequestPDFHTML(messageData) {
   // Get attached file info (if any)
   const attachedFile = savedData.file || null;
   
-  // Build full HTML document
+  // Build full HTML document (exactly like sanctions checker to avoid custom font issues)
   let html = `
     <!DOCTYPE html>
     <html>
@@ -3421,7 +3421,7 @@ function buildRequestPDFHTML(messageData) {
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; 
           padding: 40px; 
           background: white; 
           color: #111; 
