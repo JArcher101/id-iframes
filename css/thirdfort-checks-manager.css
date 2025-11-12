@@ -85,16 +85,17 @@ body {
     margin: 0;
 }
 
-/* Ensure all form elements, text, and overlays inherit custom fonts */
-input,
-textarea,
-select,
-button,
-label,
-p,
-span,
-div,
-a {
+/* Ensure all form elements and text within app container inherit custom fonts */
+/* Scope to #app-container to avoid breaking dynamically generated PDF content */
+#app-container input,
+#app-container textarea,
+#app-container select,
+#app-container button,
+#app-container label,
+#app-container p,
+#app-container span,
+#app-container div,
+#app-container a {
     font-family: inherit;
 }
 
