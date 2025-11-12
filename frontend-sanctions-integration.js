@@ -221,34 +221,16 @@ export async function handleUploadSuccess(message, iframeId) {
     }
 }
 
-/**
- * Return to request form with uploaded file data
- * Switches view back to request form and passes file info
- * 
- * Note: This function is exported so page code can call initiateRequest
- * 
- * @param {Object} uploadedFile - The uploaded file object from backend
- * @param {string} entryId - The entry ID to reload
- */
 export async function returnToRequest(uploadedFile, entryId) {
     console.log('🔄 Switching back to request form with file:', uploadedFile);
-    console.log('🔄 Entry ID:', entryId);
     
     $w('#loadingSwirl-v2-lightbox').show();
     $w('#lightboxTitle').text = "New Note, Request or Update";
     $w('#PreloaderStateBox').changeState("Request");
-    
-    // Call page's initiateRequest function with both entryId and uploadedFile
-    // The page code should implement: initiateRequest(entryId, uploadedFile)
-    // This will reload the form with entry data AND include the uploaded file
-    if (typeof window.initiateRequest === 'function') {
-        await window.initiateRequest(entryId, uploadedFile);
-    } else {
-        console.error('❌ window.initiateRequest function not found - page needs to define this');
-    }
+    initiateRequest(entryId, uploadedFile);
     
     $w('#loadingSwirl-v2-lightbox').hide();
-    console.log('✅ Returned to request form');
+    console.log('✅ Returned to request form with file data');
 }
 
 /**
