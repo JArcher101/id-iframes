@@ -3567,7 +3567,7 @@ function buildRequestPDFHTML(messageData) {
       <!-- Client & Matter Details Section (COMBINED) -->
       <div class="section-title">Client & Matter Details</div>
       
-      <div class="hit-card" style="border-left: 4px solid #1d71b8;">
+      <div class="hit-card" style="border-left: 4px solid #1d71b8; page-break-inside: avoid;">
         <!-- Client Header with Name and Badges -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(clientName)}</div>
@@ -3647,7 +3647,7 @@ function buildRequestPDFHTML(messageData) {
       <!-- Request Details Section -->
       <div class="section-title">Request Details</div>
       
-      <div class="hit-card" style="border-left: 4px solid #1d71b8;">
+      <div class="hit-card" style="border-left: 4px solid #1d71b8; page-break-inside: avoid;">
         <div style="padding: 8px 16px;">
           <!-- Message Box -->
           <div style="background: #f0f7ff; border: 1px solid #90caf9; border-radius: 6px; padding: 16px; margin-bottom: 12px;">
@@ -3693,7 +3693,7 @@ function buildRequestPDFHTML(messageData) {
       ${['formJ', 'formK', 'formE', 'esof'].includes(requestType) ? `
       <div class="section-title">Form Requirements & Validation</div>
       
-      <div class="hit-card" style="border-left: 4px solid #1d71b8;">
+      <div class="hit-card" style="border-left: 4px solid #1d71b8; page-break-inside: avoid;">
         
         ${requestType === 'formK' && messageContent ? `
           <!-- Form K Selected Rule & Message -->
@@ -3811,7 +3811,7 @@ function buildRequestPDFHTML(messageData) {
       ` : ''}
       
       <!-- Submission Confirmation -->
-      <div class="hit-card" style="border-left: 4px solid #39b549; margin-top: 24px;">
+      <div class="hit-card" style="border-left: 4px solid #39b549; margin-top: 24px; page-break-inside: avoid;">
         <div style="padding: 12px 16px;">
           <h4 style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center;">
             <div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 8px;">
