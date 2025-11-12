@@ -3874,39 +3874,31 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview:', pdfHTML.substring(0, 300));
     console.log('📄 Element created with', element.children.length, 'children');
-    console.log('📄 Element.innerHTML length:', element.innerHTML.length);
-    console.log('📄 First child:', element.firstElementChild?.tagName);
-    console.log('📄 All sections count:', element.querySelectorAll('div[style*="font-size: 18px"]').length);
+    console.log('📄 First 5 children:', Array.from(element.children).slice(0, 5).map(c => c.tagName));
     
-    // DEBUG: Check what sections are actually in the element
-    const sectionTitles = element.querySelectorAll('div[style*="font-size: 18px"]');
-    console.log('📄 Section titles found:', Array.from(sectionTitles).map(s => s.textContent.trim()));
+    // Extract style element and content (skip META tags)
+    const styleEl = element.querySelector('style');
+    const contentDivs = Array.from(element.children).filter(c => c.tagName === 'DIV');
     
-    // DEBUG: Check if there's a BODY element
-    const bodyEl = element.querySelector('body');
-    if (bodyEl) {
-      console.log('📄 BODY element found! Using body instead of div');
-      // Use body element which will have the CSS styles applied
-      const bodyDiv = bodyEl.querySelector('div');
-      if (bodyDiv) {
-        console.log('📄 Found div inside body, using that instead');
-        // Replace element with the actual content div from body
-        while (element.firstChild) {
-          element.removeChild(element.firstChild);
-        }
-        element.appendChild(bodyDiv);
-      }
+    console.log('📄 Found', contentDivs.length, 'content divs');
+    
+    if (contentDivs.length === 0) {
+      console.error('❌ No content divs found!');
+      throw new Error('No content found in HTML');
     }
     
-    // Add page-break-inside: avoid to all cards (INLINE STYLE, not CSS class)
-    // This matches checks manager which uses: avoid: 'div[style*="page-break-inside: avoid"]'
-    const allCards = element.querySelectorAll('div[style*="border-radius: 8px"]');
-    allCards.forEach(card => {
-      const currentStyle = card.getAttribute('style') || '';
-      card.setAttribute('style', currentStyle + '; page-break-inside: avoid; break-inside: avoid;');
+    // Create clean element with style + content only
+    const cleanElement = document.createElement('div');
+    if (styleEl) {
+      cleanElement.appendChild(styleEl.cloneNode(true));
+      console.log('📄 Added <style> element to clean element');
+    }
+    contentDivs.forEach(div => {
+      cleanElement.appendChild(div);
     });
-    console.log('📄 Added page-break-inside: avoid to', allCards.length, 'cards');
-    console.log('📄 Final element to pass to html2pdf has', element.children.length, 'children');
+    
+    console.log('📄 Clean element has', cleanElement.children.length, 'children (style + content)');
+    console.log('📄 Section titles in clean element:', cleanElement.querySelectorAll('.section-title').length);
     
     // Configure html2pdf options (EXACTLY like checks manager line 24552-24559)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
@@ -3925,8 +3917,8 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 Starting PDF generation with html2pdf...');
     
-    // Generate PDF blob (EXACTLY like sanctions checker line 1867)
-    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+    // Generate PDF blob from clean element (style + content only, no META tags)
+    const pdfBlob = await html2pdf().set(options).from(cleanElement).outputPdf('blob');
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
     
