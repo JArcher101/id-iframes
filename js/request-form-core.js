@@ -3894,14 +3894,21 @@ async function generateRequestPDF(messageData) {
     }
     
     // Apply body styles to our container element so html2pdf can calculate dimensions
-    // NOTE: Do NOT apply padding here - the body padding from CSS will be used by html2pdf
-    // CRITICAL: Add explicit width to help html2pdf calculate proper layout and prevent cutoff
+    // CRITICAL: Temporarily append to body so html2canvas can calculate proper dimensions
+    // This is needed because detached elements have no computed dimensions
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    element.style.top = '0';
     element.style.width = '794px'; // A4 width in pixels at 96 DPI (210mm)
     element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
+    element.style.padding = '40px';
     element.style.background = 'white';
     element.style.color = '#111';
     element.style.lineHeight = '1.5';
     element.style.fontSize = '14px';
+    
+    // Append to body so it can be measured
+    document.body.appendChild(element);
     
     console.log('📄 Body children count:', bodyElement.children.length);
     console.log('📄 Element created with', element.children.length, 'children (includes STYLE tag)');
@@ -3960,9 +3967,18 @@ async function generateRequestPDF(messageData) {
     };
     
     console.log('📄 Starting PDF generation with html2pdf...');
+    console.log('📄 Element appended to body for dimension calculation');
+    console.log('📄 Element computed height:', element.offsetHeight, 'px');
+    console.log('📄 Element scroll height:', element.scrollHeight, 'px');
     
     // Generate PDF blob using html2pdf (same pattern as uk-sanctions-checker.html)
     const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+    
+    // Remove from body after PDF generation
+    if (element.parentNode) {
+      document.body.removeChild(element);
+      console.log('📄 Element removed from body after PDF generation');
+    }
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
     
