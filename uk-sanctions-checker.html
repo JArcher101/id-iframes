@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UK Sanctions List Search</title>
   
-  <!-- jsPDF library for PDF generation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- html2pdf library for PDF generation (same as checks manager) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   
   <style>
     /*
@@ -1648,310 +1648,204 @@
     =====================================================================
     */
     
-    async function generatePDF() {
-      console.log('📄 Generating PDF...');
+    /*
+    Build HTML template for PDF matching sanctions-pdf-mockup.html
+    */
+    function buildPDFHTML() {
+      const searchDate = new Date().toLocaleString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
       
-      try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+      let html = `
+        <div style="font-family: 'Trebuchet MS', 'Lucida Grande', sans-serif; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px;">
+          <!-- PDF Header -->
+          <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
+            <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">UK Sanctions List Search Report</div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px;">
+              <div style="display: flex; gap: 8px;">
+                <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Search Name:</span>
+                <span style="color: #333;">${escapeHtml(searchParams.searchName)}</span>
+              </div>
+              ${searchParams.searchYOB ? `
+              <div style="display: flex; gap: 8px;">
+                <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Year of Birth:</span>
+                <span style="color: #333;">${escapeHtml(searchParams.searchYOB)}</span>
+              </div>
+              ` : ''}
+              <div style="display: flex; gap: 8px;">
+                <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Search Type:</span>
+                <span style="color: #333;">${searchParams.searchType.charAt(0).toUpperCase() + searchParams.searchType.slice(1)}</span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Match Mode:</span>
+                <span style="color: #333;">${searchParams.isFuzzy ? `Fuzzy (${searchParams.threshold}% threshold)` : 'Exact Match'}</span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Search Date:</span>
+                <span style="color: #333;">${searchDate}</span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Results Found:</span>
+                <span style="color: #333;">${currentSearchResults.length} match${currentSearchResults.length === 1 ? '' : 'es'}</span>
+              </div>
+            </div>
+          </div>
+      `;
+      
+      if (currentSearchResults.length === 0) {
+        // No results card (matching mockup)
+        html += `
+          <div style="background: #e8f5e9; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 12px;">✓</div>
+            <h3 style="font-size: 18px; color: #155724; margin-bottom: 8px;">No Sanctions Matches Found</h3>
+            <p style="font-size: 13px; color: #155724;">The search subject does not appear on the UK Sanctions List based on the provided criteria.</p>
+            <p style="margin-top: 12px; font-weight: bold; font-size: 13px; color: #155724;">This does not constitute a full PEP or sanctions screening.</p>
+          </div>
+        `;
+      } else {
+        // Search Results section
+        html += `<div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">Search Results</div>`;
         
-        let yPos = 20;
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 15;
-        const maxWidth = pageWidth - (margin * 2);
-        
-        // Helper to check if we need a new page
-        const checkPageBreak = (requiredSpace) => {
-          if (yPos + requiredSpace > pageHeight - margin) {
-            doc.addPage();
-            yPos = 20;
-            return true;
-          }
-          return false;
-        };
-        
-        // Title
-        doc.setFontSize(18);
-        doc.setFont(undefined, 'bold');
-        doc.text('UK Sanctions List Search Report', margin, yPos);
-        yPos += 10;
-        
-        // Search parameters
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Search Date: ${new Date().toLocaleString()}`, margin, yPos);
-        yPos += 6;
-        doc.text(`Search Name: ${searchParams.searchName}`, margin, yPos);
-        yPos += 6;
-        doc.text(`Search Type: ${searchParams.searchType.charAt(0).toUpperCase() + searchParams.searchType.slice(1)}`, margin, yPos);
-        yPos += 6;
-        doc.text(`Match Mode: ${searchParams.isFuzzy ? `Fuzzy (${searchParams.threshold}% threshold)` : 'Exact'}`, margin, yPos);
-        yPos += 6;
-        if (searchParams.searchYOB) {
-          doc.text(`Year of Birth: ${searchParams.searchYOB}`, margin, yPos);
-          yPos += 6;
-        }
-        doc.text(`Results Found: ${currentSearchResults.length}`, margin, yPos);
-        yPos += 10;
-        
-        // Separator line
-        doc.setDrawColor(0, 60, 113);
-        doc.setLineWidth(0.5);
-        doc.line(margin, yPos, pageWidth - margin, yPos);
-        yPos += 10;
-        
-        // No results - Clear card
-        if (currentSearchResults.length === 0) {
-          checkPageBreak(60);
-          
-          // Draw green border card
-          doc.setDrawColor(195, 230, 203);
-          doc.setFillColor(232, 245, 233);
-          doc.roundedRect(margin, yPos, maxWidth, 50, 3, 3, 'FD');
-          
-          yPos += 8;
-          
-          // Checkmark icon (text-based)
-          doc.setFontSize(24);
-          doc.setTextColor(56, 142, 60);
-          doc.text('✓', margin + (maxWidth / 2) - 5, yPos);
-          yPos += 15;
-          
-          // "No Sanctions Matches Found" heading
-          doc.setFontSize(14);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(21, 87, 36);
-          const heading = 'No Sanctions Matches Found';
-          const headingWidth = doc.getTextWidth(heading);
-          doc.text(heading, margin + (maxWidth - headingWidth) / 2, yPos);
-          yPos += 8;
-          
-          // Clear message
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(21, 87, 36);
-          const clearMsg = 'The search subject does not appear on the UK Sanctions List.';
-          const msgWidth = doc.getTextWidth(clearMsg);
-          doc.text(clearMsg, margin + (maxWidth - msgWidth) / 2, yPos);
-          yPos += 16;
-          
-          // Disclaimer below card
-          yPos += 8;
-          doc.setFontSize(10);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(0, 0, 0);
-          const disclaimerBold = 'Note: This does not constitute a full PEP or sanctions screening.';
-          const disclaimerWidth = doc.getTextWidth(disclaimerBold);
-          doc.text(disclaimerBold, margin + (maxWidth - disclaimerWidth) / 2, yPos);
-          yPos += 10;
-        }
-        
-        // Results
+        // Hit cards
         currentSearchResults.forEach((entry, index) => {
-          checkPageBreak(50);
-          
-          // Primary name with badges
           const primaryName = entry.names.find(n => n.type === 'Primary Name');
           const displayName = primaryName ? primaryName.fullName : entry.matchedName;
-          
-          doc.setFontSize(14);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(0, 60, 113);
-          doc.text(`${index + 1}. ${displayName}`, margin, yPos);
-          yPos += 8;
-          
-          // Badges line (Type | Match | Confidence)
-          doc.setFontSize(9);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(80, 80, 80);
-          let badgeLine = `${entry.type}`;
-          if (searchParams.isFuzzy) {
-            badgeLine += ` • ${entry.matchScore}% Match • ${entry.confidence} Confidence`;
-          }
-          doc.text(badgeLine, margin, yPos);
-          yPos += 8;
-          
-          // Match details box (fuzzy only)
-          if (searchParams.isFuzzy && entry.matchDetails) {
-            checkPageBreak(20);
-            doc.setFillColor(240, 247, 255);
-            doc.setDrawColor(144, 202, 249);
-            doc.roundedRect(margin, yPos, maxWidth, 18, 2, 2, 'FD');
-            
-            doc.setFontSize(9);
-            doc.setTextColor(25, 118, 210);
-            doc.setFont(undefined, 'bold');
-            doc.text('Match Details: ', margin + 3, yPos + 6);
-            doc.setFont(undefined, 'normal');
-            const detailsText = doc.splitTextToSize(entry.matchDetails, maxWidth - 40);
-            doc.text(detailsText, margin + 28, yPos + 6);
-            
-            yPos += 20;
-          }
-          
-          // Details grid (2 columns)
-          doc.setFontSize(10);
-          doc.setTextColor(0, 0, 0);
-          
-          const labelX = margin;
-          const valueX = margin + 40;
-          const col2LabelX = pageWidth / 2;
-          const col2ValueX = col2LabelX + 40;
-          
-          // Row 1: Unique ID | Date of Birth
-          checkPageBreak(7);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(100, 100, 100);
-          doc.text('Unique ID:', labelX, yPos);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(0, 0, 0);
-          doc.text(entry.uniqueId, valueX, yPos);
-          
-          if (entry.dateOfBirth) {
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(100, 100, 100);
-            doc.text('Date of Birth:', col2LabelX, yPos);
-            doc.setFont(undefined, 'normal');
-            doc.setTextColor(0, 0, 0);
-            doc.text(entry.dateOfBirth, col2ValueX, yPos);
-          }
-          yPos += 6;
-          
-          // Row 2: Nationality | Date Designated
-          if (entry.nationality.length > 0) {
-            checkPageBreak(7);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(100, 100, 100);
-            doc.text('Nationality:', labelX, yPos);
-            doc.setFont(undefined, 'normal');
-            doc.setTextColor(0, 0, 0);
-            doc.text(entry.nationality.slice(0, 2).join(', '), valueX, yPos);
-          }
-          
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(100, 100, 100);
-          doc.text('Designated:', col2LabelX, yPos);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(0, 0, 0);
-          doc.text(entry.dateDesignated, col2ValueX, yPos);
-          yPos += 8;
-          
-          // Aliases section
-          const aliases = entry.names
-            .filter(n => n.type !== 'Primary Name' && n.fullName)
-            .map(n => n.fullName);
-          
-          if (aliases.length > 0) {
-            checkPageBreak(15);
-            doc.setFontSize(9);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(100, 100, 100);
-            doc.text('ALSO KNOWN AS:', margin, yPos);
-            yPos += 5;
-            
-            doc.setFont(undefined, 'normal');
-            doc.setTextColor(50, 50, 50);
-            const aliasesText = aliases.slice(0, 4).join(' • ');
-            const aliasLines = doc.splitTextToSize(aliasesText, maxWidth);
-            doc.text(aliasLines, margin, yPos);
-            yPos += aliasLines.length * 4 + 5;
-          }
-          
-          // Sanctions section
+          const aliases = entry.names.filter(n => n.type !== 'Primary Name' && n.fullName).map(n => n.fullName);
           const sanctions = entry.sanctionsImposed.split('|').map(s => s.trim()).filter(s => s);
-          if (sanctions.length > 0) {
-            checkPageBreak(15);
-            doc.setFontSize(9);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(100, 100, 100);
-            doc.text('SANCTIONS IMPOSED:', margin, yPos);
-            yPos += 5;
-            
-            doc.setFont(undefined, 'normal');
-            doc.setTextColor(50, 50, 50);
-            const sanctionsText = sanctions.join(' • ');
-            const sanctionLines = doc.splitTextToSize(sanctionsText, maxWidth);
-            doc.text(sanctionLines, margin, yPos);
-            yPos += sanctionLines.length * 4 + 5;
-          }
           
-          // Regime box
-          checkPageBreak(20);
-          doc.setFillColor(255, 249, 249);
-          doc.setDrawColor(211, 47, 47);
-          doc.setLineWidth(2);
-          doc.rect(margin, yPos, maxWidth, 0, 'S'); // Just left border
-          doc.line(margin, yPos, margin, yPos + 15); // Red left border
-          
-          doc.setFontSize(8);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(100, 100, 100);
-          doc.text('REGIME:', margin + 3, yPos + 5);
-          yPos += 8;
-          
-          doc.setFontSize(9);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(50, 50, 50);
-          const regimeLines = doc.splitTextToSize(entry.regimeName, maxWidth - 6);
-          doc.text(regimeLines, margin + 3, yPos);
-          yPos += regimeLines.length * 4 + 8;
-          
-          // UK Statement (if exists and not too long)
-          if (entry.ukStatement && entry.ukStatement.length < 500) {
-            checkPageBreak(25);
-            doc.setFillColor(255, 249, 249);
-            
-            doc.setFontSize(8);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(100, 100, 100);
-            doc.text('UK STATEMENT OF REASONS:', margin + 3, yPos);
-            yPos += 5;
-            
-            doc.setFontSize(8);
-            doc.setFont(undefined, 'normal');
-            doc.setTextColor(50, 50, 50);
-            const statementLines = doc.splitTextToSize(entry.ukStatement, maxWidth - 6);
-            const limitedLines = statementLines.slice(0, 6); // Limit to 6 lines
-            doc.text(limitedLines, margin + 3, yPos);
-            yPos += limitedLines.length * 4 + 3;
-            
-            if (statementLines.length > 6) {
-              doc.setFont(undefined, 'italic');
-              doc.setTextColor(120, 120, 120);
-              doc.text('(Statement truncated - see full details in UK Sanctions List)', margin + 3, yPos);
-              yPos += 5;
-            }
-          }
-          
-          // Separator
-          yPos += 5;
-          checkPageBreak(10);
-          doc.setDrawColor(200, 200, 200);
-          doc.setLineWidth(0.3);
-          doc.line(margin, yPos, pageWidth - margin, yPos);
-          yPos += 10;
+          html += `
+            <!-- Hit Card ${index + 1} -->
+            <div style="background: white; border-radius: 8px; border-left: 4px solid #d32f2f; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
+              <!-- Header -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(displayName)}</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2;">${entry.type}</span>
+                  ${searchParams.isFuzzy ? `
+                    <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #fff3cd; color: #856404;">${entry.matchScore}% Match</span>
+                  ` : ''}
+                  <div style="width: 20px; height: 20px; border-radius: 50%; background: #d32f2f; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">×</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Hit Details -->
+              <div style="padding: 8px 16px; border-top: 1px solid #dee2e6;">
+                ${searchParams.isFuzzy && entry.matchDetails ? `
+                <!-- Match Details -->
+                <div style="background: #f0f7ff; border: 1px solid #90caf9; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+                  <strong style="color: #1976d2; font-size: 12px;">Match Details:</strong>
+                  <div style="font-size: 12px; color: #1976d2; line-height: 1.6;">${escapeHtml(entry.matchDetails)}</div>
+                  <div style="font-size: 11px; color: #666; font-style: italic; margin-top: 4px;">
+                    Matched in: ${escapeHtml(entry.matchType)} • ${entry.confidence} Confidence
+                  </div>
+                </div>
+                ` : ''}
+                
+                <!-- Details Grid -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666; margin-bottom: 12px;">
+                  <div style="display: flex; gap: 4px;"><strong style="color: #333;">Unique ID:</strong> ${entry.uniqueId}</div>
+                  <div style="display: flex; gap: 4px;"><strong style="color: #333;">Date of Birth:</strong> ${entry.dateOfBirth || 'Not provided'}</div>
+                  <div style="display: flex; gap: 4px;"><strong style="color: #333;">Nationality:</strong> ${entry.nationality.slice(0, 2).join(', ') || 'Not provided'}</div>
+                  <div style="display: flex; gap: 4px;"><strong style="color: #333;">Date Designated:</strong> ${entry.dateDesignated}</div>
+                </div>
+                
+                ${aliases.length > 0 ? `
+                <!-- Aliases -->
+                <div style="margin-bottom: 12px;">
+                  <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">ALSO KNOWN AS:</div>
+                  ${aliases.slice(0, 4).map(a => `<span style="display: inline-block; background: #f8f9fa; padding: 4px 10px; border-radius: 4px; font-size: 12px; color: #333; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(a)}</span>`).join('')}
+                </div>
+                ` : ''}
+                
+                ${sanctions.length > 0 ? `
+                <!-- Sanctions -->
+                <div style="margin-bottom: 12px;">
+                  <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">SANCTIONS IMPOSED:</div>
+                  ${sanctions.map(s => `<span style="display: inline-block; background: #ffebee; color: #c62828; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(s)}</span>`).join('')}
+                </div>
+                ` : ''}
+                
+                <!-- Regime -->
+                <div style="background: #fff9f9; border-left: 3px solid #d32f2f; border-radius: 4px; padding: 12px; margin-top: 12px;">
+                  <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">REGIME:</div>
+                  <div style="font-size: 12px; color: #333; line-height: 1.6;">${escapeHtml(entry.regimeName)}</div>
+                </div>
+                
+                ${entry.ukStatement ? `
+                <!-- UK Statement -->
+                <div style="background: #fff9f9; border-left: 3px solid #d32f2f; border-radius: 4px; padding: 12px; margin-top: 12px;">
+                  <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">UK STATEMENT OF REASONS:</div>
+                  <div style="font-size: 12px; color: #333; line-height: 1.6;">${escapeHtml(entry.ukStatement.substring(0, 400))}${entry.ukStatement.length > 400 ? '...' : ''}</div>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
         });
+      }
+      
+      // PDF Footer
+      html += `
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #dee2e6; text-align: center; font-size: 11px; color: #999;">
+            <p>Data source: FCDO UK Sanctions List (https://sanctionslist.fcdo.gov.uk/)</p>
+            <p>Contains public sector information licensed under the Open Government Licence v3.0.</p>
+            <p>Generated by: ${escapeHtml(userEmail)} | Report ID: SANC-${Date.now()}</p>
+            <p style="margin-top: 8px; font-style: italic;">This report is for informational purposes only. Verify all information with official sources.</p>
+          </div>
+        </div>
+      `;
+      
+      return html;
+    }
+    
+    async function generatePDF() {
+      console.log('📄 Generating PDF using html2pdf...');
+      
+      if (typeof html2pdf === 'undefined') {
+        showError('PDF library not loaded. Please refresh the page.');
+        return;
+      }
+      
+      try {
+        // Build HTML template for PDF
+        const pdfHTML = buildPDFHTML();
         
-        // Footer on last page
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.setFont(undefined, 'italic');
-        const footerText = 'Data source: FCDO UK Sanctions List (https://sanctionslist.fcdo.gov.uk/)';
-        doc.text(footerText, margin, pageHeight - 20);
-        const licence = 'Contains public sector information licensed under the Open Government Licence v3.0.';
-        doc.text(licence, margin, pageHeight - 15);
-        const disclaimer = 'This report is for informational purposes only. Verify all information with official sources.';
-        doc.text(disclaimer, margin, pageHeight - 10);
+        // Create temporary container for html2pdf
+        const tempContainer = document.createElement('div');
+        tempContainer.innerHTML = pdfHTML;
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        document.body.appendChild(tempContainer);
         
-        console.log('✅ PDF generated');
+        // Configure html2pdf options (same as checks manager)
+        const options = {
+          margin: 10,
+          filename: `UK_Sanctions_Search_${searchParams.searchName.replace(/\s+/g, '_')}_${Date.now()}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        // Generate PDF blob using html2pdf
+        const pdfBlob = await html2pdf().set(options).from(tempContainer).output('blob');
+        
+        // Clean up temp container
+        document.body.removeChild(tempContainer);
+        
+        console.log('✅ PDF generated using html2pdf');
         
         // Handle PDF - either upload to S3 or open in popup
         if (clientEntryId) {
-          await uploadPDFToS3(doc);
+          // Store blob and trigger S3 upload
+          await uploadPDFBlobToS3(pdfBlob);
         } else {
           // Open in popup window
-          const pdfBlob = doc.output('blob');
           const pdfUrl = URL.createObjectURL(pdfBlob);
           
           const width = 900;
@@ -1959,14 +1853,12 @@
           const left = Math.max(0, (screen.width - width) / 2);
           const top = Math.max(0, (screen.height - height) / 2);
           
-          // Use proper popup features format (no spaces, proper syntax)
           const features = `width=${width},height=${height},left=${left},top=${top},resizable=1,scrollbars=1,status=1,menubar=1,toolbar=1,location=0`;
           
           const popup = window.open(pdfUrl, 'sanctionsPDFPopup', features);
           
           if (popup) {
             popup.focus();
-            // Clean up blob URL after a delay
             setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
           } else {
             console.warn('⚠️ Popup blocked - opening in new tab');
@@ -1987,13 +1879,12 @@
     =====================================================================
     */
     
-    async function uploadPDFToS3(pdfDoc) {
+    async function uploadPDFBlobToS3(pdfBlob) {
       console.log('📤 Preparing PDF for S3 upload...');
       uploadingOverlay.classList.add('show');
       
       try {
-        // Generate PDF as blob
-        const pdfBlob = pdfDoc.output('blob');
+        // Use the provided blob
         const filename = `UK_Sanctions_Search_${searchParams.searchName.replace(/\s+/g, '_')}_${Date.now()}`;
         
         // Store blob in window for later upload (File objects can't be sent via postMessage)
