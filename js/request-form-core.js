@@ -3895,6 +3895,8 @@ async function generateRequestPDF(messageData) {
     
     // Apply body styles to our container element so html2pdf can calculate dimensions
     // NOTE: Do NOT apply padding here - the body padding from CSS will be used by html2pdf
+    // CRITICAL: Add explicit width to help html2pdf calculate proper layout and prevent cutoff
+    element.style.width = '794px'; // A4 width in pixels at 96 DPI (210mm)
     element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
     element.style.background = 'white';
     element.style.color = '#111';
