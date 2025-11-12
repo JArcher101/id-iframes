@@ -3868,14 +3868,31 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     
-    // CRITICAL: Create element but do NOT add to document.body to avoid custom font inheritance!
-    // This matches the EXACT pattern from thirdfort-checks-manager.js which works perfectly
+    // CRITICAL: Parse HTML and extract ONLY the body's innerHTML (includes wrapper div)
+    // This prevents html2pdf from trying to render html/body structure which causes cutoff
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(pdfHTML, 'text/html');
+    const bodyHTML = doc.body.innerHTML; // This includes our wrapper div and all content
+    const headStyles = doc.head.querySelector('style');
+    
+    // Create element but do NOT add to document.body to avoid custom font inheritance!
     const element = document.createElement('div');
-    element.innerHTML = pdfHTML;
+    
+    // Set body content first (wrapper div + all sections)
+    element.innerHTML = bodyHTML;
+    
+    // Prepend stylesheet from head if it exists (for CSS classes)
+    // Must be prepended AFTER setting innerHTML so it's not replaced
+    if (headStyles) {
+      const styleEl = document.createElement('style');
+      styleEl.textContent = headStyles.textContent;
+      element.insertBefore(styleEl, element.firstChild);
+    }
     
     console.log('📄 Element created with', element.children.length, 'children');
     console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
     console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
+    console.log('📄 Body HTML length:', bodyHTML.length);
     
     // Configure html2pdf options (EXACTLY like thirdfort-checks-manager.js)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
