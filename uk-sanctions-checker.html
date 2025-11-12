@@ -1701,34 +1701,50 @@
         doc.line(margin, yPos, pageWidth - margin, yPos);
         yPos += 10;
         
-        // No results message
+        // No results - Clear card
         if (currentSearchResults.length === 0) {
-          checkPageBreak(40);
+          checkPageBreak(60);
+          
+          // Draw green border card
+          doc.setDrawColor(195, 230, 203);
+          doc.setFillColor(232, 245, 233);
+          doc.roundedRect(margin, yPos, maxWidth, 50, 3, 3, 'FD');
+          
+          yPos += 8;
+          
+          // Checkmark icon (text-based)
+          doc.setFontSize(24);
+          doc.setTextColor(56, 142, 60);
+          doc.text('✓', margin + (maxWidth / 2) - 5, yPos);
+          yPos += 15;
+          
+          // "No Sanctions Matches Found" heading
           doc.setFontSize(14);
           doc.setFont(undefined, 'bold');
-          doc.setTextColor(0, 128, 0);
-          doc.text('No Sanctions Matches Found', margin, yPos);
-          yPos += 10;
+          doc.setTextColor(21, 87, 36);
+          const heading = 'No Sanctions Matches Found';
+          const headingWidth = doc.getTextWidth(heading);
+          doc.text(heading, margin + (maxWidth - headingWidth) / 2, yPos);
+          yPos += 8;
           
-          doc.setFontSize(11);
-          doc.setFont(undefined, 'normal');
-          doc.setTextColor(0, 0, 0);
-          const clearMessage = doc.splitTextToSize(
-            'The search subject does not appear on the UK Sanctions List based on the provided criteria. This indicates a CLEAR result for this specific search.',
-            maxWidth
-          );
-          doc.text(clearMessage, margin, yPos);
-          yPos += clearMessage.length * 6 + 10;
-          
+          // Clear message
           doc.setFontSize(10);
-          doc.setFont(undefined, 'italic');
-          doc.setTextColor(100, 100, 100);
-          const disclaimer = doc.splitTextToSize(
-            'Note: This search is limited to the UK Sanctions List only and does not constitute a full PEP or sanctions screening.',
-            maxWidth
-          );
-          doc.text(disclaimer, margin, yPos);
-          yPos += disclaimer.length * 5 + 10;
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(21, 87, 36);
+          const clearMsg = 'The search subject does not appear on the UK Sanctions List.';
+          const msgWidth = doc.getTextWidth(clearMsg);
+          doc.text(clearMsg, margin + (maxWidth - msgWidth) / 2, yPos);
+          yPos += 16;
+          
+          // Disclaimer below card
+          yPos += 8;
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(0, 0, 0);
+          const disclaimerBold = 'Note: This does not constitute a full PEP or sanctions screening.';
+          const disclaimerWidth = doc.getTextWidth(disclaimerBold);
+          doc.text(disclaimerBold, margin + (maxWidth - disclaimerWidth) / 2, yPos);
+          yPos += 10;
         }
         
         // Results
