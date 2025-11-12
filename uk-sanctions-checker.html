@@ -2088,18 +2088,20 @@
           
           const width = 900;
           const height = 800;
-          const left = (screen.width - width) / 2;
-          const top = (screen.height - height) / 2;
-          const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes,menubar=yes,toolbar=yes`;
+          const left = Math.max(0, (screen.width - width) / 2);
+          const top = Math.max(0, (screen.height - height) / 2);
           
-          const popup = window.open(pdfUrl, 'sanctionsPDF', features);
+          // Use proper popup features format
+          const features = `width=${width},height=${height},left=${left},top=${top},resizable=1,scrollbars=1,status=1,menubar=1,toolbar=1,location=0`;
+          
+          const popup = window.open(pdfUrl, 'sanctionsPDFPopup', features);
           
           if (popup) {
             popup.focus();
-            // Clean up blob URL after popup loads
-            popup.onload = () => {
-              setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
-            };
+            // Clean up blob URL after a delay
+            setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
+          } else {
+            console.warn('⚠️ Popup blocked - opening in new tab');
           }
           
           console.log('✅ PDF opened in popup window');
