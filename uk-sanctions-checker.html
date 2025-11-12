@@ -1252,18 +1252,19 @@
         }
       });
       
-      // Calculate word coverage penalty
-      // If only 1 out of 3 search words matched, penalize the score
+      // Calculate word coverage penalty using square root (less harsh)
+      // This allows partial surname matches to show at lower thresholds
       const searchWordCount = words1.filter(w => w.length >= 2).length; // Count valid search words
       const matchedWordCount = matchedWords.length;
       const wordCoverage = searchWordCount > 0 ? matchedWordCount / searchWordCount : 0;
       
-      // Apply coverage penalty to best score
-      // If only 1/3 words matched, reduce score by 67%
-      // If 2/3 words matched, reduce score by 33%
-      // If 3/3 words matched, no penalty
+      // Apply square root penalty for more forgiving partial matches
+      // Examples:
+      // - 1/3 coverage: √0.333 = 0.577 → 95% × 0.577 = 55% (shows at 50% threshold)
+      // - 2/3 coverage: √0.667 = 0.816 → 95% × 0.816 = 77% (shows at 75% threshold)
+      // - 3/3 coverage: √1.000 = 1.000 → 95% × 1.000 = 95% (no penalty)
       if (matchedWordCount > 0 && wordCoverage < 1.0) {
-        bestScore = bestScore * wordCoverage;
+        bestScore = bestScore * Math.sqrt(wordCoverage);
       }
       
       // Build match details string
