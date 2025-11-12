@@ -994,19 +994,30 @@
         entry.names.forEach(name => {
           const fullName = name.fullName || '';
           
+          // Also check individual name parts (Name1, Name2, Name3, etc)
+          // This catches patronymics like "Robertovich" that may not be in Name6
+          const allNameParts = [
+            fullName,
+            name.parts.name1,
+            name.parts.name2,
+            name.parts.name3,
+            name.parts.name4,
+            name.parts.name5
+          ].filter(p => p).join(' ');
+          
           if (isFuzzy) {
-            const result = fuzzyMatchScoreDetailed(searchName, fullName);
+            const result = fuzzyMatchScoreDetailed(searchName, allNameParts);
             if (result.score > matchScore) {
               matchScore = result.score;
-              matchedName = fullName;
+              matchedName = fullName || allNameParts;
               matchType = name.type;
               matchDetails = result.details;
             }
           } else {
             // Exact match: ALL search words must be present in the name
-            if (exactMatch(searchName, fullName)) {
+            if (exactMatch(searchName, allNameParts)) {
               matchScore = 100;
-              matchedName = fullName;
+              matchedName = fullName || allNameParts;
               matchType = name.type;
               matchDetails = 'All search terms found in name';
             }
