@@ -3884,6 +3884,14 @@ async function generateRequestPDF(messageData) {
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
     
+    // TEMP DEBUG: Also trigger download to test if PDF has actual content
+    const downloadLink = document.createElement('a');
+    downloadLink.href = URL.createObjectURL(pdfBlob);
+    downloadLink.download = `${requestType}_request_${Date.now()}.pdf`;
+    downloadLink.click();
+    URL.revokeObjectURL(downloadLink.href);
+    console.log('📥 PDF download triggered for testing');
+    
     // Open PDF in popup window
     const pdfUrl = URL.createObjectURL(pdfBlob);
     
