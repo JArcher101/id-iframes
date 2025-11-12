@@ -1931,14 +1931,31 @@
         
         console.log('✅ PDF generated');
         
-        // Handle PDF - either upload to S3 or download
+        // Handle PDF - either upload to S3 or open in popup
         if (clientEntryId) {
           await uploadPDFToS3(doc);
         } else {
-          // Just download
-          const filename = `UK_Sanctions_Search_${searchParams.searchName.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
-          doc.save(filename);
-          console.log('✅ PDF downloaded');
+          // Open in popup window
+          const pdfBlob = doc.output('blob');
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          
+          const width = 900;
+          const height = 800;
+          const left = (screen.width - width) / 2;
+          const top = (screen.height - height) / 2;
+          const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes,menubar=yes,toolbar=yes`;
+          
+          const popup = window.open(pdfUrl, 'sanctionsPDF', features);
+          
+          if (popup) {
+            popup.focus();
+            // Clean up blob URL after popup loads
+            popup.onload = () => {
+              setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
+            };
+          }
+          
+          console.log('✅ PDF opened in popup window');
         }
         
       } catch (error) {
