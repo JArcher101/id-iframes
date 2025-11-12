@@ -3508,14 +3508,14 @@ function buildRequestPDFHTML(messageData) {
         :root { --primary-blue: #003c71; --secondary-blue: #1d71b8; --green: #39b549; --orange: #f7931e; --red: #d32f2f; --grey: #6c757d; --light-grey: #f8f9fa; --border-grey: #dee2e6; }
         body { 
           font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
-          padding: 20px; 
+          padding: 10px 20px; 
           background: white; 
           color: #111; 
           line-height: 1.5; 
           font-size: 14px; 
           margin: 0;
         }
-        .pdf-header { border-bottom: 3px solid var(--primary-blue); padding-bottom: 20px; margin-bottom: 20px; page-break-after: avoid; }
+        .pdf-header { border-bottom: 3px solid var(--primary-blue); padding-bottom: 15px; margin-bottom: 15px; margin-top: 0; page-break-after: avoid; }
         .section-title { font-size: 18px; font-weight: bold; color: var(--primary-blue); margin: 20px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid var(--border-grey); page-break-after: avoid; }
         .hit-card { page-break-inside: avoid; margin-bottom: 16px; background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); }
         .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border-grey); text-align: center; font-size: 11px; color: #999; page-break-before: avoid; }
@@ -3873,22 +3873,32 @@ async function generateRequestPDF(messageData) {
     const element = document.createElement('div');
     element.innerHTML = pdfHTML;
     
+    // Set explicit width to ensure html2canvas renders full content (A4 width minus margins)
+    // A4 = 210mm, margins = 20mm total (10mm each side), content = 190mm ≈ 718px at 96 DPI
+    const htmlElement = element.querySelector('html');
+    const bodyElement = element.querySelector('body');
+    if (htmlElement) htmlElement.style.width = '718px';
+    if (bodyElement) bodyElement.style.width = '718px';
+    if (bodyElement) bodyElement.style.maxWidth = '718px';
+    
     // Note: Element is NOT appended to document.body - this prevents custom font inheritance
     
     console.log('📄 Element created with', element.children.length, 'children');
     console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
     console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
     
-    // Configure html2pdf options (EXACTLY like sanctions checker - NO width/height constraints)
+    // Configure html2pdf options - reduced top margin to fix spacing
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
     const options = {
-      margin: [10, 10, 10, 10],
+      margin: [5, 10, 10, 10], // Reduced top margin from 10 to 5
       filename: `${requestType}_request_${Date.now()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
-        logging: false
+        logging: false,
+        letterRendering: true,
+        allowTaint: false
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: 'css', avoid: '.hit-card' }
