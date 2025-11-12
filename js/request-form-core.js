@@ -719,6 +719,11 @@ function handleParentMessage(event) {
         handleCompanyData(message.companyData || message.charityData);
         break;
         
+      case 'sanctions-file-uploaded':
+        // Handle sanctions PDF uploaded from sanctions checker
+        handleSanctionsFileUploaded(message);
+        break;
+        
       default:
         // Forward to current module if it has a message handler
         if (currentRequestType && requestTypeModules[currentRequestType]?.handleMessage) {
@@ -3098,24 +3103,120 @@ if (ofsiOpenBtn) {
 window.openDocument = openDocument;
 
 /*
-Open UK Sanctions List Search in popup window
+Request sanctions check from parent - switches lightbox to sanctions state
 */
 function openOFSISearch() {
-  console.log('Opening UK Sanctions List Search');
-  const popup = window.open(
-    'https://search-uk-sanctions-list.service.gov.uk/', 
-    'ofsiSearch', 
-    'width=1200,height=800,scrollbars=yes,resizable=yes,menubar=yes,toolbar=yes,location=yes,status=yes'
-  );
+  console.log('Requesting sanctions check from parent...');
   
-  // Focus the popup window
-  if (popup) {
-    popup.focus();
+  // Extract client name
+  let clientName = '';
+  const businessCheckbox = document.getElementById('businessCheckbox');
+  const charityCheckbox = document.getElementById('charityCheckbox');
+  const isEntity = businessCheckbox?.checked || charityCheckbox?.checked;
+  
+  if (isEntity) {
+    const businessNameInput = document.getElementById('businessName');
+    clientName = businessNameInput?.value?.trim() || '';
+  } else {
+    const firstNameInput = document.getElementById('firstName');
+    const middleNameInput = document.getElementById('middleName');
+    const lastNameInput = document.getElementById('lastName');
+    const nameParts = [
+      firstNameInput?.value?.trim(),
+      middleNameInput?.value?.trim(),
+      lastNameInput?.value?.trim()
+    ].filter(p => p);
+    clientName = nameParts.join(' ');
   }
+  
+  // Extract year of birth
+  let yearOfBirth = '';
+  const dobInputs = document.querySelectorAll('.birthdate-inputs input');
+  if (dobInputs.length === 8) {
+    const dobDigits = Array.from(dobInputs).map(inp => inp?.value || '').join('');
+    if (dobDigits.length === 8) {
+      yearOfBirth = dobDigits.substring(4, 8);
+    }
+  }
+  
+  const searchType = isEntity ? 'entity' : 'individual';
+  
+  console.log('📤 Sending sanctions check request:', { clientName, yearOfBirth, searchType });
+  
+  window.parent.postMessage({
+    type: 'sanctions-check-request',
+    clientName: clientName,
+    yearOfBirth: yearOfBirth,
+    searchType: searchType,
+    entryId: requestData._id,
+    returnToRequest: true
+  }, '*');
 }
 
 // Make openOFSISearch globally available for onclick handlers
 window.openOFSISearch = openOFSISearch;
+
+/*
+Handle sanctions file uploaded from sanctions checker
+Adds the file object to idDocuments array for validation
+*/
+function handleSanctionsFileUploaded(message) {
+  console.log('✅ Received sanctions file from parent:', message);
+  
+  // Create file object matching request form structure
+  const ofsiFile = {
+    document: 'OFSI Sanctions Search',
+    type: 'PEP & Sanctions Check',
+    s3Key: message.s3Key,
+    liveUrl: message.liveUrl,
+    data: {
+      type: 'application/pdf',
+      size: message.fileSize,
+      name: message.fileName,
+      lastModified: Date.now()
+    },
+    date: message.date,
+    uploader: message.uploader,
+    file: null // Already uploaded
+  };
+  
+  // Add to idDocuments array
+  idDocuments.push(ofsiFile);
+  
+  // Update OFSI UI to show document card
+  const ofsiDocumentCard = document.getElementById('ofsiDocumentCard');
+  const ofsiOpenBtn = document.getElementById('ofsiOpenBtn');
+  const ofsiHint = document.getElementById('ofsiHint');
+  
+  if (ofsiDocumentCard) {
+    ofsiDocumentCard.classList.remove('hidden');
+    const titleEl = ofsiDocumentCard.querySelector('.document-title');
+    const uploadInfoEl = ofsiDocumentCard.querySelector('.document-upload-info');
+    
+    if (titleEl) titleEl.textContent = 'UK Sanctions List Search';
+    if (uploadInfoEl) uploadInfoEl.textContent = `Uploaded by ${message.uploader} on ${message.date}`;
+    
+    if (ofsiOpenBtn) {
+      ofsiOpenBtn.classList.remove('hidden');
+      ofsiOpenBtn.onclick = () => openDocument(message.s3Key, message.liveUrl);
+    }
+  }
+  
+  if (ofsiHint) {
+    ofsiHint.classList.add('hidden');
+  }
+  
+  // Hide upload area and show success state
+  const ofsiUploadArea = document.getElementById('ofsiUploadArea');
+  if (ofsiUploadArea) {
+    ofsiUploadArea.style.display = 'none';
+  }
+  
+  // Re-evaluate ID Documents UI (will now pass OFSI validation)
+  updateIDDocumentsUI(requestData);
+  
+  console.log('✅ OFSI document added to request form');
+}
 
 /**
  * Update Form J validation flags based on ID images

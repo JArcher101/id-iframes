@@ -56,7 +56,8 @@ export async function initiateSanctionsChecker(context) {
             yearOfBirth: context.clientData?.yearOfBirth || '',
             searchType: context.clientData?.entityType === 'company' ? 'entity' : 'individual',
             clientEntryId: context.openEntryId || null,
-            userEmail: context.currentUser?.email || ''
+            userEmail: context.currentUser?.email || '',
+            returnToRequest: context.returnToRequest || false  // Pass flag for request form integration
         });
     }
     
@@ -188,6 +189,9 @@ async function handleUploadSuccess(message, iframeId) {
             });
         }
         
+        // Return updateRes for caller to access uploadedFile data
+        return updateRes;
+        
     } catch (error) {
         console.error('❌ Failed to update entry:', error);
         
@@ -197,6 +201,9 @@ async function handleUploadSuccess(message, iframeId) {
             message: error.message || 'Upload succeeded but failed to update record',
             _id: message._id
         });
+        
+        // Re-throw for caller to handle
+        throw error;
     }
 }
 

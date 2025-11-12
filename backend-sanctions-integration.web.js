@@ -144,9 +144,20 @@ export const updateEntryWithSanctionsPDF = webMethod(
             console.log('💾 Collection item before update:', collectionItem);
             const updatedItem = await wixData.update('OutstandingID', collectionItem);
             
+            // Build uploaded file object for request form validation
+            const uploadedFile = {
+                s3Key: fileObject.s3Key,
+                liveUrl: `https://id-documents-london-prod.s3.eu-west-2.amazonaws.com/${fileObject.s3Key}`,
+                date: fileObject.date,
+                uploader: uploader,
+                fileName: fileObject.data?.name || 'UK_Sanctions_Search.pdf',
+                fileSize: fileObject.data?.size || 0
+            };
+            
             response.success = true;
             response.result = 'Entry updated successfully';
             response.updatedItem = updatedItem;
+            response.uploadedFile = uploadedFile;  // Include file object for request form
             
             console.log('✅ Entry updated with sanctions PDF');
             

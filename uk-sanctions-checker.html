@@ -754,6 +754,7 @@
     let clientEntryId = null;
     let userEmail = '';
     let searchParams = {};
+    let returnToRequestFlag = false;  // Flag for request form integration
     
     // DOM elements
     const loadingOverlay = document.getElementById('loading-overlay');
@@ -1863,7 +1864,8 @@
           type: 'upload-success',
           files: data.s3Keys || data.images,
           _id: clientEntryId,
-          uploader: userEmail
+          uploader: userEmail,
+          returnToRequest: returnToRequestFlag  // Pass flag for request form integration
         }, '*');
         
         uploadingOverlay.classList.remove('show');
@@ -1935,6 +1937,7 @@
       // Store client entry ID and user email
       clientEntryId = data.clientEntryId || null;
       userEmail = data.userEmail || '';
+      returnToRequestFlag = data.returnToRequest || false;  // Store flag for request form integration
       
       // Pre-populate name
       if (data.clientName) {
