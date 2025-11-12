@@ -3545,8 +3545,8 @@ function buildRequestPDFHTML(messageData) {
           <div style="display: flex; gap: 8px;">
             <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Request Type:</span>
             <span style="color: #333;">
-              <span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; ${badgeStyle}">${badgeText}</span>
-              ${requestPayload.eSoF ? `<span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32; margin-left: 6px;">+ eSoF</span>` : ''}
+              <span style="display: inline-block; padding: 4px 10px; border: 2px solid #1976d2; border-radius: 4px; font-size: 11px; font-weight: bold; color: #1976d2; background: #e3f2fd;">${badgeText}</span>
+              ${requestPayload.eSoF ? `<span style="display: inline-block; padding: 4px 10px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; color: #2e7d32; background: #e8f5e9; margin-left: 6px;">+ eSoF</span>` : ''}
             </span>
           </div>
           <div style="display: flex; gap: 8px;">
@@ -3572,8 +3572,8 @@ function buildRequestPDFHTML(messageData) {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(clientName)}</div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
-            <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${escapeHtml(clientNumber)} ${feeEarner ? escapeHtml(feeEarner) : ''}</span>
+            <span style="display: inline-block; padding: 4px 10px; border: 2px solid ${isEntity ? '#7b1fa2' : '#1976d2'}; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
+            <span style="display: inline-block; padding: 4px 10px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${escapeHtml(clientNumber)} ${feeEarner ? escapeHtml(feeEarner) : ''}</span>
           </div>
         </div>
         
@@ -3878,25 +3878,18 @@ async function generateRequestPDF(messageData) {
       return;
     }
     
-    // Write the HTML and add print button
+    // Write the HTML
     printWindow.document.write(pdfHTML);
     printWindow.document.close();
     
-    // Add a print button at the top for easy access
+    // Automatically trigger print dialog when content loads
     printWindow.onload = () => {
-      const printBtn = printWindow.document.createElement('div');
-      printBtn.innerHTML = `
-        <div style="position: fixed; top: 10px; right: 10px; z-index: 99999; background: #003c71; color: white; padding: 12px 24px; border-radius: 6px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-family: Arial, sans-serif; font-size: 14px; font-weight: bold;" onclick="window.print();">
-          🖨️ Print / Save as PDF
-        </div>
-        <style>
-          @media print {
-            div[onclick="window.print()"] { display: none !important; }
-          }
-        </style>
-      `;
-      printWindow.document.body.insertBefore(printBtn, printWindow.document.body.firstChild);
-      console.log('✅ PDF window opened - user can now print');
+      console.log('📄 PDF window loaded, triggering print dialog...');
+      // Small delay to ensure all styles are applied
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 250);
     };
     
     // Notify parent that PDF window is ready
