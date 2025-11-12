@@ -3545,8 +3545,8 @@ function buildRequestPDFHTML(messageData) {
           <div style="display: flex; gap: 8px;">
             <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Request Type:</span>
             <span style="color: #333;">
-              <span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; ${badgeStyle}">${badgeText}</span>
-              ${requestPayload.eSoF ? `<span style="padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32; margin-left: 6px;">+ eSoF</span>` : ''}
+              <span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; ${badgeStyle}">${badgeText}</span>
+              ${requestPayload.eSoF ? `<span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32; margin-left: 6px;">+ eSoF</span>` : ''}
             </span>
           </div>
           <div style="display: flex; gap: 8px;">
@@ -3572,8 +3572,8 @@ function buildRequestPDFHTML(messageData) {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(clientName)}</div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
-            <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${escapeHtml(clientNumber)} ${feeEarner ? escapeHtml(feeEarner) : ''}</span>
+            <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
+            <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${escapeHtml(clientNumber)} ${feeEarner ? escapeHtml(feeEarner) : ''}</span>
           </div>
         </div>
         
