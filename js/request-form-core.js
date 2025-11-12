@@ -3515,7 +3515,7 @@ function buildRequestPDFHTML(messageData) {
         }
         body { 
           font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; 
-          padding: 10px 20px; 
+          padding: 40px; 
           background: white; 
           color: #111; 
           line-height: 1.5; 
@@ -3531,13 +3531,13 @@ function buildRequestPDFHTML(messageData) {
         .badge-pep-update { background: #f3e5f5; color: #7b1fa2; }
         @media print { 
           body { 
-            padding: 10px 20px !important; 
+            padding: 20px !important; 
             margin: 0 !important;
           } 
         }
       </style>
     </head>
-    <body style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; margin: 0; padding: 10px 20px;">
+    <body style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; margin: 0; padding: 40px;">
     <div style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">
       <!-- PDF Header -->
       <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
@@ -3876,8 +3876,7 @@ function buildRequestPDFHTML(messageData) {
       </div>
     </div>
     </body>
-    </html>
-  `;
+    </html>`;
   
   return html;
 }
