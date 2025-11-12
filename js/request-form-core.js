@@ -3894,12 +3894,15 @@ async function generateRequestPDF(messageData) {
     }
     
     // Apply body styles to our container element so html2pdf can calculate dimensions
-    // CRITICAL: Temporarily append to body so html2canvas can calculate proper dimensions
-    // This is needed because detached elements have no computed dimensions
-    element.style.position = 'absolute';
-    element.style.left = '-9999px';
+    // CRITICAL: Temporarily append to body so html2canvas can capture it
+    // Must be in viewport but invisible - positioning off-screen prevents html2canvas from capturing
+    element.style.position = 'fixed';
+    element.style.left = '0';
     element.style.top = '0';
     element.style.width = '794px'; // A4 width in pixels at 96 DPI (210mm)
+    element.style.zIndex = '-9999'; // Behind everything
+    element.style.opacity = '0'; // Invisible to user
+    element.style.pointerEvents = 'none'; // Can't interact with it
     element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
     element.style.padding = '40px';
     element.style.background = 'white';
@@ -3907,7 +3910,7 @@ async function generateRequestPDF(messageData) {
     element.style.lineHeight = '1.5';
     element.style.fontSize = '14px';
     
-    // Append to body so it can be measured
+    // Append to body so html2canvas can capture it
     document.body.appendChild(element);
     
     console.log('📄 Body children count:', bodyElement.children.length);
