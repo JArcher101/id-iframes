@@ -1097,7 +1097,7 @@
     9. 'company-data' - Full company data (directors, officers, PSCs, registered office)
     10. 'charity-results' - Charity search results from Charity Commission API
     11. 'charity-data' - Full charity data (trustees, income, expenditure)
-    12. 'sanctions-check' - Open UK Sanctions List search in popup window
+    12. 'sanctions-check' - Request to format client data for sanctions search
     
     OUTGOING MESSAGES:
     1. 'address-search' - Request autocomplete suggestions
@@ -1109,6 +1109,7 @@
     7. 'new-data' - Send updated client data (includes eT: entityType)
     8. 'validation-error' - Send validation errors
     9. 'disable-close' - Notify parent of unsaved changes
+    10. 'sanctions-information' - Send formatted client data for sanctions checker { clientName, yearOfBirth, searchType }
     =====================================================================
     */
     
@@ -3611,18 +3612,49 @@
         // Store full company/charity data (directors/trustees, officers, PSCs, etc.)
         handleCompanyData(event.data.companyData || event.data.charityData);
       } else if (event.data && event.data.type === 'sanctions-check') {
-        // Open UK Sanctions List in popup window
-        const width = 1200;
-        const height = 800;
-        const left = (screen.width - width) / 2;
-        const top = (screen.height - height) / 2;
-        const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes,menubar=yes,toolbar=yes,location=yes`;
+        // Format client data and send back to parent for sanctions lightbox
+        console.log('🔍 Formatting client data for sanctions check...');
         
-        const popup = window.open('https://search-uk-sanctions-list.service.gov.uk/', 'sanctionsSearch', features);
-        if (popup) {
-          popup.focus();
+        // Compile client name
+        let clientName = '';
+        if (isEntityMode) {
+          // Entity mode: Use business name
+          clientName = businessName?.value?.trim() || '';
+        } else {
+          // Individual mode: Combine first, middle, last name
+          const nameParts = [
+            firstName?.value?.trim(),
+            middleName?.value?.trim(),
+            lastName?.value?.trim()
+          ].filter(p => p);
+          clientName = nameParts.join(' ');
         }
-        console.log('🔍 Opened UK Sanctions List search');
+        
+        // Extract year of birth from DOB inputs (individual mode only)
+        let yearOfBirth = '';
+        if (!isEntityMode && dobInputs.length === 8) {
+          const dobDigits = dobInputs.map(inp => inp?.value || '').join('');
+          if (dobDigits.length === 8) {
+            // Extract year (last 4 digits: DDMMYYYY)
+            yearOfBirth = dobDigits.substring(4, 8);
+          }
+        }
+        
+        // Determine search type
+        const searchType = isEntityMode ? 'entity' : 'individual';
+        
+        // Send back to parent
+        const sanctionsData = {
+          type: 'sanctions-information',
+          clientData: {
+            clientName: clientName,
+            yearOfBirth: yearOfBirth,
+            searchType: searchType
+          }
+        };
+        
+        console.log('📤 Sending sanctions data to parent:', sanctionsData);
+        window.parent.postMessage(sanctionsData, '*');
       }
     });
     
