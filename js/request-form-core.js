@@ -13,6 +13,7 @@ Core functionality for the request form including:
 let currentRequestType = null;
 let previousRequestType = null;
 let requestData = {};
+let lastSentRequestData = null; // Store the request-data message for PDF generation
 let formState = {
   isLoading: false,
   hasUnsavedChanges: false,
@@ -3347,13 +3348,20 @@ function escapeHtml(text) {
  */
 function buildRequestPDFHTML(messageData) {
   console.log('🔨 Building PDF HTML with data:', messageData);
-  console.log('📊 Request data:', requestData);
   
-  const requestType = messageData.requestType || 'note';
-  const savedData = messageData.savedData || {};
+  // Use the last sent request data (what we sent to parent)
+  if (!lastSentRequestData) {
+    console.error('❌ No stored request data for PDF generation');
+    return '<html><body><h1>Error: No request data available</h1></body></html>';
+  }
+  
+  const requestType = lastSentRequestData.requestType || 'note';
+  const requestMessage = lastSentRequestData.message || {};
+  const data = lastSentRequestData.data || {};
   
   console.log('📝 Request type:', requestType);
-  console.log('💾 Saved data:', savedData);
+  console.log('📤 Using last sent request data:', lastSentRequestData);
+  console.log('📊 Client/matter data:', data);
   
   // Determine badge class and title
   let badgeClass, badgeText, title, borderColor;
@@ -3392,25 +3400,26 @@ function buildRequestPDFHTML(messageData) {
     hour12: false
   });
   
-  // Get client info
-  const clientName = requestData.cN || '';
-  const clientNumber = requestData.cO || '';
-  const entryId = requestData._id || '';
-  const userEmail = requestData.user || '';
+  // Get client info from data structure
+  const clientName = data.cD?.n || '';  // Full name string from Client Details
+  const clientNumber = `${data.cD?.cN || ''}-${data.cD?.mN || ''}`.replace(/^-|-$/g, '');  // "clientNum-matterNum"
+  const feeEarner = data.cD?.fe || '';
+  const entryId = lastSentRequestData._id || '';
+  const userEmail = lastSentRequestData.user || '';
   
   // Determine if entity or individual
-  const isEntity = requestData.cI?.bD && Object.keys(requestData.cI.bD).length > 0;
+  const isEntity = data.cI?.bD && Object.keys(data.cI.bD).length > 0;
   
-  // Get matter details
-  const workType = requestData.mW || '';
-  const relation = requestData.mR || '';
-  const matterDescription = requestData.mD || '';
+  // Get matter details from data
+  const workType = data.wT || '';
+  const relation = data.r || '';
+  const matterDescription = data.mD || '';
   
-  // Get message content
-  const messageContent = escapeHtml(savedData.messageContent || '');
+  // Get message content from the stored request message
+  const messageContent = escapeHtml(requestMessage.message || '');
   
   // Get attached file info (if any)
-  const attachedFile = savedData.file || null;
+  const attachedFile = requestMessage.file || null;
   
   // Build full HTML document (exactly like sanctions checker to avoid custom font issues)
   let html = `
@@ -3481,30 +3490,30 @@ function buildRequestPDFHTML(messageData) {
         </div>
         ${isEntity ? `
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666; margin-bottom: 12px;">
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Business Name:</strong> ${escapeHtml(requestData.cI?.bD?.title || '')}</div>
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Registration:</strong> ${escapeHtml(requestData.cI?.bD?.address_snippet?.split(',').pop()?.trim() || 'Unknown')}</div>
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Company Number:</strong> ${escapeHtml(requestData.cI?.bD?.company_number || '')}</div>
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Business Type:</strong> ${escapeHtml(requestData.cI?.bD?.company_type || '')}</div>
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(requestData.cC?.cE || '')}</div>
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(requestData.cC?.cP || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Business Name:</strong> ${escapeHtml(data.cI?.bD?.title || data.cI?.n?.b || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Registration:</strong> ${escapeHtml(data.cI?.bD?.address_snippet?.split(',').pop()?.trim() || 'Unknown')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Company Number:</strong> ${escapeHtml(data.cI?.eN || data.cI?.bD?.company_number || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Business Type:</strong> ${escapeHtml(data.cI?.bD?.company_type || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(data.cI?.e || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(data.cI?.m || '')}</div>
           </div>
-          ${requestData.cA?.cC ? `
+          ${data.cI?.a?.formattedAddress ? `
             <div style="margin-top: 12px;">
               <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">REGISTERED ADDRESS:</div>
-              <div style="font-size: 12px; color: #333; line-height: 1.6;">${escapeHtml(formatAddress(requestData.cA.cC))}</div>
+              <div style="font-size: 12px; color: #333; line-height: 1.6;">${escapeHtml(formatAddress(data.cI.a))}</div>
             </div>
           ` : ''}
         ` : `
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666; margin-bottom: 12px;">
             <div style="display: flex; gap: 4px;"><strong style="color: #333;">Full Name:</strong> ${escapeHtml(clientName)}</div>
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Date of Birth:</strong> ${escapeHtml(requestData.cI?.cD || 'Not provided')}</div>
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(requestData.cC?.cE || '')}</div>
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(requestData.cC?.cP || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Date of Birth:</strong> ${escapeHtml(data.cI?.b || 'Not provided')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(data.cI?.e || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(data.cI?.m || '')}</div>
           </div>
-          ${requestData.cA?.cC ? `
+          ${data.cI?.a?.formattedAddress ? `
             <div style="margin-top: 12px;">
               <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">CURRENT ADDRESS:</div>
-              <div style="font-size: 12px; color: #333; line-height: 1.6;">${escapeHtml(formatAddress(requestData.cA.cC))}</div>
+              <div style="font-size: 12px; color: #333; line-height: 1.6;">${escapeHtml(formatAddress(data.cI.a))}</div>
             </div>
           ` : ''}
         `}
@@ -3611,9 +3620,22 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 Element created with', element.children.length, 'children');
     
+    // Log the actual text content to see if there's any visible text
+    console.log('📄 Element text content length:', element.textContent?.length || 0);
+    console.log('📄 Element text preview:', element.textContent?.substring(0, 500));
+    
     if (element.children.length === 0) {
       console.error('❌ Element has no children - HTML may have parsing errors');
       console.log('🔍 Full HTML:', pdfHTML);
+    }
+    
+    // Log the parsed body content
+    const bodyElement = element.querySelector('body');
+    if (bodyElement) {
+      console.log('📄 Body element found, text length:', bodyElement.textContent?.length || 0);
+      console.log('📄 Body first div:', bodyElement.querySelector('div')?.outerHTML?.substring(0, 500));
+    } else {
+      console.error('❌ No body element found in parsed HTML');
     }
     
     // Configure html2pdf options (same as checks manager and sanctions checker)
@@ -4961,6 +4983,9 @@ function buildAndSendRequestData(requestType, messageObj, messageFile, documentF
   }
   
   console.log('📤 Sending request-data to parent:', requestDataMessage);
+  
+  // Store for PDF generation when we receive save-success
+  lastSentRequestData = requestDataMessage;
   
   // Send to parent
   sendMessageToParent(requestDataMessage);
