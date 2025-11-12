@@ -357,13 +357,17 @@ Sends request-data message to parent with:
         }
       }
       
-      // CDF or OFSI validation (must have at least one)
+      // CDF and OFSI validation (BOTH required for Form E)
       const idDocuments = window.RequestFormCore.idDocuments();
       const hasCDF = idDocuments.some(doc => doc.type === 'Details form');
       const hasOFSI = idDocuments.some(doc => doc.type === 'PEP & Sanctions Check');
       
-      if (!hasCDF && !hasOFSI) {
-        errors.push('You must upload a CDF or OFSI document, or ensure at least one already exists');
+      if (!hasCDF) {
+        errors.push('You must upload a CDF (Client Details Form) or ensure one already exists');
+      }
+      
+      if (!hasOFSI) {
+        errors.push('You must upload an OFSI (Sanctions Check) or ensure one already exists');
       }
       
       return {

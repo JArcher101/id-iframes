@@ -611,32 +611,38 @@ Sends request-data message to parent with:
       const charityCheckbox = document.getElementById('charityCheckbox');
       const isEntity = businessCheckbox?.checked || charityCheckbox?.checked;
       
+      // ============================================
+      // CDF and OFSI validation (required for ALL Form K - both individuals and entities)
+      // ============================================
+      const idDocuments = window.RequestFormCore.idDocuments();
+      const hasCDF = idDocuments.some(doc => doc.type === 'Details form');
+      const hasOFSI = idDocuments.some(doc => doc.type === 'PEP & Sanctions Check');
+      
+      const cdfFileInput = document.getElementById('cdfFileInput');
+      const cdfDocumentType = document.getElementById('cdfDocumentType');
+      
+      // CDF file dropdown validation
+      if (cdfFileInput?.files[0] && !cdfDocumentType?.value) {
+        errors.push('You have uploaded a CDF file, please select the document type from the dropdown');
+      }
+      
+      // Require BOTH CDF and OFSI
+      if (!hasCDF) {
+        errors.push('You must upload a CDF (Client Details Form) or ensure one already exists');
+      }
+      
+      if (!hasOFSI) {
+        errors.push('You must upload an OFSI (Sanctions Check) or ensure one already exists');
+      }
+      
       if (isEntity) {
         // ============================================
-        // ENTITY REQUIREMENTS (Business/Charity)
+        // ADDITIONAL ENTITY REQUIREMENTS (Business/Charity)
         // ============================================
         
-        // OFSI document required (existing or uploaded)
-        const idDocuments = window.RequestFormCore.idDocuments();
-        const hasOFSI = idDocuments.some(doc => doc.type === 'PEP & Sanctions Check');
-        const ofsiFileInput = document.getElementById('ofsiFileInput');
-        const ofsiUploaded = ofsiFileInput?.files[0];
-        
-        if (!hasOFSI && !ofsiUploaded) {
-          errors.push('You must upload an OFSI document or ensure one already exists');
-        }
-        
-        // EITHER successful company/charity link OR CDF
+        // EITHER successful company/charity link OR business name + entity number
         const requestData = window.RequestFormCore.requestData();
         const hasBusinessData = requestData?.cI?.bD && Object.keys(requestData.cI.bD).length > 0;
-        const hasCDF = idDocuments.some(doc => doc.type === 'Details form');
-        const cdfFileInput = document.getElementById('cdfFileInput');
-        const cdfUploaded = cdfFileInput?.files[0];
-        const cdfDocumentType = document.getElementById('cdfDocumentType');
-        
-        if (!hasBusinessData && !hasCDF && !cdfUploaded) {
-          errors.push('You must have a successful company/charity link or upload a CDF document');
-        }
         
         // If no successful business link, require business name and entity number
         if (!hasBusinessData) {
@@ -652,14 +658,9 @@ Sends request-data message to parent with:
           }
         }
         
-        // If CDF uploaded, dropdown required
-        if (cdfUploaded && !cdfDocumentType?.value) {
-          errors.push('You have uploaded a CDF file, please select the document type from the dropdown');
-        }
-        
       } else {
         // ============================================
-        // INDIVIDUAL REQUIREMENTS
+        // ADDITIONAL INDIVIDUAL REQUIREMENTS
         // ============================================
         
         // First and Last Name
