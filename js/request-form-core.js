@@ -3883,19 +3883,40 @@ async function generateRequestPDF(messageData) {
     // Wait for iframe to finish rendering
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    // Extract the body element from iframe
+    // Extract the body element and style from iframe
     const iframeBody = iframeDoc.body;
+    const iframeStyle = iframeDoc.querySelector('style');
+    
     console.log('📄 Iframe body has', iframeBody.children.length, 'children');
     console.log('📄 Section titles found:', iframeBody.querySelectorAll('.section-title').length);
     console.log('📄 Hit cards found:', iframeBody.querySelectorAll('.hit-card').length);
     
-    // Clone the body so we can use it after removing iframe
-    const element = iframeBody.cloneNode(true);
+    // Create a container with style + body content
+    const element = document.createElement('div');
+    
+    // Add the style tag first
+    if (iframeStyle) {
+      element.appendChild(iframeStyle.cloneNode(true));
+      console.log('📄 Added style tag to element');
+    }
+    
+    // Add all body children
+    Array.from(iframeBody.children).forEach(child => {
+      element.appendChild(child.cloneNode(true));
+    });
+    
+    // Apply body styles to container
+    element.style.fontFamily = window.getComputedStyle(iframeBody).fontFamily;
+    element.style.padding = window.getComputedStyle(iframeBody).padding;
+    element.style.background = 'white';
+    element.style.color = '#111';
+    element.style.fontSize = '14px';
+    element.style.lineHeight = '1.5';
     
     // Remove temporary iframe
     document.body.removeChild(iframe);
     
-    console.log('📄 Cloned body ready for PDF');
+    console.log('📄 Element ready with style + body content:', element.children.length, 'children');
     
     // Configure html2pdf options (EXACTLY like sanctions checker - NO width/height constraints)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
