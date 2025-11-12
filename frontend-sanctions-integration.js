@@ -68,9 +68,11 @@ export async function initiateSanctionsChecker(context) {
 /**
  * Setup message listener for sanctions iframe
  * Call this in your page's $w.onReady()
+ * 
+ * @param {string} iframeId - ID of your HTML iframe element (e.g. '#html17')
  */
-export function setupSanctionsMessageListener() {
-    $w('#sanctions-iframe').onMessage(async (event) => {
+export function setupSanctionsMessageListener(iframeId = '#html17') {
+    $w(iframeId).onMessage(async (event) => {
         const message = event.data;
         
         console.log('📨 Received message from sanctions iframe:', message.type);
@@ -86,13 +88,13 @@ export function setupSanctionsMessageListener() {
                         throw new Error(sanctionsRes.result || 'Failed to fetch sanctions data');
                     }
                     
-                    $w('#sanctions-iframe').postMessage({
+                    $w(iframeId).postMessage({
                         type: 'sanctions-xml',
                         xml: sanctionsRes.xml
                     });
                 } catch (error) {
                     console.error('❌ Failed to fetch sanctions XML:', error);
-                    $w('#sanctions-iframe').postMessage({
+                    $w(iframeId).postMessage({
                         type: 'sanctions-xml',
                         error: error.message || 'Failed to fetch sanctions data'
                     });
@@ -101,24 +103,24 @@ export function setupSanctionsMessageListener() {
                 
             case 'file-data':
                 // Request S3 presigned PUT URL for PDF upload
-                await handleFileDataRequest(message);
+                await handleFileDataRequest(message, iframeId);
                 break;
                 
             case 'upload-success':
                 // Update entry with uploaded sanctions PDF
-                await handleUploadSuccess(message);
+                await handleUploadSuccess(message, iframeId);
                 break;
         }
     });
     
-    console.log('✅ Sanctions message listener setup complete');
+    console.log('✅ Sanctions message listener setup complete on', iframeId);
 }
 
 /**
  * Handle file-data request from iframe
  * Generates S3 PUT link and responds to iframe
  */
-async function handleFileDataRequest(message) {
+async function handleFileDataRequest(message, iframeId) {
     console.log('🔗 Generating S3 PUT links for sanctions PDF...');
     
     try {
@@ -135,7 +137,7 @@ async function handleFileDataRequest(message) {
         }
         
         // Send PUT links back to iframe
-        $w('#sanctions-iframe').postMessage({
+        $w(iframeId).postMessage({
             type: 'put-links',
             links: putLinkRes.links.map((url, index) => ({
                 url: url,
@@ -149,7 +151,7 @@ async function handleFileDataRequest(message) {
         
     } catch (error) {
         console.error('❌ Failed to generate PUT links:', error);
-        $w('#sanctions-iframe').postMessage({
+        $w(iframeId).postMessage({
             type: 'put-error',
             message: error.message || 'Failed to generate upload link',
             _id: message._id
@@ -161,7 +163,7 @@ async function handleFileDataRequest(message) {
  * Handle upload-success from iframe
  * Updates entry with uploaded PDF
  */
-async function handleUploadSuccess(message) {
+async function handleUploadSuccess(message, iframeId) {
     console.log('💾 Sanctions PDF uploaded, updating entry...');
     
     try {
@@ -191,7 +193,7 @@ async function handleUploadSuccess(message) {
         console.error('❌ Failed to update entry:', error);
         
         // Send error to iframe to display to user
-        $w('#sanctions-iframe').postMessage({
+        $w(iframeId).postMessage({
             type: 'upload-error',
             message: error.message || 'Upload succeeded but failed to update record',
             _id: message._id
@@ -203,7 +205,7 @@ async function handleUploadSuccess(message) {
  * Example usage in your page code:
  * 
  * // In $w.onReady()
- * setupSanctionsMessageListener();
+ * setupSanctionsMessageListener('#html17'); // Use your iframe's ID
  * 
  * // When user clicks "Check Sanctions" button
  * async function onCheckSanctionsClick() {
@@ -219,7 +221,7 @@ async function handleUploadSuccess(message) {
  *         }
  *     };
  *     
- *     await initiateSanctionsChecker(context);
+ *     await initiateSanctionsChecker(context, '#html17'); // Pass iframe ID
  *     
  *     // Show lightbox/popup containing the iframe
  *     $w('#sanctions-lightbox').show();
