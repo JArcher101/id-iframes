@@ -1981,6 +1981,9 @@
         // Store blob in window for later upload (File objects can't be sent via postMessage)
         window.pendingUploadFile = pdfBlob;
         
+        // Also store for opening in popup after upload
+        window.pendingPDFForViewing = pdfBlob;
+        
         // Create file metadata following document-viewer.html pattern
         const fileMetadata = {
           type: 'PEP & Sanctions Check',
@@ -2060,11 +2063,36 @@
         
         uploadingOverlay.classList.remove('show');
         
+        // Open PDF in popup window for viewing/printing
+        const pdfForViewing = window.pendingPDFForViewing;
+        if (pdfForViewing) {
+          const pdfUrl = URL.createObjectURL(pdfForViewing);
+          
+          const width = 900;
+          const height = 800;
+          const left = (screen.width - width) / 2;
+          const top = (screen.height - height) / 2;
+          const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes,menubar=yes,toolbar=yes`;
+          
+          const popup = window.open(pdfUrl, 'sanctionsPDF', features);
+          
+          if (popup) {
+            popup.focus();
+            // Clean up blob URL after popup loads
+            popup.onload = () => {
+              setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
+            };
+          }
+          
+          console.log('✅ PDF opened in popup window');
+        }
+        
         // Show success message
         showSuccess('PDF uploaded successfully!');
         
         // Clean up
         delete window.pendingUploadFile;
+        delete window.pendingPDFForViewing;
         
       } catch (error) {
         console.error('❌ Error uploading to S3:', error);
