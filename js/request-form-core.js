@@ -3972,15 +3972,16 @@ async function generateRequestPDF(messageData) {
     console.log('📄 Element scroll height:', element.scrollHeight, 'px');
     
     // Generate PDF blob using html2pdf (same pattern as uk-sanctions-checker.html)
+    // CRITICAL: html2pdf renders asynchronously, so we must keep element in DOM until .outputPdf completes
     const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
     
-    // Remove from body after PDF generation
+    console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
+    
+    // NOW remove from body after PDF generation is FULLY complete
     if (element.parentNode) {
       document.body.removeChild(element);
       console.log('📄 Element removed from body after PDF generation');
     }
-    
-    console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
     
     // Open PDF in popup window
     const pdfUrl = URL.createObjectURL(pdfBlob);
