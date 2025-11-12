@@ -1734,155 +1734,179 @@
         
         // Results
         currentSearchResults.forEach((entry, index) => {
-          checkPageBreak(40);
+          checkPageBreak(50);
           
-          // Result number
-          doc.setFontSize(14);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(0, 60, 113);
-          doc.text(`Result ${index + 1}`, margin, yPos);
-          yPos += 8;
-          
-          // Primary name
+          // Primary name with badges
           const primaryName = entry.names.find(n => n.type === 'Primary Name');
           const displayName = primaryName ? primaryName.fullName : entry.matchedName;
           
-          doc.setFontSize(12);
-          doc.setTextColor(0, 0, 0);
-          const nameLines = doc.splitTextToSize(displayName, maxWidth);
-          doc.text(nameLines, margin, yPos);
-          yPos += nameLines.length * 6;
-          
-          // Type and match score
-          doc.setFontSize(9);
-          doc.setFont(undefined, 'normal');
-          let badge = `Type: ${entry.type}`;
-          if (searchParams.isFuzzy) {
-            badge += ` | Match: ${entry.matchScore}%`;
-          }
-          doc.text(badge, margin, yPos);
+          doc.setFontSize(14);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(0, 60, 113);
+          doc.text(`${index + 1}. ${displayName}`, margin, yPos);
           yPos += 8;
           
-          // Details
-          doc.setFontSize(10);
+          // Badges line (Type | Match | Confidence)
+          doc.setFontSize(9);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(80, 80, 80);
+          let badgeLine = `${entry.type}`;
+          if (searchParams.isFuzzy) {
+            badgeLine += ` • ${entry.matchScore}% Match • ${entry.confidence} Confidence`;
+          }
+          doc.text(badgeLine, margin, yPos);
+          yPos += 8;
           
-          // Aliases
+          // Match details box (fuzzy only)
+          if (searchParams.isFuzzy && entry.matchDetails) {
+            checkPageBreak(20);
+            doc.setFillColor(240, 247, 255);
+            doc.setDrawColor(144, 202, 249);
+            doc.roundedRect(margin, yPos, maxWidth, 18, 2, 2, 'FD');
+            
+            doc.setFontSize(9);
+            doc.setTextColor(25, 118, 210);
+            doc.setFont(undefined, 'bold');
+            doc.text('Match Details: ', margin + 3, yPos + 6);
+            doc.setFont(undefined, 'normal');
+            const detailsText = doc.splitTextToSize(entry.matchDetails, maxWidth - 40);
+            doc.text(detailsText, margin + 28, yPos + 6);
+            
+            yPos += 20;
+          }
+          
+          // Details grid (2 columns)
+          doc.setFontSize(10);
+          doc.setTextColor(0, 0, 0);
+          
+          const labelX = margin;
+          const valueX = margin + 40;
+          const col2LabelX = pageWidth / 2;
+          const col2ValueX = col2LabelX + 40;
+          
+          // Row 1: Unique ID | Date of Birth
+          checkPageBreak(7);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(100, 100, 100);
+          doc.text('Unique ID:', labelX, yPos);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(0, 0, 0);
+          doc.text(entry.uniqueId, valueX, yPos);
+          
+          if (entry.dateOfBirth) {
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(100, 100, 100);
+            doc.text('Date of Birth:', col2LabelX, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(0, 0, 0);
+            doc.text(entry.dateOfBirth, col2ValueX, yPos);
+          }
+          yPos += 6;
+          
+          // Row 2: Nationality | Date Designated
+          if (entry.nationality.length > 0) {
+            checkPageBreak(7);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(100, 100, 100);
+            doc.text('Nationality:', labelX, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(0, 0, 0);
+            doc.text(entry.nationality.slice(0, 2).join(', '), valueX, yPos);
+          }
+          
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(100, 100, 100);
+          doc.text('Designated:', col2LabelX, yPos);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(0, 0, 0);
+          doc.text(entry.dateDesignated, col2ValueX, yPos);
+          yPos += 8;
+          
+          // Aliases section
           const aliases = entry.names
             .filter(n => n.type !== 'Primary Name' && n.fullName)
             .map(n => n.fullName);
           
           if (aliases.length > 0) {
             checkPageBreak(15);
+            doc.setFontSize(9);
             doc.setFont(undefined, 'bold');
-            doc.text('Aliases:', margin, yPos);
+            doc.setTextColor(100, 100, 100);
+            doc.text('ALSO KNOWN AS:', margin, yPos);
             yPos += 5;
+            
             doc.setFont(undefined, 'normal');
-            aliases.forEach(alias => {
-              checkPageBreak(6);
-              const aliasLines = doc.splitTextToSize(`• ${alias}`, maxWidth - 5);
-              doc.text(aliasLines, margin + 3, yPos);
-              yPos += aliasLines.length * 5;
-            });
-            yPos += 3;
+            doc.setTextColor(50, 50, 50);
+            const aliasesText = aliases.slice(0, 4).join(' • ');
+            const aliasLines = doc.splitTextToSize(aliasesText, maxWidth);
+            doc.text(aliasLines, margin, yPos);
+            yPos += aliasLines.length * 4 + 5;
           }
           
-          // Nationality
-          if (entry.nationality.length > 0) {
-            checkPageBreak(7);
-            doc.setFont(undefined, 'bold');
-            doc.text('Nationality: ', margin, yPos);
-            doc.setFont(undefined, 'normal');
-            doc.text(entry.nationality.join(', '), margin + 25, yPos);
-            yPos += 6;
-          }
-          
-          // Date of Birth
-          if (entry.dateOfBirth) {
-            checkPageBreak(7);
-            doc.setFont(undefined, 'bold');
-            doc.text('Date of Birth: ', margin, yPos);
-            doc.setFont(undefined, 'normal');
-            doc.text(entry.dateOfBirth, margin + 28, yPos);
-            yPos += 6;
-          }
-          
-          // Regime
-          checkPageBreak(7);
-          doc.setFont(undefined, 'bold');
-          doc.text('Regime: ', margin, yPos);
-          doc.setFont(undefined, 'normal');
-          const regimeLines = doc.splitTextToSize(entry.regimeName, maxWidth - 20);
-          doc.text(regimeLines, margin + 18, yPos);
-          yPos += regimeLines.length * 5 + 1;
-          
-          // Date Designated
-          checkPageBreak(7);
-          doc.setFont(undefined, 'bold');
-          doc.text('Date Designated: ', margin, yPos);
-          doc.setFont(undefined, 'normal');
-          doc.text(entry.dateDesignated, margin + 35, yPos);
-          yPos += 6;
-          
-          // Sanctions
+          // Sanctions section
           const sanctions = entry.sanctionsImposed.split('|').map(s => s.trim()).filter(s => s);
           if (sanctions.length > 0) {
-            checkPageBreak(10);
-            doc.setFont(undefined, 'bold');
-            doc.text('Sanctions Imposed:', margin, yPos);
-            yPos += 5;
-            doc.setFont(undefined, 'normal');
-            sanctions.forEach(sanction => {
-              checkPageBreak(6);
-              const sanctionLines = doc.splitTextToSize(`• ${sanction}`, maxWidth - 5);
-              doc.text(sanctionLines, margin + 3, yPos);
-              yPos += sanctionLines.length * 5;
-            });
-            yPos += 3;
-          }
-          
-          // Addresses
-          if (entry.addresses.length > 0) {
-            checkPageBreak(10);
-            doc.setFont(undefined, 'bold');
-            doc.text('Addresses:', margin, yPos);
-            yPos += 5;
-            doc.setFont(undefined, 'normal');
-            entry.addresses.slice(0, 3).forEach(addr => {
-              checkPageBreak(10);
-              const addrLines = doc.splitTextToSize(`• ${addr}`, maxWidth - 5);
-              doc.text(addrLines, margin + 3, yPos);
-              yPos += addrLines.length * 5;
-            });
-            yPos += 3;
-          }
-          
-          // Other Information (condensed)
-          if (entry.otherInformation) {
             checkPageBreak(15);
-            doc.setFont(undefined, 'bold');
-            doc.text('Other Information:', margin, yPos);
-            yPos += 5;
-            doc.setFont(undefined, 'normal');
             doc.setFontSize(9);
-            const otherLines = doc.splitTextToSize(entry.otherInformation, maxWidth);
-            const condensedLines = otherLines.slice(0, 8); // Limit to first 8 lines
-            doc.text(condensedLines, margin, yPos);
-            yPos += condensedLines.length * 4 + 3;
-            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(100, 100, 100);
+            doc.text('SANCTIONS IMPOSED:', margin, yPos);
+            yPos += 5;
+            
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(50, 50, 50);
+            const sanctionsText = sanctions.join(' • ');
+            const sanctionLines = doc.splitTextToSize(sanctionsText, maxWidth);
+            doc.text(sanctionLines, margin, yPos);
+            yPos += sanctionLines.length * 4 + 5;
           }
           
-          // UK Statement
-          if (entry.ukStatement) {
-            checkPageBreak(15);
+          // Regime box
+          checkPageBreak(20);
+          doc.setFillColor(255, 249, 249);
+          doc.setDrawColor(211, 47, 47);
+          doc.setLineWidth(2);
+          doc.rect(margin, yPos, maxWidth, 0, 'S'); // Just left border
+          doc.line(margin, yPos, margin, yPos + 15); // Red left border
+          
+          doc.setFontSize(8);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(100, 100, 100);
+          doc.text('REGIME:', margin + 3, yPos + 5);
+          yPos += 8;
+          
+          doc.setFontSize(9);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(50, 50, 50);
+          const regimeLines = doc.splitTextToSize(entry.regimeName, maxWidth - 6);
+          doc.text(regimeLines, margin + 3, yPos);
+          yPos += regimeLines.length * 4 + 8;
+          
+          // UK Statement (if exists and not too long)
+          if (entry.ukStatement && entry.ukStatement.length < 500) {
+            checkPageBreak(25);
+            doc.setFillColor(255, 249, 249);
+            
+            doc.setFontSize(8);
             doc.setFont(undefined, 'bold');
-            doc.text('UK Statement of Reasons:', margin, yPos);
+            doc.setTextColor(100, 100, 100);
+            doc.text('UK STATEMENT OF REASONS:', margin + 3, yPos);
             yPos += 5;
+            
+            doc.setFontSize(8);
             doc.setFont(undefined, 'normal');
-            doc.setFontSize(9);
-            const statementLines = doc.splitTextToSize(entry.ukStatement, maxWidth);
-            doc.text(statementLines, margin, yPos);
-            yPos += statementLines.length * 4 + 3;
-            doc.setFontSize(10);
+            doc.setTextColor(50, 50, 50);
+            const statementLines = doc.splitTextToSize(entry.ukStatement, maxWidth - 6);
+            const limitedLines = statementLines.slice(0, 6); // Limit to 6 lines
+            doc.text(limitedLines, margin + 3, yPos);
+            yPos += limitedLines.length * 4 + 3;
+            
+            if (statementLines.length > 6) {
+              doc.setFont(undefined, 'italic');
+              doc.setTextColor(120, 120, 120);
+              doc.text('(Statement truncated - see full details in UK Sanctions List)', margin + 3, yPos);
+              yPos += 5;
+            }
           }
           
           // Separator
