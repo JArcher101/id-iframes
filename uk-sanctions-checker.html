@@ -1817,12 +1817,15 @@
         const pdfHTML = buildPDFHTML();
         
         // Create temporary container for html2pdf
+        // CRITICAL: Isolate from parent styles to prevent custom font inheritance
         const tempContainer = document.createElement('div');
-        tempContainer.innerHTML = pdfHTML;
+        tempContainer.style.all = 'initial'; // Reset ALL inherited styles
         tempContainer.style.position = 'absolute';
         tempContainer.style.left = '-9999px';
         tempContainer.style.top = '0';
         tempContainer.style.width = '210mm'; // A4 width
+        tempContainer.style.fontFamily = 'Trebuchet MS, Arial, sans-serif'; // Force system fonts only
+        tempContainer.innerHTML = pdfHTML;
         document.body.appendChild(tempContainer);
         
         console.log('📄 HTML content length:', pdfHTML.length);
@@ -1833,7 +1836,15 @@
           margin: [10, 10, 10, 10],
           filename: `UK_Sanctions_Search_${searchParams.searchName.replace(/\s+/g, '_')}_${Date.now()}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
+          html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            logging: true, // Enable logging to debug
+            letterRendering: true,
+            allowTaint: false,
+            backgroundColor: '#ffffff',
+            removeContainer: false
+          },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: { mode: 'css', avoid: '.hit-card' }
         };
