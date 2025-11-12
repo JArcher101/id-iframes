@@ -3866,11 +3866,37 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     
-    // CRITICAL: Create element but do NOT add to document.body to avoid custom font inheritance!
-    // This matches the pattern from uk-sanctions-checker.html and thirdfort-checks-manager.html
-    // The iframe approach was causing PDF rendering issues by inheriting parent page styles
+    // CRITICAL: Parse HTML and extract body content to avoid blank pages and spacing issues
+    // When innerHTML contains a full HTML document, we need to extract just the body content
+    // This prevents html2pdf from trying to render DOCTYPE/html tags as text
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(pdfHTML, 'text/html');
+    const bodyContent = doc.body;
+    const headStyles = doc.head.querySelector('style');
+    
+    // Create a container div and apply body styles from the parsed document
     const element = document.createElement('div');
-    element.innerHTML = pdfHTML;
+    // Apply body styles as inline styles (padding, font-family, etc.)
+    element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
+    element.style.padding = '40px';
+    element.style.background = 'white';
+    element.style.color = '#111';
+    element.style.lineHeight = '1.5';
+    element.style.fontSize = '14px';
+    element.style.margin = '0';
+    element.style.boxSizing = 'border-box';
+    
+    // Add the stylesheet from head if it exists (for CSS classes like .pdf-header, .section-title, etc.)
+    if (headStyles) {
+      const styleEl = document.createElement('style');
+      styleEl.textContent = headStyles.textContent;
+      element.appendChild(styleEl);
+    }
+    
+    // Clone all body children to avoid any reference issues
+    Array.from(bodyContent.children).forEach(child => {
+      element.appendChild(child.cloneNode(true));
+    });
     
     console.log('📄 Element created with', element.children.length, 'children');
     console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
