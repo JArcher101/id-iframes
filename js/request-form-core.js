@@ -3346,8 +3346,14 @@ function escapeHtml(text) {
  * Matching request-note-pdf-mockup.html design
  */
 function buildRequestPDFHTML(messageData) {
+  console.log('🔨 Building PDF HTML with data:', messageData);
+  console.log('📊 Request data:', requestData);
+  
   const requestType = messageData.requestType || 'note';
   const savedData = messageData.savedData || {};
+  
+  console.log('📝 Request type:', requestType);
+  console.log('💾 Saved data:', savedData);
   
   // Determine badge class and title
   let badgeClass, badgeText, title, borderColor;
@@ -3588,11 +3594,14 @@ async function generateRequestPDF(messageData) {
     // Build HTML template
     const pdfHTML = buildRequestPDFHTML(messageData);
     
+    console.log('📄 HTML content length:', pdfHTML.length);
+    console.log('📄 HTML preview:', pdfHTML.substring(0, 500));
+    
     // Create element for html2pdf (don't add to DOM to avoid font inheritance)
     const element = document.createElement('div');
     element.innerHTML = pdfHTML;
     
-    console.log('📄 HTML content length:', pdfHTML.length);
+    console.log('📄 Element created with', element.children.length, 'children');
     
     // Configure html2pdf options (same as checks manager and sanctions checker)
     const requestType = messageData.requestType || 'note';
