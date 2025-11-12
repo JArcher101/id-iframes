@@ -3550,16 +3550,12 @@ function buildRequestPDFHTML(messageData) {
             </span>
           </div>
           <div style="display: flex; gap: 8px;">
-            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Entry ID:</span>
-            <span style="color: #333;">${escapeHtml(entryId)}</span>
+            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Submission Date:</span>
+            <span style="color: #333;">${submissionDate}</span>
           </div>
           <div style="display: flex; gap: 8px;">
             <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Submitted By:</span>
             <span style="color: #333;">${escapeHtml(userEmail)}</span>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Submission Date:</span>
-            <span style="color: #333;">${submissionDate}</span>
           </div>
         </div>
       </div>
