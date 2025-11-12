@@ -3866,16 +3866,26 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     
-    // CRITICAL: Create element but do NOT add to document.body to avoid custom font inheritance!
-    // This matches the pattern from uk-sanctions-checker.html and thirdfort-checks-manager.html
-    // When innerHTML contains a full HTML document, the browser automatically parses it correctly
-    const element = document.createElement('div');
-    element.innerHTML = pdfHTML;
+    // CRITICAL: Parse HTML and extract ONLY the body content to avoid blank pages
+    // When innerHTML contains a full HTML document with DOCTYPE/html tags, html2pdf tries to render them
+    // We need to extract just the body's innerHTML content
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(pdfHTML, 'text/html');
+    const bodyHTML = doc.body.innerHTML;
+    const headStyles = doc.head.querySelector('style');
     
-    // Set width to match A4 content area (210mm - 20mm margins = 190mm ≈ 720px at 96 DPI)
-    // This ensures html2canvas renders at the correct width and prevents content cutoff
-    element.style.width = '720px';
-    element.style.maxWidth = '720px';
+    // Create element but do NOT add to document.body to avoid custom font inheritance!
+    const element = document.createElement('div');
+    
+    // Add stylesheet from head if it exists (for CSS classes)
+    if (headStyles) {
+      const styleEl = document.createElement('style');
+      styleEl.textContent = headStyles.textContent;
+      element.appendChild(styleEl);
+    }
+    
+    // Set only the body content (not the body element itself)
+    element.innerHTML = bodyHTML;
     
     console.log('📄 Element created with', element.children.length, 'children');
     console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
@@ -3890,9 +3900,7 @@ async function generateRequestPDF(messageData) {
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
-        logging: false,
-        windowWidth: 720,
-        allowTaint: true
+        logging: false
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: 'css', avoid: '.hit-card' }
