@@ -3889,7 +3889,15 @@ async function generateRequestPDF(messageData) {
     const headStyles = doc.head.querySelector('style');
     if (headStyles) {
       const styleEl = document.createElement('style');
-      styleEl.textContent = headStyles.textContent;
+      // CRITICAL: Override any custom @font-face from parent page (styles.css)
+      // This prevents base64 font inheritance which can break html2canvas rendering
+      styleEl.textContent = `
+        /* Reset any inherited @font-face rules */
+        * { 
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
+        }
+        ${headStyles.textContent}
+      `;
       element.insertBefore(styleEl, element.firstChild);
     }
     
