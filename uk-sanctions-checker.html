@@ -1200,11 +1200,12 @@
     }
     
     // Get confidence rating based on match score
+    // For fuzzy matching, this reflects the BEST word match found
     function getConfidenceRating(score) {
-      if (score >= 95) return 'Very High';
-      if (score >= 80) return 'High';
-      if (score >= 65) return 'Medium';
-      if (score >= 50) return 'Low';
+      if (score >= 90) return 'Very High';  // Exact or near-exact word match
+      if (score >= 75) return 'High';       // Strong similarity (e.g., "John" vs "Jon")
+      if (score >= 60) return 'Medium';     // Moderate similarity (e.g., "Smith" vs "Smyth")
+      if (score >= 50) return 'Low';        // Weak similarity (e.g., "Robert" vs "Roberto")
       return 'Very Low';
     }
     
@@ -1310,9 +1311,10 @@
         </div>
         
         ${entry.matchDetails ? `
-          <div style="background: #f0f7ff; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; color: #1976d2;">
+          <div style="background: #f0f7ff; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; color: #1976d2; line-height: 1.6;">
             <strong>Match Details:</strong> ${escapeHtml(entry.matchDetails)}
             ${entry.matchType ? `<br><strong>Matched in:</strong> ${escapeHtml(entry.matchType)}` : ''}
+            <br><em style="font-size: 12px; color: #666;">Note: Score shows best name part match. Review full details to verify relevance.</em>
           </div>
         ` : ''}
         
