@@ -1008,8 +1008,8 @@
           }
         });
         
-        // Add to results if match found
-        if ((isFuzzy && matchScore >= 70) || (!isFuzzy && matchScore > 0)) {
+        // Add to results if match found (lowered threshold to 50% for better fuzzy results)
+        if ((isFuzzy && matchScore >= 50) || (!isFuzzy && matchScore > 0)) {
           currentSearchResults.push({
             ...entry,
             matchScore: Math.round(matchScore),
@@ -1027,21 +1027,44 @@
       displayResults();
     }
     
-    // Fuzzy matching using Levenshtein distance
+    // Fuzzy matching using Levenshtein distance with word-level matching
     function fuzzyMatchScore(str1, str2) {
       const s1 = str1.toLowerCase();
       const s2 = str2.toLowerCase();
       
-      // Quick check for exact match
+      // Quick check for exact substring match
       if (s2.includes(s1)) {
         return 100;
       }
       
-      const distance = levenshteinDistance(s1, s2);
-      const maxLength = Math.max(s1.length, s2.length);
-      const similarity = ((maxLength - distance) / maxLength) * 100;
+      // Word-level matching - split both strings into words
+      const words1 = s1.split(/\s+/).filter(w => w.length > 0);
+      const words2 = s2.split(/\s+/).filter(w => w.length > 0);
       
-      return similarity;
+      let bestScore = 0;
+      
+      // Check each word in search term against each word in target name
+      words1.forEach(searchWord => {
+        words2.forEach(targetWord => {
+          // Check for substring match first
+          if (targetWord.includes(searchWord) || searchWord.includes(targetWord)) {
+            bestScore = Math.max(bestScore, 90);
+          } else {
+            // Calculate Levenshtein similarity for this word pair
+            const distance = levenshteinDistance(searchWord, targetWord);
+            const maxLength = Math.max(searchWord.length, targetWord.length);
+            const wordSimilarity = ((maxLength - distance) / maxLength) * 100;
+            bestScore = Math.max(bestScore, wordSimilarity);
+          }
+        });
+      });
+      
+      // Also check full string similarity as fallback
+      const fullDistance = levenshteinDistance(s1, s2);
+      const fullMaxLength = Math.max(s1.length, s2.length);
+      const fullSimilarity = ((fullMaxLength - fullDistance) / fullMaxLength) * 100;
+      
+      return Math.max(bestScore, fullSimilarity);
     }
     
     // Levenshtein distance algorithm
