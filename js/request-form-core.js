@@ -3581,30 +3581,12 @@ function buildRequestPDFHTML(messageData) {
         </div>
       </div>
       
-      <!-- Matter Details Section -->
-      <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">Matter Details</div>
-      
-      <div style="background: white; border-radius: 8px; border-left: 4px solid #1d71b8; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
-        <div style="background: #f8f9fa; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
-          <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 8px;">MATTER DETAILS:</div>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666;">
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Work Type:</strong> ${escapeHtml(workType)}</div>
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Relation:</strong> ${escapeHtml(relation)}</div>
-            <div style="display: flex; gap: 4px; grid-column: 1 / -1; margin-top: 8px;"><strong style="color: #333;">Description:</strong> ${escapeHtml(matterDescription)}</div>
-            ${data.b ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Type:</strong> Business</div>` : ''}
-            ${data.c ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Type:</strong> Charity</div>` : ''}
-          </div>
-        </div>
-      </div>
-      
-      <!-- Client Information Section -->
-      <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">
-        ${isEntity ? 'Business/Charity Details' : 'Client Details'}
-      </div>
+      <!-- Client & Matter Details Section (COMBINED) -->
+      <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">Client & Matter Details</div>
       
       <div style="background: white; border-radius: 8px; border-left: 4px solid #1d71b8; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
         <!-- Client Header with Name and Badges -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #dee2e6;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(clientName)}</div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
@@ -3612,7 +3594,18 @@ function buildRequestPDFHTML(messageData) {
           </div>
         </div>
         
-        <div style="padding: 0 4px;">
+        <div style="padding: 8px 16px; border-top: 1px solid #dee2e6;">
+        <!-- Matter Details in Grey Box -->
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+          <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 8px;">MATTER DETAILS:</div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666;">
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Work Type:</strong> ${escapeHtml(workType)}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Relation:</strong> ${escapeHtml(relation)}</div>
+          </div>
+          <div style="margin-top: 8px; font-size: 12px;">
+            <strong>Description:</strong> ${escapeHtml(matterDescription)}
+          </div>
+        </div>
         ${isEntity ? `
           <!-- Business Details -->
           <div style="margin-bottom: 16px;">
@@ -3668,37 +3661,21 @@ function buildRequestPDFHTML(messageData) {
         </div>
       </div>
       
-      <!-- Request Type Information -->
-      <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">
-        Request Type & Message
-      </div>
+      <!-- Request Details Section -->
+      <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">Request Details</div>
       
-      <div style="background: white; border-radius: 8px; border-left: 4px solid ${borderColor}; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1; font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">${title}</div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; ${badgeStyle}">${badgeText}</span>
-            ${requestPayload.eSoF ? `<span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">+ eSoF</span>` : ''}
-          </div>
-        </div>
-        
-        <div style="padding: 12px;">
-          <!-- Timestamp -->
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #dee2e6;">
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Submitted By:</strong> ${escapeHtml(userEmail)}</div>
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Submission Time:</strong> ${submissionDateTime}</div>
+      <div style="background: white; border-radius: 8px; border-left: 4px solid #1d71b8; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
+        <div style="padding: 8px 16px;">
+          <!-- Message Box -->
+          <div style="background: #f0f7ff; border: 1px solid #90caf9; border-radius: 6px; padding: 16px; margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: bold; color: #1976d2; margin-bottom: 8px;">MESSAGE:</div>
+            <div style="font-size: 13px; color: #333; line-height: 1.6;">
+              ${messageContent}
+            </div>
           </div>
           
-          <!-- Message -->
-          <div style="background: #f0f7ff; border: 1px solid #90caf9; border-radius: 6px; padding: 14px; margin-bottom: 12px;">
-            <strong style="color: #1976d2; font-size: 13px; display: block; margin-bottom: 8px;">
-              ${messageLabel}
-            </strong>
-            <div style="font-size: 13px; color: #333; line-height: 1.6; white-space: pre-wrap;">${messageContent}</div>
-          </div>
-          
+          <!-- Attached File (if any) -->
           ${attachedFile ? `
-          <!-- Attached File -->
           <div style="background: #e8f5e9; border: 1px solid #81c784; border-radius: 6px; padding: 12px;">
             <div style="font-size: 11px; font-weight: bold; color: #2e7d32; margin-bottom: 6px; display: flex; align-items: center;">
               <div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 6px;">
@@ -3722,7 +3699,7 @@ function buildRequestPDFHTML(messageData) {
               NO FILES ATTACHED
             </div>
             <div style="font-size: 12px; color: #e65100;">
-              No documents were uploaded with this ${requestType === 'note' ? 'note' : 'request'}.
+              No documents were uploaded with this request.
             </div>
           </div>
           `}
@@ -3855,15 +3832,15 @@ function buildRequestPDFHTML(messageData) {
       <!-- Submission Confirmation -->
       <div style="background: white; border-radius: 8px; border-left: 4px solid #39b549; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-top: 24px; margin-bottom: 16px; page-break-inside: avoid;">
         <div style="padding: 12px 16px;">
-          <h4 style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center; font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">
+          <h4 style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center;">
             <div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 8px;">
               <span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">✓</span>
             </div>
             Request Successfully Submitted
           </h4>
-          <div style="font-size: 13px; color: #666; line-height: 1.6; font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">
-            <p style="margin: 0; font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">This request has been submitted to the ID system and will be processed by cashiers.</p>
-            <p style="margin-top: 8px; margin-bottom: 0; font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">Keep this PDF for your records.</p>
+          <div style="font-size: 13px; color: #666; line-height: 1.6;">
+            <p>This request has been submitted to the ID system and will be processed by cashiers.</p>
+            <p style="margin-top: 8px;">Keep this PDF for your records.</p>
           </div>
         </div>
       </div>
