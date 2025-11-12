@@ -3700,18 +3700,6 @@ function buildRequestPDFHTML(messageData) {
               `;
             })()}
           </div>
-          
-          ${['formJ', 'formK', 'formE', 'esof'].includes(requestType) ? `
-          <!-- Form Requirements Info -->
-          <div style="margin-top: 12px; padding: 10px; background: #fff3e0; border-left: 3px solid #f7931e; border-radius: 4px; font-size: 12px; color: #856404; line-height: 1.6;">
-            <strong>${requestType === 'formJ' ? 'Form J' : requestType === 'formK' ? 'Form K' : requestType === 'formE' ? `Form E${requestPayload.eSoF ? ' + eSoF' : ''}` : 'eSoF'} Requirements:</strong><br>
-            ${requestType === 'formJ' ? '• 2 forms of Address ID<br>• 1 form of Photo ID<br>• Likeness confirmation<br>' : ''}
-            • OFSI screening${requestType === 'formK' ? ' (always required)' : ''}<br>
-            • ${(isEntity && data.cI?.bD && requestType === 'formK') ? 'CDF waived (entity data linked)' : 'Client Details Form (CDF)'}${requestType === 'formK' ? '<br>• Selected rule compliance' : ''}
-            ${requestType === 'formE' || requestType === 'esof' ? '<br>• Electronic verification via Thirdfort' : ''}
-            ${requestPayload.eSoF || requestType === 'esof' ? '<br>• Electronic Source of Funds questionnaire<br>• Source of Wealth bank linking' : ''}
-          </div>
-          ` : ''}
         </div>
       </div>
 
