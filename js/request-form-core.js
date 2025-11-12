@@ -3888,22 +3888,20 @@ async function generateRequestPDF(messageData) {
       throw new Error('No content found in HTML');
     }
     
-    // There should be ONE main wrapper div that contains everything
-    // The first DIV should be the main wrapper from <body><div>...</div></body>
-    const mainWrapper = contentDivs[0];
-    console.log('📄 Main wrapper has', mainWrapper.children.length, 'children');
-    console.log('📄 Main wrapper child tags:', Array.from(mainWrapper.children).slice(0, 10).map(c => c.tagName + (c.className ? `.${c.className}` : '')));
-    
-    // Create clean element with style + main wrapper
+    // All content divs are siblings (no wrapper), append them all
     const cleanElement = document.createElement('div');
     if (styleEl) {
       cleanElement.appendChild(styleEl.cloneNode(true));
       console.log('📄 Added <style> element to clean element');
     }
-    cleanElement.appendChild(mainWrapper);
+    // Append ALL content divs
+    contentDivs.forEach(div => {
+      cleanElement.appendChild(div);
+    });
     
-    console.log('📄 Clean element ready for PDF with', mainWrapper.children.length, 'sections');
+    console.log('📄 Clean element ready for PDF with', cleanElement.children.length - 1, 'content sections (+ 1 style)');
     console.log('📄 Section titles found:', cleanElement.querySelectorAll('.section-title').length);
+    console.log('📄 Hit cards found:', cleanElement.querySelectorAll('.hit-card').length);
     
     // Configure html2pdf options (EXACTLY like checks manager line 24552-24559)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
