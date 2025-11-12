@@ -3888,18 +3888,27 @@ async function generateRequestPDF(messageData) {
       throw new Error('No content found in HTML');
     }
     
-    // All content divs are siblings (no wrapper), append them all
+    // Create clean element with proper structure for CSS to apply
     const cleanElement = document.createElement('div');
+    
+    // Create a body-styled wrapper div
+    const bodyWrapper = document.createElement('div');
+    bodyWrapper.setAttribute('style', 'font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", Arial, sans-serif; padding: 40px; background: white; color: #111; line-height: 1.5; font-size: 14px;');
+    
+    // Append style element first
     if (styleEl) {
-      cleanElement.appendChild(styleEl.cloneNode(true));
-      console.log('📄 Added <style> element to clean element');
+      bodyWrapper.appendChild(styleEl.cloneNode(true));
+      console.log('📄 Added <style> element inside body wrapper');
     }
-    // Append ALL content divs
+    
+    // Append ALL content divs into the body wrapper
     contentDivs.forEach(div => {
-      cleanElement.appendChild(div);
+      bodyWrapper.appendChild(div);
     });
     
-    console.log('📄 Clean element ready for PDF with', cleanElement.children.length - 1, 'content sections (+ 1 style)');
+    cleanElement.appendChild(bodyWrapper);
+    
+    console.log('📄 Clean element ready for PDF with', contentDivs.length, 'content sections');
     console.log('📄 Section titles found:', cleanElement.querySelectorAll('.section-title').length);
     console.log('📄 Hit cards found:', cleanElement.querySelectorAll('.hit-card').length);
     
