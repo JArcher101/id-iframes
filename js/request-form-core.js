@@ -3737,11 +3737,11 @@ function buildRequestPDFHTML(messageData) {
       
       <div style="background: white; border-radius: 8px; border-left: 4px solid #1d71b8; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
         
-        ${requestType === 'formK' ? `
-          <!-- Form K Selected Rule -->
+        ${requestType === 'formK' && messageContent ? `
+          <!-- Form K Selected Rule & Message -->
           <div style="margin-bottom: 16px; padding: 12px; background: #e3f2fd; border-left: 3px solid #1976d2; border-radius: 4px;">
-            <div style="font-size: 13px; font-weight: bold; color: #0d47a1; margin-bottom: 6px;">SELECTED RULE:</div>
-            <div style="font-size: 12px; color: #333; line-height: 1.6;">${escapeHtml(requestMessage.message || 'Rule not specified')}</div>
+            <div style="font-size: 13px; font-weight: bold; color: #0d47a1; margin-bottom: 6px;">SELECTED RULE & MESSAGE:</div>
+            <div style="font-size: 12px; color: #333; line-height: 1.6; white-space: pre-wrap;">${messageContent}</div>
           </div>
         ` : ''}
         
@@ -3938,7 +3938,7 @@ async function generateRequestPDF(messageData) {
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
     const requestData = messageData.request?.data || messageData.request?.savedData?.data || {};
     const options = {
-      margin: [0, 0, 0, 0],  // Zero margins to avoid blank pages
+      margin: [10, 10, 10, 10],  // 10mm margins (matches sanctions checker)
       filename: `${requestType}_request_${Date.now()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
