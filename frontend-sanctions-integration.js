@@ -37,19 +37,28 @@ export async function initiateSanctionsChecker(context) {
             type: 'sanctions-xml',
             error: error.message || 'Failed to fetch sanctions data'
         });
-        $w('#loadingSwirl-v2-lightbox').hide();
-        wixWindowFrontend.showNotification('Failed to load sanctions data', 'error');
-        return;
+        // Don't return early - still send init data so form can be populated
     }
     
-    // Send XML to iframe
-    $w('#sanctions-iframe').postMessage({
-        type: 'sanctions-xml',
-        xml: sanctionsRes.xml
-    });
+    // Send XML to iframe (only if we have it)
+    if (sanctionsRes && sanctionsRes.xml) {
+        $w('#sanctions-iframe').postMessage({
+            type: 'sanctions-xml',
+            xml: sanctionsRes.xml
+        });
+    }
     
-    // Send initialization data if we have client context
+    // Always send initialization data if we have client context (even if XML fetch failed)
+    // This ensures the form is at least populated with client data
     if (context.clientData || context.openEntryId) {
+        console.log('📤 Sending init-sanctions-search with:', {
+            clientName: context.clientData?.clientName || context.clientData?.fullName || '',
+            yearOfBirth: context.clientData?.yearOfBirth || '',
+            searchType: context.clientData?.searchType || (context.clientData?.entityType === 'company' ? 'entity' : 'individual'),
+            clientEntryId: context.openEntryId || null,
+            returnToRequest: context.returnToRequest || false
+        });
+        
         $w('#sanctions-iframe').postMessage({
             type: 'init-sanctions-search',
             clientName: context.clientData?.clientName || context.clientData?.fullName || '',
