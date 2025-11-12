@@ -3868,24 +3868,21 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     
-    // CRITICAL: Parse HTML and extract the wrapper div from body (not body element itself)
-    // When you set innerHTML to full HTML doc, browser creates HTML element as first child
-    // html2pdf needs the wrapper div (first child of body), not the body or HTML element
+    // CRITICAL: Parse HTML and clone ALL body children (not just firstElementChild)
+    // This ensures we get the complete wrapper div with all sections and footer
     const parser = new DOMParser();
     const doc = parser.parseFromString(pdfHTML, 'text/html');
     const bodyElement = doc.body;
-    const wrapperDiv = bodyElement.firstElementChild; // Get the wrapper div inside body
-    
-    if (!wrapperDiv) {
-      throw new Error('Wrapper div not found in PDF HTML body');
-    }
     
     // Create wrapper div but do NOT add to document.body to avoid custom font inheritance!
     const element = document.createElement('div');
     
-    // Clone the wrapper div and append it (this preserves all content including all sections)
-    const wrapperClone = wrapperDiv.cloneNode(true);
-    element.appendChild(wrapperClone);
+    // Clone ALL children from body (should be just the wrapper div, but this ensures completeness)
+    // Use cloneNode(true) to deep clone with all nested content
+    Array.from(bodyElement.children).forEach(child => {
+      const clonedChild = child.cloneNode(true);
+      element.appendChild(clonedChild);
+    });
     
     // Also need to preserve styles from head
     const headStyles = doc.head.querySelector('style');
@@ -3895,12 +3892,15 @@ async function generateRequestPDF(messageData) {
       element.insertBefore(styleEl, element.firstChild);
     }
     
+    console.log('📄 Body children count:', bodyElement.children.length);
     console.log('📄 Element created with', element.children.length, 'children');
     console.log('📄 First child:', element.firstChild?.tagName);
-    console.log('📄 Wrapper div children:', wrapperDiv.children.length);
+    console.log('📄 Last child:', element.lastChild?.tagName);
+    console.log('📄 Wrapper div children:', element.querySelector('div > div')?.children.length || 'N/A');
     console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
     console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
     console.log('📄 PDF footer found:', element.querySelectorAll('.pdf-footer').length);
+    console.log('📄 Total content height check:', element.scrollHeight, 'px');
     
     // Configure html2pdf options (EXACTLY like thirdfort-checks-manager.js)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
