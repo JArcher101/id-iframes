@@ -6,8 +6,8 @@ import { fetch } from 'wix-fetch';
 import { Permissions, webMethod } from 'wix-web-module';
 import wixData from 'wix-data';
 
-// Import your existing helper functions (adjust paths as needed)
-import { appendCashierLog, appendAuditLog } from 'backend/id-system/in-person-verification/upload.web.js';
+// Import Thirdfort helper for consistent logging
+import { saveEntryWithLogs } from 'backend/thirdfort/webhook/helpers/entry-saver.web.js';
 
 // ============================================================================
 // UK SANCTIONS CHECKER FUNCTIONS
@@ -104,45 +104,15 @@ export const updateEntryWithSanctionsPDF = webMethod(
             
             collectionItem.idDocuments = [fileObject, ...currentDocs];
 
-            // Add cashier log entry
-            const cashierLogResult = await appendCashierLog(
-                collectionItem, 
-                { 
-                    user: uploader, 
-                    time: new Date().toLocaleString(), 
-                    message: 'UK Sanctions List Search report uploaded' 
-                }
-            );
-
-            if (!cashierLogResult.success) {
-                console.warn('⚠️ Failed to append cashier log:', cashierLogResult);
-            } else {
-                collectionItem.cashierLog = cashierLogResult.updatedLog;
-            }
-
-            // Add audit log entry
-            try {
-                const auditLogResult = await appendAuditLog(
-                    collectionItem, 
-                    'UK Sanctions Search', 
-                    uploader
-                );
-
-                if (auditLogResult && auditLogResult.error) {
-                    console.warn('⚠️ Error adding audit log:', auditLogResult.error);
-                } else if (auditLogResult && auditLogResult.updatedAuditLog) {
-                    collectionItem.auditLog = auditLogResult.updatedAuditLog;
-                }
-            } catch (auditError) {
-                console.warn('⚠️ Error in appendAuditLog:', auditError);
-            }
-
-            // Update lastUpdated timestamp
-            collectionItem.lastUpdated = new Date();
-
-            // Update the collection item
-            console.log('💾 Collection item before update:', collectionItem);
-            const updatedItem = await wixData.update('OutstandingID', collectionItem);
+            // Save entry with logs using Thirdfort pattern
+            await saveEntryWithLogs(collectionItem, {
+                cashierMessage: 'UK Sanctions List Search report uploaded',
+                auditMessage: 'UK Sanctions Search',
+                chatMessage: `UK Sanctions List Search report uploaded by ${uploader}`
+            });
+            
+            // Get the updated entry (saveEntryWithLogs returns the saved item)
+            const updatedItem = await wixData.get('OutstandingID', entryId);
             
             // Build uploaded file object for request form validation
             const uploadedFile = {
