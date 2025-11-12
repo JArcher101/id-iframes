@@ -120,8 +120,13 @@ export function setupSanctionsMessageListener(iframeId = '#html17') {
                 const updateRes = await handleUploadSuccess(message, iframeId);
                 // Check if we need to return to request form
                 if (message.returnToRequest && updateRes?.uploadedFile) {
-                    console.log('🔄 Returning to request form with uploaded file...');
-                    await returnToRequest(updateRes.uploadedFile);
+                    console.log('🔄 File uploaded, returning data to page for request form reload...');
+                    // Return the data - page code will handle state switch and initiateRequest
+                    const returnData = await returnToRequest(updateRes.uploadedFile, message._id);
+                    // Dispatch custom event so page code can handle the state switch
+                    window.dispatchEvent(new CustomEvent('sanctions-return-to-request', { 
+                        detail: returnData 
+                    }));
                 }
                 break;
         }
@@ -134,7 +139,7 @@ export function setupSanctionsMessageListener(iframeId = '#html17') {
  * Handle file-data request from iframe
  * Generates S3 PUT link and responds to iframe
  */
-async function handleFileDataRequest(message, iframeId) {
+export async function handleFileDataRequest(message, iframeId) {
     console.log('🔗 Generating S3 PUT links for sanctions PDF...');
     
     try {
@@ -177,7 +182,7 @@ async function handleFileDataRequest(message, iframeId) {
  * Handle upload-success from iframe
  * Updates entry with uploaded PDF
  */
-async function handleUploadSuccess(message, iframeId) {
+export async function handleUploadSuccess(message, iframeId) {
     console.log('💾 Sanctions PDF uploaded, updating entry...');
     
     try {
@@ -224,27 +229,25 @@ async function handleUploadSuccess(message, iframeId) {
 /**
  * Return to request form with uploaded file data
  * Switches view back to request form and passes file info
+ * 
+ * Note: Switching multi-state box causes iframe reload, so we need to:
+ * 1. Store the file data temporarily
+ * 2. Return the file data to caller so they can pass it to initiateRequest
+ * 
+ * @param {Object} uploadedFile - The uploaded file object from backend
+ * @param {string} entryId - The entry ID to reload
+ * @returns {Object} - Returns uploaded file for caller to pass to initiateRequest
  */
-async function returnToRequest(uploadedFile) {
-    console.log('🔄 Switching back to request form with file:', uploadedFile);
+export async function returnToRequest(uploadedFile, entryId) {
+    console.log('🔄 Returning to request form with file:', uploadedFile);
+    console.log('🔄 Entry ID:', entryId);
     
-    $w('#loadingSwirl-v2-lightbox').show();
-    $w('#lightboxTitle').text = "New Note, Request or Update";
-    $w('#PreloaderStateBox').changeState("Request");
-    
-    // Send full file object to request form iframe
-    $w('#iframeRequest').postMessage({
-        type: 'sanctions-file-uploaded',
-        s3Key: uploadedFile.s3Key,
-        liveUrl: uploadedFile.liveUrl,
-        date: uploadedFile.date,
-        uploader: uploadedFile.uploader,
-        fileName: uploadedFile.fileName,
-        fileSize: uploadedFile.fileSize
-    });
-    
-    $w('#loadingSwirl-v2-lightbox').hide();
-    console.log('✅ Returned to request form with file data');
+    // Return the file data so the caller can include it in initiateRequest context
+    // The initiateRequest function will handle reloading the form AND adding the file
+    return {
+        uploadedFile: uploadedFile,
+        entryId: entryId
+    };
 }
 
 /**
