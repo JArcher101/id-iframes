@@ -3665,26 +3665,26 @@ function buildRequestPDFHTML(messageData) {
               const cdfRequired = !(isEntity && data.cI?.bD); // CDF not required if entity has linked data
               
               return `
-                <div style="display: grid; gap: 8px; font-size: 12px;">
+                <div style="display: grid; gap: 4px; font-size: 12px;">
                   ${cdfRequired ? `
-                  <div style="display: flex; align-items: center; padding: 8px; background: ${hasCDF ? '#e8f5e9' : '#ffebee'}; border-radius: 4px;">
+                  <div style="display: flex; align-items: center; padding: 6px 8px; background: ${hasCDF ? '#e8f5e9' : '#ffebee'}; border-radius: 4px;">
                     ${getValidationIcon(hasCDF)}
                     <span style="color: #333;"><strong>Client Details Form (CDF):</strong> ${hasCDF ? 'Already uploaded' : 'Not uploaded'}</span>
                   </div>
                   ` : `
-                  <div style="display: flex; align-items: center; padding: 8px; background: #e8f5e9; border-radius: 4px;">
+                  <div style="display: flex; align-items: center; padding: 6px 8px; background: #e8f5e9; border-radius: 4px;">
                     ${getValidationIcon(true)}
                     <span style="color: #333;"><strong>Client Details Form (CDF):</strong> Not required (entity data linked)</span>
                   </div>
                   `}
                   
-                  <div style="display: flex; align-items: center; padding: 8px; background: ${hasOFSI ? '#e8f5e9' : '#ffebee'}; border-radius: 4px;">
+                  <div style="display: flex; align-items: center; padding: 6px 8px; background: ${hasOFSI ? '#e8f5e9' : '#ffebee'}; border-radius: 4px;">
                     ${getValidationIcon(hasOFSI)}
                     <span style="color: #333;"><strong>PEP & Sanctions Screening:</strong> ${hasOFSI ? 'Already uploaded' : 'Not uploaded'}</span>
                   </div>
                   
                   ${attachedFile ? `
-                  <div style="display: flex; align-items: center; padding: 8px; background: #e8f5e9; border-radius: 4px;">
+                  <div style="display: flex; align-items: center; padding: 6px 8px; background: #e8f5e9; border-radius: 4px;">
                     ${getValidationIcon(true)}
                     <span style="color: #333;"><strong>Additional File:</strong> ${escapeHtml(attachedFile.name || 'Attached with this request')}</span>
                   </div>
@@ -3695,10 +3695,9 @@ function buildRequestPDFHTML(messageData) {
           </div>
         </div>
       </div>
-
       
       <!-- Submission Confirmation -->
-      <div class="hit-card" style="border-left: 4px solid #39b549; margin-top: 24px; page-break-inside: avoid;">
+      <div class="hit-card" style="border-left: 4px solid #39b549; margin-top: 12px; page-break-inside: avoid;">
         <div style="padding: 12px 16px;">
           <h4 style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center;">
             <div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 8px;">
