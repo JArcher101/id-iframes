@@ -3865,22 +3865,37 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
-    console.log('📄 HTML preview (middle):', pdfHTML.substring(3000, 3300));
     
-    // Create element for html2pdf (EXACTLY like sanctions checker line 1843-1844)  
-    const element = document.createElement('div');
-    element.innerHTML = pdfHTML;
+    // Use a temporary iframe to properly parse the full HTML document
+    // This ensures styles in <head> apply to <body> content correctly
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.left = '-9999px';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    document.body.appendChild(iframe);
     
-    console.log('📄 HTML content length:', pdfHTML.length);
-    console.log('📄 HTML preview:', pdfHTML.substring(0, 300));
-    console.log('📄 Element created with', element.children.length, 'children');
-    console.log('📄 First 5 children:', Array.from(element.children).slice(0, 5).map(c => c.tagName));
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    iframeDoc.open();
+    iframeDoc.write(pdfHTML);
+    iframeDoc.close();
     
-    // Pass element DIRECTLY to html2pdf (EXACTLY like sanctions checker line 1844, 1867)
-    // NO manipulation, NO extraction - just use it as-is
-    console.log('📄 Using element AS-IS with', element.children.length, 'children');
-    console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
-    console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
+    // Wait for iframe to finish rendering
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Extract the body element from iframe
+    const iframeBody = iframeDoc.body;
+    console.log('📄 Iframe body has', iframeBody.children.length, 'children');
+    console.log('📄 Section titles found:', iframeBody.querySelectorAll('.section-title').length);
+    console.log('📄 Hit cards found:', iframeBody.querySelectorAll('.hit-card').length);
+    
+    // Clone the body so we can use it after removing iframe
+    const element = iframeBody.cloneNode(true);
+    
+    // Remove temporary iframe
+    document.body.removeChild(iframe);
+    
+    console.log('📄 Cloned body ready for PDF');
     
     // Configure html2pdf options (EXACTLY like sanctions checker - NO width/height constraints)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
