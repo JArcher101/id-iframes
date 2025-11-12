@@ -3560,9 +3560,6 @@ function buildRequestPDFHTML(messageData) {
         </div>
       </div>
       
-      <!-- Client & Matter Details Section (COMBINED) -->
-      <div class="section-title">Client & Matter Details</div>
-      
       <div class="hit-card" style="border-left: 4px solid #1d71b8; page-break-inside: avoid;">
         <!-- Client Header with Name and Badges -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -3642,9 +3639,6 @@ function buildRequestPDFHTML(messageData) {
         `}
         </div>
       </div>
-      
-      <!-- Request Details Section -->
-      <div class="section-title">Request Details</div>
       
       <div class="hit-card" style="border-left: 4px solid #1d71b8; page-break-inside: avoid;">
         <div style="padding: 8px 16px;">
