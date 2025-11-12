@@ -1088,19 +1088,46 @@
       
       // Check each word in search term against each word in target name
       words1.forEach(searchWord => {
+        // Skip very short search words (less than 3 characters)
+        if (searchWord.length < 3) {
+          return;
+        }
+        
         let bestWordMatch = { score: 0, target: '', type: '' };
         
         words2.forEach(targetWord => {
+          // Skip very short target words (1-2 characters) as they cause false matches
+          if (targetWord.length < 3) {
+            return;
+          }
+          
           let wordScore = 0;
           let matchType = '';
           
-          // Check for substring match first
+          // Check for substring match
           if (targetWord.includes(searchWord)) {
-            wordScore = 95;
-            matchType = 'contains';
+            // Only give high score if lengths are reasonably close
+            const lengthRatio = searchWord.length / targetWord.length;
+            if (lengthRatio >= 0.6) {
+              wordScore = 95; // Good substring match
+              matchType = 'contains';
+            } else if (lengthRatio >= 0.4) {
+              wordScore = 75; // Partial substring match
+              matchType = 'contains';
+            } else {
+              wordScore = 60; // Weak substring match
+              matchType = 'partial';
+            }
           } else if (searchWord.includes(targetWord)) {
-            wordScore = 90;
-            matchType = 'partial';
+            // Reverse substring - only if lengths are close
+            const lengthRatio = targetWord.length / searchWord.length;
+            if (lengthRatio >= 0.6) {
+              wordScore = 85;
+              matchType = 'partial';
+            } else {
+              wordScore = 50; // Too short, weak match
+              matchType = 'partial';
+            }
           } else {
             // Check phonetic similarity for name matching
             const phoneticScore = phoneticSimilarity(searchWord, targetWord);
