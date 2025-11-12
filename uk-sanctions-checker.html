@@ -973,22 +973,28 @@
       filtered.forEach(entry => {
         let matchScore = 0;
         let matchedName = '';
+        let matchType = '';
+        let matchDetails = '';
         
         // Check primary names and aliases
         entry.names.forEach(name => {
           const fullName = name.fullName || '';
           
           if (isFuzzy) {
-            const score = fuzzyMatchScore(searchName, fullName);
-            if (score > matchScore) {
-              matchScore = score;
+            const result = fuzzyMatchScoreDetailed(searchName, fullName);
+            if (result.score > matchScore) {
+              matchScore = result.score;
               matchedName = fullName;
+              matchType = name.type;
+              matchDetails = result.details;
             }
           } else {
             // Exact match: ALL search words must be present in the name
             if (exactMatch(searchName, fullName)) {
               matchScore = 100;
               matchedName = fullName;
+              matchType = name.type;
+              matchDetails = 'All search terms found in name';
             }
           }
         });
@@ -996,16 +1002,20 @@
         // Check non-Latin names
         entry.nonLatinNames.forEach(name => {
           if (isFuzzy) {
-            const score = fuzzyMatchScore(searchName, name);
-            if (score > matchScore) {
-              matchScore = score;
+            const result = fuzzyMatchScoreDetailed(searchName, name);
+            if (result.score > matchScore) {
+              matchScore = result.score;
               matchedName = name;
+              matchType = 'Non-Latin Name';
+              matchDetails = result.details;
             }
           } else {
             // Exact match: ALL search words must be present
             if (exactMatch(searchName, name)) {
               matchScore = 100;
               matchedName = name;
+              matchType = 'Non-Latin Name';
+              matchDetails = 'All search terms found in name';
             }
           }
         });
@@ -1017,7 +1027,10 @@
           currentSearchResults.push({
             ...entry,
             matchScore: Math.round(matchScore),
-            matchedName: matchedName
+            matchedName: matchedName,
+            matchType: matchType,
+            matchDetails: matchDetails,
+            confidence: getConfidenceRating(Math.round(matchScore))
           });
         }
       });
@@ -1040,15 +1053,15 @@
       return searchWords.every(word => targetLower.includes(word));
     }
     
-    // Fuzzy matching using Levenshtein distance with word-level matching
-    // Returns best similarity score found across all word pairs
-    function fuzzyMatchScore(str1, str2) {
+    // Fuzzy matching with detailed match information
+    // Returns { score, details } with match explanation
+    function fuzzyMatchScoreDetailed(str1, str2) {
       const s1 = str1.toLowerCase();
       const s2 = str2.toLowerCase();
       
       // Quick check for exact substring match
       if (s2.includes(s1)) {
-        return 100;
+        return { score: 100, details: 'Exact substring match' };
       }
       
       // Word-level matching - split both strings into words
@@ -1056,31 +1069,72 @@
       const words2 = s2.split(/\s+/).filter(w => w.length > 0);
       
       let bestScore = 0;
+      let matchedWords = [];
       
       // Check each word in search term against each word in target name
-      // If ANY word pair matches well, include this entry
       words1.forEach(searchWord => {
+        let bestWordMatch = { score: 0, target: '', type: '' };
+        
         words2.forEach(targetWord => {
+          let wordScore = 0;
+          let matchType = '';
+          
           // Check for substring match first
-          if (targetWord.includes(searchWord) || searchWord.includes(targetWord)) {
-            bestScore = Math.max(bestScore, 95);
+          if (targetWord.includes(searchWord)) {
+            wordScore = 95;
+            matchType = 'contains';
+          } else if (searchWord.includes(targetWord)) {
+            wordScore = 90;
+            matchType = 'partial';
           } else {
             // Calculate Levenshtein similarity for this word pair
             const distance = levenshteinDistance(searchWord, targetWord);
             const maxLength = Math.max(searchWord.length, targetWord.length);
-            const wordSimilarity = ((maxLength - distance) / maxLength) * 100;
-            bestScore = Math.max(bestScore, wordSimilarity);
+            wordScore = ((maxLength - distance) / maxLength) * 100;
+            matchType = 'similar';
+          }
+          
+          if (wordScore > bestWordMatch.score) {
+            bestWordMatch = { score: wordScore, target: targetWord, type: matchType, search: searchWord };
           }
         });
+        
+        if (bestWordMatch.score > 50) {
+          matchedWords.push(bestWordMatch);
+          bestScore = Math.max(bestScore, bestWordMatch.score);
+        }
       });
+      
+      // Build match details string
+      let details = '';
+      if (matchedWords.length > 0) {
+        const matches = matchedWords
+          .sort((a, b) => b.score - a.score)
+          .map(m => `"${m.search}" matched "${m.target}" (${Math.round(m.score)}%)`)
+          .join(', ');
+        details = matches;
+      }
       
       // Also check full string similarity as fallback
       const fullDistance = levenshteinDistance(s1, s2);
       const fullMaxLength = Math.max(s1.length, s2.length);
       const fullSimilarity = ((fullMaxLength - fullDistance) / fullMaxLength) * 100;
       
-      // Return the best score found
-      return Math.max(bestScore, fullSimilarity);
+      if (fullSimilarity > bestScore) {
+        bestScore = fullSimilarity;
+        details = `Full name similarity: ${Math.round(fullSimilarity)}%`;
+      }
+      
+      return { score: bestScore, details: details || 'Low similarity match' };
+    }
+    
+    // Get confidence rating based on match score
+    function getConfidenceRating(score) {
+      if (score >= 95) return 'Very High';
+      if (score >= 80) return 'High';
+      if (score >= 65) return 'Medium';
+      if (score >= 50) return 'Low';
+      return 'Very Low';
     }
     
     // Levenshtein distance algorithm
@@ -1174,10 +1228,22 @@
               <span class="badge ${entry.type === 'Individual' ? 'badge-individual' : 'badge-entity'}">
                 ${entry.type}
               </span>
-              ${searchParams.isFuzzy ? `<span class="badge badge-match">${entry.matchScore}% Match</span>` : ''}
+              ${searchParams.isFuzzy ? `
+                <span class="badge badge-match">${entry.matchScore}% Match</span>
+                <span class="badge badge-match" style="background: ${getConfidenceColor(entry.confidence)};">
+                  ${entry.confidence} Confidence
+                </span>
+              ` : ''}
             </div>
           </div>
         </div>
+        
+        ${entry.matchDetails ? `
+          <div style="background: #f0f7ff; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; color: #1976d2;">
+            <strong>Match Details:</strong> ${escapeHtml(entry.matchDetails)}
+            ${entry.matchType ? `<br><strong>Matched in:</strong> ${escapeHtml(entry.matchType)}` : ''}
+          </div>
+        ` : ''}
         
         <div class="result-details">
           ${aliases.length > 0 ? `
@@ -1841,6 +1907,16 @@
       return div.innerHTML;
     }
     
+    function getConfidenceColor(confidence) {
+      switch(confidence) {
+        case 'Very High': return '#10a37f';
+        case 'High': return '#39b549';
+        case 'Medium': return '#f7931e';
+        case 'Low': return '#ff9800';
+        default: return '#f44336';
+      }
+    }
+    
     /*
     =====================================================================
     EVENT LISTENERS
@@ -1869,4 +1945,5 @@
   </script>
 </body>
 </html>
+
 
