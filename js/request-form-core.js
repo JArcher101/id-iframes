@@ -3522,6 +3522,7 @@ function buildRequestPDFHTML(messageData) {
       </style>
     </head>
     <body>
+    <div>
     <!-- PDF Header -->
     <div class="pdf-header">
         <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">
@@ -3831,6 +3832,7 @@ function buildRequestPDFHTML(messageData) {
       <p>Generated from Thurstan Hoskin's Thirdfort ID Management System</p>
       <p>Report ID: ${requestType.toUpperCase()}-${Date.now()} | ${escapeHtml(userEmail)}</p>
       <p style="margin-top: 8px; font-style: italic;">This is a system-generated record of the request submission.</p>
+    </div>
     </div>
     </body>
     </html>`;
