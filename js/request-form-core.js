@@ -3457,22 +3457,14 @@ function buildRequestPDFHTML(messageData) {
     <head>
       <meta charset="UTF-8">
       <style>
-        * { 
-          margin: 0; 
-          padding: 0; 
-          box-sizing: border-box; 
-          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; 
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
           padding: 40px; 
           background: white; 
           color: #111; 
           line-height: 1.5; 
           font-size: 14px; 
-        }
-        div, span, p, strong, em { 
-          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
         }
         .request-card, .client-card { page-break-inside: avoid; }
         .badge-note { background: #fff3e0; color: #e65100; }
@@ -3851,10 +3843,7 @@ async function generateRequestPDF(messageData) {
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
-        logging: true,  // Enable to debug blank PDF
-        letterRendering: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff'
+        logging: false
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: 'css', avoid: '.request-card, .client-card' }
@@ -3862,20 +3851,9 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 Starting PDF generation with html2pdf...');
     
-    // CRITICAL FIX: Temporarily add element to a hidden container to isolate from custom fonts
-    // This prevents html2canvas from trying to load base64 custom fonts from styles.css
-    const tempContainer = document.createElement('div');
-    tempContainer.style.cssText = 'position: absolute; left: -9999px; top: 0; font-family: "Trebuchet MS", "Lucida Grande", sans-serif !important;';
-    tempContainer.appendChild(element);
-    document.body.appendChild(tempContainer);
-    
-    console.log('📄 Element temporarily added to hidden container to bypass custom fonts');
-    
-    // Generate PDF blob
+    // CRITICAL: Do NOT add to DOM to avoid font inheritance (like sanctions checker)
+    // Generate PDF blob directly from detached element
     const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
-    
-    // Clean up
-    document.body.removeChild(tempContainer);
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
     
