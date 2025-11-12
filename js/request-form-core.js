@@ -825,6 +825,12 @@ function handleParentMessage(event) {
         handleSanctionsFileUploaded(message);
         break;
         
+      case 'save-success':
+        // Backend save succeeded - generate PDF for Note/Update requests
+        console.log('✅ Save successful - generating request PDF...');
+        generateRequestPDF(message);
+        break;
+        
       default:
         // Forward to current module if it has a message handler
         if (currentRequestType && requestTypeModules[currentRequestType]?.handleMessage) {
@@ -3317,6 +3323,346 @@ function handleSanctionsFileUploaded(message) {
   updateIDDocumentsUI(requestData);
   
   console.log('✅ OFSI document added to request form');
+}
+
+/*
+=====================================================================
+REQUEST NOTE/UPDATE PDF GENERATION
+=====================================================================
+*/
+
+/**
+ * Build HTML template for request note/update PDF
+ * Matching request-note-pdf-mockup.html design
+ */
+function buildRequestPDFHTML(messageData) {
+  const requestType = messageData.requestType || 'note';
+  const savedData = messageData.savedData || {};
+  
+  // Determine badge class and title
+  let badgeClass, badgeText, title, borderColor;
+  if (requestType === 'note') {
+    badgeClass = 'badge-note';
+    badgeText = 'Note';
+    title = 'Note Added to Entry';
+    borderColor = '#1d71b8';
+  } else if (requestType === 'updatePep') {
+    badgeClass = 'badge-pep-update';
+    badgeText = 'PEP Update';
+    title = 'PEP Status Change Notification';
+    borderColor = '#7b1fa2';
+  } else {
+    badgeClass = 'badge-update';
+    badgeText = 'Update';
+    title = 'Issue Update Submitted';
+    borderColor = '#1d71b8';
+  }
+  
+  const submissionDate = new Date().toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  const submissionDateTime = new Date().toLocaleString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  // Get client info
+  const clientName = requestData.cN || '';
+  const clientNumber = requestData.cO || '';
+  const entryId = requestData._id || '';
+  const userEmail = requestData.user || '';
+  
+  // Determine if entity or individual
+  const isEntity = requestData.cI?.bD && Object.keys(requestData.cI.bD).length > 0;
+  
+  // Get matter details
+  const workType = requestData.mW || '';
+  const relation = requestData.mR || '';
+  const matterDescription = requestData.mD || '';
+  
+  // Get message content
+  const messageContent = escapeHtml(savedData.messageContent || '');
+  
+  // Get attached file info (if any)
+  const attachedFile = savedData.file || null;
+  
+  // Build full HTML document
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
+          padding: 40px; 
+          background: white; 
+          color: #111; 
+          line-height: 1.5; 
+          font-size: 14px; 
+        }
+        .request-card, .client-card { page-break-inside: avoid; }
+        .badge-note { background: #fff3e0; color: #e65100; }
+        .badge-update { background: #e3f2fd; color: #1976d2; }
+        .badge-pep-update { background: #f3e5f5; color: #7b1fa2; }
+        @media print { body { padding: 20px; } }
+      </style>
+    </head>
+    <body>
+    <div>
+      <!-- PDF Header -->
+      <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
+        <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">
+          ${requestType === 'note' ? 'Request Note' : requestType === 'updatePep' ? 'PEP Status Update' : 'Issue Update Request'}
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px;">
+          <div style="display: flex; gap: 8px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Client Name:</span>
+            <span style="color: #333;">${escapeHtml(clientName)}</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Client Number:</span>
+            <span style="color: #333;">${escapeHtml(clientNumber)}</span>
+          </div>
+          ${isEntity ? `
+          <div style="display: flex; gap: 8px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Entity Type:</span>
+            <span style="color: #333;">${requestData.cI?.bD?.type || 'Business'}</span>
+          </div>
+          ` : ''}
+          <div style="display: flex; gap: 8px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Entry ID:</span>
+            <span style="color: #333;">${escapeHtml(entryId)}</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Submitted By:</span>
+            <span style="color: #333;">${escapeHtml(userEmail)}</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Submission Date:</span>
+            <span style="color: #333;">${submissionDate}</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Client Information -->
+      <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">Client Information</div>
+      
+      <div style="background: white; border-radius: 8px; border: 1px solid #dee2e6; padding: 16px; margin-bottom: 16px; page-break-inside: avoid;">
+        <div style="font-size: 16px; font-weight: bold; color: #003c71; margin-bottom: 12px;">
+          ${isEntity ? 'Business Details' : 'Personal Details'}
+        </div>
+        ${isEntity ? `
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666; margin-bottom: 12px;">
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Business Name:</strong> ${escapeHtml(requestData.cI?.bD?.title || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Registration:</strong> ${escapeHtml(requestData.cI?.bD?.address_snippet?.split(',').pop()?.trim() || 'Unknown')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Company Number:</strong> ${escapeHtml(requestData.cI?.bD?.company_number || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Business Type:</strong> ${escapeHtml(requestData.cI?.bD?.company_type || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(requestData.cC?.cE || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(requestData.cC?.cP || '')}</div>
+          </div>
+          ${requestData.cA?.cC ? `
+            <div style="margin-top: 12px;">
+              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">REGISTERED ADDRESS:</div>
+              <div style="font-size: 12px; color: #333; line-height: 1.6;">${escapeHtml(formatAddress(requestData.cA.cC))}</div>
+            </div>
+          ` : ''}
+        ` : `
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666; margin-bottom: 12px;">
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Full Name:</strong> ${escapeHtml(clientName)}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Date of Birth:</strong> ${escapeHtml(requestData.cI?.cD || 'Not provided')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(requestData.cC?.cE || '')}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(requestData.cC?.cP || '')}</div>
+          </div>
+          ${requestData.cA?.cC ? `
+            <div style="margin-top: 12px;">
+              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">CURRENT ADDRESS:</div>
+              <div style="font-size: 12px; color: #333; line-height: 1.6;">${escapeHtml(formatAddress(requestData.cA.cC))}</div>
+            </div>
+          ` : ''}
+        `}
+      </div>
+      
+      <!-- Request Details -->
+      <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">
+        ${requestType === 'updatePep' ? 'PEP Update Details' : requestType === 'update' ? 'Update Details' : 'Request Details'}
+      </div>
+      
+      <div style="background: white; border-radius: 8px; border-left: 4px solid ${borderColor}; padding: 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${title}</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="${badgeClass}" style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold;">${badgeText}</span>
+          </div>
+        </div>
+        
+        <div style="padding: 12px 16px; border-top: 1px solid #dee2e6;">
+          <!-- Timestamp -->
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666; margin-bottom: 12px;">
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Created By:</strong> ${escapeHtml(userEmail)}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Date & Time:</strong> ${submissionDateTime}</div>
+          </div>
+          
+          <!-- Matter Details -->
+          <div style="background: #fff9f9; border-left: 3px solid #003c71; border-radius: 4px; padding: 12px; margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">MATTER DETAILS:</div>
+            <div style="font-size: 12px; color: #333; line-height: 1.6;">
+              <strong>Work Type:</strong> ${escapeHtml(workType)}<br>
+              <strong>Relation:</strong> ${escapeHtml(relation)}<br>
+              <strong>Matter Description:</strong> ${escapeHtml(matterDescription)}
+            </div>
+          </div>
+          
+          <!-- Message -->
+          <div style="background: #f0f7ff; border: 1px solid #90caf9; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+            <strong style="color: #1976d2; font-size: 12px; display: block; margin-bottom: 6px;">
+              ${requestType === 'updatePep' ? 'PEP Status Update:' : requestType === 'update' ? 'Update Message:' : 'Message:'}
+            </strong>
+            <div style="font-size: 13px; color: #333; line-height: 1.6; white-space: pre-wrap;">${messageContent}</div>
+          </div>
+          
+          ${attachedFile ? `
+          <!-- Attached File -->
+          <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">ATTACHED FILE:</div>
+          <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 12px;">
+            <div style="width: 24px; height: 24px; flex-shrink: 0;">📄</div>
+            <div style="flex: 1;">
+              <div style="font-weight: bold; color: #333;">${escapeHtml(attachedFile.name || 'Attachment')}</div>
+              <div style="color: #666; font-size: 11px;">${attachedFile.size ? formatFileSize(attachedFile.size) : ''}</div>
+            </div>
+          </div>
+          ` : ''}
+        </div>
+      </div>
+      
+      <!-- PDF Footer -->
+      <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #dee2e6; text-align: center; font-size: 11px; color: #999;">
+        <p>Generated from Thurstan Hoskin's Thirdfort ID Management System</p>
+        <p>Report ID: ${requestType.toUpperCase()}-${Date.now()} | ${escapeHtml(userEmail)}</p>
+        <p style="margin-top: 8px; font-style: italic;">This is a system-generated record of the request submission.</p>
+      </div>
+    </div>
+    </body>
+    </html>
+  `;
+  
+  return html;
+}
+
+/**
+ * Generate PDF for Note/Update request
+ * Opens PDF in popup window and notifies parent
+ */
+async function generateRequestPDF(messageData) {
+  console.log('📄 Generating request PDF...');
+  
+  if (typeof html2pdf === 'undefined') {
+    console.error('❌ html2pdf library not loaded');
+    // Still notify parent to close
+    sendMessageToParent({ type: 'pdf-generated', success: false });
+    return;
+  }
+  
+  try {
+    // Build HTML template
+    const pdfHTML = buildRequestPDFHTML(messageData);
+    
+    // Create element for html2pdf (don't add to DOM to avoid font inheritance)
+    const element = document.createElement('div');
+    element.innerHTML = pdfHTML;
+    
+    console.log('📄 HTML content length:', pdfHTML.length);
+    
+    // Configure html2pdf options (same as checks manager and sanctions checker)
+    const requestType = messageData.requestType || 'note';
+    const options = {
+      margin: [10, 10, 10, 10],
+      filename: `${requestType}_request_${requestData.cN?.replace(/\s+/g, '_')}_${Date.now()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        logging: false
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: 'css', avoid: '.request-card, .client-card' }
+    };
+    
+    console.log('📄 Starting PDF generation with html2pdf...');
+    
+    // Generate PDF blob
+    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+    
+    console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
+    
+    // Open PDF in popup window
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    
+    const width = 900;
+    const height = 800;
+    const left = Math.max(0, (screen.width - width) / 2);
+    const top = Math.max(0, (screen.height - height) / 2);
+    
+    const features = `width=${width},height=${height},left=${left},top=${top},resizable=1,scrollbars=1,status=1,menubar=1,toolbar=1,location=0`;
+    
+    const popup = window.open(pdfUrl, 'requestPDFPopup', features);
+    
+    if (popup) {
+      popup.focus();
+      setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
+      console.log('✅ PDF opened in popup window');
+    } else {
+      console.warn('⚠️ Popup blocked - PDF may have opened in new tab');
+    }
+    
+    // Notify parent that PDF has been generated and opened
+    sendMessageToParent({ type: 'pdf-generated', success: true });
+    
+  } catch (error) {
+    console.error('❌ Error generating PDF:', error);
+    // Still notify parent to close (even if PDF failed)
+    sendMessageToParent({ type: 'pdf-generated', success: false, error: error.message });
+  }
+}
+
+/**
+ * Format file size for display
+ */
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+/**
+ * Format address object to string
+ */
+function formatAddress(addressObj) {
+  if (!addressObj) return '';
+  
+  const parts = [
+    addressObj.fN,
+    addressObj.bN,
+    addressObj.bNa,
+    addressObj.s,
+    addressObj.sS,
+    addressObj.t,
+    addressObj.pC,
+    addressObj.c
+  ].filter(p => p && p.trim());
+  
+  return parts.join(', ');
 }
 
 /**
