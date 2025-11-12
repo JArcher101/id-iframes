@@ -3615,7 +3615,12 @@ function buildRequestPDFHTML(messageData) {
           ${attachedFile ? `
           <!-- Attached File -->
           <div style="background: #e8f5e9; border: 1px solid #81c784; border-radius: 6px; padding: 12px;">
-            <div style="font-size: 11px; font-weight: bold; color: #2e7d32; margin-bottom: 6px;">📎 FILE ATTACHED:</div>
+            <div style="font-size: 11px; font-weight: bold; color: #2e7d32; margin-bottom: 6px; display: flex; align-items: center;">
+              <div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 6px;">
+                <span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">✓</span>
+              </div>
+              FILE ATTACHED
+            </div>
             <div style="font-size: 12px; color: #333; margin-bottom: 4px;">
               <strong>File Name:</strong> ${escapeHtml(attachedFile.name || 'Attachment')}
             </div>
@@ -3625,7 +3630,12 @@ function buildRequestPDFHTML(messageData) {
           </div>
           ` : `
           <div style="background: #fff3e0; border: 1px solid #ffb74d; border-radius: 6px; padding: 12px;">
-            <div style="font-size: 11px; font-weight: bold; color: #e65100; margin-bottom: 6px;">📎 NO FILES ATTACHED</div>
+            <div style="font-size: 11px; font-weight: bold; color: #e65100; margin-bottom: 6px; display: flex; align-items: center;">
+              <div style="width: 16px; height: 16px; border-radius: 50%; background: #f7931e; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 6px;">
+                <span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">−</span>
+              </div>
+              NO FILES ATTACHED
+            </div>
             <div style="font-size: 12px; color: #e65100;">
               No documents were uploaded with this ${requestType === 'note' ? 'note' : 'request'}.
             </div>
