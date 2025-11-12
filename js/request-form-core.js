@@ -3896,11 +3896,22 @@ async function generateRequestPDF(messageData) {
     element.style.color = '#111';
     element.style.lineHeight = '1.5';
     element.style.fontSize = '14px';
+    element.style.width = '794px'; // A4 width in pixels at 96 DPI
+    
+    // CRITICAL: Temporarily append to body so html2canvas can calculate dimensions
+    // Position it absolutely at top-left, visible (opacity/visibility:hidden prevents capture)
+    element.style.position = 'absolute';
+    element.style.left = '0';
+    element.style.top = '0';
+    element.style.zIndex = '99999'; // On top of everything
+    
+    document.body.appendChild(element);
     
     console.log('📄 Element created with', element.children.length, 'children (includes STYLE tag)');
     console.log('📄 Number of section-title divs:', element.querySelectorAll('.section-title').length);
     console.log('📄 Number of hit-card divs:', element.querySelectorAll('.hit-card').length);
     console.log('📄 PDF footer exists:', !!element.querySelector('.pdf-footer'));
+    console.log('📄 Element offsetHeight:', element.offsetHeight, 'px');
     
     // Configure html2pdf options (EXACTLY like thirdfort-checks-manager.js)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
@@ -3923,6 +3934,12 @@ async function generateRequestPDF(messageData) {
     const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
+    
+    // Remove element from DOM after PDF generation completes
+    if (element.parentNode) {
+      document.body.removeChild(element);
+      console.log('📄 Element removed from DOM');
+    }
     
     // Open PDF in popup window
     const pdfUrl = URL.createObjectURL(pdfBlob);
