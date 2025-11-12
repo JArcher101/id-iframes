@@ -3505,6 +3505,7 @@ function buildRequestPDFHTML(messageData) {
       <meta charset="UTF-8">
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --primary-blue: #003c71; --secondary-blue: #1d71b8; --green: #39b549; --orange: #f7931e; --red: #d32f2f; --grey: #6c757d; --light-grey: #f8f9fa; --border-grey: #dee2e6; }
         body { 
           font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
           padding: 40px; 
@@ -3513,14 +3514,16 @@ function buildRequestPDFHTML(messageData) {
           line-height: 1.5; 
           font-size: 14px; 
         }
-        .hit-card { page-break-inside: avoid; }
+        .pdf-header { border-bottom: 3px solid var(--primary-blue); padding-bottom: 20px; margin-bottom: 30px; page-break-after: avoid; }
+        .section-title { font-size: 18px; font-weight: bold; color: var(--primary-blue); margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid var(--border-grey); page-break-after: avoid; }
+        .hit-card { page-break-inside: avoid; margin-bottom: 16px; background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); }
+        .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border-grey); text-align: center; font-size: 11px; color: #999; page-break-before: avoid; }
         @media print { body { padding: 20px; } }
       </style>
     </head>
     <body>
-    <div>
       <!-- PDF Header -->
-      <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
+      <div class="pdf-header">
         <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">
           ${title}
         </div>
@@ -3562,9 +3565,9 @@ function buildRequestPDFHTML(messageData) {
       </div>
       
       <!-- Client & Matter Details Section (COMBINED) -->
-      <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">Client & Matter Details</div>
+      <div class="section-title">Client & Matter Details</div>
       
-      <div style="background: white; border-radius: 8px; border-left: 4px solid #1d71b8; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
+      <div class="hit-card" style="border-left: 4px solid #1d71b8;">
         <!-- Client Header with Name and Badges -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(clientName)}</div>
@@ -3642,9 +3645,9 @@ function buildRequestPDFHTML(messageData) {
       </div>
       
       <!-- Request Details Section -->
-      <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">Request Details</div>
+      <div class="section-title">Request Details</div>
       
-      <div style="background: white; border-radius: 8px; border-left: 4px solid #1d71b8; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
+      <div class="hit-card" style="border-left: 4px solid #1d71b8;">
         <div style="padding: 8px 16px;">
           <!-- Message Box -->
           <div style="background: #f0f7ff; border: 1px solid #90caf9; border-radius: 6px; padding: 16px; margin-bottom: 12px;">
@@ -3688,11 +3691,9 @@ function buildRequestPDFHTML(messageData) {
       
       <!-- Form-Specific Requirements & Validation -->
       ${['formJ', 'formK', 'formE', 'esof'].includes(requestType) ? `
-      <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">
-        Form Requirements & Validation
-      </div>
+      <div class="section-title">Form Requirements & Validation</div>
       
-      <div style="background: white; border-radius: 8px; border-left: 4px solid #1d71b8; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
+      <div class="hit-card" style="border-left: 4px solid #1d71b8;">
         
         ${requestType === 'formK' && messageContent ? `
           <!-- Form K Selected Rule & Message -->
@@ -3810,7 +3811,7 @@ function buildRequestPDFHTML(messageData) {
       ` : ''}
       
       <!-- Submission Confirmation -->
-      <div style="background: white; border-radius: 8px; border-left: 4px solid #39b549; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-top: 24px; margin-bottom: 16px; page-break-inside: avoid;">
+      <div class="hit-card" style="border-left: 4px solid #39b549; margin-top: 24px;">
         <div style="padding: 12px 16px;">
           <h4 style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center;">
             <div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 8px;">
@@ -3826,12 +3827,11 @@ function buildRequestPDFHTML(messageData) {
       </div>
       
       <!-- PDF Footer -->
-      <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #dee2e6; text-align: center; font-size: 11px; color: #999;">
+      <div class="pdf-footer">
         <p>Generated from Thurstan Hoskin's Thirdfort ID Management System</p>
         <p>Report ID: ${requestType.toUpperCase()}-${Date.now()} | ${escapeHtml(userEmail)}</p>
         <p style="margin-top: 8px; font-style: italic;">This is a system-generated record of the request submission.</p>
       </div>
-    </div>
     </body>
     </html>`;
   
