@@ -3515,7 +3515,7 @@ function buildRequestPDFHTML(messageData) {
         }
         body { 
           font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; 
-          padding: 20px 40px; 
+          padding: 10px 20px; 
           background: white; 
           color: #111; 
           line-height: 1.5; 
@@ -3537,7 +3537,7 @@ function buildRequestPDFHTML(messageData) {
         }
       </style>
     </head>
-    <body style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; margin: 0; padding: 20px 40px;">
+    <body style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; margin: 0; padding: 10px 20px;">
     <div style="font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">
       <!-- PDF Header -->
       <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
@@ -3584,13 +3584,16 @@ function buildRequestPDFHTML(messageData) {
       <!-- Matter Details Section -->
       <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">Matter Details</div>
       
-      <div style="background: white; border-radius: 8px; border: 1px solid #dee2e6; padding: 16px; margin-bottom: 16px; page-break-inside: avoid;">
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px; color: #666;">
-          <div style="display: flex; gap: 4px;"><strong style="color: #333;">Work Type:</strong> ${escapeHtml(workType)}</div>
-          <div style="display: flex; gap: 4px;"><strong style="color: #333;">Relation:</strong> ${escapeHtml(relation)}</div>
-          <div style="display: flex; gap: 4px; grid-column: 1 / -1;"><strong style="color: #333;">Matter Description:</strong> ${escapeHtml(matterDescription)}</div>
-          ${data.b ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Type:</strong> Business</div>` : ''}
-          ${data.c ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Type:</strong> Charity</div>` : ''}
+      <div style="background: white; border-radius: 8px; border-left: 4px solid #1d71b8; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+          <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 8px;">MATTER DETAILS:</div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666;">
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Work Type:</strong> ${escapeHtml(workType)}</div>
+            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Relation:</strong> ${escapeHtml(relation)}</div>
+            <div style="display: flex; gap: 4px; grid-column: 1 / -1; margin-top: 8px;"><strong style="color: #333;">Description:</strong> ${escapeHtml(matterDescription)}</div>
+            ${data.b ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Type:</strong> Business</div>` : ''}
+            ${data.c ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Type:</strong> Charity</div>` : ''}
+          </div>
         </div>
       </div>
       
@@ -3599,7 +3602,17 @@ function buildRequestPDFHTML(messageData) {
         ${isEntity ? 'Business/Charity Details' : 'Client Details'}
       </div>
       
-      <div style="background: white; border-radius: 8px; border: 1px solid #dee2e6; padding: 16px; margin-bottom: 16px; page-break-inside: avoid;">
+      <div style="background: white; border-radius: 8px; border-left: 4px solid #1d71b8; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
+        <!-- Client Header with Name and Badges -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #dee2e6;">
+          <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(clientName)}</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
+            <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${escapeHtml(clientNumber)} ${feeEarner ? escapeHtml(feeEarner) : ''}</span>
+          </div>
+        </div>
+        
+        <div style="padding: 0 4px;">
         ${isEntity ? `
           <!-- Business Details -->
           <div style="margin-bottom: 16px;">
@@ -3652,6 +3665,7 @@ function buildRequestPDFHTML(messageData) {
             </div>
           ` : ''}
         </div>
+        </div>
       </div>
       
       <!-- Request Type Information -->
@@ -3659,11 +3673,11 @@ function buildRequestPDFHTML(messageData) {
         Request Type & Message
       </div>
       
-      <div style="background: white; border-radius: 8px; border-left: 4px solid ${borderColor}; padding: 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
+      <div style="background: white; border-radius: 8px; border-left: 4px solid ${borderColor}; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${title}</div>
+          <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1; font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">${title}</div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="${badgeClass}" style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold;">${badgeText}</span>
+            <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; ${badgeStyle}">${badgeText}</span>
             ${requestPayload.eSoF ? `<span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">+ eSoF</span>` : ''}
           </div>
         </div>
@@ -3721,7 +3735,7 @@ function buildRequestPDFHTML(messageData) {
         Form Requirements & Validation
       </div>
       
-      <div style="background: white; border-radius: 8px; border: 1px solid #dee2e6; padding: 16px; margin-bottom: 16px; page-break-inside: avoid;">
+      <div style="background: white; border-radius: 8px; border-left: 4px solid #1d71b8; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 16px; page-break-inside: avoid;">
         
         ${requestType === 'formK' ? `
           <!-- Form K Selected Rule -->
@@ -3839,23 +3853,23 @@ function buildRequestPDFHTML(messageData) {
       ` : ''}
       
       <!-- Submission Confirmation -->
-      <div style="background: white; border-radius: 8px; border-left: 4px solid #39b549; padding: 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-top: 24px; margin-bottom: 16px; page-break-inside: avoid;">
+      <div style="background: white; border-radius: 8px; border-left: 4px solid #39b549; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-top: 24px; margin-bottom: 16px; page-break-inside: avoid;">
         <div style="padding: 12px 16px;">
-          <h4 style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center;">
+          <h4 style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center; font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">
             <div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 8px;">
               <span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">✓</span>
             </div>
             Request Successfully Submitted
           </h4>
-          <div style="font-size: 13px; color: #666; line-height: 1.6;">
-            <p>This request has been submitted to the ID system and will be processed by cashiers.</p>
-            <p style="margin-top: 8px;">Keep this PDF for your records.</p>
+          <div style="font-size: 13px; color: #666; line-height: 1.6; font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">
+            <p style="margin: 0; font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">This request has been submitted to the ID system and will be processed by cashiers.</p>
+            <p style="margin-top: 8px; margin-bottom: 0; font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;">Keep this PDF for your records.</p>
           </div>
         </div>
       </div>
       
       <!-- PDF Footer -->
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #dee2e6; text-align: center; font-size: 11px; color: #999;">
+      <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #dee2e6; text-align: center; font-size: 11px; color: #999;">
         <p>Generated from Thurstan Hoskin's Thirdfort ID Management System</p>
         <p>Report ID: ${requestType.toUpperCase()}-${Date.now()} | ${escapeHtml(userEmail)}</p>
         <p style="margin-top: 8px; font-style: italic;">This is a system-generated record of the request submission.</p>
@@ -3925,14 +3939,16 @@ async function generateRequestPDF(messageData) {
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
     const requestData = messageData.request?.data || messageData.request?.savedData?.data || {};
     const options = {
-      margin: [5, 5, 5, 5],  // Reduced margins to avoid blank first page
+      margin: [0, 0, 0, 0],  // Zero margins to avoid blank pages
       filename: `${requestType}_request_${Date.now()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        windowWidth: 794,  // A4 width in pixels at 96 DPI
+        windowHeight: 1123  // A4 height in pixels at 96 DPI
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: 'css', avoid: ['.request-card', '.client-card', '.hit-card'] }
@@ -3966,7 +3982,7 @@ async function generateRequestPDF(messageData) {
     if (iframeBody) {
       iframeBody.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
       iframeBody.style.margin = '0';
-      iframeBody.style.padding = '20px 40px';
+      iframeBody.style.padding = '10px 20px';
       
       // Set font on all elements
       const allElements = iframeBody.querySelectorAll('*');
