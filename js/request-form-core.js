@@ -3874,6 +3874,9 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview:', pdfHTML.substring(0, 300));
     console.log('📄 Element created with', element.children.length, 'children');
+    console.log('📄 Element.innerHTML length:', element.innerHTML.length);
+    console.log('📄 First child:', element.firstElementChild?.tagName);
+    console.log('📄 All sections count:', element.querySelectorAll('div[style*="font-size: 18px"]').length);
     
     // Configure html2pdf options (EXACTLY like sanctions checker lines 1851-1862)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
