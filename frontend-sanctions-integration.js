@@ -52,9 +52,9 @@ export async function initiateSanctionsChecker(context) {
     if (context.clientData || context.openEntryId) {
         $w('#sanctions-iframe').postMessage({
             type: 'init-sanctions-search',
-            clientName: context.clientData?.fullName || '',
+            clientName: context.clientData?.clientName || context.clientData?.fullName || '',
             yearOfBirth: context.clientData?.yearOfBirth || '',
-            searchType: context.clientData?.entityType === 'company' ? 'entity' : 'individual',
+            searchType: context.clientData?.searchType || (context.clientData?.entityType === 'company' ? 'entity' : 'individual'),
             clientEntryId: context.openEntryId || null,
             userEmail: context.currentUser?.email || '',
             returnToRequest: context.returnToRequest || false  // Pass flag for request form integration
