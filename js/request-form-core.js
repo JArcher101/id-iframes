@@ -3867,15 +3867,27 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     console.log('📄 HTML preview (middle):', pdfHTML.substring(3000, 3300));
     
-    // Create element for html2pdf (EXACTLY like sanctions checker - NO IFRAME!)
-    const element = document.createElement('div');
-    element.innerHTML = pdfHTML;
+    // Create temp container and parse full HTML document
+    const tempContainer = document.createElement('div');
+    tempContainer.innerHTML = pdfHTML;
     
-    console.log('📄 HTML content length:', pdfHTML.length);
-    console.log('📄 HTML preview:', pdfHTML.substring(0, 300));
-    console.log('📄 Element created with', element.children.length, 'children');
+    // Extract the styles and body content
+    const styleElement = tempContainer.querySelector('head style');
+    const bodyContent = tempContainer.querySelector('body > div');
     
-    // Configure html2pdf options (EXACTLY like sanctions checker)
+    if (!bodyContent) {
+      console.error('❌ Failed to extract body content from HTML');
+      throw new Error('Failed to parse PDF HTML');
+    }
+    
+    // Add style element to the content so it has the CSS
+    if (styleElement) {
+      bodyContent.insertBefore(styleElement.cloneNode(true), bodyContent.firstChild);
+    }
+    
+    console.log('📄 Content extracted, contains', bodyContent.children.length, 'elements (including style)');
+    
+    // Configure html2pdf options (EXACTLY like sanctions checker lines 1851-1862)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
     const options = {
       margin: [10, 10, 10, 10],
@@ -3892,8 +3904,8 @@ async function generateRequestPDF(messageData) {
     
     console.log('📄 Starting PDF generation with html2pdf...');
     
-    // Generate PDF blob (EXACTLY like sanctions checker - simple and clean!)
-    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+    // Generate PDF blob from the extracted content div
+    const pdfBlob = await html2pdf().set(options).from(bodyContent).outputPdf('blob');
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
     
