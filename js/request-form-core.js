@@ -3869,98 +3869,12 @@ async function generateRequestPDF(messageData) {
     console.log('📄 HTML content length:', pdfHTML.length);
     console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     
-    // CRITICAL: Parse HTML and clone ALL body children (not just firstElementChild)
-    // This ensures we get the complete wrapper div with all sections and footer
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(pdfHTML, 'text/html');
-    const bodyElement = doc.body;
-    
-    // Create wrapper div but do NOT add to document.body to avoid custom font inheritance!
+    // Create element for html2pdf (EXACTLY like uk-sanctions-checker.html)
+    // CRITICAL: Do NOT add to document.body to avoid custom font inheritance!
     const element = document.createElement('div');
+    element.innerHTML = pdfHTML;
     
-    // Clone ALL children from body (should be just the wrapper div, but this ensures completeness)
-    // Use cloneNode(true) to deep clone with all nested content
-    Array.from(bodyElement.children).forEach(child => {
-      const clonedChild = child.cloneNode(true);
-      element.appendChild(clonedChild);
-    });
-    
-    // Also need to preserve styles from head
-    const headStyles = doc.head.querySelector('style');
-    if (headStyles) {
-      const styleEl = document.createElement('style');
-      // CRITICAL: Override any custom @font-face from parent page (styles.css)
-      // This prevents base64 font inheritance which can break html2canvas rendering
-      styleEl.textContent = `
-        /* Reset any inherited @font-face rules */
-        * { 
-          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
-        }
-        ${headStyles.textContent}
-      `;
-      element.insertBefore(styleEl, element.firstChild);
-    }
-    
-    // Apply body styles to our container element so html2pdf can calculate dimensions
-    // CRITICAL: Temporarily append to body so html2canvas can capture it
-    // Use visibility:hidden instead of opacity:0 - element still renders but is invisible
-    element.style.position = 'fixed';
-    element.style.left = '0';
-    element.style.top = '0';
-    element.style.width = '794px'; // A4 width in pixels at 96 DPI (210mm)
-    element.style.zIndex = '-9999'; // Behind everything
-    element.style.visibility = 'hidden'; // Hidden but still rendered (unlike opacity:0)
-    element.style.pointerEvents = 'none'; // Can't interact with it
-    element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
-    element.style.padding = '40px';
-    element.style.background = 'white';
-    element.style.color = '#111';
-    element.style.lineHeight = '1.5';
-    element.style.fontSize = '14px';
-    
-    // Append to body so html2canvas can capture it
-    document.body.appendChild(element);
-    
-    console.log('📄 Body children count:', bodyElement.children.length);
-    console.log('📄 Element created with', element.children.length, 'children (includes STYLE tag)');
-    console.log('📄 First child:', element.firstChild?.tagName);
-    console.log('📄 Last child:', element.lastChild?.tagName);
-    console.log('📄 Section titles found:', element.querySelectorAll('.section-title').length);
-    console.log('📄 Hit cards found:', element.querySelectorAll('.hit-card').length);
-    console.log('📄 PDF footer found:', element.querySelectorAll('.pdf-footer').length);
-    
-    // Log specific sections to verify content completeness
-    const pdfHeader = element.querySelector('.pdf-header');
-    const clientMatterSection = element.querySelectorAll('.section-title')[0];
-    const requestDetailsSection = element.querySelectorAll('.section-title')[1];
-    const businessInfoCard = element.querySelector('.hit-card');
-    
-    console.log('📄 PDF Header exists:', !!pdfHeader);
-    console.log('📄 Client & Matter Details section exists:', !!clientMatterSection, clientMatterSection?.textContent);
-    console.log('📄 Request Details section exists:', !!requestDetailsSection, requestDetailsSection?.textContent);
-    console.log('📄 Business Info card exists:', !!businessInfoCard);
-    
-    // Check if Business Details section contains expected fields
-    if (businessInfoCard) {
-      const businessDetailsHTML = businessInfoCard.innerHTML;
-      console.log('📄 Business Details HTML length:', businessDetailsHTML.length);
-      console.log('📄 Contains "Business Details":', businessDetailsHTML.includes('Business Details'));
-      console.log('📄 Contains "Business Name":', businessDetailsHTML.includes('Business Name'));
-      console.log('📄 Contains "Company Number":', businessDetailsHTML.includes('Company Number'));
-      console.log('📄 Contains "Email":', businessDetailsHTML.includes('Email'));
-      console.log('📄 Contains "Phone":', businessDetailsHTML.includes('Phone'));
-      console.log('📄 Contains "REGISTERED ADDRESS":', businessDetailsHTML.includes('REGISTERED ADDRESS'));
-      
-      // Extract and log the Business Details section specifically
-      const businessDetailsMatch = businessDetailsHTML.match(/<div style="font-size: 16px[^>]*>Business Details<\/div>([\s\S]*?)(?=<\/div>\s*<\/div>|$)/);
-      if (businessDetailsMatch) {
-        console.log('📄 ===== BUSINESS DETAILS SECTION =====');
-        console.log(businessDetailsMatch[0]);
-        console.log('📄 ===== END BUSINESS DETAILS =====');
-      } else {
-        console.log('⚠️ Business Details section NOT FOUND in HTML!');
-      }
-    }
+    console.log('📄 Element created with', element.children.length, 'children');
     
     // Configure html2pdf options (EXACTLY like thirdfort-checks-manager.js)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
@@ -3978,21 +3892,11 @@ async function generateRequestPDF(messageData) {
     };
     
     console.log('📄 Starting PDF generation with html2pdf...');
-    console.log('📄 Element appended to body for dimension calculation');
-    console.log('📄 Element computed height:', element.offsetHeight, 'px');
-    console.log('📄 Element scroll height:', element.scrollHeight, 'px');
     
-    // Generate PDF blob using html2pdf (same pattern as uk-sanctions-checker.html)
-    // CRITICAL: html2pdf renders asynchronously, so we must keep element in DOM until .outputPdf completes
+    // Generate PDF blob using html2pdf (EXACTLY like uk-sanctions-checker.html)
     const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
-    
-    // NOW remove from body after PDF generation is FULLY complete
-    if (element.parentNode) {
-      document.body.removeChild(element);
-      console.log('📄 Element removed from body after PDF generation');
-    }
     
     // Open PDF in popup window
     const pdfUrl = URL.createObjectURL(pdfBlob);
