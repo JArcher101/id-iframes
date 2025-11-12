@@ -3898,16 +3898,17 @@ async function generateRequestPDF(messageData) {
       }
     }
     
-    // Add page-break-inside: avoid to all cards to prevent cut-off
+    // Add page-break-inside: avoid to all cards (INLINE STYLE, not CSS class)
+    // This matches checks manager which uses: avoid: 'div[style*="page-break-inside: avoid"]'
     const allCards = element.querySelectorAll('div[style*="border-radius: 8px"]');
     allCards.forEach(card => {
-      card.style.pageBreakInside = 'avoid';
-      card.style.breakInside = 'avoid';
+      const currentStyle = card.getAttribute('style') || '';
+      card.setAttribute('style', currentStyle + '; page-break-inside: avoid; break-inside: avoid;');
     });
     console.log('📄 Added page-break-inside: avoid to', allCards.length, 'cards');
     console.log('📄 Final element to pass to html2pdf has', element.children.length, 'children');
     
-    // Configure html2pdf options (EXACTLY like sanctions checker lines 1851-1862)
+    // Configure html2pdf options (EXACTLY like checks manager line 24552-24559)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
     const options = {
       margin: [10, 10, 10, 10],
@@ -3919,7 +3920,7 @@ async function generateRequestPDF(messageData) {
         logging: false
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'css', avoid: '.hit-card' }
+      pagebreak: { mode: 'css', avoid: 'div[style*="page-break-inside: avoid"]' }
     };
     
     console.log('📄 Starting PDF generation with html2pdf...');
