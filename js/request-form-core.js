@@ -3846,14 +3846,7 @@ function buildRequestPDFHTML(messageData) {
  * Opens PDF in popup window and notifies parent
  */
 async function generateRequestPDF(messageData) {
-  console.log('📄 Generating request PDF...');
-  
-  if (typeof html2pdf === 'undefined') {
-    console.error('❌ html2pdf library not loaded');
-    // Still notify parent to close
-    sendMessageToParent({ type: 'pdf-generated', success: false });
-    return;
-  }
+  console.log('📄 Generating request PDF using native print...');
   
   try {
     // Build HTML template
@@ -3867,83 +3860,8 @@ async function generateRequestPDF(messageData) {
     }
     
     console.log('📄 HTML content length:', pdfHTML.length);
-    console.log('📄 HTML preview (first 300 chars):', pdfHTML.substring(0, 300));
     
-    // Parse HTML and extract body content (to avoid nested HTML structure issues)
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(pdfHTML, 'text/html');
-    
-    // Create element for html2pdf - use body content only, not full HTML
-    const element = document.createElement('div');
-    
-    // First, insert the styles from <head>
-    const headStyles = doc.head.querySelector('style');
-    if (headStyles) {
-      const styleEl = document.createElement('style');
-      styleEl.textContent = headStyles.textContent;
-      element.appendChild(styleEl);
-    }
-    
-    // Then, clone all body children (the actual PDF content)
-    Array.from(doc.body.children).forEach(child => {
-      element.appendChild(child.cloneNode(true));
-    });
-    
-    // Apply body styles to the container element
-    element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
-    element.style.padding = '40px';
-    element.style.background = 'white';
-    element.style.color = '#111';
-    element.style.lineHeight = '1.5';
-    element.style.fontSize = '14px';
-    element.style.width = '794px'; // A4 width in pixels at 96 DPI
-    
-    // CRITICAL: Temporarily append to body so html2canvas can calculate dimensions
-    // Position it absolutely at top-left, visible (opacity/visibility:hidden prevents capture)
-    element.style.position = 'absolute';
-    element.style.left = '0';
-    element.style.top = '0';
-    element.style.zIndex = '99999'; // On top of everything
-    
-    document.body.appendChild(element);
-    
-    console.log('📄 Element created with', element.children.length, 'children (includes STYLE tag)');
-    console.log('📄 Number of section-title divs:', element.querySelectorAll('.section-title').length);
-    console.log('📄 Number of hit-card divs:', element.querySelectorAll('.hit-card').length);
-    console.log('📄 PDF footer exists:', !!element.querySelector('.pdf-footer'));
-    console.log('📄 Element offsetHeight:', element.offsetHeight, 'px');
-    
-    // Configure html2pdf options (EXACTLY like thirdfort-checks-manager.js)
-    const requestType = messageData.request?.requestType || messageData.requestType || 'note';
-    const options = {
-      margin: [10, 10, 10, 10],
-      filename: `${requestType}_request_${Date.now()}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
-        logging: false
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'css', avoid: '.hit-card' }
-    };
-    
-    console.log('📄 Starting PDF generation with html2pdf...');
-    
-    // Generate PDF blob using html2pdf (EXACTLY like uk-sanctions-checker.html)
-    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
-    
-    console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
-    
-    // Remove element from DOM after PDF generation completes
-    if (element.parentNode) {
-      document.body.removeChild(element);
-      console.log('📄 Element removed from DOM');
-    }
-    
-    // Open PDF in popup window
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    
+    // Create a new window/tab for the PDF content
     const width = 900;
     const height = 800;
     const left = Math.max(0, (screen.width - width) / 2);
@@ -3951,22 +3869,37 @@ async function generateRequestPDF(messageData) {
     
     const features = `width=${width},height=${height},left=${left},top=${top},resizable=1,scrollbars=1,status=1,menubar=1,toolbar=1,location=0`;
     
-    const popup = window.open(pdfUrl, 'requestPDFPopup', features);
+    const printWindow = window.open('', 'requestPDF', features);
     
-    if (popup) {
-      popup.focus();
-      setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
-      console.log('✅ PDF opened in popup window');
-    } else {
-      console.warn('⚠️ Popup blocked - PDF may have opened in new tab');
+    if (!printWindow) {
+      console.warn('⚠️ Popup blocked');
+      showError('Popup blocked. Please allow popups for this site.');
+      sendMessageToParent({ type: 'pdf-generated', success: false });
+      return;
     }
     
-    // Notify parent that PDF has been generated and opened
+    // Write the complete HTML to the new window
+    printWindow.document.write(pdfHTML);
+    printWindow.document.close();
+    
+    // Wait for content to load, then trigger print
+    printWindow.onload = () => {
+      console.log('📄 PDF window loaded, triggering print dialog...');
+      // Small delay to ensure all styles are applied
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 250);
+    };
+    
+    console.log('✅ PDF window opened with print dialog');
+    
+    // Notify parent that PDF is ready
     sendMessageToParent({ type: 'pdf-generated', success: true });
     
   } catch (error) {
     console.error('❌ Error generating PDF:', error);
-    // Still notify parent to close (even if PDF failed)
+    showError('Failed to generate PDF: ' + error.message);
     sendMessageToParent({ type: 'pdf-generated', success: false, error: error.message });
   }
 }
