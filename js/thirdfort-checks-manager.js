@@ -29196,18 +29196,33 @@ class ThirdfortChecksManager {
         
         if (typeof html2pdf !== 'undefined') {
             console.log('📄 Starting PDF generation...');
-            // Generate PDF as blob and open in new window
+            // Generate PDF as blob and open in print dialog
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
-                const pdfUrl = URL.createObjectURL(pdfBlob);
-                console.log('📄 Opening PDF print dialogue:', pdfUrl);
                 
-                // Open print dialogue for PDF
-                const printWindow = window.open(pdfUrl, '_blank');
-                if (!printWindow) {
-                    console.error('❌ Popup blocked by browser');
-                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                // Check if Print.js is available
+                if (typeof printJS !== 'undefined') {
+                    console.log('📄 Opening print dialog with Print.js...');
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                    
+                    // Use Print.js to open print dialog with PDF
+                    printJS({
+                        printable: pdfUrl,
+                        type: 'pdf',
+                        onPrintDialogClose: () => {
+                            // Clean up blob URL after print dialog closes
+                            URL.revokeObjectURL(pdfUrl);
+                        }
+                    });
                 } else {
+                    // Fallback to new tab if Print.js not loaded
+                    console.warn('⚠️ Print.js not loaded, opening in new tab');
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                    const printWindow = window.open(pdfUrl, '_blank');
+                    if (!printWindow) {
+                        console.error('❌ Popup blocked by browser');
+                        alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                    } else {
                     // Trigger print dialogue when PDF loads
                     printWindow.addEventListener('load', () => {
                         setTimeout(() => {
@@ -31145,15 +31160,30 @@ class ThirdfortChecksManager {
             console.log('📄 Generating SoF PDF with html2pdf...');
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ SoF PDF generated:', pdfBlob.size, 'bytes');
-                const pdfUrl = URL.createObjectURL(pdfBlob);
-                console.log('📄 Opening SoF PDF print dialogue:', pdfUrl);
                 
-                // Open print dialogue for PDF
-                const printWindow = window.open(pdfUrl, '_blank');
-                if (!printWindow) {
-                    console.error('❌ Popup blocked by browser');
-                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                // Check if Print.js is available
+                if (typeof printJS !== 'undefined') {
+                    console.log('📄 Opening SoF print dialog with Print.js...');
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                    
+                    // Use Print.js to open print dialog with PDF
+                    printJS({
+                        printable: pdfUrl,
+                        type: 'pdf',
+                        onPrintDialogClose: () => {
+                            // Clean up blob URL after print dialog closes
+                            URL.revokeObjectURL(pdfUrl);
+                        }
+                    });
                 } else {
+                    // Fallback to new tab if Print.js not loaded
+                    console.warn('⚠️ Print.js not loaded, opening in new tab');
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                    const printWindow = window.open(pdfUrl, '_blank');
+                    if (!printWindow) {
+                        console.error('❌ Popup blocked by browser');
+                        alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                    } else {
                     // Trigger print dialogue when PDF loads
                     printWindow.addEventListener('load', () => {
                         setTimeout(() => {
@@ -31425,18 +31455,33 @@ class ThirdfortChecksManager {
         
         if (typeof html2pdf !== 'undefined') {
             console.log('📄 Generating PEP dismissals PDF with html2pdf...');
-            // Generate PDF as blob and open in new window
+            // Generate PDF as blob and open in print dialog
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ PEP dismissals PDF generated:', pdfBlob.size, 'bytes');
-                const pdfUrl = URL.createObjectURL(pdfBlob);
-                console.log('📄 Opening PEP dismissals PDF print dialogue:', pdfUrl);
                 
-                // Open print dialogue for PDF
-                const printWindow = window.open(pdfUrl, '_blank');
-                if (!printWindow) {
-                    console.error('❌ Popup blocked by browser');
-                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                // Check if Print.js is available
+                if (typeof printJS !== 'undefined') {
+                    console.log('📄 Opening PEP print dialog with Print.js...');
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                    
+                    // Use Print.js to open print dialog with PDF
+                    printJS({
+                        printable: pdfUrl,
+                        type: 'pdf',
+                        onPrintDialogClose: () => {
+                            // Clean up blob URL after print dialog closes
+                            URL.revokeObjectURL(pdfUrl);
+                        }
+                    });
                 } else {
+                    // Fallback to new tab if Print.js not loaded
+                    console.warn('⚠️ Print.js not loaded, opening in new tab');
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                    const printWindow = window.open(pdfUrl, '_blank');
+                    if (!printWindow) {
+                        console.error('❌ Popup blocked by browser');
+                        alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                    } else {
                     // Trigger print dialogue when PDF loads
                     printWindow.addEventListener('load', () => {
                         setTimeout(() => {
