@@ -1874,42 +1874,33 @@
         
         // Handle PDF - either upload to S3 or open print dialog
         if (clientEntryId) {
-          // Store HTML for print dialog after upload
-          window.pendingPDFHTML = pdfHTML;
+          // Store blob for print dialog after upload
+          window.pendingPDFForPrinting = pdfBlob;
           await uploadPDFBlobToS3(pdfBlob);
         } else {
-          // Open print dialog using Print.js (no S3 upload, just print)
+          // Open print dialog using Print.js with PDF blob (no S3 upload, just print)
           if (typeof printJS === 'undefined') {
             console.error('❌ Print.js library not loaded');
             showError('Print library not loaded. Please refresh the page.');
             return;
           }
           
-          console.log('📄 Parsing HTML for print dialog...');
+          console.log('📄 Opening print dialog with PDF blob...');
           
-          // Parse the HTML to extract styles and body content
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(pdfHTML, 'text/html');
+          // Convert blob to object URL for Print.js
+          const pdfUrl = URL.createObjectURL(pdfBlob);
           
-          // Extract all styles from <head> (including fonts and layout)
-          const styleElements = doc.head.querySelectorAll('style');
-          const styleContent = Array.from(styleElements).map(s => s.innerHTML).join('\n');
-          
-          // Get body HTML
-          const bodyHTML = doc.body.innerHTML;
-          
-          console.log('📄 Triggering print dialog with Print.js...');
-          
-          // Use Print.js to trigger print dialog directly
+          // Use Print.js to print the PDF directly (preserves all styling)
           printJS({
-            printable: bodyHTML,
-            type: 'raw-html',
-            style: styleContent,
-            scanStyles: false,
-            targetStyles: ['*']
+            printable: pdfUrl,
+            type: 'pdf',
+            onPrintDialogClose: () => {
+              // Clean up blob URL after print dialog closes
+              URL.revokeObjectURL(pdfUrl);
+            }
           });
           
-          console.log('✅ Print dialog opened');
+          console.log('✅ Print dialog opened with PDF');
         }
         
       } catch (error) {
@@ -2018,32 +2009,25 @@
         
         uploadingOverlay.classList.remove('show');
         
-        // Open print dialog after successful S3 upload
-        const pdfHTML = window.pendingPDFHTML;
-        if (pdfHTML && typeof printJS !== 'undefined') {
+        // Open print dialog after successful S3 upload using the same PDF blob
+        const pdfBlob = window.pendingPDFForPrinting;
+        if (pdfBlob && typeof printJS !== 'undefined') {
           console.log('📄 Opening print dialog after S3 upload...');
           
-          // Parse the HTML to extract styles and body content
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(pdfHTML, 'text/html');
+          // Convert blob to object URL for Print.js
+          const pdfUrl = URL.createObjectURL(pdfBlob);
           
-          // Extract all styles from <head> (including fonts and layout)
-          const styleElements = doc.head.querySelectorAll('style');
-          const styleContent = Array.from(styleElements).map(s => s.innerHTML).join('\n');
-          
-          // Get body HTML
-          const bodyHTML = doc.body.innerHTML;
-          
-          // Use Print.js to trigger print dialog directly
+          // Use Print.js to print the PDF directly (same PDF that was uploaded to S3)
           printJS({
-            printable: bodyHTML,
-            type: 'raw-html',
-            style: styleContent,
-            scanStyles: false,
-            targetStyles: ['*']
+            printable: pdfUrl,
+            type: 'pdf',
+            onPrintDialogClose: () => {
+              // Clean up blob URL after print dialog closes
+              URL.revokeObjectURL(pdfUrl);
+            }
           });
           
-          console.log('✅ Print dialog opened after S3 upload');
+          console.log('✅ Print dialog opened with PDF after S3 upload');
         }
         
         // Show success message
