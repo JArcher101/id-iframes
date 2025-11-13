@@ -29200,11 +29200,20 @@ class ThirdfortChecksManager {
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
                 const pdfUrl = URL.createObjectURL(pdfBlob);
-                console.log('📄 Opening PDF in new window:', pdfUrl);
-                const popup = window.open(pdfUrl, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
-                if (!popup) {
+                console.log('📄 Opening PDF print dialogue:', pdfUrl);
+                
+                // Open print dialogue for PDF
+                const printWindow = window.open(pdfUrl, '_blank');
+                if (!printWindow) {
                     console.error('❌ Popup blocked by browser');
                     alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                } else {
+                    // Trigger print dialogue when PDF loads
+                    printWindow.addEventListener('load', () => {
+                        setTimeout(() => {
+                            printWindow.print();
+                        }, 100);
+                    });
                 }
                 
                 // Notify parent that PDF is generated and opened (only if auto-save)
@@ -31137,10 +31146,22 @@ class ThirdfortChecksManager {
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ SoF PDF generated:', pdfBlob.size, 'bytes');
                 const pdfUrl = URL.createObjectURL(pdfBlob);
-                const popup = window.open(pdfUrl, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
-                if (!popup) {
+                console.log('📄 Opening SoF PDF print dialogue:', pdfUrl);
+                
+                // Open print dialogue for PDF
+                const printWindow = window.open(pdfUrl, '_blank');
+                if (!printWindow) {
+                    console.error('❌ Popup blocked by browser');
                     alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                } else {
+                    // Trigger print dialogue when PDF loads
+                    printWindow.addEventListener('load', () => {
+                        setTimeout(() => {
+                            printWindow.print();
+                        }, 100);
+                    });
                 }
+                
                 // Notify parent that PDF is generated and opened (only if auto-save)
                 if (autoSave) {
                     console.log('📤 Sending pdf-generated message to parent');
@@ -31408,9 +31429,20 @@ class ThirdfortChecksManager {
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ PEP dismissals PDF generated:', pdfBlob.size, 'bytes');
                 const pdfUrl = URL.createObjectURL(pdfBlob);
-                const popup = window.open(pdfUrl, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
-                if (!popup) {
+                console.log('📄 Opening PEP dismissals PDF print dialogue:', pdfUrl);
+                
+                // Open print dialogue for PDF
+                const printWindow = window.open(pdfUrl, '_blank');
+                if (!printWindow) {
+                    console.error('❌ Popup blocked by browser');
                     alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                } else {
+                    // Trigger print dialogue when PDF loads
+                    printWindow.addEventListener('load', () => {
+                        setTimeout(() => {
+                            printWindow.print();
+                        }, 100);
+                    });
                 }
                 
                 // Notify parent that PDF is generated and opened (only if auto-save)
