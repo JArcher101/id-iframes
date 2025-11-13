@@ -2010,12 +2010,12 @@
         uploadingOverlay.classList.remove('show');
         
         // Open print dialog after successful S3 upload using the same PDF blob
-        const pdfBlob = window.pendingPDFForPrinting;
-        if (pdfBlob && typeof printJS !== 'undefined') {
+        const pdfBlobForPrint = window.pendingPDFForPrinting;
+        if (pdfBlobForPrint && typeof printJS !== 'undefined') {
           console.log('📄 Opening print dialog after S3 upload...');
           
           // Convert blob to object URL for Print.js
-          const pdfUrl = URL.createObjectURL(pdfBlob);
+          const pdfUrl = URL.createObjectURL(pdfBlobForPrint);
           
           // Use Print.js to print the PDF directly (same PDF that was uploaded to S3)
           printJS({
