@@ -29223,12 +29223,13 @@ class ThirdfortChecksManager {
                         console.error('❌ Popup blocked by browser');
                         alert('PDF generated but popup was blocked. Please allow popups for this site.');
                     } else {
-                    // Trigger print dialogue when PDF loads
-                    printWindow.addEventListener('load', () => {
-                        setTimeout(() => {
-                            printWindow.print();
-                        }, 100);
-                    });
+                        // Trigger print dialogue when PDF loads
+                        printWindow.addEventListener('load', () => {
+                            setTimeout(() => {
+                                printWindow.print();
+                            }, 100);
+                        });
+                    }
                 }
                 
                 // Notify parent that PDF is generated and opened (only if auto-save)
@@ -31184,12 +31185,13 @@ class ThirdfortChecksManager {
                         console.error('❌ Popup blocked by browser');
                         alert('PDF generated but popup was blocked. Please allow popups for this site.');
                     } else {
-                    // Trigger print dialogue when PDF loads
-                    printWindow.addEventListener('load', () => {
-                        setTimeout(() => {
-                            printWindow.print();
-                        }, 100);
-                    });
+                        // Trigger print dialogue when PDF loads
+                        printWindow.addEventListener('load', () => {
+                            setTimeout(() => {
+                                printWindow.print();
+                            }, 100);
+                        });
+                    }
                 }
                 
                 // Notify parent that PDF is generated and opened (only if auto-save)
@@ -31482,12 +31484,13 @@ class ThirdfortChecksManager {
                         console.error('❌ Popup blocked by browser');
                         alert('PDF generated but popup was blocked. Please allow popups for this site.');
                     } else {
-                    // Trigger print dialogue when PDF loads
-                    printWindow.addEventListener('load', () => {
-                        setTimeout(() => {
-                            printWindow.print();
-                        }, 100);
-                    });
+                        // Trigger print dialogue when PDF loads
+                        printWindow.addEventListener('load', () => {
+                            setTimeout(() => {
+                                printWindow.print();
+                            }, 100);
+                        });
+                    }
                 }
                 
                 // Notify parent that PDF is generated and opened (only if auto-save)
