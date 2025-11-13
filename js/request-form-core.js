@@ -3545,8 +3545,8 @@ function buildRequestPDFHTML(messageData) {
           <div style="display: flex; gap: 8px;">
             <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Request Type:</span>
             <span style="color: #333;">
-              <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2;">${badgeText}</span>
-              ${requestPayload.eSoF ? `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32; margin-left: 6px;">+ eSoF</span>` : ''}
+              <span style="display: inline-block; padding: 4px 10px; border: 2px solid #1976d2; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2;">${badgeText}</span>
+              ${requestPayload.eSoF ? `<span style="display: inline-block; padding: 4px 10px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32; margin-left: 6px;">+ eSoF</span>` : ''}
             </span>
           </div>
           <div style="display: flex; gap: 8px;">
@@ -3565,8 +3565,8 @@ function buildRequestPDFHTML(messageData) {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(clientName)}</div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
-            <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${feeEarner ? escapeHtml(feeEarner) + ' ' : ''}${escapeHtml(clientNumber)}</span>
+            <span style="display: inline-block; padding: 4px 10px; border: 2px solid ${isEntity ? '#7b1fa2' : '#1976d2'}; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
+            <span style="display: inline-block; padding: 4px 10px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${feeEarner ? escapeHtml(feeEarner) + ' ' : ''}${escapeHtml(clientNumber)}</span>
           </div>
         </div>
         
@@ -3726,8 +3726,8 @@ function buildRequestPDFHTML(messageData) {
 async function generateRequestPDF(messageData) {
   console.log('📄 Generating request PDF...');
   
-  if (typeof html2pdf === 'undefined') {
-    console.error('❌ html2pdf library not loaded');
+  if (typeof printJS === 'undefined') {
+    console.error('❌ Print.js library not loaded');
     sendMessageToParent({ type: 'pdf-generated', success: false });
     return;
   }
@@ -3736,43 +3736,8 @@ async function generateRequestPDF(messageData) {
     // Build HTML string
     const pdfHTML = buildRequestPDFHTML(messageData);
     console.log('✅ HTML built, length:', pdfHTML.length);
-    console.log('📄 HTML preview (first 5000 chars):', pdfHTML.substring(0, 5000));
     
-    // Simple approach: just use innerHTML directly like checks manager
-    const element = document.createElement('div');
-    element.innerHTML = pdfHTML;
-    
-    console.log('📄 Element children:', element.children.length);
-    console.log('📄 Element children tags:', Array.from(element.children).map(c => c.tagName));
-    console.log('📄 First DIV innerHTML length:', element.querySelector('div')?.innerHTML?.length || 0);
-    
-    // Configure options (matching checks manager for proper CSS class handling)
-    const requestType = messageData.request?.requestType || messageData.requestType || 'note';
-    const options = {
-      margin: [10, 10, 10, 10],
-      filename: `${requestType}_request_${Date.now()}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'css', avoid: 'div[style*="page-break-inside: avoid"]' }
-    };
-    
-    console.log('📄 Generating PDF with html2pdf...');
-    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
-    console.log('✅ PDF generated:', pdfBlob.size, 'bytes');
-    
-    // Dual approach: Open blob in new tab AND use Print.js with raw HTML
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    
-    // 1. Open html2pdf blob in new tab (allows saving)
-    const newTab = window.open(pdfUrl, '_blank');
-    if (newTab) {
-      console.log('✅ PDF blob opened in new tab');
-    } else {
-      console.warn('⚠️ Popup blocked for new tab');
-    }
-    
-    // 2. Also trigger print dialog with Print.js using RAW HTML (not blob)
+    // Trigger print dialog with Print.js using RAW HTML
     if (typeof printJS !== 'undefined') {
       console.log('📄 Triggering Print.js with raw HTML data...');
       
@@ -3790,20 +3755,36 @@ async function generateRequestPDF(messageData) {
       console.log('📄 Style content length:', styleContent.length);
       console.log('📄 Body HTML length:', bodyHTML.length);
       
-      printJS({
-        printable: bodyHTML,
-        type: 'raw-html',
-        style: styleContent,
-        scanStyles: false,
-        targetStyles: ['*']
-      });
+      // Track dialog close count to reopen once
+      let dialogCloseCount = 0;
+      
+      const openPrintDialog = () => {
+        printJS({
+          printable: bodyHTML,
+          type: 'raw-html',
+          style: styleContent,
+          scanStyles: false,
+          targetStyles: ['*'],
+          onPrintDialogClose: () => {
+            dialogCloseCount++;
+            console.log(`📄 Print dialog closed (count: ${dialogCloseCount})`);
+            
+            if (dialogCloseCount === 1) {
+              console.log('📄 Reopening print dialog one more time...');
+              setTimeout(() => openPrintDialog(), 500);
+            } else {
+              console.log('📄 Not reopening - dialog closed twice');
+              sendMessageToParent({ type: 'print-dialog-closed' });
+            }
+          }
+        });
+      };
+      
+      openPrintDialog();
       console.log('✅ Print.js dialog triggered with raw HTML');
     } else {
       console.log('ℹ️ Print.js not available, skipping print dialog');
     }
-    
-    // Clean up URL after a delay
-    setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
     
     sendMessageToParent({ type: 'pdf-generated', success: true });
   } catch (error) {
