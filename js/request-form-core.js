@@ -3522,6 +3522,7 @@ function buildRequestPDFHTML(messageData) {
       </style>
     </head>
     <body>
+    <div>
     <!-- PDF Header -->
     <div class="pdf-header">
         <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">
@@ -3545,8 +3546,8 @@ function buildRequestPDFHTML(messageData) {
           <div style="display: flex; gap: 8px;">
             <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Request Type:</span>
             <span style="color: #333;">
-              <span style="display: inline-block; padding: 4px 10px; border: 2px solid #1976d2; border-radius: 4px; font-size: 11px; font-weight: bold; color: #1976d2; background: #e3f2fd;">${badgeText}</span>
-              ${requestPayload.eSoF ? `<span style="display: inline-block; padding: 4px 10px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; color: #2e7d32; background: #e8f5e9; margin-left: 6px;">+ eSoF</span>` : ''}
+              <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2;">${badgeText}</span>
+              ${requestPayload.eSoF ? `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32; margin-left: 6px;">+ eSoF</span>` : ''}
             </span>
           </div>
           <div style="display: flex; gap: 8px;">
@@ -3565,8 +3566,8 @@ function buildRequestPDFHTML(messageData) {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(clientName)}</div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="display: inline-block; padding: 4px 10px; border: 2px solid ${isEntity ? '#7b1fa2' : '#1976d2'}; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
-            <span style="display: inline-block; padding: 4px 10px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${feeEarner ? escapeHtml(feeEarner) + ' ' : ''}${escapeHtml(clientNumber)}</span>
+            <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
+            <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${feeEarner ? escapeHtml(feeEarner) + ' ' : ''}${escapeHtml(clientNumber)}</span>
           </div>
         </div>
         
@@ -3597,11 +3598,11 @@ function buildRequestPDFHTML(messageData) {
             
             ${data.cI?.a?.formattedAddress ? `
             <div style="margin-top: 12px;">
-              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">REGISTERED ADDRESS:</div>
+                <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">REGISTERED ADDRESS:</div>
               <div style="font-size: 12px; color: #333; line-height: 1.6;">
                 ${escapeHtml(formatAddress(data.cI.a))}
               </div>
-            </div>
+              </div>
             ` : ''}
           </div>
         ` : `
@@ -3614,28 +3615,28 @@ function buildRequestPDFHTML(messageData) {
               ${data.cI?.n?.m ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Middle Name:</strong> ${escapeHtml(data.cI.n.m)}</div>` : ''}
               ${data.cI?.n?.l ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Last Name:</strong> ${escapeHtml(data.cI.n.l)}</div>` : ''}
               ${data.cI?.b ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Date of Birth:</strong> ${escapeHtml(data.cI.b)}</div>` : ''}
-              ${data.cI?.e ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(data.cI.e)}</div>` : ''}
-              ${data.cI?.m ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(data.cI.m)}</div>` : ''}
+            ${data.cI?.e ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(data.cI.e)}</div>` : ''}
+            ${data.cI?.m ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(data.cI.m)}</div>` : ''}
               ${data.cI?.nC ? `<div style="display: flex; gap: 4px; grid-column: 1 / -1;"><strong style="color: #333;">Previous/Known As:</strong> ${escapeHtml(data.cI?.pN || '')} ${data.cI?.rNC ? `(${escapeHtml(data.cI.rNC)})` : ''}</div>` : ''}
-            </div>
+          </div>
             
-            ${data.cI?.a?.formattedAddress ? `
+          ${data.cI?.a?.formattedAddress ? `
             <div style="margin-top: 12px;">
               <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">CURRENT ADDRESS:</div>
               <div style="font-size: 12px; color: #333; line-height: 1.6;">
                 ${escapeHtml(formatAddress(data.cI.a))}
               </div>
             </div>
-            ` : ''}
-            ${data.cI?.pA?.formattedAddress ? `
+          ` : ''}
+          ${data.cI?.pA?.formattedAddress ? `
             <div style="margin-top: 12px;">
               <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">PREVIOUS ADDRESS:</div>
               <div style="font-size: 12px; color: #333; line-height: 1.6;">
                 ${escapeHtml(formatAddress(data.cI.pA))}
               </div>
             </div>
-            ` : ''}
-          </div>
+          ` : ''}
+        </div>
         `}
         </div>
       </div>
@@ -3651,33 +3652,33 @@ function buildRequestPDFHTML(messageData) {
           </div>
           
           <!-- Document Requirements & Validation Checklist -->
-          <div style="margin-bottom: 12px;">
+        <div style="margin-bottom: 12px;">
             <div style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 10px;">Document Requirements</div>
-            
-            ${(() => {
+          
+          ${(() => {
               // CDF and OFSI are ALWAYS required for form submissions - if we're generating PDF, they must exist
               // CDF is only waived if entity has linked data
-              const cdfRequired = !(isEntity && data.cI?.bD); // CDF not required if entity has linked data
-              
-              return `
+            const cdfRequired = !(isEntity && data.cI?.bD); // CDF not required if entity has linked data
+            
+            return `
                 <div style="display: grid; gap: 4px; font-size: 12px;">
-                  ${cdfRequired ? `
+                ${cdfRequired ? `
                   <div style="display: flex; align-items: center; padding: 6px 8px; background: #e8f5e9; border-radius: 4px;">
                     ${getValidationIcon(true)}
                     <span style="color: #333;"><strong>Client Details Form (CDF):</strong> Already uploaded</span>
-                  </div>
-                  ` : `
+                </div>
+                ` : `
                   <div style="display: flex; align-items: center; padding: 6px 8px; background: #e8f5e9; border-radius: 4px;">
-                    ${getValidationIcon(true)}
-                    <span style="color: #333;"><strong>Client Details Form (CDF):</strong> Not required (entity data linked)</span>
-                  </div>
-                  `}
-                  
+                  ${getValidationIcon(true)}
+                  <span style="color: #333;"><strong>Client Details Form (CDF):</strong> Not required (entity data linked)</span>
+                </div>
+                `}
+                
                   <div style="display: flex; align-items: center; padding: 6px 8px; background: #e8f5e9; border-radius: 4px;">
                     ${getValidationIcon(true)}
                     <span style="color: #333;"><strong>PEP & Sanctions Screening:</strong> Already uploaded</span>
-                  </div>
-                  
+        </div>
+        
                   ${attachedFile ? `
                   <div style="display: flex; align-items: center; padding: 6px 8px; background: #e8f5e9; border-radius: 4px;">
                     ${getValidationIcon(true)}
@@ -3688,8 +3689,8 @@ function buildRequestPDFHTML(messageData) {
               `;
             })()}
           </div>
-        </div>
-      </div>
+          </div>
+          </div>
       
       <!-- Submission Confirmation -->
       <div class="hit-card" style="border-left: 4px solid #39b549; margin-top: 12px; page-break-inside: avoid;">
@@ -3713,6 +3714,7 @@ function buildRequestPDFHTML(messageData) {
       <p>Report ID: ${requestType.toUpperCase()}-${Date.now()} | ${escapeHtml(userEmail)}</p>
       <p style="margin-top: 8px; font-style: italic;">This is a system-generated record of the request submission.</p>
     </div>
+    </div>
     </body>
     </html>`;
   
@@ -3724,59 +3726,60 @@ function buildRequestPDFHTML(messageData) {
  * Opens PDF in popup window and notifies parent
  */
 async function generateRequestPDF(messageData) {
-  console.log('📄 Generating request PDF using Print.js...');
+  console.log('📄 Generating request PDF...');
   
-  if (typeof printJS === 'undefined') {
-    console.error('❌ Print.js library not loaded');
-    showError('Print library not loaded. Please refresh the page.');
+  if (typeof html2pdf === 'undefined') {
+    console.error('❌ html2pdf library not loaded');
     sendMessageToParent({ type: 'pdf-generated', success: false });
     return;
   }
   
   try {
-    // Build HTML template
-    let pdfHTML;
-    try {
-      pdfHTML = buildRequestPDFHTML(messageData);
-      console.log('✅ HTML template built successfully');
-    } catch (htmlError) {
-      console.error('❌ Error building HTML template:', htmlError);
-      throw htmlError;
+    // Build HTML string
+    const pdfHTML = buildRequestPDFHTML(messageData);
+    console.log('✅ HTML built, length:', pdfHTML.length);
+    
+    // Simple approach: createElement + innerHTML (same as uk-sanctions-checker)
+    const element = document.createElement('div');
+    element.innerHTML = pdfHTML;
+    
+    console.log('📄 Element children:', element.children.length);
+    
+    // Configure options (matching uk-sanctions-checker exactly)
+    const requestType = messageData.request?.requestType || messageData.requestType || 'note';
+    const options = {
+      margin: [10, 10, 10, 10],
+      filename: `${requestType}_request_${Date.now()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: 'css', avoid: '.hit-card' }
+    };
+    
+    console.log('📄 Generating PDF with html2pdf...');
+    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+    console.log('✅ PDF generated:', pdfBlob.size, 'bytes');
+    
+    // Open in popup window (allows print + save multiple times)
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    const width = 900, height = 800;
+    const left = Math.max(0, (screen.width - width) / 2);
+    const top = Math.max(0, (screen.height - height) / 2);
+    const features = `width=${width},height=${height},left=${left},top=${top},resizable=1,scrollbars=1,status=1,menubar=1,toolbar=1`;
+    
+    const popup = window.open(pdfUrl, 'requestPDFPopup', features);
+    if (popup) {
+      popup.focus();
+      setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
+      console.log('✅ PDF opened in popup');
+    } else {
+      console.warn('⚠️ Popup blocked - PDF may have opened in new tab');
     }
     
-    console.log('📄 HTML content length:', pdfHTML.length);
-    
-    // Parse HTML to extract body content and styles
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(pdfHTML, 'text/html');
-    
-    // Extract inline styles
-    const headStyles = doc.head.querySelector('style');
-    const styleContent = headStyles ? headStyles.textContent : '';
-    
-    // Extract body HTML
-    const bodyHTML = doc.body.innerHTML;
-    
-    console.log('📄 Triggering print dialog with Print.js...');
-    
-    // Use Print.js to trigger print dialog directly
-    printJS({
-      printable: bodyHTML,
-      type: 'raw-html',
-      style: styleContent,
-      scanStyles: false,
-      targetStyles: ['*']
-    });
-    
-    console.log('✅ Print dialog opened');
-    
-    // Notify parent that PDF is ready
     sendMessageToParent({ type: 'pdf-generated', success: true });
-    
   } catch (error) {
-    console.error('❌ Error generating PDF:', error);
-    showError('Failed to generate PDF: ' + error.message);
-    sendMessageToParent({ type: 'pdf-generated', success: false, error: error.message });
+    console.error('❌ PDF error:', error);
+    sendMessageToParent({ type: 'pdf-generated', success: false });
   }
 }
 
