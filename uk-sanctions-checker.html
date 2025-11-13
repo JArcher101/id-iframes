@@ -8,6 +8,10 @@
   <!-- html2pdf library for PDF generation (same as checks manager) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   
+  <!-- Print.js library for print dialog -->
+  <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
+  
   <style>
     /*
     =====================================================================
@@ -1868,31 +1872,44 @@
         
         console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
         
-        // Handle PDF - either upload to S3 or open in popup
+        // Handle PDF - either upload to S3 or open print dialog
         if (clientEntryId) {
-          // Store blob and trigger S3 upload
+          // Store blob and HTML for later use (print after upload)
+          window.pendingPDFHTML = pdfHTML;
           await uploadPDFBlobToS3(pdfBlob);
         } else {
-          // Open in popup window
-          const pdfUrl = URL.createObjectURL(pdfBlob);
-          
-          const width = 900;
-          const height = 800;
-          const left = Math.max(0, (screen.width - width) / 2);
-          const top = Math.max(0, (screen.height - height) / 2);
-          
-          const features = `width=${width},height=${height},left=${left},top=${top},resizable=1,scrollbars=1,status=1,menubar=1,toolbar=1,location=0`;
-          
-          const popup = window.open(pdfUrl, 'sanctionsPDFPopup', features);
-          
-          if (popup) {
-            popup.focus();
-            setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
-          } else {
-            console.warn('⚠️ Popup blocked - opening in new tab');
+          // Open print dialog using Print.js
+          if (typeof printJS === 'undefined') {
+            console.error('❌ Print.js library not loaded');
+            showError('Print library not loaded. Please refresh the page.');
+            return;
           }
           
-          console.log('✅ PDF opened in popup window');
+          console.log('📄 Parsing HTML for print dialog...');
+          
+          // Parse the HTML to extract styles and body content
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(pdfHTML, 'text/html');
+          
+          // Extract all styles from <head> (including fonts and layout)
+          const styleElements = doc.head.querySelectorAll('style');
+          const styleContent = Array.from(styleElements).map(s => s.innerHTML).join('\n');
+          
+          // Get body HTML
+          const bodyHTML = doc.body.innerHTML;
+          
+          console.log('📄 Triggering print dialog with Print.js...');
+          
+          // Use Print.js to trigger print dialog directly
+          printJS({
+            printable: bodyHTML,
+            type: 'raw-html',
+            style: styleContent,
+            scanStyles: false,
+            targetStyles: ['*']
+          });
+          
+          console.log('✅ Print dialog opened');
         }
         
       } catch (error) {
@@ -2001,30 +2018,32 @@
         
         uploadingOverlay.classList.remove('show');
         
-        // Open PDF in popup window for viewing/printing
-        const pdfForViewing = window.pendingPDFForViewing;
-        if (pdfForViewing) {
-          const pdfUrl = URL.createObjectURL(pdfForViewing);
+        // Open print dialog using Print.js after successful upload
+        const pdfHTML = window.pendingPDFHTML;
+        if (pdfHTML && typeof printJS !== 'undefined') {
+          console.log('📄 Opening print dialog after S3 upload...');
           
-          const width = 900;
-          const height = 800;
-          const left = Math.max(0, (screen.width - width) / 2);
-          const top = Math.max(0, (screen.height - height) / 2);
+          // Parse the HTML to extract styles and body content
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(pdfHTML, 'text/html');
           
-          // Use proper popup features format
-          const features = `width=${width},height=${height},left=${left},top=${top},resizable=1,scrollbars=1,status=1,menubar=1,toolbar=1,location=0`;
+          // Extract all styles from <head> (including fonts and layout)
+          const styleElements = doc.head.querySelectorAll('style');
+          const styleContent = Array.from(styleElements).map(s => s.innerHTML).join('\n');
           
-          const popup = window.open(pdfUrl, 'sanctionsPDFPopup', features);
+          // Get body HTML
+          const bodyHTML = doc.body.innerHTML;
           
-          if (popup) {
-            popup.focus();
-            // Clean up blob URL after a delay
-            setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
-          } else {
-            console.warn('⚠️ Popup blocked - opening in new tab');
-          }
+          // Use Print.js to trigger print dialog directly
+          printJS({
+            printable: bodyHTML,
+            type: 'raw-html',
+            style: styleContent,
+            scanStyles: false,
+            targetStyles: ['*']
+          });
           
-          console.log('✅ PDF opened in popup window');
+          console.log('✅ Print dialog opened after S3 upload');
         }
         
         // Show success message
