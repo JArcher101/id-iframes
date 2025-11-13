@@ -3761,26 +3761,43 @@ async function generateRequestPDF(messageData) {
     const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
     console.log('✅ PDF generated:', pdfBlob.size, 'bytes');
     
-    // Dual approach: Open in new tab AND trigger print dialog
+    // Dual approach: Open blob in new tab AND use Print.js with raw HTML
     const pdfUrl = URL.createObjectURL(pdfBlob);
     
-    // 1. Open in new tab (allows saving)
+    // 1. Open html2pdf blob in new tab (allows saving)
     const newTab = window.open(pdfUrl, '_blank');
     if (newTab) {
-      console.log('✅ PDF opened in new tab');
+      console.log('✅ PDF blob opened in new tab');
     } else {
       console.warn('⚠️ Popup blocked for new tab');
     }
     
-    // 2. Also trigger print dialog with Print.js if available
+    // 2. Also trigger print dialog with Print.js using RAW HTML (not blob)
     if (typeof printJS !== 'undefined') {
-      console.log('📄 Also opening print dialog with Print.js...');
+      console.log('📄 Triggering Print.js with raw HTML data...');
+      
+      // Parse HTML to extract body content and styles
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(pdfHTML, 'text/html');
+      
+      // Extract inline styles
+      const headStyles = doc.head.querySelector('style');
+      const styleContent = headStyles ? headStyles.textContent : '';
+      
+      // Extract body HTML
+      const bodyHTML = doc.body.innerHTML;
+      
+      console.log('📄 Style content length:', styleContent.length);
+      console.log('📄 Body HTML length:', bodyHTML.length);
+      
       printJS({
-        printable: pdfUrl,
-        type: 'pdf',
-        showModal: false
+        printable: bodyHTML,
+        type: 'raw-html',
+        style: styleContent,
+        scanStyles: false,
+        targetStyles: ['*']
       });
-      console.log('✅ Print dialog triggered');
+      console.log('✅ Print.js dialog triggered with raw HTML');
     } else {
       console.log('ℹ️ Print.js not available, skipping print dialog');
     }
