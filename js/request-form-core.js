@@ -3738,40 +3738,13 @@ async function generateRequestPDF(messageData) {
     console.log('✅ HTML built, length:', pdfHTML.length);
     console.log('📄 HTML preview (first 5000 chars):', pdfHTML.substring(0, 5000));
     
-    // Parse HTML and extract body content (matching checks manager pattern)
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = pdfHTML;
-    
-    console.log('📄 Temp element children:', tempDiv.children.length);
-    console.log('📄 Temp element children tags:', Array.from(tempDiv.children).map(c => c.tagName));
-    
-    // Extract the STYLE tag and body DIVs (skip META)
-    const styleTag = tempDiv.querySelector('style');
-    const bodyDivs = Array.from(tempDiv.children).filter(child => child.tagName === 'DIV');
-    
-    console.log('📄 Found style tag:', !!styleTag);
-    console.log('📄 Found body divs:', bodyDivs.length);
-    
-    // Create clean container with style tag first, then body content
+    // Simple approach: just use innerHTML directly like checks manager
     const element = document.createElement('div');
+    element.innerHTML = pdfHTML;
     
-    // Apply body styles to container since we don't have a real <body> tag
-    element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
-    element.style.padding = '40px';
-    element.style.background = 'white';
-    element.style.color = '#111';
-    element.style.lineHeight = '1.5';
-    element.style.fontSize = '14px';
-    
-    if (styleTag) {
-      element.appendChild(styleTag.cloneNode(true));
-    }
-    bodyDivs.forEach(div => {
-      element.appendChild(div.cloneNode(true));
-    });
-    
-    console.log('📄 Final element children:', element.children.length);
-    console.log('📄 Final element children tags:', Array.from(element.children).map(c => c.tagName));
+    console.log('📄 Element children:', element.children.length);
+    console.log('📄 Element children tags:', Array.from(element.children).map(c => c.tagName));
+    console.log('📄 First DIV innerHTML length:', element.querySelector('div')?.innerHTML?.length || 0);
     
     // Configure options (matching checks manager for proper CSS class handling)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
