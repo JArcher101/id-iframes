@@ -3736,7 +3736,7 @@ async function generateRequestPDF(messageData) {
     // Build HTML string
     const pdfHTML = buildRequestPDFHTML(messageData);
     console.log('✅ HTML built, length:', pdfHTML.length);
-    console.log('📄 HTML preview (first 500 chars):', pdfHTML.substring(0, 500));
+    console.log('📄 HTML preview (first 5000 chars):', pdfHTML.substring(0, 5000));
     
     // Parse HTML and extract body content (matching checks manager pattern)
     const tempDiv = document.createElement('div');
@@ -3754,6 +3754,15 @@ async function generateRequestPDF(messageData) {
     
     // Create clean container with style tag first, then body content
     const element = document.createElement('div');
+    
+    // Apply body styles to container since we don't have a real <body> tag
+    element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
+    element.style.padding = '40px';
+    element.style.background = 'white';
+    element.style.color = '#111';
+    element.style.lineHeight = '1.5';
+    element.style.fontSize = '14px';
+    
     if (styleTag) {
       element.appendChild(styleTag.cloneNode(true));
     }
