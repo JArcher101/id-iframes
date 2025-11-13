@@ -3759,25 +3759,36 @@ async function generateRequestPDF(messageData) {
       let dialogCloseCount = 0;
       
       const openPrintDialog = () => {
+        console.log(`📄 Opening print dialog (attempt ${dialogCloseCount + 1})...`);
+        
         printJS({
           printable: bodyHTML,
           type: 'raw-html',
           style: styleContent,
           scanStyles: false,
           targetStyles: ['*'],
+          onLoadingEnd: () => {
+            console.log('📄 Print.js loading ended');
+          },
           onPrintDialogClose: () => {
             dialogCloseCount++;
-            console.log(`📄 Print dialog closed (count: ${dialogCloseCount})`);
+            console.log(`📄 Print dialog closed! (count: ${dialogCloseCount})`);
+            console.log(`📄 Will reopen: ${dialogCloseCount === 1}`);
             
             if (dialogCloseCount === 1) {
-              console.log('📄 Reopening print dialog one more time...');
-              setTimeout(() => openPrintDialog(), 500);
+              console.log('📄 Reopening print dialog in 500ms...');
+              setTimeout(() => {
+                console.log('📄 Timeout fired - calling openPrintDialog again');
+                openPrintDialog();
+              }, 500);
             } else {
               console.log('📄 Both dialogs closed - notifying parent');
               sendMessageToParent({ type: 'pdf-generated', success: true });
             }
           }
         });
+        
+        console.log('📄 printJS() called');
       };
       
       openPrintDialog();
