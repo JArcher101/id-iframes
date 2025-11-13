@@ -314,9 +314,35 @@ Sends request-data message to parent with:
       // Current Address validation
       const currentAddress = document.getElementById('currentAddress');
       const addressNotListed = document.getElementById('addressNotListed');
+      const currentCountry = document.getElementById('currentCountry');
+      const isUK =
+        currentCountry?.dataset?.countryCode === 'GBR' ||
+        currentCountry?.value === 'GBR' ||
+        currentCountry?.value === 'United Kingdom';
       
-      if (!currentAddress?.value?.trim() && !addressNotListed?.checked) {
-        errors.push('You must enter the Current Address or manually input address details');
+      if (addressNotListed?.checked) {
+        const street = document.getElementById('street')?.value?.trim();
+        const town = document.getElementById('town')?.value?.trim();
+        const postcode = document.getElementById('postcode')?.value?.trim();
+        const buildingBits = [
+          document.getElementById('flatNumber')?.value?.trim(),
+          document.getElementById('buildingNumber')?.value?.trim(),
+          document.getElementById('buildingName')?.value?.trim()
+        ].filter(Boolean);
+        
+        if (!street || !town) {
+          errors.push('Please complete the Street and Town/City fields for the Current Address.');
+        }
+        
+        if (isUK && !postcode) {
+          errors.push('Please enter a Postcode for the Current Address.');
+        }
+        
+        if (isUK && buildingBits.length === 0) {
+          errors.push('Please enter a Flat, Building Name or Building Number for the Current Address.');
+        }
+      } else if (!currentAddress?.value?.trim()) {
+        errors.push('You must enter the Current Address or select "Address not listed" to provide manual details.');
       }
       
       // Recent Move validation
