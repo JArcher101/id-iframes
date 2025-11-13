@@ -3755,43 +3755,32 @@ async function generateRequestPDF(messageData) {
       console.log('📄 Style content length:', styleContent.length);
       console.log('📄 Body HTML length:', bodyHTML.length);
       
-      // Track dialog close count to reopen once
-      let dialogCloseCount = 0;
+      // Open print dialog once
+      let printDialogOpened = false;
       
-      const openPrintDialog = () => {
-        console.log(`📄 Opening print dialog (attempt ${dialogCloseCount + 1})...`);
-        
-        printJS({
-          printable: bodyHTML,
-          type: 'raw-html',
-          style: styleContent,
-          scanStyles: false,
-          targetStyles: ['*'],
-          onLoadingEnd: () => {
-            console.log('📄 Print.js loading ended');
-          },
-          onPrintDialogClose: () => {
-            dialogCloseCount++;
-            console.log(`📄 Print dialog closed! (count: ${dialogCloseCount})`);
-            console.log(`📄 Will reopen: ${dialogCloseCount === 1}`);
-            
-            if (dialogCloseCount === 1) {
-              console.log('📄 Reopening print dialog in 500ms...');
-              setTimeout(() => {
-                console.log('📄 Timeout fired - calling openPrintDialog again');
-                openPrintDialog();
-              }, 500);
-            } else {
-              console.log('📄 Both dialogs closed - notifying parent');
-              sendMessageToParent({ type: 'pdf-generated', success: true });
-            }
-          }
-        });
-        
-        console.log('📄 printJS() called');
+      const handleAfterPrint = () => {
+        if (printDialogOpened) {
+          console.log('📄 Print dialog closed - notifying parent');
+          window.removeEventListener('afterprint', handleAfterPrint);
+          sendMessageToParent({ type: 'pdf-generated', success: true });
+        }
       };
       
-      openPrintDialog();
+      // Listen for print dialog close
+      window.addEventListener('afterprint', handleAfterPrint);
+      
+      printJS({
+        printable: bodyHTML,
+        type: 'raw-html',
+        style: styleContent,
+        scanStyles: false,
+        targetStyles: ['*'],
+        onLoadingEnd: () => {
+          console.log('📄 Print.js loading ended - dialog open');
+          printDialogOpened = true;
+        }
+      });
+      
       console.log('✅ Print.js dialog triggered with raw HTML');
     } else {
       console.log('ℹ️ Print.js not available, skipping print dialog');
