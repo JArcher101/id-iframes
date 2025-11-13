@@ -31074,8 +31074,8 @@ class ThirdfortChecksManager {
             fundingCardsHTML += `</div></div>`;
         });
         
-        // Build bank analysis summary
-        let bankSummaryHTML = '';
+        // Build detailed bank analysis (including recurring, largest transactions, flags)
+        let bankAnalysisHTML = '';
         const totalAccounts = Object.keys(accounts).length;
         if (totalAccounts > 0) {
             let totalTxs = 0;
@@ -31083,21 +31083,27 @@ class ThirdfortChecksManager {
                 totalTxs += (acc.statement || []).length;
             });
             
-            bankSummaryHTML = `
-                <div style="background: white; border-radius: 8px; border-left: 4px solid #39b549; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-top: 30px;">
+            // Summary header
+            bankAnalysisHTML = `
+                <div style="background: white; border-radius: 8px; border-left: 4px solid #39b549; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 24px;">
                     <div style="padding: 12px 16px;">
                         <div style="font-size: 13px; color: #666; margin-bottom: 12px;">
                             <div><strong>Total Accounts Linked:</strong> ${totalAccounts}</div>
                             <div><strong>Statement Period:</strong> 6 months</div>
                             <div><strong>Total Transactions Analyzed:</strong> ${totalTxs}</div>
                         </div>
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #1d71b8;">
-                            <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">OVERALL NOTES:</div>
-                            <div style="font-size: 13px; color: #333;">Bank analysis shows consistent transaction patterns. Review complete.</div>
-                        </div>
                     </div>
                 </div>
             `;
+            
+            // Get bank analysis from task outcome
+            const analysis = bankSummary?.breakdown?.analysis || bankStatement?.breakdown?.analysis || docsBankStatement?.breakdown?.analysis;
+            
+            if (analysis) {
+                // Build detailed analysis sections (recurring, largest, etc.)
+                const detailedAnalysisHTML = this.buildBankAnalysisHTML(check, accounts, analysis);
+                bankAnalysisHTML += detailedAnalysisHTML;
+            }
         }
         
         const htmlContent = `
@@ -31136,7 +31142,7 @@ class ThirdfortChecksManager {
                 ${propertyHTML ? `<div class="section-title">Property Information</div>${propertyHTML}` : ''}
                 <div class="section-title">Funding Methods</div>
                 ${fundingCardsHTML}
-                ${bankSummaryHTML ? `<div class="section-title">Bank Analysis Summary</div>${bankSummaryHTML}` : ''}
+                ${bankAnalysisHTML ? `<div class="section-title">Bank Analysis</div>${bankAnalysisHTML}` : ''}
                 <div class="pdf-footer">
                     <p>This report was generated from Thurstan Hoskin's Thirdfort ID Management System</p>
                     <p>Report ID: SOF-${Date.now()} | Page 1 of 1</p>
