@@ -3738,14 +3738,31 @@ async function generateRequestPDF(messageData) {
     console.log('✅ HTML built, length:', pdfHTML.length);
     console.log('📄 HTML preview (first 500 chars):', pdfHTML.substring(0, 500));
     
-    // Simple approach: createElement + innerHTML (same as uk-sanctions-checker)
-    const element = document.createElement('div');
-    element.innerHTML = pdfHTML;
+    // Parse HTML and extract body content (matching checks manager pattern)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = pdfHTML;
     
-    console.log('📄 Element children:', element.children.length);
-    console.log('📄 Element children tags:', Array.from(element.children).map(c => c.tagName));
-    console.log('📄 First child class:', element.children[0]?.className);
-    console.log('📄 Element innerHTML preview (first 500 chars):', element.innerHTML.substring(0, 500));
+    console.log('📄 Temp element children:', tempDiv.children.length);
+    console.log('📄 Temp element children tags:', Array.from(tempDiv.children).map(c => c.tagName));
+    
+    // Extract the STYLE tag and body DIVs (skip META)
+    const styleTag = tempDiv.querySelector('style');
+    const bodyDivs = Array.from(tempDiv.children).filter(child => child.tagName === 'DIV');
+    
+    console.log('📄 Found style tag:', !!styleTag);
+    console.log('📄 Found body divs:', bodyDivs.length);
+    
+    // Create clean container with style tag first, then body content
+    const element = document.createElement('div');
+    if (styleTag) {
+      element.appendChild(styleTag.cloneNode(true));
+    }
+    bodyDivs.forEach(div => {
+      element.appendChild(div.cloneNode(true));
+    });
+    
+    console.log('📄 Final element children:', element.children.length);
+    console.log('📄 Final element children tags:', Array.from(element.children).map(c => c.tagName));
     
     // Configure options (matching checks manager for proper CSS class handling)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
