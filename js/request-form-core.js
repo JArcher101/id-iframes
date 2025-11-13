@@ -3522,7 +3522,6 @@ function buildRequestPDFHTML(messageData) {
       </style>
     </head>
     <body>
-    <div>
     <!-- PDF Header -->
     <div class="pdf-header">
         <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">
@@ -3714,7 +3713,6 @@ function buildRequestPDFHTML(messageData) {
       <p>Report ID: ${requestType.toUpperCase()}-${Date.now()} | ${escapeHtml(userEmail)}</p>
       <p style="margin-top: 8px; font-style: italic;">This is a system-generated record of the request submission.</p>
     </div>
-    </div>
     </body>
     </html>`;
   
@@ -3749,7 +3747,7 @@ async function generateRequestPDF(messageData) {
     console.log('📄 First child class:', element.children[0]?.className);
     console.log('📄 Element innerHTML preview (first 500 chars):', element.innerHTML.substring(0, 500));
     
-    // Configure options (matching uk-sanctions-checker exactly)
+    // Configure options (matching checks manager for proper CSS class handling)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
     const options = {
       margin: [10, 10, 10, 10],
@@ -3757,7 +3755,7 @@ async function generateRequestPDF(messageData) {
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, logging: false },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'css', avoid: '.hit-card' }
+      pagebreak: { mode: 'css', avoid: 'div[style*="page-break-inside: avoid"]' }
     };
     
     console.log('📄 Generating PDF with html2pdf...');
