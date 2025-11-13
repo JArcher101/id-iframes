@@ -3761,21 +3761,32 @@ async function generateRequestPDF(messageData) {
     const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
     console.log('✅ PDF generated:', pdfBlob.size, 'bytes');
     
-    // Open in popup window (allows print + save multiple times)
+    // Dual approach: Open in new tab AND trigger print dialog
     const pdfUrl = URL.createObjectURL(pdfBlob);
-    const width = 900, height = 800;
-    const left = Math.max(0, (screen.width - width) / 2);
-    const top = Math.max(0, (screen.height - height) / 2);
-    const features = `width=${width},height=${height},left=${left},top=${top},resizable=1,scrollbars=1,status=1,menubar=1,toolbar=1`;
     
-    const popup = window.open(pdfUrl, 'requestPDFPopup', features);
-    if (popup) {
-      popup.focus();
-      setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
-      console.log('✅ PDF opened in popup');
+    // 1. Open in new tab (allows saving)
+    const newTab = window.open(pdfUrl, '_blank');
+    if (newTab) {
+      console.log('✅ PDF opened in new tab');
     } else {
-      console.warn('⚠️ Popup blocked - PDF may have opened in new tab');
+      console.warn('⚠️ Popup blocked for new tab');
     }
+    
+    // 2. Also trigger print dialog with Print.js if available
+    if (typeof printJS !== 'undefined') {
+      console.log('📄 Also opening print dialog with Print.js...');
+      printJS({
+        printable: pdfUrl,
+        type: 'pdf',
+        showModal: false
+      });
+      console.log('✅ Print dialog triggered');
+    } else {
+      console.log('ℹ️ Print.js not available, skipping print dialog');
+    }
+    
+    // Clean up URL after a delay
+    setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
     
     sendMessageToParent({ type: 'pdf-generated', success: true });
   } catch (error) {
