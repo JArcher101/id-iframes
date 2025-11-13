@@ -341,8 +341,6 @@ Sends request-data message to parent with:
         if (isUK && buildingBits.length === 0) {
           errors.push('Please enter a Flat, Building Name or Building Number for the Current Address.');
         }
-      } else if (!currentAddress?.value?.trim()) {
-        errors.push('You must enter the Current Address or select "Address not listed" to provide manual details.');
       }
       
       // Recent Move validation
