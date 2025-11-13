@@ -31101,8 +31101,51 @@ class ThirdfortChecksManager {
             
             if (analysis) {
                 // Build detailed analysis sections (recurring, largest, etc.)
-                const detailedAnalysisHTML = this.buildBankAnalysisHTML(check, accounts, analysis);
-                bankAnalysisHTML += detailedAnalysisHTML;
+                bankAnalysisHTML += '<div style="margin-top: 20px;">';
+                
+                // Recurring Payments
+                if (analysis.recurring_payment_groups && analysis.recurring_payment_groups.length > 0) {
+                    bankAnalysisHTML += '<div style="margin-bottom: 16px;"><div style="font-weight: bold; font-size: 14px; color: var(--primary-blue); margin-bottom: 8px;">🔁 Recurring Payments</div>';
+                    analysis.recurring_payment_groups.forEach((group, gIdx) => {
+                        const count = group.occurrences?.length || 0;
+                        const avgAmount = group.average_amount || 0;
+                        const merchant = group.merchant_name || 'Unknown';
+                        bankAnalysisHTML += `<div style="padding: 8px; background: #f8f9fa; border-radius: 4px; margin-bottom: 6px; font-size: 12px;">`;
+                        bankAnalysisHTML += `<strong>${merchant}</strong> - ${count} payments, avg £${Math.abs(avgAmount).toFixed(2)}`;
+                        bankAnalysisHTML += `</div>`;
+                    });
+                    bankAnalysisHTML += '</div>';
+                }
+                
+                // Transaction Chains
+                if (analysis.chain_analysis && analysis.chain_analysis.length > 0) {
+                    bankAnalysisHTML += '<div style="margin-bottom: 16px;"><div style="font-weight: bold; font-size: 14px; color: var(--primary-blue); margin-bottom: 8px;">🔗 Transaction Chains</div>';
+                    analysis.chain_analysis.slice(0, 5).forEach((chain, cIdx) => {
+                        const count = chain.transactions?.length || 0;
+                        bankAnalysisHTML += `<div style="padding: 8px; background: #f8f9fa; border-radius: 4px; margin-bottom: 6px; font-size: 12px;">`;
+                        bankAnalysisHTML += `<strong>Chain ${cIdx + 1}</strong> - ${count} transactions`;
+                        bankAnalysisHTML += `</div>`;
+                    });
+                    bankAnalysisHTML += '</div>';
+                }
+                
+                // Largest Transactions
+                if (analysis.largest_individual_transactions && analysis.largest_individual_transactions.length > 0) {
+                    bankAnalysisHTML += '<div style="margin-bottom: 16px;"><div style="font-weight: bold; font-size: 14px; color: var(--primary-blue); margin-bottom: 8px;">💰 Largest Transactions</div>';
+                    analysis.largest_individual_transactions.slice(0, 10).forEach((tx, tIdx) => {
+                        const amount = tx.amount || 0;
+                        const desc = tx.description || tx.merchant_name || 'Transaction';
+                        const date = tx.timestamp ? new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+                        const sign = amount >= 0 ? '+' : '';
+                        const amountColor = amount >= 0 ? '#39b549' : '#d32f2f';
+                        bankAnalysisHTML += `<div style="padding: 8px; background: #f8f9fa; border-radius: 4px; margin-bottom: 6px; font-size: 12px;">`;
+                        bankAnalysisHTML += `<span style="color: ${amountColor}; font-weight: bold;">${sign}£${Math.abs(amount).toFixed(2)}</span> - ${desc} <span style="color: #6c757d;">(${date})</span>`;
+                        bankAnalysisHTML += `</div>`;
+                    });
+                    bankAnalysisHTML += '</div>';
+                }
+                
+                bankAnalysisHTML += '</div>';
             }
         }
         
