@@ -3738,12 +3738,16 @@ async function generateRequestPDF(messageData) {
     // Build HTML string
     const pdfHTML = buildRequestPDFHTML(messageData);
     console.log('✅ HTML built, length:', pdfHTML.length);
+    console.log('📄 HTML preview (first 500 chars):', pdfHTML.substring(0, 500));
     
     // Simple approach: createElement + innerHTML (same as uk-sanctions-checker)
     const element = document.createElement('div');
     element.innerHTML = pdfHTML;
     
     console.log('📄 Element children:', element.children.length);
+    console.log('📄 Element children tags:', Array.from(element.children).map(c => c.tagName));
+    console.log('📄 First child class:', element.children[0]?.className);
+    console.log('📄 Element innerHTML preview (first 500 chars):', element.innerHTML.substring(0, 500));
     
     // Configure options (matching uk-sanctions-checker exactly)
     const requestType = messageData.request?.requestType || messageData.requestType || 'note';
