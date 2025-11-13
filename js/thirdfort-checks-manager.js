@@ -12969,6 +12969,1967 @@ class ThirdfortChecksManager {
                   "smsSent": true,
                   "transactionId": "d4ahp5r23amg030yrx60"
             },
+            {
+                "taskOutcomes": {
+                  "sof:v1": {
+                    "breakdown": {
+                      "property": {
+                        "address": {
+                          "postcode": "BT32 5HD",
+                          "country": "GBR",
+                          "street": "Mill Road",
+                          "building_number": "40",
+                          "town": "Banbridge"
+                        },
+                        "new_build": false,
+                        "price": 28000000,
+                        "stamp_duty": 250000
+                      },
+                      "funds": [
+                        {
+                          "data": {
+                            "amount": 22000000,
+                            "lender": "hsbc",
+                            "location": "GBR"
+                          },
+                          "metadata": {
+                            "created_at": 1763045673639
+                          },
+                          "type": "fund:mortgage"
+                        },
+                        {
+                          "data": {
+                            "amount": 2000000,
+                            "location": "GBR",
+                            "type": "lisa"
+                          },
+                          "metadata": {
+                            "created_at": 1763045673800
+                          },
+                          "type": "fund:htb"
+                        },
+                        {
+                          "data": {
+                            "amount": 1500000,
+                            "location": "GBR",
+                            "people": [
+                              {
+                                "actor": true,
+                                "name": "Jacob Robert Archer-Moran",
+                                "incomes": [
+                                  {
+                                    "reference": "varies",
+                                    "source": "salary",
+                                    "description": "",
+                                    "annual_total": 3500000,
+                                    "frequency": "other"
+                                  }
+                                ],
+                                "employment_status": "independent",
+                                "phone": "+447506430094"
+                              },
+                              {
+                                "actor": false,
+                                "name": "Se Stewart ",
+                                "incomes": [
+                                  {
+                                    "reference": "ladywell",
+                                    "source": "salary",
+                                    "description": "",
+                                    "annual_total": 2800000,
+                                    "frequency": "monthly"
+                                  },
+                                  {
+                                    "reference": "pip",
+                                    "source": "other",
+                                    "description": "pip",
+                                    "annual_total": 975000,
+                                    "frequency": "fortnightly"
+                                  }
+                                ],
+                                "employment_status": "employed",
+                                "phone": "+447493580033"
+                              }
+                            ]
+                          },
+                          "metadata": {
+                            "created_at": 1763045673971
+                          },
+                          "type": "fund:savings"
+                        },
+                        {
+                          "data": {
+                            "amount": 1500000,
+                            "giftor": {
+                              "contactable": true,
+                              "name": "Barbara Archer",
+                              "phone": "+447581408576",
+                              "relationship": "Mum"
+                            },
+                            "location": "GBR",
+                            "repayable": false
+                          },
+                          "metadata": {
+                            "created_at": 1763045674170
+                          },
+                          "type": "fund:gift"
+                        },
+                        {
+                          "data": {
+                            "location": "GBR",
+                            "amount": 500000,
+                            "date": "2025-11-11T00:00:00.000Z",
+                            "status": "complete",
+                            "lawyer": "Thurstan hoskin "
+                          },
+                          "metadata": {
+                            "created_at": 1763045674331
+                          },
+                          "type": "fund:sale:property"
+                        },
+                        {
+                          "data": {
+                            "amount": 250000,
+                            "description": "Car",
+                            "location": "GBR"
+                          },
+                          "metadata": {
+                            "created_at": 1763045674490
+                          },
+                          "type": "fund:sale:assets"
+                        },
+                        {
+                          "data": {
+                            "location": "GBR",
+                            "is_owner": false,
+                            "amount": 100000,
+                            "date": "2025-11-03T00:00:00.000Z",
+                            "account_name": "Thurstan hoskin ",
+                            "from": "Mary archer"
+                          },
+                          "metadata": {
+                            "created_at": 1763045674658
+                          },
+                          "type": "fund:inheritance"
+                        },
+                        {
+                          "data": {
+                            "location": "GBR",
+                            "is_owner": false,
+                            "amount": 100000,
+                            "account_name": "Thurstan hoskin ",
+                            "lawyer": "Thurstan hoskin ",
+                            "settlement_date": "2025-11-01T00:00:00.000Z"
+                          },
+                          "metadata": {
+                            "created_at": 1763045674812
+                          },
+                          "type": "fund:divorce"
+                        },
+                        {
+                          "data": {
+                            "amount": 200000,
+                            "description": "Savings",
+                            "location": "GBR"
+                          },
+                          "metadata": {
+                            "created_at": 1763045674975
+                          },
+                          "type": "fund:cryptocurrency"
+                        },
+                        {
+                          "data": {
+                            "amount": 100000,
+                            "description": "Found in street",
+                            "location": "GBR"
+                          },
+                          "metadata": {
+                            "created_at": 1763045675143
+                          },
+                          "type": "fund:other"
+                        }
+                      ]
+                    },
+                    "data": {},
+                    "result": "clear",
+                    "documents": [],
+                    "id": "d4az3he23amg030ys230",
+                    "status": "closed",
+                    "createdAt": "2025-11-13T14:57:09.949Z"
+                  },
+                  "documents:savings": {
+                    "breakdown": {
+                      "documents": [
+                        {
+                          "id": "d4az49h23amg030ys2a0",
+                          "type": "savings"
+                        },
+                        {
+                          "id": "d4az49s23amg030ys2ag",
+                          "type": "savings"
+                        }
+                      ]
+                    },
+                    "data": {},
+                    "result": "clear",
+                    "documents": [
+                      "d4az49h23amg030ys2a0",
+                      "d4az49s23amg030ys2ag"
+                    ],
+                    "id": "d4az4ah23amg030ys2rg",
+                    "status": "closed",
+                    "createdAt": "2025-11-13T14:58:50.011Z"
+                  },
+                  "documents:mortgage": {
+                    "breakdown": {
+                      "documents": [
+                        {
+                          "id": "d4az40r23amg030ys290",
+                          "type": "mortgage"
+                        }
+                      ]
+                    },
+                    "data": {},
+                    "result": "clear",
+                    "documents": [
+                      "d4az40r23amg030ys290"
+                    ],
+                    "id": "d4az4a923amg030ys2kg",
+                    "status": "closed",
+                    "createdAt": "2025-11-13T14:58:49.465Z"
+                  },
+                  "documents:poa": {
+                    "breakdown": {
+                      "documents": [
+                        {
+                          "id": "d4az3g623amg030ys1rg",
+                          "type": "poa"
+                        },
+                        {
+                          "id": "d4az3ge23amg030ys1s0",
+                          "type": "poa"
+                        }
+                      ]
+                    },
+                    "data": {},
+                    "result": "clear",
+                    "documents": [
+                      "d4az3g623amg030ys1rg",
+                      "d4az3ge23amg030ys1s0"
+                    ],
+                    "id": "d4az3h623amg030ys1tg",
+                    "status": "closed",
+                    "createdAt": "2025-11-13T14:57:08.120Z"
+                  },
+                  "peps": {
+                    "breakdown": {
+                      "total_hits": 2,
+                      "hits": [
+                        {
+                          "name": "Jake Moran",
+                          "assets": [],
+                          "dob": {
+                            "main": "",
+                            "other": []
+                          },
+                          "score": 0.1,
+                          "flag_types": [
+                            "adverse-media",
+                            "adverse-media-violent-crime"
+                          ],
+                          "source_notes": {
+                            "complyadvantage-adverse-media": {
+                              "aml_types": [
+                                "adverse-media",
+                                "adverse-media-violent-crime"
+                              ],
+                              "country_codes": [
+                                "US"
+                              ],
+                              "name": "ComplyAdvantage Adverse Media"
+                            }
+                          },
+                          "institutions": [],
+                          "spouses": [],
+                          "political_positions": [],
+                          "countries": [
+                            "United States"
+                          ],
+                          "aka": [
+                            "Jake Moran"
+                          ],
+                          "id": "CPPFOJFI8OCU4PE",
+                          "match_types": [
+                            "equivalent_name",
+                            "name_variations_removal"
+                          ],
+                          "roles": [],
+                          "fields": [
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "United States"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "United States"
+                            },
+                            {
+                              "name": "Countries",
+                              "source": "",
+                              "value": "United States"
+                            }
+                          ],
+                          "media": [
+                            {
+                              "date": "2014-05-21T00:00:00Z",
+                              "snippet": "But after suffering a gut-wrenching 29-27, 20-25, 29-27 setback to the Redwings, the RedHawks rebounded to take down St. Patrick (25-19, 25-22) in another conference clash. Spearheading Marist's winning effort was Jake Moran, who registered five kills and six digs. Tom Inzinga equaled Moran's kill total, while Nick O'Gorman chipped in four kills and a service ace.",
+                              "title": "Community sports news - Southwest Community Publishing",
+                              "url": "https://www.southwestregionalpublishing.com/2014/05/21/community-sports-news-05-21-14-2/"
+                            },
+                            {
+                              "date": "2016-05-21T00:00:00Z",
+                              "snippet": "The best challenge to the Patriot stronghold, as evidenced this weekend, is O'Gorman, which took four of six heads-up championship matches against Lincoln. Sam Heckman (Flight 3), Jake Moran (Flight 4) and Michael Yousef (Flight 6) all racked up singles titles, while Flight 2 runner-up Wil McDowell and Heckman took home the Flight 2 doubles crown. \"They performed like I thought they would, and also expected,\" said Coach Don Barnes.",
+                              "title": "Lincoln caps third straight tennis title",
+                              "url": "https://www.argusleader.com/story/sports/high-school-sports/2016/05/21/midst-dynasty---lincoln-caps-third-straight-title/84666134/"
+                            }
+                          ],
+                          "associates": []
+                        },
+                        {
+                          "name": "Jacob Moran",
+                          "assets": [],
+                          "dob": {
+                            "main": "",
+                            "other": []
+                          },
+                          "score": 0.1,
+                          "flag_types": [
+                            "adverse-media",
+                            "adverse-media-general",
+                            "adverse-media-violent-crime"
+                          ],
+                          "source_notes": {
+                            "complyadvantage-adverse-media": {
+                              "aml_types": [
+                                "adverse-media",
+                                "adverse-media-general",
+                                "adverse-media-violent-crime"
+                              ],
+                              "country_codes": [
+                                "CA",
+                                "US"
+                              ],
+                              "name": "ComplyAdvantage Adverse Media"
+                            }
+                          },
+                          "institutions": [],
+                          "spouses": [],
+                          "political_positions": [],
+                          "countries": [
+                            "Canada",
+                            "United States"
+                          ],
+                          "aka": [
+                            "Jacob Benning Moran",
+                            "Jacob Moran"
+                          ],
+                          "id": "5F0CGJUQGD3KXR6",
+                          "match_types": [
+                            "aka_exact",
+                            "name_variations_removal"
+                          ],
+                          "roles": [],
+                          "fields": [
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Canada"
+                            },
+                            {
+                              "name": "Original Country Text",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "Canada, United States"
+                            },
+                            {
+                              "name": "Country",
+                              "source": "complyadvantage-adverse-media",
+                              "value": "United States"
+                            },
+                            {
+                              "name": "Countries",
+                              "source": "",
+                              "value": "Canada, United States"
+                            }
+                          ],
+                          "media": [
+                            {
+                              "date": "0001-01-01T00:00:00Z",
+                              "snippet": "GPD is in direct communication with the Michigan State Police and are working with them on the case following his capture, the agency said.<\\/p>\\n Shortly after GPD announced that Jacob Moran was in custody, the Johnson County Coroner\\u2019s Office formally identified Shaun Moran as the man who was killed in the shooting. The office ruled his death as homicide caused by a single gunshot wound.<\\/p>\\n",
+                              "title": "(no title)",
+                              "url": "https://dailyjournal.net/wp-json/wp/v2/posts/1816390"
+                            },
+                            {
+                              "date": "2021-03-01T00:00:00Z",
+                              "snippet": "They detained Moran and learned he had urinated on a tire of the car. \"Moran was heavily intoxicated on marijuana. He was arrested for prowling, public urination and public intoxication,\" police said.",
+                              "title": "530 Crime Watch: Man tried to rob bank across street from police station",
+                              "url": "https://www.usatoday.com/story/news/local/2021/03/01/530-crime-watch-arrest-jail-redding-police-shasta-sheriff/6870286002/?gnt-cfr=1"
+                            },
+                            {
+                              "date": "2023-08-29T00:00:00Z",
+                              "snippet": "Court documents show that Jacob Moran had allegedly assaulted his father twice in the hours before the shooting. Jacob Moran was charged Tuesday with residential entry, a Level 6 felony, and two counts of domestic battery both as a Level 6 felony and a misdemeanor, for the incidents. Charges for the shooting have not yet been filed.",
+                              "title": "Greenwood domestic dispute ends in fatal shooting - Daily Journal",
+                              "url": "https://dailyjournal.net/2023/08/29/greenwood-domestic-dispute-ends-in-fatal-shooting/"
+                            },
+                            {
+                              "date": "2024-11-15T00:00:00Z",
+                              "snippet": "Jacob Moran had been staying at his father's home but had reportedly been causing issues and been asked to leave the home. After being asked to leave the first time, Jacob Moran allegedly assaulted his father, leading to police being called. Later that day, he returned and again allegedly assaulted Shaun Moran, according to court documents.",
+                              "title": "Greenwood man convicted of murder of father following domestic dispute - Daily Journal",
+                              "url": "https://dailyjournal.net/2024/11/15/greenwood-man-convicted-of-murder-of-father-following-domestic-dispute/"
+                            },
+                            {
+                              "date": "2023-09-07T00:00:00Z",
+                              "snippet": "The gun's serial number was a match to the gun box that was found in the garage, court documents show. Jacob Moran was then arrested and taken to a Sturgis, Michigan jail on a charge of possession of an unregistered handgun. The BMW was impounded, court documents say.",
+                              "title": "Greenwood man, 22, charged with his father's murder - Daily Journal",
+                              "url": "https://dailyjournal.net/2023/09/07/greenwood-man-22-charged-with-his-fathers-murder/"
+                            },
+                            {
+                              "date": "0001-01-01T00:00:00Z",
+                              "snippet": "As deputies attempted to place Moran into custody for his warrant, Moran began to physically resist deputies. While resisting, Moran twice attempted to unholster a deputy's service firearm. After a brief struggle, Moran was arrested and then booked into the Humboldt County Correctional Facility on fresh charges of attempting to remove a peace officer's firearm (PC 148(d)) and resisting a peace officer (PC 148(a)(1)), in addition to his warrant charges of assault (PC 240) and battery (PC 242).",
+                              "title": "News Flash • County of Humboldt • CivicEngage",
+                              "url": "https://humboldtgov.org/CivicAlerts.aspx?AID=4279"
+                            },
+                            {
+                              "date": "2021-03-26T00:00:00Z",
+                              "snippet": "They immediately detained Moran and learned he urinated on a tire of the same car. Moran was \"heavily intoxicated on marijuana,\" and was ultimately arrested for public intoxication, public urination, and prowling.",
+                              "title": "Officers arrest prowler looking inside, and urinating on, a vehicle in Redding on Friday",
+                              "url": "https://krcrtv.com/news/local/bicycle-officers-catch-prowler-looking-inside-cars-in-redding-on-friday"
+                            },
+                            {
+                              "date": "2015-04-01T00:00:00Z",
+                              "snippet": "Moran then emerged, ran toward the plaintiff, and punched him. The officers arrested Moran. The plaintiff commenced this action against, among others, the defendant City of New York, alleging that the officers were negligent in failing to protect the plaintiff.",
+                              "title": "PHILIP v. MORAN | 127 A.D.3d 717 (2015) | 20150401440 | Leagle.com",
+                              "url": "https://www.leagle.com/decision/innyco20150401440"
+                            },
+                            {
+                              "date": "2023-08-29T00:00:00Z",
+                              "snippet": "When they arrived they found, Shaun Moran dead of an apparent gunshot wound in the home's garage, police say. Police say Jacob Moran is suspect in the shooting. It was reported that he was angry with Shaun Moran about being told to move out of the home, according to the news release.",
+                              "title": "UPDATE: Suspect in custody after deadly Greenwood shooting - Daily Journal",
+                              "url": "https://dailyjournal.net/2023/08/29/update-suspect-in-custody-after-deadly-greenwood-shooting/"
+                            },
+                            {
+                              "date": "2021-10-13T00:00:00Z",
+                              "snippet": "16 p.m., Humboldt County Sheriff's deputies on patrol in the 2400 block of Myrtle Avenue observed a suspicious male exhibiting behavior consistent with attempting a car burglary. Deputies contacted the man, 20-year-old Jacob Benning Moran, and learned that Moran had an outstanding misdemeanor warrant for his arrest. As deputies attempted to place Moran into custody for his warrant, Moran began to physically resist deputies.",
+                              "title": "Warrant suspect tries to grab deputy's gun during arrest in Myrtletown, HCSO says",
+                              "url": "https://krcrtv.com/north-coast-news/eureka-local-news/warrant-suspect-tries-to-grab-deputys-gun-during-arrest-in-myrtletown-hcso-says"
+                            }
+                          ],
+                          "associates": []
+                        }
+                      ]
+                    },
+                    "data": {
+                      "dob": "2001-01-11T00:00:00.000Z",
+                      "name": {
+                        "first": "Jacob",
+                        "last": "Moran",
+                        "other": "Robert"
+                      },
+                      "address": {
+                        "postcode": "TR15 2ND",
+                        "country": "GBR",
+                        "street": "Southgate Street",
+                        "building_number": "94",
+                        "town": "Redruth"
+                      }
+                    },
+                    "result": "consider",
+                    "documents": [
+                      "d4az67023amg030ys3dg"
+                    ],
+                    "id": "d4az4p223amg030ys3b0",
+                    "status": "closed",
+                    "createdAt": "2025-11-13T14:59:36.723Z"
+                  },
+                  "nfc": {
+                    "result": "clear",
+                    "status": "complete",
+                    "data": {
+                      "chip": {
+                        "clone_detection": "clear",
+                        "verification": "clear"
+                      },
+                      "comparison": {
+                        "dob": 0,
+                        "name": 100
+                      }
+                    }
+                  },
+                  "documents:bank-statement": {
+                    "breakdown": {
+                      "accounts": {
+                        "71857460": {
+                          "info": {
+                            "number": {
+                              "iban": "",
+                              "number": "71857460",
+                              "sort_code": "40-44-34",
+                              "swift_bic": ""
+                            },
+                            "name": "",
+                            "provider": {
+                              "id": "",
+                              "name": "HSBC"
+                            },
+                            "balance": {
+                              "available": 44.29,
+                              "current": 44.29,
+                              "overdraft": 0
+                            },
+                            "info": [
+                              {
+                                "full_name": "Mr Jacob Robert Archer-Moran",
+                                "phones": null,
+                                "date_of_birth": "",
+                                "emails": null,
+                                "update_timestamp": "",
+                                "addresses": null
+                              }
+                            ],
+                            "credentials_id": "",
+                            "currency": "GBP",
+                            "metadata": {
+                              "created_at": "2025-11-13T14:57:10.728512Z",
+                              "encryption": "",
+                              "updated_at": "2025-11-13T14:59:21.316696Z"
+                            },
+                            "type": ""
+                          },
+                          "statement": [
+                            {
+                              "merchant_name": "BOOKING.COM",
+                              "timestamp": "2025-08-21T00:00:00Z",
+                              "description": "DD HLTN37 BOOKING.COM",
+                              "amount": -46.9,
+                              "rolling_account_balance": 112.87,
+                              "id": "41c33378-07b6-496b-b128-38c4b24e099b",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "Se Iou",
+                              "timestamp": "2025-08-23T00:00:00Z",
+                              "description": "BP Se Iou",
+                              "amount": -50,
+                              "rolling_account_balance": 62.87,
+                              "id": "304ce228-e101-43dd-a043-7bc423eb646f",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "BP",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "KLARNA",
+                              "timestamp": "2025-08-26T00:00:00Z",
+                              "description": "DD KLARNA",
+                              "amount": -19.96,
+                              "id": "9eaae314-f9bb-4137-aaa6-e14e4c330bbd",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-08-26T00:00:00Z",
+                              "description": "DD MONEYBOX",
+                              "amount": -30,
+                              "id": "815ac584-c009-42b7-bdd1-23e93b8cc40f",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-08-26T00:00:00Z",
+                              "description": "DD MONEYBOX",
+                              "amount": -30,
+                              "id": "9a27095f-9fb2-4959-8716-c5f6c2b896b6",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "LISA Arc-McDo B",
+                              "timestamp": "2025-08-26T00:00:00Z",
+                              "description": "CR LISA Arc-McDo B",
+                              "amount": 20,
+                              "rolling_account_balance": 2.91,
+                              "id": "0d1f001e-c7ed-4096-99cc-af40c5bb53ba",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "CR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "STEWART S Holidayxx",
+                              "timestamp": "2025-08-30T00:00:00Z",
+                              "description": "BP STEWART S Holidayxx",
+                              "amount": 245,
+                              "id": "a9af73cf-cedb-403c-9af7-46f362671c91",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "BP",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "TESCO BANK",
+                              "timestamp": "2025-08-30T00:00:00Z",
+                              "description": "OBP TESCO BANK 518652 ****** 0936",
+                              "amount": -200,
+                              "rolling_account_balance": 47.91,
+                              "id": "c1dd88a3-247f-4ba5-91f4-2e61c0f15278",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "OBP",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "PROSPECT UNION",
+                              "timestamp": "2025-09-01T00:00:00Z",
+                              "description": "DD PROSPECT UNION",
+                              "amount": -11.25,
+                              "id": "b0a174ba-92f7-4fa2-908d-9b16760d01dd",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "ADMIRAL INSURANCE",
+                              "timestamp": "2025-09-01T00:00:00Z",
+                              "description": "DD ADMIRAL INSURANCE",
+                              "amount": -90.18,
+                              "id": "99b1ca77-a7f1-4a97-bad7-7f1a155a30d6",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "DVLA-OE62WGD",
+                              "timestamp": "2025-09-01T00:00:00Z",
+                              "description": "DD DVLA-OE62WGD",
+                              "amount": -29.31,
+                              "id": "16f0b91f-4d6c-4d86-8bf2-7ee60139bd65",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "DVLA-WF60YWP",
+                              "timestamp": "2025-09-01T00:00:00Z",
+                              "description": "DD DVLA-WF60YWP",
+                              "amount": -18.81,
+                              "id": "82300241-7c41-40e0-9225-6e82cc915003",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-09-01T00:00:00Z",
+                              "description": "DD MONEYBOX",
+                              "amount": -30,
+                              "id": "cf235c75-239c-4e8f-9572-4485d61fd495",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-09-01T00:00:00Z",
+                              "description": "DD MONEYBOX",
+                              "amount": -30,
+                              "id": "dc3ce488-e5ae-4c64-ab8e-7565a5477175",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "LISA Arc-McDo B",
+                              "timestamp": "2025-09-01T00:00:00Z",
+                              "description": "CR LISA Arc-McDo B",
+                              "amount": 20,
+                              "id": "d78e6959-7952-4f3c-927a-e04922a9bef9",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "CR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "CAR STEWART S",
+                              "timestamp": "2025-09-01T00:00:00Z",
+                              "description": "CR CAR STEWART S",
+                              "amount": 70,
+                              "id": "eada9b3a-b64a-444a-b145-c5d46d4164c7",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "CR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "INTERNET TRANSFER",
+                              "timestamp": "2025-09-01T00:00:00Z",
+                              "description": "TFR 404434 21857479 INTERNET TRANSFER",
+                              "amount": 130,
+                              "id": "d5791b41-18d8-40ae-9ead-e7fab6298d51",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "TFR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "PAYPAL *UBERTRIP",
+                              "timestamp": "2025-09-01T00:00:00Z",
+                              "description": "VIS PAYPAL *UBERTRIP 35314369001",
+                              "amount": -4.99,
+                              "rolling_account_balance": 53.37,
+                              "id": "0c51747e-b92f-43d8-bd18-579b9753544f",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-09-22T00:00:00Z",
+                              "description": "MONEYBOX",
+                              "amount": -30,
+                              "id": "22e95bf5-fd83-40aa-aca2-d71931972fc9",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-09-22T00:00:00Z",
+                              "description": "MONEYBOX",
+                              "amount": -30,
+                              "id": "a240e396-b287-4872-b6e8-ddeef664ea18",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "LISA Arc-McDo B",
+                              "timestamp": "2025-09-22T00:00:00Z",
+                              "description": "LISA Arc-McDo B",
+                              "amount": 20,
+                              "rolling_account_balance": 334.27,
+                              "id": "7f2616ce-054d-4a3f-87f5-9e8e1c73c98e",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "CR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "KLARNA",
+                              "timestamp": "2025-09-24T00:00:00Z",
+                              "description": "KLARNA",
+                              "amount": -19.96,
+                              "id": "29c56ee0-fa74-4256-a697-978edaf03224",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "CO-OP GROUP FOOD LONDON",
+                              "timestamp": "2025-09-24T00:00:00Z",
+                              "description": "CO-OP GROUP FOOD LONDON",
+                              "amount": -1.95,
+                              "id": "a7527947-b9fa-4b94-a899-aa34dbb7bc4b",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": ")))",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "DELIVEROO LONDON",
+                              "timestamp": "2025-09-24T00:00:00Z",
+                              "description": "DELIVEROO LONDON",
+                              "amount": -17.54,
+                              "rolling_account_balance": 294.82,
+                              "id": "1f8faa7f-7ae5-4ced-ac43-66cfac9581a9",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "Klarna Financial S",
+                              "timestamp": "2025-09-25T00:00:00Z",
+                              "description": "Klarna Financial S YA777777777713C9YB",
+                              "amount": -199.56,
+                              "id": "5f581817-f85b-44d6-95ac-f23c1c131e93",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "OBP",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "VAPE CLUB LTD WATFORD",
+                              "timestamp": "2025-09-25T00:00:00Z",
+                              "description": "VAPE CLUB LTD WATFORD",
+                              "amount": -28.99,
+                              "id": "56161b6a-9ac6-4fa7-8b28-521d1855caaf",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "DELIVEROO LONDON",
+                              "timestamp": "2025-09-25T00:00:00Z",
+                              "description": "DELIVEROO LONDON",
+                              "amount": -12.08,
+                              "rolling_account_balance": 54.19,
+                              "id": "bffcb516-5079-4264-a5f0-1b4a0e65fc2a",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "STEWART S",
+                              "timestamp": "2025-09-28T00:00:00Z",
+                              "description": "STEWART S Holidayxx",
+                              "amount": 200,
+                              "rolling_account_balance": 254.19,
+                              "id": "9a7c7c95-83c1-4fa7-9ad0-4f446562db9c",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "BP",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-09-29T00:00:00Z",
+                              "description": "MONEYBOX",
+                              "amount": -30,
+                              "id": "22d44a80-9dce-4d1e-b21f-7c3843f421d2",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-09-29T00:00:00Z",
+                              "description": "MONEYBOX",
+                              "amount": -30,
+                              "id": "43ca2e55-d2e0-4b65-8c19-1a2fbb2e158f",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "LISA Arc-McDo B",
+                              "timestamp": "2025-09-29T00:00:00Z",
+                              "description": "LISA Arc-McDo B",
+                              "amount": 20,
+                              "id": "8bf294d2-0b5e-416d-8381-2c3f1502226c",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "CR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "Just Eat.Co. UK Ltd London",
+                              "timestamp": "2025-09-29T00:00:00Z",
+                              "description": "Just Eat.Co. UK Ltd London",
+                              "amount": 7,
+                              "id": "d9912d42-43db-4f1d-ac57-0279ac2df945",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "Just Eat.Co.UK Ltd London",
+                              "timestamp": "2025-09-29T00:00:00Z",
+                              "description": "Just Eat.Co.UK Ltd London",
+                              "amount": -38.38,
+                              "id": "86408118-caab-4edb-aadd-2ccf26695412",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "SP OMAZE UK ALTRINCHAM",
+                              "timestamp": "2025-09-29T00:00:00Z",
+                              "description": "SP OMAZE UK ALTRINCHAM",
+                              "amount": -15,
+                              "rolling_account_balance": 167.81,
+                              "id": "669ac886-e612-4a11-8d54-4e5baf2fb2aa",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "Just Eat.Co. UK Ltd London",
+                              "timestamp": "2025-09-30T00:00:00Z",
+                              "description": "Just Eat.Co. UK Ltd London",
+                              "amount": -25.57,
+                              "rolling_account_balance": 142.24,
+                              "id": "947a1861-f43c-460e-b233-2ecdb4404f2a",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "PROSPECT UNION",
+                              "timestamp": "2025-10-01T00:00:00Z",
+                              "description": "PROSPECT UNION",
+                              "amount": -11.25,
+                              "id": "6367f1e6-21f3-4382-8f8e-14350caee2c0",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "ADMIRAL INSURANCE",
+                              "timestamp": "2025-10-01T00:00:00Z",
+                              "description": "ADMIRAL INSURANCE",
+                              "amount": -90.18,
+                              "id": "acc51f3d-ad5d-4659-98a9-468071c8342b",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "DVLA-OE62WGD",
+                              "timestamp": "2025-10-01T00:00:00Z",
+                              "description": "DVLA-OE62WGD",
+                              "amount": -29.31,
+                              "id": "9e02560a-a7b5-4ffe-8ee4-320c634a1219",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "DVLA-WF60YWP",
+                              "timestamp": "2025-10-01T00:00:00Z",
+                              "description": "DVLA-WF60YWP",
+                              "amount": -18.81,
+                              "id": "0718ce8d-96bb-4398-845d-7ac5870634a1",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "CAR STEWART S",
+                              "timestamp": "2025-10-01T00:00:00Z",
+                              "description": "CAR STEWART S",
+                              "amount": 70,
+                              "id": "b78dd0fc-9eea-4bc7-b9ce-dec5a1d3ed94",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "CR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "PAYPAL *APPLE.COM/",
+                              "timestamp": "2025-10-01T00:00:00Z",
+                              "description": "PAYPAL *APPLE.COM/ 35314369001",
+                              "amount": -0.99,
+                              "rolling_account_balance": 61.7,
+                              "id": "f0f671b7-23c9-432b-a6a4-0fec00ee80b9",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "HLTN41 EXPERIAN LT",
+                              "timestamp": "2025-10-02T00:00:00Z",
+                              "description": "HLTN41 EXPERIAN LT",
+                              "amount": -15,
+                              "id": "1ca847ac-e821-4e0a-b2a7-e1510ecb0422",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "JACOB ARCHER-MORAN",
+                              "timestamp": "2025-10-02T00:00:00Z",
+                              "description": "JACOB ARCHER-MORAN GWD25",
+                              "amount": 2300,
+                              "id": "91ac1d0d-9346-4863-9955-ae12f0cc8e30",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "CR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "TESCO BANK",
+                              "timestamp": "2025-10-02T00:00:00Z",
+                              "description": "TESCO BANK 518652 ****** 0936",
+                              "amount": -2034.26,
+                              "id": "22f1ebc5-5b2a-4b07-9353-b8b278722685",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "OBP",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "PAYPAL *UBERTRIP",
+                              "timestamp": "2025-10-02T00:00:00Z",
+                              "description": "PAYPAL *UBERTRIP 35314369001",
+                              "amount": -1.5,
+                              "rolling_account_balance": 310.94,
+                              "id": "54084884-6134-4926-ae38-dafb256f4d5d",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "HLTN42 VOIPSTUDIO.",
+                              "timestamp": "2025-10-03T00:00:00Z",
+                              "description": "HLTN42 VOIPSTUDIO.",
+                              "amount": -18,
+                              "id": "c97eb1ef-8980-4b76-bf2b-ed1d368449b7",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "HMRC GOV.UK SA GLASGOW",
+                              "timestamp": "2025-10-03T00:00:00Z",
+                              "description": "HMRC GOV.UK SA GLASGOW",
+                              "amount": -197.6,
+                              "id": "8821fc1b-a83d-476d-b803-9b2653820437",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "THUR HOSK SO LLP",
+                              "timestamp": "2025-10-03T00:00:00Z",
+                              "description": "THUR HOSK SO LLP work w/e 3.10.25",
+                              "amount": 660,
+                              "id": "745a293f-61df-43be-89b6-a5e90ea6b405",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "CR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "B ARCHER",
+                              "timestamp": "2025-10-03T00:00:00Z",
+                              "description": "B ARCHER Rent & Owings x2",
+                              "amount": -300,
+                              "rolling_account_balance": 455.34,
+                              "id": "e1f2a89b-127f-46c0-93b6-cad2b9871103",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "BP",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "HLTN43 PRIME VIDE",
+                              "timestamp": "2025-10-06T00:00:00Z",
+                              "description": "HLTN43 PRIME VIDE",
+                              "amount": -5,
+                              "id": "96ea35b3-8cd5-4941-8bc4-0996d81881e5",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-10-06T00:00:00Z",
+                              "description": "MONEYBOX",
+                              "amount": -30,
+                              "id": "49f6d20c-1616-47a0-8147-dd157f079f63",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-10-06T00:00:00Z",
+                              "description": "MONEYBOX",
+                              "amount": -30,
+                              "id": "1a59c3a1-5a17-434e-ad82-35810a481741",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "LISA Arc-McDo B",
+                              "timestamp": "2025-10-06T00:00:00Z",
+                              "description": "LISA Arc-McDo B",
+                              "amount": 20,
+                              "id": "3451f11e-1861-46f0-9ea0-6ebb9eeb83cd",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "CR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "GOOGLE *Google Pla",
+                              "timestamp": "2025-10-06T00:00:00Z",
+                              "description": "GOOGLE *Google Pla g.co/helppay#",
+                              "amount": -12.99,
+                              "id": "a62a7b9f-fad1-4479-b158-fccba58857f8",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "Just Eat. Co. UK Ltd London",
+                              "timestamp": "2025-10-06T00:00:00Z",
+                              "description": "Just Eat. Co. UK Ltd London",
+                              "amount": -25.96,
+                              "id": "9cc60826-4dff-4143-afc3-9a2b94e1dd18",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "VAPE CLUB LTD WATFORD",
+                              "timestamp": "2025-10-06T00:00:00Z",
+                              "description": "VAPE CLUB LTD WATFORD",
+                              "amount": -47.98,
+                              "id": "2bce8f48-54d2-480e-a143-ddba17a3052c",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "DUOFAX.COM PRAHA 4",
+                              "timestamp": "2025-10-06T00:00:00Z",
+                              "description": "INT'L 0066184243 DUOFAX.COM PRAHA 4 EUR 10.00 @ 1.1454 Visa Rate",
+                              "amount": -8.73,
+                              "id": "a2714dba-c8ba-4537-a077-f47c01abd958",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "",
+                              "timestamp": "2025-10-06T00:00:00Z",
+                              "description": "Non-Sterling Transaction Fee",
+                              "amount": -0.24,
+                              "rolling_account_balance": 314.44,
+                              "id": "9ded8527-5f28-4c96-8a3d-bf6903e5fb31",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DR",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "Just Eat.Co. UK Ltd London",
+                              "timestamp": "2025-10-08T00:00:00Z",
+                              "description": "Just Eat.Co. UK Ltd London",
+                              "amount": -15.75,
+                              "rolling_account_balance": 298.69,
+                              "id": "80b127b2-cc31-4cc2-b21a-186c2fd73abd",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-10-13T00:00:00Z",
+                              "description": "MONEYBOX",
+                              "amount": -30,
+                              "id": "87b890fb-b106-4a2c-b3e6-fa331048e66c",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-10-13T00:00:00Z",
+                              "description": "MONEYBOX",
+                              "amount": -30,
+                              "id": "106bfabe-3459-4798-95ec-927884e6083a",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "LISA Arc-McDo B",
+                              "timestamp": "2025-10-13T00:00:00Z",
+                              "description": "LISA Arc-McDo B",
+                              "amount": 20,
+                              "id": "bb7b1ae3-fe59-4173-af9d-54f991f21a27",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "CR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "VAPE CLUB LTD WATFORD",
+                              "timestamp": "2025-10-13T00:00:00Z",
+                              "description": "VAPE CLUB LTD WATFORD",
+                              "amount": -49.97,
+                              "id": "4b8f66f3-1b70-43b5-8db2-1ad3159b75d0",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "Just Eat.Co.UK Ltd London",
+                              "timestamp": "2025-10-13T00:00:00Z",
+                              "description": "Just Eat.Co.UK Ltd London",
+                              "amount": -25.96,
+                              "rolling_account_balance": 182.76,
+                              "id": "6ae01562-f0a4-4b91-8729-6245b2e477aa",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "HLTN44 AMAZON.CO.U",
+                              "timestamp": "2025-10-14T00:00:00Z",
+                              "description": "HLTN44 AMAZON.CO.U",
+                              "amount": -4,
+                              "rolling_account_balance": 178.76,
+                              "id": "95c6031a-e83f-472b-b6c8-4bfd2eea0523",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "HLTN46 PRIME VIDE",
+                              "timestamp": "2025-10-15T00:00:00Z",
+                              "description": "HLTN46 PRIME VIDE",
+                              "amount": -4,
+                              "id": "6dc62e08-3aa3-40d8-9106-f00301f12f77",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "HLTN45 AMAZON.CO.U",
+                              "timestamp": "2025-10-15T00:00:00Z",
+                              "description": "HLTN45 AMAZON.CO.U",
+                              "amount": -14,
+                              "rolling_account_balance": 160.76,
+                              "id": "c80106c2-8996-4a87-b202-ba0a297e6c1e",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "HLTN47 AMAZON.CO.U",
+                              "timestamp": "2025-10-17T00:00:00Z",
+                              "description": "HLTN47 AMAZON.CO.U",
+                              "amount": -7,
+                              "id": "bab3bae3-0bbf-45d5-ace6-5e22c10a7863",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "ICO",
+                              "timestamp": "2025-10-17T00:00:00Z",
+                              "description": "ICO",
+                              "amount": -47,
+                              "rolling_account_balance": 106.76,
+                              "id": "d9f511d7-fc32-4fa4-9dbb-977cbda4eb53",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-10-20T00:00:00Z",
+                              "description": "MONEYBOX",
+                              "amount": -30,
+                              "id": "c201084b-317e-4565-aeb0-c9ffa4a9e7a2",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "MONEYBOX",
+                              "timestamp": "2025-10-20T00:00:00Z",
+                              "description": "MONEYBOX",
+                              "amount": -30,
+                              "id": "a6cb7389-9800-4b23-9487-dbfe6d0d9a1f",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "DD",
+                              "classification": null,
+                              "type": "DEBIT"
+                            },
+                            {
+                              "merchant_name": "LISA Arc-McDo B",
+                              "timestamp": "2025-10-20T00:00:00Z",
+                              "description": "LISA Arc-McDo B",
+                              "amount": 20,
+                              "id": "654ade3c-e5ba-4ab5-881b-dd92b72a236f",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "CR",
+                              "classification": null,
+                              "type": "CREDIT"
+                            },
+                            {
+                              "merchant_name": "Just Eat.Co.UK Ltd London",
+                              "timestamp": "2025-10-20T00:00:00Z",
+                              "description": "Just Eat.Co.UK Ltd London",
+                              "amount": -22.47,
+                              "rolling_account_balance": 44.29,
+                              "id": "e4704ef1-45ab-4011-a0c4-593c3ba7b8a0",
+                              "account_id": "71857460",
+                              "currency": "GBP",
+                              "category": "VIS",
+                              "classification": null,
+                              "type": "DEBIT"
+                            }
+                          ]
+                        }
+                      },
+                      "documents": [
+                        {
+                          "id": "d4az35c23amg030ys1qg",
+                          "type": "bank-statement"
+                        },
+                        {
+                          "id": "d4az35m23amg030ys1r0",
+                          "type": "bank-statement"
+                        }
+                      ],
+                      "analysis": {
+                        "id": "4151814987",
+                        "repeating_transactions": [
+                          {
+                            "sort_score": 20,
+                            "items": [
+                              "3451f11e-1861-46f0-9ea0-6ebb9eeb83cd",
+                              "654ade3c-e5ba-4ab5-881b-dd92b72a236f",
+                              "7f2616ce-054d-4a3f-87f5-9e8e1c73c98e",
+                              "8bf294d2-0b5e-416d-8381-2c3f1502226c",
+                              "bb7b1ae3-fe59-4173-af9d-54f991f21a27"
+                            ]
+                          },
+                          {
+                            "sort_score": 17.54,
+                            "items": [
+                              "1f8faa7f-7ae5-4ced-ac43-66cfac9581a9",
+                              "bffcb516-5079-4264-a5f0-1b4a0e65fc2a"
+                            ]
+                          },
+                          {
+                            "sort_score": 14,
+                            "items": [
+                              "95c6031a-e83f-472b-b6c8-4bfd2eea0523",
+                              "bab3bae3-0bbf-45d5-ace6-5e22c10a7863",
+                              "c80106c2-8996-4a87-b202-ba0a297e6c1e"
+                            ]
+                          },
+                          {
+                            "sort_score": 5,
+                            "items": [
+                              "6dc62e08-3aa3-40d8-9106-f00301f12f77",
+                              "96ea35b3-8cd5-4941-8bc4-0996d81881e5"
+                            ]
+                          },
+                          {
+                            "sort_score": 49.97,
+                            "items": [
+                              "2bce8f48-54d2-480e-a143-ddba17a3052c",
+                              "4b8f66f3-1b70-43b5-8db2-1ad3159b75d0",
+                              "56161b6a-9ac6-4fa7-8b28-521d1855caaf"
+                            ]
+                          },
+                          {
+                            "sort_score": 38.38,
+                            "items": [
+                              "6ae01562-f0a4-4b91-8729-6245b2e477aa",
+                              "80b127b2-cc31-4cc2-b21a-186c2fd73abd",
+                              "86408118-caab-4edb-aadd-2ccf26695412",
+                              "947a1861-f43c-460e-b233-2ecdb4404f2a",
+                              "9cc60826-4dff-4143-afc3-9a2b94e1dd18",
+                              "e4704ef1-45ab-4011-a0c4-593c3ba7b8a0"
+                            ]
+                          },
+                          {
+                            "sort_score": 30,
+                            "items": [
+                              "106bfabe-3459-4798-95ec-927884e6083a",
+                              "1a59c3a1-5a17-434e-ad82-35810a481741",
+                              "22d44a80-9dce-4d1e-b21f-7c3843f421d2",
+                              "22e95bf5-fd83-40aa-aca2-d71931972fc9",
+                              "43ca2e55-d2e0-4b65-8c19-1a2fbb2e158f",
+                              "49f6d20c-1616-47a0-8147-dd157f079f63",
+                              "87b890fb-b106-4a2c-b3e6-fa331048e66c",
+                              "a240e396-b287-4872-b6e8-ddeef664ea18",
+                              "a6cb7389-9800-4b23-9487-dbfe6d0d9a1f",
+                              "c201084b-317e-4565-aeb0-c9ffa4a9e7a2"
+                            ]
+                          },
+                          {
+                            "sort_score": 30,
+                            "items": [
+                              "815ac584-c009-42b7-bdd1-23e93b8cc40f",
+                              "9a27095f-9fb2-4959-8716-c5f6c2b896b6",
+                              "cf235c75-239c-4e8f-9572-4485d61fd495",
+                              "dc3ce488-e5ae-4c64-ab8e-7565a5477175"
+                            ]
+                          },
+                          {
+                            "sort_score": 29.31,
+                            "items": [
+                              "0718ce8d-96bb-4398-845d-7ac5870634a1",
+                              "9e02560a-a7b5-4ffe-8ee4-320c634a1219"
+                            ]
+                          },
+                          {
+                            "sort_score": 29.31,
+                            "items": [
+                              "16f0b91f-4d6c-4d86-8bf2-7ee60139bd65",
+                              "82300241-7c41-40e0-9225-6e82cc915003"
+                            ]
+                          },
+                          {
+                            "sort_score": 20,
+                            "items": [
+                              "0d1f001e-c7ed-4096-99cc-af40c5bb53ba",
+                              "d78e6959-7952-4f3c-927a-e04922a9bef9"
+                            ]
+                          }
+                        ],
+                        "large_one_off_transactions": [
+                          "22f1ebc5-5b2a-4b07-9353-b8b278722685",
+                          "e1f2a89b-127f-46c0-93b6-cad2b9871103",
+                          "c1dd88a3-247f-4ba5-91f4-2e61c0f15278",
+                          "5f581817-f85b-44d6-95ac-f23c1c131e93",
+                          "8821fc1b-a83d-476d-b803-9b2653820437",
+                          "99b1ca77-a7f1-4a97-bad7-7f1a155a30d6",
+                          "acc51f3d-ad5d-4659-98a9-468071c8342b",
+                          "304ce228-e101-43dd-a043-7bc423eb646f",
+                          "d9f511d7-fc32-4fa4-9dbb-977cbda4eb53",
+                          "41c33378-07b6-496b-b128-38c4b24e099b",
+                          "91ac1d0d-9346-4863-9955-ae12f0cc8e30",
+                          "745a293f-61df-43be-89b6-a5e90ea6b405",
+                          "a9af73cf-cedb-403c-9af7-46f362671c91",
+                          "9a7c7c95-83c1-4fa7-9ad0-4f446562db9c",
+                          "d5791b41-18d8-40ae-9ead-e7fab6298d51",
+                          "b78dd0fc-9eea-4bc7-b9ce-dec5a1d3ed94",
+                          "eada9b3a-b64a-444a-b145-c5d46d4164c7",
+                          "d9912d42-43db-4f1d-ac57-0279ac2df945"
+                        ],
+                        "sof_matches": {
+                          "gift": [
+                            "91ac1d0d-9346-4863-9955-ae12f0cc8e30"
+                          ]
+                        }
+                      }
+                    },
+                    "data": {},
+                    "result": "clear",
+                    "documents": [
+                      "d4az35c23amg030ys1qg",
+                      "d4az35m23amg030ys1r0"
+                    ],
+                    "id": "d4az4kt23amg030ys2yg",
+                    "status": "closed",
+                    "createdAt": "2025-11-13T14:59:27.288Z"
+                  },
+                  "bank:summary": {
+                    "breakdown": {},
+                    "data": {},
+                    "result": "unknown",
+                    "documents": [],
+                    "id": "d4az2ds23amg030ys1p0",
+                    "status": "rejected",
+                    "createdAt": "2025-11-13T14:54:47.615Z"
+                  },
+                  "bank:statement": {
+                    "breakdown": {},
+                    "data": {},
+                    "result": "unknown",
+                    "documents": [],
+                    "id": "d4az2ds23amg030ys1ng",
+                    "status": "rejected",
+                    "createdAt": "2025-11-13T14:54:47.508Z"
+                  },
+                  "address": {
+                    "result": "fail",
+                    "status": "closed",
+                    "data": {
+                      "quality": 0
+                    }
+                  },
+                  "documents:inheritance": {
+                    "breakdown": {
+                      "documents": [
+                        {
+                          "id": "d4az3xf23amg030ys28g",
+                          "type": "inheritance"
+                        }
+                      ]
+                    },
+                    "data": {},
+                    "result": "clear",
+                    "documents": [
+                      "d4az3xf23amg030ys28g"
+                    ],
+                    "id": "d4az4a923amg030ys2gg",
+                    "status": "closed",
+                    "createdAt": "2025-11-13T14:58:49.156Z"
+                  },
+                  "documents:sale-assets": {
+                    "breakdown": {
+                      "documents": [
+                        {
+                          "id": "d4az44r23amg030ys29g",
+                          "type": "sale-assets"
+                        }
+                      ]
+                    },
+                    "data": {},
+                    "result": "clear",
+                    "documents": [
+                      "d4az44r23amg030ys29g"
+                    ],
+                    "id": "d4az4a923amg030ys2p0",
+                    "status": "closed",
+                    "createdAt": "2025-11-13T14:58:49.783Z"
+                  },
+                  "biometrics": {
+                    "result": "clear",
+                    "status": "complete",
+                    "data": {}
+                  },
+                  "identity": {
+                    "breakdown": {
+                      "nfc": {
+                        "breakdown": {
+                          "chip": {
+                            "breakdown": {
+                              "clone_detection": {
+                                "result": "clear"
+                              },
+                              "verification": {
+                                "result": "clear"
+                              }
+                            },
+                            "result": "clear"
+                          },
+                          "data_comparison": {
+                            "breakdown": {
+                              "dob": {
+                                "result": "clear",
+                                "properties": {
+                                  "days_difference": 0
+                                }
+                              },
+                              "name": {
+                                "result": "clear",
+                                "properties": {
+                                  "levenshtein_pct": 100
+                                }
+                              }
+                            },
+                            "result": "clear"
+                          }
+                        },
+                        "result": "clear",
+                        "status": "complete"
+                      },
+                      "documents": [
+                        {
+                          "id": "d4ax9en23amg030ys0z0",
+                          "type": "passport"
+                        },
+                        {
+                          "id": "d4ax9kp23amg030ys0zg",
+                          "type": "face-image"
+                        },
+                        {
+                          "id": "d4ax9qp23amg030ys100",
+                          "type": "selfie"
+                        }
+                      ],
+                      "biometrics": {
+                        "breakdown": {
+                          "attempts": [
+                            {
+                              "frame_available": false,
+                              "passed": true,
+                              "status": "complete",
+                              "token": {
+                                "created_at": 1763038415204,
+                                "validated_at": 1763038429973,
+                                "value": "5cb794e707a37bfec1da6d0809c473a8234cd2efc58928507126e77c1801vi07"
+                              }
+                            }
+                          ]
+                        },
+                        "result": "clear",
+                        "status": "complete"
+                      }
+                    },
+                    "data": {
+                      "nfc": {
+                        "date_of_expiry": "22.08.2033",
+                        "dob": "11.01.2001",
+                        "name": "MORAN, JACOB ROBERT"
+                      },
+                      "name": {
+                        "first": "Jacob",
+                        "last": "Moran",
+                        "other": "Robert"
+                      },
+                      "dob": "2001-01-11T00:00:00.000Z"
+                    },
+                    "result": "clear",
+                    "documents": [
+                      "d4ax9en23amg030ys0z0",
+                      "d4ax9kp23amg030ys0zg",
+                      "d4ax9qp23amg030ys100"
+                    ],
+                    "id": "d4az4na23amg030ys370",
+                    "status": "closed",
+                    "createdAt": "2025-11-13T14:59:33.864Z"
+                  },
+                  "documents:divorce": {
+                    "breakdown": {
+                      "documents": [
+                        {
+                          "id": "d4az3sz23amg030ys280",
+                          "type": "divorce"
+                        }
+                      ]
+                    },
+                    "data": {},
+                    "result": "clear",
+                    "documents": [
+                      "d4az3sz23amg030ys280"
+                    ],
+                    "id": "d4az4a123amg030ys2e0",
+                    "status": "closed",
+                    "createdAt": "2025-11-13T14:58:48.838Z"
+                  },
+                  "footprint": {
+                    "breakdown": {
+                      "data_count": {
+                        "properties": {
+                          "score": 0
+                        },
+                        "result": "consider"
+                      },
+                      "data_quality": {
+                        "properties": {
+                          "score": 0
+                        },
+                        "result": "consider"
+                      },
+                      "service_name": "Authenticateplus",
+                      "documents": [
+                        {
+                          "id": "d4az4mt23amg030ys310",
+                          "type": "poa"
+                        },
+                        {
+                          "id": "d4az4mt23amg030ys31g",
+                          "type": "poa"
+                        }
+                      ],
+                      "rules": [
+                        {
+                          "id": "U000",
+                          "name": "",
+                          "score": 0,
+                          "text": "No trace of supplied Address(es), or manual Authentication required by the Applicant"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "dob": "2001-01-11T00:00:00.000Z",
+                      "name": {
+                        "first": "Jacob",
+                        "last": "Moran",
+                        "other": "Robert"
+                      },
+                      "address": {
+                        "postcode": "TR15 2ND",
+                        "country": "GBR",
+                        "street": "Southgate Street",
+                        "building_number": "94",
+                        "town": "Redruth"
+                      }
+                    },
+                    "result": "fail",
+                    "documents": [
+                      "d4az4mt23amg030ys310",
+                      "d4az4mt23amg030ys31g"
+                    ],
+                    "id": "d4az4na23amg030ys330",
+                    "status": "closed",
+                    "createdAt": "2025-11-13T14:59:33.389Z"
+                  }
+                },
+                "updatedAt": "2025-11-13T14:59:43.509Z",
+                "consumerPhone": "+447506430094",
+                "pdfReady": true,
+                "checkType": "electronic-id",
+                "completedAt": "2025-11-13T14:59:43.509Z",
+                "initiatedAt": "2025-11-13T12:46:39.453Z",
+                "considerReasons": [
+                  "address verification",
+                  "digital footprint",
+                  "PEP hits"
+                ],
+                "pdfS3Key": "protected/6bEktxs",
+                "consumerName": "Jacob Robert Archer-Moran",
+                "tasks": [
+                  "report:identity",
+                  "report:footprint",
+                  "report:peps",
+                  "documents:poa",
+                  "report:sof-v1",
+                  "report:bank-statement",
+                  "report:bank-summary"
+                ],
+                "updates": [
+                  {
+                    "timestamp": "2025-11-13T12:46:39.454Z",
+                    "update": "Electronic ID check initiated by elizabeth.farrington@thurstanhoskin.co.uk"
+                  },
+                  {
+                    "timestamp": "2025-11-13T14:59:43.509Z",
+                    "update": "Transaction completed - awaiting PDF"
+                  },
+                  {
+                    "timestamp": "2025-11-13T15:03:04.760Z",
+                    "update": "PEPs & Sanctions task completed/updated"
+                  },
+                  {
+                    "timestamp": "2025-11-13T15:04:49.990Z",
+                    "update": "PDF received and uploaded to S3 - CONSIDER: address verification, digital footprint, PEP hits"
+                  }
+                ],
+                "status": "closed",
+                "initiatedBy": "elizabeth.farrington@thurstanhoskin.co.uk",
+                "piiData": {
+                  "name": {
+                    "first": "Jacob",
+                    "last": "Moran",
+                    "other": "Robert"
+                  },
+                  "address": {
+                    "postcode": "TR15 2ND",
+                    "country": "GBR",
+                    "street": "Southgate Street",
+                    "building_number": "94",
+                    "town": "Redruth"
+                  },
+                  "dob": "2001-01-11T00:00:00.000Z",
+                  "document": {}
+                },
+                "hasMonitoring": true,
+                "thirdfortResponse": {
+                  "name": "Purchase of 21 Green Lane",
+                  "request": {
+                    "actor": {
+                      "name": "Jacob Robert Archer-Moran",
+                      "phone": "+447506430094"
+                    },
+                    "tasks": [
+                      {
+                        "opts": {
+                          "nfc": "preferred"
+                        },
+                        "type": "report:identity"
+                      },
+                      {
+                        "opts": {
+                          "consent": false
+                        },
+                        "type": "report:footprint"
+                      },
+                      {
+                        "opts": {
+                          "monitored": true
+                        },
+                        "type": "report:peps"
+                      },
+                      {
+                        "type": "documents:poa"
+                      },
+                      {
+                        "type": "report:sof-v1"
+                      },
+                      {
+                        "type": "report:bank-statement"
+                      },
+                      {
+                        "type": "report:bank-summary"
+                      }
+                    ]
+                  },
+                  "ref": "Val'ID'ate: 50/998",
+                  "id": "d4ax6b923amg030ys0y0",
+                  "reports": [],
+                  "status": "open",
+                  "metadata": {
+                    "notify": {
+                      "type": "http",
+                      "data": {
+                        "hmac_key": "sHxpp6Xb9DIYeyLab5zKdj1RQ6XJ4LazOhFm3XxrS7U=",
+                        "method": "POST",
+                        "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                      }
+                    },
+                    "created_by": "d3t0auq9io6g00ak3kkg",
+                    "print": {
+                      "team": "Cashiers",
+                      "tenant": "Thurstan Hoskin Solicitors LLP",
+                      "user": "THS Bot"
+                    },
+                    "context": {
+                      "gid": "d3t2k5a9io6g00ak3km0",
+                      "uid": "d3t0auq9io6g00ak3kkg",
+                      "team_id": "d3t2k5a9io6g00ak3km0",
+                      "tenant_id": "d3t2ifa9io6g00ak3klg"
+                    },
+                    "ce": {
+                      "uri": "/v1/checks/4151797978"
+                    },
+                    "created_at": "2025-11-13T12:46:37.017Z"
+                  },
+                  "type": "v2",
+                  "opts": {
+                    "peps": {
+                      "monitored": true
+                    }
+                  }
+                },
+                "hasAlerts": true,
+                "pdfAddedAt": "2025-11-13T15:04:49.990Z",
+                "smsSent": true,
+                "transactionId": "d4ax6b923amg030ys0y0"
+            },            
             // Mock Check 0: Jacob Robert Archer-Moran - Lite Screen in PROGRESS
             {
                 "taskOutcomes": {
@@ -29203,7 +31164,7 @@ class ThirdfortChecksManager {
                 // Check if Print.js is available
                 if (typeof printJS !== 'undefined') {
                     console.log('📄 Opening print dialog with Print.js...');
-                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                const pdfUrl = URL.createObjectURL(pdfBlob);
                     
                     // Use Print.js to open print dialog with PDF
                     printJS({
@@ -29218,17 +31179,17 @@ class ThirdfortChecksManager {
                     // Fallback to new tab if Print.js not loaded
                     console.warn('⚠️ Print.js not loaded, opening in new tab');
                     const pdfUrl = URL.createObjectURL(pdfBlob);
-                    const printWindow = window.open(pdfUrl, '_blank');
-                    if (!printWindow) {
-                        console.error('❌ Popup blocked by browser');
-                        alert('PDF generated but popup was blocked. Please allow popups for this site.');
-                    } else {
-                        // Trigger print dialogue when PDF loads
-                        printWindow.addEventListener('load', () => {
-                            setTimeout(() => {
-                                printWindow.print();
-                            }, 100);
-                        });
+                const printWindow = window.open(pdfUrl, '_blank');
+                if (!printWindow) {
+                    console.error('❌ Popup blocked by browser');
+                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                } else {
+                    // Trigger print dialogue when PDF loads
+                    printWindow.addEventListener('load', () => {
+                        setTimeout(() => {
+                            printWindow.print();
+                        }, 100);
+                    });
                     }
                 }
                 
@@ -31214,7 +33175,7 @@ class ThirdfortChecksManager {
                 // Check if Print.js is available
                 if (typeof printJS !== 'undefined') {
                     console.log('📄 Opening SoF print dialog with Print.js...');
-                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                const pdfUrl = URL.createObjectURL(pdfBlob);
                     
                     // Use Print.js to open print dialog with PDF
                     printJS({
@@ -31229,17 +33190,17 @@ class ThirdfortChecksManager {
                     // Fallback to new tab if Print.js not loaded
                     console.warn('⚠️ Print.js not loaded, opening in new tab');
                     const pdfUrl = URL.createObjectURL(pdfBlob);
-                    const printWindow = window.open(pdfUrl, '_blank');
-                    if (!printWindow) {
-                        console.error('❌ Popup blocked by browser');
-                        alert('PDF generated but popup was blocked. Please allow popups for this site.');
-                    } else {
-                        // Trigger print dialogue when PDF loads
-                        printWindow.addEventListener('load', () => {
-                            setTimeout(() => {
-                                printWindow.print();
-                            }, 100);
-                        });
+                const printWindow = window.open(pdfUrl, '_blank');
+                if (!printWindow) {
+                    console.error('❌ Popup blocked by browser');
+                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                } else {
+                    // Trigger print dialogue when PDF loads
+                    printWindow.addEventListener('load', () => {
+                        setTimeout(() => {
+                            printWindow.print();
+                        }, 100);
+                    });
                     }
                 }
                 
@@ -31513,7 +33474,7 @@ class ThirdfortChecksManager {
                 // Check if Print.js is available
                 if (typeof printJS !== 'undefined') {
                     console.log('📄 Opening PEP print dialog with Print.js...');
-                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                const pdfUrl = URL.createObjectURL(pdfBlob);
                     
                     // Use Print.js to open print dialog with PDF
                     printJS({
@@ -31528,17 +33489,17 @@ class ThirdfortChecksManager {
                     // Fallback to new tab if Print.js not loaded
                     console.warn('⚠️ Print.js not loaded, opening in new tab');
                     const pdfUrl = URL.createObjectURL(pdfBlob);
-                    const printWindow = window.open(pdfUrl, '_blank');
-                    if (!printWindow) {
-                        console.error('❌ Popup blocked by browser');
-                        alert('PDF generated but popup was blocked. Please allow popups for this site.');
-                    } else {
-                        // Trigger print dialogue when PDF loads
-                        printWindow.addEventListener('load', () => {
-                            setTimeout(() => {
-                                printWindow.print();
-                            }, 100);
-                        });
+                const printWindow = window.open(pdfUrl, '_blank');
+                if (!printWindow) {
+                    console.error('❌ Popup blocked by browser');
+                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                } else {
+                    // Trigger print dialogue when PDF loads
+                    printWindow.addEventListener('load', () => {
+                        setTimeout(() => {
+                            printWindow.print();
+                        }, 100);
+                    });
                     }
                 }
                 
