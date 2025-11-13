@@ -3773,8 +3773,8 @@ async function generateRequestPDF(messageData) {
               console.log('📄 Reopening print dialog one more time...');
               setTimeout(() => openPrintDialog(), 500);
             } else {
-              console.log('📄 Not reopening - dialog closed twice');
-              sendMessageToParent({ type: 'print-dialog-closed' });
+              console.log('📄 Both dialogs closed - notifying parent');
+              sendMessageToParent({ type: 'pdf-generated', success: true });
             }
           }
         });
@@ -3784,9 +3784,8 @@ async function generateRequestPDF(messageData) {
       console.log('✅ Print.js dialog triggered with raw HTML');
     } else {
       console.log('ℹ️ Print.js not available, skipping print dialog');
+      sendMessageToParent({ type: 'pdf-generated', success: true });
     }
-    
-    sendMessageToParent({ type: 'pdf-generated', success: true });
   } catch (error) {
     console.error('❌ PDF error:', error);
     sendMessageToParent({ type: 'pdf-generated', success: false });
