@@ -2035,6 +2035,12 @@ body {
     margin-bottom: 8px;
 }
 
+.funding-header-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .funding-type {
     font-family: 'RotisBold', sans-serif;
     font-size: 14px;
@@ -2153,13 +2159,111 @@ body {
 
 .funding-doc-status {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    gap: 4px;
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
+.funding-doc-status.pdf {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.doc-status-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--grey);
+}
+
+.doc-status-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--grey);
+}
+
+.doc-status-line .task-check-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.funding-matched-section {
+    margin-top: 12px;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    background: #f8f9fb;
+}
+
+.funding-matched-header {
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #003c71;
+    border-bottom: 1px solid #e1e4e8;
+}
+
+.funding-matched-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 12px 10px 12px;
+}
+
+.funding-no-matches {
+    margin-top: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: #fff8e6;
+    border: 1px solid #ffd966;
+    color: #856404;
+}
+
+.funding-no-matches-icon .objective-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.funding-no-matches-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.funding-no-matches-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #856404;
+}
+
+.funding-no-matches-text {
+    font-size: 12px;
+    color: #856404;
+}
+
+.funding-investigation-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.funding-investigation-amount {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dark-grey);
+}
 .funding-doc-status .task-check-icon {
     width: 16px;
     height: 16px;
@@ -4329,6 +4433,252 @@ body {
     margin-top: 16px;
     padding-top: 16px;
     border-top: 1px solid #e1e4e8;
+}
+
+.funding-meta-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.funding-section-heading {
+    font-size: 13px;
+    font-weight: 400;
+    color: #003c71;
+    margin: 12px 0 8px 0;
+}
+
+.funding-meta-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: #333;
+    margin: 4px 0;
+}
+
+.funding-meta-row.compact {
+    font-size: 11px;
+}
+
+.funding-meta-label {
+    min-width: 110px;
+    font-weight: 600;
+    color: #003c71;
+}
+
+.funding-meta-value {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    color: #333;
+}
+
+.funding-meta-empty {
+    font-size: 12px;
+    font-style: italic;
+    color: #777;
+    margin: 6px 0;
+}
+
+.funding-origin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #eef2f7;
+    font-size: 11px;
+    font-weight: 600;
+    color: #003c71;
+}
+
+.funding-bank-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    background: #f8f9fb;
+    margin-bottom: 12px;
+}
+
+.funding-bank-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 200px;
+    width: 200px;
+}
+
+.funding-bank-logo img,
+.funding-bank-logo .bank-logo {
+    max-height: 80px !important;
+    max-width: 200px !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 120px !important;
+    min-height: 60px !important;
+    object-fit: contain !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+.funding-bank-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.funding-bank-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #6c757d;
+}
+
+.funding-bank-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #003c71;
+}
+
+.funding-people-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.funding-person-card {
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    padding: 12px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.funding-person-card.full {
+    width: 100%;
+    flex: 0 0 100%;
+}
+
+.funding-person-card.half {
+    width: calc(50% - 6px);
+    flex: 0 0 calc(50% - 6px);
+}
+
+.funding-person-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+}
+
+.funding-person-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #003c71;
+}
+
+.funding-person-role {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.income-card-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.income-card {
+    border: 1px solid #dbe2ea;
+    border-radius: 6px;
+    padding: 10px;
+    background: #f9fbfd;
+}
+
+.income-card.full {
+    width: 100%;
+    flex: 0 0 100%;
+}
+
+.income-card.half {
+    width: calc(50% - 5px);
+    flex: 0 0 calc(50% - 5px);
+}
+
+.income-card.salary {
+    background: #f1f8f5;
+    border-color: #cfe8d6;
+}
+
+.income-card.other {
+    background: #f8f9fa;
+}
+
+.income-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #003c71;
+    margin-bottom: 6px;
+}
+
+.income-card-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 11px;
+    color: #333;
+    margin: 2px 0;
+}
+
+.income-label {
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.income-value {
+    flex: 1;
+    text-align: right;
+    color: #333;
+}
+
+.funding-detail-card {
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fdfdfd;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom: 12px;
+}
+
+.funding-detail-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #003c71;
+    margin-bottom: 8px;
+}
+
+.funding-doc-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #e3f2fd;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1976d2;
+    margin-left: auto;
 }
 
 /* Account Investigation Cards */

@@ -3328,7 +3328,7 @@ class ThirdfortChecksManager {
                         // Document status
                         const hasDoc = matchingFund.documents && matchingFund.documents.length > 0;
                         const docIcon = hasDoc ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
-                        const docText = hasDoc ? 'Evidence document uploaded' : 'Ensure the gifter undergoes their own AML, ID and SoF/SoW Checks';
+                        const docText = hasDoc ? 'Evidence document uploaded' : 'Check the report pdf for evidence or obtain from the client and review manually';
                         detailsContent += `
                             <div class="sof-fund-detail" style="margin-top: 8px; display: flex; align-items: center; gap: 6px;">
                                 ${docIcon}
@@ -5218,10 +5218,297 @@ class ThirdfortChecksManager {
         document.body.appendChild(lightbox);
     }
     
+    buildFundingDetailContent(fund, { originBadge = '' } = {}) {
+        if (!fund) return '';
+        const type = fund.type || 'unknown';
+        const data = fund.data || {};
+        const htmlParts = [];
+        const renderIncomeRow = (label, value, { allowEmpty = false } = {}) => {
+            if (!value && !allowEmpty) return '';
+            const display = value || 'Not provided';
+            return `<div class="income-card-row"><span class="income-label">${label}</span><span class="income-value">${display}</span></div>`;
+        };
+        const renderIncomeCards = (incomes = [], sizeClass = 'full') => {
+            if (!Array.isArray(incomes) || incomes.length === 0) return '';
+            return incomes.map(income => {
+                if (!income) return '';
+                const isSalary = (income.source || '').toLowerCase() === 'salary';
+                const title = isSalary ? 'Salary' : (income.description || income.source || 'Other Income');
+                const frequency = this.formatFundingFrequency(income.frequency);
+                const amount = this.formatCurrencyMinor(income.annual_total, { fallback: 'Not provided' });
+                const reference = income.reference ? income.reference : '';
+                const description = income.description ? income.description : '';
+                let rows = '';
+                if (isSalary) {
+                    rows += renderIncomeRow('Pay Cycle', frequency, { allowEmpty: true });
+                    rows += renderIncomeRow('Payment Ref', reference, { allowEmpty: true });
+                    rows += renderIncomeRow('Annual Amount', amount, { allowEmpty: true });
+                } else {
+                    rows += renderIncomeRow('Pay Cycle', frequency, { allowEmpty: true });
+                    rows += renderIncomeRow('Annual Amount', amount, { allowEmpty: true });
+                    if (reference) {
+                        rows += renderIncomeRow('Reference', reference);
+                    }
+                }
+                // Determine income card width based on person card width and number of incomes
+                let incomeCardClass = '';
+                if (sizeClass === 'full') {
+                    // Full width person card: 2 incomes = 50/50, 1 income = 100%
+                    incomeCardClass = incomes.length === 2 ? 'half' : 'full';
+                } else {
+                    // Half width person card: incomes are stacked (full width each)
+                    incomeCardClass = 'full';
+                }
+                return `
+                    <div class="income-card ${isSalary ? 'salary' : 'other'} ${incomeCardClass}">
+                        <div class="income-card-title">${title}</div>
+                        ${rows}
+                    </div>
+                `;
+            }).join('');
+        };
+        const renderSavingsPerson = (person, { isPrimary = false, sizeClass = 'full' } = {}) => {
+            if (!person) return '';
+            const role = person.actor ? 'Primary Applicant' : 'Joint Contributor';
+            let status = '';
+            if (person.employment_status) {
+                const statusRaw = String(person.employment_status).toLowerCase();
+                if (statusRaw === 'independent' || statusRaw === 'independant') {
+                    status = 'Self-Employed';
+                } else {
+                    status = this.formatFundingLabel(person.employment_status);
+                }
+            }
+            const contactPhone = person.phone || '';
+            const contactEmail = person.email || '';
+            const personOriginBadge = this.getFundingOriginBadge(person.location);
+            let meta = '';
+            if (status) meta += this.renderMetaRow('Status', status, { className: 'compact' });
+            if (personOriginBadge) {
+                meta += this.renderMetaRow('Location', personOriginBadge, { raw: true, className: 'compact' });
+            }
+            if (contactPhone) meta += this.renderMetaRow('Phone', contactPhone, { className: 'compact' });
+            if (contactEmail) meta += this.renderMetaRow('Email', contactEmail, { className: 'compact' });
+            const incomeCards = renderIncomeCards(person.incomes, sizeClass);
+            const cardClasses = ['funding-person-card', sizeClass];
+            if (isPrimary) cardClasses.push('primary');
+            return `
+                <div class="${cardClasses.join(' ')}">
+                    <div class="funding-person-header">
+                        <div class="funding-person-name">${person.name || 'Unknown Person'}</div>
+                        <div class="funding-person-role">${role}</div>
+                    </div>
+                    ${meta}
+                    ${incomeCards ? `<div class="income-card-list">${incomeCards}</div>` : ''}
+                </div>
+            `;
+        };
+
+        switch (type) {
+            case 'fund:mortgage': {
+                const lenderName = data.lender ? this.formatFundingLabel(data.lender) : '';
+                const displayLender = lenderName || data.lender || '';
+                const bankLogo = data.lender ? this.getBankLogo(data.lender, displayLender || data.lender) : '';
+                if (displayLender || bankLogo) {
+                    htmlParts.push(`
+                        <div class="funding-bank-card">
+                            ${bankLogo ? `<div class="funding-bank-logo">${bankLogo}</div>` : ''}
+                            <div class="funding-bank-copy">
+                                <div class="funding-bank-label">Mortgage Lender</div>
+                                <div class="funding-bank-name">${displayLender || 'Not provided'}</div>
+                            </div>
+                        </div>
+                    `);
+                }
+                if (data.mortgage_type) {
+                    htmlParts.push(this.renderMetaRow('Product', this.formatFundingLabel(data.mortgage_type)));
+                }
+                if (data.account_name) {
+                    htmlParts.push(this.renderMetaRow('Account Name', data.account_name));
+                }
+                if (data.reference) {
+                    htmlParts.push(this.renderMetaRow('Reference', data.reference));
+                }
+                break;
+            }
+            case 'fund:htb':
+            case 'fund:htb_lisa': {
+                if (data.account_name) {
+                    htmlParts.push(this.renderMetaRow('Account Name', data.account_name));
+                }
+                if (data.provider) {
+                    htmlParts.push(this.renderMetaRow('Provider', this.formatFundingLabel(data.provider)));
+                }
+                if (data.reference) {
+                    htmlParts.push(this.renderMetaRow('Reference', data.reference));
+                }
+                break;
+            }
+            case 'fund:savings': {
+                htmlParts.push('<div class="funding-section-heading">Contributors</div>');
+                if (Array.isArray(data.people) && data.people.length > 0) {
+                    // Determine layout based on number of people
+                    const peopleCount = data.people.length;
+                    let peopleCards = '';
+                    
+                    if (peopleCount === 1) {
+                        // 1 person: full width
+                        peopleCards = renderSavingsPerson(data.people[0], { isPrimary: true, sizeClass: 'full' });
+                    } else if (peopleCount === 2) {
+                        // 2 people: 50/50
+                        peopleCards = data.people.map((person, idx) => 
+                            renderSavingsPerson(person, { isPrimary: idx === 0, sizeClass: 'half' })
+                        ).join('');
+                    } else {
+                        // 3+ people: primary full width, others 50/50 below
+                        peopleCards = renderSavingsPerson(data.people[0], { isPrimary: true, sizeClass: 'full' });
+                        if (peopleCount > 1) {
+                            const others = data.people.slice(1);
+                            others.forEach((person, idx) => {
+                                peopleCards += renderSavingsPerson(person, { isPrimary: false, sizeClass: 'half' });
+                            });
+                        }
+                    }
+                    
+                    htmlParts.push(`<div class="funding-people-list">${peopleCards}</div>`);
+                } else {
+                    htmlParts.push('<div class="funding-meta-empty">No contributor details provided.</div>');
+                }
+                break;
+            }
+            case 'fund:gift': {
+                const giftor = data.giftor || {};
+                const cardTitle = giftor.name || 'Giftor';
+                let detailRows = '';
+                if (giftor.relationship) {
+                    detailRows += this.renderMetaRow('Relationship', this.formatFundingLabel(giftor.relationship), { className: 'compact' });
+                }
+                if (typeof giftor.contactable === 'boolean') {
+                    detailRows += this.renderMetaRow('Contactable', giftor.contactable ? 'Yes' : 'No', { className: 'compact' });
+                }
+                if (typeof data.repayable === 'boolean') {
+                    detailRows += this.renderMetaRow('Repayable', data.repayable ? 'Yes' : 'No', { className: 'compact' });
+                }
+                if (giftor.phone) {
+                    detailRows += this.renderMetaRow('Phone', giftor.phone, { className: 'compact' });
+                }
+                if (giftor.email) {
+                    detailRows += this.renderMetaRow('Email', giftor.email, { className: 'compact' });
+                }
+                if (!detailRows) {
+                    detailRows = '<div class="funding-meta-empty">No additional giftor details recorded.</div>';
+                }
+                // Add consider message for giftor checks
+                const considerIcon = this.getTaskCheckIcon('CO');
+                const giftorCheckMessage = '<div class="giftor-check-message" style="margin-top: 12px; padding: 10px; background: #fff8e6; border: 1px solid #ffd966; border-radius: 6px; display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #856404;">' +
+                    considerIcon +
+                    '<span>Ensure the gifter undergoes their own AML, ID and SoF/SoW Checks</span>' +
+                    '</div>';
+                htmlParts.push(`
+                    <div class="funding-detail-card">
+                        <div class="funding-detail-card-title">${cardTitle}</div>
+                        ${detailRows}
+                        ${giftorCheckMessage}
+                    </div>
+                `);
+                break;
+            }
+            case 'fund:sale:property':
+            case 'fund:property_sale': {
+                const completion = this.formatShortDate(data.date);
+                if (completion) {
+                    htmlParts.push(this.renderMetaRow('Completion Date', completion));
+                }
+                if (data.status) {
+                    htmlParts.push(this.renderMetaRow('Status', this.formatFundingLabel(data.status)));
+                }
+                if (data.lawyer || data.conveyancer) {
+                    htmlParts.push(this.renderMetaRow('Conveyancer', data.lawyer || data.conveyancer));
+                }
+                if (data.property) {
+                    htmlParts.push(this.renderMetaRow('Property', data.property));
+                }
+                break;
+            }
+            case 'fund:sale:assets':
+            case 'fund:asset_sale': {
+                if (data.description) {
+                    htmlParts.push(this.renderMetaRow('Asset Description', data.description));
+                }
+                if (data.status) {
+                    htmlParts.push(this.renderMetaRow('Status', this.formatFundingLabel(data.status)));
+                }
+                break;
+            }
+            case 'fund:inheritance': {
+                if (data.from) {
+                    htmlParts.push(this.renderMetaRow('Inherited From', data.from));
+                }
+                const inheritDate = this.formatShortDate(data.date || data.received_at);
+                if (inheritDate) {
+                    htmlParts.push(this.renderMetaRow('Inherited On', inheritDate));
+                }
+                if (data.account_name) {
+                    htmlParts.push(this.renderMetaRow('Account Name', data.account_name));
+                }
+                if (typeof data.is_owner === 'boolean') {
+                    htmlParts.push(this.renderMetaRow('Beneficiary', data.is_owner ? 'Applicant' : 'Third Party'));
+                }
+                break;
+            }
+            case 'fund:divorce': {
+                if (data.account_name) {
+                    htmlParts.push(this.renderMetaRow('Account Name', data.account_name));
+                }
+                if (data.lawyer) {
+                    htmlParts.push(this.renderMetaRow('Conveyancer/Lawyer', data.lawyer));
+                }
+                const settlementDate = this.formatShortDate(data.settlement_date || data.date);
+                if (settlementDate) {
+                    htmlParts.push(this.renderMetaRow('Settlement Date', settlementDate));
+                }
+                if (typeof data.is_owner === 'boolean') {
+                    htmlParts.push(this.renderMetaRow('Beneficiary', data.is_owner ? 'Applicant' : 'Third Party'));
+                }
+                break;
+            }
+            case 'fund:cryptocurrency': {
+                if (data.description) {
+                    htmlParts.push(this.renderMetaRow('Asset', data.description));
+                }
+                if (data.exchange) {
+                    htmlParts.push(this.renderMetaRow('Exchange', this.formatFundingLabel(data.exchange)));
+                }
+                if (data.wallet_provider) {
+                    htmlParts.push(this.renderMetaRow('Wallet Provider', this.formatFundingLabel(data.wallet_provider)));
+                }
+                break;
+            }
+            default: {
+                const handledKeys = new Set(['amount', 'location', 'people', 'giftor', 'metadata']);
+                let hasDetails = false;
+                Object.entries(data || {}).forEach(([key, value]) => {
+                    if (handledKeys.has(key)) return;
+                    if (value === undefined || value === null) return;
+                    if (typeof value === 'object') return;
+                    const label = this.formatFundingLabel(key.replace(/[:_]/g, ' ')) || this.formatFundingLabel(key);
+                    htmlParts.push(this.renderMetaRow(label || this.formatFundingLabel(key), value));
+                    hasDetails = true;
+                });
+                if (!hasDetails) {
+                    htmlParts.push('<div class="funding-meta-empty">No additional funding details provided.</div>');
+                }
+                break;
+            }
+        }
+        return htmlParts.filter(Boolean).join('');
+    }
+    
     createFundingSourceCard(fund, check, index, sofMatches = {}, accounts = {}) {
         const type = fund.type || 'unknown';
         const data = fund.data || {};
         const amount = data.amount ? `£${(data.amount / 100).toLocaleString()}` : 'Not specified';
+        const originBadge = this.getFundingOriginBadge(data.location);
         
         // Get matched bank transactions for this funding type
         // Map all possible funding types to their SOF match keys
@@ -5321,32 +5608,30 @@ class ThirdfortChecksManager {
         const cleanType = type.replace('fund:', '').replace(/:/g, '-');
         
         // Build matched transactions HTML
+        const hasMatches = matchedTxIds.length > 0;
         let matchedTxHtml = '';
-        
-        // Determine label based on funding type
         const labelMap = {
-            'fund:gift': 'Potential Gift Deposits:',
-            'fund:mortgage': 'Potential Mortgage Deposits:',
-            'fund:savings': 'Verified Salary Deposits:',
-            'fund:income': 'Verified Salary Deposits:',
-            'fund:property_sale': 'Potential Property Sale Proceeds:',
-            'fund:sale:property': 'Potential Property Sale Proceeds:',
-            'fund:asset_sale': 'Potential Asset Sale Proceeds:',
-            'fund:sale:assets': 'Potential Asset Sale Proceeds:',
-            'fund:htb': 'Potential HTB/LISA Deposits:',
-            'fund:htb_lisa': 'Potential HTB/LISA Deposits:',
-            'fund:inheritance': 'Potential Inheritance Deposits:',
-            'fund:loan': 'Potential Loan Deposits:',
-            'fund:investment': 'Potential Investment Deposits:',
-            'fund:business': 'Potential Business Income:',
-            'fund:other': 'Potential Matched Transactions:'
+            'fund:gift': 'Potential Gift Deposits',
+            'fund:mortgage': 'Potential Mortgage Deposits',
+            'fund:savings': 'Verified Salary Deposits',
+            'fund:income': 'Verified Salary Deposits',
+            'fund:property_sale': 'Potential Property Sale Proceeds',
+            'fund:sale:property': 'Potential Property Sale Proceeds',
+            'fund:asset_sale': 'Potential Asset Sale Proceeds',
+            'fund:sale:assets': 'Potential Asset Sale Proceeds',
+            'fund:htb': 'Potential Lifetime ISA Deposits',
+            'fund:htb_lisa': 'Potential Lifetime ISA Deposits',
+            'fund:inheritance': 'Potential Inheritance Deposits',
+            'fund:loan': 'Potential Loan Deposits',
+            'fund:investment': 'Potential Investment Deposits',
+            'fund:business': 'Potential Business Income',
+            'fund:other': 'Potential Matched Transactions'
         };
-        
-        const matchLabel = labelMap[type] || 'Potential Matched Transactions:';
-        
-        if (matchedTxIds.length > 0) {
-            matchedTxHtml = `<div class="matched-transactions-section"><div class="matched-tx-label">${matchLabel}</div>`;
-            
+        const matchLabel = labelMap[type] || 'Potential Matched Transactions';
+
+        // Determine label based on funding type
+        if (hasMatches) {
+            matchedTxHtml = `<div class="funding-matched-section"><div class="funding-matched-header">${matchLabel} (${matchedTxIds.length})</div><div class="funding-matched-list">`;
             // Get transaction markers, notes, and links from ALL sources using comprehensive function
             const transactionMarkers = {};
             const transactionNotes = {};
@@ -5472,30 +5757,7 @@ class ThirdfortChecksManager {
                 }
             });
             
-            matchedTxHtml += '</div>';
-        } else {
-            // No matched transactions - check if document was uploaded
-            const docTaskKey = `documents:${cleanType}`;
-            const hasDocument = check.taskOutcomes && check.taskOutcomes[docTaskKey] && 
-                               check.taskOutcomes[docTaskKey].status === 'closed';
-            
-            // For savings/income, always show hint when no matches (document only proves balance, not income source)
-            // For other funding types, only show hint if no document uploaded
-            const isSavingsType = type === 'fund:savings' || type === 'fund:income';
-            
-            if (isSavingsType || !hasDocument) {
-                const considerIcon = `<svg class="task-status-icon" viewBox="0 0 300 300" style="width: 20px; height: 20px; margin-right: 8px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
-                
-                matchedTxHtml = `
-                    <div class="matched-transactions-section" style="margin-top: 16px;">
-                        <div class="matched-tx-label">${matchLabel}</div>
-                        <div class="no-matches-hint">
-                            ${considerIcon}
-                            <span>No linked bank transactions detected, manual review required</span>
-                        </div>
-                    </div>
-                `;
-            }
+            matchedTxHtml += '</div></div>';
         }
         
         // Map funding type display names
@@ -5503,137 +5765,53 @@ class ThirdfortChecksManager {
             'mortgage': 'Mortgage',
             'savings': 'Savings',
             'gift': 'Gift',
-            'sale_property': 'Property Sale',
-            'sale_assets': 'Asset Sale',
+            'sale-property': 'Sale of Property',
+            'sale-assets': 'Sale of Assets',
             'inheritance': 'Inheritance',
-            'htb': 'Help to Buy / LISA',
+            'divorce': 'Divorce',
+            'cryptocurrency': 'Cryptocurrency',
+            'htb': 'Lifetime ISA',
+            'htb_lisa': 'Lifetime ISA',
             'investment': 'Investment',
             'business': 'Business Income',
             'loan': 'Loan',
+            'income': 'Income',
             'other': 'Other'
         };
         const typeName = typeNames[cleanType] || cleanType;
         
         // Check if corresponding document exists in taskOutcomes
         const docTaskKey = `documents:${cleanType}`;
-        const hasDocument = check.taskOutcomes && check.taskOutcomes[docTaskKey];
-        const docIcon = hasDocument ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
-        
-        // Specific message for gift type
-        let docStatusText = 'Document uploaded';
-        if (!hasDocument) {
-            if (type === 'fund:gift') {
-                docStatusText = 'Ensure the gifter undergoes their own AML, ID and SoF/SoW Checks';
+        const docOutcome = check.taskOutcomes ? check.taskOutcomes[docTaskKey] : null;
+        const documentCount = this.getDocumentCount(docOutcome);
+        const hasDocuments = documentCount > 0;
+        const docLines = [];
+        const defaultReminder = 'Check the report pdf for evidence or obtain from the client and review manually';
+        const hasLinkedTx = hasMatches;
+        const shouldShowManualReview = !hasLinkedTx && type !== 'fund:mortgage';
+
+        if (hasDocuments) {
+            const uploadedLabel = `${documentCount} document${documentCount === 1 ? '' : 's'} uploaded`;
+            docLines.push({ status: 'clear', text: uploadedLabel });
             } else {
-                docStatusText = 'Check the report pdf for evidence or obtain from the client and review manually';
-            }
+            docLines.push({ status: 'consider', text: defaultReminder });
         }
+
+        if (shouldShowManualReview) {
+            docLines.push({ status: 'consider', text: 'No linked bank transactions detected, manual review required.' });
+        }
+
+        if (docLines.length === 0) {
+            docLines.push({ status: hasDocuments ? 'clear' : 'consider', text: defaultReminder });
+        }
+
+        const docStatusLines = docLines.map(line => {
+            const icon = this.getTaskCheckIcon(line.status === 'clear' ? 'CL' : line.status === 'fail' ? 'FA' : 'CO');
+            return `<div class="doc-status-line">${icon}<span>${line.text}</span></div>`;
+        }).join('');
         
         // Build detailed information based on fund type
-        let detailsHtml = '';
-        
-        if (type === 'fund:mortgage') {
-            if (data.lender) {
-                detailsHtml += `<div class="funding-detail"><strong>Lender:</strong> ${data.lender}</div>`;
-            }
-            if (data.location) {
-                detailsHtml += `<div class="funding-detail"><strong>Location:</strong> ${data.location}</div>`;
-            }
-        } else if (type === 'fund:savings') {
-            if (data.people && data.people.length > 0) {
-                detailsHtml += '<div class="funding-section-title">Income & Employment Details:</div>';
-                detailsHtml += `<div class="people-grid people-grid-${data.people.length}">`;
-                
-                data.people.forEach(person => {
-                    const isActor = person.actor ? 'Primary' : 'Joint';
-                    const employmentStatus = person.employment_status === 'independent' ? 'Self-employed' : 
-                                            person.employment_status ? person.employment_status.charAt(0).toUpperCase() + person.employment_status.slice(1) : '';
-                    
-                    detailsHtml += `<div class="person-card">`;
-                    detailsHtml += `<div class="person-card-name">${person.name}</div>`;
-                    detailsHtml += `<div class="person-card-role">${isActor}</div>`;
-                    if (employmentStatus) {
-                        detailsHtml += `<div class="person-card-item"><strong>Status:</strong> ${employmentStatus}</div>`;
-                    }
-                    if (person.incomes && person.incomes.length > 0) {
-                        person.incomes.forEach(income => {
-                            const annualAmount = income.annual_total ? `£${(income.annual_total / 100).toLocaleString()}` : 'N/A';
-                            detailsHtml += `<div class="person-card-item"><strong>Source:</strong> ${income.source || 'N/A'}</div>`;
-                            detailsHtml += `<div class="person-card-item"><strong>Annual:</strong> ${annualAmount}</div>`;
-                            detailsHtml += `<div class="person-card-item"><strong>Frequency:</strong> ${income.frequency || 'N/A'}</div>`;
-                            if (income.reference) {
-                                detailsHtml += `<div class="person-card-item"><strong>Payslip:</strong> ${income.reference}</div>`;
-                            }
-                            if (income.description) {
-                                detailsHtml += `<div class="person-card-item"><strong>Details:</strong> ${income.description}</div>`;
-                            }
-                        });
-                    }
-                    detailsHtml += `</div>`;
-                });
-                
-                detailsHtml += `</div>`;
-            }
-        } else if (type === 'fund:gift') {
-            if (data.giftor) {
-                detailsHtml += '<div class="funding-section-title">Gift Details:</div>';
-                if (data.giftor.name) {
-                    detailsHtml += `<div class="funding-detail"><strong>From:</strong> ${data.giftor.name}</div>`;
-                }
-                if (data.giftor.relationship) {
-                    detailsHtml += `<div class="funding-detail"><strong>Relationship:</strong> ${data.giftor.relationship}</div>`;
-                }
-                if (data.giftor.phone) {
-                    detailsHtml += `<div class="funding-detail"><strong>Phone:</strong> ${data.giftor.phone}</div>`;
-                }
-                if (typeof data.giftor.contactable !== 'undefined') {
-                    detailsHtml += `<div class="funding-detail"><strong>Contactable:</strong> ${data.giftor.contactable ? 'Yes' : 'No'}</div>`;
-                }
-                if (typeof data.repayable !== 'undefined') {
-                    detailsHtml += `<div class="funding-detail"><strong>Repayable:</strong> ${data.repayable ? 'Yes' : 'No'}</div>`;
-                }
-            }
-        } else if (type === 'fund:sale:property') {
-            detailsHtml += '<div class="funding-section-title">Property Sale Details:</div>';
-            if (data.date) {
-                const saleDate = new Date(data.date).toLocaleDateString('en-GB');
-                detailsHtml += `<div class="funding-detail"><strong>Completion Date:</strong> ${saleDate}</div>`;
-            }
-            if (data.status) {
-                detailsHtml += `<div class="funding-detail"><strong>Status:</strong> ${data.status}</div>`;
-            }
-            if (data.lawyer) {
-                detailsHtml += `<div class="funding-detail"><strong>Lawyer:</strong> ${data.lawyer}</div>`;
-            }
-        } else if (type === 'fund:sale:assets') {
-            detailsHtml += '<div class="funding-section-title">Asset Sale Details:</div>';
-            if (data.description) {
-                detailsHtml += `<div class="funding-detail"><strong>Asset:</strong> ${data.description}</div>`;
-            }
-            if (data.location) {
-                detailsHtml += `<div class="funding-detail"><strong>Location:</strong> ${data.location}</div>`;
-            }
-        } else if (type === 'fund:htb') {
-            detailsHtml += '<div class="funding-section-title">Help to Buy / LISA:</div>';
-            if (data.type) {
-                detailsHtml += `<div class="funding-detail"><strong>Type:</strong> ${data.type.toUpperCase()}</div>`;
-            }
-            if (data.location) {
-                detailsHtml += `<div class="funding-detail"><strong>Location:</strong> ${data.location}</div>`;
-            }
-        } else if (type === 'fund:inheritance') {
-            detailsHtml += '<div class="funding-section-title">Inheritance Details:</div>';
-            if (data.from) {
-                detailsHtml += `<div class="funding-detail"><strong>From:</strong> ${data.from}</div>`;
-            }
-            if (data.date) {
-                const inheritDate = new Date(data.date).toLocaleDateString('en-GB');
-                detailsHtml += `<div class="funding-detail"><strong>Date:</strong> ${inheritDate}</div>`;
-            }
-            if (typeof data.is_owner !== 'undefined') {
-                detailsHtml += `<div class="funding-detail"><strong>Beneficiary:</strong> ${data.is_owner ? 'Primary' : 'Secondary'}</div>`;
-            }
-        }
+        const detailsHtml = this.buildFundingDetailContent(fund, { originBadge });
         
         // Get SOF annotations for this specific funding method
         const sofAnnotations = check.sofAnnotations || [];
@@ -5711,14 +5889,16 @@ class ThirdfortChecksManager {
             <div class="funding-source-card">
                 <div class="funding-header">
                     <div class="funding-type">${typeName}</div>
-                    <div class="funding-amount">${amount}</div>
+                    <div class="funding-header-meta">
+                        ${originBadge || ''}
+                        <span class="funding-amount">${amount}</span>
+                    </div>
                 </div>
                 ${detailsHtml}
                 ${matchedTxHtml}
                 ${fundAnnotationsHtml}
                 <div class="funding-doc-status">
-                    ${docIcon}
-                    <span class="doc-status-text">${docStatusText}</span>
+                    <div class="doc-status-text">${docStatusLines}</div>
                 </div>
             </div>
         `;
@@ -5951,6 +6131,12 @@ class ThirdfortChecksManager {
         
         const taskTitle = this.getTaskTitle(taskType);
         const taskChecks = this.getTaskChecks(taskType, outcome, check);
+
+        // Proof of Savings evidence is displayed inside the Source of Funds task card
+        // so we can skip rendering the standalone documents:savings card when SoF exists.
+        if (taskType === 'documents:savings' && check?.taskOutcomes?.['sof:v1']) {
+            return '';
+        }
         
         // Document tasks (PoA, PoO, Savings, Crypto, Other) - Expandable if has annotations, otherwise non-expandable
         const isDocumentTask = taskType === 'documents:poa' || taskType === 'documents:poo' || 
@@ -6507,13 +6693,23 @@ class ThirdfortChecksManager {
         const fundingLabels = [];
         const fundingAmounts = [];
         const fundingColors = {
-            'fund:mortgage': '#93C5FD',      // Pastel Blue
-            'fund:savings': '#86EFAC',        // Pastel Green
-            'fund:gift': '#FCA5A5',           // Pastel Pink/Red
-            'fund:sale:property': '#C4B5FD',  // Pastel Purple
-            'fund:sale:assets': '#FDBA74',    // Pastel Orange
-            'fund:htb': '#A5F3FC',            // Pastel Cyan
-            'fund:inheritance': '#D1D5DB'     // Pastel Gray
+            'fund:mortgage': '#93C5FD',        // Pastel Blue
+            'fund:savings': '#86EFAC',         // Pastel Green
+            'fund:gift': '#FCA5A5',            // Pastel Pink/Red
+            'fund:sale:property': '#C4B5FD',   // Pastel Purple
+            'fund:sale:assets': '#FDBA74',     // Pastel Orange
+            'fund:asset_sale': '#FDBA74',
+            'fund:htb': '#A5F3FC',             // Pastel Cyan
+            'fund:htb_lisa': '#A5F3FC',
+            'fund:inheritance': '#FDE68A',     // Pastel Yellow
+            'fund:divorce': '#FBCFE8',         // Pastel Pink
+            'fund:cryptocurrency': '#99F6E4',  // Pastel Teal
+            'fund:crypto': '#99F6E4',
+            'fund:loan': '#FDE68A',
+            'fund:investment': '#BBF7D0',
+            'fund:business': '#DDD6FE',
+            'fund:income': '#A7F3D0',
+            'fund:other': '#E5E7EB'
         };
         
         const typeLabels = {
@@ -6521,14 +6717,26 @@ class ThirdfortChecksManager {
             'fund:savings': 'Savings',
             'fund:gift': 'Gift',
             'fund:sale:property': 'Property Sale',
+            'fund:property_sale': 'Property Sale',
             'fund:sale:assets': 'Asset Sale',
-            'fund:htb': 'Help to Buy/LISA',
-            'fund:inheritance': 'Inheritance'
+            'fund:asset_sale': 'Asset Sale',
+            'fund:htb': 'Lifetime ISA',
+            'fund:htb_lisa': 'Lifetime ISA',
+            'fund:inheritance': 'Inheritance',
+            'fund:divorce': 'Divorce Settlement',
+            'fund:cryptocurrency': 'Cryptocurrency',
+            'fund:crypto': 'Cryptocurrency',
+            'fund:loan': 'Loan',
+            'fund:investment': 'Investment',
+            'fund:business': 'Business Income',
+            'fund:income': 'Income',
+            'fund:other': 'Other'
         };
         
         funds.forEach(fund => {
-            const label = typeLabels[fund.type] || fund.type;
-            const amount = fund.data.amount / 100; // Convert pence to pounds
+            const label = typeLabels[fund.type] || this.formatFundingLabel(fund.type?.replace('fund:', '') || 'Other');
+            const amountMinor = typeof fund.data.amount === 'number' ? fund.data.amount : 0;
+            const amount = amountMinor / 100; // Convert pence to pounds
             fundingLabels.push(label);
             fundingAmounts.push(amount);
         });
@@ -7075,6 +7283,382 @@ class ThirdfortChecksManager {
             'Ireland': '🇮🇪', 'IE': '🇮🇪'
         };
         return flagMap[countryName] || '🌍';
+    }
+
+    formatFundingLabel(value) {
+        if (value === undefined || value === null) return '';
+        if (typeof value !== 'string') value = String(value);
+        const trimmed = value.trim();
+        if (!trimmed) return '';
+        const acronyms = new Set(['hsbc', 'tsb', 'rbs', 'uk', 'usa', 'isa', 'lisa', 'htb', 'aml', 'sow', 'kyc', 'pep', 'ltd']);
+        return trimmed.split(/[\s_\-]+/).map(part => {
+            const lower = part.toLowerCase();
+            if (acronyms.has(lower) || lower.length <= 3) {
+                return lower.toUpperCase();
+            }
+            return lower.charAt(0).toUpperCase() + lower.slice(1);
+        }).join(' ');
+    }
+
+    formatFundingFrequency(value) {
+        if (!value) return '';
+        return this.formatFundingLabel(value);
+    }
+
+    formatCurrencyMinor(amount, { fallback = 'Not provided', currency = '£' } = {}) {
+        if (typeof amount !== 'number' || Number.isNaN(amount)) return fallback;
+        const isWhole = amount % 100 === 0;
+        const absolute = amount / 100;
+        const options = {
+            minimumFractionDigits: isWhole ? 0 : 2,
+            maximumFractionDigits: isWhole ? 0 : 2
+        };
+        return `${currency}${absolute.toLocaleString('en-GB', options)}`;
+    }
+
+    formatShortDate(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    getIso2FromLocation(location) {
+        if (!location) return '';
+        const trimmed = location.trim();
+        if (!trimmed) return '';
+        const upper = trimmed.toUpperCase();
+        const iso3ToIso2 = {
+            'GBR': 'GB',
+            'IRL': 'IE',
+            'USA': 'US',
+            'CAN': 'CA',
+            'AUS': 'AU',
+            'NZL': 'NZ',
+            'FRA': 'FR',
+            'DEU': 'DE',
+            'ESP': 'ES',
+            'ITA': 'IT',
+            'PRT': 'PT',
+            'CHE': 'CH',
+            'SGP': 'SG',
+            'HKG': 'HK',
+            'ARE': 'AE',
+            'QAT': 'QA',
+            'BHR': 'BH',
+            'KWT': 'KW',
+            'SAU': 'SA',
+            'ZAF': 'ZA',
+            'BRA': 'BR',
+            'ARG': 'AR',
+            'MEX': 'MX',
+            'BEL': 'BE',
+            'NLD': 'NL',
+            'SWE': 'SE',
+            'NOR': 'NO',
+            'DNK': 'DK',
+            'POL': 'PL',
+            'CZE': 'CZ',
+            'HUN': 'HU',
+            'ROU': 'RO',
+            'ISL': 'IS',
+            'JPN': 'JP',
+            'CHN': 'CN',
+            'IND': 'IN',
+            'PAK': 'PK',
+            'KEN': 'KE',
+            'GHA': 'GH',
+            'NGA': 'NG',
+            'UGA': 'UG',
+            'ZMB': 'ZM',
+            'ZWE': 'ZW'
+        };
+        if (iso3ToIso2[upper]) return iso3ToIso2[upper];
+        if (upper.length === 2) return upper;
+        const nameToIso2 = {
+            'UNITED KINGDOM': 'GB',
+            'GREAT BRITAIN': 'GB',
+            'ENGLAND': 'GB',
+            'SCOTLAND': 'GB',
+            'WALES': 'GB',
+            'NORTHERN IRELAND': 'GB',
+            'UK': 'GB',
+            'UNITED STATES': 'US',
+            'UNITED STATES OF AMERICA': 'US',
+            'AMERICA': 'US',
+            'IRELAND': 'IE',
+            'REPUBLIC OF IRELAND': 'IE',
+            'FRANCE': 'FR',
+            'GERMANY': 'DE',
+            'SPAIN': 'ES',
+            'ITALY': 'IT',
+            'PORTUGAL': 'PT',
+            'AUSTRALIA': 'AU',
+            'CANADA': 'CA',
+            'NEW ZEALAND': 'NZ',
+            'SINGAPORE': 'SG',
+            'HONG KONG': 'HK',
+            'SWITZERLAND': 'CH',
+            'SOUTH AFRICA': 'ZA',
+            'INDIA': 'IN',
+            'JAPAN': 'JP',
+            'UNITED ARAB EMIRATES': 'AE',
+            'UAE': 'AE'
+        };
+        if (nameToIso2[upper]) return nameToIso2[upper];
+        return '';
+    }
+
+    countryCodeToEmoji(code) {
+        if (!code || code.length !== 2) return '';
+        return code.toUpperCase().split('').map(char => {
+            const base = 127397;
+            return String.fromCodePoint(base + char.charCodeAt(0));
+        }).join('');
+    }
+
+    getLocationDisplay(location) {
+        if (!location) return '';
+        const trimmed = location.trim();
+        if (!trimmed) return '';
+        const iso2 = this.getIso2FromLocation(trimmed);
+        const upper = trimmed.toUpperCase();
+        const displayCode = upper.length === 2 || upper.length === 3 ? upper : (iso2 || upper);
+        if (!displayCode) return '';
+        const flag = iso2 ? this.countryCodeToEmoji(iso2) : '';
+        return `${flag || '🌍'} ${displayCode}`;
+    }
+
+    getFundingOriginBadge(location) {
+        const display = this.getLocationDisplay(location);
+        if (!display) return '';
+        return `<span class="funding-origin-badge">${display}</span>`;
+    }
+
+    renderMetaRow(label, value, { raw = false, className = '' } = {}) {
+        if (value === undefined || value === null) return '';
+        let content = raw ? value : String(value);
+        if (!raw) {
+            content = content.trim();
+            if (!content) return '';
+        }
+        return `<div class="funding-meta-row${className ? ' ' + className : ''}"><span class="funding-meta-label">${label}</span><span class="funding-meta-value">${content}</span></div>`;
+    }
+
+    renderOriginMetaRow(location) {
+        const badge = this.getFundingOriginBadge(location);
+        if (!badge) return '';
+        return this.renderMetaRow('Origin', badge, { raw: true });
+    }
+
+    getDocumentCount(outcome) {
+        if (!outcome) return 0;
+        if (Array.isArray(outcome.documents)) return outcome.documents.length;
+        if (Array.isArray(outcome.breakdown?.documents)) return outcome.breakdown.documents.length;
+        if (typeof outcome.breakdown?.document_count === 'number') return outcome.breakdown.document_count;
+        if (typeof outcome.data?.document_count === 'number') return outcome.data.document_count;
+        if (Array.isArray(outcome.data?.documents)) return outcome.data.documents.length;
+        return 0;
+    }
+
+    formatFundingLabel(value) {
+        if (value === undefined || value === null) return '';
+        if (typeof value !== 'string') {
+            value = String(value);
+        }
+        const trimmed = value.trim();
+        if (!trimmed) {
+            return '';
+        }
+        const acronyms = new Set(['hsbc', 'tsb', 'rbs', 'lloyds', 'natwest', 'uk', 'usa', 'isa', 'lisa', 'psa', 'sow', 'aml', 'ftb', 'htb', 'fca', 'sra']);
+        return trimmed.split(/[\s_\-]+/).map(part => {
+            const lower = part.toLowerCase();
+            if (acronyms.has(lower) || lower.length <= 3) {
+                return lower.toUpperCase();
+            }
+            return lower.charAt(0).toUpperCase() + lower.slice(1);
+        }).join(' ');
+    }
+
+    formatFundingFrequency(value) {
+        if (!value) return '';
+        return this.formatFundingLabel(value);
+    }
+
+    formatCurrencyMinor(amount, { fallback = 'Not provided', currency = '£' } = {}) {
+        if (typeof amount !== 'number' || Number.isNaN(amount)) {
+            return fallback;
+        }
+        const isWhole = amount % 100 === 0;
+        const absolute = amount / 100;
+        const options = {
+            minimumFractionDigits: isWhole ? 0 : 2,
+            maximumFractionDigits: isWhole ? 0 : 2
+        };
+        return `${currency}${absolute.toLocaleString('en-GB', options)}`;
+    }
+
+    formatShortDate(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return '';
+        }
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    getIso2FromLocation(location) {
+        if (!location) return '';
+        const trimmed = location.trim();
+        if (!trimmed) return '';
+        const upper = trimmed.toUpperCase();
+        const iso3ToIso2 = {
+            'GBR': 'GB',
+            'IRL': 'IE',
+            'USA': 'US',
+            'CAN': 'CA',
+            'AUS': 'AU',
+            'NZL': 'NZ',
+            'FRA': 'FR',
+            'DEU': 'DE',
+            'ESP': 'ES',
+            'ITA': 'IT',
+            'PRT': 'PT',
+            'CHE': 'CH',
+            'SGP': 'SG',
+            'HKG': 'HK',
+            'ARE': 'AE',
+            'QAT': 'QA',
+            'BHR': 'BH',
+            'KWT': 'KW',
+            'SAU': 'SA',
+            'ZAF': 'ZA',
+            'BRA': 'BR',
+            'ARG': 'AR',
+            'MEX': 'MX',
+            'BEL': 'BE',
+            'NLD': 'NL',
+            'SWE': 'SE',
+            'NOR': 'NO',
+            'DNK': 'DK',
+            'POL': 'PL',
+            'CZE': 'CZ',
+            'HUN': 'HU',
+            'ROU': 'RO',
+            'ISL': 'IS',
+            'JPN': 'JP',
+            'CHN': 'CN',
+            'IND': 'IN',
+            'PAK': 'PK',
+            'KEN': 'KE',
+            'GHA': 'GH',
+            'NGA': 'NG',
+            'UGA': 'UG',
+            'ZMB': 'ZM',
+            'ZWE': 'ZW'
+        };
+        if (iso3ToIso2[upper]) {
+            return iso3ToIso2[upper];
+        }
+        if (upper.length === 2) {
+            return upper;
+        }
+        const nameToIso2 = {
+            'UNITED KINGDOM': 'GB',
+            'GREAT BRITAIN': 'GB',
+            'ENGLAND': 'GB',
+            'SCOTLAND': 'GB',
+            'WALES': 'GB',
+            'NORTHERN IRELAND': 'GB',
+            'UK': 'GB',
+            'UNITED STATES': 'US',
+            'UNITED STATES OF AMERICA': 'US',
+            'AMERICA': 'US',
+            'IRELAND': 'IE',
+            'REPUBLIC OF IRELAND': 'IE',
+            'FRANCE': 'FR',
+            'GERMANY': 'DE',
+            'SPAIN': 'ES',
+            'ITALY': 'IT',
+            'PORTUGAL': 'PT',
+            'AUSTRALIA': 'AU',
+            'CANADA': 'CA',
+            'NEW ZEALAND': 'NZ',
+            'SINGAPORE': 'SG',
+            'HONG KONG': 'HK',
+            'SWITZERLAND': 'CH',
+            'SOUTH AFRICA': 'ZA',
+            'INDIA': 'IN',
+            'JAPAN': 'JP',
+            'UNITED ARAB EMIRATES': 'AE',
+            'UAE': 'AE'
+        };
+        if (nameToIso2[upper]) {
+            return nameToIso2[upper];
+        }
+        return '';
+    }
+
+    countryCodeToEmoji(code) {
+        if (!code || code.length !== 2) return '';
+        return code.toUpperCase().split('').map(char => {
+            const base = 127397;
+            return String.fromCodePoint(base + char.charCodeAt(0));
+        }).join('');
+    }
+
+    getLocationDisplay(location) {
+        if (!location) return '';
+        const trimmed = location.trim();
+        if (!trimmed) return '';
+        const iso2 = this.getIso2FromLocation(trimmed);
+        const upper = trimmed.toUpperCase();
+        const displayCode = upper.length === 2 || upper.length === 3 ? upper : (iso2 || upper);
+        if (!displayCode) return '';
+        const flag = iso2 ? this.countryCodeToEmoji(iso2) : '';
+        return `${flag || '🌍'} ${displayCode}`;
+    }
+
+    getFundingOriginBadge(location) {
+        const display = this.getLocationDisplay(location);
+        if (!display) return '';
+        return `<span class="funding-origin-badge">${display}</span>`;
+    }
+
+    renderMetaRow(label, value, { raw = false, className = '' } = {}) {
+        if (value === undefined || value === null) return '';
+        let content = raw ? value : String(value);
+        if (!raw) {
+            content = content.trim();
+            if (!content) return '';
+        }
+        return `<div class="funding-meta-row${className ? ' ' + className : ''}"><span class="funding-meta-label">${label}</span><span class="funding-meta-value">${content}</span></div>`;
+    }
+
+    renderOriginMetaRow(location) {
+        const badge = this.getFundingOriginBadge(location);
+        if (!badge) return '';
+        return this.renderMetaRow('Origin', badge, { raw: true });
+    }
+
+    getDocumentCount(outcome) {
+        if (!outcome) return 0;
+        if (Array.isArray(outcome.documents)) {
+            return outcome.documents.length;
+        }
+        if (Array.isArray(outcome.breakdown?.documents)) {
+            return outcome.breakdown.documents.length;
+        }
+        if (typeof outcome.breakdown?.document_count === 'number') {
+            return outcome.breakdown.document_count;
+        }
+        if (typeof outcome.data?.document_count === 'number') {
+            return outcome.data.document_count;
+        }
+        if (Array.isArray(outcome.data?.documents)) {
+            return outcome.data.documents.length;
+        }
+        return 0;
     }
     
     deduplicatePeople(owners, officers) {
@@ -28780,6 +29364,7 @@ class ThirdfortChecksManager {
         
         // Get matched transactions (including user-linked ones)
         const matchedTxIds = this.getMatchedTransactions(type, sofMatches, fund, fundIdx, check);
+        const hasMatches = matchedTxIds.length > 0;
         
         // Map funding type to display name
         const cleanType = type.replace('fund:', '').replace(/:/g, '-');
@@ -28787,16 +29372,18 @@ class ThirdfortChecksManager {
             'mortgage': 'Mortgage',
             'savings': 'Savings',
             'gift': 'Gift',
-            'sale-property': 'Property Sale',
-            'sale-assets': 'Asset Sale',
+            'sale-property': 'Sale of Property',
+            'sale-assets': 'Sale of Assets',
             'inheritance': 'Inheritance',
-            'htb': 'Help to Buy / LISA',
-            'htb_lisa': 'Help to Buy / LISA',
+            'divorce': 'Divorce',
+            'cryptocurrency': 'Cryptocurrency',
+            'htb': 'Lifetime ISA',
+            'htb_lisa': 'Lifetime ISA',
             'investment': 'Investment',
             'business': 'Business Income',
             'loan': 'Loan',
-            'other': 'Other',
-            'income': 'Income'
+            'income': 'Income',
+            'other': 'Other'
         };
         const typeName = typeNames[cleanType] || cleanType;
         
@@ -28870,7 +29457,13 @@ class ThirdfortChecksManager {
         // Funding Header (collapsed view) - clickable to toggle
         html += `<div class="funding-investigation-header" onclick="manager.toggleFundingCard(event, ${fundIdx});">`;
         html += '<div class="funding-investigation-info">';
-        html += `<div class="funding-investigation-name">${typeName} <span style="font-weight: 600; color: #388e3c;">${amount}</span></div>`;
+        html += `<div class="funding-investigation-name">${typeName}</div>`;
+        html += '<div class="funding-investigation-meta">';
+        if (originBadge) {
+            html += originBadge;
+        }
+        html += `<span class="funding-investigation-amount">${amount}</span>`;
+        html += '</div>';
         if (summaryText) {
             html += `<div class="funding-investigation-summary">${summaryText}</div>`;
         }
@@ -28906,48 +29499,44 @@ class ThirdfortChecksManager {
         html += '<div class="funding-investigation-details" onclick="event.stopPropagation();">';
         
         // Type-specific details (same as task card)
-        html += this.createFundingDetailsSection(fund, data, type);
+        html += this.createFundingDetailsSection(fund, originBadge);
         
-        // Matched transactions OR no matches message (same as task card)
-        if (matchedTxIds.length > 0) {
+        // Matched transactions (same as task card)
+        if (hasMatches) {
             html += this.createFundingMatchedTxSection(matchedTxIds, accounts, type, fundTransactionMarkers, check, fundIdx, sofMatches);
-        } else {
-            // No matched transactions - show message
-            const labelMap = {
-                'fund:gift': 'Potential Gift Deposits:',
-                'fund:mortgage': 'Potential Mortgage Deposits:',
-                'fund:savings': 'Verified Salary Deposits:',
-                'fund:income': 'Verified Salary Deposits:'
-            };
-            const matchLabel = labelMap[type] || 'Potential Matched Transactions:';
-            
-            const considerIcon = `<svg class="task-status-icon" viewBox="0 0 300 300" style="width: 20px; height: 20px; margin-right: 8px;"><path fill="#f7931e" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="M67.36 135.15h165v30h-165z"/></svg>`;
-            
-            html += '<div class="matched-transactions-section" style="margin-top: 16px;">';
-            html += `<div class="matched-tx-label">${matchLabel}</div>`;
-            html += '<div class="no-matches-hint">';
-            html += considerIcon;
-            html += '<span>No linked bank transactions detected, manual review required</span>';
-            html += '</div></div>';
         }
         
         // Document status (same as task card)
         const docTaskKey = `documents:${cleanType}`;
-        const hasDocument = check.taskOutcomes && check.taskOutcomes[docTaskKey];
-        const docIcon = hasDocument ? this.getTaskCheckIcon('CL') : this.getTaskCheckIcon('CO');
-        
-        let docStatusText = 'Document uploaded';
-        if (!hasDocument) {
-            if (type === 'fund:gift') {
-                docStatusText = 'Ensure the gifter undergoes their own AML, ID and SoF/SoW Checks';
+        const docOutcome = check.taskOutcomes ? check.taskOutcomes[docTaskKey] : null;
+        const documentCount = this.getDocumentCount(docOutcome);
+        const hasDocuments = documentCount > 0;
+        const docLines = [];
+        const defaultReminder = 'Check the report pdf for evidence or obtain from the client and review manually';
+        const shouldShowManualReview = !hasMatches && type !== 'fund:mortgage';
+
+        if (hasDocuments) {
+            const uploadedLabel = `${documentCount} document${documentCount === 1 ? '' : 's'} uploaded`;
+            docLines.push({ status: 'clear', text: uploadedLabel });
             } else {
-                docStatusText = 'Check the report pdf for evidence or obtain from the client and review manually';
-            }
+            docLines.push({ status: 'consider', text: defaultReminder });
+        }
+
+        if (shouldShowManualReview) {
+            docLines.push({ status: 'consider', text: 'No linked bank transactions detected, manual review required.' });
+        }
+
+        if (docLines.length === 0) {
+            docLines.push({ status: hasDocuments ? 'clear' : 'consider', text: defaultReminder });
         }
         
         html += '<div class="funding-doc-status">';
-        html += docIcon;
-        html += `<span class="doc-status-text">${docStatusText}</span>`;
+        html += '<div class="doc-status-text">';
+        docLines.forEach(line => {
+            const icon = this.getTaskCheckIcon(line.status === 'clear' ? 'CL' : line.status === 'fail' ? 'FA' : 'CO');
+            html += `<div class="doc-status-line">${icon}<span>${line.text}</span></div>`;
+        });
+        html += '</div>';
         html += '</div>';
         
         // Red Flags Section (if applicable) - Show full details like in task card
@@ -29107,79 +29696,31 @@ class ThirdfortChecksManager {
         return html;
     }
     
-    createFundingDetailsSection(fund, data, type) {
-        let html = '';
-        
-        if (type === 'fund:mortgage') {
-            if (data.lender) html += `<div class="funding-detail"><strong>Lender:</strong> ${data.lender}</div>`;
-            if (data.location) html += `<div class="funding-detail"><strong>Location:</strong> ${data.location}</div>`;
-        } 
-        else if (type === 'fund:savings') {
-            if (data.people && data.people.length > 0) {
-                html += '<div class="funding-section-title">Income & Employment Details:</div>';
-                html += `<div class="people-grid people-grid-${data.people.length}">`;
-                
-                data.people.forEach(person => {
-                    const isActor = person.actor ? 'Primary' : 'Joint';
-                    const employmentStatus = person.employment_status === 'independent' ? 'Self-employed' : 
-                                            person.employment_status ? person.employment_status.charAt(0).toUpperCase() + person.employment_status.slice(1) : '';
-                    
-                    html += '<div class="person-card">';
-                    html += `<div class="person-card-name">${person.name}</div>`;
-                    html += `<div class="person-card-role">${isActor}</div>`;
-                    if (employmentStatus) html += `<div class="person-card-item"><strong>Status:</strong> ${employmentStatus}</div>`;
-                    
-                    if (person.incomes && person.incomes.length > 0) {
-                        person.incomes.forEach(income => {
-                            const annualAmount = income.annual_total ? `£${(income.annual_total / 100).toLocaleString()}` : 'N/A';
-                            html += `<div class="person-card-item"><strong>Source:</strong> ${income.source || 'N/A'}</div>`;
-                            html += `<div class="person-card-item"><strong>Annual:</strong> ${annualAmount}</div>`;
-                            html += `<div class="person-card-item"><strong>Frequency:</strong> ${income.frequency || 'N/A'}</div>`;
-                            if (income.reference) html += `<div class="person-card-item"><strong>Payslip:</strong> ${income.reference}</div>`;
-                        });
-                    }
-                    html += '</div>';
-                });
-                
-                html += '</div>';
-            }
-        } 
-        else if (type === 'fund:gift') {
-            if (data.giftor) {
-                html += '<div class="funding-section-title">Gift Details:</div>';
-                if (data.giftor.name) html += `<div class="funding-detail"><strong>From:</strong> ${data.giftor.name}</div>`;
-                if (data.giftor.relationship) html += `<div class="funding-detail"><strong>Relationship:</strong> ${data.giftor.relationship}</div>`;
-                if (data.giftor.phone) html += `<div class="funding-detail"><strong>Phone:</strong> ${data.giftor.phone}</div>`;
-                if (typeof data.giftor.contactable !== 'undefined') html += `<div class="funding-detail"><strong>Contactable:</strong> ${data.giftor.contactable ? 'Yes' : 'No'}</div>`;
-                if (typeof data.repayable !== 'undefined') html += `<div class="funding-detail"><strong>Repayable:</strong> ${data.repayable ? 'Yes' : 'No'}</div>`;
-            }
-        } 
-        else if (type === 'fund:sale:property' || type === 'fund:property_sale') {
-            html += '<div class="funding-section-title">Property Sale Details:</div>';
-            if (data.date) {
-                const saleDate = new Date(data.date).toLocaleDateString('en-GB');
-                html += `<div class="funding-detail"><strong>Completion Date:</strong> ${saleDate}</div>`;
-            }
-            if (data.status) html += `<div class="funding-detail"><strong>Status:</strong> ${data.status}</div>`;
-            if (data.lawyer) html += `<div class="funding-detail"><strong>Lawyer:</strong> ${data.lawyer}</div>`;
-        } 
-        else if (type === 'fund:sale:assets' || type === 'fund:asset_sale') {
-            html += '<div class="funding-section-title">Asset Sale Details:</div>';
-            if (data.description) html += `<div class="funding-detail"><strong>Asset:</strong> ${data.description}</div>`;
-            if (data.location) html += `<div class="funding-detail"><strong>Location:</strong> ${data.location}</div>`;
-        }
-        
-        return html;
+    createFundingDetailsSection(fund, originBadge = '') {
+        const detailHtml = this.buildFundingDetailContent(fund, { originBadge });
+        if (!detailHtml) return '';
+        return `<div class="funding-meta-container">${detailHtml}</div>`;
     }
     
     createFundingMatchedTxSection(matchedTxIds, accounts, type, transactionMarkers = {}, check = null, fundIdx = null, sofMatches = {}) {
         const labelMap = {
-            'fund:gift': 'Potential Gift Deposits:',
-            'fund:mortgage': 'Potential Mortgage Deposits:',
-            'fund:savings': 'Verified Salary Deposits:',
-            'fund:income': 'Verified Salary Deposits:'
+            'fund:gift': 'Potential Gift Deposits',
+            'fund:mortgage': 'Potential Mortgage Deposits',
+            'fund:savings': 'Verified Salary Deposits',
+            'fund:income': 'Verified Salary Deposits',
+            'fund:property_sale': 'Potential Property Sale Proceeds',
+            'fund:sale:property': 'Potential Property Sale Proceeds',
+            'fund:asset_sale': 'Potential Asset Sale Proceeds',
+            'fund:sale:assets': 'Potential Asset Sale Proceeds',
+            'fund:htb': 'Potential Lifetime ISA Deposits',
+            'fund:htb_lisa': 'Potential Lifetime ISA Deposits',
+            'fund:inheritance': 'Potential Inheritance Deposits',
+            'fund:loan': 'Potential Loan Deposits',
+            'fund:investment': 'Potential Investment Deposits',
+            'fund:business': 'Potential Business Income',
+            'fund:other': 'Potential Matched Transactions'
         };
-        const matchLabel = labelMap[type] || 'Potential Matched Transactions:';
+        const matchLabel = labelMap[type] || 'Potential Matched Transactions';
         
         // Get comprehensive annotations for all transactions from ALL sources
         const userLinkedTxIds = new Set();
@@ -32903,6 +33444,9 @@ class ThirdfortChecksManager {
                 'fund:income': 'Income'
             };
             const typeName = typeNames[type] || type.replace('fund:', '').replace(/:/g, ' ').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const cleanType = type.replace('fund:', '').replace(/:/g, '-');
+            const originBadge = this.getFundingOriginBadge(data.location);
+            const detailMarkup = this.buildFundingDetailContent(fund, { originBadge });
             
             // Get annotations for this funding method
             const fundAnnotations = (check.sofAnnotations || []).flatMap(ann => 
@@ -32923,6 +33467,7 @@ class ThirdfortChecksManager {
             // Get matched transactions
             const matchedTxIds = this.getMatchedTransactions(type, sofMatches, fund);
             const hasSomeMatches = matchedTxIds.length > 0;
+            let matchedTxs = [];
             
             // Determine card status based on red flags and notes
             const hasRedFlags = allFundRedFlags.length > 0;
@@ -32935,32 +33480,37 @@ class ThirdfortChecksManager {
                 <div style="background: white; border-radius: 8px; border-left: 4px solid ${borderColor}; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; page-break-inside: avoid;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <div style="font-size: 14px; font-weight: 500; color: #003c71; flex: 1;">${typeName}</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            ${originBadge || ''}
+                            <span style="font-size: 14px; font-weight: bold; color: #003c71;">${amount}</span>
                         ${statusIconHTML}
+                        </div>
                     </div>
                     <div style="padding: 12px 16px; border-top: 1px solid #dee2e6;">
-                        <div style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 8px;">${amount}</div>
+                        ${detailMarkup}
             `;
-            
-            // Type-specific details
-            let detailsHTML = '<div style="font-size: 13px; color: #666; margin-bottom: 12px;">';
-            if (type === 'fund:mortgage') {
-                if (data.lender) detailsHTML += `<div><strong>Provider:</strong> ${data.lender}</div>`;
-                if (data.mortgage_type) detailsHTML += `<div><strong>Type:</strong> ${data.mortgage_type}</div>`;
-            } else if (type === 'fund:gift') {
-                if (data.giftor?.relationship) detailsHTML += `<div><strong>Relationship:</strong> ${data.giftor.relationship}</div>`;
-            } else if (type === 'fund:savings' || type === 'fund:income') {
-                detailsHTML += `<div><strong>Source:</strong> Salary savings over time</div>`;
-            } else if (type === 'fund:sale:property') {
-                if (data.property) detailsHTML += `<div><strong>Property:</strong> ${data.property}</div>`;
-            } else if (type === 'fund:sale:assets') {
-                detailsHTML += `<div><strong>Assets:</strong> Vehicle and personal items</div>`;
-            }
-            detailsHTML += '</div>';
-            fundingCardsHTML += detailsHTML;
+
+            const labelMap = {
+                'fund:gift': 'Potential Gift Deposits:',
+                'fund:mortgage': 'Potential Mortgage Deposits:',
+                'fund:savings': 'Verified Salary Deposits:',
+                'fund:income': 'Verified Salary Deposits:',
+                'fund:property_sale': 'Potential Property Sale Proceeds:',
+                'fund:sale:property': 'Potential Property Sale Proceeds:',
+                'fund:asset_sale': 'Potential Asset Sale Proceeds:',
+                'fund:sale:assets': 'Potential Asset Sale Proceeds:',
+                'fund:htb': 'Potential HTB/LISA Deposits:',
+                'fund:htb_lisa': 'Potential HTB/LISA Deposits:',
+                'fund:inheritance': 'Potential Inheritance Deposits:',
+                'fund:loan': 'Potential Loan Deposits:',
+                'fund:investment': 'Potential Investment Deposits:',
+                'fund:business': 'Potential Business Income:',
+                'fund:other': 'Potential Matched Transactions:'
+            };
+            const matchLabel = labelMap[type] || 'Potential Matched Transactions:';
             
             // Matched Transactions
             if (hasSomeMatches) {
-                const matchedTxs = [];
                 Object.values(accounts).forEach(acc => {
                     (acc.statement || []).forEach(tx => {
                         if (matchedTxIds.includes(tx.id)) {
@@ -32975,7 +33525,7 @@ class ThirdfortChecksManager {
                     matchedTxs.slice(0, 5).forEach(tx => {
                         const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
                         const txMarker = transactionMarkers[tx.id];
-                        const markerStyle = txMarker === 'rejected' ? 'opacity: 0.6; text-decoration: line-through;' : '';
+                        const markerStyle = txMarker === 'rejected' ? 'opacity: 0.65;' : '';
                         const markerText = txMarker === 'verified' ? ' ✓ VERIFIED' : (txMarker === 'rejected' ? ' ✕ REJECTED' : (txMarker === 'review' ? ' ? REVIEW' : ''));
                         const markerColor = txMarker === 'verified' ? '#39b549' : (txMarker === 'rejected' ? '#d32f2f' : '#f7931e');
                         
@@ -32986,6 +33536,18 @@ class ThirdfortChecksManager {
                     }
                     fundingCardsHTML += `</div></div>`;
                 }
+            }
+            if ((!hasSomeMatches || matchedTxs.length === 0) && type !== 'fund:mortgage') {
+                const considerIcon = this.getTaskCheckIconCSS('CO');
+                fundingCardsHTML += `
+                    <div style="margin: 12px 0;">
+                        <div style="font-size: 12px; font-weight: bold; color: #6c757d; margin-bottom: 6px;">${matchLabel}</div>
+                        <div style="display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: #fff8e6; border: 1px solid #ffd966; border-radius: 6px; font-size: 11px; color: #856404;">
+                            ${considerIcon}
+                            <span>No linked bank transactions detected, manual review required</span>
+                        </div>
+                    </div>
+                `;
             }
             
             // Verification checkboxes
@@ -32998,6 +33560,38 @@ class ThirdfortChecksManager {
                 });
                 fundingCardsHTML += `</div></div>`;
             }
+            
+            const docTaskKey = `documents:${cleanType}`;
+            const docOutcome = check.taskOutcomes ? check.taskOutcomes[docTaskKey] : null;
+            const documentCount = this.getDocumentCount(docOutcome);
+            const hasDocuments = documentCount > 0;
+            const pdfDocLines = [];
+            const pdfDefaultReminder = 'Check the report pdf for evidence or obtain from the client and review manually';
+            const pdfShouldShowManualReview = (!hasSomeMatches || matchedTxs.length === 0) && type !== 'fund:mortgage';
+
+            if (hasDocuments) {
+                const uploadedLabel = `${documentCount} document${documentCount === 1 ? '' : 's'} uploaded`;
+                pdfDocLines.push({ status: 'clear', text: uploadedLabel });
+            } else {
+                pdfDocLines.push({ status: 'consider', text: pdfDefaultReminder });
+            }
+
+            if (pdfShouldShowManualReview) {
+                pdfDocLines.push({ status: 'consider', text: 'No linked bank transactions detected, manual review required.' });
+            }
+
+            if (pdfDocLines.length === 0) {
+                pdfDocLines.push({ status: hasDocuments ? 'clear' : 'consider', text: pdfDefaultReminder });
+            }
+
+            fundingCardsHTML += `
+                <div class="funding-doc-status pdf">
+                    ${pdfDocLines.map(line => {
+                        const icon = this.getTaskCheckIconCSS(line.status === 'clear' ? 'CL' : line.status === 'fail' ? 'FA' : 'CO');
+                        return `<div class="doc-status-line">${icon}<span>${line.text}</span></div>`;
+                    }).join('')}
+                </div>
+            `;
             
             // Red Flags
             if (allFundRedFlags.length > 0) {
@@ -33128,6 +33722,36 @@ class ThirdfortChecksManager {
                     .section-title { font-size: 18px; font-weight: bold; color: var(--primary-blue); margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid var(--border-grey); }
                     .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border-grey); text-align: center; font-size: 11px; color: #999; }
                     @media print { body { padding: 20px; } }
+                    .funding-meta-container { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+                    .funding-meta-row { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #333; margin: 4px 0; }
+                    .funding-meta-row.compact { font-size: 11px; }
+                    .funding-meta-label { min-width: 110px; font-weight: 600; color: #003c71; }
+                    .funding-meta-value { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; color: #333; }
+                    .funding-meta-empty { font-size: 12px; font-style: italic; color: #777; margin: 6px 0; }
+                    .funding-origin-badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 12px; background: #eef2f7; font-size: 11px; font-weight: 600; color: #003c71; }
+                    .funding-bank-card { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e1e4e8; border-radius: 8px; background: #f8f9fb; margin-bottom: 12px; }
+                    .funding-bank-logo { display: flex; align-items: center; justify-content: center; max-width: 200px; }
+                    .funding-bank-logo img { max-height: 80px; max-width: 200px; object-fit: contain; }
+                    .funding-bank-copy { display: flex; flex-direction: column; gap: 4px; }
+                    .funding-bank-label { font-size: 10px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: #6c757d; }
+                    .funding-bank-name { font-size: 14px; font-weight: 600; color: #003c71; }
+                    .funding-section-heading { font-size: 13px; font-weight: 600; color: #003c71; margin: 12px 0 8px 0; }
+                    .funding-person-card { border: 1px solid #e1e4e8; border-radius: 8px; padding: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 10px; }
+                    .funding-person-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+                    .funding-person-name { font-size: 13px; font-weight: 600; color: #003c71; }
+                    .funding-person-role { font-size: 11px; font-weight: 600; color: #6c757d; }
+                    .income-card-list { display: grid; gap: 10px; margin-top: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+                    .income-card { border: 1px solid #dbe2ea; border-radius: 6px; padding: 10px; background: #f9fbfd; }
+                    .income-card.salary { background: #f1f8f5; border-color: #cfe8d6; }
+                    .income-card.other { background: #f8f9fa; }
+                    .income-card-title { font-size: 12px; font-weight: 600; color: #003c71; margin-bottom: 6px; }
+                    .income-card-row { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: #333; margin: 2px 0; }
+                    .income-label { font-weight: 600; color: #6c757d; }
+                    .income-value { flex: 1; text-align: right; color: #333; }
+                    .funding-detail-card { border: 1px solid #e1e4e8; border-radius: 8px; padding: 12px; background: #fdfdfd; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 12px; }
+                    .funding-detail-card-title { font-size: 13px; font-weight: 600; color: #003c71; margin-bottom: 8px; }
+                    .funding-doc-status.pdf { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.08); display: flex; align-items: center; gap: 6px; }
+                    .funding-doc-count-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; background: #e3f2fd; font-size: 11px; font-weight: 600; color: #1976d2; margin-left: auto; }
                 </style>
             </head>
             <body>
