@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -152,7 +152,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>🧪 Test FCDO Sanctions Search</h1>
+    <h1>ðŸ§ª Test FCDO Sanctions Search</h1>
     
     <div class="info">
       <strong>Test Harness for sanctions-search-v2.html</strong><br>
@@ -166,9 +166,9 @@
       <label for="testDOB">Test Client DOB:</label>
       <input type="date" id="testDOB" value="1975-06-15">
       
-      <button onclick="sendClientData()">📤 Send Client Data to Iframe</button>
-      <button onclick="sendMockXML()" class="secondary">📦 Send Mock XML to Iframe</button>
-      <button onclick="clearLog()" class="secondary">🧹 Clear Log</button>
+      <button onclick="sendClientData()">ðŸ“¤ Send Client Data to Iframe</button>
+      <button onclick="sendMockXML()" class="secondary">ðŸ“¦ Send Mock XML to Iframe</button>
+      <button onclick="clearLog()" class="secondary">ðŸ§¹ Clear Log</button>
     </div>
     
     <div class="iframe-container">
@@ -176,19 +176,19 @@
     </div>
     
     <div class="log">
-      <h3>📋 Message Log</h3>
+      <h3>ðŸ“‹ Message Log</h3>
       <div id="logContainer"></div>
     </div>
     
     <div class="instructions">
-      <h3>📝 Testing Instructions</h3>
+      <h3>ðŸ“ Testing Instructions</h3>
       <ol>
         <li>Make sure <code>sanctions-search-v2.html</code> is in the same directory</li>
         <li>Open <code>test-xml-sample.xml</code> and copy its entire contents</li>
         <li>In <code>sanctions-search-v2.html</code>, set <code>USE_MOCK_DATA = true</code></li>
         <li>Paste the XML into the <code>&lt;script id="mockSanctionsXML"&gt;</code> tag</li>
         <li>Reload this page</li>
-        <li>Click "📤 Send Client Data to Iframe" to populate the search form</li>
+        <li>Click "ðŸ“¤ Send Client Data to Iframe" to populate the search form</li>
         <li>Click "Search Sanctions List" in the iframe to test search</li>
         <li>Try these test names:
           <ul>
@@ -197,7 +197,7 @@
             <li><strong>"Vladimir Petrov"</strong> - Exact match (TEST002)</li>
             <li><strong>"Sarah Williams"</strong> - Exact match (TEST005)</li>
             <li><strong>"Ahmed Rahman"</strong> - Fuzzy match (TEST004)</li>
-            <li><strong>"Test Company"</strong> - No match (should show ✅)</li>
+            <li><strong>"Test Company"</strong> - No match (should show âœ…)</li>
           </ul>
         </li>
       </ol>
@@ -212,8 +212,8 @@
     // Listen for messages from iframe
     window.addEventListener('message', (event) => {
       // Log all messages from iframe
-      logMessage(`⬅️ RECEIVED: ${event.data.type || 'unknown'}`, 'received');
-      console.log('📬 Received from iframe:', event.data);
+      logMessage(`â¬…ï¸ RECEIVED: ${event.data.type || 'unknown'}`, 'received');
+      console.log('ðŸ“¬ Received from iframe:', event.data);
       
       // Handle different message types
       switch (event.data.type) {
@@ -236,8 +236,8 @@
           break;
           
         case 'sanctions-search-complete':
-          logMessage('✅ Sanctions search completed successfully!', 'received');
-          alert('✅ Search completed!\n\nIn production, the PDF would be uploaded to S3 now.');
+          logMessage('âœ… Sanctions search completed successfully!', 'received');
+          alert('âœ… Search completed!\n\nIn production, the PDF would be uploaded to S3 now.');
           break;
           
         case 'close-lightbox':
@@ -262,8 +262,8 @@
       };
       
       iframe.contentWindow.postMessage(message, '*');
-      logMessage(`➡️ SENT: sanctions-client-data (${name}, ${dob})`, 'sent');
-      console.log('📤 Sent to iframe:', message);
+      logMessage(`âž¡ï¸ SENT: sanctions-client-data (${name}, ${dob})`, 'sent');
+      console.log('ðŸ“¤ Sent to iframe:', message);
     }
     
     // Send mock XML to iframe (for testing without backend)
@@ -292,9 +292,18 @@
     
     // Wait for iframe to load
     iframe.addEventListener('load', () => {
-      logMessage('✅ Iframe loaded successfully', 'info');
+      logMessage('âœ… Iframe loaded successfully', 'info');
     });
   </script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = 'd10a3e2';
+    console.log('[test-sanctions-search] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
 </body>
 </html>
+
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -92,14 +92,14 @@
 <body>
   <div class="demo-container">
     <div class="demo-header">
-      <h1>🔐 Thirdfort Check Manager - Demo</h1>
+      <h1>ðŸ” Thirdfort Check Manager - Demo</h1>
       <p>Testing interface for Thirdfort check initiation iframe</p>
     </div>
     
     <div class="demo-controls">
-      <button onclick="sendMockData()">📤 Send Mock Client Data</button>
-      <button onclick="clearConsole()">🗑️ Clear Console</button>
-      <button onclick="reloadIframe()">🔄 Reload Iframe</button>
+      <button onclick="sendMockData()">ðŸ“¤ Send Mock Client Data</button>
+      <button onclick="clearConsole()">ðŸ—‘ï¸ Clear Console</button>
+      <button onclick="reloadIframe()">ðŸ”„ Reload Iframe</button>
     </div>
     
     <iframe src="thirdfort-check.html" id="thirdfortIframe"></iframe>
@@ -155,21 +155,21 @@
           type: 'CLIENT_DATA',
           payload: mockClientData
         }, '*');
-        log('✅ Sent mock client data to iframe', mockClientData);
+        log('âœ… Sent mock client data to iframe', mockClientData);
       }
     }
     
     // Listen for messages from iframe
     window.addEventListener('message', (event) => {
       if (event.data.type === 'THIRDFORT_CHECK_READY') {
-        log('✅ Iframe ready, sending mock data automatically...');
+        log('âœ… Iframe ready, sending mock data automatically...');
         setTimeout(() => {
           sendMockData();
         }, 100);
       }
       
       if (event.data.type === 'THIRDFORT_CHECK_SUBMIT') {
-        log('✅ Check submission received from iframe', event.data.payload);
+        log('âœ… Check submission received from iframe', event.data.payload);
         alert('Check initiated successfully! See console output below for full data.');
       }
       
@@ -179,6 +179,15 @@
       }
     });
   </script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = 'd10a3e2';
+    console.log('[thirdfort-check-demo] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
 </body>
 </html>
+
 

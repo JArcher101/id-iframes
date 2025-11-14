@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -19,8 +19,8 @@
     =====================================================================
     CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
     =====================================================================
-    Transport Medium → fallback to Quicksand Bold (700)
-    Rotis fonts → fallback to Quicksand Regular (400/600)
+    Transport Medium â†’ fallback to Quicksand Bold (700)
+    Rotis fonts â†’ fallback to Quicksand Regular (400/600)
     =====================================================================
     */
     
@@ -58,9 +58,9 @@
     ADDRESS AUTOCOMPLETE FLOW:
     1. User types in address field (7+ chars)
     2. Child sends 'address-search' to parent via postMessage
-    3. Parent calls Wix backend → backend calls getaddress.io
+    3. Parent calls Wix backend â†’ backend calls getaddress.io
     4. Parent sends 'address-results' back with suggestions
-    5. User selects address → Child sends 'address-lookup' to parent
+    5. User selects address â†’ Child sends 'address-lookup' to parent
     6. Parent sends 'address-data' with full address object
     7. Child converts to Thirdfort format and stores
     =====================================================================
@@ -782,7 +782,7 @@
             <div class="entity-right">
               <h3 style="margin: 0 0 4px 0; font-size: 0.9rem; color: #666;">People</h3>
               <div style="margin-top: 4px; margin-bottom: 8px; padding: 8px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; font-size: 0.75rem; color: #856404; line-height: 1.3;">
-                ⚠️ Ensure all directors and people with &gt; 25% share have undergone appropriate AML &amp; ID checks
+                âš ï¸ Ensure all directors and people with &gt; 25% share have undergone appropriate AML &amp; ID checks
               </div>
               <div class="people-scrollable">
                 <div id="peopleRepeater">
@@ -839,7 +839,7 @@
           <div>
             <label for="phoneCountryCode">Code</label>
             <div class="address-autocomplete-container">
-              <input type="text" id="phoneCountryCode" name="phoneCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
+              <input type="text" id="phoneCountryCode" name="phoneCountryCode" autocomplete="off" placeholder="Search country code..." value="ðŸ‡¬ðŸ‡§ +44 UK" data-phone-code="+44" data-country-code="GB" />
               <div id="phoneCountryCodeDropdown" class="address-dropdown hidden"></div>
             </div>
           </div>
@@ -1043,7 +1043,7 @@
     <h4 class="error-popup-header">Validation Error</h4>
     <div class="error-popup-content">
       <span id="errorMessage" style="white-space:pre-wrap;"></span>
-      <button type="button" id="closeError">×</button>
+      <button type="button" id="closeError">Ã—</button>
     </div>
   </div>
 
@@ -1253,7 +1253,7 @@
       }
       // companyLinkBtn and downloadSummaryBtn stay enabled (always allow viewing and downloading)
       
-      console.log(enabled ? '✏️ Edit mode enabled' : '🔒 Edit mode disabled (read-only)');
+      console.log(enabled ? 'âœï¸ Edit mode enabled' : 'ðŸ”’ Edit mode disabled (read-only)');
     }
     
     // ===== CHANGE DETECTION =====
@@ -1261,7 +1261,7 @@
     function notifyUnsavedChanges() {
       if (!isLoadingData && !hasUnsavedChanges) {
         hasUnsavedChanges = true;
-        console.log('🔒 Unsaved changes detected, disabling close button');
+        console.log('ðŸ”’ Unsaved changes detected, disabling close button');
         window.parent.postMessage({
           type: 'disable-close'
         }, '*');
@@ -1303,7 +1303,7 @@
       // Update registration country label
       document.querySelector('label[for="registrationCountry"]').textContent = 'Registration Country';
       
-      console.log(`✏️ Labels updated for ${entityType} mode`);
+      console.log(`âœï¸ Labels updated for ${entityType} mode`);
     }
     
     // ===== CACHE MANAGEMENT =====
@@ -1599,7 +1599,7 @@
           let addressPrefix = getAddressData.line_1.trim();
           
           // Remove thoroughfare/street from line_1 if present
-          // Example: "94 Southgate Street" → "94" | "Thurstan Hoskin Llp" → "Thurstan Hoskin Llp"
+          // Example: "94 Southgate Street" â†’ "94" | "Thurstan Hoskin Llp" â†’ "Thurstan Hoskin Llp"
           if (getAddressData.thoroughfare && addressPrefix.includes(getAddressData.thoroughfare)) {
             addressPrefix = addressPrefix.replace(getAddressData.thoroughfare, '').replace(/,\s*$/, '').trim();
           }
@@ -1779,7 +1779,7 @@
         const cachedSuggestions = getCachedItem(cacheKey, 'autocomplete');
         
         if (cachedSuggestions) {
-          console.log('✅ Cache hit for autocomplete:', searchTerm);
+          console.log('âœ… Cache hit for autocomplete:', searchTerm);
           displayAddressSuggestions(cachedSuggestions, isCurrentAddress ? 'current' : 'previous');
           return;
         }
@@ -1790,7 +1790,7 @@
         
         // Debounce 300ms
         const timer = setTimeout(() => {
-          console.log('📡 API call for autocomplete:', searchTerm);
+          console.log('ðŸ“¡ API call for autocomplete:', searchTerm);
           window.parent.postMessage({
             type: 'address-search',
             searchTerm: searchTerm,
@@ -1888,13 +1888,13 @@
       const cachedAddress = getCachedItem(cacheKey, 'address');
       
       if (cachedAddress) {
-        console.log('✅ Cache hit for full address:', addressId);
+        console.log('âœ… Cache hit for full address:', addressId);
         handleAddressData(cachedAddress, isCurrentAddress ? 'current' : 'previous');
         return;
       }
       
       // Request full address from parent
-      console.log('📡 API call for full address:', addressId);
+      console.log('ðŸ“¡ API call for full address:', addressId);
       window.parent.postMessage({
         type: 'address-lookup',
         addressId: addressId,
@@ -1955,7 +1955,7 @@
         // Debounce 300ms
         companyNameDebounceTimer = setTimeout(() => {
           const apiType = entityType === 'charity' ? 'charity-search' : 'company-search';
-          console.log(`📡 API call for ${entityType} name search:`, searchTerm);
+          console.log(`ðŸ“¡ API call for ${entityType} name search:`, searchTerm);
           window.parent.postMessage({
             type: apiType,
             searchTerm: searchTerm,
@@ -2033,7 +2033,7 @@
         // Debounce 300ms
         companyNumberDebounceTimer = setTimeout(() => {
           const apiType = entityType === 'charity' ? 'charity-search' : 'company-search';
-          console.log(`📡 API call for ${entityType} number search:`, searchTerm);
+          console.log(`ðŸ“¡ API call for ${entityType} number search:`, searchTerm);
           window.parent.postMessage({
             type: apiType,
             searchTerm: searchTerm,
@@ -2127,7 +2127,7 @@
       // For charities, store organisation_number in data attribute (for URL construction)
       if (entityType === 'charity' && company.organisation_number) {
         entityNumber.dataset.organisationNumber = company.organisation_number;
-        console.log(`🏷️ Stored organisation_number: ${company.organisation_number} (display: ${company.company_number})`);
+        console.log(`ðŸ·ï¸ Stored organisation_number: ${company.organisation_number} (display: ${company.company_number})`);
       } else {
         entityNumber.dataset.organisationNumber = '';
       }
@@ -2138,7 +2138,7 @@
       
       // Request full company/charity data from parent (directors/trustees, officers, PSCs)
       const apiType = entityType === 'charity' ? 'charity-lookup' : 'company-lookup';
-      console.log(`📡 Requesting full ${entityType} data for:`, company.company_number);
+      console.log(`ðŸ“¡ Requesting full ${entityType} data for:`, company.company_number);
       window.parent.postMessage({
         type: apiType,
         companyNumber: company.company_number,
@@ -2154,13 +2154,13 @@
     */
     function handleCompanyData(data) {
       businessData = data;
-      console.log('✅ Received full company data:', businessData);
+      console.log('âœ… Received full company data:', businessData);
       // Company data now includes: directors, officers, PSCs, registered_office_address, etc.
       
       // For charities, extract and store organisation_number in dataset (for URL construction)
       if (entityType === 'charity' && data.organisation_number) {
         entityNumber.dataset.organisationNumber = data.organisation_number;
-        console.log(`🏷️ Stored organisation_number from charity data: ${data.organisation_number}`);
+        console.log(`ðŸ·ï¸ Stored organisation_number from charity data: ${data.organisation_number}`);
       }
       
       // Show the link and refresh buttons
@@ -2180,7 +2180,7 @@
           const isDifferentAddress = currentDisplayText !== newDisplayText;
           
           if (isDifferentAddress || !currentAddressObject) {
-            console.log('📍 Auto-populating registered office address:', thirdfortAddress);
+            console.log('ðŸ“ Auto-populating registered office address:', thirdfortAddress);
             
             // Set UK as country
             setCountry('currentCountry', 'GBR');
@@ -2191,9 +2191,9 @@
             // Display in the autocomplete field
             currentAddress.value = formatThirdfortForDisplay(thirdfortAddress);
             
-            console.log('✅ Registered office address converted and stored:', currentAddressObject);
+            console.log('âœ… Registered office address converted and stored:', currentAddressObject);
           } else {
-            console.log('ℹ️ Registered office address is identical to current address, keeping existing');
+            console.log('â„¹ï¸ Registered office address is identical to current address, keeping existing');
           }
         }
       }
@@ -2368,14 +2368,14 @@
         `;
         
         if (person.share) {
-          html += `<div class="people-card-share">📊 ${person.share}</div>`;
+          html += `<div class="people-card-share">ðŸ“Š ${person.share}</div>`;
         }
         
         card.innerHTML = html;
         peopleRepeater.appendChild(card);
       });
       
-      console.log(`✅ Displayed ${allPeople.length} people cards`);
+      console.log(`âœ… Displayed ${allPeople.length} people cards`);
     }
     
     /*
@@ -2409,7 +2409,7 @@
           const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
           
           window.open(url, 'charityTrustees', features);
-          console.log('👤 Opening charity trustees tab:', url);
+          console.log('ðŸ‘¤ Opening charity trustees tab:', url);
         }
         return;
       }
@@ -2424,7 +2424,7 @@
       const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
       
       window.open(url, 'officerAppointments', features);
-      console.log('👤 Opening officer appointments:', url);
+      console.log('ðŸ‘¤ Opening officer appointments:', url);
     }
     
     /*
@@ -2462,7 +2462,7 @@
       if (entityNumber?.value?.trim()) {
         const companyNumber = entityNumber.value.trim();
         const apiType = entityType === 'charity' ? 'charity-lookup' : 'company-lookup';
-        console.log(`🔄 Refreshing ${entityType} data for:`, companyNumber);
+        console.log(`ðŸ”„ Refreshing ${entityType} data for:`, companyNumber);
         window.parent.postMessage({
           type: apiType,
           companyNumber: companyNumber,
@@ -2669,8 +2669,8 @@
         doc.setTextColor(51, 51, 51);
         
         const financialInfo = [
-          ['Latest Income:', businessData.charity_income ? `£${businessData.charity_income.toLocaleString()}` : 'N/A'],
-          ['Latest Expenditure:', businessData.charity_expenditure ? `£${businessData.charity_expenditure.toLocaleString()}` : 'N/A']
+          ['Latest Income:', businessData.charity_income ? `Â£${businessData.charity_income.toLocaleString()}` : 'N/A'],
+          ['Latest Expenditure:', businessData.charity_expenditure ? `Â£${businessData.charity_expenditure.toLocaleString()}` : 'N/A']
         ];
         
         financialInfo.forEach(([label, value]) => {
@@ -2715,7 +2715,7 @@
           else if (officer.officer_role === 'trustee') roleType = 'Trustee';
           else roleType = 'Officer';
           
-          const appointedDate = officer.appointed_on ? formatDate(officer.appointed_on) : '—';
+          const appointedDate = officer.appointed_on ? formatDate(officer.appointed_on) : 'â€”';
           
           if (existing) {
             if (!existing.roles.includes(roleType)) {
@@ -2738,7 +2738,7 @@
           const normalizedName = normalizeName(psc.name);
           const existing = peopleMap.get(normalizedName);
           
-          let shareInfo = '—';
+          let shareInfo = 'â€”';
           if (psc.natures_of_control && psc.natures_of_control.length > 0) {
             const control = psc.natures_of_control[0];
             if (control.includes('25-to-50')) shareInfo = '25-50%';
@@ -2757,7 +2757,7 @@
               name: psc.name,
               roles: ['PSC'],
               share: shareInfo,
-              appointed: '—'
+              appointed: 'â€”'
             });
           }
         });
@@ -2781,7 +2781,7 @@
       
       // Helper function to format date
       function formatDate(dateString) {
-        if (!dateString) return '—';
+        if (!dateString) return 'â€”';
         try {
           const date = new Date(dateString);
           return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -2794,7 +2794,7 @@
       const tableData = allPeople.map(person => [
         person.name,
         person.roles.join(', '),
-        person.share || '—',
+        person.share || 'â€”',
         person.appointed
       ]);
       
@@ -2830,7 +2830,7 @@
       doc.setFontSize(11);
       doc.setTextColor(133, 100, 4);
       doc.setFont('helvetica', 'bold');
-      doc.text('⚠️ AML & ID Verification Required', margin + 10, yPosition + 15);
+      doc.text('âš ï¸ AML & ID Verification Required', margin + 10, yPosition + 15);
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
@@ -2879,7 +2879,7 @@
       
       // Download
       doc.save(filename);
-      console.log('📄 PDF downloaded:', filename);
+      console.log('ðŸ“„ PDF downloaded:', filename);
     }
     
     // ===== FORM VALIDATION =====
@@ -3338,7 +3338,7 @@
         entityNumberDropdown.classList.add('hidden');
         businessData = null;
         updateCompanyButtons();
-        console.log('⚠️ Company search only available for UK companies');
+        console.log('âš ï¸ Company search only available for UK companies');
       }
     });
     
@@ -3480,7 +3480,7 @@
         e.preventDefault();
         
         const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-        console.log('📋 Pasted DOB text:', pastedText);
+        console.log('ðŸ“‹ Pasted DOB text:', pastedText);
         
         // Try to parse the date
         const parsedDate = parseDateString(pastedText);
@@ -3495,9 +3495,9 @@
           
           dobInputs[7].focus();
           const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
-          console.log('✅ Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
+          console.log('âœ… Pasted DOB filled all fields:', parsedDate, 'â†’', formattedDate);
         } else {
-          console.warn('⚠️ Could not parse date from pasted text:', pastedText);
+          console.warn('âš ï¸ Could not parse date from pasted text:', pastedText);
         }
       });
     }
@@ -3515,7 +3515,7 @@
       } else if (event.data && event.data.type === 'allowEdits-false') {
         setEditMode(false);
       } else if (event.data && event.data.type === 'client-data') {
-        console.log('📥 Received client-data:', event.data);
+        console.log('ðŸ“¥ Received client-data:', event.data);
         
         // Handle entity flag from message
         if (event.data.entity === true) {
@@ -3547,7 +3547,7 @@
         const errors = validateForm();
         if (errors.length) {
           // Send validation error to parent (don't show error popup in iframe)
-          console.log('❌ Validation errors:', errors);
+          console.log('âŒ Validation errors:', errors);
           window.parent.postMessage({
             type: 'validation-error',
             errors: errors
@@ -3558,7 +3558,7 @@
         // Additional phone validation before sending data
         const phoneValidation = validatePhoneNumber();
         if (!phoneValidation.isValid) {
-          console.log('❌ Phone validation failed before sending data:', phoneValidation.error);
+          console.log('âŒ Phone validation failed before sending data:', phoneValidation.error);
           window.parent.postMessage({
             type: 'validation-error',
             errors: [phoneValidation.error]
@@ -3570,7 +3570,7 @@
         
         // Check if data compilation failed
         if (!data) {
-          console.error('❌ Data compilation failed');
+          console.error('âŒ Data compilation failed');
           window.parent.postMessage({
             type: 'validation-error',
             errors: ['Data compilation error']
@@ -3579,7 +3579,7 @@
         }
         
         // Send to parent (DOB will be in 'dd-mm-yyyy' format)
-        console.log('📤 Sending new-data to parent:', data);
+        console.log('ðŸ“¤ Sending new-data to parent:', data);
         window.parent.postMessage({
           type: 'new-data',
           data: data
@@ -3592,7 +3592,7 @@
         if (event.data.searchTerm && event.data.suggestions) {
           const cacheKey = 'auto_' + event.data.searchTerm.toLowerCase();
           setCachedItem(cacheKey, event.data.suggestions, 'autocomplete');
-          console.log('💾 Cached autocomplete results for:', event.data.searchTerm);
+          console.log('ðŸ’¾ Cached autocomplete results for:', event.data.searchTerm);
         }
         
         displayAddressSuggestions(event.data.suggestions, event.data.field);
@@ -3601,7 +3601,7 @@
         if (event.data.addressId && event.data.address) {
           const cacheKey = 'addr_' + event.data.addressId;
           setCachedItem(cacheKey, event.data.address, 'address');
-          console.log('💾 Cached full address for ID:', event.data.addressId);
+          console.log('ðŸ’¾ Cached full address for ID:', event.data.addressId);
         }
         
         handleAddressData(event.data.address, event.data.field);
@@ -3613,7 +3613,7 @@
         handleCompanyData(event.data.companyData || event.data.charityData);
       } else if (event.data && event.data.type === 'sanctions-check') {
         // Format client data and send back to parent for sanctions lightbox
-        console.log('🔍 Formatting client data for sanctions check...');
+        console.log('ðŸ” Formatting client data for sanctions check...');
         
         // Compile client name
         let clientName = '';
@@ -3653,7 +3653,7 @@
           }
         };
         
-        console.log('📤 Sending sanctions data to parent:', sanctionsData);
+        console.log('ðŸ“¤ Sending sanctions data to parent:', sanctionsData);
         window.parent.postMessage(sanctionsData, '*');
       }
     });
@@ -3746,7 +3746,7 @@
         // Entity type already set by switchToEntityMode() before loadData() is called
         // Only use formData.eT if entityType wasn't explicitly set
         if (formData.eT && formData.eT !== entityType) {
-          console.log(`ℹ️ Preserving entityType from message: '${entityType}' (formData has: '${formData.eT}')`);
+          console.log(`â„¹ï¸ Preserving entityType from message: '${entityType}' (formData has: '${formData.eT}')`);
         }
         
         setJurisdiction('registrationCountry', formData.rC || 'GB');
@@ -3757,7 +3757,7 @@
         // For charities, extract organisation_number from businessData (used only for URLs, not saved to DB)
         if (entityType === 'charity' && businessData?.organisation_number) {
           entityNumber.dataset.organisationNumber = businessData.organisation_number;
-          console.log(`🏷️ Extracted organisation_number from businessData for URLs: ${businessData.organisation_number}`);
+          console.log(`ðŸ·ï¸ Extracted organisation_number from businessData for URLs: ${businessData.organisation_number}`);
         } else {
           entityNumber.dataset.organisationNumber = '';
         }
@@ -3766,7 +3766,7 @@
         updateEntityLabels();
         
         if (businessData) {
-          console.log(`✅ Loaded ${entityType} data:`, businessData);
+          console.log(`âœ… Loaded ${entityType} data:`, businessData);
         }
         
         // Update button visibility
@@ -3798,7 +3798,7 @@
             
             setPhoneCode('phoneCountryCode', countryCode);
             phoneNumber.value = nationalNumber;
-            console.log(`📞 Formatted phone using libphonenumber: ${cleanPhone} → ${formattedPhone} (${countryCode} + ${nationalNumber})`);
+            console.log(`ðŸ“ž Formatted phone using libphonenumber: ${cleanPhone} â†’ ${formattedPhone} (${countryCode} + ${nationalNumber})`);
           } catch (error) {
             console.warn('Error parsing formatted phone number:', error);
             // Fall back to original logic
@@ -3807,7 +3807,7 @@
           }
         } else {
           // Couldn't format with libphonenumber - use original logic
-          console.log('📞 Could not format phone with libphonenumber, using original logic for:', cleanPhone);
+          console.log('ðŸ“ž Could not format phone with libphonenumber, using original logic for:', cleanPhone);
           
           // Check if it already has international format (starts with +)
           if (cleanPhone.startsWith('+')) {
@@ -3819,7 +3819,7 @@
               if (cleanPhone.startsWith(code)) {
                 setPhoneCode('phoneCountryCode', code);
                 phoneNumber.value = cleanPhone.substring(code.length);
-                console.log(`📞 Loaded international phone: ${code} + ${cleanPhone.substring(code.length)}`);
+                console.log(`ðŸ“ž Loaded international phone: ${code} + ${cleanPhone.substring(code.length)}`);
                 matched = true;
                 break;
               }
@@ -3831,27 +3831,27 @@
               if (genericMatch) {
                 setPhoneCode('phoneCountryCode', genericMatch[1]);
                 phoneNumber.value = genericMatch[2];
-                console.log(`📞 Loaded phone with unrecognized code: ${genericMatch[1]} + ${genericMatch[2]}`);
+                console.log(`ðŸ“ž Loaded phone with unrecognized code: ${genericMatch[1]} + ${genericMatch[2]}`);
               }
             }
           } 
           // Check if it's UK mobile starting with 07, 08, or 09
           else if (cleanPhone.match(/^0[7-9]\d{9}$/)) {
             setPhoneCode('phoneCountryCode', '+44');
-            phoneNumber.value = cleanPhone.substring(1); // Remove leading 0: 07700000000 → 7700000000
-            console.log(`📞 Converted UK mobile ${cleanPhone} → +44${cleanPhone.substring(1)}`);
+            phoneNumber.value = cleanPhone.substring(1); // Remove leading 0: 07700000000 â†’ 7700000000
+            console.log(`ðŸ“ž Converted UK mobile ${cleanPhone} â†’ +44${cleanPhone.substring(1)}`);
           }
           // Other UK format (starts with 0) - landlines or other
           else if (cleanPhone.startsWith('0')) {
             setPhoneCode('phoneCountryCode', '+44');
             phoneNumber.value = cleanPhone.substring(1); // Remove leading 0
-            console.log(`📞 Converted UK number ${cleanPhone} → +44${cleanPhone.substring(1)}`);
+            console.log(`ðŸ“ž Converted UK number ${cleanPhone} â†’ +44${cleanPhone.substring(1)}`);
           }
           // No recognized format, store as-is with default country code
           else {
             setPhoneCode('phoneCountryCode', '+44');
             phoneNumber.value = cleanPhone;
-            console.log('📞 Loaded phone (no prefix):', cleanPhone, '→ assuming +44');
+            console.log('ðŸ“ž Loaded phone (no prefix):', cleanPhone, 'â†’ assuming +44');
           }
         }
       } else {
@@ -4009,7 +4009,7 @@
       // Use setTimeout to ensure all DOM updates are complete before enabling change detection
       setTimeout(() => {
         isLoadingData = false;
-        console.log('✅ Data loaded successfully, change detection enabled');
+        console.log('âœ… Data loaded successfully, change detection enabled');
         
         // Apply edit mode state (in case it was set before data load)
         setEditMode(allowEdits);
@@ -4080,15 +4080,15 @@
   </script>
   
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=d10a3e2"></script>
   <script>
     // Initialize all autocomplete fields immediately (DOM already loaded since scripts are at bottom)
-    console.log('🔧 Initializing autocomplete fields...');
+    console.log('ðŸ”§ Initializing autocomplete fields...');
     initializeCountryAutocomplete('currentCountry', 'currentCountryDropdown');
     initializeCountryAutocomplete('previousCountry', 'previousCountryDropdown');
     initializePhoneCodeAutocomplete('phoneCountryCode', 'phoneCountryCodeDropdown');
     initializeJurisdictionAutocomplete('registrationCountry', 'registrationCountryDropdown');
-    console.log('✅ Autocomplete initialization calls complete');
+    console.log('âœ… Autocomplete initialization calls complete');
     
     // Patch elements to have .value getter/setter that work with data attributes
     const currentCountryEl = document.getElementById('currentCountry');
@@ -4165,8 +4165,17 @@
       });
     }
   </script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = 'd10a3e2';
+    console.log('[client-details] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
 </body>
 </html>
+
 
 
 

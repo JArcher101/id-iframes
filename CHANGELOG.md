@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Backend Thirdfort integrations now generate **one JWT per request/webhook** and reuse it across nested helpers (admin refresh, webhook handlers, summary/pdffetchers) to reduce redundant auth calls and avoid rate limits.
+- Moved non-secret Thirdfort/CloudFront/AWS configuration into `backend/authentication/secrets.js`. Wix Secrets Manager is now only required for `THIRDFORT_RSA_PRIVATE_KEY`.
+
 ### Added
+- **`image-viewer.html`**
+  - Adds selfie/passport comparison view with a Print.js-friendly layout and a fallback button to re-open the full carousel
+  - Broadcasts `check-images` payloads (s3Key + live URL) whenever selfies/passport images are present so other iframes can mirror them without duplicate downloads
+- **`thirdfort-checks-manager.html`**
+  - Consumes `check-images` payloads and renders the latest selfie/passport pair directly inside the detail header and the client details card
+
+### Added
+- **Global iframe versioning workflow**
+  - Added `scripts/bump-iframes.ps1` to generate 7-character UUIDs, cache-bust every local CSS/JS reference, inject console version logs, append `iframe-version-log.md`, and create commits titled `Your message [uuid]`
+  - Every iframe now emits `[iframe-name] version <uuid>` on load so we can confirm which deploy was loaded directly from the iframe console
 - **`uk-sanctions-checker.html`** - UK Sanctions List Search ⭐ NEW FEATURE
   - Search and query the UK FCDO Sanctions List for individuals and entities
   - Live XML data fetching from https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml via backend proxy (CORS required)

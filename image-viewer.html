@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10,8 +10,8 @@
         =====================================================================
         CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
         =====================================================================
-        Transport Medium → fallback to Quicksand Bold (700)
-        Rotis fonts → fallback to Quicksand Regular (400/600)
+        Transport Medium â†’ fallback to Quicksand Bold (700)
+        Rotis fonts â†’ fallback to Quicksand Regular (400/600)
         =====================================================================
         */
         
@@ -549,7 +549,7 @@
         UPLOADING STATE
         - Full-size section card shown during file upload to S3
         - Displays progress bar and file list with status
-        - Shows individual file upload progress (Pending → Uploading → Success/Error)
+        - Shows individual file upload progress (Pending â†’ Uploading â†’ Success/Error)
         - Displayed as a normal section instead of modal overlay
         =====================================================================
         */
@@ -1092,6 +1092,88 @@
         .image-display-section {
             width: 100%;
             margin: 0 auto;
+        }
+
+        .comparison-view {
+            width: 100%;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f9fbff;
+            border: 1px solid #e0e6f0;
+            border-radius: 18px;
+            box-shadow: 0 12px 40px rgba(21, 35, 58, 0.08);
+        }
+
+        .comparison-tiles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .comparison-tile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 180px;
+        }
+
+        .comparison-image {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f0f4ff, #e4ecff);
+            border: 4px solid #d0dffb;
+            box-shadow: 0 8px 24px rgba(57, 95, 172, 0.22);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .comparison-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1a2c47;
+        }
+
+        .comparison-meta {
+            font-size: 0.8rem;
+            font-family: 'RotisItalic', 'Quicksand', sans-serif;
+            color: #5b6a88;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .comparison-actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .view-all-btn,
+        .back-to-comparison-btn {
+            font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: transparent;
+            color: #003c71;
+            border: 1px solid #003c71;
+            padding: 10px 18px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .view-all-btn:hover,
+        .back-to-comparison-btn:hover {
+            background: #003c71;
+            color: #fff;
+        }
+
+        .back-to-comparison-btn {
+            margin: 12px auto 0;
+            display: block;
         }
 
         .client-heading {
@@ -1703,25 +1785,43 @@
                 </div>
                 
                 <!-- Hidden arrows and counter -->
-                <button class="navigation-arrows nav-left" disabled style="display: none;">‹</button>
-                <button class="navigation-arrows nav-right" disabled style="display: none;">›</button>
+                <button class="navigation-arrows nav-left" disabled style="display: none;">â€¹</button>
+                <button class="navigation-arrows nav-right" disabled style="display: none;">â€º</button>
             </div>
             <!-- Disabled add button -->
             <div class="add-more-container" style="margin-top: 10px;">
                 <button class="add-more-btn" disabled>Add more ID images</button>
             </div>
+            <button class="back-to-comparison-btn hidden" id="backToComparisonBtn">Back to comparison view</button>
         </div>
 
         <!-- Image display state -->
         <div class="image-display-section hidden" id="imageDisplaySection">
             <h2 class="client-heading" id="clientHeading">ID Photos</h2>
+            <div class="comparison-view hidden" id="comparisonView">
+                <div class="comparison-tiles">
+                    <div class="comparison-tile hidden" id="selfieTile">
+                        <div class="comparison-image" id="selfieImage"></div>
+                        <div class="comparison-label">Selfie</div>
+                        <div class="comparison-meta" id="selfieMeta"></div>
+                    </div>
+                    <div class="comparison-tile hidden" id="faceTile">
+                        <div class="comparison-image" id="faceImage"></div>
+                        <div class="comparison-label">Passport Image</div>
+                        <div class="comparison-meta" id="faceMeta"></div>
+                    </div>
+                </div>
+                <div class="comparison-actions">
+                    <button class="view-all-btn hidden" id="viewAllButton">View all images</button>
+                </div>
+            </div>
             <div class="reel-container" id="reelContainer">
                 <div class="image-slider" id="imageSlider">
                     <div class="loading" id="loadingState">Loading images...</div>
                 </div>
                 
-                <button class="navigation-arrows nav-left" id="prevBtn" disabled>‹</button>
-                <button class="navigation-arrows nav-right" id="nextBtn" disabled>›</button>
+                <button class="navigation-arrows nav-left" id="prevBtn" disabled>â€¹</button>
+                <button class="navigation-arrows nav-right" id="nextBtn" disabled>â€º</button>
             </div>
         </div>
 
@@ -1757,7 +1857,7 @@
     <!-- Error Popup -->
     <div class="error-popup" id="errorPopup">
         <div class="error-popup-content">
-            <button class="error-popup-close" id="errorPopupClose">×</button>
+            <button class="error-popup-close" id="errorPopupClose">Ã—</button>
             <div class="error-popup-header">Upload Error</div>
             <div class="error-popup-message" id="errorMessage">An error occurred during upload.</div>
         </div>
@@ -1795,16 +1895,16 @@
         3. 'refresh-images' - Request to refresh image display after upload
         
         IMAGE DISPLAY FLOW:
-        - Parent sends display-images/image-display → displayImages() renders carousel →
-          User navigates with arrows → Download button fetches from liveUrl
+        - Parent sends display-images/image-display â†’ displayImages() renders carousel â†’
+          User navigates with arrows â†’ Download button fetches from liveUrl
         
         UPLOAD FLOW:
-        - User clicks "Add more" → showUploader() displays form →
-          User selects document type and files → validateAllUploadCards() checks completion →
-          uploadAllFiles() sends 'image-data' to parent → parent generates s3Keys →
-          parent sends 'put-links' → uploadFiles() uploads to S3 →
-          handleUploadSuccess() sends 'upload-success' to parent →
-          parent saves to DB and sends fresh 'display-images' →
+        - User clicks "Add more" â†’ showUploader() displays form â†’
+          User selects document type and files â†’ validateAllUploadCards() checks completion â†’
+          uploadAllFiles() sends 'image-data' to parent â†’ parent generates s3Keys â†’
+          parent sends 'put-links' â†’ uploadFiles() uploads to S3 â†’
+          handleUploadSuccess() sends 'upload-success' to parent â†’
+          parent saves to DB and sends fresh 'display-images' â†’
           returnToAwaitingData() resets state
         
         IMPORTANT RULES:
@@ -1827,6 +1927,11 @@
         let uploadedImages = null;
         let imageSlider, prevBtn, nextBtn, loadingState, awaitingState, imageDisplaySection, reelContainer, mockBtn, addMoreContainer, addMoreBtn, clientHeading;
         let idUploaderSection, uploaderSubheading, uploaderCardsContainer, uploadAllBtn, cancelHeaderBtn, errorPopup, errorMessage, errorPopupClose, dynamicHint;
+        let comparisonView, selfieTile, faceTile, selfieImageEl, faceImageEl, selfieMetaEl, faceMetaEl, viewAllButton, backToComparisonBtn;
+        let comparisonEligible = false;
+        let hasComparisonExtras = false;
+        let isCarouselMode = false;
+        let lastCheckImagesSignature = '';
 
         // DOM elements
         imageSlider = document.getElementById('imageSlider');
@@ -1849,6 +1954,27 @@
         errorMessage = document.getElementById('errorMessage');
         errorPopupClose = document.getElementById('errorPopupClose');
         dynamicHint = document.getElementById('dynamicHint');
+        comparisonView = document.getElementById('comparisonView');
+        selfieTile = document.getElementById('selfieTile');
+        faceTile = document.getElementById('faceTile');
+        selfieImageEl = document.getElementById('selfieImage');
+        faceImageEl = document.getElementById('faceImage');
+        selfieMetaEl = document.getElementById('selfieMeta');
+        faceMetaEl = document.getElementById('faceMeta');
+        viewAllButton = document.getElementById('viewAllButton');
+        backToComparisonBtn = document.getElementById('backToComparisonBtn');
+
+        if (viewAllButton) {
+            viewAllButton.addEventListener('click', () => {
+                switchToCarouselView();
+            });
+        }
+
+        if (backToComparisonBtn) {
+            backToComparisonBtn.addEventListener('click', () => {
+                switchToComparisonView();
+            });
+        }
 
         /*
         =====================================================================
@@ -1901,6 +2027,138 @@
             showImage(currentImageIndex);
         }
 
+        function getImageTimestamp(image) {
+            if (!image) return 0;
+            const lastModified = image.data?.lastModified;
+            if (lastModified) {
+                const parsed = Number(lastModified);
+                if (!Number.isNaN(parsed)) {
+                    return parsed;
+                }
+            }
+            if (image.date) {
+                const dateValue = Date.parse(image.date);
+                if (!Number.isNaN(dateValue)) {
+                    return dateValue;
+                }
+            }
+            return 0;
+        }
+
+        function getCheckImagesByName(name) {
+            return images
+                .filter(img => img && img.type === 'Check Images' && img.name === name)
+                .sort((a, b) => getImageTimestamp(b) - getImageTimestamp(a));
+        }
+
+        function updateComparisonTile(imageElement, metaElement, imageData) {
+            if (!imageElement || !metaElement || !imageData) {
+                return;
+            }
+            const imageUrl = imageData.url || imageData.liveUrl || '';
+            if (imageUrl) {
+                imageElement.style.backgroundImage = `url('${imageUrl}')`;
+            } else {
+                imageElement.style.backgroundImage = 'linear-gradient(135deg, #f0f4ff, #e4ecff)';
+            }
+            const uploaderText = imageData.uploader ? `${imageData.uploader}` : 'Uploader unknown';
+            const dateText = imageData.date || '';
+            metaElement.innerHTML = `${uploaderText}${dateText ? `<br>${dateText}` : ''}`;
+        }
+
+        function toggleImageCounterVisibility(showCounter) {
+            const counter = document.getElementById('imageCounter');
+            if (counter) {
+                counter.classList.toggle('hidden', !showCounter);
+            }
+        }
+
+        function renderComparison(latestSelfie, latestFace, hasExtras) {
+            if (!comparisonView) return;
+
+            comparisonEligible = !!latestSelfie;
+            hasComparisonExtras = comparisonEligible && hasExtras;
+
+            if (!comparisonEligible) {
+                comparisonView.classList.add('hidden');
+                reelContainer?.classList.remove('hidden');
+                viewAllButton?.classList.add('hidden');
+                backToComparisonBtn?.classList.add('hidden');
+                isCarouselMode = true;
+                toggleImageCounterVisibility(true);
+                return;
+            }
+
+            selfieTile?.classList.remove('hidden');
+            updateComparisonTile(selfieImageEl, selfieMetaEl, latestSelfie);
+
+            if (latestFace) {
+                faceTile?.classList.remove('hidden');
+                updateComparisonTile(faceImageEl, faceMetaEl, latestFace);
+            } else {
+                faceTile?.classList.add('hidden');
+            }
+
+            if (!isCarouselMode) {
+                comparisonView.classList.remove('hidden');
+                reelContainer?.classList.add('hidden');
+                backToComparisonBtn?.classList.add('hidden');
+                toggleImageCounterVisibility(false);
+            } else {
+                comparisonView.classList.add('hidden');
+                reelContainer?.classList.remove('hidden');
+                backToComparisonBtn?.classList.toggle('hidden', !hasComparisonExtras);
+                toggleImageCounterVisibility(true);
+            }
+
+            viewAllButton?.classList.toggle('hidden', !hasComparisonExtras);
+        }
+
+        function switchToCarouselView() {
+            if (!comparisonEligible) return;
+            isCarouselMode = true;
+            comparisonView?.classList.add('hidden');
+            reelContainer?.classList.remove('hidden');
+            backToComparisonBtn?.classList.toggle('hidden', !hasComparisonExtras);
+            viewAllButton?.classList.add('hidden');
+            toggleImageCounterVisibility(true);
+            showImage(currentImageIndex || 0);
+        }
+
+        function switchToComparisonView() {
+            if (!comparisonEligible) return;
+            isCarouselMode = false;
+            comparisonView?.classList.remove('hidden');
+            reelContainer?.classList.add('hidden');
+            backToComparisonBtn?.classList.add('hidden');
+            viewAllButton?.classList.toggle('hidden', !hasComparisonExtras);
+            toggleImageCounterVisibility(false);
+        }
+
+        function postCheckImagesPayload(imagesToPost) {
+            if (!Array.isArray(imagesToPost)) return;
+            const payload = imagesToPost
+                .filter(img => img && img.s3Key && (img.liveUrl || img.url))
+                .map(img => ({
+                    s3Key: img.s3Key,
+                    url: img.liveUrl || img.url,
+                    transactionId: img.thirdfortTransactionId || img.transactionId || null,
+                    documentId: img.thirdfortDocumentId || img.documentId || null,
+                    type: img.name
+                }));
+
+            const signature = JSON.stringify(payload.map(p => `${p.s3Key}:${p.url}`));
+            if (signature === lastCheckImagesSignature) {
+                return;
+            }
+
+            lastCheckImagesSignature = signature;
+            window.parent.postMessage({
+                type: 'check-images',
+                images: payload
+            }, '*');
+        }
+
         /*
         =====================================================================
         IMAGE ERROR HANDLING
@@ -1942,7 +2200,7 @@
             
             container.innerHTML = `
                 <div class="image-error">
-                    <div class="image-error-icon">📷</div>
+                    <div class="image-error-icon">ðŸ“·</div>
                     <div class="image-error-text">
                         <strong>Image unavailable</strong><br>
                         ${documentType || 'Document image'} could not be loaded
@@ -1960,7 +2218,7 @@
             const container = button.closest('.image-error').parentElement;
             container.innerHTML = `
                 <div class="image-loading">
-                    <div class="image-error-icon">⏳</div>
+                    <div class="image-error-icon">â³</div>
                     <div class="image-error-text">Loading...</div>
                 </div>
             `;
@@ -2190,6 +2448,9 @@
             allowUploads = allowUploadsData || false;
             clientData = clientDataParam || {};
             userEmail = userEmailParam || '';
+            comparisonEligible = false;
+            hasComparisonExtras = false;
+            isCarouselMode = false;
             
             // Hide awaiting state and show image display section
             awaitingState.classList.add('hidden');
@@ -2212,6 +2473,10 @@
             }
             
             if (images.length === 0) {
+                comparisonView?.classList.add('hidden');
+                viewAllButton?.classList.add('hidden');
+                backToComparisonBtn?.classList.add('hidden');
+                postCheckImagesPayload([]);
                 imageSlider.innerHTML = `
                     <div class="no-images">
                         <div class="no-images-icon">
@@ -2258,6 +2523,16 @@
             counter.textContent = `${currentImageIndex + 1} / ${images.length}`;
             counter.id = 'imageCounter';
             reelContainer.appendChild(counter);
+
+            const selfieImages = getCheckImagesByName('Selfie');
+            const faceImages = getCheckImagesByName('Passport Image');
+            const latestSelfie = selfieImages[0];
+            const latestFace = faceImages[0];
+            const comparisonTileCount = (latestSelfie ? 1 : 0) + (latestFace ? 1 : 0);
+            const hasExtras = comparisonTileCount > 0 && images.length > comparisonTileCount;
+
+            postCheckImagesPayload([...selfieImages, ...faceImages]);
+            renderComparison(latestSelfie, latestFace, hasExtras);
         }
 
         // Update client heading with client data
@@ -2764,7 +3039,7 @@
             
             let completed = 0; // Track completions for progress bar
             
-            console.log(`⚡ Uploading ALL ${total} files simultaneously with Promise.all()`);
+            console.log(`âš¡ Uploading ALL ${total} files simultaneously with Promise.all()`);
             
             // Create upload promise for each file
             const uploadPromises = files.map(async (fileData, index) => {
@@ -2819,7 +3094,7 @@
             const successCount = results.filter(r => r.success).length;
             const hasErrors = results.some(r => !r.success);
             
-            console.log(`✅ All uploads complete: ${successCount}/${total} successful`);
+            console.log(`âœ… All uploads complete: ${successCount}/${total} successful`);
             
             // Handle completion
             setTimeout(() => {
@@ -3753,5 +4028,14 @@
         console.log('Image display iframe loaded and ready');
     </script>
     </div>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = 'd10a3e2';
+    console.log('[image-viewer] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
 </body>
 </html>
+

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -20,8 +20,8 @@
     =====================================================================
     CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
     =====================================================================
-    Transport Medium → fallback to Quicksand Bold (700)
-    Rotis fonts → fallback to Quicksand Regular (400/600)
+    Transport Medium â†’ fallback to Quicksand Bold (700)
+    Rotis fonts â†’ fallback to Quicksand Regular (400/600)
     =====================================================================
     */
     
@@ -402,7 +402,7 @@
 <body>
   <!-- Fixed Header -->
   <div class="header">
-    <h1>🔍 FCDO UK Sanctions List Search</h1>
+    <h1>ðŸ” FCDO UK Sanctions List Search</h1>
     <div class="subtitle">Search the UK Sanctions List for matches</div>
   </div>
 
@@ -445,7 +445,7 @@
           type="checkbox" 
           id="fuzzyDOB"
         />
-        <label for="fuzzyDOB">Enable fuzzy DOB matching (±5 years)</label>
+        <label for="fuzzyDOB">Enable fuzzy DOB matching (Â±5 years)</label>
       </div>
     </div>
 
@@ -481,7 +481,7 @@
     =====================================================================
     Features:
     - Fuzzy name matching with configurable threshold
-    - Optional DOB matching (exact or fuzzy ±5 years)
+    - Optional DOB matching (exact or fuzzy Â±5 years)
     - PDF generation with jsPDF
     - S3 upload via parent postMessage (same pattern as document-viewer.html)
     - Mock data support for testing
@@ -582,7 +582,7 @@
      * Parse XML and extract sanctions entries
      */
     function parseXML(xmlString) {
-      console.log('📄 Parsing XML sanctions list...');
+      console.log('ðŸ“„ Parsing XML sanctions list...');
       
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
@@ -590,7 +590,7 @@
       // Check for parser errors
       const parserError = xmlDoc.querySelector('parsererror');
       if (parserError) {
-        console.error('❌ XML parsing error:', parserError.textContent);
+        console.error('âŒ XML parsing error:', parserError.textContent);
         throw new Error('Failed to parse XML: ' + parserError.textContent);
       }
       
@@ -679,7 +679,7 @@
         }
       });
       
-      console.log(`✅ Parsed ${entries.length} valid entries from XML`);
+      console.log(`âœ… Parsed ${entries.length} valid entries from XML`);
       return entries;
     }
 
@@ -695,7 +695,7 @@
         let xmlString;
         
         if (USE_MOCK_DATA) {
-          console.log('📦 Using mock XML data');
+          console.log('ðŸ“¦ Using mock XML data');
           const mockScript = document.getElementById('mockSanctionsXML');
           xmlString = mockScript.textContent;
           
@@ -703,7 +703,7 @@
             throw new Error('Mock XML data is empty. Please paste XML content.');
           }
         } else {
-          console.log('🌐 Requesting XML from backend...');
+          console.log('ðŸŒ Requesting XML from backend...');
           
           // Request XML from parent (which will call backend)
           return new Promise((resolve, reject) => {
@@ -715,10 +715,10 @@
                 
                 if (event.data.success) {
                   xmlString = event.data.xml;
-                  console.log(`✅ Received ${xmlString.length} characters XML from backend`);
+                  console.log(`âœ… Received ${xmlString.length} characters XML from backend`);
                   
                   sanctionsList = parseXML(xmlString);
-                  showStatus(`✅ Loaded ${sanctionsList.length} sanctions entries`, 'success');
+                  showStatus(`âœ… Loaded ${sanctionsList.length} sanctions entries`, 'success');
                   
                   searchBtn.disabled = false;
                   searchBtn.textContent = 'Search Sanctions List';
@@ -747,11 +747,11 @@
         
         // Parse XML
         sanctionsList = parseXML(xmlString);
-        showStatus(`✅ Loaded ${sanctionsList.length} sanctions entries`, 'success');
+        showStatus(`âœ… Loaded ${sanctionsList.length} sanctions entries`, 'success');
         
       } catch (error) {
-        console.error('❌ Error loading sanctions list:', error);
-        showStatus(`❌ Error: ${error.message}`, 'error');
+        console.error('âŒ Error loading sanctions list:', error);
+        showStatus(`âŒ Error: ${error.message}`, 'error');
       } finally {
         searchBtn.disabled = false;
         searchBtn.textContent = 'Search Sanctions List';
@@ -777,7 +777,7 @@
         return;
       }
       
-      console.log(`🔍 Searching for: "${searchName}"${searchDOB ? ` (DOB: ${searchDOB})` : ''}`);
+      console.log(`ðŸ” Searching for: "${searchName}"${searchDOB ? ` (DOB: ${searchDOB})` : ''}`);
       
       searchResults = [];
       const normalizedSearch = normalizeName(searchName);
@@ -871,7 +871,7 @@
       // Sort by match score (highest first)
       searchResults.sort((a, b) => b.matchScore - a.matchScore);
       
-      console.log(`✅ Found ${searchResults.length} matches`);
+      console.log(`âœ… Found ${searchResults.length} matches`);
       displayResults();
     }
 
@@ -885,7 +885,7 @@
       if (searchResults.length === 0) {
         resultsContainer.innerHTML = `
           <div class="no-results">
-            <div class="icon">✅</div>
+            <div class="icon">âœ…</div>
             <div>No matches found in the sanctions list</div>
           </div>
         `;
@@ -995,7 +995,7 @@
           });
         } else {
           doc.setFontSize(10);
-          doc.text('✅ No matches found in the UK Sanctions List', 14, 86);
+          doc.text('âœ… No matches found in the UK Sanctions List', 14, 86);
         }
         
         // Footer
@@ -1009,14 +1009,14 @@
         }
         
         const pdfBlob = doc.output('blob');
-        console.log('✅ PDF generated, size:', pdfBlob.size, 'bytes');
+        console.log('âœ… PDF generated, size:', pdfBlob.size, 'bytes');
         
         // Request S3 upload URL from parent
         await uploadPDFToS3(pdfBlob);
         
       } catch (error) {
-        console.error('❌ Error generating PDF:', error);
-        showStatus(`❌ Error: ${error.message}`, 'error');
+        console.error('âŒ Error generating PDF:', error);
+        showStatus(`âŒ Error: ${error.message}`, 'error');
         generatePdfBtn.disabled = false;
         generatePdfBtn.textContent = 'Generate & Upload PDF Report';
       }
@@ -1087,7 +1087,7 @@
           throw new Error(`S3 upload failed: ${response.status}`);
         }
         
-        console.log('✅ PDF uploaded to S3');
+        console.log('âœ… PDF uploaded to S3');
         
         // Notify parent of completion
         window.parent.postMessage({
@@ -1096,7 +1096,7 @@
           metadata: metadata
         }, '*');
         
-        showStatus('✅ PDF uploaded successfully!', 'success');
+        showStatus('âœ… PDF uploaded successfully!', 'success');
         
         // Close after 2 seconds
         setTimeout(() => {
@@ -1104,8 +1104,8 @@
         }, 2000);
         
       } catch (error) {
-        console.error('❌ Error uploading to S3:', error);
-        showStatus(`❌ Upload error: ${error.message}`, 'error');
+        console.error('âŒ Error uploading to S3:', error);
+        showStatus(`âŒ Upload error: ${error.message}`, 'error');
         throw error;
       }
     }
@@ -1132,7 +1132,7 @@
     // Listen for client data from parent
     window.addEventListener('message', (event) => {
       if (event.data.type === 'sanctions-client-data') {
-        console.log('📬 Received client data from parent:', event.data);
+        console.log('ðŸ“¬ Received client data from parent:', event.data);
         clientData = event.data;
         
         // Pre-fill form
@@ -1146,14 +1146,23 @@
     });
     
     // Request client data from parent
-    console.log('📤 Requesting client data from parent...');
+    console.log('ðŸ“¤ Requesting client data from parent...');
     window.parent.postMessage({ type: 'request-sanctions-client-data' }, '*');
     
     // Load sanctions list on startup
     loadSanctionsList();
     
-    console.log('✅ FCDO Sanctions Search initialized');
+    console.log('âœ… FCDO Sanctions Search initialized');
   </script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = 'd10a3e2';
+    console.log('[sanctions-search-v2] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
 </body>
 </html>
+
 

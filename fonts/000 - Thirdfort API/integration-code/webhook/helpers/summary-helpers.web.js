@@ -11,7 +11,6 @@
 // =====================================================================
 
 import { generateThirdfortJWT, getThirdfortAPIUrl } from 'backend/thirdfort/generate-jwt.js';
-import { getSecret } from 'wix-secrets-backend';
 import axios from 'axios';
 
 /**
@@ -21,10 +20,10 @@ import axios from 'axios';
  * @param {string} transactionId - Transaction ID
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-export async function fetchTransactionSummary(transactionId) {
+export async function fetchTransactionSummary(transactionId, options = {}) {
   try {
-    const jwt = await generateThirdfortJWT();
-    if (!jwt) {
+    const token = options.jwt || await generateThirdfortJWT();
+    if (!token) {
       console.error('❌ Failed to generate JWT');
       return { success: false, error: 'Failed to generate JWT' };
     }
@@ -33,7 +32,7 @@ export async function fetchTransactionSummary(transactionId) {
     
     const response = await axios.get(`${baseUrl}/transactions/${transactionId}/_summary`, {
       headers: {
-        'Authorization': `Bearer ${jwt}`,
+        'Authorization': `Bearer ${token}`,
         'Accept': 'application/json'
       }
     });
@@ -55,10 +54,10 @@ export async function fetchTransactionSummary(transactionId) {
  * @param {string} checkId - Check ID
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-export async function fetchCheckSummary(checkId) {
+export async function fetchCheckSummary(checkId, options = {}) {
   try {
-    const jwt = await generateThirdfortJWT();
-    if (!jwt) {
+    const token = options.jwt || await generateThirdfortJWT();
+    if (!token) {
       console.error('❌ Failed to generate JWT');
       return { success: false, error: 'Failed to generate JWT' };
     }
@@ -68,7 +67,7 @@ export async function fetchCheckSummary(checkId) {
     // Checks don't have a /_summary endpoint, fetch full check
     const response = await axios.get(`${baseUrl}/checks/${checkId}`, {
       headers: {
-        'Authorization': `Bearer ${jwt}`,
+        'Authorization': `Bearer ${token}`,
         'Accept': 'application/json'
       }
     });
@@ -192,12 +191,12 @@ export async function parseTransactionSummary(summaryData) {
  * @param {string} reportId - Report ID
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-export async function fetchTransactionReport(transactionId, reportId) {
+export async function fetchTransactionReport(transactionId, reportId, options = {}) {
   const maxAttempts = 3;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const jwt = await generateThirdfortJWT();
-      if (!jwt) {
+      const token = options.jwt || await generateThirdfortJWT();
+      if (!token) {
         console.error('❌ Failed to generate JWT');
         return { success: false, error: 'Failed to generate JWT' };
       }
@@ -206,7 +205,7 @@ export async function fetchTransactionReport(transactionId, reportId) {
       
       const response = await axios.get(`${baseUrl}/transactions/${transactionId}/reports/${reportId}`, {
         headers: {
-          'Authorization': `Bearer ${jwt}`,
+          'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         }
       });
@@ -236,13 +235,13 @@ export async function fetchTransactionReport(transactionId, reportId) {
  * @param {string} transactionId - Transaction ID
  * @returns {Promise<object>} Object with reports map, considerReasons, and hasAlerts
  */
-export async function fetchAllTransactionReports(transactionId) {
+export async function fetchAllTransactionReports(transactionId, options = {}) {
   const reportDetails = {};
   const considerReasons = [];
   
   try {
-    const jwt = await generateThirdfortJWT();
-    if (!jwt) {
+    const token = options.jwt || await generateThirdfortJWT();
+    if (!token) {
       console.error('❌ Failed to generate JWT');
       return { reports: {}, considerReasons: [], hasAlerts: false };
     }
@@ -252,7 +251,7 @@ export async function fetchAllTransactionReports(transactionId) {
     // First, fetch the list of reports
     const reportsListResponse = await axios.get(`${baseUrl}/transactions/${transactionId}/reports`, {
       headers: {
-        'Authorization': `Bearer ${jwt}`,
+        'Authorization': `Bearer ${token}`,
         'Accept': 'application/json'
       }
     });
@@ -268,7 +267,9 @@ export async function fetchAllTransactionReports(transactionId) {
     const reportIds = reportsList.map(r => r.id);
     
     // Fetch all reports in parallel
-    const fetchPromises = reportIds.map(reportId => fetchTransactionReport(transactionId, reportId));
+    const fetchPromises = reportIds.map(reportId =>
+      fetchTransactionReport(transactionId, reportId, { jwt: token })
+    );
     const results = await Promise.all(fetchPromises);
     
     // Process results and map by type
@@ -287,6 +288,15 @@ export async function fetchAllTransactionReports(transactionId) {
           data: reportData.data || {},
           createdAt: reportData.metadata?.created_at
         };
+        
+        if (reportType === 'identity') {
+          try {
+            const preview = JSON.stringify(reportData, null, 2);
+            console.log('🧾 Full identity report JSON preview:', preview);
+          } catch (stringifyError) {
+            console.warn('⚠️ Unable to stringify identity report for logging:', stringifyError?.message);
+          }
+        }
         
         // Build consider reasons based on results (exclude unobtainable reports)
         if ((reportData.result === 'consider' || reportData.result === 'fail' || reportData.result === 'alert') && reportData.status !== 'unobtainable') {
@@ -325,10 +335,10 @@ export async function fetchAllTransactionReports(transactionId) {
  * @param {string} reportId - Report ID
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-export async function fetchCheckReport(checkId, reportId) {
+export async function fetchCheckReport(checkId, reportId, options = {}) {
   try {
-    const jwt = await generateThirdfortJWT();
-    if (!jwt) {
+    const token = options.jwt || await generateThirdfortJWT();
+    if (!token) {
       console.error('❌ Failed to generate JWT');
       return { success: false, error: 'Failed to generate JWT' };
     }
@@ -337,7 +347,7 @@ export async function fetchCheckReport(checkId, reportId) {
     
     const response = await axios.get(`${baseUrl}/checks/${checkId}/reports/${reportId}`, {
       headers: {
-        'Authorization': `Bearer ${jwt}`,
+        'Authorization': `Bearer ${token}`,
         'Accept': 'application/json'
       }
     });
@@ -358,12 +368,14 @@ export async function fetchCheckReport(checkId, reportId) {
  * @param {string[]} reportIds - Array of report IDs
  * @returns {Promise<object>} Map of report type to report details
  */
-export async function fetchAllCheckReports(checkId, reportIds) {
+export async function fetchAllCheckReports(checkId, reportIds, options = {}) {
   const reportDetails = {};
   const considerReasons = [];
   
   // Fetch all reports in parallel
-  const fetchPromises = reportIds.map(reportId => fetchCheckReport(checkId, reportId));
+  const fetchPromises = reportIds.map(reportId =>
+    fetchCheckReport(checkId, reportId, { jwt: options.jwt })
+  );
   const results = await Promise.all(fetchPromises);
   
   // Process results and map by type
@@ -414,7 +426,7 @@ export async function fetchAllCheckReports(checkId, reportIds) {
  * @param {boolean} includeReportDetails - Whether to fetch full report details
  * @returns {Promise<object>} Parsed check data
  */
-export async function parseCheckSummary(checkData, includeReportDetails = false) {
+export async function parseCheckSummary(checkData, includeReportDetails = false, options = {}) {
   let considerReasons = [];
   let detailedReports = {};
   
@@ -430,7 +442,7 @@ export async function parseCheckSummary(checkData, includeReportDetails = false)
   // If requested, fetch full report details
   if (includeReportDetails && checkData.reports && checkData.reports.length > 0) {
     console.log(`📋 Fetching ${checkData.reports.length} report(s) for check ${checkData.id}...`);
-    const reportsResult = await fetchAllCheckReports(checkData.id, checkData.reports);
+    const reportsResult = await fetchAllCheckReports(checkData.id, checkData.reports, { jwt: options.jwt });
     detailedReports = reportsResult.reports;
     considerReasons = reportsResult.considerReasons;
   }

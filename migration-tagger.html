@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1147,7 +1147,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏷️ ID Image Migration Tool</h1>
+            <h1>ðŸ·ï¸ ID Image Migration Tool</h1>
             
             <!-- Begin Controls (shown initially) -->
             <div class="begin-controls" id="beginControls">
@@ -1171,7 +1171,7 @@
 
         <!-- No Data State -->
         <div id="noDataState" class="no-data hidden">
-            <h2>📭 No Entries to Process</h2>
+            <h2>ðŸ“­ No Entries to Process</h2>
             <p>No entries were provided for migration.</p>
         </div>
 
@@ -1197,7 +1197,7 @@
 
                     <!-- Hotkey Guide Card (below image) -->
                     <div class="hotkey-card">
-                        <div class="hotkey-card-title">🏷️ Tag Image (Click or Press Key)</div>
+                        <div class="hotkey-card-title">ðŸ·ï¸ Tag Image (Click or Press Key)</div>
                         <div class="hotkey-overlay">
                             <div class="hotkey-item" onclick="tagCurrentImage('Passport')" title="Click to tag or press P">
                                 <div class="hotkey-key">P</div>
@@ -1260,7 +1260,7 @@
         <!-- Error Popup (matching image-viewer.html styling) -->
         <div id="errorPopup" class="upload-modal hidden">
             <div class="upload-modal-content" style="background: #dc3545; padding: 20px; max-width: 400px;">
-                <button onclick="hideErrorPopup()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">×</button>
+                <button onclick="hideErrorPopup()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">Ã—</button>
                 <h2 style="color: white; font-size: 1.1rem; margin-bottom: 10px; font-weight: 600;">Upload Error</h2>
                 <p id="errorMessage" style="color: white; margin: 0; line-height: 1.4; font-size: 0.9rem;"></p>
             </div>
@@ -1716,15 +1716,15 @@
             const nextRotation = (currentRotation + degrees) % 360;
             const normalizedNext = nextRotation < 0 ? nextRotation + 360 : nextRotation;
             
-            // Check if we're crossing 0° boundary
-            // If at 270° and rotating right (+90), should unwind to 0° not continue to 360°
-            // If at 90° and rotating left (-90), should unwind to 0° not continue to -90°
+            // Check if we're crossing 0Â° boundary
+            // If at 270Â° and rotating right (+90), should unwind to 0Â° not continue to 360Â°
+            // If at 90Â° and rotating left (-90), should unwind to 0Â° not continue to -90Â°
             if (currentRotation === 270 && degrees > 0) {
-                // At 270°, rotating right → unwind back to 0°
+                // At 270Â°, rotating right â†’ unwind back to 0Â°
                 currentRotation = 0;
                 mainImage.style.transform = 'rotate(0deg)';
             } else if (currentRotation === 90 && degrees < 0) {
-                // At 90°, rotating left → unwind back to 0°
+                // At 90Â°, rotating left â†’ unwind back to 0Â°
                 currentRotation = 0;
                 mainImage.style.transform = 'rotate(0deg)';
             } else {
@@ -1733,7 +1733,7 @@
                 mainImage.style.transform = `rotate(${currentRotation}deg)`;
             }
             
-            console.log(`🔄 Image rotated to ${currentRotation}°`);
+            console.log(`ðŸ”„ Image rotated to ${currentRotation}Â°`);
         }
 
         function resetRotation() {
@@ -1862,7 +1862,7 @@
         =====================================================================
         */
         async function prefetchEntryImages(entry) {
-            console.log('🔄 Background pre-fetching images for:', entry.name);
+            console.log('ðŸ”„ Background pre-fetching images for:', entry.name);
             
             for (let imgIdx = 0; imgIdx < entry.images.length; imgIdx++) {
                 const img = entry.images[imgIdx];
@@ -1890,9 +1890,9 @@
                         }
                     });
                     
-                    console.log(`✅ Pre-fetched: ${entry.name} - Image ${imgIdx + 1}`);
+                    console.log(`âœ… Pre-fetched: ${entry.name} - Image ${imgIdx + 1}`);
                 } catch (error) {
-                    console.warn(`⚠️ Pre-fetch failed for ${entry.name} - Image ${imgIdx + 1}:`, error);
+                    console.warn(`âš ï¸ Pre-fetch failed for ${entry.name} - Image ${imgIdx + 1}:`, error);
                     // Don't block - will fetch during upload if needed
                 }
             }
@@ -1942,13 +1942,13 @@
                         // Check cache first
                         let blob, metadata;
                         if (imageCache.has(cacheKey)) {
-                            console.log(`📦 Using cached blob for: ${entry.name} - Image ${imgIdx + 1}`);
+                            console.log(`ðŸ“¦ Using cached blob for: ${entry.name} - Image ${imgIdx + 1}`);
                             const cached = imageCache.get(cacheKey);
                             blob = cached.blob;
                             metadata = cached.metadata;
                         } else {
                             // Fetch if not cached (fallback)
-                            console.log(`⏳ Fetching (not cached): ${entry.name} - Image ${imgIdx + 1}`);
+                            console.log(`â³ Fetching (not cached): ${entry.name} - Image ${imgIdx + 1}`);
                             try {
                                 const response = await fetch(publicUrl);
                                 blob = await response.blob();
@@ -1958,7 +1958,7 @@
                                     lastModified: Date.now()
                                 };
                             } catch (error) {
-                                console.error(`❌ Fetch failed for ${entry.name} - Image ${imgIdx + 1}:`, error);
+                                console.error(`âŒ Fetch failed for ${entry.name} - Image ${imgIdx + 1}:`, error);
                                 throw error;
                             }
                         }
@@ -1978,11 +1978,11 @@
                     }
                 }
                 
-                console.log(`✅ Compiled upload data: ${uploadData.length} images (${imageCache.size} from cache)`);
+                console.log(`âœ… Compiled upload data: ${uploadData.length} images (${imageCache.size} from cache)`);
                 console.log('Upload data details:', uploadData);
                 
                 // Log message before posting
-                console.log('📤 Posting image-data to parent:', {
+                console.log('ðŸ“¤ Posting image-data to parent:', {
                     type: 'image-data',
                     images: uploadData.map(item => ({
                         entryId: item.entryId,
@@ -2109,7 +2109,7 @@
             
             let completed = 0; // Track completions for progress bar
             
-            console.log(`⚡ Uploading ALL ${total} files simultaneously with Promise.all()`);
+            console.log(`âš¡ Uploading ALL ${total} files simultaneously with Promise.all()`);
             
             // Create upload promise for each file
             const uploadPromises = uploadDataWithBlobs.map(async (uploadItem, index) => {
@@ -2147,7 +2147,7 @@
                     if (fileItem && badge) {
                         fileItem.classList.remove('uploading');
                         fileItem.classList.add('success');
-                        badge.textContent = 'Success ✓';
+                        badge.textContent = 'Success âœ“';
                         badge.className = 'file-upload-item-badge badge-success';
                     }
                     
@@ -2167,7 +2167,7 @@
                     if (fileItem && badge) {
                         fileItem.classList.remove('uploading');
                         fileItem.classList.add('error');
-                        badge.textContent = 'Failed ✗';
+                        badge.textContent = 'Failed âœ—';
                         badge.className = 'file-upload-item-badge badge-error';
                     }
                     
@@ -2188,17 +2188,17 @@
             // Count successes
             const successCount = results.filter(r => r.success).length;
             
-            console.log(`✅ All uploads complete: ${successCount}/${total} successful`);
+            console.log(`âœ… All uploads complete: ${successCount}/${total} successful`);
             
             // All uploads complete
             if (successCount === total) {
-                uploadStatus.textContent = '✅ All files uploaded successfully!';
+                uploadStatus.textContent = 'âœ… All files uploaded successfully!';
                 
                 // Compile results for parent
                 const results = compileUploadResults(s3Keys);
                 
                 // Log message before posting
-                console.log('📤 Posting migration-complete to parent:', {
+                console.log('ðŸ“¤ Posting migration-complete to parent:', {
                     type: 'migration-complete',
                     updates: results,
                     batchNumber: currentBatchNumber,
@@ -2216,7 +2216,7 @@
                     }, '*');
                 }, 1000);
             } else {
-                uploadStatus.textContent = `⚠️ Upload completed with errors (${successCount}/${total} successful)`;
+                uploadStatus.textContent = `âš ï¸ Upload completed with errors (${successCount}/${total} successful)`;
             }
         }
 
@@ -2244,7 +2244,7 @@
             Object.keys(entriesMap).forEach(entryId => {
                 // Validate _id exists and is a valid UUID/GUID format
                 if (!entryId || entryId === 'undefined' || entryId === 'null') {
-                    console.error('⚠️ Invalid entry ID detected:', entryId);
+                    console.error('âš ï¸ Invalid entry ID detected:', entryId);
                     return;
                 }
                 
@@ -2255,7 +2255,7 @@
                 };
                 
                 // Log each update object for debugging
-                console.log('📋 Update object for entry:', {
+                console.log('ðŸ“‹ Update object for entry:', {
                     _id: entryId,
                     imageCount: entriesMap[entryId].length,
                     images: entriesMap[entryId]
@@ -2265,7 +2265,7 @@
             });
             
             // Final validation log
-            console.log('✅ Compiled results for bulkUpdate:', {
+            console.log('âœ… Compiled results for bulkUpdate:', {
                 totalEntries: results.length,
                 entryIds: results.map(r => r._id),
                 results: results
@@ -2335,7 +2335,7 @@
             });
             
             // Update summary with keyboard hint
-            confirmSummary.textContent = `${totalToUpload} images will be uploaded${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''} • Press ESC to cancel, ENTER to upload`;
+            confirmSummary.textContent = `${totalToUpload} images will be uploaded${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''} â€¢ Press ESC to cancel, ENTER to upload`;
             
             // Build confirmation cards
             confirmCardsContainer.innerHTML = '';
@@ -2438,7 +2438,7 @@
                 return;
             }
             
-            console.log('📤 Requesting data from parent with limit:', limit);
+            console.log('ðŸ“¤ Requesting data from parent with limit:', limit);
             
             // Hide all sections and show loading state
             mainInterface.classList.add('hidden');
@@ -2473,6 +2473,15 @@
         console.log('Begin button element:', beginBtn);
         console.log('Limit input element:', limitInput);
     </script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = 'd10a3e2';
+    console.log('[migration-tagger] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
 </body>
 </html>
+
 

@@ -11,6 +11,7 @@ class ThirdfortChecksManager {
         this.currentCheck = null;
         this.currentView = 'loading'; // 'loading', 'list', 'detail'
         this.mode = 'edit'; // 'view' or 'edit' - controls interaction permissions
+        this.checkIdentityImages = {};
         
         // DOM elements
         this.loadingState = document.getElementById('loading-state');
@@ -99,6 +100,10 @@ class ThirdfortChecksManager {
             case 'error':
                 console.error('❌ Error from parent:', data.message);
                 this.showError(data.message);
+                break;
+                
+            case 'check-images':
+                this.handleCheckImages((data && data.images) || []);
                 break;
         }
     }
@@ -286,6 +291,7 @@ class ThirdfortChecksManager {
     loadChecks(checks) {
         console.log('📊 Loading checks:', checks.length);
         
+        this.checkIdentityImages = {};
         this.currentCheck = null;
         this.checks = checks;
         
@@ -779,6 +785,8 @@ class ThirdfortChecksManager {
             ? `${baseUrl}/transactions/${check.transactionId}`
             : `${baseUrl}/checks/${check.checkId}`;
         
+        const identityMarkup = this.getIdentityComparisonMarkup(check);
+
         this.detailHeader.innerHTML = `
             <div class="header-top">
                 ${pepMonIcon}
@@ -790,6 +798,7 @@ class ThirdfortChecksManager {
             <div class="header-meta-grid">
                 ${metaItems.join('')}
             </div>
+            ${identityMarkup}
         `;
     }
     
@@ -1185,7 +1194,117 @@ class ThirdfortChecksManager {
             `;
         }
         
+        const detailIdentityMarkup = this.getIdentityComparisonMarkup(check, { compact: true, heading: 'Check Images' });
+        if (detailIdentityMarkup) {
+            detailsContent += detailIdentityMarkup;
+        }
+
         this.detailsCard.innerHTML = detailsContent;
+    }
+
+    extractIdentityTimestamp(image) {
+        const candidates = [
+            image?.recordedAt,
+            image?.timestamp,
+            image?.lastModified,
+            image?.lastModifiedMs,
+            image?.data?.lastModified,
+            image?.date ? Date.parse(image.date) : null
+        ];
+        for (const value of candidates) {
+            const parsed = Number(value);
+            if (!Number.isNaN(parsed) && parsed > 0) {
+                return parsed;
+            }
+        }
+        return Date.now();
+    }
+
+    normalizeIdentityImages(images) {
+        if (!Array.isArray(images)) return {};
+        const sorted = images
+            .map(image => ({
+                ...image,
+                url: image.url || image.liveUrl || '',
+                recordedAt: image.recordedAt || this.extractIdentityTimestamp(image)
+            }))
+            .sort((a, b) => (b.recordedAt || 0) - (a.recordedAt || 0));
+
+        const normalized = { raw: sorted };
+        sorted.forEach(image => {
+            const key = this.getIdentityTypeKey(image);
+            if (key && !normalized[key]) {
+                normalized[key] = image;
+            }
+        });
+
+        return normalized;
+    }
+
+    getIdentityTypeKey(image) {
+        const label = (image?.type || image?.name || '').toLowerCase();
+        if (label.includes('passport') || label.includes('face')) {
+            return 'faceImage';
+        }
+        return 'selfie';
+    }
+
+    getIdentityImageData(check) {
+        if (!check) return null;
+        if (check.identityImages) {
+            return check.identityImages;
+        }
+        if (check.transactionId && this.checkIdentityImages[check.transactionId]) {
+            return this.checkIdentityImages[check.transactionId];
+        }
+        return null;
+    }
+
+    buildIdentityTileMarkup(image, label, options = {}) {
+        if (!image) return '';
+        const circleClass = options.compact ? 'identity-circle small' : 'identity-circle';
+        const url = image.url || image.liveUrl || '';
+        const uploader = image.uploader || 'Thirdfort API';
+        const date = image.date || '';
+        return `
+            <div class="identity-tile">
+                <div class="${circleClass}" style="${url ? `background-image: url('${url}')` : ''}"></div>
+                <div class="identity-label">${label}</div>
+                <div class="identity-meta">${uploader}${date ? `<br>${date}` : ''}</div>
+            </div>
+        `;
+    }
+
+    getIdentityComparisonMarkup(check, options = {}) {
+        const identityData = this.getIdentityImageData(check);
+        if (!identityData) return '';
+
+        const selfie = identityData.selfie;
+        const faceImage = identityData.faceImage;
+
+        if (!selfie && !faceImage) {
+            return '';
+        }
+
+        const compact = options.compact === true;
+        const heading = options.heading ? `<div class="identity-comparison-heading">${options.heading}</div>` : '';
+
+        const tiles = [];
+        if (selfie) {
+            tiles.push(this.buildIdentityTileMarkup(selfie, 'Selfie', { compact }));
+        }
+        if (faceImage) {
+            tiles.push(this.buildIdentityTileMarkup(faceImage, 'Passport Image', { compact }));
+        }
+
+        return `
+            <div class="identity-comparison ${compact ? 'compact' : ''}">
+                ${heading}
+                <div class="identity-tiles">
+                    ${tiles.join('')}
+                </div>
+            </div>
+        `;
     }
     
     renderDocumentDetailsCard(check) {
@@ -7283,6 +7402,41 @@ class ThirdfortChecksManager {
             'Ireland': '🇮🇪', 'IE': '🇮🇪'
         };
         return flagMap[countryName] || '🌍';
+    }
+
+    handleCheckImages(images) {
+        if (!Array.isArray(images)) {
+            return;
+        }
+
+        const groupedByTransaction = {};
+        images.forEach(image => {
+            const transactionId = image?.transactionId || image?.thirdfortTransactionId;
+            if (!transactionId) return;
+            if (!groupedByTransaction[transactionId]) {
+                groupedByTransaction[transactionId] = [];
+            }
+            groupedByTransaction[transactionId].push({
+                ...image,
+                url: image.url || image.liveUrl || '',
+                recordedAt: this.extractIdentityTimestamp(image)
+            });
+        });
+
+        Object.keys(groupedByTransaction).forEach(transactionId => {
+            const normalized = this.normalizeIdentityImages(groupedByTransaction[transactionId]);
+            this.checkIdentityImages[transactionId] = normalized;
+
+            const check = this.checks.find(c => c.transactionId === transactionId);
+            if (check) {
+                check.identityImages = normalized;
+            }
+
+            if (this.currentCheck && this.currentCheck.transactionId === transactionId) {
+                this.currentCheck.identityImages = normalized;
+                this.renderDetailView(this.currentCheck);
+            }
+        });
     }
 
     formatFundingLabel(value) {
@@ -29452,6 +29606,8 @@ class ThirdfortChecksManager {
         else if (data.lender) summaryText = data.lender;
         else if (data.people && data.people.length > 0) summaryText = data.people.map(p => p.name).filter(n => n).join(', ');
         
+        const originBadge = this.getFundingOriginBadge(data.location);
+
         let html = `<div class="funding-investigation-card collapsed" data-funding-card="${fundIdx}">`;
         
         // Funding Header (collapsed view) - clickable to toggle
@@ -31329,7 +31485,8 @@ class ThirdfortChecksManager {
         // Store context for success handler
         this.pendingSave = {
             type: 'pep-dismissal',
-            check: check
+            check: check,
+            dismissals
         };
         
         // Clear pending dismissals

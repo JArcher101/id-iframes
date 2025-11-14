@@ -16,6 +16,11 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Full Thirdfort API compliance and validation
   - Parent communication: client-data, request-thirdfort-check
 
+- **`thirdfort-checks-manager.html`** - Thirdfort Checks Console
+  - List/detail UI for reviewing returned Thirdfort checks
+  - Supports monitoring toggles, abort workflows, PDF generation, and task digests
+  - Displays inline selfie/passport images streamed from `check-images` messages
+
 - **`uk-sanctions-checker.html`** - UK Sanctions List Search ⭐ NEW
   - Search FCDO UK Sanctions List for individuals and entities
   - Live XML data fetching with session caching
@@ -66,6 +71,8 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - View and display identification images
   - Modern, responsive interface
   - Custom typography with Transport and Rotis fonts
+  - Selfie vs passport comparison view with quick toggle back to the carousel
+  - Emits `check-images` payloads so other iframes (e.g. Thirdfort Checks Manager) can surface the latest selfies
 
 - **`single-image-viewer.html`** - Single Image Viewer
   - Standalone fullscreen image viewer
@@ -156,6 +163,26 @@ Simply open any HTML file in a web browser or embed it as an iframe:
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history, release notes, and future roadmap
 
 For the best developer experience, start with the interactive documentation which includes live examples you can test in your browser.
+
+## Iframe Versioning Workflow
+
+All iframe HTML files now share a mandatory release workflow:
+
+- Run `powershell -ExecutionPolicy Bypass -File scripts\bump-iframes.ps1 -Title "Your commit title"` before committing. The script:
+  - Generates a new 7-character UUID
+  - Appends cache-busting `?v=<uuid>` query params to every local CSS/JS reference (skipping CDN/data URIs)
+  - Injects a console log block so each iframe prints `[iframe-name] version <uuid>` on load
+  - Updates `iframe-version-log.md` with the UUID, timestamp, commit title, and the list of touched iframes
+  - Creates the git commit `Your commit title [uuid]` and optionally pushes when `-Push` is supplied
+- Commit titles must include the UUID (the helper script appends `[uuid]` automatically).
+- Every deploy should therefore have a unique UUID recorded in `iframe-version-log.md`, matching the version emitted by each iframe’s console log.
+
+> Tip: pass `-Body "multi-line body"` for additional commit details, or `-NoGit -SkipLog` when dry-running locally.
+
+## Backend Configuration
+
+- All Thirdfort/AWS configuration values now live in `backend/authentication/secrets.js`. Update this file (not Wix Secrets) when tenant IDs, CloudFront domains, or bucket names change.
+- Backend code now generates **one Thirdfort JWT per request** and shares it with nested helpers/webhook handlers. When calling shared helpers such as `fetchTransactionSummary()` or `downloadAndSaveCheckPDF()`, always pass `{ jwt }` if you already have a token to avoid redundant authentication calls.
 
 ## Typography
 

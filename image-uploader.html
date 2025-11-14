@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -11,8 +11,8 @@
     =====================================================================
     CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
     =====================================================================
-    Transport Medium → fallback to Quicksand Bold (700)
-    Rotis fonts → fallback to Quicksand Regular (400/600)
+    Transport Medium â†’ fallback to Quicksand Bold (700)
+    Rotis fonts â†’ fallback to Quicksand Regular (400/600)
     =====================================================================
     */
     
@@ -893,7 +893,7 @@
     =====================================================================
     SECTION 5: UPLOAD PROGRESS INDICATORS
     - Shows real-time progress bar during S3 file uploads
-    - File list displays each file with status (Pending → Uploading → Success/Error)
+    - File list displays each file with status (Pending â†’ Uploading â†’ Success/Error)
     - Border colors indicate status: Blue=Default, Orange=Uploading, Green=Success, Red=Error
     - Progress percentage updates as files complete
     - Upload fails if any file errors, returns user to Address ID section to retry
@@ -1512,7 +1512,7 @@
 
       <!-- Name Verification Hint -->
       <div class="name-hint">
-        ⚠️ Ensure the name matches the above Photo ID exactly. If they are known by a different name please indicate this below.
+        âš ï¸ Ensure the name matches the above Photo ID exactly. If they are known by a different name please indicate this below.
       </div>
 
       <div class="row">
@@ -2044,12 +2044,12 @@
     <h4 class="error-popup-header">Validation Error</h4>
     <div class="error-popup-content">
       <span id="errorMessage" style="white-space:pre-wrap;"></span>
-      <button type="button" id="closeError">×</button>
+      <button type="button" id="closeError">Ã—</button>
     </div>
   </div>
 
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=d10a3e2"></script>
   
   <script>
     /*
@@ -2078,14 +2078,14 @@
     2. 'upload-success' - Complete form data after successful S3 uploads (includes s3Keys)
     
     FORM FLOW:
-    1. Parent sends 'initiation-data' → Child populates form with existing data
-    2. User fills Section 1 (Client Details) → validates → proceeds to Section 2
-    3. User chooses Photo ID (Yes/No) → if Yes, selects types and uploads files
-    4. User proceeds to Section 3 (Address History) → fills addresses
-    5. User proceeds to Section 4 (Address ID) → chooses Yes/No, uploads if Yes
-    6. User clicks Upload → Child collects all files and sends 'image-data' to parent
-    7. Parent generates S3 keys and sends 'put-links' → Child uploads to S3
-    8. Child sends 'upload-success' with form data and s3Keys → Form resets to loading state
+    1. Parent sends 'initiation-data' â†’ Child populates form with existing data
+    2. User fills Section 1 (Client Details) â†’ validates â†’ proceeds to Section 2
+    3. User chooses Photo ID (Yes/No) â†’ if Yes, selects types and uploads files
+    4. User proceeds to Section 3 (Address History) â†’ fills addresses
+    5. User proceeds to Section 4 (Address ID) â†’ chooses Yes/No, uploads if Yes
+    6. User clicks Upload â†’ Child collects all files and sends 'image-data' to parent
+    7. Parent generates S3 keys and sends 'put-links' â†’ Child uploads to S3
+    8. Child sends 'upload-success' with form data and s3Keys â†’ Form resets to loading state
     
     FILE UPLOAD PROCESS:
     - Child creates file metadata objects (type, document, side, name, data, uploader, date)
@@ -2433,10 +2433,10 @@
     =====================================================================
     ADDRESS AUTOCOMPLETE WITH BACKEND PROXY + CACHING
     - Checks localStorage cache BEFORE calling API
-    - User types in address field → triggers debounced search
+    - User types in address field â†’ triggers debounced search
     - If cached: Uses cached results (no API call)
     - If not cached: Sends 'address-search' message to parent
-    - Parent calls Wix backend → backend calls getaddress.io API
+    - Parent calls Wix backend â†’ backend calls getaddress.io API
     - Parent sends 'address-results' back with suggestions
     - Caches results for 7 days (max 50 items, LRU eviction)
     - Displays dropdown with clickable suggestions
@@ -2557,7 +2557,7 @@
           let addressPrefix = getAddressData.line_1.trim();
           
           // Remove thoroughfare/street from line_1 if present
-          // Example: "94 Southgate Street" → "94" | "Thurstan Hoskin Llp" → "Thurstan Hoskin Llp"
+          // Example: "94 Southgate Street" â†’ "94" | "Thurstan Hoskin Llp" â†’ "Thurstan Hoskin Llp"
           if (getAddressData.thoroughfare && addressPrefix.includes(getAddressData.thoroughfare)) {
             addressPrefix = addressPrefix.replace(getAddressData.thoroughfare, '').replace(/,\s*$/, '').trim();
           }
@@ -2742,7 +2742,7 @@
           const cachedResults = getCachedItem(cacheKey);
           
           if (cachedResults) {
-            console.log('✅ Using cached autocomplete results for:', searchTerm);
+            console.log('âœ… Using cached autocomplete results for:', searchTerm);
             dropdownElement.classList.remove('hidden');
             displayAddressSuggestions(cachedResults, isCurrentAddress ? 'current' : 'previous');
             return;
@@ -2831,14 +2831,14 @@
       const cachedAddress = getCachedItem(cacheKey);
       
       if (cachedAddress) {
-        console.log('✅ Using cached full address for:', addressId);
+        console.log('âœ… Using cached full address for:', addressId);
         // Use cached address directly
         handleAddressData(cachedAddress, isCurrentAddress ? 'current' : 'previous');
         return;
       }
       
       // Not cached - request from parent
-      console.log('📡 Requesting full address from API:', addressId);
+      console.log('ðŸ“¡ Requesting full address from API:', addressId);
       window.parent.postMessage({
         type: 'address-lookup',
         addressId: addressId,
@@ -2963,7 +2963,7 @@
         e.preventDefault();
         
         const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-        console.log('📋 Pasted DOB text:', pastedText);
+        console.log('ðŸ“‹ Pasted DOB text:', pastedText);
         
         // Try to parse the date
         const parsedDate = parseDateString(pastedText);
@@ -2978,9 +2978,9 @@
           
           dobInputs[7].focus();
           const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
-          console.log('✅ Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
+          console.log('âœ… Pasted DOB filled all fields:', parsedDate, 'â†’', formattedDate);
         } else {
-          console.warn('⚠️ Could not parse date from pasted text:', pastedText);
+          console.warn('âš ï¸ Could not parse date from pasted text:', pastedText);
         }
       });
     }
@@ -4420,7 +4420,7 @@
     - Collects all files to upload via collectFiles()
     - Iterates through files and uploads each to S3 using PUT URL
     - Updates progress bar and file status in real-time:
-    -   Pending → Uploading (orange border) → Success (green) or Error (red)
+    -   Pending â†’ Uploading (orange border) â†’ Success (green) or Error (red)
     - On success: Shows "Upload Complete!" and sends 'upload-success' to parent
     - On error: Shows error message and returns to Address ID section
     - Validates files array matches links array length
@@ -4432,7 +4432,7 @@
       
       let completed = 0; // Track completions for progress bar
       
-      console.log(`⚡ Uploading ALL ${total} files simultaneously with Promise.all()`);
+      console.log(`âš¡ Uploading ALL ${total} files simultaneously with Promise.all()`);
       
       // Check if files and links arrays match
       if (files.length !== links.length) {
@@ -4488,7 +4488,7 @@
       const successCount = results.filter(r => r.success).length;
       const hasErrors = results.some(r => !r.success);
       
-      console.log(`✅ All uploads complete: ${successCount}/${total} successful`);
+      console.log(`âœ… All uploads complete: ${successCount}/${total} successful`);
       
       // Handle completion
       if (hasErrors) {
@@ -4679,9 +4679,9 @@
     function showSection1() {
       if (loadingContainer) {
         loadingContainer.classList.add('hidden'); // Hide loading spinner
-        console.log('🔄 Loading spinner hidden, showing Section 1');
+        console.log('ðŸ”„ Loading spinner hidden, showing Section 1');
       } else {
-        console.error('❌ loadingContainer element not found!');
+        console.error('âŒ loadingContainer element not found!');
       }
       cardTitle.textContent = 'Section 1 - Client Details';
       form.classList.remove('hidden');
@@ -4720,7 +4720,7 @@
     nextBtn.addEventListener('click', (e)=>{
       e.preventDefault(); hideError();
       const errors = validateSection1();
-      if(errors.length){ showError('• ' + errors.join('\n• ')); return; }
+      if(errors.length){ showError('â€¢ ' + errors.join('\nâ€¢ ')); return; }
       
       // Update formData with current Section 1 inputs before proceeding
       updateFormDataFromSection1();
@@ -4880,7 +4880,7 @@
       
       // If user selected "Yes", run validation
       const errs = validateSection2();
-      if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
+      if(errs.length){ showError('â€¢ ' + errs.join('\nâ€¢ ')); return; }
       
       // Collect image data from uploaders
       collectPhotoIdImageData();
@@ -4894,7 +4894,7 @@
     nextToSection4.addEventListener('click', ()=>{
       hideError();
       const errs = validateSection3();
-      if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
+      if(errs.length){ showError('â€¢ ' + errs.join('\nâ€¢ ')); return; }
       
       // Update formData with current Section 3 inputs before proceeding
       updateFormDataFromSection3();
@@ -4920,7 +4920,7 @@
       
       // If user selected "Yes" for Address ID, run validation
       const errs = validateSection4();
-      if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
+      if(errs.length){ showError('â€¢ ' + errs.join('\nâ€¢ ')); return; }
       
       // Collect address ID image data
       collectAddressIdImageData();
@@ -5050,12 +5050,12 @@
     }
     
     Flow:
-    1. Parent sends 'initiation-data' → Child resets form via resetForm()
+    1. Parent sends 'initiation-data' â†’ Child resets form via resetForm()
     2. Child populates form with data via loadData()
-    3. User types address → Child sends 'address-search' to parent
-    4. Parent sends 'address-results' → Child shows dropdown
-    5. User selects → Child sends 'address-lookup' to parent
-    6. Parent sends 'address-data' → Child stores Thirdfort object
+    3. User types address â†’ Child sends 'address-search' to parent
+    4. Parent sends 'address-results' â†’ Child shows dropdown
+    5. User selects â†’ Child sends 'address-lookup' to parent
+    6. Parent sends 'address-data' â†’ Child stores Thirdfort object
     =====================================================================
     */
     // Add immediate listener log to verify script is running
@@ -5069,37 +5069,37 @@
       console.log('========================');
       
       if(event.data && event.data.type === 'initiation-data'){
-        console.log('✅ Processing initiation-data...');
+        console.log('âœ… Processing initiation-data...');
         // Clear form and reset all data before loading new data
         resetForm();
         loadData(event.data.data || {});
-        console.log('✅ Data loaded, form should be visible');
+        console.log('âœ… Data loaded, form should be visible');
       } else if (event.data && event.data.type === 'address-results') {
-        console.log('✅ Processing address-results...');
+        console.log('âœ… Processing address-results...');
         
         // Cache the autocomplete results
         if (event.data.searchTerm && event.data.suggestions) {
           const cacheKey = 'auto_' + event.data.searchTerm.toLowerCase();
           setCachedItem(cacheKey, event.data.suggestions, 'autocomplete');
-          console.log('💾 Cached autocomplete results for:', event.data.searchTerm);
+          console.log('ðŸ’¾ Cached autocomplete results for:', event.data.searchTerm);
         }
         
         // Display autocomplete suggestions
         displayAddressSuggestions(event.data.suggestions, event.data.field);
       } else if (event.data && event.data.type === 'address-data') {
-        console.log('✅ Processing address-data...');
+        console.log('âœ… Processing address-data...');
         
         // Cache the full address object
         if (event.data.addressId && event.data.address) {
           const cacheKey = 'addr_' + event.data.addressId;
           setCachedItem(cacheKey, event.data.address, 'address');
-          console.log('💾 Cached full address for ID:', event.data.addressId);
+          console.log('ðŸ’¾ Cached full address for ID:', event.data.addressId);
         }
         
         // Store full address object
         handleAddressData(event.data.address, event.data.field);
       } else {
-        console.log('⚠️ Unknown message type or missing type');
+        console.log('âš ï¸ Unknown message type or missing type');
       }
     });
 
@@ -5332,11 +5332,20 @@
     
     // ===== INITIALIZE COUNTRY AUTOCOMPLETE =====
     // Initialize country autocomplete fields immediately
-    console.log('🔧 Initializing country autocomplete fields...');
+    console.log('ðŸ”§ Initializing country autocomplete fields...');
     initializeCountryAutocomplete('currentCountry', 'currentCountryDropdown');
     initializeCountryAutocomplete('previousCountry', 'previousCountryDropdown');
-    console.log('✅ Country autocomplete initialization complete');
+    console.log('âœ… Country autocomplete initialization complete');
   </script>
   </div>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = 'd10a3e2';
+    console.log('[image-uploader] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
 </body>
 </html>
+

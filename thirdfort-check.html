@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7,18 +7,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
   
   <!-- Core CSS -->
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=d10a3e2" />
   
   <!-- Thirdfort Check Specific CSS -->
-  <link rel="stylesheet" href="css/thirdfort-check.css" />
+  <link rel="stylesheet" href="css/thirdfort-check.css?v=d10a3e2" />
   
   <style>
     /*
     =====================================================================
     CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
     =====================================================================
-    Transport Medium → fallback to Quicksand Bold (700)
-    Rotis fonts → fallback to Quicksand Regular (400/600)
+    Transport Medium â†’ fallback to Quicksand Bold (700)
+    Rotis fonts â†’ fallback to Quicksand Regular (400/600)
     =====================================================================
     */
     
@@ -110,15 +110,15 @@
       <div class="matter-details-card hidden" id="matterDetailsCard">
         <div class="matter-detail-row">
           <span class="matter-detail-label">Work Type:</span>
-          <span class="matter-detail-value" id="matterWorkType">—</span>
+          <span class="matter-detail-value" id="matterWorkType">â€”</span>
         </div>
         <div class="matter-detail-row">
           <span class="matter-detail-label">Matter:</span>
-          <span class="matter-detail-value" id="matterDescription">—</span>
+          <span class="matter-detail-value" id="matterDescription">â€”</span>
         </div>
         <div class="matter-detail-row">
           <span class="matter-detail-label">Relation:</span>
-          <span class="matter-detail-value" id="matterRelation">—</span>
+          <span class="matter-detail-value" id="matterRelation">â€”</span>
         </div>
       </div>
       
@@ -306,7 +306,7 @@
         <div>
           <label for="electronicIdCountryCode" class="required">Country Code</label>
           <div class="address-autocomplete-container">
-            <input type="text" id="electronicIdCountryCode" name="electronicIdCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" required />
+            <input type="text" id="electronicIdCountryCode" name="electronicIdCountryCode" autocomplete="off" placeholder="Search country code..." value="ðŸ‡¬ðŸ‡§ +44 UK" data-phone-code="+44" data-country-code="GB" required />
             <div id="electronicIdCountryCodeDropdown" class="address-dropdown hidden"></div>
           </div>
         </div>
@@ -585,7 +585,7 @@
       
       <!-- Previous Name Hint -->
       <div class="previous-name-hint hidden" id="litePreviousNameHint">
-        Previous/Known as name: <strong></strong> <em>—</em>
+        Previous/Known as name: <strong></strong> <em>â€”</em>
       </div>
 
       <!-- Date of Birth Row -->
@@ -641,7 +641,7 @@
               Selected address
             </button>
           </div>
-          <div class="address-card-text" id="liteCurrentAddressText">—</div>
+          <div class="address-card-text" id="liteCurrentAddressText">â€”</div>
         </div>
         
         <!-- Previous Address Card -->
@@ -652,7 +652,7 @@
               Check previous address
             </button>
           </div>
-          <div class="address-card-text" id="litePreviousAddressText">—</div>
+          <div class="address-card-text" id="litePreviousAddressText">â€”</div>
         </div>
       </div>
 
@@ -717,7 +717,7 @@
       
       <!-- IDV Photo ID Error Hint -->
       <div class="request-hint request-hint-error hidden" id="idvPhotoIdError">
-        ⚠️ There is no uploaded Photo ID types that meets the IDV requirements
+        âš ï¸ There is no uploaded Photo ID types that meets the IDV requirements
       </div>
       
       <!-- IDV Content (shows when YES is selected) -->
@@ -799,7 +799,7 @@
       
       <!-- IDV Name Hint -->
       <div class="previous-name-hint" id="idvNameHint">
-        <strong>⚠️</strong> Ensure the name is entered exactly as shown on the ID document
+        <strong>âš ï¸</strong> Ensure the name is entered exactly as shown on the ID document
       </div>
       
       <!-- IDV Image Selection -->
@@ -940,13 +940,22 @@
 
   <!-- Core JavaScript -->
   <!-- Jurisdiction Autocomplete (must load before core) -->
-  <script src="js/jurisdiction-autocomplete.js"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=d10a3e2"></script>
   
   <!-- Google libphonenumber for mobile validation -->
   <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
   <!-- All logic is now in thirdfort-check-core.js (old check-type modules removed) -->
-  <script src="js/thirdfort-check-core.js"></script>
+  <script src="js/thirdfort-check-core.js?v=d10a3e2"></script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = 'd10a3e2';
+    console.log('[thirdfort-check] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
 </body>
 </html>
+
 

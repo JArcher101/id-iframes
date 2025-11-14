@@ -24,6 +24,8 @@ This document describes the communication interface for each iframe component. A
 
 ---
 
+> **Versioning requirement:** Every iframe emits `[iframe-name] version <uuid>` to the browser console on load. Run `scripts/bump-iframes.ps1` before each commit to generate the UUID, append `?v=<uuid>` cache-busting params to local CSS/JS files, update `iframe-version-log.md`, and produce the required commit title (`Your title [uuid]`). This ensures parents can diagnose which deploy is loaded simply by checking the iframe console output.
+
 ## Thirdfort Check Manager
 
 **File:** `thirdfort-check.html`
@@ -1812,6 +1814,24 @@ Notifies parent that upload completed successfully.
   ],
   _id: 'item-database-id',
   docType: 'Photo ID'
+}
+```
+
+#### `check-images`
+Broadcasts the latest selfie/face-image artifacts for the currently loaded entry. Parents should forward this payload to consumer iframes (e.g. Thirdfort Checks Manager) so they can render inline comparison tiles without duplicating storage.
+
+```javascript
+{
+  type: 'check-images',
+  images: [
+    {
+      s3Key: 'protected/abc123',
+      url: 'https://s3.eu-west-1.amazonaws.com/.../abc123?X-Amz-SignedHeaders=...',
+      transactionId: 'd4ahx6c23amg030yrxng',
+      documentId: 'd4ahxa523amg030yrxp0',
+      type: 'Selfie'             // or 'Passport Image'
+    }
+  ]
 }
 ```
 
@@ -3729,6 +3749,11 @@ The Chart Viewer uses:
 </body>
 </html>
 ```
+
+### Backend Auth / Configuration
+
+- Backend modules use `backend/authentication/secrets.js` for tenant IDs, team IDs, CloudFront domains, and S3 buckets. Edit that file (not Wix Secrets) whenever these values change.
+- Each backend/webhook flow now shares a single Thirdfort JWT per request. When calling helpers like `fetchTransactionSummary()` or `downloadAndSaveCheckPDF()` from new code, pass the existing token via `{ jwt }` to prevent redundant authentication calls.
 
 ### S3 Upload Flow
 
