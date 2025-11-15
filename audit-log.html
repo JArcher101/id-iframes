@@ -15,8 +15,8 @@
         =====================================================================
         CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
         =====================================================================
-        Transport Medium â†’ fallback to Quicksand Bold (700)
-        Rotis fonts â†’ fallback to Quicksand Regular (400/600)
+        Transport Medium &#xE2;&#x2020;&#x2019; fallback to Quicksand Bold (700)
+        Rotis fonts &#xE2;&#x2020;&#x2019; fallback to Quicksand Regular (400/600)
         =====================================================================
         */
         
@@ -900,7 +900,7 @@
                         logItems += `
                             <div class="detail-item" style="margin-top: 8px;">
                                 <span class="badge badge-flag" style="background: #e3f2fd; color: #1565c0; border-color: #90caf9;">
-                                    ðŸ“Ž ${entry.lastLog.file.name || 'Attachment'}
+                                    &#xF0;&#x178;&#x201C;&#x17D; ${entry.lastLog.file.name || 'Attachment'}
                                 </span>
                             </div>
                         `;
@@ -922,7 +922,7 @@
                         messageItems += `
                             <div class="detail-item" style="margin-top: 8px;">
                                 <span class="badge badge-flag" style="background: #e3f2fd; color: #1565c0; border-color: #90caf9;">
-                                    ðŸ“Ž ${entry.lastMessage.file.name || 'Attachment'}
+                                    &#xF0;&#x178;&#x201C;&#x17D; ${entry.lastMessage.file.name || 'Attachment'}
                                 </span>
                             </div>
                         `;
@@ -1096,7 +1096,7 @@
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-                doc.text(`${timestamp} â€¢ ${entry.userEmail || 'Unknown User'}`, margin, yPosition);
+                doc.text(`${timestamp} &#xE2;&#x20AC;&#xA2; ${entry.userEmail || 'Unknown User'}`, margin, yPosition);
                 
                 yPosition += 15;
                 
@@ -1219,7 +1219,7 @@
             
             // Download
             doc.save(filename);
-            console.log('ðŸ“„ PDF downloaded:', filename);
+            console.log('&#xF0;&#x178;&#x201C;&#x201E; PDF downloaded:', filename);
         }
         
         // Listen for messages from parent window
@@ -1234,12 +1234,12 @@
                 }
             } else if (event.data && event.data.type === 'clear-data') {
                 // Clear all audit log data and return to empty state
-                console.log('ðŸ—‘ï¸ Clearing audit log data');
+                console.log('&#xF0;&#x178;&#x2014;&#x2018;&#xEF;&#xB8;&#x8F; Clearing audit log data');
                 auditLog = [];
                 renderAuditLog();
             } else if (event.data && event.data.type === 'audit-download') {
                 // Trigger PDF download
-                console.log('ðŸ“¥ Download audit log requested');
+                console.log('&#xF0;&#x178;&#x201C;&#xA5; Download audit log requested');
                 downloadAuditLogPDF();
             }
         });
@@ -1253,7 +1253,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '37b167e';
+    window.__IFRAME_VERSION__ = 'f05c00f';
     console.log('[audit-log] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

@@ -303,8 +303,8 @@ body {
     grid-template-rows: repeat(3, auto); /* Always 3 rows */
     gap: 4px;
     align-self: center;
-    grid-auto-flow: row; /* Fill across rows first: col1→col2→col3, then next row */
-    width: 470px; /* Fixed width: 3 × 150px + 2 × 10px gaps */
+    grid-auto-flow: row; /* Fill across rows first: col1&#x2192;col2&#x2192;col3, then next row */
+    width: 470px; /* Fixed width: 3 &#xD7; 150px + 2 &#xD7; 10px gaps */
 }
 
 .hint {

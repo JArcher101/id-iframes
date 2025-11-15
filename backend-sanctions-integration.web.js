@@ -32,7 +32,7 @@ export const getSanctionsXML = webMethod(
         };
 
         try {
-            console.log('📥 Fetching UK Sanctions List XML from FCDO...');
+            console.log('&#xD83D;&#xDCE5; Fetching UK Sanctions List XML from FCDO...');
             
             const fetchResponse = await fetch('https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml');
             
@@ -42,14 +42,14 @@ export const getSanctionsXML = webMethod(
             
             const xml = await fetchResponse.text();
             
-            console.log(`✅ Fetched XML (${(xml.length / 1024 / 1024).toFixed(2)} MB)`);
+            console.log(`&#x2705; Fetched XML (${(xml.length / 1024 / 1024).toFixed(2)} MB)`);
             
             response.xml = xml;
             response.success = true;
             response.result = 'XML fetched successfully';
             
         } catch (error) {
-            console.error('❌ Error fetching sanctions XML:', error);
+            console.error('&#x274C; Error fetching sanctions XML:', error);
             response.result = 'Error fetching sanctions XML';
             response.error = {
                 error,
@@ -82,7 +82,7 @@ export const updateEntryWithSanctionsPDF = webMethod(
         };
 
         try {
-            console.log('💾 Updating entry with sanctions PDF:', entryId);
+            console.log('&#xD83D;&#xDCBE; Updating entry with sanctions PDF:', entryId);
             
             // Get current entry
             let collectionItem;
@@ -129,10 +129,10 @@ export const updateEntryWithSanctionsPDF = webMethod(
             response.updatedItem = updatedItem;
             response.uploadedFile = uploadedFile;  // Include file object for request form
             
-            console.log('✅ Entry updated with sanctions PDF');
+            console.log('&#x2705; Entry updated with sanctions PDF');
             
         } catch (error) {
-            console.error('❌ Error updating entry:', error);
+            console.error('&#x274C; Error updating entry:', error);
             response.result = 'Error updating entry';
             response.error = {
                 error,

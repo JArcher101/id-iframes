@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Backend Thirdfort integrations now generate **one JWT per request/webhook** and reuse it across nested helpers (admin refresh, webhook handlers, summary/pdffetchers) to reduce redundant auth calls and avoid rate limits.
 - Moved non-secret Thirdfort/CloudFront/AWS configuration into `backend/authentication/secrets.js`. Wix Secrets Manager is now only required for `THIRDFORT_RSA_PRIVATE_KEY`.
+- Request Form (`request-form.html` + modules): Individuals can now satisfy the CDF requirement for Form J/K/E/eSoF by completing all client profile fields (title, first/last name, DOB, contact, current/previous addresses, name-change details) without uploading the PDF. A new &#x201C;Full client data entered&#x201D; hint appears when the override is active, while OFSI requirements and entity logic remain unchanged.
 
 ### Added
 - **`image-viewer.html`**
@@ -22,7 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Global iframe versioning workflow**
   - Added `scripts/bump-iframes.ps1` to generate 7-character UUIDs, cache-bust every local CSS/JS reference, inject console version logs, append `iframe-version-log.md`, and create commits titled `Your message [uuid]`
   - Every iframe now emits `[iframe-name] version <uuid>` on load so we can confirm which deploy was loaded directly from the iframe console
-- **`uk-sanctions-checker.html`** - UK Sanctions List Search ⭐ NEW FEATURE
+  - Introduced `iframe-version-log.json` for structured history plus a git-ignored Quicksand viewer (`iframe-version-log-viewer.html`) to browse entries locally
+- **`uk-sanctions-checker.html`** - UK Sanctions List Search &#x2B50; NEW FEATURE
   - Search and query the UK FCDO Sanctions List for individuals and entities
   - Live XML data fetching from https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.xml via backend proxy (CORS required)
   - Session-based caching (XML parsed once on load, cached for session duration)
@@ -40,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Parent communication: init-sanctions-search, file-data, put-links, upload-success
   - Pre-population of search fields from parent (client name, year of birth, search type)
   - Automatic button text change based on upload context ("Generate PDF" vs "Generate PDF & Upload")
-- **`migration-tagger.html`** - ID Image Migration Tool ⭐ NEW FEATURE
+- **`migration-tagger.html`** - ID Image Migration Tool &#x2B50; NEW FEATURE
   - Migrate existing Wix Media Gallery images to S3 storage
   - Hotkey-based tagging system (P, DF, DB, OS, OF, OB, A)
   - Batch processing (1-10 entries at a time)
@@ -58,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Minimal update objects (only _id, idImages, imagesTransferred fields)
   - Parent communication: migration-batch, image-data, migration-complete, backend-error, network-error
   - Mock data button with 10 test entries for development testing
-- **`thirdfort-check.html`** - Thirdfort Check Manager ⭐ MAJOR NEW FEATURE
+- **`thirdfort-check.html`** - Thirdfort Check Manager &#x2B50; MAJOR NEW FEATURE
   - Comprehensive check creation and management interface for Thirdfort API integration
   - Four check types: IDV (Identity Verification), Lite Screen, Electronic ID, KYB (Know Your Business)
   - Matter category routing: Conveyancing, Property Other, Private Client, Other
@@ -77,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Core JavaScript module: `js/thirdfort-check-core.js` (~3,000 lines)
   - Mock data buttons for testing different client scenarios
   - Parent communication: client-data, request-thirdfort-check, address-search, address-lookup
-- **`request-form.html`** - Comprehensive Request Management Form ⭐ MAJOR NEW FEATURE
+- **`request-form.html`** - Comprehensive Request Management Form &#x2B50; MAJOR NEW FEATURE
   - Dynamic multi-request type form system supporting 7 distinct request types
   - Modular JavaScript architecture with core + request type modules (~4,500 lines)
   - Request types: Form J, Form K (11 rules), Form E, eSoF Request, Note, Issue Update, PEP Update
@@ -126,9 +128,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Form K: Fixed "sale" worktype detection bug (was matching "Purchase" due to substring "se")
 
 ### Enhanced
-- **All Forms: Autocomplete Dropdown System** 🎯 MAJOR UX IMPROVEMENT
+- **All Forms: Autocomplete Dropdown System** &#xD83C;&#xDFAF; MAJOR UX IMPROVEMENT
   - Replaced all static dropdowns with searchable autocomplete inputs
-  - **Phone Country Codes**: Flag emoji + code + country name (e.g., "🇬🇧 +44 UK")
+  - **Phone Country Codes**: Flag emoji + code + country name (e.g., "&#xD83C;&#xDDEC;&#xD83C;&#xDDE7; +44 UK")
   - **Address Countries**: Country name with blue code badge (e.g., "United Kingdom [GBR]")
   - **Business Jurisdictions**: Jurisdiction name with blue code badge (e.g., "United Kingdom [GB]")
   - Blue code badge styling: `#e8f4f8` background, `rgb(0,60,113)` text, Transport font

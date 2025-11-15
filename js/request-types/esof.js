@@ -25,7 +25,7 @@ Sends request-data message to parent with:
   
   const ESoF = {
     init: function(requestData) {
-      console.log('📝 Initializing eSoF request');
+      console.log('&#xD83D;&#xDCDD; Initializing eSoF request');
       
       // Check if worktype includes purchase (required for eSoF)
       if (!this.validatePurchaseWorktype()) {
@@ -51,7 +51,7 @@ Sends request-data message to parent with:
       // Enable submit button
       this.enableSubmitButton();
       
-      console.log('✅ eSoF request initialized');
+      console.log('&#x2705; eSoF request initialized');
     },
     
     showIDDocumentsSection: function() {
@@ -59,7 +59,7 @@ Sends request-data message to parent with:
       
       if (idDocumentsSection) {
         idDocumentsSection.classList.remove('hidden');
-        console.log('👁️ ID Documents section shown');
+        console.log('&#xD83D;&#xDC41;&#xFE0F; ID Documents section shown');
       }
     },
     
@@ -112,7 +112,7 @@ Sends request-data message to parent with:
         window.RequestFormCore.resetFormUI('esof', null);
       }
       
-      console.log('❌ eSoF not available - worktype does not include purchase');
+      console.log('&#x274C; eSoF not available - worktype does not include purchase');
     },
     
     checkFormECombo: function() {
@@ -126,12 +126,12 @@ Sends request-data message to parent with:
         // Combined with Form E - show eSoFHint
         if (eSoFHint) eSoFHint.classList.remove('hidden');
         if (eSoFOnlyHint) eSoFOnlyHint.classList.add('hidden');
-        console.log('ℹ️ eSoF combined with Form E - showing eSoFHint');
+        console.log('&#x2139;&#xFE0F; eSoF combined with Form E - showing eSoFHint');
       } else {
         // Standalone eSoF - show eSoFOnlyHint
         if (eSoFOnlyHint) eSoFOnlyHint.classList.remove('hidden');
         if (eSoFHint) eSoFHint.classList.add('hidden');
-        console.log('ℹ️ eSoF standalone - showing eSoFOnlyHint');
+        console.log('&#x2139;&#xFE0F; eSoF standalone - showing eSoFOnlyHint');
       }
     },
     
@@ -148,7 +148,7 @@ Sends request-data message to parent with:
           // eSoF only message
           messageInput.value = 'The client has requested/I would like to send the client an electronic source of funds check, i include the required details below';
         }
-        console.log('📝 eSoF message text populated');
+        console.log('&#xD83D;&#xDCDD; eSoF message text populated');
       }
     },
     
@@ -156,7 +156,7 @@ Sends request-data message to parent with:
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
         submitBtn.disabled = false;
-        console.log('✅ Submit button enabled for eSoF');
+        console.log('&#x2705; Submit button enabled for eSoF');
       }
     },
     
@@ -308,8 +308,9 @@ Sends request-data message to parent with:
       const hasCDF = idDocuments.some(doc => doc.type === 'Details form');
       const hasOFSI = idDocuments.some(doc => doc.type === 'PEP & Sanctions Check');
       
-      if (!hasCDF) {
-        errors.push('You must upload a CDF (Client Details Form) or ensure one already exists');
+      const profileComplete = window.RequestFormCore.hasCompleteIndividualProfile();
+      if (!hasCDF && !profileComplete) {
+        errors.push('You must upload a CDF (Client Details Form) or complete all client data in the form');
       }
       
       if (!hasOFSI) {

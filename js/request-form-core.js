@@ -33,6 +33,9 @@ let companyNumberDebounceTimer = null;
 let idDocuments = [];
 let idImages = [];
 
+// Individual profile completeness tracking
+let lastProfileCompleteState = null;
+
 // Form J validation flags
 let formJSufficientPhotos = false;
 let formJConditionsMet = false;
@@ -102,6 +105,9 @@ function setupEventListeners() {
   
   // Contact details handling
   setupContactDetailsHandlers();
+
+  // Track profile completeness for CDF overrides
+  setupCDFProfileListeners();
 }
 
 function initializeRequestTags() {
@@ -122,7 +128,7 @@ function selectRequestType(type) {
   
   // Check if tag is disabled (e.g., entity-invalid types)
   if (clickedTag.disabled) {
-    console.log(`⚠️ Request type "${type}" is not available for this client type`);
+    console.log(`&#x26A0;&#xFE0F; Request type "${type}" is not available for this client type`);
     return;
   }
   
@@ -169,7 +175,7 @@ function selectRequestType(type) {
           }
         }
         
-        console.log('🗑️ eSoF deselected manually → eSoFSkipHint shown, message updated, ejHint preserved');
+        console.log('&#xD83D;&#xDDD1;&#xFE0F; eSoF deselected manually &#x2192; eSoFSkipHint shown, message updated, ejHint preserved');
         
         // Don't call resetFormUI - Form E stays active
         return;
@@ -184,7 +190,7 @@ function selectRequestType(type) {
         // Deselect eSoF tag
         if (esofTag && esofTag.classList.contains('selected')) {
           esofTag.classList.remove('selected');
-          console.log('🗑️ eSoF also deselected (Form E deselected)');
+          console.log('&#xD83D;&#xDDD1;&#xFE0F; eSoF also deselected (Form E deselected)');
         }
         
         // Hide both eSoF hints
@@ -229,7 +235,7 @@ function selectRequestType(type) {
           }
         }
         
-        console.log('✅ eSoF selected manually → eSoFHint shown, message updated, ejHint preserved');
+        console.log('&#x2705; eSoF selected manually &#x2192; eSoFHint shown, message updated, ejHint preserved');
         
         // Don't change currentRequestType or call loadRequestTypeContent
         // Form E remains the active module
@@ -334,12 +340,12 @@ function checkOFSIRequirement(type) {
   const hasOFSI = idDocuments.some(doc => doc.type === 'PEP & Sanctions Check');
   
   if (hasOFSI) {
-    console.log('✅ OFSI document found, proceeding with', type);
+    console.log('&#x2705; OFSI document found, proceeding with', type);
     return; // OFSI exists, all good
   }
   
   // OFSI required but not found - show popup
-  console.log('⚠️ OFSI required for', type, 'but not found - showing popup');
+  console.log('&#x26A0;&#xFE0F; OFSI required for', type, 'but not found - showing popup');
   showOFSIRequiredPopup(type);
 }
 
@@ -375,7 +381,7 @@ function handleOFSIPopupCancel() {
   const requestType = popup?.dataset?.requestType;
   
   if (requestType) {
-    console.log('❌ User cancelled OFSI requirement - deselecting', requestType);
+    console.log('&#x274C; User cancelled OFSI requirement - deselecting', requestType);
     
     // Deselect the tag
     const tag = document.querySelector(`[data-type="${requestType}"]`);
@@ -397,7 +403,7 @@ function handleOFSIPopupCancel() {
  * Handle OFSI popup search - open sanctions checker
  */
 function handleOFSIPopupSearch() {
-  console.log('🔍 User chose to search UK Sanctions List');
+  console.log('&#xD83D;&#xDD0D; User chose to search UK Sanctions List');
   hideOFSIRequiredPopup();
   
   // Call the existing openOFSISearch function
@@ -524,15 +530,15 @@ function parseDateString(dateStr) {
  * @returns {Object} - { valid: boolean, formatted: 'DD-MM-YYYY' or null, error: string or null }
  */
 function validateAndFormatDOB(day, month, year) {
-  console.log('🔍 DOB Validation - Input values:', { day, month, year });
+  console.log('&#xD83D;&#xDD0D; DOB Validation - Input values:', { day, month, year });
   
   // Convert to strings and trim
   const dayStr = day ? String(day).trim() : '';
   const monthStr = month ? String(month).trim() : '';
   const yearStr = year ? String(year).trim() : '';
   
-  console.log('🔍 DOB Validation - After trim:', { dayStr, monthStr, yearStr });
-  console.log('🔍 DOB Validation - Lengths:', { 
+  console.log('&#xD83D;&#xDD0D; DOB Validation - After trim:', { dayStr, monthStr, yearStr });
+  console.log('&#xD83D;&#xDD0D; DOB Validation - Lengths:', { 
     day: dayStr.length, 
     month: monthStr.length, 
     year: yearStr.length 
@@ -540,13 +546,13 @@ function validateAndFormatDOB(day, month, year) {
   
   // Check if all fields have values after trimming
   if (!dayStr || !monthStr || !yearStr) {
-    console.log('❌ DOB Validation - Incomplete (empty string)');
+    console.log('&#x274C; DOB Validation - Incomplete (empty string)');
     return { valid: false, formatted: null, error: 'Date of Birth is incomplete' };
   }
   
   // Check if all digits are filled (DD/MM/YYYY = 8 digits)
   if (dayStr.length !== 2 || monthStr.length !== 2 || yearStr.length !== 4) {
-    console.log('❌ DOB Validation - Wrong format');
+    console.log('&#x274C; DOB Validation - Wrong format');
     return { valid: false, formatted: null, error: 'Date of Birth must be in DD/MM/YYYY format' };
   }
   
@@ -584,7 +590,7 @@ function validateAndFormatDOB(day, month, year) {
   // Format as DD-MM-YYYY
   const formatted = `${dayStr}-${monthStr}-${yearStr}`;
   
-  console.log('✅ DOB Validation - Valid date:', formatted);
+  console.log('&#x2705; DOB Validation - Valid date:', formatted);
   return { valid: true, formatted: formatted, error: null };
 }
 
@@ -828,7 +834,7 @@ function handleParentMessage(event) {
         
       case 'save-success':
         // Backend save succeeded - generate PDF for Note/Update requests
-        console.log('✅ Save successful - generating request PDF...');
+        console.log('&#x2705; Save successful - generating request PDF...');
         generateRequestPDF(message);
         break;
         
@@ -872,7 +878,7 @@ function handleInitData(message) {
 function handleClientData(message) {
   const data = message.data || message;
   
-  console.log('📥 Received client data from parent:', data);
+  console.log('&#xD83D;&#xDCE5; Received client data from parent:', data);
   
   // Store user from message
   if (message.user) {
@@ -986,7 +992,7 @@ function handleClientData(message) {
     const isCharity = document.getElementById('charityCheckbox')?.checked || false;
     if (isCharity && businessData?.organisation_number && entityNumber) {
       entityNumber.dataset.organisationNumber = businessData.organisation_number;
-      console.log(`🏷️ Extracted organisation_number from businessData for URLs: ${businessData.organisation_number}`);
+      console.log(`&#xD83C;&#xDFF7;&#xFE0F; Extracted organisation_number from businessData for URLs: ${businessData.organisation_number}`);
     }
     
     // Populate people cards with officers and PSCs
@@ -1006,12 +1012,12 @@ function handleClientData(message) {
       if (phoneCountryCode) setPhoneCode('phoneCountryCode', formattedPhone.countryCode);
       if (phoneNumber) phoneNumber.value = formattedPhone.nationalNumber;
       
-      console.log(`📞 Formatted phone: ${mobileStr} → ${formattedPhone.countryCode} ${formattedPhone.nationalNumber}`);
+      console.log(`&#xD83D;&#xDCDE; Formatted phone: ${mobileStr} &#x2192; ${formattedPhone.countryCode} ${formattedPhone.nationalNumber}`);
     } else {
       // Fallback to basic parsing if libphonenumber fails
       const phoneNumber = document.getElementById('phoneNumber');
       if (phoneNumber) phoneNumber.value = mobileStr;
-      console.warn(`⚠️ Could not format phone number: ${mobileStr}`);
+      console.warn(`&#x26A0;&#xFE0F; Could not format phone number: ${mobileStr}`);
     }
   }
   
@@ -1038,10 +1044,10 @@ function handleClientData(message) {
       if (isValidAddress) {
         // Valid address - just display it
         currentAddress.value = formatAddressForDisplay(currentAddressObject);
-        console.log('✅ Current address is valid, displaying without API call');
+        console.log('&#x2705; Current address is valid, displaying without API call');
       } else {
         // Invalid/incomplete address - try to search for it via API
-        console.warn('⚠️ Current address object is incomplete, attempting to search via API');
+        console.warn('&#x26A0;&#xFE0F; Current address object is incomplete, attempting to search via API');
         const searchTerm = formatAddressForDisplay(currentAddressObject);
         if (searchTerm && searchTerm.length >= 7) {
           currentAddress.value = searchTerm;
@@ -1084,10 +1090,10 @@ function handleClientData(message) {
         if (isValidAddress) {
           // Valid address - just display it
           previousAddress.value = formatAddressForDisplay(previousAddressObject);
-          console.log('✅ Previous address is valid, displaying without API call');
+          console.log('&#x2705; Previous address is valid, displaying without API call');
         } else {
           // Invalid/incomplete address - try to search for it via API
-          console.warn('⚠️ Previous address object is incomplete, attempting to search via API');
+          console.warn('&#x26A0;&#xFE0F; Previous address object is incomplete, attempting to search via API');
           const searchTerm = formatAddressForDisplay(previousAddressObject);
           if (searchTerm && searchTerm.length >= 7) {
             previousAddress.value = searchTerm;
@@ -1150,7 +1156,7 @@ function handleClientData(message) {
   // === SELECT REQUEST TYPE TAGS FROM uT AND eS FIELDS ===
   // If data includes uT (update type), select those tags
   if (data.uT && Array.isArray(data.uT) && data.uT.length > 0) {
-    console.log('📋 Selecting request types from uT field:', data.uT);
+    console.log('&#xD83D;&#xDCCB; Selecting request types from uT field:', data.uT);
     
     // Clear all existing selections first
     elements.requestTags.forEach(tag => tag.classList.remove('selected'));
@@ -1160,9 +1166,9 @@ function handleClientData(message) {
       const tag = document.querySelector(`[data-type="${requestType}"]`);
       if (tag) {
         tag.classList.add('selected');
-        console.log(`✅ Selected tag: ${requestType}`);
+        console.log(`&#x2705; Selected tag: ${requestType}`);
       } else {
-        console.warn(`⚠️ Request type tag not found: ${requestType}`);
+        console.warn(`&#x26A0;&#xFE0F; Request type tag not found: ${requestType}`);
       }
     });
     
@@ -1183,20 +1189,20 @@ function handleClientData(message) {
     if (hasEsofRequested) {
       // eSoF was requested - select the tag
       esofTag.classList.add('selected');
-      console.log('✅ eSoF tag selected (eS includes "Requested")');
+      console.log('&#x2705; eSoF tag selected (eS includes "Requested")');
     } else {
       // eSoF not requested or eS field missing - ensure tag is deselected
       // Only deselect if it's not in the uT array (uT takes precedence)
       const inUT = data.uT && Array.isArray(data.uT) && data.uT.includes('esof');
       if (!inUT && esofTag.classList.contains('selected')) {
         esofTag.classList.remove('selected');
-        console.log('🗑️ eSoF tag deselected (eS not "Requested" and not in uT)');
+        console.log('&#xD83D;&#xDDD1;&#xFE0F; eSoF tag deselected (eS not "Requested" and not in uT)');
       }
     }
   }
   
-  console.log('✅ Client data loaded and form populated');
-  console.log('📊 Form J Flags - Sufficient Photos:', formJSufficientPhotos, '| Conditions Met:', formJConditionsMet);
+  console.log('&#x2705; Client data loaded and form populated');
+  console.log('&#xD83D;&#xDCCA; Form J Flags - Sufficient Photos:', formJSufficientPhotos, '| Conditions Met:', formJConditionsMet);
 }
 
 function handleDataRequest() {
@@ -1258,9 +1264,9 @@ function resetFormUI(previousType = null, newType = null) {
     if (fileInput) {
       fileInput.value = '';
     }
-    console.log('🗑️ Message input cleared (switching between different request categories)');
+    console.log('&#xD83D;&#xDDD1;&#xFE0F; Message input cleared (switching between different request categories)');
   } else {
-    console.log('📝 Message input preserved (switching between message-based types)');
+    console.log('&#xD83D;&#xDCDD; Message input preserved (switching between message-based types)');
   }
   
   // Hide request-type-controlled sections only
@@ -1323,7 +1329,7 @@ function resetFormUI(previousType = null, newType = null) {
     submitBtn.disabled = true;
   }
   
-  console.log('✅ Form UI reset to default state (preserving input values and header)');
+  console.log('&#x2705; Form UI reset to default state (preserving input values and header)');
 }
 
 function updateHeaderInfo(data) {
@@ -1528,7 +1534,7 @@ function setupFileHandlers() {
       };
       
       cdfDocumentType.addEventListener('change', handleTypeSelection);
-      console.log('📋 Waiting for document type selection...');
+      console.log('&#xD83D;&#xDCCB; Waiting for document type selection...');
       return;
     }
     
@@ -1570,7 +1576,7 @@ function setupFileHandlers() {
     // Re-evaluate ID Documents UI
     updateIDDocumentsUI(requestData);
     
-    console.log('✅ CDF document added:', docObject);
+    console.log('&#x2705; CDF document added:', docObject);
   };
 
   window.handleCDFDragOver = function(event) {
@@ -1654,7 +1660,7 @@ function setupFileHandlers() {
     // Re-evaluate ID Documents UI
     updateIDDocumentsUI(requestData);
     
-    console.log('✅ OFSI document added:', docObject);
+    console.log('&#x2705; OFSI document added:', docObject);
   };
 
   window.handleOFSIDragOver = function(event) {
@@ -1919,7 +1925,7 @@ function setupClientDetailsHandlers() {
       e.preventDefault();
       
       const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-      console.log('📋 Pasted DOB text:', pastedText);
+      console.log('&#xD83D;&#xDCCB; Pasted DOB text:', pastedText);
       
       // Try to parse the date
       const parsedDate = parseDateString(pastedText);
@@ -1934,9 +1940,9 @@ function setupClientDetailsHandlers() {
         
         dobInputs[7].focus();
         const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
-        console.log('✅ Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
+        console.log('&#x2705; Pasted DOB filled all fields:', parsedDate, '&#x2192;', formattedDate);
       } else {
-        console.warn('⚠️ Could not parse date from pasted text:', pastedText);
+        console.warn('&#x26A0;&#xFE0F; Could not parse date from pasted text:', pastedText);
       }
     });
   }
@@ -1996,7 +2002,7 @@ function setupBusinessCharityHandlers() {
       companyNameDebounceTimer = setTimeout(() => {
         const isCharity = document.getElementById('charityCheckbox')?.checked || false;
         const searchType = isCharity ? 'charity-search' : 'company-search';
-        console.log(`📡 API call for ${isCharity ? 'charity' : 'company'} search:`, searchTerm);
+        console.log(`&#xD83D;&#xDCE1; API call for ${isCharity ? 'charity' : 'company'} search:`, searchTerm);
         
         window.parent.postMessage({
           type: searchType,
@@ -2044,7 +2050,7 @@ function setupBusinessCharityHandlers() {
       companyNumberDebounceTimer = setTimeout(() => {
         const isCharity = document.getElementById('charityCheckbox')?.checked || false;
         const searchType = isCharity ? 'charity-search' : 'company-search';
-        console.log(`📡 API call for ${isCharity ? 'charity' : 'company'} number search:`, searchTerm);
+        console.log(`&#xD83D;&#xDCE1; API call for ${isCharity ? 'charity' : 'company'} number search:`, searchTerm);
         
         window.parent.postMessage({
           type: searchType,
@@ -2163,6 +2169,89 @@ function setupContactDetailsHandlers() {
       }
     });
   }
+}
+
+// Track when individual profile fields change so we can refresh CDF hints
+function setupCDFProfileListeners() {
+  const inputFieldIds = [
+    'firstName',
+    'middleName',
+    'lastName',
+    'email',
+    'phoneNumber',
+    'currentAddress',
+    'previousAddress',
+    'previousName',
+    'reasonForNameChange',
+    'flatNumber',
+    'buildingNumber',
+    'buildingName',
+    'street',
+    'subStreet',
+    'town',
+    'postcode',
+    'prevFlatNumber',
+    'prevBuildingNumber',
+    'prevBuildingName',
+    'prevStreet',
+    'prevSubStreet',
+    'prevTown',
+    'prevPostcode'
+  ];
+  
+  inputFieldIds.forEach(fieldId => {
+    const element = document.getElementById(fieldId);
+    if (element) {
+      element.addEventListener('input', handleCDFProfileFieldChange);
+    }
+  });
+  
+  const changeFieldIds = [
+    'titlePrefix',
+    'addressNotListed',
+    'previousAddressNotListed',
+    'recentMove',
+    'recentNameChange',
+    'currentCountry',
+    'previousCountry',
+    'phoneCountryCode'
+  ];
+  
+  changeFieldIds.forEach(fieldId => {
+    const element = document.getElementById(fieldId);
+    if (element) {
+      element.addEventListener('change', handleCDFProfileFieldChange);
+    }
+  });
+  
+  const dobInputs = ['dob1','dob2','dob3','dob4','dob5','dob6','dob7','dob8'];
+  dobInputs.forEach(fieldId => {
+    const element = document.getElementById(fieldId);
+    if (element) {
+      element.addEventListener('input', handleCDFProfileFieldChange);
+    }
+  });
+  
+  handleCDFProfileFieldChange();
+}
+
+function handleCDFProfileFieldChange() {
+  refreshCDFHintsForProfileChange();
+}
+
+function refreshCDFHintsForProfileChange() {
+  const hasCDFDocument = idDocuments.some(doc => doc.type === 'Details form');
+  const businessCheckbox = document.getElementById('businessCheckbox');
+  const charityCheckbox = document.getElementById('charityCheckbox');
+  const entityFromData = requestData?.b || requestData?.c || requestData?.data?.b || requestData?.data?.c;
+  const isEntity = !!(businessCheckbox?.checked || charityCheckbox?.checked || entityFromData);
+  const hasLinkedData = !!(requestData?.cI?.bD || requestData?.data?.cI?.bD);
+  
+  toggleCDFHintsState({
+    hasCDFDocument,
+    isEntity,
+    hasLinkedData
+  });
 }
 
 // Matter details handlers
@@ -2300,7 +2389,7 @@ function setupAddressAutocomplete(field) {
     
     // Debounce 300ms
     const timer = setTimeout(() => {
-      console.log('📡 API call for autocomplete:', searchTerm);
+      console.log('&#xD83D;&#xDCE1; API call for autocomplete:', searchTerm);
       window.parent.postMessage({
         type: 'address-search',
         searchTerm: searchTerm,
@@ -2427,7 +2516,7 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
           let addressPrefix = getAddressData.line_1.trim();
           
           // Remove thoroughfare/street from line_1 if present
-          // Example: "94 Southgate Street" → "94" | "Thurstan Hoskin Llp" → "Thurstan Hoskin Llp"
+          // Example: "94 Southgate Street" &#x2192; "94" | "Thurstan Hoskin Llp" &#x2192; "Thurstan Hoskin Llp"
           if (getAddressData.thoroughfare && addressPrefix.includes(getAddressData.thoroughfare)) {
             addressPrefix = addressPrefix.replace(getAddressData.thoroughfare, '').replace(/,\s*$/, '').trim();
           }
@@ -2520,11 +2609,13 @@ function handleAddressData(addressData, field) {
   
   if (field === 'current') {
     currentAddressObject = thirdfortAddress;
-    console.log('✅ Stored current address object:', currentAddressObject);
+    console.log('&#x2705; Stored current address object:', currentAddressObject);
   } else {
     previousAddressObject = thirdfortAddress;
-    console.log('✅ Stored previous address object:', previousAddressObject);
+    console.log('&#x2705; Stored previous address object:', previousAddressObject);
   }
+  
+  handleCDFProfileFieldChange();
 }
 
 /*
@@ -2532,7 +2623,7 @@ Handle full company/charity data from parent (company-data/charity-data message)
 */
 function handleCompanyData(data) {
   businessData = data;
-  console.log('✅ Received full company/charity data:', businessData);
+  console.log('&#x2705; Received full company/charity data:', businessData);
   
   // Store in requestData
   if (!requestData.cI) requestData.cI = {};
@@ -2544,7 +2635,7 @@ function handleCompanyData(data) {
   
   if (isCharity && data.organisation_number && entityNumberEl) {
     entityNumberEl.dataset.organisationNumber = data.organisation_number;
-    console.log(`🏷️ Stored organisation_number for URLs: ${data.organisation_number} (display: ${data.reg_charity_number || data.company_number})`);
+    console.log(`&#xD83C;&#xDFF7;&#xFE0F; Stored organisation_number for URLs: ${data.organisation_number} (display: ${data.reg_charity_number || data.company_number})`);
   }
   
   // Update company buttons visibility if they exist
@@ -2605,7 +2696,7 @@ function displayCompanySuggestions(suggestions, searchBy) {
   });
   
   dropdownElement.classList.remove('hidden');
-  console.log(`✅ Displayed ${suggestions.length} ${isCharity ? 'charity' : 'company'} suggestions`);
+  console.log(`&#x2705; Displayed ${suggestions.length} ${isCharity ? 'charity' : 'company'} suggestions`);
 }
 
 /*
@@ -2625,7 +2716,7 @@ function selectCompany(company) {
   // For charities, store organisation_number in data attribute (for URL construction)
   if (isCharity && company.organisation_number && entityNumberEl) {
     entityNumberEl.dataset.organisationNumber = company.organisation_number;
-    console.log(`🏷️ Stored organisation_number: ${company.organisation_number} (display: ${company.company_number})`);
+    console.log(`&#xD83C;&#xDFF7;&#xFE0F; Stored organisation_number: ${company.organisation_number} (display: ${company.company_number})`);
   } else if (entityNumberEl) {
     entityNumberEl.dataset.organisationNumber = '';
   }
@@ -2636,7 +2727,7 @@ function selectCompany(company) {
   
   // Request full company/charity data from parent (directors/trustees, officers, PSCs)
   const apiType = isCharity ? 'charity-lookup' : 'company-lookup';
-  console.log(`📡 Requesting full ${isCharity ? 'charity' : 'company'} data for:`, company.company_number);
+  console.log(`&#xD83D;&#xDCE1; Requesting full ${isCharity ? 'charity' : 'company'} data for:`, company.company_number);
   
   window.parent.postMessage({
     type: apiType,
@@ -2799,14 +2890,14 @@ function populatePeopleCards(companyData) {
     `;
     
     if (person.share) {
-      html += `<div class="people-card-share">📊 ${person.share}</div>`;
+      html += `<div class="people-card-share">&#xD83D;&#xDCCA; ${person.share}</div>`;
     }
     
     card.innerHTML = html;
     peopleRepeater.appendChild(card);
   });
   
-  console.log(`✅ Populated ${allPeople.length} people cards (merged duplicates)`);
+  console.log(`&#x2705; Populated ${allPeople.length} people cards (merged duplicates)`);
 }
 
 /*
@@ -2830,7 +2921,7 @@ function openOfficerAppointments(appointmentsPath) {
       const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
       
       window.open(url, 'charityTrustees', features);
-      console.log('👤 Opening charity trustees tab:', url);
+      console.log('&#xD83D;&#xDC64; Opening charity trustees tab:', url);
     }
     return;
   }
@@ -2845,7 +2936,7 @@ function openOfficerAppointments(appointmentsPath) {
   const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
   
   window.open(url, 'officerAppointments', features);
-  console.log('👤 Opening officer appointments:', url);
+  console.log('&#xD83D;&#xDC64; Opening officer appointments:', url);
 }
 
 /*
@@ -2861,7 +2952,7 @@ function clearPeopleCards() {
     : 'Link a company to view officers, directors, and PSCs';
   
   peopleRepeater.innerHTML = `<div class="no-people-message">${message}</div>`;
-  console.log('🗑️ Cleared people cards');
+  console.log('&#xD83D;&#xDDD1;&#xFE0F; Cleared people cards');
 }
 
 /*
@@ -2918,7 +3009,7 @@ function openCompanyRegisterPage() {
   
   if (popup) {
     popup.focus();
-    console.log(`🔗 Opened ${isCharity ? 'Charity Register' : 'Companies House'} for: ${entityNum}`);
+    console.log(`&#xD83D;&#xDD17; Opened ${isCharity ? 'Charity Register' : 'Companies House'} for: ${entityNum}`);
   } else {
     console.error('Failed to open popup - please allow popups for this site');
   }
@@ -2941,7 +3032,7 @@ function refreshCompanyData() {
   const apiType = isCharity ? 'charity-lookup' : 'company-lookup';
   const entityTypeStr = isCharity ? 'charity' : 'business';
   
-  console.log(`🔄 Refreshing ${entityTypeStr} data for:`, companyNumber);
+  console.log(`&#xD83D;&#xDD04; Refreshing ${entityTypeStr} data for:`, companyNumber);
   
   window.parent.postMessage({
     type: apiType,
@@ -2973,7 +3064,7 @@ function autoPopulateRegisteredAddress() {
     const isDifferentAddress = currentDisplayText !== newDisplayText;
     
     if (isDifferentAddress || !currentAddressObject) {
-      console.log('📍 Auto-populating registered office address:', thirdfortAddress);
+      console.log('&#xD83D;&#xDCCD; Auto-populating registered office address:', thirdfortAddress);
       
       // Set UK as country
       if (currentCountry) {
@@ -2990,9 +3081,9 @@ function autoPopulateRegisteredAddress() {
       // Display in the autocomplete field
       currentAddress.value = formatAddressForDisplay(thirdfortAddress);
       
-      console.log('✅ Registered office address converted and stored:', currentAddressObject);
+      console.log('&#x2705; Registered office address converted and stored:', currentAddressObject);
     } else {
-      console.log('ℹ️ Registered office address is identical to current address, keeping existing');
+      console.log('&#x2139;&#xFE0F; Registered office address is identical to current address, keeping existing');
     }
   }
 }
@@ -3041,12 +3132,14 @@ function selectAddressSuggestion(addressId, displayText, isCurrentAddress) {
   dropdownElement.classList.add('hidden');
   
   // Request full address from parent
-  console.log('📡 API call for full address:', addressId);
+  console.log('&#xD83D;&#xDCE1; API call for full address:', addressId);
   window.parent.postMessage({
     type: 'address-lookup',
     addressId: addressId,
     field: isCurrentAddress ? 'current' : 'previous'
   }, '*');
+  
+  handleCDFProfileFieldChange();
 }
 
 /*
@@ -3157,6 +3250,106 @@ function getFormDataObjects() {
   };
 }
 
+// Determine if the form already contains all data normally captured by the CDF
+function hasCompleteIndividualProfile() {
+  return computeIndividualProfileCompleteness();
+}
+
+function computeIndividualProfileCompleteness() {
+  const businessCheckbox = document.getElementById('businessCheckbox');
+  const charityCheckbox = document.getElementById('charityCheckbox');
+  const entityFromData = requestData?.b || requestData?.c || requestData?.data?.b || requestData?.data?.c;
+  const isEntity = !!(businessCheckbox?.checked || charityCheckbox?.checked || entityFromData);
+  
+  if (isEntity) {
+    return false;
+  }
+  
+  const clientData = requestData?.cI || requestData?.data?.cI || {};
+  const nameData = clientData?.n || {};
+  
+  const getValue = (id, fallback = '') => {
+    const element = document.getElementById(id);
+    if (element && typeof element.value === 'string') {
+      return element.value.trim() || fallback || '';
+    }
+    return fallback || '';
+  };
+  
+  const title = getValue('titlePrefix', nameData.t || '');
+  const firstName = getValue('firstName', nameData.f || '');
+  const lastName = getValue('lastName', nameData.l || '');
+  
+  if (!title || !firstName || !lastName) {
+    return false;
+  }
+  
+  const dobFromInputs = collectDOBFromInputs();
+  const dateOfBirth = dobFromInputs || clientData.b || '';
+  if (!dateOfBirth) {
+    return false;
+  }
+  
+  const email = getValue('email', clientData.e || '');
+  const phoneInput = getValue('phoneNumber', '');
+  const storedPhone = clientData.m || '';
+  if (!email && !phoneInput && !storedPhone) {
+    return false;
+  }
+  
+  // Ensure manual address objects are up to date
+  buildAddressObjects();
+  
+  const activeAddress = (currentAddressObject && Object.keys(currentAddressObject).length > 0)
+    ? currentAddressObject
+    : clientData.a || {};
+  
+  if (!validateThirdfortAddress(activeAddress)) {
+    return false;
+  }
+  
+  const recentNameChangeToggle = document.getElementById('recentNameChange');
+  const requiresNameChange = recentNameChangeToggle
+    ? recentNameChangeToggle.checked
+    : !!clientData.nC;
+  
+  if (requiresNameChange) {
+    const previousName = getValue('previousName', clientData.pN || '');
+    const reasonForChange = getValue('reasonForNameChange', clientData.rNC || '');
+    if (!previousName || !reasonForChange) {
+      return false;
+    }
+  }
+  
+  const recentMoveToggle = document.getElementById('recentMove');
+  const requiresPreviousAddress = recentMoveToggle
+    ? recentMoveToggle.checked
+    : !!clientData.rM;
+  
+  if (requiresPreviousAddress) {
+    const activePreviousAddress = (previousAddressObject && Object.keys(previousAddressObject).length > 0)
+      ? previousAddressObject
+      : clientData.pA || {};
+    
+    if (!validateThirdfortAddress(activePreviousAddress)) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+function collectDOBFromInputs() {
+  const dobInputs = ['dob1','dob2','dob3','dob4','dob5','dob6','dob7','dob8'];
+  const combined = dobInputs.map(id => document.getElementById(id)?.value || '').join('');
+  
+  if (combined.length !== 8) {
+    return '';
+  }
+  
+  return `${combined.slice(0,2)}-${combined.slice(2,4)}-${combined.slice(4)}`;
+}
+
 /*
 Open document in popup window using liveUrl from S3
 */
@@ -3192,7 +3385,7 @@ function openDocument(documentType) {
     popup.focus();
   }
   
-  console.log('📄 Opened document:', doc.liveUrl);
+  console.log('&#xD83D;&#xDCC4; Opened document:', doc.liveUrl);
 }
 
 // Set up click event listeners for document open buttons
@@ -3249,7 +3442,7 @@ function openOFSISearch() {
   
   const searchType = isEntity ? 'entity' : 'individual';
   
-  console.log('📤 Sending sanctions check request:', { clientName, yearOfBirth, searchType });
+  console.log('&#xD83D;&#xDCE4; Sending sanctions check request:', { clientName, yearOfBirth, searchType });
   
   window.parent.postMessage({
     type: 'sanctions-check-request',
@@ -3269,7 +3462,7 @@ Handle sanctions file uploaded from sanctions checker
 Adds the file object to idDocuments array for validation
 */
 function handleSanctionsFileUploaded(message) {
-  console.log('✅ Received sanctions file from parent:', message);
+  console.log('&#x2705; Received sanctions file from parent:', message);
   
   // Create file object matching request form structure
   const ofsiFile = {
@@ -3323,7 +3516,7 @@ function handleSanctionsFileUploaded(message) {
   // Re-evaluate ID Documents UI (will now pass OFSI validation)
   updateIDDocumentsUI(requestData);
   
-  console.log('✅ OFSI document added to request form');
+  console.log('&#x2705; OFSI document added to request form');
 }
 
 /*
@@ -3349,10 +3542,10 @@ function escapeHtml(text) {
 function getValidationIcon(isValid) {
   if (isValid) {
     // Green checkmark
-    return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; margin-right: 6px;"><span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">✓</span></div>`;
+    return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; margin-right: 6px;"><span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">&#x2713;</span></div>`;
   } else {
     // Red X
-    return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #d32f2f; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; margin-right: 6px;"><span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">×</span></div>`;
+    return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #d32f2f; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; margin-right: 6px;"><span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">&#xD7;</span></div>`;
   }
 }
 
@@ -3361,13 +3554,13 @@ function getValidationIcon(isValid) {
  * Matching request-note-pdf-mockup.html design with full form details
  */
 function buildRequestPDFHTML(messageData) {
-  console.log('🔨 Building PDF HTML with data:', messageData);
+  console.log('&#xD83D;&#xDD28; Building PDF HTML with data:', messageData);
   
   // Use the request payload from save-success message (sent back by parent)
   const requestPayload = messageData.request || messageData.savedData;
   
   if (!requestPayload) {
-    console.error('❌ No request payload in save-success message');
+    console.error('&#x274C; No request payload in save-success message');
     return '<html><body><h1>Error: No request data available</h1></body></html>';
   }
   
@@ -3375,9 +3568,9 @@ function buildRequestPDFHTML(messageData) {
   const requestMessage = requestPayload.message || {};
   const data = requestPayload.data || {};
   
-  console.log('📝 Request type:', requestType);
-  console.log('📤 Using request payload from parent:', requestPayload);
-  console.log('📊 Client/matter data:', data);
+  console.log('&#xD83D;&#xDCDD; Request type:', requestType);
+  console.log('&#xD83D;&#xDCE4; Using request payload from parent:', requestPayload);
+  console.log('&#xD83D;&#xDCCA; Client/matter data:', data);
   
   // Determine badge class and title for all 7 request types
   let badgeClass, badgeText, title, borderColor, messageLabel, badgeStyle;
@@ -3465,7 +3658,7 @@ function buildRequestPDFHTML(messageData) {
   const entryId = requestPayload._id || '';
   const userEmail = requestPayload.user || '';
   
-  console.log('👤 Extracted client info:');
+  console.log('&#xD83D;&#xDC64; Extracted client info:');
   console.log('  - clientName:', clientName);
   console.log('  - clientNumber:', clientNumber);
   console.log('  - feeEarner:', feeEarner);
@@ -3481,7 +3674,7 @@ function buildRequestPDFHTML(messageData) {
   const relation = data.r || '';
   const matterDescription = data.mD || '';
   
-  console.log('📋 Matter details:');
+  console.log('&#xD83D;&#xDCCB; Matter details:');
   console.log('  - workType:', workType);
   console.log('  - relation:', relation);
   console.log('  - matterDescription:', matterDescription);
@@ -3696,7 +3889,7 @@ function buildRequestPDFHTML(messageData) {
         <div style="padding: 12px 16px;">
           <h4 style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center;">
             <div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 8px;">
-              <span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">✓</span>
+              <span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">&#x2713;</span>
             </div>
             Request Successfully Submitted
           </h4>
@@ -3724,10 +3917,10 @@ function buildRequestPDFHTML(messageData) {
  * Opens PDF in popup window and notifies parent
  */
 async function generateRequestPDF(messageData) {
-  console.log('📄 Generating request PDF...');
+  console.log('&#xD83D;&#xDCC4; Generating request PDF...');
   
   if (typeof printJS === 'undefined') {
-    console.error('❌ Print.js library not loaded');
+    console.error('&#x274C; Print.js library not loaded');
     sendMessageToParent({ type: 'pdf-generated', success: false });
     return;
   }
@@ -3735,11 +3928,11 @@ async function generateRequestPDF(messageData) {
   try {
     // Build HTML string
     const pdfHTML = buildRequestPDFHTML(messageData);
-    console.log('✅ HTML built, length:', pdfHTML.length);
+    console.log('&#x2705; HTML built, length:', pdfHTML.length);
     
     // Trigger print dialog with Print.js using RAW HTML
     if (typeof printJS !== 'undefined') {
-      console.log('📄 Triggering Print.js with raw HTML data...');
+      console.log('&#xD83D;&#xDCC4; Triggering Print.js with raw HTML data...');
       
       // Parse HTML to extract body content and styles
       const parser = new DOMParser();
@@ -3752,15 +3945,15 @@ async function generateRequestPDF(messageData) {
       // Extract body HTML
       const bodyHTML = doc.body.innerHTML;
       
-      console.log('📄 Style content length:', styleContent.length);
-      console.log('📄 Body HTML length:', bodyHTML.length);
+      console.log('&#xD83D;&#xDCC4; Style content length:', styleContent.length);
+      console.log('&#xD83D;&#xDCC4; Body HTML length:', bodyHTML.length);
       
       // Open print dialog once
       let printDialogOpened = false;
       
       const handleAfterPrint = () => {
         if (printDialogOpened) {
-          console.log('📄 Print dialog closed - notifying parent');
+          console.log('&#xD83D;&#xDCC4; Print dialog closed - notifying parent');
           window.removeEventListener('afterprint', handleAfterPrint);
           sendMessageToParent({ type: 'pdf-generated', success: true });
         }
@@ -3776,18 +3969,18 @@ async function generateRequestPDF(messageData) {
         scanStyles: false,
         targetStyles: ['*'],
         onLoadingEnd: () => {
-          console.log('📄 Print.js loading ended - dialog open');
+          console.log('&#xD83D;&#xDCC4; Print.js loading ended - dialog open');
           printDialogOpened = true;
         }
       });
       
-      console.log('✅ Print.js dialog triggered with raw HTML');
+      console.log('&#x2705; Print.js dialog triggered with raw HTML');
     } else {
-      console.log('ℹ️ Print.js not available, skipping print dialog');
+      console.log('&#x2139;&#xFE0F; Print.js not available, skipping print dialog');
       sendMessageToParent({ type: 'pdf-generated', success: true });
     }
   } catch (error) {
-    console.error('❌ PDF error:', error);
+    console.error('&#x274C; PDF error:', error);
     sendMessageToParent({ type: 'pdf-generated', success: false });
   }
 }
@@ -3907,7 +4100,7 @@ function updateFormJFlags(images, iconData) {
   // data.i.l = likeness NOT confirmed (so we want this to be false/undefined)
   formJConditionsMet = !!(iconData?.p && iconData?.a && !iconData?.l);
   
-  console.log('📊 Form J Flags Updated:');
+  console.log('&#xD83D;&#xDCCA; Form J Flags Updated:');
   console.log('  - Sufficient Photos:', formJSufficientPhotos);
   console.log('    - Address IDs:', addressIDs.length, '+ DL bonus:', drivingLicenceCount, '= Total:', totalAddressIDs);
   console.log('    - Has Complete Driving License:', hasCompleteDrivingLicense, '(Front + Back)');
@@ -3983,7 +4176,7 @@ function updateClientOrBusinessSection() {
       showError(`${typeName} is not available for ${entityType}`, 'Request Type Not Available');
     }
     
-    console.log('👔 Showing Business/Charity Details section | Disabled: Form J, Form E, eSoF');
+    console.log('&#xD83D;&#xDC54; Showing Business/Charity Details section | Disabled: Form J, Form E, eSoF');
   } else {
     // Show Client Details section, hide Business/Charity
     if (clientDetailsSection) clientDetailsSection.classList.remove('hidden');
@@ -4000,7 +4193,7 @@ function updateClientOrBusinessSection() {
       }
     });
     
-    console.log('👤 Showing Client Details section | All request types available');
+    console.log('&#xD83D;&#xDC64; Showing Client Details section | All request types available');
   }
 }
 
@@ -4048,9 +4241,6 @@ function updateIDDocumentsUI(data) {
   
   // === CDF COLUMN (Left) ===
   const cdfDocumentCard = document.getElementById('cdfDocumentCard');
-  const cdfPeopleHint = document.getElementById('cdfPeopleHint');
-  const cdfEntityHint = document.getElementById('cdfEntityHint');
-  const entityLinkedHint = document.getElementById('entityLinkedHint');
   
   // Look for CDF document (type: "Details form")
   const cdfDoc = idDocuments.find(doc => doc.type === 'Details form');
@@ -4070,8 +4260,13 @@ function updateIDDocumentsUI(data) {
   
   const cdfDocumentName = cdfDoc?.document?.toLowerCase() || '';
   const cdfOpenBtn = document.getElementById('cdfOpenBtn');
+  const isBusiness = data?.b === true;
+  const isCharity = data?.c === true;
+  const isEntity = isBusiness || isCharity;
+  const hasLinkedData = !!(data?.cI?.bD);
+  const hasValidCDFDocument = !!(cdfDoc && validCDFTypes.includes(cdfDocumentName));
   
-  if (cdfDoc && validCDFTypes.includes(cdfDocumentName) && cdfDocumentCard) {
+  if (hasValidCDFDocument && cdfDocumentCard) {
     // Populate and show CDF card
     const titleEl = cdfDocumentCard.querySelector('.document-title');
     const uploadInfoEl = cdfDocumentCard.querySelector('.document-upload-info');
@@ -4092,38 +4287,68 @@ function updateIDDocumentsUI(data) {
     }
     
     cdfDocumentCard.classList.remove('hidden');
-    cdfPeopleHint.classList.add('hidden');
-    cdfEntityHint.classList.add('hidden');
-    entityLinkedHint.classList.add('hidden');
   } else {
-    // No CDF document - show appropriate hint based on entity type
     if (cdfDocumentCard) cdfDocumentCard.classList.add('hidden');
     if (cdfOpenBtn) cdfOpenBtn.classList.add('hidden');
-    
-    const isBusiness = data?.b === true;
-    const isCharity = data?.c === true;
-    const isEntity = isBusiness || isCharity;
-    const hasLinkedData = !!(data?.cI?.bD);
-    
-    if (!isEntity) {
-      // Individual - show people hint
-      if (cdfPeopleHint) cdfPeopleHint.classList.remove('hidden');
-      if (cdfEntityHint) cdfEntityHint.classList.add('hidden');
-      if (entityLinkedHint) entityLinkedHint.classList.add('hidden');
-    } else if (hasLinkedData) {
-      // Entity with linked data - show entity linked hint
-      if (cdfPeopleHint) cdfPeopleHint.classList.add('hidden');
-      if (cdfEntityHint) cdfEntityHint.classList.add('hidden');
-      if (entityLinkedHint) entityLinkedHint.classList.remove('hidden');
-    } else {
-      // Entity without linked data - show entity hint
-      if (cdfPeopleHint) cdfPeopleHint.classList.add('hidden');
-      if (cdfEntityHint) cdfEntityHint.classList.remove('hidden');
-      if (entityLinkedHint) entityLinkedHint.classList.add('hidden');
-    }
   }
   
-  console.log('✅ ID Documents UI updated');
+  toggleCDFHintsState({
+    hasCDFDocument: hasValidCDFDocument,
+    isEntity,
+    hasLinkedData
+  });
+  
+  console.log('&#x2705; ID Documents UI updated');
+}
+
+function toggleCDFHintsState({ hasCDFDocument, isEntity, hasLinkedData }) {
+  const cdfPeopleHint = document.getElementById('cdfPeopleHint');
+  const cdfEntityHint = document.getElementById('cdfEntityHint');
+  const entityLinkedHint = document.getElementById('entityLinkedHint');
+  const cdfProfileHint = document.getElementById('cdfProfileCompleteHint');
+  
+  const profileComplete = hasCompleteIndividualProfile();
+  if (profileComplete !== lastProfileCompleteState) {
+    lastProfileCompleteState = profileComplete;
+    document.dispatchEvent(new CustomEvent('cdfProfileCompleteChanged', {
+      detail: { complete: profileComplete }
+    }));
+  }
+  
+  const hideHint = (element) => {
+    if (element && !element.classList.contains('hidden')) {
+      element.classList.add('hidden');
+    }
+  };
+  const showHint = (element) => {
+    if (element && element.classList.contains('hidden')) {
+      element.classList.remove('hidden');
+    }
+  };
+  
+  hideHint(cdfPeopleHint);
+  hideHint(cdfEntityHint);
+  hideHint(entityLinkedHint);
+  hideHint(cdfProfileHint);
+  
+  if (hasCDFDocument) {
+    return;
+  }
+  
+  if (isEntity) {
+    if (hasLinkedData) {
+      showHint(entityLinkedHint);
+    } else {
+      showHint(cdfEntityHint);
+    }
+    return;
+  }
+  
+  if (profileComplete) {
+    showHint(cdfProfileHint);
+  } else {
+    showHint(cdfPeopleHint);
+  }
 }
 
 /**
@@ -4185,9 +4410,9 @@ function formatAddressForDisplay(addressObject) {
 /**
  * Parse and format phone number using google-libphonenumber
  * Handles various formats:
- * - UK: 07700900123 → +44 7700900123
- * - International: +447700900123 → +44 7700900123
- * - Already formatted: +44 7700900123 → +44 7700900123
+ * - UK: 07700900123 &#x2192; +44 7700900123
+ * - International: +447700900123 &#x2192; +44 7700900123
+ * - Already formatted: +44 7700900123 &#x2192; +44 7700900123
  * Returns: { countryCode: '+44', nationalNumber: '7700900123', e164: '+447700900123' } or null
  */
 function parseAndFormatPhoneNumber(phoneString) {
@@ -4195,7 +4420,7 @@ function parseAndFormatPhoneNumber(phoneString) {
   
   // Check if libphonenumber is loaded
   if (typeof libphonenumber === 'undefined') {
-    console.warn('⚠️ libphonenumber not loaded, using basic parsing');
+    console.warn('&#x26A0;&#xFE0F; libphonenumber not loaded, using basic parsing');
     return basicPhoneParse(phoneString);
   }
   
@@ -4245,7 +4470,7 @@ function parseAndFormatPhoneNumber(phoneString) {
     }
     
     // If all else fails, use basic parsing
-    console.warn('⚠️ libphonenumber validation failed, using basic parsing');
+    console.warn('&#x26A0;&#xFE0F; libphonenumber validation failed, using basic parsing');
     return basicPhoneParse(phoneString);
     
   } catch (error) {
@@ -4489,8 +4714,8 @@ function handleFormSubmit(event) {
       
       // Show specific validation errors
       const errorMessages = validation?.errors || ['Please complete all required fields before submitting.'];
-      const errorText = errorMessages.join('\n• ');
-      showError('• ' + errorText, 'Validation Error');
+      const errorText = errorMessages.join('\n&#x2022; ');
+      showError('&#x2022; ' + errorText, 'Validation Error');
       return;
     }
     
@@ -4586,7 +4811,7 @@ function uploadFormFiles(files) {
       file: {} // File object can't be serialized
     }));
     
-    console.log('📤 Requesting PUT links for files:', fileMetadata);
+    console.log('&#xD83D;&#xDCE4; Requesting PUT links for files:', fileMetadata);
     
     sendMessageToParent({
       type: 'file-data',
@@ -4826,7 +5051,7 @@ function handleFileUploadResponse(event) {
   const message = event.data;
   
   if (message.type === 'put-links') {
-    console.log('📥 Received PUT links from parent:', message);
+    console.log('&#xD83D;&#xDCE5; Received PUT links from parent:', message);
     
     const links = message.links;
     const s3Keys = message.s3Keys;
@@ -4834,7 +5059,7 @@ function handleFileUploadResponse(event) {
     // Upload to S3
     uploadFilesToS3(localFilesForUpload, links, s3Keys)
       .then((uploadedS3Keys) => {
-        console.log('✅ All files uploaded to S3');
+        console.log('&#x2705; All files uploaded to S3');
         
         // Hide upload progress
         hideUploadProgress();
@@ -4854,7 +5079,7 @@ function handleFileUploadResponse(event) {
         }
       })
       .catch((error) => {
-        console.error('❌ S3 upload failed:', error);
+        console.error('&#x274C; S3 upload failed:', error);
         
         // Hide upload progress
         hideUploadProgress();
@@ -4875,7 +5100,7 @@ function handleFileUploadResponse(event) {
       });
       
   } else if (message.type === 'put-error') {
-    console.error('❌ PUT error from parent:', message);
+    console.error('&#x274C; PUT error from parent:', message);
     
     // Hide upload progress
     hideUploadProgress();
@@ -4909,7 +5134,7 @@ window.addEventListener('message', handleFileUploadResponse);
  */
 async function prepareAndSubmitRequest(requestType, messageObj = null) {
   try {
-    console.log(`📤 Preparing ${requestType} submission`);
+    console.log(`&#xD83D;&#xDCE4; Preparing ${requestType} submission`);
     
     // Check all 3 file upload inputs
     const messageFileInput = document.getElementById('fileInput');
@@ -4944,7 +5169,7 @@ async function prepareAndSubmitRequest(requestType, messageObj = null) {
           lastModified: file.lastModified
         },
         file: file,
-        isMessageFile: true  // ← Flag for separation
+        isMessageFile: true  // &#x2190; Flag for separation
       });
     }
     
@@ -4974,7 +5199,7 @@ async function prepareAndSubmitRequest(requestType, messageObj = null) {
           lastModified: file.lastModified
         },
         file: file,
-        isMessageFile: false  // ← Document file
+        isMessageFile: false  // &#x2190; Document file
       });
     }
     
@@ -5003,13 +5228,13 @@ async function prepareAndSubmitRequest(requestType, messageObj = null) {
           lastModified: file.lastModified
         },
         file: file,
-        isMessageFile: false  // ← Document file
+        isMessageFile: false  // &#x2190; Document file
       });
     }
     
     // Decide whether to upload files or go straight to request-data
     if (filesToUpload.length > 0) {
-      console.log(`📁 Found ${filesToUpload.length} file(s) to upload`);
+      console.log(`&#xD83D;&#xDCC1; Found ${filesToUpload.length} file(s) to upload`);
       
       // Upload files and wait for completion
       const { messageFile, documentFiles } = await uploadFormFiles(filesToUpload);
@@ -5018,14 +5243,14 @@ async function prepareAndSubmitRequest(requestType, messageObj = null) {
       buildAndSendRequestData(requestType, messageObj, messageFile, documentFiles);
       
     } else {
-      console.log('📄 No files to upload, sending request-data immediately');
+      console.log('&#xD83D;&#xDCC4; No files to upload, sending request-data immediately');
       
       // No files - send request-data immediately
       buildAndSendRequestData(requestType, messageObj, null, []);
     }
     
   } catch (error) {
-    console.error('❌ Submission error:', error);
+    console.error('&#x274C; Submission error:', error);
     
     // Re-enable submit button
     const submitBtn = document.getElementById('submitBtn');
@@ -5081,7 +5306,7 @@ function buildAndSendRequestData(requestType, messageObj, messageFile, documentF
     requestDataMessage.newFiles = documentFiles;
   }
   
-  console.log('📤 Sending request-data to parent:', requestDataMessage);
+  console.log('&#xD83D;&#xDCE4; Sending request-data to parent:', requestDataMessage);
   
   // Store for PDF generation when we receive save-success
   lastSentRequestData = requestDataMessage;
@@ -5093,7 +5318,7 @@ function buildAndSendRequestData(requestType, messageObj, messageFile, documentF
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) submitBtn.disabled = false;
   
-  console.log('✅ Request submitted successfully');
+  console.log('&#x2705; Request submitted successfully');
 }
 
 /**
@@ -5286,7 +5511,9 @@ window.RequestFormCore = {
   validateAndFormatDOB,
   // Global submission utilities
   prepareAndSubmitRequest,
-  buildUpdatedClientData
+  buildUpdatedClientData,
+  // Individual profile completeness helper
+  hasCompleteIndividualProfile
 };
 
 // ===== TEMPORARY: MOCK DATA FOR TESTING =====
@@ -5888,21 +6115,21 @@ document.addEventListener('DOMContentLoaded', function() {
   
   if (mockClientBtn) {
     mockClientBtn.addEventListener('click', function() {
-      console.log('🧪 Loading Individual Mock Data');
+      console.log('&#xD83E;&#xDDEA; Loading Individual Mock Data');
       handleClientData(mockClientData);
     });
   }
   
   if (mockBusinessBtn) {
     mockBusinessBtn.addEventListener('click', function() {
-      console.log('🧪 Loading Business Mock Data');
+      console.log('&#xD83E;&#xDDEA; Loading Business Mock Data');
       handleClientData(mockBusinessData);
     });
   }
   
   if (mockCharityBtn) {
     mockCharityBtn.addEventListener('click', function() {
-      console.log('🧪 Loading Charity Mock Data');
+      console.log('&#xD83E;&#xDDEA; Loading Charity Mock Data');
       handleClientData(mockCharityData);
     });
   }

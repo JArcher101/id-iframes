@@ -30,7 +30,7 @@ If file present, follows message-iframe.html upload flow:
     uploadingFile: false,
     
     init: function(requestData) {
-      console.log('📝 Initializing Issue Update request');
+      console.log('&#xD83D;&#xDCDD; Initializing Issue Update request');
       
       // Enable submit button (validation happens on submit)
       this.enableSubmitButton();
@@ -38,14 +38,14 @@ If file present, follows message-iframe.html upload flow:
       // Setup file upload listener
       this.setupFileUploadListener();
       
-      console.log('✅ Issue Update request initialized');
+      console.log('&#x2705; Issue Update request initialized');
     },
     
     enableSubmitButton: function() {
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
         submitBtn.disabled = false;
-        console.log('✅ Submit button enabled for Issue Update');
+        console.log('&#x2705; Submit button enabled for Issue Update');
       }
     },
     

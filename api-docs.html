@@ -476,7 +476,7 @@
                 <p>Comprehensive check creation and management interface for Thirdfort API integration. Supports four check types (IDV, Lite Screen, Electronic ID, KYB) with intelligent routing, dynamic task configuration, and full validation.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> client-data, address-results, address-data<br>
                     <strong>Sends:</strong> request-thirdfort-check, address-search, address-lookup<br>
                     <strong>Check Types:</strong> IDV, Lite Screen, Electronic ID, KYB</p>
@@ -501,7 +501,7 @@
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>client-data</code>
                 </div>
                 <p>Loads complete client data including ID images, matter details, and tags for intelligent auto-selection.</p>
@@ -550,7 +550,7 @@
                 <h3>Outgoing Messages</h3>
                 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>request-thirdfort-check</code>
                 </div>
                 <p>Submits complete check request with validation. Returns 1-3 request objects for different Thirdfort API endpoints.</p>
@@ -615,10 +615,10 @@
 
                 <h3>Matter Categories</h3>
                 <div class="info-box">
-                    <div class="info-box-title">ðŸŽ¯ Intelligent Routing</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x17D;&#xAF; Intelligent Routing</div>
                     <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
-                        <li><strong>Conveyancing:</strong> Sale, Purchase, Transfer, Lease â†’ Purchaser/Gifter/Seller/Other</li>
-                        <li><strong>Property Other:</strong> Equity Release, Re-mortgaging, Auction â†’ Purchaser/Seller/Landlord/Tenant</li>
+                        <li><strong>Conveyancing:</strong> Sale, Purchase, Transfer, Lease &#xE2;&#x2020;&#x2019; Purchaser/Gifter/Seller/Other</li>
+                        <li><strong>Property Other:</strong> Equity Release, Re-mortgaging, Auction &#xE2;&#x2020;&#x2019; Purchaser/Seller/Landlord/Tenant</li>
                         <li><strong>Private Client:</strong> Wills, LPA, Probate, Estates, Deeds</li>
                         <li><strong>Other:</strong> Unrecognized work types</li>
                     </ul>
@@ -639,7 +639,7 @@
                 <p>All forms use a shared autocomplete system with blue code badges:</p>
                 <div class="code-block">
                     <pre><code><span class="comment">// Phone Country Code</span>
-<span class="string">"ðŸ‡¬ðŸ‡§ +44 UK"</span>  <span class="comment">// Display</span>
+<span class="string">"&#xF0;&#x178;&#x2021;&#xAC;&#xF0;&#x178;&#x2021;&#xA7; +44 UK"</span>  <span class="comment">// Display</span>
 <span class="property">data-phone-code</span>=<span class="string">"+44"</span>  <span class="comment">// Stored value</span>
 
 <span class="comment">// Address Country</span>
@@ -717,7 +717,7 @@ window.addEventListener(<span class="string">'message'</span>, (event) => {
                 </ul>
                 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ” Autocomplete System</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201D;&#x8D; Autocomplete System</div>
                     <p style="margin: 0; color: var(--text-secondary);">All forms use a shared autocomplete infrastructure (<code>js/jurisdiction-autocomplete.js</code>) for consistent UX. Displays country names with blue code badges (e.g., "United Kingdom [GBR]") and stores codes in dataset attributes for proper API integration.</p>
                 </div>
             </section>
@@ -763,7 +763,7 @@ window.addEventListener(<span class="string">'message'</span>, (event) => {
                 </div>
 
                 <div class="warning-box info-box">
-                    <div class="info-box-title">âš ï¸ Production Security</div>
+                    <div class="info-box-title">&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Production Security</div>
                     <p style="margin: 0; color: #78350f;">Replace <code>'*'</code> with your specific origin (e.g., <code>'https://yourdomain.com'</code>) and always validate <code>event.origin</code> in message listeners.</p>
                 </div>
             </section>
@@ -797,7 +797,7 @@ window.addEventListener(<span class="string">'message'</span>, (event) => {
                 <p>Timeline-based audit trail viewer that displays case activity, status changes, and matter details. Features visual badges for status tracking, risk indicators, PEP status, and PDF export capability.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> log-data, clear-data, audit-download<br>
                     <strong>Sends:</strong> None (display-only component)</p>
                 </div>
@@ -827,7 +827,7 @@ window.addEventListener(<span class="string">'message'</span>, (event) => {
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>log-data</code>
                 </div>
                 <p>Sends audit log entries to display in timeline format.</p>
@@ -871,7 +871,7 @@ window.addEventListener(<span class="string">'message'</span>, (event) => {
                 </div>
 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>clear-data</code>
                 </div>
                 <p>Clears all audit log entries and returns to empty state.</p>
@@ -882,7 +882,7 @@ window.addEventListener(<span class="string">'message'</span>, (event) => {
                 </div>
 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>audit-download</code>
                 </div>
                 <p>Triggers PDF download of the audit log.</p>
@@ -950,7 +950,7 @@ auditFrame.postMessage({ <span class="property">type</span>: <span class="string
                 <p>Real-time metrics dashboard displaying case statistics across fee earners. Features auto-refresh countdown timer, interactive analytics with charts, and PDF export.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> wallboard-data, analytics-data, analytics-error<br>
                     <strong>Sends:</strong> refresh-request, fe-analytics</p>
                 </div>
@@ -980,7 +980,7 @@ auditFrame.postMessage({ <span class="property">type</span>: <span class="string
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>wallboard-data</code>
                 </div>
                 <p>Sends metrics data and fee earner options.</p>
@@ -1006,13 +1006,13 @@ auditFrame.postMessage({ <span class="property">type</span>: <span class="string
                 <h3>Outgoing Messages</h3>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>refresh-request</code>
                 </div>
                 <p>Requests fresh wallboard data (auto-sent every 5 minutes).</p>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>fe-analytics</code>
                 </div>
                 <p>Requests detailed analytics for a fee earner.</p>
@@ -1040,7 +1040,7 @@ auditFrame.postMessage({ <span class="property">type</span>: <span class="string
                 <p>Lightweight client details and address form (NO file uploads). Features searchable autocomplete dropdowns for phone codes, countries, and jurisdictions with blue code badges. Focuses on personal information and Thirdfort-formatted addresses. Mobile phone numbers are validated using Google's libphonenumber library.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> client-data, entity-true, entity-false, allowEdits-true/false, request-data, address-results, address-data<br>
                     <strong>Sends:</strong> new-data, address-search, address-lookup, validation-error, disable-close<br>
                     <strong>Autocomplete:</strong> Phone codes, countries, jurisdictions with blue [CODE] badges</p>
@@ -1048,14 +1048,14 @@ auditFrame.postMessage({ <span class="property">type</span>: <span class="string
 
                 <h3>Key Difference</h3>
                 <div class="info-box warning">
-                    <div class="info-box-title">âš ï¸ No File Uploads</div>
+                    <div class="info-box-title">&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; No File Uploads</div>
                     <p style="margin: 0; color: var(--text-secondary);">Unlike <code>image-uploader.html</code>, this form does NOT handle file uploads. Use this for lightweight client data collection only.</p>
                 </div>
 
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>client-data</code>
                 </div>
                 <p>Loads client data into form.</p>
@@ -1075,25 +1075,25 @@ auditFrame.postMessage({ <span class="property">type</span>: <span class="string
                 <h3>Outgoing Messages</h3>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>new-data</code>
                 </div>
                 <p>Sends validated form data. Phone numbers are validated using Google's libphonenumber library and formatted in E.164 international format.</p>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>address-search</code>
                 </div>
                 <p>Requests address autocomplete.</p>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>validation-error</code>
                 </div>
                 <p>Notifies parent of validation failures, including phone number validation using Google's libphonenumber library.</p>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>disable-close</code>
                 </div>
                 <p>Prevents parent from closing due to unsaved changes.</p>
@@ -1121,7 +1121,7 @@ auditFrame.postMessage({ <span class="property">type</span>: <span class="string
                 <p>Standalone fullscreen image viewer with zoom and pan controls. <strong>Note:</strong> This component uses URL hash for data (not postMessage API).</p>
 
                 <div class="info-box warning">
-                    <div class="info-box-title">âš ï¸ Different Integration Pattern</div>
+                    <div class="info-box-title">&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Different Integration Pattern</div>
                     <p style="margin: 0; color: var(--text-secondary);">This viewer does NOT use postMessage. Data is passed via URL hash parameter (base64 JSON).</p>
                 </div>
 
@@ -1175,7 +1175,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 <p>Displays ID images (Photo ID and Address ID documents) with upload capabilities and image carousel.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-images, image-display, put-links, put-error, button-enable, button-disable<br>
                     <strong>Sends:</strong> image-data, upload-success, refresh-images</p>
                 </div>
@@ -1205,7 +1205,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>display-images</code>
                 </div>
                 <p>Initial display of existing images with upload permissions.</p>
@@ -1232,7 +1232,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 </div>
 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>put-links</code>
                 </div>
                 <p>Provides S3 PUT URLs for uploading images.</p>
@@ -1253,7 +1253,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 <h3>Outgoing Messages</h3>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>image-data</code>
                 </div>
                 <p>Requests PUT links for image upload.</p>
@@ -1276,7 +1276,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>upload-success</code>
                 </div>
                 <p>Notifies completion of successful upload.</p>
@@ -1289,7 +1289,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>check-images</code>
                 </div>
                 <p>Streams the latest selfie and passport image references so downstream iframes (for example, the Thirdfort Checks Manager) can render them inline without duplicating uploads.</p>
@@ -1309,7 +1309,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>refresh-images</code>
                 </div>
                 <p>Requests parent to reload image data (e.g., after successful upload).</p>
@@ -1383,7 +1383,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 <p>ID image migration tool for transferring existing Wix Media Gallery images to S3. Features hotkey-based tagging, batch processing (1-10 entries), and simplified document type classification.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> migration-batch, put-links, put-error, backend-error, network-error<br>
                     <strong>Sends:</strong> image-data, migration-complete<br>
                     <strong>Hotkeys:</strong> P, DF, DB, OS, OF, OB, A, Backspace, Enter</p>
@@ -1408,7 +1408,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>migration-batch</code>
                 </div>
                 <p>Sends a batch of entries (1-10) with Wix Media Gallery images to tag and migrate.</p>
@@ -1438,7 +1438,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 <h3>Outgoing Messages</h3>
                 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>image-data</code>
                 </div>
                 <p>Requests PUT links for all tagged images (same format as image-viewer.html).</p>
@@ -1461,7 +1461,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>migration-complete</code>
                 </div>
                 <p>Notifies parent that all images uploaded. Returns minimal objects for wixData.bulkSave().</p>
@@ -1499,37 +1499,37 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                         <tr>
                             <td><code>P</code></td>
                             <td>Passport</td>
-                            <td>Tag as Passport (Single) â†’ Auto-advance</td>
+                            <td>Tag as Passport (Single) &#xE2;&#x2020;&#x2019; Auto-advance</td>
                         </tr>
                         <tr>
                             <td><code>DF</code></td>
                             <td>Driving Licence Front</td>
-                            <td>Tag as DL Front â†’ Auto-advance</td>
+                            <td>Tag as DL Front &#xE2;&#x2020;&#x2019; Auto-advance</td>
                         </tr>
                         <tr>
                             <td><code>DB</code></td>
                             <td>Driving Licence Back</td>
-                            <td>Tag as DL Back â†’ Auto-advance</td>
+                            <td>Tag as DL Back &#xE2;&#x2020;&#x2019; Auto-advance</td>
                         </tr>
                         <tr>
                             <td><code>OS</code></td>
                             <td>Other Photo ID Single</td>
-                            <td>Tag as Other Single â†’ Auto-advance</td>
+                            <td>Tag as Other Single &#xE2;&#x2020;&#x2019; Auto-advance</td>
                         </tr>
                         <tr>
                             <td><code>OF</code></td>
                             <td>Other Photo ID Front</td>
-                            <td>Tag as Other Front â†’ Auto-advance</td>
+                            <td>Tag as Other Front &#xE2;&#x2020;&#x2019; Auto-advance</td>
                         </tr>
                         <tr>
                             <td><code>OB</code></td>
                             <td>Other Photo ID Back</td>
-                            <td>Tag as Other Back â†’ Auto-advance</td>
+                            <td>Tag as Other Back &#xE2;&#x2020;&#x2019; Auto-advance</td>
                         </tr>
                         <tr>
                             <td><code>A</code></td>
                             <td>Address ID</td>
-                            <td>Tag as Address ID (Other) â†’ Auto-advance</td>
+                            <td>Tag as Address ID (Other) &#xE2;&#x2020;&#x2019; Auto-advance</td>
                         </tr>
                         <tr>
                             <td><code>Backspace</code></td>
@@ -1539,7 +1539,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                         <tr>
                             <td><code>Enter</code></td>
                             <td>Confirm Entry</td>
-                            <td>Mark entry complete â†’ Move to next entry</td>
+                            <td>Mark entry complete &#xE2;&#x2020;&#x2019; Move to next entry</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1552,8 +1552,8 @@ document.<span class="function">getElementById</span>(<span class="string">'view
                     <li>Entry turns green when all images tagged</li>
                     <li>Press <code>Enter</code> to confirm and move to next entry</li>
                     <li>Once all entries tagged, "Upload to S3" button enables</li>
-                    <li>Click upload â†’ iframe sends <code>image-data</code></li>
-                    <li>Parent generates PUT links â†’ sends <code>put-links</code></li>
+                    <li>Click upload &#xE2;&#x2020;&#x2019; iframe sends <code>image-data</code></li>
+                    <li>Parent generates PUT links &#xE2;&#x2020;&#x2019; sends <code>put-links</code></li>
                     <li>iframe uploads to S3 from Wix public URLs</li>
                     <li>iframe sends <code>migration-complete</code> with minimal updates</li>
                     <li>Parent calls <code>wixData.bulkSave()</code></li>
@@ -1561,7 +1561,7 @@ document.<span class="function">getElementById</span>(<span class="string">'view
 
                 <h3>wixData.bulkSave() Integration</h3>
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ’¡ Minimal Updates</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x2019;&#xA1; Minimal Updates</div>
                     <p style="margin: 0; color: var(--text-secondary);">The <code>migration-complete</code> message returns minimal objects containing only <code>_id</code>, <code>idImages</code>, and <code>imagesTransferred</code>. When passed to <code>wixData.bulkSave()</code>, only these fields are updated - all other entry fields remain unchanged.</p>
                 </div>
 
@@ -1627,7 +1627,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <p>Client onboarding form for collecting personal details and ID documents.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> initiation-data, put-links, put-error<br>
                     <strong>Sends:</strong> image-data, upload-success</p>
                 </div>
@@ -1656,7 +1656,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>initiation-data</code>
                 </div>
                 <p>Populates the form with client data.</p>
@@ -1678,7 +1678,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <h3>Outgoing Messages</h3>
                 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>image-data</code>
                 </div>
                 <p>Sends form data and image metadata for processing.</p>
@@ -1706,7 +1706,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>upload-success</code>
                 </div>
                 <p>Final submission with all form data and uploaded images.</p>
@@ -1736,7 +1736,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <p>Displays and manages compliance documents and other file uploads.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-documents, display-images, put-links, put-error, button-enable, button-disable<br>
                     <strong>Sends:</strong> file-data, upload-success, refresh-images</p>
                 </div>
@@ -1778,7 +1778,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <p>Chat interface for communication between staff and cashiers with file attachment support.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> message-data, put-links, put-error, button-enable, button-disable<br>
                     <strong>Sends:</strong> message-sent, dismiss-notification, file-data (for attachments)</p>
                 </div>
@@ -1807,7 +1807,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>message-data</code>
                 </div>
                 <p>Complete chat data including messages, notifications, and user context.</p>
@@ -1834,7 +1834,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <h3>Outgoing Messages</h3>
                 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>message-sent</code>
                 </div>
                 <p>New message to be saved to database.</p>
@@ -1851,7 +1851,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>dismiss-notification</code>
                 </div>
                 <p>Requests to clear notification indicator.</p>
@@ -1863,7 +1863,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>file-data</code>
                 </div>
                 <p>Requests PUT links for file attachments.</p>
@@ -1900,7 +1900,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <p>Upload system for standard report documents (EID, SA302, P60, payslips, etc.).</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-data, put-links, put-error<br>
                     <strong>Sends:</strong> file-data, upload-success</p>
                 </div>
@@ -1929,7 +1929,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>display-data</code>
                 </div>
                 <p>Initializes the uploader with client context.</p>
@@ -1950,7 +1950,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <h3>Outgoing Messages</h3>
                 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>file-data</code>
                 </div>
                 <p>Requests PUT links for selected report documents.</p>
@@ -1970,7 +1970,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>upload-success</code>
                 </div>
                 <p>Confirms successful upload of all report files.</p>
@@ -2001,7 +2001,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <p>Activity log display for cashier operations with dynamic pagination and responsive height.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> log-data<br>
                     <strong>Sends:</strong> None (display-only component)</p>
                 </div>
@@ -2030,7 +2030,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>log-data</code>
                 </div>
                 <p>Sends complete array of log entries to display.</p>
@@ -2063,7 +2063,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <p>Comprehensive request management form supporting 7 request types with dynamic validation, ID image management, client details collection, and business/charity entity handling.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“‹ Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x2039; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> client-data, entity-data, address-results, put-links, put-error<br>
                     <strong>Sends:</strong> request-data, address-search, file-data, upload-success<br>
                     <strong>Request Types:</strong> Form J, Form K, Form E, eSoF, Note, Issue Update, PEP Update</p>
@@ -2090,7 +2090,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                     <li>1 form of Photo ID (Front/Back or Single)</li>
                     <li>Likeness confirmation</li>
                     <li>Client details (name, DOB, address)</li>
-                    <li>CDF (Client Details Form) or entity linking</li>
+                    <li>CDF (Client Details Form) upload unless all individual client data fields are completed (entities can satisfy this via linked company/charity data)</li>
                     <li>OFSI screening report</li>
                 </ul>
 
@@ -2185,7 +2185,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>client-data</code>
                 </div>
                 <p>Pre-populates form with client information and existing ID images/documents.</p>
@@ -2250,13 +2250,13 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>address-results</code>
                 </div>
                 <p>Returns address autocomplete results from getaddress.io API.</p>
 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>put-links</code>
                 </div>
                 <p>Provides S3 presigned URLs for document uploads (CDF/OFSI).</p>
@@ -2264,7 +2264,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <h3>Outgoing Messages</h3>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>request-data</code>
                 </div>
                 <p>Submits complete request with all collected data using the same shortened field format.</p>
@@ -2343,7 +2343,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>address-search</code>
                 </div>
                 <p>Requests address autocomplete suggestions.</p>
@@ -2356,7 +2356,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>address-lookup</code>
                 </div>
                 <p>Requests full address data by ID.</p>
@@ -2369,7 +2369,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>company-search</code>
                 </div>
                 <p>Requests company search from Companies House.</p>
@@ -2382,7 +2382,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>charity-search</code>
                 </div>
                 <p>Requests charity search from Charity Commission.</p>
@@ -2395,7 +2395,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>company-lookup</code>
                 </div>
                 <p>Requests full company data from Companies House.</p>
@@ -2408,7 +2408,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>charity-lookup</code>
                 </div>
                 <p>Requests full charity data from Charity Commission.</p>
@@ -2421,7 +2421,7 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 </div>
 
                 <div class="message-type outgoing">
-                    <span class="arrow">â†</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x90;</span>
                     <code>file-data</code>
                 </div>
                 <p>Requests PUT links for CDF/OFSI document uploads and message attachments.</p>
@@ -2450,9 +2450,9 @@ window.<span class="function">addEventListener</span>(<span class="string">'mess
                 <h3>Validation</h3>
                 <p>Each request type has specific validation requirements:</p>
                 <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
-                    <li><strong>Form J:</strong> ID images (2 Address + 1 Photo), likeness, client details, CDF/entity, OFSI, confirmation checkbox</li>
+                    <li><strong>Form J:</strong> ID images (2 Address + 1 Photo), likeness, client details, OFSI, confirmation checkbox, and either a CDF upload or a fully completed client profile (title, names, DOB, contact, current/previous address)</li>
                     <li><strong>Form K:</strong> Rule selection, rule-specific requirements (e.g., Rule 3 requires Form J ID)</li>
-                    <li><strong>Form E:</strong> Same as Form J (includes eSoF automatically)</li>
+                    <li><strong>Form E:</strong> Same as Form J (includes eSoF automatically) &#x2013; CDF upload becomes optional when all required personal data points are entered for individuals</li>
                     <li><strong>eSoF:</strong> Message only</li>
                     <li><strong>Note/Updates:</strong> Message only</li>
                 </ul>
@@ -2521,7 +2521,7 @@ window.addEventListener(<span class="string">'message'</span>, <span class="keyw
                 <p>The form supports both individual clients and business/charity entities. The <code>data</code> object structure varies based on the <code>b</code> (business) or <code>c</code> (charity) flags.</p>
                 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ” Detecting Entity Type</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201D;&#x8D; Detecting Entity Type</div>
                     <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
                         <li><code>b: true</code> - Business entity</li>
                         <li><code>c: true</code> - Charity entity</li>
@@ -2774,7 +2774,7 @@ window.addEventListener(<span class="string">'message'</span>, <span class="keyw
                     <li>Dynamic section visibility based on selections</li>
                     <li>Address autocomplete with caching</li>
                     <li>Phone number validation (Google libphonenumber)</li>
-                    <li>CDF and OFSI document upload with S3 integration</li>
+                    <li>CDF and OFSI document upload with S3 integration, plus automatic CDF override when all individual client details are completed</li>
                     <li>Previous name/address toggle fields</li>
                     <li>People cards for directors and PSCs</li>
                 </ul>
@@ -2787,7 +2787,7 @@ window.addEventListener(<span class="string">'message'</span>, <span class="keyw
                 <p>Dynamic chart visualization component powered by Chart.js. Displays data in various chart formats with automatic chart updates and empty state handling.</p>
 
                 <div class="info-box">
-                    <div class="info-box-title">ðŸ“Š Quick Reference</div>
+                    <div class="info-box-title">&#xF0;&#x178;&#x201C;&#x160; Quick Reference</div>
                     <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> chart-data<br>
                     <strong>Sends:</strong> Nothing (display-only component)<br>
                     <strong>Chart Types:</strong> bar, line, pie, doughnut, radar, polarArea, bubble, scatter</p>
@@ -2820,7 +2820,7 @@ window.addEventListener(<span class="string">'message'</span>, <span class="keyw
                 <h3>Incoming Messages</h3>
                 
                 <div class="message-type incoming">
-                    <span class="arrow">â†’</span>
+                    <span class="arrow">&#xE2;&#x2020;&#x2019;</span>
                     <code>chart-data</code>
                 </div>
                 <p>Sends chart configuration and data to render a visualization.</p>
@@ -2924,55 +2924,55 @@ window.addEventListener(<span class="string">'message'</span>, <span class="keyw
                     <tbody>
                         <tr>
                             <td><code>display-images</code></td>
-                            <td>Parent â†’ iframe</td>
+                            <td>Parent &#xE2;&#x2020;&#x2019; iframe</td>
                             <td>Initialize/update image display</td>
                             <td>Image Viewer, Document Viewer</td>
                         </tr>
                         <tr>
                             <td><code>image-data</code></td>
-                            <td>iframe â†’ Parent</td>
+                            <td>iframe &#xE2;&#x2020;&#x2019; Parent</td>
                             <td>Request PUT links for images</td>
                             <td>Image Viewer, Image Uploader</td>
                         </tr>
                         <tr>
                             <td><code>file-data</code></td>
-                            <td>iframe â†’ Parent</td>
+                            <td>iframe &#xE2;&#x2020;&#x2019; Parent</td>
                             <td>Request PUT links for files</td>
                             <td>Document Viewer, Message iframe, Report Uploader</td>
                         </tr>
                         <tr>
                             <td><code>put-links</code></td>
-                            <td>Parent â†’ iframe</td>
+                            <td>Parent &#xE2;&#x2020;&#x2019; iframe</td>
                             <td>Provide S3 upload URLs</td>
                             <td>All upload-enabled iframes</td>
                         </tr>
                         <tr>
                             <td><code>put-error</code></td>
-                            <td>Parent â†’ iframe</td>
+                            <td>Parent &#xE2;&#x2020;&#x2019; iframe</td>
                             <td>Signal upload error</td>
                             <td>All upload-enabled iframes</td>
                         </tr>
                         <tr>
                             <td><code>upload-success</code></td>
-                            <td>iframe â†’ Parent</td>
+                            <td>iframe &#xE2;&#x2020;&#x2019; Parent</td>
                             <td>Confirm upload completion</td>
                             <td>All upload-enabled iframes</td>
                         </tr>
                         <tr>
                             <td><code>refresh-images</code></td>
-                            <td>iframe â†’ Parent</td>
+                            <td>iframe &#xE2;&#x2020;&#x2019; Parent</td>
                             <td>Request data refresh</td>
                             <td>Image Viewer, Document Viewer</td>
                         </tr>
                         <tr>
                             <td><code>message-sent</code></td>
-                            <td>iframe â†’ Parent</td>
+                            <td>iframe &#xE2;&#x2020;&#x2019; Parent</td>
                             <td>Save new chat message</td>
                             <td>Message iframe</td>
                         </tr>
                         <tr>
                             <td><code>chart-data</code></td>
-                            <td>Parent â†’ iframe</td>
+                            <td>Parent &#xE2;&#x2020;&#x2019; iframe</td>
                             <td>Display chart visualization</td>
                             <td>Chart Viewer</td>
                         </tr>
@@ -3080,7 +3080,7 @@ window.addEventListener(<span class="string">'message'</span>, <span class="keyw
 
     <!-- Scroll to Top Button -->
     <button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
-        â†‘
+        &#xE2;&#x2020;&#x2018;
     </button>
 
     <script>
@@ -3620,7 +3620,7 @@ window.addEventListener(<span class="string">'message'</span>, <span class="keyw
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '37b167e';
+    window.__IFRAME_VERSION__ = 'f05c00f';
     console.log('[api-docs] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

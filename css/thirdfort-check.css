@@ -1015,7 +1015,7 @@ input:focus, select:focus, textarea:focus {
    KYB SECTION LAYOUT
    =================================== */
 
-/* KYB Section: Header (h3) → Body (two-column) → Footer (reports) */
+/* KYB Section: Header (h3) &#x2192; Body (two-column) &#x2192; Footer (reports) */
 
 /* Body: Two-Column Search & Results */
 .kyb-two-column-layout {

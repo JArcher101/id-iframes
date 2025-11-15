@@ -4,14 +4,14 @@ This document describes the communication interface for each iframe component. A
 
 ## Table of Contents
 
-1. [Thirdfort Check Manager](#thirdfort-check-manager) ⭐ NEW
-2. [Thirdfort Checks Manager](#thirdfort-checks-manager) ⭐ NEW
-3. [UK Sanctions Checker](#uk-sanctions-checker) ⭐ NEW
+1. [Thirdfort Check Manager](#thirdfort-check-manager) &#x2B50; NEW
+2. [Thirdfort Checks Manager](#thirdfort-checks-manager) &#x2B50; NEW
+3. [UK Sanctions Checker](#uk-sanctions-checker) &#x2B50; NEW
 4. [Audit Log Viewer](#audit-log-viewer)
 5. [Wallboard Dashboard](#wallboard-dashboard)
 6. [Single Image Viewer](#single-image-viewer)
 7. [Image Viewer](#image-viewer)
-8. [Migration Tagger](#migration-tagger) ⭐ NEW
+8. [Migration Tagger](#migration-tagger) &#x2B50; NEW
 9. [Image Uploader](#image-uploader)
 10. [Document Viewer](#document-viewer)
 11. [Message iframe](#message-iframe)
@@ -73,7 +73,7 @@ Comprehensive check creation and management interface for Thirdfort API integrat
 - Business entity verification
 - Requires business details and entity linking
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `client-data`
 Loads complete client data with ID images, matter details, and tags.
@@ -181,7 +181,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `request-thirdfort-check`
 Submits complete check request with validation. Returns 1-3 request objects for different Thirdfort API endpoints.
@@ -275,7 +275,7 @@ Based on `wT` (work type) and `r` (relation):
 - **Conveyancing**: Sale, Purchase, Transfer, Lease
 - **Property Other**: Equity Release, Re-mortgaging, Auction, 1st Registration, Assent
 - **Private Client**: Wills, LPA, Probate, Estates, Deeds & Declarations
-- **Relation Override**: Tenant, Occupier, Leaseholder, Freeholder, Landlord → forces Property Other
+- **Relation Override**: Tenant, Occupier, Leaseholder, Freeholder, Landlord &#x2192; forces Property Other
 
 #### Sub-Category Auto-Selection
 - **Conveyancing**: Purchaser, Gifter, Seller, Other
@@ -441,7 +441,7 @@ window.addEventListener('message', (event) => {
 All dropdowns use the shared autocomplete system:
 
 #### Phone Country Code
-- Displays: Flag emoji + code + country name (e.g., "🇬🇧 +44 UK")
+- Displays: Flag emoji + code + country name (e.g., "&#xD83C;&#xDDEC;&#xD83C;&#xDDE7; +44 UK")
 - Stores: `data-phone-code="+44"` and `data-country-code="GB"`
 - Search filters by code, country name, or flag
 
@@ -557,7 +557,7 @@ Display and management interface for viewing Thirdfort check results. Shows a li
 - **Updates/Audit Trail**: Chronological history of check events
 - **Action Buttons**: View Report (PDF), Expand (full window), Back to list
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `checks-data`
 Loads array of check objects to display in the manager.
@@ -753,7 +753,7 @@ The check objects shown above match the structure of data returned from the Thir
 - Nested objects (taskOutcomes, piiData, companyData)
 - Arrays (pepSanctionsUpdates, updates, considerReasons)
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `iframe-ready`
 Sent when iframe loads and is ready to receive data.
@@ -926,10 +926,10 @@ Parent should:
 ### Integration Notes
 
 1. **Check Status Flow**:
-   - `open` → User hasn't completed check yet
-   - `processing` → Thirdfort is processing the check
-   - `closed` → Check complete, results available
-   - `aborted` → Check was cancelled
+   - `open` &#x2192; User hasn't completed check yet
+   - `processing` &#x2192; Thirdfort is processing the check
+   - `closed` &#x2192; Check complete, results available
+   - `aborted` &#x2192; Check was cancelled
 
 2. **Alert Priority**:
    - ALERT level (red): PEP/Sanction hits, document integrity issues, identity failures
@@ -943,8 +943,8 @@ Parent should:
    - Indicates ongoing surveillance for watchlist changes
 
 4. **PDF Generation**:
-   - `pdfReady: false` → No PDF available yet
-   - `pdfReady: true` → PDF available at `pdfS3Key`
+   - `pdfReady: false` &#x2192; No PDF available yet
+   - `pdfReady: true` &#x2192; PDF available at `pdfS3Key`
    - Parent handles S3 URL generation and CloudFront signed URLs
 
 5. **Data Refresh**:
@@ -979,7 +979,7 @@ Search and query the UK FCDO Sanctions List for individuals and entities. Fetche
 - **S3 Upload**: Conditional upload when connected to client entry (using document-viewer pattern)
 - **Thirdfort Styling**: Matches existing iframe design system
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `init-sanctions-search`
 Initialize the sanctions checker with optional pre-populated data and client entry context.
@@ -1037,7 +1037,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `file-data`
 Request for S3 presigned upload URLs before PDF upload (only sent if `clientEntryId` provided).
@@ -1210,7 +1210,7 @@ window.addEventListener('message', (event) => {
       }]
     });
     
-    console.log('✅ Sanctions report uploaded');
+    console.log('&#x2705; Sanctions report uploaded');
   }
 });
 
@@ -1246,7 +1246,7 @@ iframe.addEventListener('load', () => {
 ### Description
 Timeline-based audit trail viewer that displays case activity, status changes, and matter details. Features visual badges for status tracking, risk indicators, PEP status, and PDF export capability.
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `log-data`
 Sends audit log entries to display in timeline format. Each entry can optionally include `lastLog` (most recent cashiers log entry) and `lastMessage` (most recent chat message) for additional context.
@@ -1328,7 +1328,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 The Audit Log Viewer is a display-only component and does not send messages back to the parent.
 
@@ -1405,7 +1405,7 @@ auditFrame.postMessage({ type: 'audit-download' }, '*');
 ### Description
 Real-time metrics dashboard displaying case statistics across fee earners. Features auto-refresh countdown timer, interactive analytics with charts, and PDF export. Supports both aggregate (ALL) and individual fee earner views.
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `wallboard-data`
 Sends complete metrics data and fee earner dropdown options.
@@ -1474,7 +1474,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `refresh-request`
 Requests fresh wallboard data (sent automatically when countdown reaches 0:00).
@@ -1666,7 +1666,7 @@ function loadImageInIframe(imageUrl, docType) {
 
 ### No postMessage Communication
 
-⚠️ **Important:** This viewer does not use postMessage API. All data must be provided via URL hash at initialization. The viewer does not send messages back to parent and cannot be updated dynamically after load (requires reload with new hash).
+&#x26A0;&#xFE0F; **Important:** This viewer does not use postMessage API. All data must be provided via URL hash at initialization. The viewer does not send messages back to parent and cannot be updated dynamically after load (requires reload with new hash).
 
 ---
 
@@ -1677,7 +1677,7 @@ function loadImageInIframe(imageUrl, docType) {
 ### Description
 Displays ID images (Photo ID and Address ID documents) with upload capabilities.
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `display-images`
 Initial display of existing images with upload permissions.
@@ -1769,7 +1769,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `image-data`
 Sends image metadata to request PUT links for upload.
@@ -1881,7 +1881,7 @@ Comprehensive request management form supporting 7 distinct request types with d
 
 #### 3. **Form E Request** - Electronic Check
 - Requires name, DOB, address, mobile
-- Requires CDF OR OFSI document
+- Requires OFSI plus either a CDF upload or a fully completed individual client profile (title, first/last name, DOB, contact, current/previous address when toggled)
 - Shows ID Documents section
 - Auto-selects eSoF if worktype includes "purchase"
 - Shows ejHint if Form J requirements met
@@ -1890,7 +1890,7 @@ Comprehensive request management form supporting 7 distinct request types with d
 #### 4. **eSoF Request** - Electronic Source of Funds
 - Can be standalone or combined with Form E
 - ONLY valid for "Purchase" worktypes
-- Requires name, DOB, address, mobile, CDF/OFSI
+- Requires name, DOB, address, mobile, OFSI, and either a CDF upload or a fully completed individual client profile
 - Shows eSoFOnlyHint when standalone
 - Shows eSoFHint when combined with Form E
 - Shows ID Documents section
@@ -1908,7 +1908,7 @@ Comprehensive request management form supporting 7 distinct request types with d
 - Same requirements as Note
 - Tagged differently for backend processing
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `client-data`
 Loads complete client data into the form, including existing documents and images.
@@ -2058,7 +2058,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `request-data`
 Sends complete request data after successful validation and file uploads. The data structure uses shortened field names matching the incoming format.
@@ -2244,10 +2244,10 @@ Sections show/hide based on client type and selected request:
 
 | Section | Individual | Entity | Form J | Form K | Form E | eSoF | Note/Update |
 |---------|------------|--------|--------|--------|--------|------|-------------|
-| Client Details | ✓ | - | ✓ | ✓ | ✓ | ✓ | - |
-| Business/Charity | - | ✓ | - | ✓ | - | - | - |
-| ID Documents | - | - | ✓ | ✓ | ✓ | ✓ | - |
-| ID Images | - | - | ✓ | ✓(Rule3) | - | - | - |
+| Client Details | &#x2713; | - | &#x2713; | &#x2713; | &#x2713; | &#x2713; | - |
+| Business/Charity | - | &#x2713; | - | &#x2713; | - | - | - |
+| ID Documents | - | - | &#x2713; | &#x2713; | &#x2713; | &#x2713; | - |
+| ID Images | - | - | &#x2713; | &#x2713;(Rule3) | - | - | - |
 
 ### Validation Requirements
 
@@ -2263,13 +2263,14 @@ Sections show/hide based on client type and selected request:
 - Current Address
 - ID Images checkbox
 - ID Documents checkbox
-- CDF AND OFSI (both required)
+- OFSI document
+- CDF upload OR all individual client data fields completed (title, first/last name, DOB, mobile/email, current address, and any toggled previous name/address details)
 - 2 Address IDs + 1 Photo ID
 - Likeness confirmed
 
 #### Form K Additional
 - Rule selection required
-- **Individuals:** Name, DOB, CDF OR OFSI
+- **Individuals:** Name, DOB, OFSI document, and either a CDF upload or a fully completed individual client profile
 - **Entities:** OFSI + (Company link OR CDF), Business Name + Entity Number (if no link)
 - **Rule 3:** Same as Form J ID requirements
 
@@ -2277,7 +2278,8 @@ Sections show/hide based on client type and selected request:
 - First Name, Last Name, DOB
 - Current Address, Mobile Number
 - ID Documents checkbox
-- CDF OR OFSI
+- OFSI document
+- CDF upload OR all individual client data fields completed (entities still require a CDF unless linked company/charity data is present)
 
 #### Note / Update / PEP Update
 - Message input required
@@ -2310,7 +2312,7 @@ Sections show/hide based on client type and selected request:
 - **Dynamic Section Visibility** - Based on client type and selected request
 - **Address Autocomplete** - getaddress.io integration with 30-day LRU cache
 - **Google libphonenumber** - International phone validation and E.164 formatting
-- **CDF and OFSI Document Upload** - S3 integration with progress tracking
+- **CDF and OFSI Document Upload** - S3 integration with progress tracking plus automatic CDF waiver when all individual client data points are completed
 - **25/25/50 Manual Address Layout** - Flat number, building number, building name on one row
 - **People Cards** - Directors, officers, PSCs with 10px vertical spacing between cards
 - **Dataset Attribute Management** - Proper country code handling via data attributes
@@ -2436,7 +2438,7 @@ window.addEventListener('message', (event) => {
 ### Description
 Lightweight client details and address collection form. Unlike `image-uploader.html`, this form does NOT handle file uploads. It focuses solely on collecting client personal information and addresses with Thirdfort API format support. Features searchable autocomplete dropdowns for phone codes, countries, and jurisdictions with blue code badges. Mobile phone numbers are validated using Google's libphonenumber library before submission.
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `client-data`
 Loads existing client data into the form.
@@ -2554,7 +2556,7 @@ Company search results and details from Companies House API.
 #### `charity-results` / `charity-data`
 Charity search results and details from Charity Commission API.
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `new-data`
 Sends complete form data (after validation). Phone numbers are validated using Google's libphonenumber library and formatted in E.164 international format.
@@ -2692,7 +2694,7 @@ Addresses are automatically converted to Thirdfort API format:
 ### Description
 ID image migration tool for transferring existing Wix Media Gallery images to S3. Features hotkey-based tagging, batch processing (1-10 entries), and simplified document type classification. Designed for rapid migration of legacy ID photos with minimal user input.
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `migration-batch`
 Sends a batch of entries (1-10) with Wix Media Gallery images to tag and migrate.
@@ -2784,7 +2786,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `image-data`
 Requests PUT links for all tagged images in the current batch (same format as image-viewer.html).
@@ -2841,17 +2843,17 @@ Notifies parent that all images have been uploaded. Returns minimal update objec
 ### Hotkey Controls
 
 #### Tagging Hotkeys
-- **`P`** - Passport (Single) → Auto-advance to next image
-- **`DF`** - Driving Licence Front → Auto-advance
-- **`DB`** - Driving Licence Back → Auto-advance
-- **`OS`** - Other Photo ID Single → Auto-advance
-- **`OF`** - Other Photo ID Front → Auto-advance
-- **`OB`** - Other Photo ID Back → Auto-advance
-- **`A`** - Address ID (Other subtype) → Auto-advance
+- **`P`** - Passport (Single) &#x2192; Auto-advance to next image
+- **`DF`** - Driving Licence Front &#x2192; Auto-advance
+- **`DB`** - Driving Licence Back &#x2192; Auto-advance
+- **`OS`** - Other Photo ID Single &#x2192; Auto-advance
+- **`OF`** - Other Photo ID Front &#x2192; Auto-advance
+- **`OB`** - Other Photo ID Back &#x2192; Auto-advance
+- **`A`** - Address ID (Other subtype) &#x2192; Auto-advance
 
 #### Navigation Hotkeys
 - **`Backspace`** - Go to previous image (cross-entry support)
-- **`Enter`** - Confirm entry complete → Move to next entry
+- **`Enter`** - Confirm entry complete &#x2192; Move to next entry
 
 #### Clickable Hotkey Hints
 All hotkey badges in the tagging area are clickable for mouse/touch users. Hovering shows "Click to tag or press [KEY]" tooltip.
@@ -2864,8 +2866,8 @@ All hotkey badges in the tagging area are clickable for mouse/touch users. Hover
 4. Entry turns green when all images tagged
 5. Press `Enter` to confirm and move to next entry
 6. Once all entries tagged, "Upload to S3" button enables
-7. Click upload → iframe sends `image-data` to parent
-8. Parent generates PUT links → sends `put-links` back
+7. Click upload &#x2192; iframe sends `image-data` to parent
+8. Parent generates PUT links &#x2192; sends `put-links` back
 9. iframe uploads to S3 directly from Wix public URLs
 10. iframe sends `migration-complete` with minimal update objects
 11. Parent calls `wixData.bulkSave()` to update entries
@@ -3025,7 +3027,7 @@ await wixData.bulkSave('OutstandingID', updates, { suppressAuth: true });
 ### Description
 Complete client onboarding form for collecting personal details AND uploading ID documents. This is the full-featured version that includes everything from `client-details.html` plus file upload capabilities. Features searchable autocomplete country dropdowns with blue code badges and proper Thirdfort API format handling.
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `initiation-data`
 Initial client data to populate the form.
@@ -3070,7 +3072,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `image-data`
 Sends form data and image metadata for processing.
@@ -3124,7 +3126,7 @@ Final submission with all form data and uploaded images.
 ### Description
 Displays and manages compliance documents and other file uploads.
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `display-documents`
 Display existing documents in list view.
@@ -3183,7 +3185,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `file-data`
 Sends document metadata to request PUT links.
@@ -3233,7 +3235,7 @@ Requests parent to refresh the display.
 ### Description
 Chat interface for communication between staff and cashiers.
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `message-data`
 Complete chat data including messages and notifications.
@@ -3304,7 +3306,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `file-data`
 Request PUT link for file attachment.
@@ -3368,7 +3370,7 @@ Request to clear notification indicator.
 ### Description
 Upload system for standard report documents (EID, SA302, P60, etc.).
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `display-data`
 Initial data to enable the uploader.
@@ -3393,7 +3395,7 @@ S3 upload URLs for reports.
 #### `put-error`
 Upload error notification.
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 #### `file-data`
 Request PUT links for report files.
@@ -3436,7 +3438,7 @@ Report upload completion.
 ### Description
 Activity log display for cashier operations with dynamic pagination. Shows user activities, messages, and timestamps with "Load more" functionality for infinite scroll-free viewing.
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `log-data`
 Sends complete array of log entries to display.
@@ -3459,7 +3461,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 The Cashiers Log is a display-only component and does not send messages back to the parent.
 
@@ -3517,7 +3519,7 @@ cashiersFrame.postMessage({
 ### Description
 Dynamic chart visualization component powered by Chart.js. Displays data in various chart formats including pie, doughnut, bar, line, radar, and more. The iframe starts with a blank screen and renders charts based on incoming data.
 
-### Parent → iframe (Incoming Messages)
+### Parent &#x2192; iframe (Incoming Messages)
 
 #### `chart-data`
 Sends chart configuration and data to render a visualization.
@@ -3561,7 +3563,7 @@ window.frames[0].postMessage({
 }, '*');
 ```
 
-### iframe → Parent (Outgoing Messages)
+### iframe &#x2192; Parent (Outgoing Messages)
 
 The Chart Viewer is a display-only component and does not send messages back to the parent.
 
@@ -3582,7 +3584,7 @@ If all data values in the datasets are `0`, the iframe:
 
 #### Expand to Popup Window
 Charts can be expanded to a larger popup window:
-- Click the **"⤢ Expand"** button (top-right when chart is displayed)
+- Click the **"&#x2922; Expand"** button (top-right when chart is displayed)
 - Opens the chart in a 1400x900px popup window
 - Uses unique ID handshake via postMessage for secure data transfer
 - Functions are serialized before sending (postMessage can't clone functions)
@@ -3592,7 +3594,7 @@ Charts can be expanded to a larger popup window:
 - Recent fix: "Fix doughnut chart expansion - serialize functions for postMessage"
 
 #### Bullet Point Lists
-When the `description` field contains bullet points (`•`), they are automatically:
+When the `description` field contains bullet points (`&#x2022;`), they are automatically:
 - Split into separate lines
 - Displayed as a vertical list
 - Each item on its own line for better readability
@@ -3865,12 +3867,12 @@ All iframes support these message patterns:
 
 | Message Type | Direction | Purpose |
 |-------------|-----------|---------|
-| `display-*` | Parent → iframe | Initialize/update display |
-| `*-data` | iframe → Parent | Request PUT links |
-| `put-links` | Parent → iframe | Provide S3 upload URLs |
-| `put-error` | Parent → iframe | Signal upload error |
-| `upload-success` | iframe → Parent | Confirm upload completion |
-| `refresh-*` | iframe → Parent | Request data refresh |
+| `display-*` | Parent &#x2192; iframe | Initialize/update display |
+| `*-data` | iframe &#x2192; Parent | Request PUT links |
+| `put-links` | Parent &#x2192; iframe | Provide S3 upload URLs |
+| `put-error` | Parent &#x2192; iframe | Signal upload error |
+| `upload-success` | iframe &#x2192; Parent | Confirm upload completion |
+| `refresh-*` | iframe &#x2192; Parent | Request data refresh |
 
 ### Document Types Supported
 

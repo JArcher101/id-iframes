@@ -1,5 +1,5 @@
-    Transport Medium → fallback to Quicksand Bold (700)
-    Rotis fonts → fallback to Quicksand Regular (400/600)
+    Transport Medium &#x2192; fallback to Quicksand Bold (700)
+    Rotis fonts &#x2192; fallback to Quicksand Regular (400/600)
     */
     
     /* Transport Medium - for headings and buttons */
@@ -34,9 +34,9 @@
     ADDRESS AUTOCOMPLETE FLOW:
     1. User types in address field (7+ chars)
     2. Child sends 'address-search' to parent via postMessage
-    3. Parent calls Wix backend → backend calls getaddress.io
+    3. Parent calls Wix backend &#x2192; backend calls getaddress.io
     4. Parent sends 'address-results' back with suggestions
-    5. User selects address → Child sends 'address-lookup' to parent
+    5. User selects address &#x2192; Child sends 'address-lookup' to parent
     6. Parent sends 'address-data' with full address object
     7. Child converts to Thirdfort format and stores
     */

@@ -1,6 +1,6 @@
-# 🚀 Quick Start - Sanctions Search V2
+# &#xD83D;&#xDE80; Quick Start - Sanctions Search V2
 
-## ✅ What's Ready
+## &#x2705; What's Ready
 
 I've created a **clean, working version** of the FCDO sanctions search that fixes all the syntax errors:
 
@@ -12,11 +12,11 @@ I've created a **clean, working version** of the FCDO sanctions search that fixe
 5. **`QUICK-START.md`** - This file
 
 ### Backend Already Updated:
-- **`backend/utils/fcdo-sanctions-proxy.web.js`** - Already fetching XML ✅
+- **`backend/utils/fcdo-sanctions-proxy.web.js`** - Already fetching XML &#x2705;
 
 ---
 
-## 🧪 Test Right Now (5 Minutes)
+## &#xD83E;&#xDDEA; Test Right Now (5 Minutes)
 
 ### Step 1: Enable Mock Data
 
@@ -57,20 +57,20 @@ open test-sanctions-search.html   # Mac
 ### Step 4: Try These Searches
 
 In the iframe, try searching for:
-- ✅ **"John Smith"** - Should find TEST001 (exact match)
-- ✅ **"Vladimir Petrov"** - Should find TEST002 (exact match)
-- ✅ **"Sarah Williams"** - Should find TEST005 (exact match)
-- ✅ **"Ahmed Rahman"** - Should find TEST004 (fuzzy match, different spelling)
-- ✅ **"Jon Smith"** - Should find TEST001 (alias match)
-- ❌ **"Bob Jones"** - Should show "No matches found"
+- &#x2705; **"John Smith"** - Should find TEST001 (exact match)
+- &#x2705; **"Vladimir Petrov"** - Should find TEST002 (exact match)
+- &#x2705; **"Sarah Williams"** - Should find TEST005 (exact match)
+- &#x2705; **"Ahmed Rahman"** - Should find TEST004 (fuzzy match, different spelling)
+- &#x2705; **"Jon Smith"** - Should find TEST001 (alias match)
+- &#x274C; **"Bob Jones"** - Should show "No matches found"
 
 ---
 
-## 🎯 What Was Fixed
+## &#xD83C;&#xDFAF; What Was Fixed
 
 ### Old Version (BROKEN):
 ```javascript
-// ❌ This caused syntax errors:
+// &#x274C; This caused syntax errors:
 const MOCK_SANCTIONS_HTML = `
   <div>Name: John</div>
   <div>Position: CEO</div>
@@ -80,7 +80,7 @@ const MOCK_SANCTIONS_HTML = `
 
 ### New Version (WORKING):
 ```xml
-<!-- ✅ Safe XML in script tag: -->
+<!-- &#x2705; Safe XML in script tag: -->
 <script id="mockSanctionsXML" type="application/xml">
   <?xml version="1.0"?>
   <SanctionsList>
@@ -93,20 +93,20 @@ const MOCK_SANCTIONS_HTML = `
 
 ---
 
-## 📋 Features Working
+## &#xD83D;&#xDCCB; Features Working
 
-- ✅ **XML Parsing** - Parses FCDO XML structure
-- ✅ **Fuzzy Search** - Levenshtein distance matching
-- ✅ **DOB Matching** - Exact or ±5 years
-- ✅ **Multiple Names** - Handles aliases and variations
-- ✅ **Results Table** - Shows matches with % similarity
-- ✅ **PDF Generation** - jsPDF with TH branding
-- ✅ **Mock Data** - Test without backend
-- 🔄 **S3 Upload** - Ready (needs parent integration)
+- &#x2705; **XML Parsing** - Parses FCDO XML structure
+- &#x2705; **Fuzzy Search** - Levenshtein distance matching
+- &#x2705; **DOB Matching** - Exact or &#xB1;5 years
+- &#x2705; **Multiple Names** - Handles aliases and variations
+- &#x2705; **Results Table** - Shows matches with % similarity
+- &#x2705; **PDF Generation** - jsPDF with TH branding
+- &#x2705; **Mock Data** - Test without backend
+- &#xD83D;&#xDD04; **S3 Upload** - Ready (needs parent integration)
 
 ---
 
-## 🔄 Replace Old File (When Ready)
+## &#xD83D;&#xDD04; Replace Old File (When Ready)
 
 Once you've tested and confirmed V2 works:
 
@@ -124,7 +124,7 @@ Just update your parent page to open `sanctions-search-v2.html` instead.
 
 ---
 
-## 🎨 Add Your Fonts
+## &#xD83C;&#xDFA8; Add Your Fonts
 
 The file has empty base64 font strings for you to fill in:
 
@@ -141,7 +141,7 @@ src: url(data:font/truetype;charset=utf-8;base64,YOUR_BASE64_HERE) format('truet
 
 ---
 
-## 🔗 Integration with Parent Page
+## &#xD83D;&#xDD17; Integration with Parent Page
 
 Your parent Wix page needs to handle these messages:
 
@@ -195,61 +195,61 @@ if (event.data.type === 'request-s3-upload-url') {
 ### 4. Handle Completion:
 ```javascript
 if (event.data.type === 'sanctions-search-complete') {
-  console.log('✅ Search complete!', event.data.metadata);
+  console.log('&#x2705; Search complete!', event.data.metadata);
   // Close lightbox or show success message
 }
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## &#xD83D;&#xDC1B; Troubleshooting
 
 ### "Cannot load sanctions list"
-- ✅ Check `USE_MOCK_DATA = true`
-- ✅ Verify XML is pasted in `<script id="mockSanctionsXML">`
-- ✅ Check browser console for errors
+- &#x2705; Check `USE_MOCK_DATA = true`
+- &#x2705; Verify XML is pasted in `<script id="mockSanctionsXML">`
+- &#x2705; Check browser console for errors
 
 ### "Uncaught SyntaxError"
-- ✅ Make sure you're using **V2 file** (not old broken one)
-- ✅ Verify XML is inside `<script type="application/xml">` tag
-- ✅ Don't put XML in a JavaScript string
+- &#x2705; Make sure you're using **V2 file** (not old broken one)
+- &#x2705; Verify XML is inside `<script type="application/xml">` tag
+- &#x2705; Don't put XML in a JavaScript string
 
 ### "No matches found" (but should find)
-- ✅ Enable fuzzy search checkbox
-- ✅ Check spelling (try "Vladimir" not "Vladmir")
-- ✅ Try searching just first name or last name
+- &#x2705; Enable fuzzy search checkbox
+- &#x2705; Check spelling (try "Vladimir" not "Vladmir")
+- &#x2705; Try searching just first name or last name
 
 ### PDF not generating
-- ✅ Check jsPDF libraries loaded (line 10-11)
-- ✅ Open browser console for errors
-- ✅ Make sure search was run first
+- &#x2705; Check jsPDF libraries loaded (line 10-11)
+- &#x2705; Open browser console for errors
+- &#x2705; Make sure search was run first
 
 ---
 
-## 📊 File Sizes
+## &#xD83D;&#xDCCA; File Sizes
 
 | File | Size | Status |
 |------|------|--------|
-| `sanctions-search.html` (old) | **2.9M tokens** | ❌ BROKEN |
-| `sanctions-search-v2.html` | **~35KB** | ✅ WORKING |
-| `test-xml-sample.xml` | **~4KB** | ✅ For testing |
-| `test-sanctions-search.html` | **~12KB** | ✅ Test harness |
+| `sanctions-search.html` (old) | **2.9M tokens** | &#x274C; BROKEN |
+| `sanctions-search-v2.html` | **~35KB** | &#x2705; WORKING |
+| `test-xml-sample.xml` | **~4KB** | &#x2705; For testing |
+| `test-sanctions-search.html` | **~12KB** | &#x2705; Test harness |
 
 ---
 
-## ✨ Next Steps
+## &#x2728; Next Steps
 
-1. ✅ **Test with mock data** (5 minutes) - Do this now!
-2. ✅ **Verify search works** - Try the test names above
-3. ✅ **Test PDF generation** - Click "Generate PDF"
-4. 🔄 **Integrate with parent page** - Add message handlers
-5. 🔄 **Test with live backend** - Use real XML from FCDO
-6. 🔄 **Replace old broken file** - When ready
-7. 🎨 **Add custom fonts** - Paste base64 strings
+1. &#x2705; **Test with mock data** (5 minutes) - Do this now!
+2. &#x2705; **Verify search works** - Try the test names above
+3. &#x2705; **Test PDF generation** - Click "Generate PDF"
+4. &#xD83D;&#xDD04; **Integrate with parent page** - Add message handlers
+5. &#xD83D;&#xDD04; **Test with live backend** - Use real XML from FCDO
+6. &#xD83D;&#xDD04; **Replace old broken file** - When ready
+7. &#xD83C;&#xDFA8; **Add custom fonts** - Paste base64 strings
 
 ---
 
-## 💬 Need Help?
+## &#xD83D;&#xDCAC; Need Help?
 
 Check these files for more info:
 - **`SANCTIONS-SEARCH-V2-README.md`** - Full documentation
@@ -258,7 +258,7 @@ Check these files for more info:
 
 ---
 
-**Status**: ✅ **Ready to test right now!**
+**Status**: &#x2705; **Ready to test right now!**
 
-Just enable mock data, paste the XML, and open in browser. 🚀
+Just enable mock data, paste the XML, and open in browser. &#xD83D;&#xDE80;
 

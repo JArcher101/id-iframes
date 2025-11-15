@@ -116,23 +116,48 @@ foreach ($file in $htmlFiles) {
 }
 
 if (-not $SkipLog) {
-    $logPath = Join-Path $repoRoot 'iframe-version-log.md'
-    if (-not (Test-Path $logPath)) {
-        $header = @'
-# Iframe Version Log
-
-| Date (UTC) | Commit Title | UUID | Iframes |
-| --- | --- | --- | --- |
-'@
-        Set-Content -Path $logPath -Value $header -Encoding UTF8
+    $logJsonPath = Join-Path $repoRoot 'iframe-version-log.json'
+    if (-not (Test-Path $logJsonPath)) {
+        Set-Content -Path $logJsonPath -Value '[]' -Encoding UTF8
     }
 
-    $date = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm:ss "UTC"')
-    $iframeList = ($htmlFiles | Sort-Object Name | ForEach-Object { $_.Name }) -join ', '
-    $safeTitle = if ($Title) { $Title.Replace('|', '\|') } else { 'Manual run' }
-    $row = "| $date | $safeTitle [$uuid] | $uuid | $iframeList |"
-    Add-Content -Path $logPath -Value $row
-    Write-Host "Logged bump to iframe-version-log.md"
+    $rawJson = Get-Content -Path $logJsonPath -Raw
+    $existingEntries = @()
+    if (-not [string]::IsNullOrWhiteSpace($rawJson)) {
+        $converted = $rawJson | ConvertFrom-Json
+        if ($converted -is [System.Collections.IEnumerable]) {
+            $existingEntries = @($converted)
+        } elseif ($converted) {
+            $existingEntries = @($converted)
+        }
+    }
+
+    $timestamp = (Get-Date).ToUniversalTime()
+    $timestampIso = $timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+    $displayTimestamp = $timestamp.ToString("yyyy-MM-dd HH:mm:ss 'UTC'")
+    $sortedIframes = $htmlFiles | Sort-Object Name | ForEach-Object { $_.Name }
+    $commitTitleWithUuid = if ($Title) { "$Title [$uuid]" } else { "Manual run [$uuid]" }
+
+    $entry = [ordered]@{
+        timestampUtc = $timestampIso
+        displayTime = $displayTimestamp
+        uuid = $uuid
+        title = $Title
+        commitTitle = $commitTitleWithUuid
+        commitBody = $Body
+        pushed = [bool]$Push.IsPresent
+        iframeCount = $sortedIframes.Count
+        iframes = $sortedIframes
+    }
+
+    $updatedEntries = @($entry)
+    if ($existingEntries) {
+        $updatedEntries += $existingEntries
+    }
+
+    $jsonOutput = $updatedEntries | ConvertTo-Json -Depth 6
+    Set-Content -Path $logJsonPath -Value $jsonOutput -Encoding UTF8
+    Write-Host "Logged bump to iframe-version-log.json"
 } else {
     Write-Host "Skipping log update."
 }

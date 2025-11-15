@@ -10,8 +10,8 @@
         =====================================================================
         CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
         =====================================================================
-        Transport Medium â†’ fallback to Quicksand Bold (700)
-        Rotis fonts â†’ fallback to Quicksand Regular (400/600)
+        Transport Medium &rarr; fallback to Quicksand Bold (700)
+        Rotis fonts &rarr; fallback to Quicksand Regular (400/600)
         =====================================================================
         */
         
@@ -549,7 +549,7 @@
         UPLOADING STATE
         - Full-size section card shown during file upload to S3
         - Displays progress bar and file list with status
-        - Shows individual file upload progress (Pending â†’ Uploading â†’ Success/Error)
+        - Shows individual file upload progress (Pending &rarr; Uploading &rarr; Success/Error)
         - Displayed as a normal section instead of modal overlay
         =====================================================================
         */
@@ -1785,8 +1785,8 @@
                 </div>
                 
                 <!-- Hidden arrows and counter -->
-                <button class="navigation-arrows nav-left" disabled style="display: none;">â€¹</button>
-                <button class="navigation-arrows nav-right" disabled style="display: none;">â€º</button>
+                <button class="navigation-arrows nav-left" disabled style="display: none;">&#xC3;&#xA2;&#xE2;&#x201A;&#xAC;&#xC2;&#xB9;</button>
+                <button class="navigation-arrows nav-right" disabled style="display: none;">&#xC3;&#xA2;&#xE2;&#x201A;&#xAC;&#xC2;&#xBA;</button>
             </div>
             <!-- Disabled add button -->
             <div class="add-more-container" style="margin-top: 10px;">
@@ -1857,7 +1857,7 @@
     <!-- Error Popup -->
     <div class="error-popup" id="errorPopup">
         <div class="error-popup-content">
-            <button class="error-popup-close" id="errorPopupClose">Ã—</button>
+            <button class="error-popup-close" id="errorPopupClose">&#xC3;&#x192;&#xE2;&#x20AC;&#x201D;</button>
             <div class="error-popup-header">Upload Error</div>
             <div class="error-popup-message" id="errorMessage">An error occurred during upload.</div>
         </div>
@@ -1895,16 +1895,16 @@
         3. 'refresh-images' - Request to refresh image display after upload
         
         IMAGE DISPLAY FLOW:
-        - Parent sends display-images/image-display â†’ displayImages() renders carousel â†’
-          User navigates with arrows â†’ Download button fetches from liveUrl
+        - Parent sends display-images/image-display &rarr; displayImages() renders carousel &rarr;
+          User navigates with arrows &rarr; Download button fetches from liveUrl
         
         UPLOAD FLOW:
-        - User clicks "Add more" â†’ showUploader() displays form â†’
-          User selects document type and files â†’ validateAllUploadCards() checks completion â†’
-          uploadAllFiles() sends 'image-data' to parent â†’ parent generates s3Keys â†’
-          parent sends 'put-links' â†’ uploadFiles() uploads to S3 â†’
-          handleUploadSuccess() sends 'upload-success' to parent â†’
-          parent saves to DB and sends fresh 'display-images' â†’
+        - User clicks "Add more" &rarr; showUploader() displays form &rarr;
+          User selects document type and files &rarr; validateAllUploadCards() checks completion &rarr;
+          uploadAllFiles() sends 'image-data' to parent &rarr; parent generates s3Keys &rarr;
+          parent sends 'put-links' &rarr; uploadFiles() uploads to S3 &rarr;
+          handleUploadSuccess() sends 'upload-success' to parent &rarr;
+          parent saves to DB and sends fresh 'display-images' &rarr;
           returnToAwaitingData() resets state
         
         IMPORTANT RULES:
@@ -2200,7 +2200,7 @@
             
             container.innerHTML = `
                 <div class="image-error">
-                    <div class="image-error-icon">ðŸ“·</div>
+                    <div class="image-error-icon">&#xC3;&#xB0;&#xC5;&#xB8;&#xE2;&#x20AC;&#x153;&#xC2;&#xB7;</div>
                     <div class="image-error-text">
                         <strong>Image unavailable</strong><br>
                         ${documentType || 'Document image'} could not be loaded
@@ -2218,7 +2218,7 @@
             const container = button.closest('.image-error').parentElement;
             container.innerHTML = `
                 <div class="image-loading">
-                    <div class="image-error-icon">â³</div>
+                    <div class="image-error-icon">&#xC3;&#xA2;&#xC2;&#x8F;&#xC2;&#xB3;</div>
                     <div class="image-error-text">Loading...</div>
                 </div>
             `;
@@ -3039,7 +3039,7 @@
             
             let completed = 0; // Track completions for progress bar
             
-            console.log(`âš¡ Uploading ALL ${total} files simultaneously with Promise.all()`);
+            console.log(`&#xC3;&#xA2;&#xC5;&#xA1;&#xC2;&#xA1; Uploading ALL ${total} files simultaneously with Promise.all()`);
             
             // Create upload promise for each file
             const uploadPromises = files.map(async (fileData, index) => {
@@ -3094,7 +3094,7 @@
             const successCount = results.filter(r => r.success).length;
             const hasErrors = results.some(r => !r.success);
             
-            console.log(`âœ… All uploads complete: ${successCount}/${total} successful`);
+            console.log(`&#xC3;&#xA2;&#xC5;&#x201C;&#xE2;&#x20AC;&#xA6; All uploads complete: ${successCount}/${total} successful`);
             
             // Handle completion
             setTimeout(() => {
@@ -4031,11 +4031,12 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '37b167e';
+    window.__IFRAME_VERSION__ = 'f05c00f';
     console.log('[image-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
 <!-- IFRAME_VERSION END -->
 </body>
 </html>
+
 

@@ -152,7 +152,7 @@ function initializeEventListeners() {
       e.preventDefault();
       
       const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-      console.log('📋 Pasted DOB text:', pastedText);
+      console.log('&#xD83D;&#xDCCB; Pasted DOB text:', pastedText);
       
       // Try to parse the date
       const parsedDate = parseDateString(pastedText);
@@ -167,9 +167,9 @@ function initializeEventListeners() {
         
         liteDobInputs[7].focus();
         const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
-        console.log('✅ Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
+        console.log('&#x2705; Pasted DOB filled all fields:', parsedDate, '&#x2192;', formattedDate);
       } else {
-        console.warn('⚠️ Could not parse date from pasted text:', pastedText);
+        console.warn('&#x26A0;&#xFE0F; Could not parse date from pasted text:', pastedText);
       }
     });
   }
@@ -466,7 +466,7 @@ function handleCheckResponse(response) {
   const submitBtn = document.getElementById('submitBtn');
   
   if (response.success) {
-    console.log('✅ Check initiated successfully:', response);
+    console.log('&#x2705; Check initiated successfully:', response);
     
     // Build success message based on check type
     let successMessage = response.message || 'Check initiated successfully!';
@@ -496,7 +496,7 @@ function handleCheckResponse(response) {
       detailsHTML = `
         <div style="margin-top: 10px; font-size: 0.9rem; color: #fff;">
           <strong>Checks initiated:</strong> ${checks.join(' + ')}<br>
-          ${response.documentsUploaded ? '<strong>Documents:</strong> Uploaded ✓' : ''}
+          ${response.documentsUploaded ? '<strong>Documents:</strong> Uploaded &#x2713;' : ''}
         </div>
       `;
     }
@@ -513,7 +513,7 @@ function handleCheckResponse(response) {
     
   } else {
     // Error from backend
-    console.error('❌ Check initiation failed:', response);
+    console.error('&#x274C; Check initiation failed:', response);
     const errorMsg = response.error || 'Failed to initiate check. Please try again.';
     showError(errorMsg);
     
@@ -559,7 +559,7 @@ function showSuccessPopup(message, detailsHTML = '') {
       width: 90%;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     ">
-      <div style="font-size: 3rem; margin-bottom: 15px;">✓</div>
+      <div style="font-size: 3rem; margin-bottom: 15px;">&#x2713;</div>
       <h3 style="color: white; margin: 0 0 10px 0; font-size: 1.3rem;">
         ${message}
       </h3>
@@ -829,7 +829,7 @@ function selectAddressSuggestion(addressId, displayText) {
   }
   
   // Request full address from parent
-  console.log('📡 Requesting full address for ID:', addressId);
+  console.log('&#xD83D;&#xDCE1; Requesting full address for ID:', addressId);
   window.parent.postMessage({
     type: 'address-lookup',
     addressId: addressId,
@@ -848,7 +848,7 @@ function handleAddressData(addressData, field) {
   // Store the Thirdfort-formatted address in the appropriate variable
   if (field === 'lite' || field === 'current') {
     liteCurrentAddressObject = thirdfortAddress;
-    console.log('✅ Lite Screen address stored:', liteCurrentAddressObject);
+    console.log('&#x2705; Lite Screen address stored:', liteCurrentAddressObject);
     
     // Update address card display text
     const currentAddressText = document.getElementById('liteCurrentAddressText');
@@ -884,7 +884,7 @@ function handleAddressData(addressData, field) {
   // If it's a previous address (in case we add that later)
   if (field === 'previous') {
     litePreviousAddressObject = thirdfortAddress;
-    console.log('✅ Lite Screen previous address stored:', litePreviousAddressObject);
+    console.log('&#x2705; Lite Screen previous address stored:', litePreviousAddressObject);
     
     // Update previous address card display
     const previousAddressText = document.getElementById('litePreviousAddressText');
@@ -928,7 +928,7 @@ function setupLiteAddressAutocomplete(inputElement, dropdownElement) {
     
     // Debounce 300ms
     addressDebounceTimer = setTimeout(() => {
-      console.log('📡 API call for address autocomplete:', searchTerm);
+      console.log('&#xD83D;&#xDCE1; API call for address autocomplete:', searchTerm);
       window.parent.postMessage({
         type: 'address-search',
         searchTerm: searchTerm,
@@ -982,7 +982,7 @@ function setupLiteAddressAutocomplete(inputElement, dropdownElement) {
  * Check and populate IDV images from client data
  */
 function checkAndPopulateIDVImages(data) {
-  console.log('🔍 Checking IDV images...', data.idI);
+  console.log('&#xD83D;&#xDD0D; Checking IDV images...', data.idI);
   
   // Get IDV elements
   const idvYesBtn = document.querySelector('[data-idv-answer="yes"]');
@@ -1029,7 +1029,7 @@ function checkAndPopulateIDVImages(data) {
   
   // If NO photo IDs at all OR no suitable types, disable buttons and show error
   if (photoIdImages.length === 0) {
-    console.log('❌ No photo ID images found - disabling IDV buttons');
+    console.log('&#x274C; No photo ID images found - disabling IDV buttons');
     // Disable IDV buttons and show error
     if (idvYesBtn) idvYesBtn.disabled = true;
     if (idvNoBtn) idvNoBtn.disabled = true;
@@ -1038,7 +1038,7 @@ function checkAndPopulateIDVImages(data) {
   }
   
   if (availableImages.length === 0) {
-    console.log('❌ No suitable photo ID types found - disabling IDV buttons');
+    console.log('&#x274C; No suitable photo ID types found - disabling IDV buttons');
     // Disable IDV buttons and show error
     if (idvYesBtn) idvYesBtn.disabled = true;
     if (idvNoBtn) idvNoBtn.disabled = true;
@@ -1046,7 +1046,7 @@ function checkAndPopulateIDVImages(data) {
     return;
   }
   
-  console.log('✅ Found suitable photo ID images:', availableImages);
+  console.log('&#x2705; Found suitable photo ID images:', availableImages);
   
   // Enable IDV buttons (in case they were disabled)
   if (idvYesBtn) idvYesBtn.disabled = false;
@@ -1062,7 +1062,7 @@ function checkAndPopulateIDVImages(data) {
     const found = availableImages.find(img => img.document === docType);
     if (found) {
       selectedDocType = suitableTypes[docType];
-      console.log(`🎯 Auto-selecting document type: ${docType} (${selectedDocType})`);
+      console.log(`&#xD83C;&#xDFAF; Auto-selecting document type: ${docType} (${selectedDocType})`);
       
       // Only auto-select if not "Other"
       if (docType !== 'Other Photo ID Card') {
@@ -1101,7 +1101,7 @@ function checkAndPopulateIDVImages(data) {
   
   // Auto-select "YES" for IDV if we have Passport, Driving Licence, Passport Card, National Identity Card, or Residence Permit
   if (shouldAutoSelectYes && idvYesBtn) {
-    console.log('✅ Auto-selecting IDV YES button (suitable photo ID type found)');
+    console.log('&#x2705; Auto-selecting IDV YES button (suitable photo ID type found)');
     // Deselect all answer cards first
     document.querySelectorAll('[data-idv-answer]').forEach(card => {
       card.classList.remove('selected');
@@ -1114,7 +1114,7 @@ function checkAndPopulateIDVImages(data) {
     const idvContent = document.getElementById('idvContent');
     if (idvContent) {
       idvContent.classList.remove('hidden');
-      console.log('✅ IDV content shown (will remain visible if IDV & Lite Screen is auto-selected)');
+      console.log('&#x2705; IDV content shown (will remain visible if IDV & Lite Screen is auto-selected)');
     }
   }
   
@@ -1151,15 +1151,15 @@ function populateIDVImageLists(images, selectedDocType) {
     // Handle both array and string document names
     if (Array.isArray(expectedDocName)) {
       filteredImages = images.filter(img => expectedDocName.includes(img.document));
-      console.log(`🔍 Filtering images for ${selectedDocType} (${expectedDocName.join(' or ')}):`, filteredImages.length);
+      console.log(`&#xD83D;&#xDD0D; Filtering images for ${selectedDocType} (${expectedDocName.join(' or ')}):`, filteredImages.length);
     } else {
       filteredImages = images.filter(img => img.document === expectedDocName);
-      console.log(`🔍 Filtering images for ${selectedDocType} (${expectedDocName}):`, filteredImages.length);
+      console.log(`&#xD83D;&#xDD0D; Filtering images for ${selectedDocType} (${expectedDocName}):`, filteredImages.length);
     }
     
     // If no exact matches, show all images but don't auto-select
     if (filteredImages.length === 0) {
-      console.log('⚠️ No exact matches found, showing all available images for manual selection');
+      console.log('&#x26A0;&#xFE0F; No exact matches found, showing all available images for manual selection');
       filteredImages = images;
       hasExactMatches = false;
     }
@@ -1189,10 +1189,10 @@ function populateIDVImageLists(images, selectedDocType) {
         const firstMatch = frontAndSingleImages[0];
         if (firstMatch) {
           selectIDVImage(firstMatch, 'front');
-          console.log('✅ Auto-selected front/single image');
+          console.log('&#x2705; Auto-selected front/single image');
         }
       } else {
-        console.log('⏸️ No exact matches - user must manually select image');
+        console.log('&#x23F8;&#xFE0F; No exact matches - user must manually select image');
       }
     }
   }
@@ -1214,10 +1214,10 @@ function populateIDVImageLists(images, selectedDocType) {
         const firstMatch = backImages[0];
         if (firstMatch) {
           selectIDVImage(firstMatch, 'back');
-          console.log('✅ Auto-selected back image');
+          console.log('&#x2705; Auto-selected back image');
         }
       } else {
-        console.log('⏸️ No exact matches - user must manually select back image');
+        console.log('&#x23F8;&#xFE0F; No exact matches - user must manually select back image');
       }
     }
   }
@@ -1283,7 +1283,7 @@ function selectIDVImage(image, column) {
   // Store in state
   checkState[`${column}Image`] = image;
   
-  console.log(`✅ Selected ${column} image:`, image.name);
+  console.log(`&#x2705; Selected ${column} image:`, image.name);
 }
 
 /**
@@ -1297,7 +1297,7 @@ function showIDVImageList(column) {
   if (selectedView) selectedView.style.display = 'none';
   if (listView) listView.style.display = 'block';
   
-  console.log(`🔄 Showing ${column} image list`);
+  console.log(`&#xD83D;&#xDD04; Showing ${column} image list`);
 }
 
 /**
@@ -1310,7 +1310,7 @@ function openIDVImage(column) {
     return;
   }
   
-  console.log(`👁️ Opening ${column} image:`, image.name);
+  console.log(`&#xD83D;&#xDC41;&#xFE0F; Opening ${column} image:`, image.name);
   
   // Prepare data for single-image-viewer.html
   const imageData = {
@@ -1353,7 +1353,7 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
   const esowBankLinkingCard = document.getElementById('esowBankLinkingCard');
   const esowBankLinkingCheckbox = document.getElementById('esowBankLinking');
   
-  console.log('🔍 Configuring Electronic ID options:', { category, subtype, workType, relation });
+  console.log('&#xD83D;&#xDD0D; Configuring Electronic ID options:', { category, subtype, workType, relation });
   
   // ===== PROOF OF OWNERSHIP =====
   let showPoO = false;
@@ -1380,7 +1380,7 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
         const normalizedWorkType = workType.toLowerCase();
         if (normalizedWorkType.includes('equity release') || normalizedWorkType.includes('re-mortgaging')) {
           checkPoO = true; // They own the property even though classified as tenant/occupier
-          console.log('✅ PoO auto-checked for tenant (Equity Release/Re-mortgaging - owner-occupier)');
+          console.log('&#x2705; PoO auto-checked for tenant (Equity Release/Re-mortgaging - owner-occupier)');
         } else {
           checkPoO = false; // Standard tenant - don't auto-check
         }
@@ -1399,11 +1399,11 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
     if (showPoO) {
       proofOfOwnershipCard.classList.remove('hidden');
       if (proofOfOwnershipCheckbox) proofOfOwnershipCheckbox.checked = checkPoO;
-      console.log(`✅ Proof of Ownership ${checkPoO ? 'shown and checked' : 'shown (unchecked)'} (${category}/${subtype})`);
+      console.log(`&#x2705; Proof of Ownership ${checkPoO ? 'shown and checked' : 'shown (unchecked)'} (${category}/${subtype})`);
     } else {
       proofOfOwnershipCard.classList.add('hidden');
       if (proofOfOwnershipCheckbox) proofOfOwnershipCheckbox.checked = false;
-      console.log(`❌ Proof of Ownership hidden (${category}/${subtype || 'none'})`);
+      console.log(`&#x274C; Proof of Ownership hidden (${category}/${subtype || 'none'})`);
     }
   }
   
@@ -1413,7 +1413,7 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
   
   // Get client data tags for conditional logic
   const clientData = checkState.clientData;
-  console.log('📊 Client data for tag detection:', { 
+  console.log('&#xD83D;&#xDCCA; Client data for tag detection:', { 
     uT: clientData?.uT, 
     eS: clientData?.eS, 
     hasClientData: !!clientData 
@@ -1444,9 +1444,9 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
     checkQuestionnaire = !shouldNotAutoCheck;
     
     if (!shouldNotAutoCheck) {
-      console.log(`✅ Questionnaire auto-checked for ${subtype} (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
+      console.log(`&#x2705; Questionnaire auto-checked for ${subtype} (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
     } else {
-      console.log(`⚠️ Questionnaire NOT auto-checked for ${subtype} (formE without eSoF)`);
+      console.log(`&#x26A0;&#xFE0F; Questionnaire NOT auto-checked for ${subtype} (formE without eSoF)`);
     }
   } else if (showQuestionnaire && category === 'conveyancing' && subtype === 'other') {
     // For "other" subtype, use old logic based on work type and relation
@@ -1465,9 +1465,9 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
     checkQuestionnaire = !shouldNotAutoCheck;
     
     if (!shouldNotAutoCheck) {
-      console.log(`✅ Questionnaire auto-checked for Property Other Purchaser (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
+      console.log(`&#x2705; Questionnaire auto-checked for Property Other Purchaser (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
     } else {
-      console.log(`⚠️ Questionnaire NOT auto-checked for Property Other Purchaser (formE without eSoF)`);
+      console.log(`&#x26A0;&#xFE0F; Questionnaire NOT auto-checked for Property Other Purchaser (formE without eSoF)`);
     }
   }
   
@@ -1475,11 +1475,11 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
     if (showQuestionnaire) {
       esofQuestionnaireCard.classList.remove('hidden');
       if (esofQuestionnaireCheckbox) esofQuestionnaireCheckbox.checked = checkQuestionnaire;
-      console.log(`✅ eSoF Questionnaire ${checkQuestionnaire ? 'shown and checked' : 'shown (unchecked)'} (${category}/${subtype})`);
+      console.log(`&#x2705; eSoF Questionnaire ${checkQuestionnaire ? 'shown and checked' : 'shown (unchecked)'} (${category}/${subtype})`);
     } else {
       esofQuestionnaireCard.classList.add('hidden');
       if (esofQuestionnaireCheckbox) esofQuestionnaireCheckbox.checked = false;
-      console.log(`❌ eSoF Questionnaire hidden (${category}/${subtype || 'none'})`);
+      console.log(`&#x274C; eSoF Questionnaire hidden (${category}/${subtype || 'none'})`);
     }
   }
   
@@ -1499,9 +1499,9 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
     checkBankLinking = !shouldNotAutoCheck;
     
     if (!shouldNotAutoCheck) {
-      console.log(`✅ Bank Linking auto-checked for ${subtype} (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
+      console.log(`&#x2705; Bank Linking auto-checked for ${subtype} (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
     } else {
-      console.log(`⚠️ Bank Linking NOT auto-checked for ${subtype} (formE without eSoF)`);
+      console.log(`&#x26A0;&#xFE0F; Bank Linking NOT auto-checked for ${subtype} (formE without eSoF)`);
     }
   } else if (showBankLinking && category === 'conveyancing' && subtype === 'other') {
     // For "other" subtype, use old logic based on work type and relation
@@ -1520,9 +1520,9 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
     checkBankLinking = !shouldNotAutoCheck;
     
     if (!shouldNotAutoCheck) {
-      console.log(`✅ Bank Linking auto-checked for Property Other Purchaser (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
+      console.log(`&#x2705; Bank Linking auto-checked for Property Other Purchaser (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
     } else {
-      console.log(`⚠️ Bank Linking NOT auto-checked for Property Other Purchaser (formE without eSoF)`);
+      console.log(`&#x26A0;&#xFE0F; Bank Linking NOT auto-checked for Property Other Purchaser (formE without eSoF)`);
     }
   }
   
@@ -1530,11 +1530,11 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
     if (showBankLinking) {
       esowBankLinkingCard.classList.remove('hidden');
       if (esowBankLinkingCheckbox) esowBankLinkingCheckbox.checked = checkBankLinking;
-      console.log(`✅ eSoW Bank Linking ${checkBankLinking ? 'shown and checked' : 'shown (unchecked)'} (${category}/${subtype})`);
+      console.log(`&#x2705; eSoW Bank Linking ${checkBankLinking ? 'shown and checked' : 'shown (unchecked)'} (${category}/${subtype})`);
     } else {
       esowBankLinkingCard.classList.add('hidden');
       if (esowBankLinkingCheckbox) esowBankLinkingCheckbox.checked = false;
-      console.log(`❌ eSoW Bank Linking hidden (${category}/${subtype || 'none'})`);
+      console.log(`&#x274C; eSoW Bank Linking hidden (${category}/${subtype || 'none'})`);
     }
   }
 }
@@ -1557,7 +1557,7 @@ function configureElectronicIdCheckboxes(data) {
   // when matter category and subtype are selected
   // This function is called during initial data load before category/subtype selection
   
-  console.log('🔍 Electronic ID checkboxes will be configured when matter category/subtype is selected');
+  console.log('&#xD83D;&#xDD0D; Electronic ID checkboxes will be configured when matter category/subtype is selected');
 }
 
 /**
@@ -1690,20 +1690,20 @@ function populateClientData(data) {
     
     // Populate work type
     if (matterWorkTypeElement) {
-      matterWorkTypeElement.textContent = data.wT || '—';
+      matterWorkTypeElement.textContent = data.wT || '&#x2014;';
     }
     
     // Populate matter description
     if (matterDescriptionElement) {
-      matterDescriptionElement.textContent = data.mD || '—';
+      matterDescriptionElement.textContent = data.mD || '&#x2014;';
     }
     
     // Populate relation
     if (matterRelationElement) {
-      matterRelationElement.textContent = data.r || '—';
+      matterRelationElement.textContent = data.r || '&#x2014;';
     }
     
-    console.log('✅ Populated matter details card:', { wT: data.wT, mD: data.mD, r: data.r });
+    console.log('&#x2705; Populated matter details card:', { wT: data.wT, mD: data.mD, r: data.r });
   }
   
   // ===== Check Reference =====
@@ -1756,7 +1756,7 @@ function populateClientData(data) {
     
     // Auto-select Electronic ID for formE or eSoF routes
     if (hasFormE || hasEsofRequested) {
-      console.log('✅ Auto-selecting Electronic ID based on client data (formE/eSoF)');
+      console.log('&#x2705; Auto-selecting Electronic ID based on client data (formE/eSoF)');
       autoSelectElectronicId();
     }
     // Auto-select IDV & Lite Screen for formJ/formK routes
@@ -1768,7 +1768,7 @@ function populateClientData(data) {
       );
       
       if (shouldAutoSelectIDV) {
-        console.log('✅ Auto-selecting IDV & Lite Screen based on client data');
+        console.log('&#x2705; Auto-selecting IDV & Lite Screen based on client data');
         autoSelectIDVLiteScreen();
       }
     }
@@ -1837,7 +1837,7 @@ function autoPopulateKYBSection(data) {
   
   if (hasCompaniesHouseData) {
     // We have Companies House data - it's definitely UK
-    console.log('✅ Companies House data detected - setting jurisdiction to UK');
+    console.log('&#x2705; Companies House data detected - setting jurisdiction to UK');
     jurisdictionCode = 'GB';
     
     // Extract company number from Companies House data or cI
@@ -1852,7 +1852,7 @@ function autoPopulateKYBSection(data) {
     }
   } else {
     // No Companies House data - check for manual business data
-    console.log('ℹ️ No Companies House data - checking for manual business data');
+    console.log('&#x2139;&#xFE0F; No Companies House data - checking for manual business data');
     
     // Check cI for business details
     if (data.cI) {
@@ -1862,7 +1862,7 @@ function autoPopulateKYBSection(data) {
       // Check registration country
       if (data.cI.rC) {
         jurisdictionCode = data.cI.rC;
-        console.log(`ℹ️ Registration country from cI: ${jurisdictionCode}`);
+        console.log(`&#x2139;&#xFE0F; Registration country from cI: ${jurisdictionCode}`);
       }
     }
     
@@ -1876,38 +1876,38 @@ function autoPopulateKYBSection(data) {
   if (jurisdictionCode && typeof setJurisdiction === 'function') {
     setJurisdiction('kybJurisdiction', jurisdictionCode);
     checkState.kybJurisdiction = jurisdictionCode;
-    console.log(`📍 Set KYB jurisdiction to: ${jurisdictionCode}`);
+    console.log(`&#xD83D;&#xDCCD; Set KYB jurisdiction to: ${jurisdictionCode}`);
   }
   
   // Populate company name if we have it
   if (companyName) {
     companyNameInput.value = companyName;
-    console.log(`🏢 Set company name to: ${companyName}`);
+    console.log(`&#xD83C;&#xDFE2; Set company name to: ${companyName}`);
   }
   
   // Populate entity number if we have it
   if (entityNumber) {
     companyNumberInput.value = entityNumber;
-    console.log(`#️⃣ Set entity number to: ${entityNumber}`);
+    console.log(`#&#xFE0F;&#x20E3; Set entity number to: ${entityNumber}`);
   }
   
   // Auto-trigger search if we have sufficient data
   if (shouldAutoSearch && jurisdictionCode) {
-    console.log('🔍 Auto-triggering KYB search...');
+    console.log('&#xD83D;&#xDD0D; Auto-triggering KYB search...');
     
     // Wait a moment for UI to settle, then trigger search
     setTimeout(() => {
       // Prefer searching by entity number if available
       if (entityNumber) {
-        console.log(`📡 Auto-searching by entity number: ${entityNumber}`);
+        console.log(`&#xD83D;&#xDCE1; Auto-searching by entity number: ${entityNumber}`);
         performKYBSearch(jurisdictionCode, '', entityNumber);
       } else if (companyName) {
-        console.log(`📡 Auto-searching by company name: ${companyName}`);
+        console.log(`&#xD83D;&#xDCE1; Auto-searching by company name: ${companyName}`);
         performKYBSearch(jurisdictionCode, companyName, '');
       }
     }, 500);
   } else {
-    console.log('⏸️ Not auto-searching - insufficient data or unknown jurisdiction');
+    console.log('&#x23F8;&#xFE0F; Not auto-searching - insufficient data or unknown jurisdiction');
   }
 }
 
@@ -1922,11 +1922,11 @@ function autoSelectMatterCategory(workType) {
   
   // ===== RELATION-BASED OVERRIDE =====
   // If relation is Tenant, Occupier, or Landlord, always route to Property Other
-  // This overrides work type mapping (e.g., "Purchase" + "Tenant" → Property Other, not Conveyancing)
+  // This overrides work type mapping (e.g., "Purchase" + "Tenant" &#x2192; Property Other, not Conveyancing)
   const propertyOtherRelations = ['Tenant', 'Occupier', 'Leaseholder', 'Freeholder', 'Landlord'];
   
   if (relation && propertyOtherRelations.includes(relation)) {
-    console.log(`✅ Relation "${relation}" detected → Routing to Property Other (overrides work type)`);
+    console.log(`&#x2705; Relation "${relation}" detected &#x2192; Routing to Property Other (overrides work type)`);
     const categoryCard = document.querySelector('.matter-category-card[data-category="property-other"]');
     
     if (categoryCard) {
@@ -1986,7 +1986,7 @@ function autoSelectMatterCategory(workType) {
   const category = categoryMapping[normalizedWorkType];
   
   if (!category) {
-    console.log('⚠️ Unrecognized work type - user must select category manually:', workType);
+    console.log('&#x26A0;&#xFE0F; Unrecognized work type - user must select category manually:', workType);
     return;
   }
   
@@ -2006,7 +2006,7 @@ function autoSelectMatterCategory(workType) {
   categoryCard.classList.add('selected');
   checkState.matterCategory = category;
   
-  console.log('✅ Auto-selected matter category:', category, 'for work type:', normalizedWorkType);
+  console.log('&#x2705; Auto-selected matter category:', category, 'for work type:', normalizedWorkType);
   
   // Handle sub-categories and Electronic ID section display
   const conveyancingSubCategory = document.getElementById('conveyancingSubCategory');
@@ -2035,7 +2035,7 @@ function autoSelectMatterCategory(workType) {
       updateElectronicIdReferenceLabel(category);
       populateElectronicIdReference(category);
       configureProofOfOwnership(category, null); // No subtypes for Private Client/Other
-      console.log('✅ Showing Electronic ID section (Private Client/Other auto-selected)');
+      console.log('&#x2705; Showing Electronic ID section (Private Client/Other auto-selected)');
     }
   }
 }
@@ -2073,7 +2073,7 @@ function autoSelectConveyancingSubtype(workType, relation) {
   }
   
   if (!subtype) {
-    console.log('⏸️ Could not determine conveyancing subtype - user must select');
+    console.log('&#x23F8;&#xFE0F; Could not determine conveyancing subtype - user must select');
     return;
   }
   
@@ -2085,7 +2085,7 @@ function autoSelectConveyancingSubtype(workType, relation) {
     });
     subtypeCard.classList.add('selected');
     checkState.matterSubCategory = subtype;
-    console.log('✅ Auto-selected conveyancing subtype:', subtype);
+    console.log('&#x2705; Auto-selected conveyancing subtype:', subtype);
     
     // Show Electronic ID section and configure Proof of Ownership
     if (checkState.checkType === 'electronic-id') {
@@ -2127,15 +2127,15 @@ function autoSelectPropertyOtherSubtype(relation, workType) {
     if (normalizedWorkType.includes('equity release') || normalizedWorkType.includes('re-mortgaging')) {
       // Equity Release / Re-mortgaging = they own/occupy but aren't selling
       subtype = 'tenant';
-      console.log('✅ Our Client with Equity Release/Re-mortgaging → Tenant/Occupier (owner-occupier)');
+      console.log('&#x2705; Our Client with Equity Release/Re-mortgaging &#x2192; Tenant/Occupier (owner-occupier)');
     } else if (normalizedWorkType.includes('purchase')) {
       // Purchase = they're buying
       subtype = 'purchaser';
-      console.log('✅ Our Client with Purchase → Purchaser');
+      console.log('&#x2705; Our Client with Purchase &#x2192; Purchaser');
     } else if (normalizedWorkType.includes('lease')) {
       // Leasing
       subtype = 'tenant';
-      console.log('✅ Our Client with Lease → Tenant');
+      console.log('&#x2705; Our Client with Lease &#x2192; Tenant');
     }
     // Other work types for "Our Client" fall through to user selection
   }
@@ -2146,12 +2146,12 @@ function autoSelectPropertyOtherSubtype(relation, workType) {
     if (normalizedWorkType.includes('purchase')) {
       // Current occupier purchasing (e.g., tenant buying their rental)
       subtype = 'tenant';
-      console.log('✅ Occupier with Purchase → Tenant/Occupier (current occupier buying)');
+      console.log('&#x2705; Occupier with Purchase &#x2192; Tenant/Occupier (current occupier buying)');
     }
   }
   
   if (!subtype) {
-    console.log('⏸️ Could not determine property other subtype - user must select');
+    console.log('&#x23F8;&#xFE0F; Could not determine property other subtype - user must select');
     return;
   }
   
@@ -2163,7 +2163,7 @@ function autoSelectPropertyOtherSubtype(relation, workType) {
     });
     subtypeCard.classList.add('selected');
     checkState.matterSubCategory = subtype;
-    console.log('✅ Auto-selected property other subtype:', subtype);
+    console.log('&#x2705; Auto-selected property other subtype:', subtype);
     
     // Show Electronic ID section and configure Proof of Ownership
     if (checkState.checkType === 'electronic-id') {
@@ -2211,18 +2211,18 @@ function autoSelectElectronicId() {
     if (additionalOnlyCard && standardCard) {
       standardCard.classList.remove('selected');
       additionalOnlyCard.classList.add('selected');
-      console.log('✅ Auto-selected Additional Tasks Only (eSoF without Form E)');
+      console.log('&#x2705; Auto-selected Additional Tasks Only (eSoF without Form E)');
     }
   } else {
     // Form E (with or without eSoF) = Standard ID
     checkState.electronicIdType = 'standard';
-    console.log('✅ Standard ID selected (default or Form E)');
+    console.log('&#x2705; Standard ID selected (default or Form E)');
   }
   
   // Show Matter Category section
   if (matterCategorySection) {
     matterCategorySection.classList.remove('hidden');
-    console.log('✅ Matter Category section shown');
+    console.log('&#x2705; Matter Category section shown');
   }
   
   // Show/hide PEP Monitoring based on Electronic ID type
@@ -2234,12 +2234,12 @@ function autoSelectElectronicId() {
       // Standard ID includes screening - show and check PEP monitoring
       monitoringCard.classList.remove('hidden');
       if (monitoringCheckbox) monitoringCheckbox.checked = true;
-      console.log('✅ PEP Monitoring shown and checked (Electronic ID - Standard ID)');
+      console.log('&#x2705; PEP Monitoring shown and checked (Electronic ID - Standard ID)');
     } else if (checkState.electronicIdType === 'additional-only') {
       // Additional Tasks Only = no screening = hide PEP monitoring
       monitoringCard.classList.add('hidden');
       if (monitoringCheckbox) monitoringCheckbox.checked = false;
-      console.log('❌ PEP Monitoring hidden (Electronic ID - Additional Tasks Only)');
+      console.log('&#x274C; PEP Monitoring hidden (Electronic ID - Additional Tasks Only)');
     }
   }
   
@@ -2252,7 +2252,7 @@ function autoSelectElectronicId() {
   // Show check reference section
   showSection('checkReferenceSection');
   
-  console.log('✅ Auto-selected Electronic ID check type');
+  console.log('&#x2705; Auto-selected Electronic ID check type');
 }
 
 /**
@@ -2289,18 +2289,18 @@ function autoSelectIDVLiteScreen() {
   } else {
     // Preserve the auto-selected state
     checkState.includeIDV = true;
-    console.log('ℹ️ IDV already auto-selected by image check, preserving includeIDV = true');
+    console.log('&#x2139;&#xFE0F; IDV already auto-selected by image check, preserving includeIDV = true');
   }
   
   // Show both lite screen and IDV sections
   if (liteScreenSection) {
     liteScreenSection.classList.remove('hidden');
-    console.log('✅ Lite Screen section shown (YES by default)');
+    console.log('&#x2705; Lite Screen section shown (YES by default)');
   }
   
   if (idvSection) {
     idvSection.classList.remove('hidden');
-    console.log('✅ IDV section shown (no default)');
+    console.log('&#x2705; IDV section shown (no default)');
   }
   
   // Lite Screen content shown by default (YES is selected in HTML)
@@ -2317,7 +2317,7 @@ function autoSelectIDVLiteScreen() {
     idvContent.classList.add('hidden');
   } else if (idvAlreadyAutoSelected) {
     // Keep content visible
-    console.log('ℹ️ IDV YES already auto-selected by image check, keeping content visible');
+    console.log('&#x2139;&#xFE0F; IDV YES already auto-selected by image check, keeping content visible');
   }
   
   // Show PEP Monitoring card (Lite Screen defaults to YES)
@@ -2331,16 +2331,16 @@ function autoSelectIDVLiteScreen() {
     if (monitoringCheckbox && !checkState.pepMonitoringInitialized) {
       monitoringCheckbox.checked = true;
       checkState.pepMonitoringInitialized = true;
-      console.log('✅ PEP Monitoring card shown and auto-checked (first time)');
+      console.log('&#x2705; PEP Monitoring card shown and auto-checked (first time)');
     } else {
-      console.log('✅ PEP Monitoring card shown (preserving user choice)');
+      console.log('&#x2705; PEP Monitoring card shown (preserving user choice)');
     }
   }
   
   // Show check reference section
   showSection('checkReferenceSection');
   
-  console.log('✅ Auto-selected IDV & Lite Screen check type');
+  console.log('&#x2705; Auto-selected IDV & Lite Screen check type');
 }
 
 /**
@@ -2363,17 +2363,17 @@ function populateLiteScreenFields(data) {
     
     if (firstNameInput && data.cI.n.f) {
       firstNameInput.value = data.cI.n.f;
-      console.log('✅ Populated first name:', data.cI.n.f);
+      console.log('&#x2705; Populated first name:', data.cI.n.f);
     }
     
     if (middleNameInput && data.cI.n.m) {
       middleNameInput.value = data.cI.n.m;
-      console.log('✅ Populated middle name:', data.cI.n.m);
+      console.log('&#x2705; Populated middle name:', data.cI.n.m);
     }
     
     if (lastNameInput && data.cI.n.l) {
       lastNameInput.value = data.cI.n.l;
-      console.log('✅ Populated last name:', data.cI.n.l);
+      console.log('&#x2705; Populated last name:', data.cI.n.l);
     }
   }
   
@@ -2399,7 +2399,7 @@ function populateLiteScreenFields(data) {
       }
     });
     
-    console.log('✅ Populated date of birth:', data.cI.b);
+    console.log('&#x2705; Populated date of birth:', data.cI.b);
   }
   
   // ===== Current Address =====
@@ -2433,7 +2433,7 @@ function populateLiteScreenFields(data) {
       }, 100);
     }
     
-    console.log('✅ Populated current address');
+    console.log('&#x2705; Populated current address');
   } else {
     // No current address - hide the card
     if (currentAddressCard) {
@@ -2456,7 +2456,7 @@ function populateLiteScreenFields(data) {
       previousAddressCard.classList.remove('hidden');
     }
     
-    console.log('✅ Stored previous address');
+    console.log('&#x2705; Stored previous address');
   } else {
     // No previous address - hide the card
     const previousAddressCard = document.getElementById('litePreviousAddressCard');
@@ -2479,10 +2479,10 @@ function populateLiteScreenFields(data) {
       const italicText = reason.includes('deed poll') ? 'Changed by deed poll' : data.cI.rNC;
       previousNameHint.innerHTML = `Previous/Known as name: <strong>${data.cI.pN}</strong> <em>- ${italicText}</em>`;
       
-      console.log('✅ Showing previous name hint:', data.cI.pN, '-', data.cI.rNC);
+      console.log('&#x2705; Showing previous name hint:', data.cI.pN, '-', data.cI.rNC);
     } else {
       previousNameHint.classList.add('hidden');
-      console.log('ℹ️ Hiding previous name hint (no data)');
+      console.log('&#x2139;&#xFE0F; Hiding previous name hint (no data)');
     }
   }
 }
@@ -2507,17 +2507,17 @@ function populateIDVFields(data) {
     
     if (idvFirstNameInput && data.cI.n.f) {
       idvFirstNameInput.value = data.cI.n.f;
-      console.log('✅ Populated IDV first name:', data.cI.n.f);
+      console.log('&#x2705; Populated IDV first name:', data.cI.n.f);
     }
     
     if (idvMiddleNameInput && data.cI.n.m) {
       idvMiddleNameInput.value = data.cI.n.m;
-      console.log('✅ Populated IDV middle name:', data.cI.n.m);
+      console.log('&#x2705; Populated IDV middle name:', data.cI.n.m);
     }
     
     if (idvLastNameInput && data.cI.n.l) {
       idvLastNameInput.value = data.cI.n.l;
-      console.log('✅ Populated IDV last name:', data.cI.n.l);
+      console.log('&#x2705; Populated IDV last name:', data.cI.n.l);
     }
   }
 }
@@ -2566,7 +2566,7 @@ function updateInternationalAddressVerification() {
     internationalCard.classList.remove('hidden');
     // Auto-check when shown
     if (checkbox) checkbox.checked = true;
-    console.log('✅ International Address Verification shown and checked for:', countryCode);
+    console.log('&#x2705; International Address Verification shown and checked for:', countryCode);
   } else {
     internationalCard.classList.add('hidden');
     // Uncheck when hidden
@@ -2599,7 +2599,7 @@ function populateElectronicIdReference(category) {
     // For Conveyancing/Property Other: Use matter description only
     // (work type already includes "Sale of"/"Purchase of")
     referenceValue = matterDescription;
-    console.log('✅ Electronic ID reference (Conveyancing/Property Other):', referenceValue);
+    console.log('&#x2705; Electronic ID reference (Conveyancing/Property Other):', referenceValue);
   } else if (category === 'private-client' || category === 'other') {
     // For Private Client/Other: Use work type + matter description
     // But if they match, use matter description only
@@ -2612,7 +2612,7 @@ function populateElectronicIdReference(category) {
     } else {
       referenceValue = matterDescription || workType;
     }
-    console.log('✅ Electronic ID reference (Private Client/Other):', referenceValue);
+    console.log('&#x2705; Electronic ID reference (Private Client/Other):', referenceValue);
   }
   
   referenceInput.value = referenceValue;
@@ -2642,7 +2642,7 @@ function populateElectronicIdFields(data) {
       ].filter(p => p && p.trim());
       
       fullNameInput.value = nameParts.join(' ');
-      console.log('✅ Populated full name (no title):', fullNameInput.value);
+      console.log('&#x2705; Populated full name (no title):', fullNameInput.value);
     }
   }
   
@@ -2665,7 +2665,7 @@ function populateElectronicIdFields(data) {
           if (electronicIdMobileInput) {
             electronicIdMobileInput.value = cleanPhone.substring(code.length);
           }
-          console.log('✅ Populated mobile:', code, '+', cleanPhone.substring(code.length));
+          console.log('&#x2705; Populated mobile:', code, '+', cleanPhone.substring(code.length));
           break;
         }
       }
@@ -2680,7 +2680,7 @@ function populateElectronicIdFields(data) {
     const emailInput = document.getElementById('electronicIdEmail');
     if (emailInput) {
       emailInput.value = data.cI.e;
-      console.log('✅ Populated email:', data.cI.e);
+      console.log('&#x2705; Populated email:', data.cI.e);
     }
   }
   
@@ -2689,7 +2689,7 @@ function populateElectronicIdFields(data) {
     const countryInput = document.getElementById('electronicIdCountry');
     if (countryInput && typeof setCountry === 'function') {
       setCountry('electronicIdCountry', data.cI.a.country);
-      console.log('✅ Set Electronic ID country:', data.cI.a.country);
+      console.log('&#x2705; Set Electronic ID country:', data.cI.a.country);
       
       // Update International Address Verification visibility
       updateElectronicIdInternationalAddressVisibility(data.cI.a.country);
@@ -2938,7 +2938,7 @@ function performKYBSearch(jurisdictionCode, companyName, companyNumber) {
   const searchBy = companyNumber ? 'number' : 'name';
   const searchValue = companyNumber ? companyNumber : companyName;
   
-  console.log(`📡 Sending company-lookup to parent: ${searchBy} = "${searchValue}", jurisdiction = ${jurisdictionCode} → ${thirdfortJurisdiction}`);
+  console.log(`&#xD83D;&#xDCE1; Sending company-lookup to parent: ${searchBy} = "${searchValue}", jurisdiction = ${jurisdictionCode} &#x2192; ${thirdfortJurisdiction}`);
   
   // Send message to parent for Thirdfort API call
   window.parent.postMessage({
@@ -2999,10 +2999,10 @@ function handleCheckTypeSelection(event) {
     if (!idvAlreadySelected) {
       checkState.includeIDV = null;
       if (idvContent) idvContent.classList.add('hidden');
-      console.log('ℹ️ IDV reset to null (not auto-selected)');
+      console.log('&#x2139;&#xFE0F; IDV reset to null (not auto-selected)');
     } else {
       // Preserve the auto-selected state
-      console.log('ℹ️ IDV already auto-selected, preserving state:', checkState.includeIDV);
+      console.log('&#x2139;&#xFE0F; IDV already auto-selected, preserving state:', checkState.includeIDV);
     }
     
     // Show PEP Monitoring card (Lite Screen defaults to YES)
@@ -3016,17 +3016,17 @@ function handleCheckTypeSelection(event) {
       if (monitoringCheckbox && !checkState.pepMonitoringInitialized) {
         monitoringCheckbox.checked = true;
         checkState.pepMonitoringInitialized = true;
-        console.log('✅ PEP Monitoring card shown and auto-checked (first time)');
+        console.log('&#x2705; PEP Monitoring card shown and auto-checked (first time)');
       } else {
-        console.log('✅ PEP Monitoring card shown (preserving user choice)');
+        console.log('&#x2705; PEP Monitoring card shown (preserving user choice)');
       }
     }
     
-    console.log('✅ Showing Lite Screen (YES default) and IDV sections (no default)');
+    console.log('&#x2705; Showing Lite Screen (YES default) and IDV sections (no default)');
   } else if (checkType === 'electronic-id') {
     // Show Matter Category section instead of Electronic ID details
     showSection('matterCategorySection');
-    console.log('✅ Showing Matter Category section for Electronic ID');
+    console.log('&#x2705; Showing Matter Category section for Electronic ID');
     
     // Show PEP Monitoring card for Electronic ID (default: Standard ID includes screening)
     const monitoringCard = document.getElementById('monitoringCard');
@@ -3037,17 +3037,17 @@ function handleCheckTypeSelection(event) {
       if (checkState.electronicIdType === 'standard') {
         monitoringCard.classList.remove('hidden');
         if (monitoringCheckbox) monitoringCheckbox.checked = true;
-        console.log('✅ PEP Monitoring shown and checked (Electronic ID - Standard ID)');
+        console.log('&#x2705; PEP Monitoring shown and checked (Electronic ID - Standard ID)');
       } else {
         monitoringCard.classList.add('hidden');
         if (monitoringCheckbox) monitoringCheckbox.checked = false;
-        console.log('❌ PEP Monitoring hidden (Electronic ID - Additional Tasks Only)');
+        console.log('&#x274C; PEP Monitoring hidden (Electronic ID - Additional Tasks Only)');
       }
     }
   } else if (checkType === 'kyb') {
     // Show KYB section
     showSection('kybSection');
-    console.log('✅ Showing KYB section');
+    console.log('&#x2705; Showing KYB section');
   }
   
   // Initialize check type specific logic
@@ -3096,7 +3096,7 @@ function handleMatterCategorySelection(event) {
       updateElectronicIdReferenceLabel(category);
       populateElectronicIdReference(category);
       configureProofOfOwnership(category, null); // No subtypes
-      console.log('✅ Showing Electronic ID section (Private Client/Other selected)');
+      console.log('&#x2705; Showing Electronic ID section (Private Client/Other selected)');
     }
   }
   
@@ -3154,7 +3154,7 @@ function handleMatterSubCategorySelection(event) {
     
     if (checkState.checkType === 'electronic-id') {
       hideSection('electronicIdSection');
-      console.log('✅ Hiding Electronic ID section (subtype deselected)');
+      console.log('&#x2705; Hiding Electronic ID section (subtype deselected)');
     }
   } else {
     // Selecting - update state and show Electronic ID section
@@ -3165,7 +3165,7 @@ function handleMatterSubCategorySelection(event) {
     // Show Electronic ID section when subtype is selected
     if (checkState.checkType === 'electronic-id') {
       showSection('electronicIdSection');
-      console.log('✅ Showing Electronic ID section (subtype selected)');
+      console.log('&#x2705; Showing Electronic ID section (subtype selected)');
       
       // Populate Electronic ID reference and configure Proof of Ownership
       populateElectronicIdReference(checkState.matterCategory);
@@ -3248,7 +3248,7 @@ function handleIDVAnswerSelection(event) {
   
   // Check if button is disabled
   if (card.disabled) {
-    console.log('⚠️ IDV button is disabled - ignoring click');
+    console.log('&#x26A0;&#xFE0F; IDV button is disabled - ignoring click');
     return;
   }
   
@@ -3268,10 +3268,10 @@ function handleIDVAnswerSelection(event) {
   if (idvContent) {
     if (answer === 'yes') {
       idvContent.classList.remove('hidden');
-      console.log('✅ IDV content shown');
+      console.log('&#x2705; IDV content shown');
     } else {
       idvContent.classList.add('hidden');
-      console.log('❌ IDV content hidden');
+      console.log('&#x274C; IDV content hidden');
     }
   }
   
@@ -3299,10 +3299,10 @@ function handleLiteAnswerSelection(event) {
   if (liteContent) {
     if (answer === 'yes') {
       liteContent.classList.remove('hidden');
-      console.log('✅ Lite Screen content shown');
+      console.log('&#x2705; Lite Screen content shown');
     } else {
       liteContent.classList.add('hidden');
-      console.log('❌ Lite Screen content hidden');
+      console.log('&#x274C; Lite Screen content hidden');
     }
   }
   
@@ -3318,13 +3318,13 @@ function handleLiteAnswerSelection(event) {
       if (monitoringCheckbox && !checkState.pepMonitoringInitialized) {
         monitoringCheckbox.checked = true;
         checkState.pepMonitoringInitialized = true;
-        console.log('✅ PEP Monitoring card shown and auto-checked (first time)');
+        console.log('&#x2705; PEP Monitoring card shown and auto-checked (first time)');
       } else {
-        console.log('✅ PEP Monitoring card shown (preserving user choice: ' + (monitoringCheckbox?.checked ? 'CHECKED' : 'UNCHECKED') + ')');
+        console.log('&#x2705; PEP Monitoring card shown (preserving user choice: ' + (monitoringCheckbox?.checked ? 'CHECKED' : 'UNCHECKED') + ')');
       }
     } else {
       monitoringCard.classList.add('hidden');
-      console.log('❌ PEP Monitoring card hidden (Lite Screen NO - checkbox state preserved)');
+      console.log('&#x274C; PEP Monitoring card hidden (Lite Screen NO - checkbox state preserved)');
     }
   }
   
@@ -3374,7 +3374,7 @@ function validateLiteManualAddress() {
   const parentContainer = document.getElementById('liteManualAddressFields');
   
   if (!parentContainer || parentContainer.classList.contains('hidden')) {
-    console.log('⏸️ Validation skipped - container hidden or not found');
+    console.log('&#x23F8;&#xFE0F; Validation skipped - container hidden or not found');
     return;
   }
   
@@ -3382,7 +3382,7 @@ function validateLiteManualAddress() {
   const gridContainer = parentContainer.querySelector('.manual-address-grid');
   
   if (!gridContainer) {
-    console.warn('⚠️ .manual-address-grid not found inside container');
+    console.warn('&#x26A0;&#xFE0F; .manual-address-grid not found inside container');
     return;
   }
   
@@ -3392,7 +3392,7 @@ function validateLiteManualAddress() {
   const town = document.getElementById('liteTown')?.value?.trim();
   const postcode = document.getElementById('litePostcode')?.value?.trim();
   
-  console.log('🔍 Validating address:', { flatNumber, buildingNumber, buildingName, town, postcode });
+  console.log('&#xD83D;&#xDD0D; Validating address:', { flatNumber, buildingNumber, buildingName, town, postcode });
   
   // Minimum requirements per Thirdfort API:
   // 1. Must have town
@@ -3401,16 +3401,16 @@ function validateLiteManualAddress() {
   const hasBuilding = flatNumber || buildingNumber || buildingName;
   const isValid = town && postcode && hasBuilding;
   
-  console.log(`🔍 Validation result: ${isValid ? 'VALID ✅' : 'INVALID ❌'} (town: ${!!town}, postcode: ${!!postcode}, hasBuilding: ${hasBuilding})`);
+  console.log(`&#xD83D;&#xDD0D; Validation result: ${isValid ? 'VALID &#x2705;' : 'INVALID &#x274C;'} (town: ${!!town}, postcode: ${!!postcode}, hasBuilding: ${hasBuilding})`);
   
   if (isValid) {
     gridContainer.classList.remove('invalid');
     gridContainer.classList.add('valid');
-    console.log('✅ Address container turned GREEN');
+    console.log('&#x2705; Address container turned GREEN');
   } else {
     gridContainer.classList.remove('valid');
     gridContainer.classList.add('invalid');
-    console.log('⚠️ Address container remains GREY');
+    console.log('&#x26A0;&#xFE0F; Address container remains GREY');
   }
   
   return isValid;
@@ -3422,7 +3422,7 @@ function validateLiteManualAddress() {
 function handleLiteCurrentAddressClick() {
   // If already selected, do nothing
   if (liteActiveAddressType === 'current') {
-    console.log('ℹ️ Current address already active');
+    console.log('&#x2139;&#xFE0F; Current address already active');
     return;
   }
   
@@ -3435,7 +3435,7 @@ function handleLiteCurrentAddressClick() {
   // Update card states
   updateLiteAddressCardStates();
   
-  console.log('✅ Switched to current address');
+  console.log('&#x2705; Switched to current address');
 }
 
 /**
@@ -3444,13 +3444,13 @@ function handleLiteCurrentAddressClick() {
 function handleLitePreviousAddressClick() {
   // If already selected, do nothing
   if (liteActiveAddressType === 'previous') {
-    console.log('ℹ️ Previous address already active');
+    console.log('&#x2139;&#xFE0F; Previous address already active');
     return;
   }
   
   // Check if we have a previous address
   if (!litePreviousAddressObject) {
-    console.warn('⚠️ No previous address available');
+    console.warn('&#x26A0;&#xFE0F; No previous address available');
     return;
   }
   
@@ -3463,7 +3463,7 @@ function handleLitePreviousAddressClick() {
   // Update card states
   updateLiteAddressCardStates();
   
-  console.log('✅ Switched to previous address');
+  console.log('&#x2705; Switched to previous address');
 }
 
 /**
@@ -3539,7 +3539,7 @@ function updateLiteAddressCardStates() {
  * Format address object for display in address card
  */
 function formatAddressForCard(addressObject) {
-  if (!addressObject) return '—';
+  if (!addressObject) return '&#x2014;';
   
   const parts = [
     addressObject.flat_number,
@@ -3551,7 +3551,7 @@ function formatAddressForCard(addressObject) {
     addressObject.postcode
   ].filter(p => p && p.trim());
   
-  return parts.join(', ') || '—';
+  return parts.join(', ') || '&#x2014;';
 }
 
 /**
@@ -3652,7 +3652,7 @@ function handleElectronicIdTypeSelection(event) {
   // Store in state
   checkState.electronicIdType = eidType;
   
-  console.log('✅ Electronic ID type selected:', eidType);
+  console.log('&#x2705; Electronic ID type selected:', eidType);
   
   // Show/hide PEP Monitoring based on type
   const monitoringCard = document.getElementById('monitoringCard');
@@ -3663,12 +3663,12 @@ function handleElectronicIdTypeSelection(event) {
       // Standard ID includes screening - show and check PEP monitoring
       monitoringCard.classList.remove('hidden');
       if (monitoringCheckbox) monitoringCheckbox.checked = true;
-      console.log('✅ PEP Monitoring shown and checked (Standard ID includes screening)');
+      console.log('&#x2705; PEP Monitoring shown and checked (Standard ID includes screening)');
     } else if (eidType === 'additional-only') {
       // Additional Tasks Only = no ID check = no screening = hide PEP monitoring
       monitoringCard.classList.add('hidden');
       if (monitoringCheckbox) monitoringCheckbox.checked = false;
-      console.log('❌ PEP Monitoring hidden (Additional Tasks Only - no screening)');
+      console.log('&#x274C; PEP Monitoring hidden (Additional Tasks Only - no screening)');
     }
   }
   
@@ -3700,7 +3700,7 @@ function handleIDVDocumentTypeSelection(event) {
   checkState.idvDocumentType = documentType;
   checkState.idvRequiresBack = requiresBack;
   
-  console.log('🔄 IDV document type changed to:', documentType, 'Requires back:', requiresBack);
+  console.log('&#xD83D;&#xDD04; IDV document type changed to:', documentType, 'Requires back:', requiresBack);
   
   // Update column visibility and labels based on document type
   const frontColumnLabel = document.getElementById('idvFrontColumnLabel');
@@ -3737,7 +3737,7 @@ function handleIDVDocumentTypeSelection(event) {
     });
     
     if (!hasExactMatches) {
-      console.log(`⚠️ No exact matches for ${expectedDocName}, showing image lists for user to choose`);
+      console.log(`&#x26A0;&#xFE0F; No exact matches for ${expectedDocName}, showing image lists for user to choose`);
       // Clear any selected images and show lists
       checkState.frontImage = null;
       checkState.backImage = null;
@@ -4355,7 +4355,7 @@ function handleKYBCompanySelection(event) {
   const monitoringCard = document.getElementById('monitoringCard');
   if (monitoringCard) {
     monitoringCard.classList.remove('hidden');
-    console.log('✅ PEP monitoring card shown after company selection');
+    console.log('&#x2705; PEP monitoring card shown after company selection');
   }
   
   // Show confirmation section
@@ -4427,21 +4427,21 @@ function showKYBReports(jurisdictionCode) {
   const uboCheckbox = document.getElementById('kybIncludeUbo');
   if (uboCheckbox) {
     uboCheckbox.checked = true;
-    console.log('✅ Auto-selected: UBO Report');
+    console.log('&#x2705; Auto-selected: UBO Report');
   }
   
   // 2. PSC Extract - auto-select only for UK
   const pscCheckbox = document.getElementById('kybBeneficialCheck');
   if (pscCheckbox && jurisdictionCode === 'GB') {
     pscCheckbox.checked = true;
-    console.log('✅ Auto-selected: PSC Extract (UK)');
+    console.log('&#x2705; Auto-selected: PSC Extract (UK)');
   }
   
   // 3. Shareholders List - always auto-select
   const shareholdersCheckbox = document.getElementById('kybShareholders');
   if (shareholdersCheckbox) {
     shareholdersCheckbox.checked = true;
-    console.log('✅ Auto-selected: Shareholders List');
+    console.log('&#x2705; Auto-selected: Shareholders List');
   }
   
   // Documents 4-6 remain unchecked (can be requested later via PATCH):
@@ -4986,7 +4986,7 @@ function validatePhone(phone) {
 function validatePhoneWithLibphonenumber(countryCode, nationalNumber) {
   // Check if libphonenumber is loaded
   if (typeof libphonenumber === 'undefined') {
-    console.warn('⚠️ libphonenumber not loaded, falling back to basic validation');
+    console.warn('&#x26A0;&#xFE0F; libphonenumber not loaded, falling back to basic validation');
     const fullPhone = `${countryCode}${nationalNumber}`;
     return {
       valid: validatePhone(fullPhone),
@@ -5334,7 +5334,7 @@ function validateAllChecks() {
     const hasLiteScreen = checkState.includeLiteScreen === true;
     const hasIDV = checkState.includeIDV === true;
     
-    console.log('🔍 Lite/IDV selection check:', { 
+    console.log('&#xD83D;&#xDD0D; Lite/IDV selection check:', { 
       includeLiteScreen: checkState.includeLiteScreen, 
       includeIDV: checkState.includeIDV,
       hasLiteScreen,
@@ -5522,7 +5522,7 @@ function buildElectronicIDRequest() {
   const phoneValidation = validatePhoneWithLibphonenumber(countryCode, mobile);
   if (phoneValidation.valid && phoneValidation.formatted) {
     fullPhone = phoneValidation.formatted;
-    console.log(`📞 Using formatted phone number: ${fullPhone}`);
+    console.log(`&#xD83D;&#xDCDE; Using formatted phone number: ${fullPhone}`);
   }
   
   // Build actor object
@@ -5679,7 +5679,7 @@ function buildIDVDocumentsObject() {
         s3Key: s3Key
       });
     } else {
-      console.error('❌ Front image has no valid S3 key:', checkState.frontImage);
+      console.error('&#x274C; Front image has no valid S3 key:', checkState.frontImage);
     }
   }
   
@@ -5696,19 +5696,19 @@ function buildIDVDocumentsObject() {
         s3Key: s3Key
       });
     } else {
-      console.error('❌ Back image has no valid S3 key:', checkState.backImage);
+      console.error('&#x274C; Back image has no valid S3 key:', checkState.backImage);
     }
   }
   
-  console.log('📎 Built IDV documents array:', documents);
+  console.log('&#xD83D;&#xDCCE; Built IDV documents array:', documents);
   return documents;
 }
 
 /**
  * Extract S3 key from CloudFront or S3 URL
  * Examples:
- *  - https://d123abc.cloudfront.net/protected/abc123.jpg → protected/abc123.jpg
- *  - https://bucket.s3.region.amazonaws.com/protected/abc123.jpg → protected/abc123.jpg
+ *  - https://d123abc.cloudfront.net/protected/abc123.jpg &#x2192; protected/abc123.jpg
+ *  - https://bucket.s3.region.amazonaws.com/protected/abc123.jpg &#x2192; protected/abc123.jpg
  */
 function extractS3KeyFromUrl(url) {
   if (!url || typeof url !== 'string') return null;
@@ -5730,7 +5730,7 @@ function extractS3KeyFromUrl(url) {
     return url;
   }
   
-  console.warn('⚠️ Could not extract S3 key from URL:', url);
+  console.warn('&#x26A0;&#xFE0F; Could not extract S3 key from URL:', url);
   return null;
 }
 
@@ -5757,7 +5757,7 @@ function buildKYBRequest() {
   const finalJurisdiction = checkState.kybCompany?.jurisdiction || jurisdiction;
   const thirdfortJurisdiction = convertJurisdictionForThirdfort(finalJurisdiction);
   
-  console.log('🌍 Jurisdiction conversion:', {
+  console.log('&#xD83C;&#xDF0D; Jurisdiction conversion:', {
     original: finalJurisdiction,
     converted: thirdfortJurisdiction,
     fromSelectedCompany: !!checkState.kybCompany?.jurisdiction
@@ -5806,7 +5806,7 @@ function buildKYBRequest() {
     });
   });
   
-  console.log('📋 KYB Reports selected:', reports);
+  console.log('&#xD83D;&#xDCCB; KYB Reports selected:', reports);
   
   return {
     type: 'company',
@@ -5924,18 +5924,18 @@ function buildCompleteRequest() {
  * Routes to appropriate handler based on check type
  */
 function submitCheckRequest() {
-  console.log('🚀 Submitting check request...');
+  console.log('&#xD83D;&#xDE80; Submitting check request...');
   
   // Validate all checks
   const validation = validateAllChecks();
   
   if (!validation.valid) {
-    console.error('❌ Validation failed:', validation.errors);
+    console.error('&#x274C; Validation failed:', validation.errors);
     showValidationErrors(validation.errors);
     return;
   }
   
-  console.log('✅ Validation passed');
+  console.log('&#x2705; Validation passed');
   
   // Route to appropriate handler based on check type
   if (checkState.checkType === 'kyb') {
@@ -5946,7 +5946,7 @@ function submitCheckRequest() {
     submitLiteIDVCheck();
   }
   
-  console.log('✅ Request sent to parent');
+  console.log('&#x2705; Request sent to parent');
 }
 
 /**
@@ -5961,7 +5961,7 @@ function submitKYBCheck() {
     data: kybData
   };
   
-  console.log('📤 Submitting KYB check:', payload);
+  console.log('&#xD83D;&#xDCE4; Submitting KYB check:', payload);
   
   window.parent.postMessage({
     type: 'kyb-check',
@@ -5983,7 +5983,7 @@ function submitElectronicIDCheck() {
     data: electronicData
   };
   
-  console.log('📤 Submitting Electronic ID check:', payload);
+  console.log('&#xD83D;&#xDCE4; Submitting Electronic ID check:', payload);
   
   window.parent.postMessage({
     type: 'electronic-check',
@@ -5997,7 +5997,7 @@ function submitElectronicIDCheck() {
  * Submit Lite Screen and/or IDV check
  */
 function submitLiteIDVCheck() {
-  console.log('🔍 Lite/IDV check state:', {
+  console.log('&#xD83D;&#xDD0D; Lite/IDV check state:', {
     includeLiteScreen: checkState.includeLiteScreen,
     includeIDV: checkState.includeIDV,
     idvDocumentType: checkState.idvDocumentType,
@@ -6013,12 +6013,12 @@ function submitLiteIDVCheck() {
   // Build Lite Screen data (if selected)
   if (checkState.includeLiteScreen) {
     payload.liteScreen = buildLiteScreenRequest();
-    console.log('✅ Lite Screen included in payload');
+    console.log('&#x2705; Lite Screen included in payload');
   }
   
   // Build IDV data (if selected)
   if (checkState.includeIDV) {
-    console.log('✅ Building IDV object...');
+    console.log('&#x2705; Building IDV object...');
     const firstName = document.getElementById('idvFirstName')?.value.trim();
     const middleName = document.getElementById('idvMiddleName')?.value.trim();
     const lastName = document.getElementById('idvLastName')?.value.trim();
@@ -6053,17 +6053,17 @@ function submitLiteIDVCheck() {
         documentType: checkState.idvDocumentType,
         documents: documents  // Array of {s3Key, side}
       };
-      console.log('✅ IDV documents included:', payload.idvDocuments);
+      console.log('&#x2705; IDV documents included:', payload.idvDocuments);
     } else {
-      console.warn('⚠️ IDV selected but no documents found');
+      console.warn('&#x26A0;&#xFE0F; IDV selected but no documents found');
     }
     
-    console.log('✅ IDV object added to payload');
+    console.log('&#x2705; IDV object added to payload');
   } else {
-    console.log('ℹ️ IDV not included (includeIDV = false or null)');
+    console.log('&#x2139;&#xFE0F; IDV not included (includeIDV = false or null)');
   }
   
-  console.log('📤 Submitting Lite/IDV check:', payload);
+  console.log('&#xD83D;&#xDCE4; Submitting Lite/IDV check:', payload);
   
   window.parent.postMessage({
     type: 'lite-idv-check',
@@ -6080,7 +6080,7 @@ function showValidationErrors(errors) {
   const errorMessage = document.getElementById('errorMessage');
   
   if (errorPopup && errorMessage) {
-    const errorList = errors.map(err => `• ${err}`).join('\n');
+    const errorList = errors.map(err => `&#x2022; ${err}`).join('\n');
     errorMessage.textContent = `Please fix the following errors:\n\n${errorList}`;
     errorPopup.classList.remove('hidden');
   }

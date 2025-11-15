@@ -26,7 +26,7 @@ Sends request-data message to parent with:
     formattedDOB: null,
     
     init: function(requestData) {
-      console.log('📝 Initializing Form E request');
+      console.log('&#xD83D;&#xDCDD; Initializing Form E request');
       
       // Show ID Documents section
       this.showIDDocumentsSection();
@@ -51,7 +51,7 @@ Sends request-data message to parent with:
       // Enable submit button
       this.enableSubmitButton();
       
-      console.log('✅ Form E request initialized');
+      console.log('&#x2705; Form E request initialized');
     },
     
     showIDDocumentsSection: function() {
@@ -59,7 +59,7 @@ Sends request-data message to parent with:
       
       if (idDocumentsSection) {
         idDocumentsSection.classList.remove('hidden');
-        console.log('👁️ ID Documents section shown');
+        console.log('&#xD83D;&#xDC41;&#xFE0F; ID Documents section shown');
       }
     },
     
@@ -74,10 +74,10 @@ Sends request-data message to parent with:
       
       if (formJSufficientPhotos && formJConditionsMet) {
         ejHint.classList.remove('hidden');
-        console.log('⚠️ ejHint shown (Form J requirements met)');
+        console.log('&#x26A0;&#xFE0F; ejHint shown (Form J requirements met)');
       } else {
         ejHint.classList.add('hidden');
-        console.log('ℹ️ ejHint hidden (Form J requirements not met)');
+        console.log('&#x2139;&#xFE0F; ejHint hidden (Form J requirements not met)');
       }
     },
     
@@ -87,7 +87,7 @@ Sends request-data message to parent with:
       if (messageInput) {
         // Form E (with or without eSoF) uses the same message
         messageInput.value = 'The client has requested an electronic check during onboarding, we attach their CDF and recent OFSI along with the BCDs entered';
-        console.log('📝 Form E message text populated');
+        console.log('&#xD83D;&#xDCDD; Form E message text populated');
       }
     },
     
@@ -126,7 +126,7 @@ Sends request-data message to parent with:
         // Auto-select eSoF tag if not already selected
         if (esofTag && !esofTag.classList.contains('selected') && !esofTag.disabled) {
           esofTag.classList.add('selected');
-          console.log('✅ eSoF auto-selected (purchase detected)');
+          console.log('&#x2705; eSoF auto-selected (purchase detected)');
         }
         
         // Show eSoFHint when both Form E + eSoF selected
@@ -134,7 +134,7 @@ Sends request-data message to parent with:
         if (esofSelected) {
           if (eSoFHint) {
             eSoFHint.classList.remove('hidden');
-            console.log('⚠️ eSoFHint shown (Form E + eSoF combo)');
+            console.log('&#x26A0;&#xFE0F; eSoFHint shown (Form E + eSoF combo)');
           }
           if (eSoFSkipHint) {
             eSoFSkipHint.classList.add('hidden');
@@ -143,7 +143,7 @@ Sends request-data message to parent with:
           // eSoF is disabled (entity mode) - show eSoFSkipHint
           if (eSoFSkipHint) {
             eSoFSkipHint.classList.remove('hidden');
-            console.log('⚠️ eSoFSkipHint shown (purchase but eSoF disabled)');
+            console.log('&#x26A0;&#xFE0F; eSoFSkipHint shown (purchase but eSoF disabled)');
           }
           if (eSoFHint) {
             eSoFHint.classList.add('hidden');
@@ -159,7 +159,7 @@ Sends request-data message to parent with:
         // Deselect eSoF if purchase not in worktype
         if (esofTag && esofTag.classList.contains('selected')) {
           esofTag.classList.remove('selected');
-          console.log('🗑️ eSoF deselected (no purchase in worktype)');
+          console.log('&#xD83D;&#xDDD1;&#xFE0F; eSoF deselected (no purchase in worktype)');
         }
         
         // Hide both eSoF hints
@@ -191,14 +191,14 @@ Sends request-data message to parent with:
         });
       }
       
-      console.log('👂 Worktype listeners setup for purchase detection (dropdown + input)');
+      console.log('&#xD83D;&#xDC42; Worktype listeners setup for purchase detection (dropdown + input)');
     },
     
     enableSubmitButton: function() {
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
         submitBtn.disabled = false;
-        console.log('✅ Submit button enabled for Form E');
+        console.log('&#x2705; Submit button enabled for Form E');
       }
     },
     
@@ -386,8 +386,9 @@ Sends request-data message to parent with:
       const hasCDF = idDocuments.some(doc => doc.type === 'Details form');
       const hasOFSI = idDocuments.some(doc => doc.type === 'PEP & Sanctions Check');
       
-      if (!hasCDF) {
-        errors.push('You must upload a CDF (Client Details Form) or ensure one already exists');
+      const profileComplete = window.RequestFormCore.hasCompleteIndividualProfile();
+      if (!hasCDF && !profileComplete) {
+        errors.push('You must upload a CDF (Client Details Form) or complete all client data in the form');
       }
       
       if (!hasOFSI) {

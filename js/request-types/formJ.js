@@ -32,7 +32,7 @@ Sends request-data message to parent with:
     uploadingFile: false,
     
     init: function(requestData) {
-      console.log('📝 Initializing Form J request');
+      console.log('&#xD83D;&#xDCDD; Initializing Form J request');
       
       // Check Form J requirements FIRST
       const formJSufficientPhotos = window.RequestFormCore.formJSufficientPhotos();
@@ -71,14 +71,14 @@ Sends request-data message to parent with:
       // Setup file upload listener
       this.setupFileUploadListener();
       
-      console.log('✅ Form J request initialized');
+      console.log('&#x2705; Form J request initialized');
     },
     
     enableSubmitButton: function() {
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
         submitBtn.disabled = false;
-        console.log('✅ Submit button enabled for Form J');
+        console.log('&#x2705; Submit button enabled for Form J');
       }
     },
     
@@ -129,7 +129,7 @@ Sends request-data message to parent with:
         window.RequestFormCore.resetFormUI('formJ', null);
       }
       
-      console.log('❌ Form J requirements not met - tag deselected and form reset');
+      console.log('&#x274C; Form J requirements not met - tag deselected and form reset');
     },
     
     showIDSections: function() {
@@ -144,7 +144,7 @@ Sends request-data message to parent with:
         idDocumentsSection.classList.remove('hidden');
       }
       
-      console.log('👁️ ID Images and ID Documents sections shown');
+      console.log('&#xD83D;&#xDC41;&#xFE0F; ID Images and ID Documents sections shown');
     },
     
     showHints: function() {
@@ -152,7 +152,7 @@ Sends request-data message to parent with:
       
       if (nameVerificationHint) {
         nameVerificationHint.classList.remove('hidden');
-        console.log('⚠️ Name verification hint shown for Form J');
+        console.log('&#x26A0;&#xFE0F; Name verification hint shown for Form J');
       }
       
       // Check if worktype includes "purchase" and show eSoFSkipHint
@@ -185,7 +185,7 @@ Sends request-data message to parent with:
       
       if (isPurchase) {
         eSoFSkipHint.classList.remove('hidden');
-        console.log('⚠️ Purchase detected - showing eSoF skip hint');
+        console.log('&#x26A0;&#xFE0F; Purchase detected - showing eSoF skip hint');
       } else {
         eSoFSkipHint.classList.add('hidden');
       }
@@ -209,7 +209,7 @@ Sends request-data message to parent with:
         });
       }
       
-      console.log('👂 Worktype listeners setup for purchase detection (dropdown + input)');
+      console.log('&#xD83D;&#xDC42; Worktype listeners setup for purchase detection (dropdown + input)');
     },
     
     populateMessage: function() {
@@ -217,7 +217,7 @@ Sends request-data message to parent with:
       
       if (messageInput) {
         messageInput.value = 'We hold sufficient Photographic and Address ID to perform a Form J check on this client, we attach the CDF and recent OFSI along with the BCDs entered';
-        console.log('📝 Form J message text populated');
+        console.log('&#xD83D;&#xDCDD; Form J message text populated');
       }
     },
     
@@ -226,7 +226,7 @@ Sends request-data message to parent with:
       // Button is enabled when Form J is selected (if requirements met)
       // Full validation only happens on submit
       // This prevents the button from toggling on/off as user types
-      console.log('✅ Form J validation configured (validates on submit only)');
+      console.log('&#x2705; Form J validation configured (validates on submit only)');
     },
     
     setupFileUploadListener: function() {
@@ -516,8 +516,9 @@ Sends request-data message to parent with:
         }
       }
       
-      if (!hasCDF) {
-        errors.push('You must upload a CDF (Client Details Form) or ensure one already exists');
+      const profileComplete = window.RequestFormCore.hasCompleteIndividualProfile();
+      if (!hasCDF && !profileComplete) {
+        errors.push('You must upload a CDF (Client Details Form) or complete all client data in the form');
       }
       
       if (!hasOFSI) {

@@ -14,7 +14,7 @@ import { generateFilePUTsBackend } from 'backend/id-system/in-person-verificatio
  * Pass client data to pre-populate search fields
  */
 export async function initiateSanctions(context) {
-    console.log('🚀 Initiating sanctions checker...', context);
+    console.log('&#xD83D;&#xDE80; Initiating sanctions checker...', context);
     
     // Show loading
     $w('#loadingSwirl-v2-lightbox').show();
@@ -28,7 +28,7 @@ export async function initiateSanctions(context) {
             throw new Error(sanctionsRes.result || 'Failed to fetch sanctions data');
         }
     } catch (error) {
-        console.error('❌ Failed to fetch sanctions XML:', error);
+        console.error('&#x274C; Failed to fetch sanctions XML:', error);
         $w('#html17').postMessage({
             type: 'sanctions-xml',
             error: error.message || 'Failed to fetch sanctions data'
@@ -59,7 +59,7 @@ export async function initiateSanctions(context) {
     }
     
     $w('#loadingSwirl-v2-lightbox').hide();
-    console.log('✅ Sanctions checker initialized');
+    console.log('&#x2705; Sanctions checker initialized');
 }
 
 /**
@@ -69,12 +69,12 @@ export async function initiateSanctions(context) {
 $w('#html17').onMessage(async (event) => {
     const message = event.data;
     
-    console.log('📨 Received message from sanctions iframe:', message.type);
+    console.log('&#xD83D;&#xDCE8; Received message from sanctions iframe:', message.type);
     
     switch (message.type) {
         case 'request-sanctions-xml':
             // Iframe is requesting XML (on page load)
-            console.log('📥 Iframe requesting sanctions XML...');
+            console.log('&#xD83D;&#xDCE5; Iframe requesting sanctions XML...');
             try {
                 const sanctionsRes = await callWithTimeout(getSanctionsXML());
                 
@@ -86,9 +86,9 @@ $w('#html17').onMessage(async (event) => {
                     type: 'sanctions-xml',
                     xml: sanctionsRes.xml
                 });
-                console.log('✅ Sent XML to iframe');
+                console.log('&#x2705; Sent XML to iframe');
             } catch (error) {
-                console.error('❌ Failed to fetch sanctions XML:', error);
+                console.error('&#x274C; Failed to fetch sanctions XML:', error);
                 $w('#html17').postMessage({
                     type: 'sanctions-xml',
                     error: error.message || 'Failed to fetch sanctions data'
@@ -98,7 +98,7 @@ $w('#html17').onMessage(async (event) => {
             
         case 'file-data':
             // Request S3 presigned PUT URL for PDF upload
-            console.log('🔗 Generating S3 PUT links for sanctions PDF...');
+            console.log('&#xD83D;&#xDD17; Generating S3 PUT links for sanctions PDF...');
             try {
                 const files = message.files;
                 const entryId = message._id;
@@ -123,10 +123,10 @@ $w('#html17').onMessage(async (event) => {
                     _id: entryId
                 });
                 
-                console.log('✅ PUT links sent to iframe');
+                console.log('&#x2705; PUT links sent to iframe');
                 
             } catch (error) {
-                console.error('❌ Failed to generate PUT links:', error);
+                console.error('&#x274C; Failed to generate PUT links:', error);
                 $w('#html17').postMessage({
                     type: 'put-error',
                     message: error.message || 'Failed to generate upload link',
@@ -137,7 +137,7 @@ $w('#html17').onMessage(async (event) => {
             
         case 'upload-success':
             // Update entry with uploaded sanctions PDF
-            console.log('💾 Sanctions PDF uploaded, updating entry...');
+            console.log('&#xD83D;&#xDCBE; Sanctions PDF uploaded, updating entry...');
             try {
                 const fileObject = message.files[0];
                 const entryId = message._id;
@@ -151,7 +151,7 @@ $w('#html17').onMessage(async (event) => {
                     throw new Error(updateRes.result || 'Failed to update entry');
                 }
                 
-                console.log('✅ Entry updated with sanctions PDF');
+                console.log('&#x2705; Entry updated with sanctions PDF');
                 
                 // Optionally refresh document viewer if it's open
                 if ($w('#document-viewer-iframe')) {
@@ -161,7 +161,7 @@ $w('#html17').onMessage(async (event) => {
                 }
                 
             } catch (error) {
-                console.error('❌ Failed to update entry:', error);
+                console.error('&#x274C; Failed to update entry:', error);
                 
                 // Send error to iframe to display to user
                 $w('#html17').postMessage({
@@ -230,7 +230,7 @@ export async function onManualSanctionsSearchClick() {
         $w('#sanctions-lightbox').show();
         
     } catch (error) {
-        console.error('❌ Failed to load sanctions:', error);
+        console.error('&#x274C; Failed to load sanctions:', error);
         $w('#loadingSwirl-v2-lightbox').hide();
         $w('#html17').postMessage({
             type: 'sanctions-xml',

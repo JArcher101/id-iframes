@@ -1,8 +1,15 @@
 # Iframe Version Log
 
-| Date (UTC) | Commit Title | UUID | Iframes |
-| --- | --- | --- | --- |
-| 2025-11-14 | Fix checks manager overlays + version bump | d10a3e2 | All iframe bundles |
+Detailed release data now lives in `iframe-version-log.json`, which is generated automatically by `scripts/bump-iframes.ps1`. Each entry contains the UTC timestamp, commit title, UUID, and the exact iframe files that were updated.
 
-| 2025-11-14 05:31:21 UTC | Verify iframe bump automation [b60a84d] | b60a84d | annotation-pdf-mockup.html, api-docs.html, audit-log.html, cashiers-log.html, client-details.html, document-viewer.html, image-uploader.html, image-viewer.html, message-iframe.html, migration-tagger.html, report-uploader.html, request-form.html, request-note-pdf-mockup.html, sanctions-pdf-mockup.html, sanctions-search.html, sanctions-search-clean.html, sanctions-search-v2.html, single-chart-viewer.html, single-image-viewer.html, test-responsive.html, test-sanctions-search.html, thirdfort-check.html, thirdfort-check-demo.html, thirdfort-checks-manager.html, uk-sanctions-checker.html, wallboard-iframe.html |
-| 2025-11-14 21:10:45 UTC | Fix carousel arrow glyphs [37b167e] | 37b167e | annotation-pdf-mockup.html, api-docs.html, audit-log.html, cashiers-log.html, client-details.html, document-viewer.html, image-uploader.html, image-viewer.html, message-iframe.html, migration-tagger.html, report-uploader.html, request-form.html, request-note-pdf-mockup.html, sanctions-pdf-mockup.html, sanctions-search.html, sanctions-search-clean.html, sanctions-search-v2.html, single-chart-viewer.html, single-image-viewer.html, test-responsive.html, test-sanctions-search.html, thirdfort-check.html, thirdfort-check-demo.html, thirdfort-checks-manager.html, uk-sanctions-checker.html, wallboard-iframe.html |
+## Usage
+
+- Run `powershell -ExecutionPolicy Bypass -File scripts\bump-iframes.ps1 -Title "Your summary"` before committing. The script:
+  - Generates a new 7-character UUID
+  - Cache-busts every local CSS/JS reference with `?v=<uuid>`
+  - Injects the `[iframe-name] version <uuid>` console logger
+  - Appends an object to `iframe-version-log.json`
+  - Creates the commit `Your summary [uuid]` (and optionally pushes with `-Push`)
+- Inspect history with the lightweight viewer `iframe-version-log-viewer.html` (ignored by git so you can customize it). Serve the repo locally (`npx serve`, `python -m http.server`, etc.) and open the viewer to get expandable cards for every entry.
+
+> The legacy Markdown table has been retired in favor of the structured JSON log + viewer combo for easier auditing.

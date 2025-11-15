@@ -592,26 +592,26 @@
             <div class="description collapsed" id="descriptionCard">
                 <h2 onclick="toggleCard('descriptionCard')">
                     ID Management System - Responsive Testing
-                    <span class="collapse-arrow">â–¼</span>
+                    <span class="collapse-arrow">&#xE2;&#x2013;&#xBC;</span>
                 </h2>
                 <p>This page allows you to test any iframe component at different screen sizes and custom dimensions.</p>
                 <p><strong>Available Components:</strong> Image Uploader, Image Viewer, Document Viewer, Message iframe, and Cashiers Log</p>
                 <p><strong>Testing Features:</strong> Preset width buttons, custom dimension inputs, and real-time iframe switching</p>
                 <p><strong>URL Parameters:</strong> Configure the page via URL - <code>?iframe=document-viewer.html&width=320&height=500&desc=true&instructions=true&custom=true</code></p>
                 <p style="margin-left: 20px; font-size: 0.9em;">
-                    â€¢ <code>iframe</code> - Set iframe to load (e.g., message-iframe.html)<br>
-                    â€¢ <code>width</code> - Set width in pixels (200-2000)<br>
-                    â€¢ <code>height</code> - Set height in pixels (200-2000)<br>
-                    â€¢ <code>desc</code> - Expand description card (true/1/yes)<br>
-                    â€¢ <code>instructions</code> - Expand instructions card (true/1/yes)<br>
-                    â€¢ <code>custom</code> - Expand custom dimensions card (true/1/yes)
+                    &#xE2;&#x20AC;&#xA2; <code>iframe</code> - Set iframe to load (e.g., message-iframe.html)<br>
+                    &#xE2;&#x20AC;&#xA2; <code>width</code> - Set width in pixels (200-2000)<br>
+                    &#xE2;&#x20AC;&#xA2; <code>height</code> - Set height in pixels (200-2000)<br>
+                    &#xE2;&#x20AC;&#xA2; <code>desc</code> - Expand description card (true/1/yes)<br>
+                    &#xE2;&#x20AC;&#xA2; <code>instructions</code> - Expand instructions card (true/1/yes)<br>
+                    &#xE2;&#x20AC;&#xA2; <code>custom</code> - Expand custom dimensions card (true/1/yes)
                 </p>
             </div>
 
             <div class="instructions collapsed" id="instructionsCard">
                 <h4 onclick="toggleCard('instructionsCard')">
                     Testing Instructions
-                    <span class="collapse-arrow">â–¼</span>
+                    <span class="collapse-arrow">&#xE2;&#x2013;&#xBC;</span>
                 </h4>
                 <ul>
                     <li>Select an iframe component from the dropdown above</li>
@@ -651,7 +651,7 @@
                 <div class="custom-dimensions collapsed" id="customDimensionsCard">
                     <h4 onclick="toggleCard('customDimensionsCard')">
                         Custom Dimensions
-                        <span class="collapse-arrow">â–¼</span>
+                        <span class="collapse-arrow">&#xE2;&#x2013;&#xBC;</span>
                     </h4>
                     <div class="dimension-inputs">
                         <div class="input-group">
@@ -675,7 +675,7 @@
                     <div class="iframe-header">
                         <h3 id="iframeTitle">Image Uploader (Client Details Form)</h3>
                         <div class="iframe-size-info">
-                            <span id="iframeSize">980px Ã— 600px</span>
+                            <span id="iframeSize">980px &#xC3;&#x2014; 600px</span>
                         </div>
                     </div>
                     <iframe 
@@ -799,7 +799,7 @@
         /* 
         =====================================================================
         GLOBAL STATE - Current iframe dimensions
-        - Initialized to desktop defaults (980px Ã— 600px)
+        - Initialized to desktop defaults (980px &#xC3;&#x2014; 600px)
         - Updated by preset buttons or custom inputs
         - Used by updateIframeDisplay() to set iframe size
         =====================================================================
@@ -842,7 +842,7 @@
             testIframe.style.height = `${currentHeight}px`;
             
             // Update iframe header display (size indicator badge)
-            iframeSize.textContent = `${currentWidth}px Ã— ${currentHeight}px`;
+            iframeSize.textContent = `${currentWidth}px &#xC3;&#x2014; ${currentHeight}px`;
             
             console.log(`Switched to ${config.name} at ${currentWidth}x${currentHeight}`);
         }
@@ -1229,7 +1229,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '37b167e';
+    window.__IFRAME_VERSION__ = 'f05c00f';
     console.log('[test-responsive] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

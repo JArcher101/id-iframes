@@ -7,16 +7,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
   
   <!-- Core CSS -->
-  <link rel="stylesheet" href="styles.css?v=37b167e" />
+  <link rel="stylesheet" href="styles.css?v=f05c00f" />
   
   <!-- Request Form Specific CSS -->
-  <link rel="stylesheet" href="css/request-form.css?v=37b167e" />
+  <link rel="stylesheet" href="css/request-form.css?v=f05c00f" />
 </head>
 <body>
   <div class="container">
     <!-- TEMPORARY: Mock Data Testing Buttons -->
     <div id="mockDataSection" class="section" style="background: #fff3cd; border: 2px solid #ffc107;">
-      <h3 style="color: #856404; margin: 0 0 10px 0;">ðŸ§ª Testing: Mock Client Data</h3>
+      <h3 style="color: #856404; margin: 0 0 10px 0;">&#xF0;&#x178;&#xA7;&#xAA; Testing: Mock Client Data</h3>
       <div style="display: flex; gap: 10px;">
         <button type="button" class="mock-btn" id="mockClientBtn" style="flex: 1; padding: 10px; background: #4A90E2; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Load Individual</button>
         <button type="button" class="mock-btn" id="mockBusinessBtn" style="flex: 1; padding: 10px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Load Business</button>
@@ -123,20 +123,20 @@
         <button type="button" class="request-tag" data-type="updatePep">PEP Update</button>
               </div>
       <div id="k3Hint" class="request-hint hidden">
-        âš ï¸ If there is any financial transaction or aspect, i.e. Property & Financial LPA or Beneficiary receiving a legacy, this route is not sufficient and a Form J or E must be used
-                </div>
+        &#9888;&#65039; If there is any financial transaction or aspect, i.e. Property &amp; Financial LPA or Beneficiary receiving a legacy, this route is not sufficient and a Form J or E must be used
+      </div>
       <div id="ejHint" class="request-hint hidden">
-        âš ï¸ This entry appears to meet Form J requirements, please double check the client's chosen ID route
-              </div>
+        &#9888;&#65039; This entry appears to meet Form J requirements, please double check the client's chosen ID route
+      </div>
       <div id="eSoFHint" class="request-hint request-hint-info hidden">
-        â„¹ï¸ This ID check will include an electronic source of funds questionnaire and source of wealth bank linking task
-            </div>
+        &#8505;&#65039; This ID check will include an electronic source of funds questionnaire and source of wealth bank linking task
+      </div>
       <div id="eSoFSkipHint" class="request-hint request-hint-error hidden">
-        âš ï¸ This client will not undergo eSoF and you MUST collect evidence and complete investigations using the manual route
-          </div>
+        &#9888;&#65039; This client will not undergo eSoF and you MUST collect evidence and complete investigations using the manual route
+      </div>
       <div id="eSoFOnlyHint" class="request-hint request-hint-info hidden">
-        â„¹ï¸ This is just the source of funds questionnaire and source of wealth bank linking task, to include address and photo ID checks please select Form E
-        </div>
+        &#8505;&#65039; This is just the source of funds questionnaire and source of wealth bank linking task, to include address and photo ID checks please select Form E
+      </div>
       <select id="formKruleSelector" class="form-select hidden">
         <option value="" disabled selected>Select a rule</option>
             </select>
@@ -245,7 +245,7 @@
 
         <!-- Name Verification Hint -->
         <div class="cdf-hint hidden" id="nameVerificationHint">
-          âš ï¸ Ensure the name matches the above Photo ID Exactly, If they are known by a different name please indicate this below.
+          &#9888;&#65039; Ensure the name matches the above Photo ID Exactly. If they are known by a different name please indicate this below.
         </div>
 
         <!-- Date of Birth Row -->
@@ -344,8 +344,8 @@
             <div class="entity-right">
             <h4>People</h4>
             <div class="people-warning">
-              âš ï¸ Ensure all directors and people with > 25% share have undergone appropriate AML & ID checks
-              </div>
+              &#9888;&#65039; Ensure all directors and people with &gt; 25% share have undergone appropriate AML &amp; ID checks
+            </div>
               <div class="people-scrollable">
                 <div id="peopleRepeater">
                   <div class="no-people-message">Link a company to view officers, directors, and PSCs</div>
@@ -365,7 +365,7 @@
           <div>
             <label for="phoneCountryCode">Code</label>
             <div class="address-autocomplete-container">
-              <input type="text" id="phoneCountryCode" name="phoneCountryCode" autocomplete="off" placeholder="Search country code..." value="ðŸ‡¬ðŸ‡§ +44 UK" data-phone-code="+44" data-country-code="GB" />
+              <input type="text" id="phoneCountryCode" name="phoneCountryCode" autocomplete="off" placeholder="Search country code..." value="&#xF0;&#x178;&#x2021;&#xAC;&#xF0;&#x178;&#x2021;&#xA7; +44 UK" data-phone-code="+44" data-country-code="GB" />
               <div id="phoneCountryCodeDropdown" class="address-dropdown hidden"></div>
             </div>
           </div>
@@ -553,19 +553,19 @@
               </svg>
             </button>
           </div>
-          <div class="cdf-hint hidden" id="cdfPeopleHint">
-            âš ï¸ Please supply the client basic details form (CDF) or beneficiary details form
-          </div>
-          <div class="cdf-hint hidden" id="cdfEntityHint">
-            âš ï¸ Please Link the charity/company using the entity number or name input or supply:<br>
-            â€¢ Print out from companies house or charity register<br>
-            â€¢ Proof of address for partnerships<br>
-            â€¢ Proof of registration for SRA/FCA regulated entities<br>
-            â€¢ Proof of authority for all other commercial work
-          </div>
-          <div class="entity-linked-hint hidden" id="entityLinkedHint">
-            âœ“ Entity data linked
-  </div>
+          &#9888;&#65039; Please upload the Client Details Form (CDF) or complete all required personal details (title, full name, contact method, DOB, current address)
+        </div>
+          &#9888;&#65039; Please Link the charity/company using the entity number or name input or supply:<br>
+          &bull; Print out from companies house or charity register<br>
+          &bull; Proof of address for partnerships<br>
+          &bull; Proof of registration for SRA/FCA regulated entities<br>
+          &bull; Proof of authority for all other commercial work
+        </div>
+          &#10003; Entity data linked
+        </div>
+        <div class="entity-linked-hint hidden" id="cdfProfileCompleteHint">
+          &#10003; Full client data entered &#x2014; CDF upload optional for this request
+        </div>
 
           <!-- CDF Uploader -->
           <div class="uploader-section">
@@ -620,7 +620,7 @@
             </button>
           </div>
           <div class="ofsi-hint hidden" id="ofsiHint">
-            âš ï¸ Please supply a recent OFSI search report
+            &#9888;&#65039; Please supply a recent OFSI search report
           </div>
           
           <!-- OFSI Uploader -->
@@ -661,7 +661,7 @@
     <div id="ofsiRequiredPopup" class="modal-overlay hidden">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>âš ï¸ OFSI Screening Required</h3>
+          <h3>&#9888;&#65039; OFSI Screening Required</h3>
         </div>
         <div class="modal-body">
           <p>This request type requires a PEP & Sanctions screening document.</p>
@@ -690,37 +690,37 @@
   <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
   
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=37b167e"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=f05c00f"></script>
   
   <!-- Google libphonenumber for phone validation (must load before core script) -->
   <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
   <!-- Core JavaScript -->
-    <script src="js/request-form-core.js?v=37b167e"></script>
+    <script src="js/request-form-core.js?v=f05c00f"></script>
   
   <!-- Request Type Modules -->
-  <script src="js/request-types/formJ.js?v=37b167e"></script>
-  <script src="js/request-types/formK.js?v=37b167e"></script>
-  <script src="js/request-types/formE.js?v=37b167e"></script>
-  <script src="js/request-types/esof.js?v=37b167e"></script>
-  <script src="js/request-types/note.js?v=37b167e"></script>
-  <script src="js/request-types/update.js?v=37b167e"></script>
-  <script src="js/request-types/updatePep.js?v=37b167e"></script>
+  <script src="js/request-types/formJ.js?v=f05c00f"></script>
+  <script src="js/request-types/formK.js?v=f05c00f"></script>
+  <script src="js/request-types/formE.js?v=f05c00f"></script>
+  <script src="js/request-types/esof.js?v=f05c00f"></script>
+  <script src="js/request-types/note.js?v=f05c00f"></script>
+  <script src="js/request-types/update.js?v=f05c00f"></script>
+  <script src="js/request-types/updatePep.js?v=f05c00f"></script>
   
   <!-- Initialize Autocomplete Fields -->
   <script>
     // Initialize all autocomplete fields immediately (DOM already loaded since scripts are at bottom)
-    console.log('ðŸ”§ Initializing autocomplete fields in request-form...');
+    console.log('&#xF0;&#x178;&#x201D;&#xA7; Initializing autocomplete fields in request-form...');
     initializeCountryAutocomplete('currentCountry', 'currentCountryDropdown');
     initializeCountryAutocomplete('previousCountry', 'previousCountryDropdown');
     initializePhoneCodeAutocomplete('phoneCountryCode', 'phoneCountryCodeDropdown');
     initializeJurisdictionAutocomplete('registrationCountry', 'registrationCountryDropdown');
-    console.log('âœ… Autocomplete initialization complete');
+    console.log('\u2705 Autocomplete initialization complete');
   </script>
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '37b167e';
+    window.__IFRAME_VERSION__ = 'f05c00f';
     console.log('[request-form] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

@@ -24,7 +24,7 @@ export async function fetchTransactionSummary(transactionId, options = {}) {
   try {
     const token = options.jwt || await generateThirdfortJWT();
     if (!token) {
-      console.error('❌ Failed to generate JWT');
+      console.error('&#x274C; Failed to generate JWT');
       return { success: false, error: 'Failed to generate JWT' };
     }
     
@@ -37,11 +37,11 @@ export async function fetchTransactionSummary(transactionId, options = {}) {
       }
     });
     
-    console.log('✅ Transaction summary fetched successfully');
+    console.log('&#x2705; Transaction summary fetched successfully');
     return { success: true, data: response.data };
     
   } catch (error) {
-    console.error('❌ Error fetching transaction summary:', error);
+    console.error('&#x274C; Error fetching transaction summary:', error);
     return { success: false, error: error.message };
   }
 }
@@ -58,7 +58,7 @@ export async function fetchCheckSummary(checkId, options = {}) {
   try {
     const token = options.jwt || await generateThirdfortJWT();
     if (!token) {
-      console.error('❌ Failed to generate JWT');
+      console.error('&#x274C; Failed to generate JWT');
       return { success: false, error: 'Failed to generate JWT' };
     }
     
@@ -72,11 +72,11 @@ export async function fetchCheckSummary(checkId, options = {}) {
       }
     });
     
-    console.log('✅ Check fetched successfully');
+    console.log('&#x2705; Check fetched successfully');
     return { success: true, data: response.data };
     
   } catch (error) {
-    console.error('❌ Error fetching check:', error);
+    console.error('&#x274C; Error fetching check:', error);
     return { success: false, error: error.message };
   }
 }
@@ -89,13 +89,13 @@ export async function fetchCheckSummary(checkId, options = {}) {
  * @returns {Promise<object>} Parsed task outcomes
  */
 export async function parseTransactionSummary(summaryData) {
-  console.log('🔍 parseTransactionSummary called with:', typeof summaryData);
+  console.log('&#xD83D;&#xDD0D; parseTransactionSummary called with:', typeof summaryData);
   const taskOutcomes = {};
   const considerReasons = [];
   
   // Safety check: return empty data if summaryData is null/undefined
   if (!summaryData) {
-    console.log('⚠️ summaryData is null/undefined, returning empty');
+    console.log('&#x26A0;&#xFE0F; summaryData is null/undefined, returning empty');
     return {
       taskOutcomes: {},
       considerReasons: [],
@@ -111,18 +111,18 @@ export async function parseTransactionSummary(summaryData) {
     dob: summaryData.pii?.dob,
     document: summaryData.pii?.document || {}
   };
-  console.log('✅ PII data parsed');
+  console.log('&#x2705; PII data parsed');
   
   // Parse report outcomes (can be object or array for Lite Screen)
   const reports = summaryData.reports || {};
-  console.log('📊 Reports type:', Array.isArray(reports) ? 'array' : 'object', 'Keys:', Object.keys(reports));
+  console.log('&#xD83D;&#xDCCA; Reports type:', Array.isArray(reports) ? 'array' : 'object', 'Keys:', Object.keys(reports));
   
   // If reports is an array (Lite Screen with no reports yet)
   if (Array.isArray(reports)) {
     // Check if array has items - if so, it's a different structure we need to handle
     if (reports.length > 0) {
       // TODO: Handle array of report objects if Thirdfort ever returns this structure
-      console.warn('⚠️ Reports returned as non-empty array - unexpected structure:', reports);
+      console.warn('&#x26A0;&#xFE0F; Reports returned as non-empty array - unexpected structure:', reports);
     }
     
     // Return with empty data structure - reports not ready yet
@@ -138,7 +138,7 @@ export async function parseTransactionSummary(summaryData) {
   for (const [reportType, reportData] of Object.entries(reports)) {
     const outcome = reportData.result || 'unknown';
     const status = reportData.status || 'unknown';
-    console.log(`📝 Processing report: ${reportType} - ${outcome} (${status})`);
+    console.log(`&#xD83D;&#xDCDD; Processing report: ${reportType} - ${outcome} (${status})`);
     
     taskOutcomes[reportType] = {
       result: outcome,
@@ -174,7 +174,7 @@ export async function parseTransactionSummary(summaryData) {
     }
   }
   
-  console.log('✅ Parsing complete. TaskOutcomes keys:', Object.keys(taskOutcomes), 'Consider reasons:', considerReasons.length);
+  console.log('&#x2705; Parsing complete. TaskOutcomes keys:', Object.keys(taskOutcomes), 'Consider reasons:', considerReasons.length);
   
   return {
     taskOutcomes,
@@ -197,7 +197,7 @@ export async function fetchTransactionReport(transactionId, reportId, options = 
     try {
       const token = options.jwt || await generateThirdfortJWT();
       if (!token) {
-        console.error('❌ Failed to generate JWT');
+        console.error('&#x274C; Failed to generate JWT');
         return { success: false, error: 'Failed to generate JWT' };
       }
       
@@ -210,20 +210,20 @@ export async function fetchTransactionReport(transactionId, reportId, options = 
         }
       });
       
-      console.log(`✅ Transaction report ${reportId} fetched successfully`);
+      console.log(`&#x2705; Transaction report ${reportId} fetched successfully`);
       return { success: true, data: response.data };
       
     } catch (error) {
       const status = error?.response?.status;
       const shouldRetry = attempt < maxAttempts && status && (status >= 500 || status === 429);
-      console.error(`❌ Error fetching transaction report ${reportId} (attempt ${attempt}/${maxAttempts}):`, error.message || error, status ? `status=${status}` : '');
+      console.error(`&#x274C; Error fetching transaction report ${reportId} (attempt ${attempt}/${maxAttempts}):`, error.message || error, status ? `status=${status}` : '');
       
       if (!shouldRetry) {
         return { success: false, error: error.message };
       }
       
       const backoffMs = 500 * attempt;
-      console.log(`⏳ Retrying report ${reportId} after ${backoffMs}ms due to status ${status}...`);
+      console.log(`&#x23F3; Retrying report ${reportId} after ${backoffMs}ms due to status ${status}...`);
       await new Promise((resolve) => setTimeout(resolve, backoffMs));
     }
   }
@@ -242,7 +242,7 @@ export async function fetchAllTransactionReports(transactionId, options = {}) {
   try {
     const token = options.jwt || await generateThirdfortJWT();
     if (!token) {
-      console.error('❌ Failed to generate JWT');
+      console.error('&#x274C; Failed to generate JWT');
       return { reports: {}, considerReasons: [], hasAlerts: false };
     }
     
@@ -257,7 +257,7 @@ export async function fetchAllTransactionReports(transactionId, options = {}) {
     });
     
     const reportsList = reportsListResponse.data || [];
-    console.log(`📋 Found ${reportsList.length} report(s) for transaction ${transactionId}`);
+    console.log(`&#xD83D;&#xDCCB; Found ${reportsList.length} report(s) for transaction ${transactionId}`);
     
     if (reportsList.length === 0) {
       return { reports: {}, considerReasons: [], hasAlerts: false };
@@ -292,9 +292,9 @@ export async function fetchAllTransactionReports(transactionId, options = {}) {
         if (reportType === 'identity') {
           try {
             const preview = JSON.stringify(reportData, null, 2);
-            console.log('🧾 Full identity report JSON preview:', preview);
+            console.log('&#xD83E;&#xDDFE; Full identity report JSON preview:', preview);
           } catch (stringifyError) {
-            console.warn('⚠️ Unable to stringify identity report for logging:', stringifyError?.message);
+            console.warn('&#x26A0;&#xFE0F; Unable to stringify identity report for logging:', stringifyError?.message);
           }
         }
         
@@ -323,7 +323,7 @@ export async function fetchAllTransactionReports(transactionId, options = {}) {
     };
     
   } catch (error) {
-    console.error('❌ Error fetching transaction reports:', error);
+    console.error('&#x274C; Error fetching transaction reports:', error);
     return { reports: {}, considerReasons: [], hasAlerts: false };
   }
 }
@@ -339,7 +339,7 @@ export async function fetchCheckReport(checkId, reportId, options = {}) {
   try {
     const token = options.jwt || await generateThirdfortJWT();
     if (!token) {
-      console.error('❌ Failed to generate JWT');
+      console.error('&#x274C; Failed to generate JWT');
       return { success: false, error: 'Failed to generate JWT' };
     }
     
@@ -352,11 +352,11 @@ export async function fetchCheckReport(checkId, reportId, options = {}) {
       }
     });
     
-    console.log(`✅ Check report ${reportId} fetched successfully`);
+    console.log(`&#x2705; Check report ${reportId} fetched successfully`);
     return { success: true, data: response.data };
     
   } catch (error) {
-    console.error(`❌ Error fetching check report ${reportId}:`, error);
+    console.error(`&#x274C; Error fetching check report ${reportId}:`, error);
     return { success: false, error: error.message };
   }
 }
@@ -441,7 +441,7 @@ export async function parseCheckSummary(checkData, includeReportDetails = false,
   
   // If requested, fetch full report details
   if (includeReportDetails && checkData.reports && checkData.reports.length > 0) {
-    console.log(`📋 Fetching ${checkData.reports.length} report(s) for check ${checkData.id}...`);
+    console.log(`&#xD83D;&#xDCCB; Fetching ${checkData.reports.length} report(s) for check ${checkData.id}...`);
     const reportsResult = await fetchAllCheckReports(checkData.id, checkData.reports, { jwt: options.jwt });
     detailedReports = reportsResult.reports;
     considerReasons = reportsResult.considerReasons;

@@ -18,7 +18,7 @@ import { generateFilePUTsBackend } from 'backend/id-system/in-person-verificatio
  * @param {Object} context.currentUser - Current user object { email }
  */
 export async function initiateSanctionsChecker(context) {
-    console.log('🚀 Initializing sanctions checker...', context);
+    console.log('&#xD83D;&#xDE80; Initializing sanctions checker...', context);
     
     // Show loading overlay
     $w('#loadingSwirl-v2-lightbox').show();
@@ -32,7 +32,7 @@ export async function initiateSanctionsChecker(context) {
             throw new Error(sanctionsRes.result || 'Failed to fetch sanctions data');
         }
     } catch (error) {
-        console.error('❌ Failed to fetch sanctions XML:', error);
+        console.error('&#x274C; Failed to fetch sanctions XML:', error);
         $w('#sanctions-iframe').postMessage({
             type: 'sanctions-xml',
             error: error.message || 'Failed to fetch sanctions data'
@@ -51,7 +51,7 @@ export async function initiateSanctionsChecker(context) {
     // Always send initialization data if we have client context (even if XML fetch failed)
     // This ensures the form is at least populated with client data
     if (context.clientData || context.openEntryId) {
-        console.log('📤 Sending init-sanctions-search with:', {
+        console.log('&#xD83D;&#xDCE4; Sending init-sanctions-search with:', {
             clientName: context.clientData?.clientName || context.clientData?.fullName || '',
             yearOfBirth: context.clientData?.yearOfBirth || '',
             searchType: context.clientData?.searchType || (context.clientData?.entityType === 'company' ? 'entity' : 'individual'),
@@ -71,7 +71,7 @@ export async function initiateSanctionsChecker(context) {
     }
     
     $w('#loadingSwirl-v2-lightbox').hide();
-    console.log('✅ Sanctions checker initialized');
+    console.log('&#x2705; Sanctions checker initialized');
 }
 
 /**
@@ -84,12 +84,12 @@ export function setupSanctionsMessageListener(iframeId = '#html17') {
     $w(iframeId).onMessage(async (event) => {
         const message = event.data;
         
-        console.log('📨 Received message from sanctions iframe:', message.type);
+        console.log('&#xD83D;&#xDCE8; Received message from sanctions iframe:', message.type);
         
         switch (message.type) {
             case 'request-sanctions-xml':
                 // Iframe is requesting XML (on page load)
-                console.log('📥 Iframe requesting sanctions XML...');
+                console.log('&#xD83D;&#xDCE5; Iframe requesting sanctions XML...');
                 try {
                     const sanctionsRes = await callWithTimeout(getSanctionsXML());
                     
@@ -102,7 +102,7 @@ export function setupSanctionsMessageListener(iframeId = '#html17') {
                         xml: sanctionsRes.xml
                     });
                 } catch (error) {
-                    console.error('❌ Failed to fetch sanctions XML:', error);
+                    console.error('&#x274C; Failed to fetch sanctions XML:', error);
                     $w(iframeId).postMessage({
                         type: 'sanctions-xml',
                         error: error.message || 'Failed to fetch sanctions data'
@@ -120,14 +120,14 @@ export function setupSanctionsMessageListener(iframeId = '#html17') {
                 const updateRes = await handleUploadSuccess(message, iframeId);
                 // Check if we need to return to request form
                 if (message.returnToRequest && updateRes?.uploadedFile) {
-                    console.log('🔄 Returning to request form with uploaded file...');
+                    console.log('&#xD83D;&#xDD04; Returning to request form with uploaded file...');
                     await returnToRequest(updateRes.uploadedFile, message._id);
                 }
                 break;
         }
     });
     
-    console.log('✅ Sanctions message listener setup complete on', iframeId);
+    console.log('&#x2705; Sanctions message listener setup complete on', iframeId);
 }
 
 /**
@@ -135,7 +135,7 @@ export function setupSanctionsMessageListener(iframeId = '#html17') {
  * Generates S3 PUT link and responds to iframe
  */
 export async function handleFileDataRequest(message, iframeId) {
-    console.log('🔗 Generating S3 PUT links for sanctions PDF...');
+    console.log('&#xD83D;&#xDD17; Generating S3 PUT links for sanctions PDF...');
     
     try {
         const files = message.files;
@@ -161,10 +161,10 @@ export async function handleFileDataRequest(message, iframeId) {
             _id: entryId
         });
         
-        console.log('✅ PUT links sent to iframe');
+        console.log('&#x2705; PUT links sent to iframe');
         
     } catch (error) {
-        console.error('❌ Failed to generate PUT links:', error);
+        console.error('&#x274C; Failed to generate PUT links:', error);
         $w(iframeId).postMessage({
             type: 'put-error',
             message: error.message || 'Failed to generate upload link',
@@ -178,7 +178,7 @@ export async function handleFileDataRequest(message, iframeId) {
  * Updates entry with uploaded PDF
  */
 export async function handleUploadSuccess(message, iframeId) {
-    console.log('💾 Sanctions PDF uploaded, updating entry...');
+    console.log('&#xD83D;&#xDCBE; Sanctions PDF uploaded, updating entry...');
     
     try {
         const fileObject = message.files[0];
@@ -194,7 +194,7 @@ export async function handleUploadSuccess(message, iframeId) {
             throw new Error(updateRes.result || 'Failed to update entry');
         }
         
-        console.log('✅ Entry updated with sanctions PDF');
+        console.log('&#x2705; Entry updated with sanctions PDF');
         
         // Optionally refresh the document viewer if it's open
         if ($w('#document-viewer-iframe')) {
@@ -207,7 +207,7 @@ export async function handleUploadSuccess(message, iframeId) {
         return updateRes;
         
     } catch (error) {
-        console.error('❌ Failed to update entry:', error);
+        console.error('&#x274C; Failed to update entry:', error);
         
         // Send error to iframe to display to user
         $w(iframeId).postMessage({
@@ -222,7 +222,7 @@ export async function handleUploadSuccess(message, iframeId) {
 }
 
 export async function returnToRequest(uploadedFile, entryId) {
-    console.log('🔄 Switching back to request form with file:', uploadedFile);
+    console.log('&#xD83D;&#xDD04; Switching back to request form with file:', uploadedFile);
     
     $w('#loadingSwirl-v2-lightbox').show();
     $w('#lightboxTitle').text = "New Note, Request or Update";
@@ -230,7 +230,7 @@ export async function returnToRequest(uploadedFile, entryId) {
     initiateRequest(entryId, uploadedFile);
     
     $w('#loadingSwirl-v2-lightbox').hide();
-    console.log('✅ Returned to request form with file data');
+    console.log('&#x2705; Returned to request form with file data');
 }
 
 /**

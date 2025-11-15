@@ -33,25 +33,25 @@ export const getFCDOSanctionsHTML = webMethod(
   Permissions.Anyone,
   async () => {
   try {
-    console.log('📡 getFCDOSanctionsHTML called');
+    console.log('&#xD83D;&#xDCE1; getFCDOSanctionsHTML called');
     
     // Check in-memory cache
     if (htmlCache && cacheTimestamp) {
       const cacheAge = Date.now() - cacheTimestamp;
       if (cacheAge < CACHE_DURATION_MS) {
-        console.log(`✅ Using cached sanctions XML (age: ${Math.round(cacheAge / 1000 / 60)} minutes)`);
+        console.log(`&#x2705; Using cached sanctions XML (age: ${Math.round(cacheAge / 1000 / 60)} minutes)`);
         return {
           xml: htmlCache,
           cached: true,
           size: htmlCache.length
         };
       } else {
-        console.log('⚠️ Cache expired, fetching fresh data');
+        console.log('&#x26A0;&#xFE0F; Cache expired, fetching fresh data');
       }
     }
     
     // Fetch from FCDO
-    console.log('🔍 Fetching from FCDO:', FCDO_SANCTIONS_URL);
+    console.log('&#xD83D;&#xDD0D; Fetching from FCDO:', FCDO_SANCTIONS_URL);
     const response = await fetch(FCDO_SANCTIONS_URL, {
       method: 'GET',
       headers: {
@@ -61,12 +61,12 @@ export const getFCDOSanctionsHTML = webMethod(
     });
     
     if (!response.ok) {
-      console.error(`❌ FCDO returned status ${response.status}`);
+      console.error(`&#x274C; FCDO returned status ${response.status}`);
       throw new Error(`FCDO API returned status ${response.status}`);
     }
     
     const xml = await response.text();
-    console.log(`✅ Fetched ${xml.length} characters XML from FCDO`);
+    console.log(`&#x2705; Fetched ${xml.length} characters XML from FCDO`);
     
     // Cache the XML in memory
     htmlCache = xml;
@@ -79,11 +79,11 @@ export const getFCDOSanctionsHTML = webMethod(
     };
     
   } catch (error) {
-    console.error('❌ Error in getFCDOSanctionsHTML:', error);
+    console.error('&#x274C; Error in getFCDOSanctionsHTML:', error);
     
     // If we have stale cache, return it with warning
     if (htmlCache) {
-      console.log('⚠️ Returning stale cache due to fetch error');
+      console.log('&#x26A0;&#xFE0F; Returning stale cache due to fetch error');
       return {
         xml: htmlCache,
         cached: true,

@@ -5,7 +5,7 @@ A collection of standalone HTML iframe utilities for image viewing, document man
 ## Components
 
 ### Check Management
-- **`thirdfort-check.html`** - Thirdfort Check Manager ⭐ NEW
+- **`thirdfort-check.html`** - Thirdfort Check Manager &#x2B50; NEW
   - Comprehensive check creation interface for Thirdfort API
   - Four check types: IDV, Lite Screen, Electronic ID, KYB
   - Matter category routing with intelligent auto-selection
@@ -21,7 +21,7 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Supports monitoring toggles, abort workflows, PDF generation, and task digests
   - Displays inline selfie/passport images streamed from `check-images` messages
 
-- **`uk-sanctions-checker.html`** - UK Sanctions List Search ⭐ NEW
+- **`uk-sanctions-checker.html`** - UK Sanctions List Search &#x2B50; NEW
   - Search FCDO UK Sanctions List for individuals and entities
   - Live XML data fetching with session caching
   - Exact and fuzzy name matching (Levenshtein distance)
@@ -57,7 +57,7 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Aggregate and individual fee earner analytics
 
 ### Image Management
-- **`migration-tagger.html`** - ID Image Migration Tool ⭐ NEW
+- **`migration-tagger.html`** - ID Image Migration Tool &#x2B50; NEW
   - Migrate existing Wix Media Gallery images to S3
   - Hotkey-based tagging (P, DF, DB, OS, OF, OB, A)
   - Batch processing (1-10 entries at a time)
@@ -109,6 +109,7 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Searchable autocomplete for phone codes, countries, jurisdictions with blue code badges
   - Comprehensive validation with detailed error messages
   - CDF and OFSI document upload and management
+- Individual CDF override automatically detects when all client details (title, names, DOB, contact, addresses, toggled previous data) are complete so uploads stay optional
   - ID Images carousel display with side tags
   - Business/Charity people cards with 10px spacing (directors, officers, trustees, PSCs)
   - Companies House and Charity Register integration
@@ -143,6 +144,7 @@ A collection of standalone HTML iframe utilities for image viewing, document man
 - **Blue code badge styling** - Consistent visual design for country/jurisdiction codes
 - **Custom typography** - Uses Transport and Rotis font families with base64 embedding
 - **Fallback fonts** - Automatically falls back to Google Fonts (Quicksand)
+- **ASCII-safe icons** - All emojis/ticks/arrows rendered via HTML entities to avoid UTF-8/Windows-1252 issues
 - **Responsive design** - Works across different screen sizes
 - **Google libphonenumber** - International phone validation and formatting
 - **Thirdfort API compliance** - Proper address formatting and validation
@@ -172,10 +174,11 @@ All iframe HTML files now share a mandatory release workflow:
   - Generates a new 7-character UUID
   - Appends cache-busting `?v=<uuid>` query params to every local CSS/JS reference (skipping CDN/data URIs)
   - Injects a console log block so each iframe prints `[iframe-name] version <uuid>` on load
-  - Updates `iframe-version-log.md` with the UUID, timestamp, commit title, and the list of touched iframes
+  - Updates `iframe-version-log.json` with the UUID, timestamp, commit title, and the precise list/count of touched iframes
   - Creates the git commit `Your commit title [uuid]` and optionally pushes when `-Push` is supplied
 - Commit titles must include the UUID (the helper script appends `[uuid]` automatically).
-- Every deploy should therefore have a unique UUID recorded in `iframe-version-log.md`, matching the version emitted by each iframe’s console log.
+- Every deploy should therefore have a unique UUID recorded in `iframe-version-log.md`, matching the version emitted by each iframe&#x2019;s console log.
+- Prefer viewing history through `iframe-version-log-viewer.html` (ignored by git). Start any static server in the repo root (e.g., `npx serve`) and open the viewer to see filterable cards driven by `iframe-version-log.json`.
 
 > Tip: pass `-Body "multi-line body"` for additional commit details, or `-NoGit -SkipLog` when dry-running locally.
 
