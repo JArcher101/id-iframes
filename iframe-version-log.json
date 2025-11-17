@@ -1,5 +1,38 @@
 ﻿[
     {
+        "timestampUtc":  "2025-11-17T18:40:16.502Z",
+        "displayTime":  "2025-11-17 18:40:16 UTC",
+        "uuid":  "d062116",
+        "title":  "Fix syntax error: Remove IFRAME_VERSION script from PDF template",
+        "commitTitle":  "Fix syntax error: Remove IFRAME_VERSION script from PDF template [d062116]",
+        "commitBody":  "Removed IFRAME_VERSION script block from PDF HTML template that was causing \u0027Unexpected end of input\u0027 syntax error. The script tag should only be in the main page HTML, not in the PDF template.",
+        "pushed":  true,
+        "iframeCount":  21,
+        "iframes":  [
+                        "annotation-pdf-mockup.html",
+                        "api-docs.html",
+                        "audit-log.html",
+                        "cashiers-log.html",
+                        "client-details.html",
+                        "document-viewer.html",
+                        "iframe-version-log-viewer.html",
+                        "image-uploader.html",
+                        "image-viewer.html",
+                        "message-iframe.html",
+                        "migration-tagger.html",
+                        "report-uploader.html",
+                        "request-form.html",
+                        "request-note-pdf-mockup.html",
+                        "sanctions-pdf-mockup.html",
+                        "single-chart-viewer.html",
+                        "single-image-viewer.html",
+                        "test-responsive.html",
+                        "thirdfort-checks-manager.html",
+                        "uk-sanctions-checker.html",
+                        "wallboard-iframe.html"
+                    ]
+    },
+    {
         "timestampUtc":  "2025-11-15T20:42:24.127Z",
         "displayTime":  "2025-11-15 20:42:24 UTC",
         "uuid":  "f05c00f",
