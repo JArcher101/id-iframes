@@ -59,7 +59,7 @@ Sends request-data message to parent with:
       
       if (idDocumentsSection) {
         idDocumentsSection.classList.remove('hidden');
-        console.log('&#xD83D;&#xDC41;&#xFE0F; ID Documents section shown');
+        console.log('👁️ ID Documents section shown');
       }
     },
     
@@ -74,10 +74,10 @@ Sends request-data message to parent with:
       
       if (formJSufficientPhotos && formJConditionsMet) {
         ejHint.classList.remove('hidden');
-        console.log('&#x26A0;&#xFE0F; ejHint shown (Form J requirements met)');
+        console.log('⚠️ ejHint shown (Form J requirements met)');
       } else {
         ejHint.classList.add('hidden');
-        console.log('&#x2139;&#xFE0F; ejHint hidden (Form J requirements not met)');
+        console.log('ℹ️ ejHint hidden (Form J requirements not met)');
       }
     },
     
@@ -134,7 +134,7 @@ Sends request-data message to parent with:
         if (esofSelected) {
           if (eSoFHint) {
             eSoFHint.classList.remove('hidden');
-            console.log('&#x26A0;&#xFE0F; eSoFHint shown (Form E + eSoF combo)');
+            console.log('⚠️ eSoFHint shown (Form E + eSoF combo)');
           }
           if (eSoFSkipHint) {
             eSoFSkipHint.classList.add('hidden');
@@ -143,7 +143,7 @@ Sends request-data message to parent with:
           // eSoF is disabled (entity mode) - show eSoFSkipHint
           if (eSoFSkipHint) {
             eSoFSkipHint.classList.remove('hidden');
-            console.log('&#x26A0;&#xFE0F; eSoFSkipHint shown (purchase but eSoF disabled)');
+            console.log('⚠️ eSoFSkipHint shown (purchase but eSoF disabled)');
           }
           if (eSoFHint) {
             eSoFHint.classList.add('hidden');
@@ -159,7 +159,7 @@ Sends request-data message to parent with:
         // Deselect eSoF if purchase not in worktype
         if (esofTag && esofTag.classList.contains('selected')) {
           esofTag.classList.remove('selected');
-          console.log('&#xD83D;&#xDDD1;&#xFE0F; eSoF deselected (no purchase in worktype)');
+          console.log('🗑️ eSoF deselected (no purchase in worktype)');
         }
         
         // Hide both eSoF hints

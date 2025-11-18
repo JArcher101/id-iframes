@@ -128,7 +128,7 @@ function selectRequestType(type) {
   
   // Check if tag is disabled (e.g., entity-invalid types)
   if (clickedTag.disabled) {
-    console.log(`&#x26A0;&#xFE0F; Request type "${type}" is not available for this client type`);
+    console.log(`⚠️ Request type "${type}" is not available for this client type`);
     return;
   }
   
@@ -175,7 +175,7 @@ function selectRequestType(type) {
           }
         }
         
-        console.log('&#xD83D;&#xDDD1;&#xFE0F; eSoF deselected manually &#x2192; eSoFSkipHint shown, message updated, ejHint preserved');
+        console.log('🗑️ eSoF deselected manually → eSoFSkipHint shown, message updated, ejHint preserved');
         
         // Don't call resetFormUI - Form E stays active
         return;
@@ -190,7 +190,7 @@ function selectRequestType(type) {
         // Deselect eSoF tag
         if (esofTag && esofTag.classList.contains('selected')) {
           esofTag.classList.remove('selected');
-          console.log('&#xD83D;&#xDDD1;&#xFE0F; eSoF also deselected (Form E deselected)');
+          console.log('🗑️ eSoF also deselected (Form E deselected)');
         }
         
         // Hide both eSoF hints
@@ -235,7 +235,7 @@ function selectRequestType(type) {
           }
         }
         
-        console.log('&#x2705; eSoF selected manually &#x2192; eSoFHint shown, message updated, ejHint preserved');
+        console.log('&#x2705; eSoF selected manually → eSoFHint shown, message updated, ejHint preserved');
         
         // Don't change currentRequestType or call loadRequestTypeContent
         // Form E remains the active module
@@ -345,7 +345,7 @@ function checkOFSIRequirement(type) {
   }
   
   // OFSI required but not found - show popup
-  console.log('&#x26A0;&#xFE0F; OFSI required for', type, 'but not found - showing popup');
+  console.log('⚠️ OFSI required for', type, 'but not found - showing popup');
   showOFSIRequiredPopup(type);
 }
 
@@ -992,7 +992,7 @@ function handleClientData(message) {
     const isCharity = document.getElementById('charityCheckbox')?.checked || false;
     if (isCharity && businessData?.organisation_number && entityNumber) {
       entityNumber.dataset.organisationNumber = businessData.organisation_number;
-      console.log(`&#xD83C;&#xDFF7;&#xFE0F; Extracted organisation_number from businessData for URLs: ${businessData.organisation_number}`);
+      console.log(`🏳️ Extracted organisation_number from businessData for URLs: ${businessData.organisation_number}`);
     }
     
     // Populate people cards with officers and PSCs
@@ -1012,12 +1012,12 @@ function handleClientData(message) {
       if (phoneCountryCode) setPhoneCode('phoneCountryCode', formattedPhone.countryCode);
       if (phoneNumber) phoneNumber.value = formattedPhone.nationalNumber;
       
-      console.log(`&#xD83D;&#xDCDE; Formatted phone: ${mobileStr} &#x2192; ${formattedPhone.countryCode} ${formattedPhone.nationalNumber}`);
+      console.log(`&#xD83D;&#xDCDE; Formatted phone: ${mobileStr} → ${formattedPhone.countryCode} ${formattedPhone.nationalNumber}`);
     } else {
       // Fallback to basic parsing if libphonenumber fails
       const phoneNumber = document.getElementById('phoneNumber');
       if (phoneNumber) phoneNumber.value = mobileStr;
-      console.warn(`&#x26A0;&#xFE0F; Could not format phone number: ${mobileStr}`);
+      console.warn(`⚠️ Could not format phone number: ${mobileStr}`);
     }
   }
   
@@ -1047,7 +1047,7 @@ function handleClientData(message) {
         console.log('&#x2705; Current address is valid, displaying without API call');
       } else {
         // Invalid/incomplete address - try to search for it via API
-        console.warn('&#x26A0;&#xFE0F; Current address object is incomplete, attempting to search via API');
+        console.warn('⚠️ Current address object is incomplete, attempting to search via API');
         const searchTerm = formatAddressForDisplay(currentAddressObject);
         if (searchTerm && searchTerm.length >= 7) {
           currentAddress.value = searchTerm;
@@ -1093,7 +1093,7 @@ function handleClientData(message) {
           console.log('&#x2705; Previous address is valid, displaying without API call');
         } else {
           // Invalid/incomplete address - try to search for it via API
-          console.warn('&#x26A0;&#xFE0F; Previous address object is incomplete, attempting to search via API');
+          console.warn('⚠️ Previous address object is incomplete, attempting to search via API');
           const searchTerm = formatAddressForDisplay(previousAddressObject);
           if (searchTerm && searchTerm.length >= 7) {
             previousAddress.value = searchTerm;
@@ -1168,7 +1168,7 @@ function handleClientData(message) {
         tag.classList.add('selected');
         console.log(`&#x2705; Selected tag: ${requestType}`);
       } else {
-        console.warn(`&#x26A0;&#xFE0F; Request type tag not found: ${requestType}`);
+        console.warn(`⚠️ Request type tag not found: ${requestType}`);
       }
     });
     
@@ -1196,7 +1196,7 @@ function handleClientData(message) {
       const inUT = data.uT && Array.isArray(data.uT) && data.uT.includes('esof');
       if (!inUT && esofTag.classList.contains('selected')) {
         esofTag.classList.remove('selected');
-        console.log('&#xD83D;&#xDDD1;&#xFE0F; eSoF tag deselected (eS not "Requested" and not in uT)');
+        console.log('🗑️ eSoF tag deselected (eS not "Requested" and not in uT)');
       }
     }
   }
@@ -1264,7 +1264,7 @@ function resetFormUI(previousType = null, newType = null) {
     if (fileInput) {
       fileInput.value = '';
     }
-    console.log('&#xD83D;&#xDDD1;&#xFE0F; Message input cleared (switching between different request categories)');
+    console.log('🗑️ Message input cleared (switching between different request categories)');
   } else {
     console.log('&#xD83D;&#xDCDD; Message input preserved (switching between message-based types)');
   }
@@ -1940,9 +1940,9 @@ function setupClientDetailsHandlers() {
         
         dobInputs[7].focus();
         const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
-        console.log('&#x2705; Pasted DOB filled all fields:', parsedDate, '&#x2192;', formattedDate);
+        console.log('&#x2705; Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
       } else {
-        console.warn('&#x26A0;&#xFE0F; Could not parse date from pasted text:', pastedText);
+        console.warn('⚠️ Could not parse date from pasted text:', pastedText);
       }
     });
   }
@@ -2516,7 +2516,7 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
           let addressPrefix = getAddressData.line_1.trim();
           
           // Remove thoroughfare/street from line_1 if present
-          // Example: "94 Southgate Street" &#x2192; "94" | "Thurstan Hoskin Llp" &#x2192; "Thurstan Hoskin Llp"
+          // Example: "94 Southgate Street" → "94" | "Thurstan Hoskin Llp" → "Thurstan Hoskin Llp"
           if (getAddressData.thoroughfare && addressPrefix.includes(getAddressData.thoroughfare)) {
             addressPrefix = addressPrefix.replace(getAddressData.thoroughfare, '').replace(/,\s*$/, '').trim();
           }
@@ -2635,7 +2635,7 @@ function handleCompanyData(data) {
   
   if (isCharity && data.organisation_number && entityNumberEl) {
     entityNumberEl.dataset.organisationNumber = data.organisation_number;
-    console.log(`&#xD83C;&#xDFF7;&#xFE0F; Stored organisation_number for URLs: ${data.organisation_number} (display: ${data.reg_charity_number || data.company_number})`);
+    console.log(`🏳️ Stored organisation_number for URLs: ${data.organisation_number} (display: ${data.reg_charity_number || data.company_number})`);
   }
   
   // Update company buttons visibility if they exist
@@ -2716,7 +2716,7 @@ function selectCompany(company) {
   // For charities, store organisation_number in data attribute (for URL construction)
   if (isCharity && company.organisation_number && entityNumberEl) {
     entityNumberEl.dataset.organisationNumber = company.organisation_number;
-    console.log(`&#xD83C;&#xDFF7;&#xFE0F; Stored organisation_number: ${company.organisation_number} (display: ${company.company_number})`);
+    console.log(`🏳️ Stored organisation_number: ${company.organisation_number} (display: ${company.company_number})`);
   } else if (entityNumberEl) {
     entityNumberEl.dataset.organisationNumber = '';
   }
@@ -2952,7 +2952,7 @@ function clearPeopleCards() {
     : 'Link a company to view officers, directors, and PSCs';
   
   peopleRepeater.innerHTML = `<div class="no-people-message">${message}</div>`;
-  console.log('&#xD83D;&#xDDD1;&#xFE0F; Cleared people cards');
+  console.log('🗑️ Cleared people cards');
 }
 
 /*
@@ -4410,9 +4410,9 @@ function formatAddressForDisplay(addressObject) {
 /**
  * Parse and format phone number using google-libphonenumber
  * Handles various formats:
- * - UK: 07700900123 &#x2192; +44 7700900123
- * - International: +447700900123 &#x2192; +44 7700900123
- * - Already formatted: +44 7700900123 &#x2192; +44 7700900123
+ * - UK: 07700900123 → +44 7700900123
+ * - International: +447700900123 → +44 7700900123
+ * - Already formatted: +44 7700900123 → +44 7700900123
  * Returns: { countryCode: '+44', nationalNumber: '7700900123', e164: '+447700900123' } or null
  */
 function parseAndFormatPhoneNumber(phoneString) {
@@ -4420,7 +4420,7 @@ function parseAndFormatPhoneNumber(phoneString) {
   
   // Check if libphonenumber is loaded
   if (typeof libphonenumber === 'undefined') {
-    console.warn('&#x26A0;&#xFE0F; libphonenumber not loaded, using basic parsing');
+    console.warn('⚠️ libphonenumber not loaded, using basic parsing');
     return basicPhoneParse(phoneString);
   }
   
@@ -4470,7 +4470,7 @@ function parseAndFormatPhoneNumber(phoneString) {
     }
     
     // If all else fails, use basic parsing
-    console.warn('&#x26A0;&#xFE0F; libphonenumber validation failed, using basic parsing');
+    console.warn('⚠️ libphonenumber validation failed, using basic parsing');
     return basicPhoneParse(phoneString);
     
   } catch (error) {

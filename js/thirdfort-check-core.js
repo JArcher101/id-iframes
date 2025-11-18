@@ -169,7 +169,7 @@ function initializeEventListeners() {
         const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
         console.log('&#x2705; Pasted DOB filled all fields:', parsedDate, '&#x2192;', formattedDate);
       } else {
-        console.warn('&#x26A0;&#xFE0F; Could not parse date from pasted text:', pastedText);
+        console.warn('⚠️ Could not parse date from pasted text:', pastedText);
       }
     });
   }
@@ -1159,7 +1159,7 @@ function populateIDVImageLists(images, selectedDocType) {
     
     // If no exact matches, show all images but don't auto-select
     if (filteredImages.length === 0) {
-      console.log('&#x26A0;&#xFE0F; No exact matches found, showing all available images for manual selection');
+      console.log('⚠️ No exact matches found, showing all available images for manual selection');
       filteredImages = images;
       hasExactMatches = false;
     }
@@ -1192,7 +1192,7 @@ function populateIDVImageLists(images, selectedDocType) {
           console.log('&#x2705; Auto-selected front/single image');
         }
       } else {
-        console.log('&#x23F8;&#xFE0F; No exact matches - user must manually select image');
+        console.log('⏸️ No exact matches - user must manually select image');
       }
     }
   }
@@ -1217,7 +1217,7 @@ function populateIDVImageLists(images, selectedDocType) {
           console.log('&#x2705; Auto-selected back image');
         }
       } else {
-        console.log('&#x23F8;&#xFE0F; No exact matches - user must manually select back image');
+        console.log('⏸️ No exact matches - user must manually select back image');
       }
     }
   }
@@ -1310,7 +1310,7 @@ function openIDVImage(column) {
     return;
   }
   
-  console.log(`&#xD83D;&#xDC41;&#xFE0F; Opening ${column} image:`, image.name);
+  console.log(`👁️ Opening ${column} image:`, image.name);
   
   // Prepare data for single-image-viewer.html
   const imageData = {
@@ -1446,7 +1446,7 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
     if (!shouldNotAutoCheck) {
       console.log(`&#x2705; Questionnaire auto-checked for ${subtype} (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
     } else {
-      console.log(`&#x26A0;&#xFE0F; Questionnaire NOT auto-checked for ${subtype} (formE without eSoF)`);
+      console.log(`⚠️ Questionnaire NOT auto-checked for ${subtype} (formE without eSoF)`);
     }
   } else if (showQuestionnaire && category === 'conveyancing' && subtype === 'other') {
     // For "other" subtype, use old logic based on work type and relation
@@ -1467,7 +1467,7 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
     if (!shouldNotAutoCheck) {
       console.log(`&#x2705; Questionnaire auto-checked for Property Other Purchaser (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
     } else {
-      console.log(`&#x26A0;&#xFE0F; Questionnaire NOT auto-checked for Property Other Purchaser (formE without eSoF)`);
+      console.log(`⚠️ Questionnaire NOT auto-checked for Property Other Purchaser (formE without eSoF)`);
     }
   }
   
@@ -1501,7 +1501,7 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
     if (!shouldNotAutoCheck) {
       console.log(`&#x2705; Bank Linking auto-checked for ${subtype} (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
     } else {
-      console.log(`&#x26A0;&#xFE0F; Bank Linking NOT auto-checked for ${subtype} (formE without eSoF)`);
+      console.log(`⚠️ Bank Linking NOT auto-checked for ${subtype} (formE without eSoF)`);
     }
   } else if (showBankLinking && category === 'conveyancing' && subtype === 'other') {
     // For "other" subtype, use old logic based on work type and relation
@@ -1522,7 +1522,7 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
     if (!shouldNotAutoCheck) {
       console.log(`&#x2705; Bank Linking auto-checked for Property Other Purchaser (tags: formE=${hasFormE}, eSoF=${hasEsofRequested})`);
     } else {
-      console.log(`&#x26A0;&#xFE0F; Bank Linking NOT auto-checked for Property Other Purchaser (formE without eSoF)`);
+      console.log(`⚠️ Bank Linking NOT auto-checked for Property Other Purchaser (formE without eSoF)`);
     }
   }
   
@@ -1907,7 +1907,7 @@ function autoPopulateKYBSection(data) {
       }
     }, 500);
   } else {
-    console.log('&#x23F8;&#xFE0F; Not auto-searching - insufficient data or unknown jurisdiction');
+    console.log('⏸️ Not auto-searching - insufficient data or unknown jurisdiction');
   }
 }
 
@@ -1986,7 +1986,7 @@ function autoSelectMatterCategory(workType) {
   const category = categoryMapping[normalizedWorkType];
   
   if (!category) {
-    console.log('&#x26A0;&#xFE0F; Unrecognized work type - user must select category manually:', workType);
+    console.log('⚠️ Unrecognized work type - user must select category manually:', workType);
     return;
   }
   
@@ -2073,7 +2073,7 @@ function autoSelectConveyancingSubtype(workType, relation) {
   }
   
   if (!subtype) {
-    console.log('&#x23F8;&#xFE0F; Could not determine conveyancing subtype - user must select');
+    console.log('⏸️ Could not determine conveyancing subtype - user must select');
     return;
   }
   
@@ -2151,7 +2151,7 @@ function autoSelectPropertyOtherSubtype(relation, workType) {
   }
   
   if (!subtype) {
-    console.log('&#x23F8;&#xFE0F; Could not determine property other subtype - user must select');
+    console.log('⏸️ Could not determine property other subtype - user must select');
     return;
   }
   
@@ -3248,7 +3248,7 @@ function handleIDVAnswerSelection(event) {
   
   // Check if button is disabled
   if (card.disabled) {
-    console.log('&#x26A0;&#xFE0F; IDV button is disabled - ignoring click');
+    console.log('⚠️ IDV button is disabled - ignoring click');
     return;
   }
   
@@ -3374,7 +3374,7 @@ function validateLiteManualAddress() {
   const parentContainer = document.getElementById('liteManualAddressFields');
   
   if (!parentContainer || parentContainer.classList.contains('hidden')) {
-    console.log('&#x23F8;&#xFE0F; Validation skipped - container hidden or not found');
+    console.log('⏸️ Validation skipped - container hidden or not found');
     return;
   }
   
@@ -3382,7 +3382,7 @@ function validateLiteManualAddress() {
   const gridContainer = parentContainer.querySelector('.manual-address-grid');
   
   if (!gridContainer) {
-    console.warn('&#x26A0;&#xFE0F; .manual-address-grid not found inside container');
+    console.warn('⚠️ .manual-address-grid not found inside container');
     return;
   }
   
@@ -3410,7 +3410,7 @@ function validateLiteManualAddress() {
   } else {
     gridContainer.classList.remove('valid');
     gridContainer.classList.add('invalid');
-    console.log('&#x26A0;&#xFE0F; Address container remains GREY');
+    console.log('⚠️ Address container remains GREY');
   }
   
   return isValid;
@@ -3450,7 +3450,7 @@ function handleLitePreviousAddressClick() {
   
   // Check if we have a previous address
   if (!litePreviousAddressObject) {
-    console.warn('&#x26A0;&#xFE0F; No previous address available');
+    console.warn('⚠️ No previous address available');
     return;
   }
   
@@ -3737,7 +3737,7 @@ function handleIDVDocumentTypeSelection(event) {
     });
     
     if (!hasExactMatches) {
-      console.log(`&#x26A0;&#xFE0F; No exact matches for ${expectedDocName}, showing image lists for user to choose`);
+      console.log(`⚠️ No exact matches for ${expectedDocName}, showing image lists for user to choose`);
       // Clear any selected images and show lists
       checkState.frontImage = null;
       checkState.backImage = null;
@@ -4986,7 +4986,7 @@ function validatePhone(phone) {
 function validatePhoneWithLibphonenumber(countryCode, nationalNumber) {
   // Check if libphonenumber is loaded
   if (typeof libphonenumber === 'undefined') {
-    console.warn('&#x26A0;&#xFE0F; libphonenumber not loaded, falling back to basic validation');
+    console.warn('⚠️ libphonenumber not loaded, falling back to basic validation');
     const fullPhone = `${countryCode}${nationalNumber}`;
     return {
       valid: validatePhone(fullPhone),
@@ -5730,7 +5730,7 @@ function extractS3KeyFromUrl(url) {
     return url;
   }
   
-  console.warn('&#x26A0;&#xFE0F; Could not extract S3 key from URL:', url);
+  console.warn('⚠️ Could not extract S3 key from URL:', url);
   return null;
 }
 
@@ -6055,7 +6055,7 @@ function submitLiteIDVCheck() {
       };
       console.log('&#x2705; IDV documents included:', payload.idvDocuments);
     } else {
-      console.warn('&#x26A0;&#xFE0F; IDV selected but no documents found');
+      console.warn('⚠️ IDV selected but no documents found');
     }
     
     console.log('&#x2705; IDV object added to payload');

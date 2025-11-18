@@ -1580,7 +1580,7 @@ class ThirdfortChecksManager {
             return check.redFlags;
         }
         
-        console.log('&#x26A0;&#xFE0F; No stored red flags found, checking alternative locations...');
+        console.log('⚠️ No stored red flags found, checking alternative locations...');
         const allFlags = [];
         const taskOutcomes = check.taskOutcomes || {};
         
@@ -6121,7 +6121,7 @@ class ThirdfortChecksManager {
                     <div class="property-bullet">&#xD83D;&#xDCCD; <strong>Property:</strong> ${fullAddress}</div>
                     <div class="property-bullet">&#xD83D;&#xDCB7; <strong>Purchase Price:</strong> ${price}</div>
                     <div class="property-bullet">&#xD83D;&#xDCCB; <strong>Stamp Duty:</strong> ${sdlt}</div>
-                    <div class="property-bullet">&#xD83C;&#xDFD7;&#xFE0F; <strong>New Build:</strong> ${newBuild}</div>
+                    <div class="property-bullet">🏗️ <strong>New Build:</strong> ${newBuild}</div>
                     ${propertyAnnotationsHtml}
                 </div>
             `;
@@ -7024,13 +7024,13 @@ class ThirdfortChecksManager {
         // Flags/Warnings
         let warnings = '';
         if (personData.is_disqualified_director) {
-            warnings += '<div class="person-warning">&#x26A0;&#xFE0F; DISQUALIFIED DIRECTOR</div>';
+            warnings += '<div class="person-warning">⚠️ DISQUALIFIED DIRECTOR</div>';
         }
         if (personData.has_bankruptcy_history) {
-            warnings += '<div class="person-warning">&#x26A0;&#xFE0F; BANKRUPTCY HISTORY</div>';
+            warnings += '<div class="person-warning">⚠️ BANKRUPTCY HISTORY</div>';
         }
         if (personData.isOutOfBusiness) {
-            warnings += '<div class="person-warning">&#x26A0;&#xFE0F; OUT OF BUSINESS</div>';
+            warnings += '<div class="person-warning">⚠️ OUT OF BUSINESS</div>';
         }
         
         // Ownership/Share information with Nature of Control
@@ -8693,7 +8693,7 @@ class ThirdfortChecksManager {
                     
                     // Determine primary hit type
                     let hitType = '';
-                    let hitIcon = '&#x26A0;&#xFE0F;';
+                    let hitIcon = '⚠️';
                     
                     // Check flag types if available (screening:lite format)
                     if (flagTypes.length > 0) {
@@ -28948,7 +28948,7 @@ class ThirdfortChecksManager {
             overlayHTML += `<div class="property-bullet">&#xD83D;&#xDCCD; <strong>Property:</strong> ${fullAddress}</div>`;
             overlayHTML += `<div class="property-bullet">&#xD83D;&#xDCB7; <strong>Purchase Price:</strong> ${price}</div>`;
             overlayHTML += `<div class="property-bullet">&#xD83D;&#xDCCB; <strong>Stamp Duty:</strong> ${sdlt}</div>`;
-            overlayHTML += `<div class="property-bullet">&#xD83C;&#xDFD7;&#xFE0F; <strong>New Build:</strong> ${newBuild}</div>`;
+            overlayHTML += `<div class="property-bullet">🏗️ <strong>New Build:</strong> ${newBuild}</div>`;
             overlayHTML += '</div>';
             
             // Property review section
@@ -31875,7 +31875,7 @@ class ThirdfortChecksManager {
                     });
                 } else {
                     // Fallback to new tab if Print.js not loaded
-                    console.warn('&#x26A0;&#xFE0F; Print.js not loaded, opening in new tab');
+                    console.warn('⚠️ Print.js not loaded, opening in new tab');
                     const pdfUrl = URL.createObjectURL(pdfBlob);
                 const printWindow = window.open(pdfUrl, '_blank');
                 if (!printWindow) {
@@ -33969,7 +33969,7 @@ class ThirdfortChecksManager {
                     });
                 } else {
                     // Fallback to new tab if Print.js not loaded
-                    console.warn('&#x26A0;&#xFE0F; Print.js not loaded, opening in new tab');
+                    console.warn('⚠️ Print.js not loaded, opening in new tab');
                     const pdfUrl = URL.createObjectURL(pdfBlob);
                 const printWindow = window.open(pdfUrl, '_blank');
                 if (!printWindow) {
@@ -34268,7 +34268,7 @@ class ThirdfortChecksManager {
                     });
                 } else {
                     // Fallback to new tab if Print.js not loaded
-                    console.warn('&#x26A0;&#xFE0F; Print.js not loaded, opening in new tab');
+                    console.warn('⚠️ Print.js not loaded, opening in new tab');
                     const pdfUrl = URL.createObjectURL(pdfBlob);
                 const printWindow = window.open(pdfUrl, '_blank');
                 if (!printWindow) {

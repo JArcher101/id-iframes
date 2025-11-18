@@ -15,8 +15,8 @@
         =====================================================================
         CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
         =====================================================================
-        Transport Medium &#xE2;&#x2020;&#x2019; fallback to Quicksand Bold (700)
-        Rotis fonts &#xE2;&#x2020;&#x2019; fallback to Quicksand Regular (400) or Italic
+        Transport Medium → fallback to Quicksand Bold (700)
+        Rotis fonts → fallback to Quicksand Regular (400) or Italic
         =====================================================================
         */
         
@@ -914,15 +914,15 @@
         3. 'dismiss-notification' - Request to clear notification status
         
         MESSAGE FLOW:
-        - Text-only: sendMessage() &#xE2;&#x2020;&#x2019; 'message-sent' (with message object) to parent &#xE2;&#x2020;&#x2019; 
-                     parent saves to DB &#xE2;&#x2020;&#x2019; parent sends fresh 'message-data' &#xE2;&#x2020;&#x2019; 
+        - Text-only: sendMessage() → 'message-sent' (with message object) to parent → 
+                     parent saves to DB → parent sends fresh 'message-data' → 
                      displayMessages() shows last 4 messages (resets pagination)
         
-        - With file: sendMessage() &#xE2;&#x2020;&#x2019; 'file-data' (with file metadata + s3Key request) to parent &#xE2;&#x2020;&#x2019; 
-                     parent generates s3Key and sends 'put-links' (with full file objects + s3Key) &#xE2;&#x2020;&#x2019;
-                     uploadFileToS3() uploads to S3 &#xE2;&#x2020;&#x2019; 'message-sent' (with message + file.s3Key) to parent &#xE2;&#x2020;&#x2019;
-                     parent saves to DB and generates liveUrl from s3Key &#xE2;&#x2020;&#x2019;
-                     parent sends fresh 'message-data' (messages with liveUrl for downloads) &#xE2;&#x2020;&#x2019;
+        - With file: sendMessage() → 'file-data' (with file metadata + s3Key request) to parent → 
+                     parent generates s3Key and sends 'put-links' (with full file objects + s3Key) →
+                     uploadFileToS3() uploads to S3 → 'message-sent' (with message + file.s3Key) to parent →
+                     parent saves to DB and generates liveUrl from s3Key →
+                     parent sends fresh 'message-data' (messages with liveUrl for downloads) →
                      displayMessages() shows last 4 messages and File buttons (resets pagination)
         
         PAGINATION FLOW:
@@ -934,7 +934,7 @@
         
         IMPORTANT: Child NEVER displays messages locally. Parent always sends complete chat
         history via 'message-data' and child renders via displayMessages().
-        File flow: child sends s3Key &#xE2;&#x2020;&#x2019; parent stores and generates liveUrl &#xE2;&#x2020;&#x2019; child displays with liveUrl.
+        File flow: child sends s3Key → parent stores and generates liveUrl → child displays with liveUrl.
         
         =====================================================================
         */
@@ -1351,7 +1351,7 @@
                 <div class="message-text">${message.message}</div>
             `;
             
-            // Append to end (for forward iteration: oldest &#xE2;&#x2020;&#x2019; newest)
+            // Append to end (for forward iteration: oldest → newest)
             messagesContainer.appendChild(messageDiv);
         }
 
@@ -1807,7 +1807,7 @@
             // Build message content
             let messageContent = '';
             if (file) {
-                messageContent = `<div class="message-text">&#xF0;&#x178;&#x201C;&#x17D; ${file.name}</div>`;
+                messageContent = `<div class="message-text">📎 ${file.name}</div>`;
             }
             if (text.trim()) {
                 messageContent += `<div class="message-text">${text}</div>`;
@@ -2111,7 +2111,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '91f50c9';
+    window.__IFRAME_VERSION__ = '158b639';
     console.log('[message-iframe] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

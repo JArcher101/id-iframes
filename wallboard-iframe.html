@@ -15,8 +15,8 @@
         =====================================================================
         CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
         =====================================================================
-        Transport Medium &#xE2;&#x2020;&#x2019; fallback to Quicksand Bold (700)
-        Rotis fonts &#xE2;&#x2020;&#x2019; fallback to Quicksand Regular (400) or Italic
+        Transport Medium → fallback to Quicksand Bold (700)
+        Rotis fonts → fallback to Quicksand Regular (400) or Italic
         =====================================================================
         */
         
@@ -732,14 +732,14 @@
                 const container = document.getElementById('chartsContainer');
                 container.innerHTML = `
                     <div style="text-align: center; padding: 40px; color: #dc3545;">
-                        <h3 style="font-size: 18px; margin-bottom: 10px;">&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Analytics Error</h3>
+                        <h3 style="font-size: 18px; margin-bottom: 10px;">⚠️ Analytics Error</h3>
                         <p style="font-size: 14px; color: #666;">
                             ${event.data.message || 'Unable to load analytics data. Please try again.'}
                         </p>
                     </div>
                 `;
                 
-                console.log('&#xE2;&#x9D;&#x152; Analytics request failed, returned to wallboard, button re-enabled for retry');
+                console.log('❌ Analytics request failed, returned to wallboard, button re-enabled for retry');
             }
         });
 
@@ -1012,7 +1012,7 @@
                 return;
             }
             
-            console.log('&#xF0;&#x178;&#x201C;&#x201E; Generating wallboard PDF...');
+            console.log('📄 Generating wallboard PDF...');
             
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'pt', 'a4'); // Landscape orientation for wide table
@@ -1137,7 +1137,7 @@
             
             // Download
             doc.save(filename);
-            console.log('&#xF0;&#x178;&#x201C;&#x201E; PDF downloaded:', filename);
+            console.log('📄 PDF downloaded:', filename);
         }
 
         /*
@@ -1180,7 +1180,7 @@
             }
             
             // Request detailed analytics from parent (for both ALL and individual FE)
-            console.log('&#xF0;&#x178;&#x201C;&#xA1; Requesting detailed analytics for:', selectedFeeEarner);
+            console.log('📡 Requesting detailed analytics for:', selectedFeeEarner);
             
             // Show loading while waiting for data
             showLoading();
@@ -1229,7 +1229,7 @@
             
             if (feeEarner === 'ALL') {
                 // ALL ANALYTICS: Show totals and breakdowns by fee earner
-                console.log('&#xF0;&#x178;&#x201C;&#x160; Creating ALL fee earner charts (totals + breakdowns)');
+                console.log('📊 Creating ALL fee earner charts (totals + breakdowns)');
                 console.log('Analytics data:', analyticsData);
                 console.log('Wallboard data:', wallboardData);
                 
@@ -1248,7 +1248,7 @@
                 });
             } else {
                 // INDIVIDUAL FE ANALYTICS: Show specific FE metrics with detailed breakdowns
-                console.log('&#xF0;&#x178;&#x201C;&#x160; Creating individual fee earner charts');
+                console.log('📊 Creating individual fee earner charts');
                 console.log('Fee Earner:', feeEarner);
                 console.log('Analytics data:', analyticsData);
                 console.log('Wallboard row:', getWallboardRowForFE(feeEarner.toLowerCase()));
@@ -2135,7 +2135,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '91f50c9';
+    window.__IFRAME_VERSION__ = '158b639';
     console.log('[wallboard-iframe] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

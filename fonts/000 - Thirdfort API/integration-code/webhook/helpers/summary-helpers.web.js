@@ -95,7 +95,7 @@ export async function parseTransactionSummary(summaryData) {
   
   // Safety check: return empty data if summaryData is null/undefined
   if (!summaryData) {
-    console.log('&#x26A0;&#xFE0F; summaryData is null/undefined, returning empty');
+    console.log('⚠️ summaryData is null/undefined, returning empty');
     return {
       taskOutcomes: {},
       considerReasons: [],
@@ -122,7 +122,7 @@ export async function parseTransactionSummary(summaryData) {
     // Check if array has items - if so, it's a different structure we need to handle
     if (reports.length > 0) {
       // TODO: Handle array of report objects if Thirdfort ever returns this structure
-      console.warn('&#x26A0;&#xFE0F; Reports returned as non-empty array - unexpected structure:', reports);
+      console.warn('⚠️ Reports returned as non-empty array - unexpected structure:', reports);
     }
     
     // Return with empty data structure - reports not ready yet
@@ -294,7 +294,7 @@ export async function fetchAllTransactionReports(transactionId, options = {}) {
             const preview = JSON.stringify(reportData, null, 2);
             console.log('&#xD83E;&#xDDFE; Full identity report JSON preview:', preview);
           } catch (stringifyError) {
-            console.warn('&#x26A0;&#xFE0F; Unable to stringify identity report for logging:', stringifyError?.message);
+            console.warn('⚠️ Unable to stringify identity report for logging:', stringifyError?.message);
           }
         }
         

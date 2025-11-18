@@ -59,7 +59,7 @@ Sends request-data message to parent with:
       
       if (idDocumentsSection) {
         idDocumentsSection.classList.remove('hidden');
-        console.log('&#xD83D;&#xDC41;&#xFE0F; ID Documents section shown');
+        console.log('👁️ ID Documents section shown');
       }
     },
     
@@ -126,12 +126,12 @@ Sends request-data message to parent with:
         // Combined with Form E - show eSoFHint
         if (eSoFHint) eSoFHint.classList.remove('hidden');
         if (eSoFOnlyHint) eSoFOnlyHint.classList.add('hidden');
-        console.log('&#x2139;&#xFE0F; eSoF combined with Form E - showing eSoFHint');
+        console.log('ℹ️ eSoF combined with Form E - showing eSoFHint');
       } else {
         // Standalone eSoF - show eSoFOnlyHint
         if (eSoFOnlyHint) eSoFOnlyHint.classList.remove('hidden');
         if (eSoFHint) eSoFHint.classList.add('hidden');
-        console.log('&#x2139;&#xFE0F; eSoF standalone - showing eSoFOnlyHint');
+        console.log('ℹ️ eSoF standalone - showing eSoFOnlyHint');
       }
     },
     

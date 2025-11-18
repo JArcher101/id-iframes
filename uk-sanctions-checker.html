@@ -17,8 +17,8 @@
     =====================================================================
     CUSTOM FONTS - Base64 Embedded
     =====================================================================
-    Transport Medium &#xE2;&#x2020;&#x2019; for headings and buttons
-    Rotis fonts &#xE2;&#x2020;&#x2019; for body text
+    Transport Medium → for headings and buttons
+    Rotis fonts → for body text
     =====================================================================
     */
     
@@ -816,7 +816,7 @@
     
     <!-- No Results -->
     <div id="no-results" class="no-results hidden">
-      <div class="no-results-icon">&#xF0;&#x178;&#x201D;&#x8D;</div>
+      <div class="no-results-icon">&#x1F50D;</div>
       <h3>No Matches Found</h3>
       <p>No sanctions entries match your search criteria. Try adjusting your search terms or using fuzzy match.</p>
     </div>
@@ -881,8 +881,8 @@
     
     // Initialize on page load
     function init() {
-      console.log('&#xF0;&#x178;&#x161;&#x20AC; Initializing UK Sanctions Checker...');
-      console.log('&#xF0;&#x178;&#x201C;&#xA4; Requesting sanctions XML from parent...');
+      console.log('🚀 Initializing UK Sanctions Checker...');
+      console.log('📡 Requesting sanctions XML from parent...');
       
       // Request XML data via parent (backend proxy)
       fetchSanctionsData();
@@ -893,7 +893,7 @@
     
     // Fetch XML data from FCDO via parent proxy
     async function fetchSanctionsData() {
-      console.log('&#xF0;&#x178;&#x201C;&#xA5; Requesting sanctions XML from parent (backend proxy)...');
+      console.log('📥 Requesting sanctions XML from parent (backend proxy)...');
       
       // Request XML from parent - parent will call backend to fetch from FCDO
       window.parent.postMessage({
@@ -916,7 +916,7 @@
       }
       
       const designations = xmlDoc.querySelectorAll('Designation');
-      console.log(`&#xF0;&#x178;&#x201C;&#x160; Found ${designations.length} total designations`);
+      console.log(`📊 Found ${designations.length} total designations`);
       
       sanctionsData = [];
       
@@ -1029,7 +1029,7 @@
         sanctionsData.push(entry);
       });
       
-      console.log(`&#xE2;&#x153;&#x2026; Processed ${sanctionsData.length} entries (excluding ships)`);
+      console.log(`✅ Processed ${sanctionsData.length} entries (excluding ships)`);
     }
     
     // Helper to get text content from XML node
@@ -1057,7 +1057,7 @@
         return;
       }
       
-      console.log('&#xF0;&#x178;&#x201D;&#x8D; Searching:', { searchName, searchYOB, searchType, isFuzzy, threshold });
+      console.log('🔍 Searching:', { searchName, searchYOB, searchType, isFuzzy, threshold });
       
       // Store search params for PDF generation
       searchParams = { searchName, searchYOB, searchType, isFuzzy, threshold };
@@ -1164,7 +1164,7 @@
       // Sort by match score (highest first)
       currentSearchResults.sort((a, b) => b.matchScore - a.matchScore);
       
-      console.log(`&#xE2;&#x153;&#x2026; Found ${currentSearchResults.length} matches`);
+      console.log(`✅ Found ${currentSearchResults.length} matches`);
       
       // Display results
       displayResults();
@@ -1289,9 +1289,9 @@
       
       // Apply square root penalty for more forgiving partial matches
       // Examples:
-      // - 1/3 coverage: &#xE2;&#x2C6;&#x161;0.333 = 0.577 &#xE2;&#x2020;&#x2019; 95% &#xC3;&#x2014; 0.577 = 55% (shows at 50% threshold)
-      // - 2/3 coverage: &#xE2;&#x2C6;&#x161;0.667 = 0.816 &#xE2;&#x2020;&#x2019; 95% &#xC3;&#x2014; 0.816 = 77% (shows at 75% threshold)
-      // - 3/3 coverage: &#xE2;&#x2C6;&#x161;1.000 = 1.000 &#xE2;&#x2020;&#x2019; 95% &#xC3;&#x2014; 1.000 = 95% (no penalty)
+      // - 1/3 coverage: √0.333 = 0.577 → 95% × 0.577 = 55% (shows at 50% threshold)
+      // - 2/3 coverage: √0.667 = 0.816 → 95% × 0.816 = 77% (shows at 75% threshold)
+      // - 3/3 coverage: √1.000 = 1.000 → 95% × 1.000 = 95% (no penalty)
       if (matchedWordCount > 0 && wordCoverage < 1.0) {
         bestScore = bestScore * Math.sqrt(wordCoverage);
       }
@@ -1309,7 +1309,7 @@
         
         // Add coverage info if not all words matched
         if (wordCoverage < 1.0) {
-          details = `${matches} &#xE2;&#x20AC;&#x201D; ${matchedWordCount}/${searchWordCount} search words matched`;
+          details = `${matches} — ${matchedWordCount}/${searchWordCount} search words matched`;
         } else {
           details = matches;
         }
@@ -1354,24 +1354,24 @@
       let normalized = word.toLowerCase();
       
       // Common name substitutions
-      normalized = normalized.replace(/ph/g, 'f');      // Philip &#xE2;&#x2020;&#x2019; Filip
-      normalized = normalized.replace(/ck/g, 'k');      // Mick &#xE2;&#x2020;&#x2019; Mik
-      normalized = normalized.replace(/c([eiy])/g, 's$1'); // Cecil &#xE2;&#x2020;&#x2019; Sesil
-      normalized = normalized.replace(/c([aou])/g, 'k$1'); // Carl &#xE2;&#x2020;&#x2019; Karl
-      normalized = normalized.replace(/qu/g, 'kw');     // Quentin &#xE2;&#x2020;&#x2019; Kwentin
-      normalized = normalized.replace(/x/g, 'ks');      // Alex &#xE2;&#x2020;&#x2019; Aleks
-      normalized = normalized.replace(/z/g, 's');       // Zachary &#xE2;&#x2020;&#x2019; Sachary
-      normalized = normalized.replace(/gh/g, '');       // Hugh &#xE2;&#x2020;&#x2019; Hu
-      normalized = normalized.replace(/kn/g, 'n');      // Knight &#xE2;&#x2020;&#x2019; Night
-      normalized = normalized.replace(/wr/g, 'r');      // Wright &#xE2;&#x2020;&#x2019; Right
-      normalized = normalized.replace(/ps/g, 's');      // Psalm &#xE2;&#x2020;&#x2019; Salm
-      normalized = normalized.replace(/ae/g, 'e');      // Caelan &#xE2;&#x2020;&#x2019; Celan
-      normalized = normalized.replace(/oe/g, 'e');      // Phoebe &#xE2;&#x2020;&#x2019; Febe
-      normalized = normalized.replace(/ie/g, 'i');      // Katie &#xE2;&#x2020;&#x2019; Kati
+      normalized = normalized.replace(/ph/g, 'f');      // Philip → Filip
+      normalized = normalized.replace(/ck/g, 'k');      // Mick → Mik
+      normalized = normalized.replace(/c([eiy])/g, 's$1'); // Cecil → Sesil
+      normalized = normalized.replace(/c([aou])/g, 'k$1'); // Carl → Karl
+      normalized = normalized.replace(/qu/g, 'kw');     // Quentin → Kwentin
+      normalized = normalized.replace(/x/g, 'ks');      // Alex → Aleks
+      normalized = normalized.replace(/z/g, 's');       // Zachary → Sachary
+      normalized = normalized.replace(/gh/g, '');       // Hugh → Hu
+      normalized = normalized.replace(/kn/g, 'n');      // Knight → Night
+      normalized = normalized.replace(/wr/g, 'r');      // Wright → Right
+      normalized = normalized.replace(/ps/g, 's');      // Psalm → Salm
+      normalized = normalized.replace(/ae/g, 'e');      // Caelan → Celan
+      normalized = normalized.replace(/oe/g, 'e');      // Phoebe → Febe
+      normalized = normalized.replace(/ie/g, 'i');      // Katie → Kati
       normalized = normalized.replace(/tion/g, 'shon'); // (rare in names)
-      normalized = normalized.replace(/ch/g, 'k');      // Michael &#xE2;&#x2020;&#x2019; Mikel
-      normalized = normalized.replace(/sh/g, 's');      // Sharma &#xE2;&#x2020;&#x2019; Sarma
-      normalized = normalized.replace(/th/g, 't');      // Matthew &#xE2;&#x2020;&#x2019; Matew
+      normalized = normalized.replace(/ch/g, 'k');      // Michael → Mikel
+      normalized = normalized.replace(/sh/g, 's');      // Sharma → Sarma
+      normalized = normalized.replace(/th/g, 't');      // Matthew → Matew
       
       // Remove double letters
       normalized = normalized.replace(/([a-z])\1+/g, '$1');
@@ -1724,7 +1724,7 @@
         // No results card (matching mockup)
         html += `
           <div style="background: #e8f5e9; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; text-align: center;">
-            <div style="font-size: 48px; margin-bottom: 12px;">&#xE2;&#x153;&#x201C;</div>
+            <div style="font-size: 48px; margin-bottom: 12px;">&#x2713;</div>
             <h3 style="font-size: 18px; color: #155724; margin-bottom: 8px;">No Sanctions Matches Found</h3>
             <p style="font-size: 13px; color: #155724;">The search subject does not appear on the UK Sanctions List based on the provided criteria.</p>
             <p style="margin-top: 12px; font-weight: bold; font-size: 13px; color: #155724;">This does not constitute a full PEP or sanctions screening.</p>
@@ -1753,7 +1753,7 @@
                     <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #fff3cd; color: #856404;">${entry.matchScore}% Match</span>
                   ` : ''}
                   <div style="width: 20px; height: 20px; border-radius: 50%; background: #d32f2f; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    <span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">&#xC3;&#x2014;</span>
+                    <span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">×</span>
                   </div>
                 </div>
               </div>
@@ -1766,7 +1766,7 @@
                   <strong style="color: #1976d2; font-size: 12px;">Match Details:</strong>
                   <div style="font-size: 12px; color: #1976d2; line-height: 1.6;">${escapeHtml(entry.matchDetails)}</div>
                   <div style="font-size: 11px; color: #666; font-style: italic; margin-top: 4px;">
-                    Matched in: ${escapeHtml(entry.matchType)} &#xE2;&#x20AC;&#xA2; ${entry.confidence} Confidence
+                    Matched in: ${escapeHtml(entry.matchType)} &bull; ${entry.confidence} Confidence
                   </div>
                 </div>
                 ` : ''}
@@ -1831,7 +1831,7 @@
     }
     
     async function generatePDF() {
-      console.log('&#xF0;&#x178;&#x201C;&#x201E; Generating PDF using html2pdf...');
+      console.log('📄 Generating PDF using html2pdf...');
       
       if (typeof html2pdf === 'undefined') {
         showError('PDF library not loaded. Please refresh the page.');
@@ -1847,9 +1847,9 @@
         const element = document.createElement('div');
         element.innerHTML = pdfHTML;
         
-        console.log('&#xF0;&#x178;&#x201C;&#x201E; HTML content length:', pdfHTML.length);
-        console.log('&#xF0;&#x178;&#x201C;&#x201E; HTML preview:', pdfHTML.substring(0, 300));
-        console.log('&#xF0;&#x178;&#x201C;&#x201E; Element created with', element.children.length, 'children');
+        console.log('📄 HTML content length:', pdfHTML.length);
+        console.log('📄 HTML preview:', pdfHTML.substring(0, 300));
+        console.log('📄 Element created with', element.children.length, 'children');
         
         // Configure html2pdf options (same as checks manager)
         const options = {
@@ -1865,12 +1865,12 @@
           pagebreak: { mode: 'css', avoid: '.hit-card' }
         };
         
-        console.log('&#xF0;&#x178;&#x201C;&#x201E; Starting PDF generation with html2pdf...');
+        console.log('📄 Starting PDF generation with html2pdf...');
         
         // Generate PDF blob using html2pdf (exactly like checks manager)
         const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
         
-        console.log('&#xE2;&#x153;&#x2026; PDF blob generated:', pdfBlob.size, 'bytes');
+        console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
         
         // Handle PDF - either upload to S3 or open print dialog
         if (clientEntryId) {
@@ -1880,12 +1880,12 @@
         } else {
           // Open print dialog using Print.js with PDF blob (no S3 upload, just print)
           if (typeof printJS === 'undefined') {
-            console.error('&#xE2;&#x9D;&#x152; Print.js library not loaded');
+            console.error('❌ Print.js library not loaded');
             showError('Print library not loaded. Please refresh the page.');
             return;
           }
           
-          console.log('&#xF0;&#x178;&#x201C;&#x201E; Opening print dialog with PDF blob...');
+          console.log('📄 Opening print dialog with PDF blob...');
           
           // Convert blob to object URL for Print.js
           const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -1900,11 +1900,11 @@
             }
           });
           
-          console.log('&#xE2;&#x153;&#x2026; Print dialog opened with PDF');
+          console.log('✅ Print dialog opened with PDF');
         }
         
       } catch (error) {
-        console.error('&#xE2;&#x9D;&#x152; Error generating PDF:', error);
+        console.error('❌ Error generating PDF:', error);
         showError('Failed to generate PDF. Please try again.');
       }
     }
@@ -1916,7 +1916,7 @@
     */
     
     async function uploadPDFBlobToS3(pdfBlob) {
-      console.log('&#xF0;&#x178;&#x201C;&#xA4; Preparing PDF for S3 upload...');
+      console.log('📤 Preparing PDF for S3 upload...');
       uploadingOverlay.classList.add('show');
       
       try {
@@ -1951,7 +1951,7 @@
           }
         };
         
-        console.log('&#xF0;&#x178;&#x201C;&#xA4; Sending file-data to parent:', fileMetadata);
+        console.log('📤 Sending file-data to parent:', fileMetadata);
         
         // Send file-data to parent (following document-viewer.html pattern)
         window.parent.postMessage({
@@ -1961,7 +1961,7 @@
         }, '*');
         
       } catch (error) {
-        console.error('&#xE2;&#x9D;&#x152; Error preparing PDF upload:', error);
+        console.error('❌ Error preparing PDF upload:', error);
         uploadingOverlay.classList.remove('show');
         showError('Failed to prepare PDF for upload. Please try again.');
       }
@@ -1969,7 +1969,7 @@
     
     // Handle put-links from parent
     async function handlePutLinks(data) {
-      console.log('&#xF0;&#x178;&#x201C;&#xA5; Received put-links from parent:', data);
+      console.log('📥 Received put-links from parent:', data);
       
       try {
         const pdfBlob = window.pendingUploadFile;
@@ -1982,7 +1982,7 @@
         const putLink = data.links[0];
         
         // Upload to S3
-        console.log('&#xE2;&#xAC;&#x2020;&#xEF;&#xB8;&#x8F; Uploading to S3...');
+        console.log('⬆️ Uploading to S3...');
         const uploadResponse = await fetch(putLink.url, {
           method: 'PUT',
           body: pdfBlob,
@@ -1995,7 +1995,7 @@
           throw new Error(`S3 upload failed: ${uploadResponse.status}`);
         }
         
-        console.log('&#xE2;&#x153;&#x2026; S3 upload complete');
+        console.log('✅ S3 upload complete');
         
         // Send upload-success to parent (using s3Keys or images from parent response)
         window.parent.postMessage({
@@ -2012,7 +2012,7 @@
         // Open print dialog after successful S3 upload using the same PDF blob
         const pdfBlobForPrint = window.pendingPDFForPrinting;
         if (pdfBlobForPrint && typeof printJS !== 'undefined') {
-          console.log('&#xF0;&#x178;&#x201C;&#x201E; Opening print dialog after S3 upload...');
+          console.log('📄 Opening print dialog after S3 upload...');
           
           // Convert blob to object URL for Print.js
           const pdfUrl = URL.createObjectURL(pdfBlobForPrint);
@@ -2027,7 +2027,7 @@
             }
           });
           
-          console.log('&#xE2;&#x153;&#x2026; Print dialog opened with PDF after S3 upload');
+          console.log('✅ Print dialog opened with PDF after S3 upload');
         }
         
         // Show success message
@@ -2038,7 +2038,7 @@
         delete window.pendingPDFForViewing;
         
       } catch (error) {
-        console.error('&#xE2;&#x9D;&#x152; Error uploading to S3:', error);
+        console.error('❌ Error uploading to S3:', error);
         uploadingOverlay.classList.remove('show');
         showError(`Upload failed: ${error.message}`);
       }
@@ -2046,14 +2046,14 @@
     
     // Handle put-error from parent
     function handlePutError(data) {
-      console.error('&#xE2;&#x9D;&#x152; PUT error from parent:', data);
+      console.error('❌ PUT error from parent:', data);
       uploadingOverlay.classList.remove('show');
       showError(data.message || 'Failed to generate upload link');
     }
     
     // Handle upload-error from parent (database update failed)
     function handleUploadError(data) {
-      console.error('&#xE2;&#x9D;&#x152; Upload error from parent:', data);
+      console.error('❌ Upload error from parent:', data);
       uploadingOverlay.classList.remove('show');
       showError(data.message || 'Upload succeeded but failed to update record');
     }
@@ -2067,11 +2067,11 @@
     window.addEventListener('message', (event) => {
       if (!event.data || !event.data.type) return;
       
-      console.log('&#xF0;&#x178;&#x201C;&#xA8; Received message:', event.data.type, event.data);
+      console.log('📨 Received message:', event.data.type, event.data);
       
       switch (event.data.type) {
         case 'init-sanctions-search':
-          console.log('&#xF0;&#x178;&#x17D;&#xAF; Processing init-sanctions-search message...');
+          console.log('🎯 Processing init-sanctions-search message...');
           handleInitMessage(event.data);
           break;
           
@@ -2094,7 +2094,7 @@
     });
     
     function handleInitMessage(data) {
-      console.log('&#xF0;&#x178;&#x201C;&#xA5; Received init data:', data);
+      console.log('📥 Received init data:', data);
       console.log('  - clientName:', data.clientName);
       console.log('  - yearOfBirth:', data.yearOfBirth);
       console.log('  - searchType:', data.searchType);
@@ -2109,13 +2109,13 @@
       // Pre-populate name
       if (data.clientName) {
         searchNameInput.value = data.clientName;
-        console.log('&#xE2;&#x153;&#x2026; Name field populated:', searchNameInput.value);
+        console.log('✅ Name field populated:', searchNameInput.value);
       }
       
       // Pre-populate year of birth
       if (data.yearOfBirth) {
         searchYOBInput.value = data.yearOfBirth;
-        console.log('&#xE2;&#x153;&#x2026; YOB field populated:', searchYOBInput.value);
+        console.log('✅ YOB field populated:', searchYOBInput.value);
       }
       
       // Preset search type
@@ -2123,9 +2123,9 @@
         const radio = document.getElementById(`type-${data.searchType.toLowerCase()}`);
         if (radio) {
           radio.checked = true;
-          console.log('&#xE2;&#x153;&#x2026; Search type set:', data.searchType);
+          console.log('✅ Search type set:', data.searchType);
         } else {
-          console.warn('&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Radio button not found for type:', data.searchType);
+          console.warn('⚠️ Radio button not found for type:', data.searchType);
         }
       }
       
@@ -2136,32 +2136,32 @@
         generatePdfBtn.textContent = 'Generate PDF Report';
       }
       
-      console.log('&#xE2;&#x153;&#x2026; Form pre-populated successfully');
+      console.log('✅ Form pre-populated successfully');
     }
     
     function handleSanctionsXML(data) {
-      console.log('&#xF0;&#x178;&#x201C;&#xA5; Received sanctions XML from parent');
+      console.log('📥 Received sanctions XML from parent');
       
       if (data.error) {
-        console.error('&#xE2;&#x9D;&#x152; Backend error:', data.error);
+        console.error('❌ Backend error:', data.error);
         loadingOverlay.classList.add('hidden');
         showError(`Failed to load sanctions data: ${data.error}`);
         return;
       }
       
       if (!data.xml) {
-        console.error('&#xE2;&#x9D;&#x152; No XML data received');
+        console.error('❌ No XML data received');
         loadingOverlay.classList.add('hidden');
         showError('Failed to load sanctions data. No data received from server.');
         return;
       }
       
       try {
-        console.log('&#xE2;&#x153;&#x2026; XML received from backend');
-        console.log(`&#xF0;&#x178;&#x201C;&#x160; XML size: ${(data.xml.length / 1024 / 1024).toFixed(2)} MB`);
+        console.log('✅ XML received from backend');
+        console.log(`📊 XML size: ${(data.xml.length / 1024 / 1024).toFixed(2)} MB`);
         
         parseSanctionsXML(data.xml);
-        console.log(`&#xE2;&#x153;&#x2026; Parsed ${sanctionsData.length} sanctions entries`);
+        console.log(`✅ Parsed ${sanctionsData.length} sanctions entries`);
         
         // Hide error message if it was showing from a previous failed attempt
         errorMessage.classList.add('hidden');
@@ -2169,7 +2169,7 @@
         loadingOverlay.classList.add('hidden');
         
       } catch (error) {
-        console.error('&#xE2;&#x9D;&#x152; Error parsing XML:', error);
+        console.error('❌ Error parsing XML:', error);
         loadingOverlay.classList.add('hidden');
         showError('Failed to parse sanctions data. Please try again.');
       }
@@ -2270,12 +2270,12 @@
     
     init();
     
-    console.log('&#xE2;&#x153;&#x2026; UK Sanctions Checker loaded');
+    console.log('✅ UK Sanctions Checker loaded');
   </script>
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '91f50c9';
+    window.__IFRAME_VERSION__ = '158b639';
     console.log('[uk-sanctions-checker] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

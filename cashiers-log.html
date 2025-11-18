@@ -15,9 +15,9 @@
         =====================================================================
         CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
         =====================================================================
-        Transport Medium &#xE2;&#x2020;&#x2019; for user emails
-        Rotis Light (Regular) &#xE2;&#x2020;&#x2019; for log message text
-        Rotis Italic &#xE2;&#x2020;&#x2019; for timestamps
+        Transport Medium → for user emails
+        Rotis Light (Regular) → for log message text
+        Rotis Italic → for timestamps
         All fonts fallback to Quicksand
         =====================================================================
         */
@@ -379,7 +379,7 @@
             // Build message content from text and file (if present)
             let messageContent = '';
             if (file) {
-                messageContent = `<div class="message-text">&#xF0;&#x178;&#x201C;&#x17D; ${file.name}</div>`;
+                messageContent = `<div class="message-text">📎 ${file.name}</div>`;
             }
             if (text.trim()) {
                 messageContent += `<div class="message-text">${text}</div>`;
@@ -636,7 +636,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '91f50c9';
+    window.__IFRAME_VERSION__ = '158b639';
     console.log('[cashiers-log] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

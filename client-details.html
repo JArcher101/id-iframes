@@ -19,8 +19,8 @@
     =====================================================================
     CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
     =====================================================================
-    Transport Medium &#xE2;&#x2020;&#x2019; fallback to Quicksand Bold (700)
-    Rotis fonts &#xE2;&#x2020;&#x2019; fallback to Quicksand Regular (400/600)
+    Transport Medium → fallback to Quicksand Bold (700)
+    Rotis fonts → fallback to Quicksand Regular (400/600)
     =====================================================================
     */
     
@@ -58,9 +58,9 @@
     ADDRESS AUTOCOMPLETE FLOW:
     1. User types in address field (7+ chars)
     2. Child sends 'address-search' to parent via postMessage
-    3. Parent calls Wix backend &#xE2;&#x2020;&#x2019; backend calls getaddress.io
+    3. Parent calls Wix backend → backend calls getaddress.io
     4. Parent sends 'address-results' back with suggestions
-    5. User selects address &#xE2;&#x2020;&#x2019; Child sends 'address-lookup' to parent
+    5. User selects address → Child sends 'address-lookup' to parent
     6. Parent sends 'address-data' with full address object
     7. Child converts to Thirdfort format and stores
     =====================================================================
@@ -782,7 +782,7 @@
             <div class="entity-right">
               <h3 style="margin: 0 0 4px 0; font-size: 0.9rem; color: #666;">People</h3>
               <div style="margin-top: 4px; margin-bottom: 8px; padding: 8px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; font-size: 0.75rem; color: #856404; line-height: 1.3;">
-                &#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Ensure all directors and people with &gt; 25% share have undergone appropriate AML &amp; ID checks
+                ⚠️ Ensure all directors and people with &gt; 25% share have undergone appropriate AML &amp; ID checks
               </div>
               <div class="people-scrollable">
                 <div id="peopleRepeater">
@@ -839,7 +839,7 @@
           <div>
             <label for="phoneCountryCode">Code</label>
             <div class="address-autocomplete-container">
-              <input type="text" id="phoneCountryCode" name="phoneCountryCode" autocomplete="off" placeholder="Search country code..." value="&#xF0;&#x178;&#x2021;&#xAC;&#xF0;&#x178;&#x2021;&#xA7; +44 UK" data-phone-code="+44" data-country-code="GB" />
+              <input type="text" id="phoneCountryCode" name="phoneCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
               <div id="phoneCountryCodeDropdown" class="address-dropdown hidden"></div>
             </div>
           </div>
@@ -1253,7 +1253,7 @@
       }
       // companyLinkBtn and downloadSummaryBtn stay enabled (always allow viewing and downloading)
       
-      console.log(enabled ? '&#xE2;&#x153;&#x8F;&#xEF;&#xB8;&#x8F; Edit mode enabled' : '&#xF0;&#x178;&#x201D;&#x2019; Edit mode disabled (read-only)');
+      console.log(enabled ? '✅ Edit mode enabled' : '🔒 Edit mode disabled (read-only)');
     }
     
     // ===== CHANGE DETECTION =====
@@ -1261,7 +1261,7 @@
     function notifyUnsavedChanges() {
       if (!isLoadingData && !hasUnsavedChanges) {
         hasUnsavedChanges = true;
-        console.log('&#xF0;&#x178;&#x201D;&#x2019; Unsaved changes detected, disabling close button');
+        console.log('🔒 Unsaved changes detected, disabling close button');
         window.parent.postMessage({
           type: 'disable-close'
         }, '*');
@@ -1303,7 +1303,7 @@
       // Update registration country label
       document.querySelector('label[for="registrationCountry"]').textContent = 'Registration Country';
       
-      console.log(`&#xE2;&#x153;&#x8F;&#xEF;&#xB8;&#x8F; Labels updated for ${entityType} mode`);
+      console.log(`✅ Labels updated for ${entityType} mode`);
     }
     
     // ===== CACHE MANAGEMENT =====
@@ -1599,7 +1599,7 @@
           let addressPrefix = getAddressData.line_1.trim();
           
           // Remove thoroughfare/street from line_1 if present
-          // Example: "94 Southgate Street" &#xE2;&#x2020;&#x2019; "94" | "Thurstan Hoskin Llp" &#xE2;&#x2020;&#x2019; "Thurstan Hoskin Llp"
+          // Example: "94 Southgate Street" → "94" | "Thurstan Hoskin Llp" → "Thurstan Hoskin Llp"
           if (getAddressData.thoroughfare && addressPrefix.includes(getAddressData.thoroughfare)) {
             addressPrefix = addressPrefix.replace(getAddressData.thoroughfare, '').replace(/,\s*$/, '').trim();
           }
@@ -1790,7 +1790,7 @@
         
         // Debounce 300ms
         const timer = setTimeout(() => {
-          console.log('&#xF0;&#x178;&#x201C;&#xA1; API call for autocomplete:', searchTerm);
+          console.log('📡 API call for autocomplete:', searchTerm);
           window.parent.postMessage({
             type: 'address-search',
             searchTerm: searchTerm,
@@ -1894,7 +1894,7 @@
       }
       
       // Request full address from parent
-      console.log('&#xF0;&#x178;&#x201C;&#xA1; API call for full address:', addressId);
+      console.log('📡 API call for full address:', addressId);
       window.parent.postMessage({
         type: 'address-lookup',
         addressId: addressId,
@@ -1955,7 +1955,7 @@
         // Debounce 300ms
         companyNameDebounceTimer = setTimeout(() => {
           const apiType = entityType === 'charity' ? 'charity-search' : 'company-search';
-          console.log(`&#xF0;&#x178;&#x201C;&#xA1; API call for ${entityType} name search:`, searchTerm);
+          console.log(`📡 API call for ${entityType} name search:`, searchTerm);
           window.parent.postMessage({
             type: apiType,
             searchTerm: searchTerm,
@@ -2033,7 +2033,7 @@
         // Debounce 300ms
         companyNumberDebounceTimer = setTimeout(() => {
           const apiType = entityType === 'charity' ? 'charity-search' : 'company-search';
-          console.log(`&#xF0;&#x178;&#x201C;&#xA1; API call for ${entityType} number search:`, searchTerm);
+          console.log(`📡 API call for ${entityType} number search:`, searchTerm);
           window.parent.postMessage({
             type: apiType,
             searchTerm: searchTerm,
@@ -2127,7 +2127,7 @@
       // For charities, store organisation_number in data attribute (for URL construction)
       if (entityType === 'charity' && company.organisation_number) {
         entityNumber.dataset.organisationNumber = company.organisation_number;
-        console.log(`&#xF0;&#x178;&#x8F;&#xB7;&#xEF;&#xB8;&#x8F; Stored organisation_number: ${company.organisation_number} (display: ${company.company_number})`);
+        console.log(`🏷️ Stored organisation_number: ${company.organisation_number} (display: ${company.company_number})`);
       } else {
         entityNumber.dataset.organisationNumber = '';
       }
@@ -2138,7 +2138,7 @@
       
       // Request full company/charity data from parent (directors/trustees, officers, PSCs)
       const apiType = entityType === 'charity' ? 'charity-lookup' : 'company-lookup';
-      console.log(`&#xF0;&#x178;&#x201C;&#xA1; Requesting full ${entityType} data for:`, company.company_number);
+      console.log(`📡 Requesting full ${entityType} data for:`, company.company_number);
       window.parent.postMessage({
         type: apiType,
         companyNumber: company.company_number,
@@ -2160,7 +2160,7 @@
       // For charities, extract and store organisation_number in dataset (for URL construction)
       if (entityType === 'charity' && data.organisation_number) {
         entityNumber.dataset.organisationNumber = data.organisation_number;
-        console.log(`&#xF0;&#x178;&#x8F;&#xB7;&#xEF;&#xB8;&#x8F; Stored organisation_number from charity data: ${data.organisation_number}`);
+        console.log(`🏷️ Stored organisation_number from charity data: ${data.organisation_number}`);
       }
       
       // Show the link and refresh buttons
@@ -2830,7 +2830,7 @@
       doc.setFontSize(11);
       doc.setTextColor(133, 100, 4);
       doc.setFont('helvetica', 'bold');
-      doc.text('&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; AML & ID Verification Required', margin + 10, yPosition + 15);
+      doc.text('⚠️ AML & ID Verification Required', margin + 10, yPosition + 15);
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
@@ -3338,7 +3338,7 @@
         entityNumberDropdown.classList.add('hidden');
         businessData = null;
         updateCompanyButtons();
-        console.log('&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Company search only available for UK companies');
+        console.log('⚠️ Company search only available for UK companies');
       }
     });
     
@@ -3495,9 +3495,9 @@
           
           dobInputs[7].focus();
           const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
-          console.log('&#xE2;&#x153;&#x2026; Pasted DOB filled all fields:', parsedDate, '&#xE2;&#x2020;&#x2019;', formattedDate);
+          console.log('&#xE2;&#x153;&#x2026; Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
         } else {
-          console.warn('&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Could not parse date from pasted text:', pastedText);
+          console.warn('⚠️ Could not parse date from pasted text:', pastedText);
         }
       });
     }
@@ -3757,7 +3757,7 @@
         // For charities, extract organisation_number from businessData (used only for URLs, not saved to DB)
         if (entityType === 'charity' && businessData?.organisation_number) {
           entityNumber.dataset.organisationNumber = businessData.organisation_number;
-          console.log(`&#xF0;&#x178;&#x8F;&#xB7;&#xEF;&#xB8;&#x8F; Extracted organisation_number from businessData for URLs: ${businessData.organisation_number}`);
+          console.log(`🏷️ Extracted organisation_number from businessData for URLs: ${businessData.organisation_number}`);
         } else {
           entityNumber.dataset.organisationNumber = '';
         }
@@ -3798,7 +3798,7 @@
             
             setPhoneCode('phoneCountryCode', countryCode);
             phoneNumber.value = nationalNumber;
-            console.log(`&#xF0;&#x178;&#x201C;&#x17E; Formatted phone using libphonenumber: ${cleanPhone} &#xE2;&#x2020;&#x2019; ${formattedPhone} (${countryCode} + ${nationalNumber})`);
+            console.log(`&#xF0;&#x178;&#x201C;&#x17E; Formatted phone using libphonenumber: ${cleanPhone} → ${formattedPhone} (${countryCode} + ${nationalNumber})`);
           } catch (error) {
             console.warn('Error parsing formatted phone number:', error);
             // Fall back to original logic
@@ -3838,20 +3838,20 @@
           // Check if it's UK mobile starting with 07, 08, or 09
           else if (cleanPhone.match(/^0[7-9]\d{9}$/)) {
             setPhoneCode('phoneCountryCode', '+44');
-            phoneNumber.value = cleanPhone.substring(1); // Remove leading 0: 07700000000 &#xE2;&#x2020;&#x2019; 7700000000
-            console.log(`&#xF0;&#x178;&#x201C;&#x17E; Converted UK mobile ${cleanPhone} &#xE2;&#x2020;&#x2019; +44${cleanPhone.substring(1)}`);
+            phoneNumber.value = cleanPhone.substring(1); // Remove leading 0: 07700000000 → 7700000000
+            console.log(`&#xF0;&#x178;&#x201C;&#x17E; Converted UK mobile ${cleanPhone} → +44${cleanPhone.substring(1)}`);
           }
           // Other UK format (starts with 0) - landlines or other
           else if (cleanPhone.startsWith('0')) {
             setPhoneCode('phoneCountryCode', '+44');
             phoneNumber.value = cleanPhone.substring(1); // Remove leading 0
-            console.log(`&#xF0;&#x178;&#x201C;&#x17E; Converted UK number ${cleanPhone} &#xE2;&#x2020;&#x2019; +44${cleanPhone.substring(1)}`);
+            console.log(`&#xF0;&#x178;&#x201C;&#x17E; Converted UK number ${cleanPhone} → +44${cleanPhone.substring(1)}`);
           }
           // No recognized format, store as-is with default country code
           else {
             setPhoneCode('phoneCountryCode', '+44');
             phoneNumber.value = cleanPhone;
-            console.log('&#xF0;&#x178;&#x201C;&#x17E; Loaded phone (no prefix):', cleanPhone, '&#xE2;&#x2020;&#x2019; assuming +44');
+            console.log('&#xF0;&#x178;&#x201C;&#x17E; Loaded phone (no prefix):', cleanPhone, '→ assuming +44');
           }
         }
       } else {
@@ -4080,7 +4080,7 @@
   </script>
   
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=91f50c9"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=158b639"></script>
   <script>
     // Initialize all autocomplete fields immediately (DOM already loaded since scripts are at bottom)
     console.log('&#xF0;&#x178;&#x201D;&#xA7; Initializing autocomplete fields...');
@@ -4168,7 +4168,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '91f50c9';
+    window.__IFRAME_VERSION__ = '158b639';
     console.log('[client-details] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

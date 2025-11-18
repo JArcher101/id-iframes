@@ -144,7 +144,7 @@ Sends request-data message to parent with:
         idDocumentsSection.classList.remove('hidden');
       }
       
-      console.log('&#xD83D;&#xDC41;&#xFE0F; ID Images and ID Documents sections shown');
+      console.log('👁️ ID Images and ID Documents sections shown');
     },
     
     showHints: function() {
@@ -152,7 +152,7 @@ Sends request-data message to parent with:
       
       if (nameVerificationHint) {
         nameVerificationHint.classList.remove('hidden');
-        console.log('&#x26A0;&#xFE0F; Name verification hint shown for Form J');
+        console.log('⚠️ Name verification hint shown for Form J');
       }
       
       // Check if worktype includes "purchase" and show eSoFSkipHint
@@ -185,7 +185,7 @@ Sends request-data message to parent with:
       
       if (isPurchase) {
         eSoFSkipHint.classList.remove('hidden');
-        console.log('&#x26A0;&#xFE0F; Purchase detected - showing eSoF skip hint');
+        console.log('⚠️ Purchase detected - showing eSoF skip hint');
       } else {
         eSoFSkipHint.classList.add('hidden');
       }

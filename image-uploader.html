@@ -11,8 +11,8 @@
     =====================================================================
     CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
     =====================================================================
-    Transport Medium &#xE2;&#x2020;&#x2019; fallback to Quicksand Bold (700)
-    Rotis fonts &#xE2;&#x2020;&#x2019; fallback to Quicksand Regular (400/600)
+    Transport Medium → fallback to Quicksand Bold (700)
+    Rotis fonts → fallback to Quicksand Regular (400/600)
     =====================================================================
     */
     
@@ -893,7 +893,7 @@
     =====================================================================
     SECTION 5: UPLOAD PROGRESS INDICATORS
     - Shows real-time progress bar during S3 file uploads
-    - File list displays each file with status (Pending &#xE2;&#x2020;&#x2019; Uploading &#xE2;&#x2020;&#x2019; Success/Error)
+    - File list displays each file with status (Pending → Uploading → Success/Error)
     - Border colors indicate status: Blue=Default, Orange=Uploading, Green=Success, Red=Error
     - Progress percentage updates as files complete
     - Upload fails if any file errors, returns user to Address ID section to retry
@@ -1512,7 +1512,7 @@
 
       <!-- Name Verification Hint -->
       <div class="name-hint">
-        &#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Ensure the name matches the above Photo ID exactly. If they are known by a different name please indicate this below.
+        ⚠️ Ensure the name matches the above Photo ID exactly. If they are known by a different name please indicate this below.
       </div>
 
       <div class="row">
@@ -2049,7 +2049,7 @@
   </div>
 
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=91f50c9"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=158b639"></script>
   
   <script>
     /*
@@ -2078,14 +2078,14 @@
     2. 'upload-success' - Complete form data after successful S3 uploads (includes s3Keys)
     
     FORM FLOW:
-    1. Parent sends 'initiation-data' &#xE2;&#x2020;&#x2019; Child populates form with existing data
-    2. User fills Section 1 (Client Details) &#xE2;&#x2020;&#x2019; validates &#xE2;&#x2020;&#x2019; proceeds to Section 2
-    3. User chooses Photo ID (Yes/No) &#xE2;&#x2020;&#x2019; if Yes, selects types and uploads files
-    4. User proceeds to Section 3 (Address History) &#xE2;&#x2020;&#x2019; fills addresses
-    5. User proceeds to Section 4 (Address ID) &#xE2;&#x2020;&#x2019; chooses Yes/No, uploads if Yes
-    6. User clicks Upload &#xE2;&#x2020;&#x2019; Child collects all files and sends 'image-data' to parent
-    7. Parent generates S3 keys and sends 'put-links' &#xE2;&#x2020;&#x2019; Child uploads to S3
-    8. Child sends 'upload-success' with form data and s3Keys &#xE2;&#x2020;&#x2019; Form resets to loading state
+    1. Parent sends 'initiation-data' → Child populates form with existing data
+    2. User fills Section 1 (Client Details) → validates → proceeds to Section 2
+    3. User chooses Photo ID (Yes/No) → if Yes, selects types and uploads files
+    4. User proceeds to Section 3 (Address History) → fills addresses
+    5. User proceeds to Section 4 (Address ID) → chooses Yes/No, uploads if Yes
+    6. User clicks Upload → Child collects all files and sends 'image-data' to parent
+    7. Parent generates S3 keys and sends 'put-links' → Child uploads to S3
+    8. Child sends 'upload-success' with form data and s3Keys → Form resets to loading state
     
     FILE UPLOAD PROCESS:
     - Child creates file metadata objects (type, document, side, name, data, uploader, date)
@@ -2433,10 +2433,10 @@
     =====================================================================
     ADDRESS AUTOCOMPLETE WITH BACKEND PROXY + CACHING
     - Checks localStorage cache BEFORE calling API
-    - User types in address field &#xE2;&#x2020;&#x2019; triggers debounced search
+    - User types in address field → triggers debounced search
     - If cached: Uses cached results (no API call)
     - If not cached: Sends 'address-search' message to parent
-    - Parent calls Wix backend &#xE2;&#x2020;&#x2019; backend calls getaddress.io API
+    - Parent calls Wix backend → backend calls getaddress.io API
     - Parent sends 'address-results' back with suggestions
     - Caches results for 7 days (max 50 items, LRU eviction)
     - Displays dropdown with clickable suggestions
@@ -2557,7 +2557,7 @@
           let addressPrefix = getAddressData.line_1.trim();
           
           // Remove thoroughfare/street from line_1 if present
-          // Example: "94 Southgate Street" &#xE2;&#x2020;&#x2019; "94" | "Thurstan Hoskin Llp" &#xE2;&#x2020;&#x2019; "Thurstan Hoskin Llp"
+          // Example: "94 Southgate Street" → "94" | "Thurstan Hoskin Llp" → "Thurstan Hoskin Llp"
           if (getAddressData.thoroughfare && addressPrefix.includes(getAddressData.thoroughfare)) {
             addressPrefix = addressPrefix.replace(getAddressData.thoroughfare, '').replace(/,\s*$/, '').trim();
           }
@@ -2978,9 +2978,9 @@
           
           dobInputs[7].focus();
           const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
-          console.log('&#xE2;&#x153;&#x2026; Pasted DOB filled all fields:', parsedDate, '&#xE2;&#x2020;&#x2019;', formattedDate);
+          console.log('&#xE2;&#x153;&#x2026; Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
         } else {
-          console.warn('&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Could not parse date from pasted text:', pastedText);
+          console.warn('⚠️ Could not parse date from pasted text:', pastedText);
         }
       });
     }
@@ -4420,7 +4420,7 @@
     - Collects all files to upload via collectFiles()
     - Iterates through files and uploads each to S3 using PUT URL
     - Updates progress bar and file status in real-time:
-    -   Pending &#xE2;&#x2020;&#x2019; Uploading (orange border) &#xE2;&#x2020;&#x2019; Success (green) or Error (red)
+    -   Pending → Uploading (orange border) → Success (green) or Error (red)
     - On success: Shows "Upload Complete!" and sends 'upload-success' to parent
     - On error: Shows error message and returns to Address ID section
     - Validates files array matches links array length
@@ -5050,12 +5050,12 @@
     }
     
     Flow:
-    1. Parent sends 'initiation-data' &#xE2;&#x2020;&#x2019; Child resets form via resetForm()
+    1. Parent sends 'initiation-data' → Child resets form via resetForm()
     2. Child populates form with data via loadData()
-    3. User types address &#xE2;&#x2020;&#x2019; Child sends 'address-search' to parent
-    4. Parent sends 'address-results' &#xE2;&#x2020;&#x2019; Child shows dropdown
-    5. User selects &#xE2;&#x2020;&#x2019; Child sends 'address-lookup' to parent
-    6. Parent sends 'address-data' &#xE2;&#x2020;&#x2019; Child stores Thirdfort object
+    3. User types address → Child sends 'address-search' to parent
+    4. Parent sends 'address-results' → Child shows dropdown
+    5. User selects → Child sends 'address-lookup' to parent
+    6. Parent sends 'address-data' → Child stores Thirdfort object
     =====================================================================
     */
     // Add immediate listener log to verify script is running
@@ -5099,7 +5099,7 @@
         // Store full address object
         handleAddressData(event.data.address, event.data.field);
       } else {
-        console.log('&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Unknown message type or missing type');
+        console.log('⚠️ Unknown message type or missing type');
       }
     });
 
@@ -5341,7 +5341,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '91f50c9';
+    window.__IFRAME_VERSION__ = '158b639';
     console.log('[image-uploader] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

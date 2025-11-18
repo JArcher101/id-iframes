@@ -46,7 +46,7 @@ export const getFCDOSanctionsHTML = webMethod(
           size: htmlCache.length
         };
       } else {
-        console.log('&#x26A0;&#xFE0F; Cache expired, fetching fresh data');
+        console.log('⚠️ Cache expired, fetching fresh data');
       }
     }
     
@@ -83,7 +83,7 @@ export const getFCDOSanctionsHTML = webMethod(
     
     // If we have stale cache, return it with warning
     if (htmlCache) {
-      console.log('&#x26A0;&#xFE0F; Returning stale cache due to fetch error');
+      console.log('⚠️ Returning stale cache due to fetch error');
       return {
         xml: htmlCache,
         cached: true,

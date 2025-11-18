@@ -7,16 +7,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
   
   <!-- Core CSS -->
-  <link rel="stylesheet" href="styles.css?v=91f50c9" />
+  <link rel="stylesheet" href="styles.css?v=158b639" />
   
   <!-- Request Form Specific CSS -->
-  <link rel="stylesheet" href="css/request-form.css?v=91f50c9" />
+  <link rel="stylesheet" href="css/request-form.css?v=158b639" />
 </head>
 <body>
   <div class="container">
     <!-- TEMPORARY: Mock Data Testing Buttons -->
     <div id="mockDataSection" class="section" style="background: #fff3cd; border: 2px solid #ffc107;">
-      <h3 style="color: #856404; margin: 0 0 10px 0;">&#xF0;&#x178;&#xA7;&#xAA; Testing: Mock Client Data</h3>
+      <h3 style="color: #856404; margin: 0 0 10px 0;">🧪 Testing: Mock Client Data</h3>
       <div style="display: flex; gap: 10px;">
         <button type="button" class="mock-btn" id="mockClientBtn" style="flex: 1; padding: 10px; background: #4A90E2; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Load Individual</button>
         <button type="button" class="mock-btn" id="mockBusinessBtn" style="flex: 1; padding: 10px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Load Business</button>
@@ -365,7 +365,7 @@
           <div>
             <label for="phoneCountryCode">Code</label>
             <div class="address-autocomplete-container">
-              <input type="text" id="phoneCountryCode" name="phoneCountryCode" autocomplete="off" placeholder="Search country code..." value="&#xF0;&#x178;&#x2021;&#xAC;&#xF0;&#x178;&#x2021;&#xA7; +44 UK" data-phone-code="+44" data-country-code="GB" />
+              <input type="text" id="phoneCountryCode" name="phoneCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
               <div id="phoneCountryCodeDropdown" class="address-dropdown hidden"></div>
             </div>
           </div>
@@ -690,27 +690,27 @@
   <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
   
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=91f50c9"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=158b639"></script>
   
   <!-- Google libphonenumber for phone validation (must load before core script) -->
   <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
   <!-- Core JavaScript -->
-    <script src="js/request-form-core.js?v=91f50c9"></script>
+    <script src="js/request-form-core.js?v=158b639"></script>
   
   <!-- Request Type Modules -->
-  <script src="js/request-types/formJ.js?v=91f50c9"></script>
-  <script src="js/request-types/formK.js?v=91f50c9"></script>
-  <script src="js/request-types/formE.js?v=91f50c9"></script>
-  <script src="js/request-types/esof.js?v=91f50c9"></script>
-  <script src="js/request-types/note.js?v=91f50c9"></script>
-  <script src="js/request-types/update.js?v=91f50c9"></script>
-  <script src="js/request-types/updatePep.js?v=91f50c9"></script>
+  <script src="js/request-types/formJ.js?v=158b639"></script>
+  <script src="js/request-types/formK.js?v=158b639"></script>
+  <script src="js/request-types/formE.js?v=158b639"></script>
+  <script src="js/request-types/esof.js?v=158b639"></script>
+  <script src="js/request-types/note.js?v=158b639"></script>
+  <script src="js/request-types/update.js?v=158b639"></script>
+  <script src="js/request-types/updatePep.js?v=158b639"></script>
   
   <!-- Initialize Autocomplete Fields -->
   <script>
     // Initialize all autocomplete fields immediately (DOM already loaded since scripts are at bottom)
-    console.log('&#xF0;&#x178;&#x201D;&#xA7; Initializing autocomplete fields in request-form...');
+    console.log('🔍 Initializing autocomplete fields in request-form...');
     initializeCountryAutocomplete('currentCountry', 'currentCountryDropdown');
     initializeCountryAutocomplete('previousCountry', 'previousCountryDropdown');
     initializePhoneCodeAutocomplete('phoneCountryCode', 'phoneCountryCodeDropdown');
@@ -720,7 +720,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '91f50c9';
+    window.__IFRAME_VERSION__ = '158b639';
     console.log('[request-form] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

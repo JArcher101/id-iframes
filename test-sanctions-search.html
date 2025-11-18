@@ -152,7 +152,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>&#xF0;&#x178;&#xA7;&#xAA; Test FCDO Sanctions Search</h1>
+    <h1>🧪 Test FCDO Sanctions Search</h1>
     
     <div class="info">
       <strong>Test Harness for sanctions-search-v2.html</strong><br>
@@ -166,9 +166,9 @@
       <label for="testDOB">Test Client DOB:</label>
       <input type="date" id="testDOB" value="1975-06-15">
       
-      <button onclick="sendClientData()">&#xF0;&#x178;&#x201C;&#xA4; Send Client Data to Iframe</button>
-      <button onclick="sendMockXML()" class="secondary">&#xF0;&#x178;&#x201C;&#xA6; Send Mock XML to Iframe</button>
-      <button onclick="clearLog()" class="secondary">&#xF0;&#x178;&#xA7;&#xB9; Clear Log</button>
+      <button onclick="sendClientData()">📤 Send Client Data to Iframe</button>
+      <button onclick="sendMockXML()" class="secondary">📦 Send Mock XML to Iframe</button>
+      <button onclick="clearLog()" class="secondary">🗑️ Clear Log</button>
     </div>
     
     <div class="iframe-container">
@@ -188,7 +188,7 @@
         <li>In <code>sanctions-search-v2.html</code>, set <code>USE_MOCK_DATA = true</code></li>
         <li>Paste the XML into the <code>&lt;script id="mockSanctionsXML"&gt;</code> tag</li>
         <li>Reload this page</li>
-        <li>Click "&#xF0;&#x178;&#x201C;&#xA4; Send Client Data to Iframe" to populate the search form</li>
+        <li>Click "📤 Send Client Data to Iframe" to populate the search form</li>
         <li>Click "Search Sanctions List" in the iframe to test search</li>
         <li>Try these test names:
           <ul>
@@ -263,7 +263,7 @@
       
       iframe.contentWindow.postMessage(message, '*');
       logMessage(`&#xE2;&#x17E;&#xA1;&#xEF;&#xB8;&#x8F; SENT: sanctions-client-data (${name}, ${dob})`, 'sent');
-      console.log('&#xF0;&#x178;&#x201C;&#xA4; Sent to iframe:', message);
+      console.log('📤 Sent to iframe:', message);
     }
     
     // Send mock XML to iframe (for testing without backend)
@@ -298,7 +298,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '91f50c9';
+    window.__IFRAME_VERSION__ = '158b639';
     console.log('[test-sanctions-search] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

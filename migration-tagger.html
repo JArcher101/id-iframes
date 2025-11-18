@@ -1147,7 +1147,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>&#xF0;&#x178;&#x8F;&#xB7;&#xEF;&#xB8;&#x8F; ID Image Migration Tool</h1>
+            <h1>🏷️ ID Image Migration Tool</h1>
             
             <!-- Begin Controls (shown initially) -->
             <div class="begin-controls" id="beginControls">
@@ -1171,7 +1171,7 @@
 
         <!-- No Data State -->
         <div id="noDataState" class="no-data hidden">
-            <h2>&#xF0;&#x178;&#x201C;&#xAD; No Entries to Process</h2>
+            <h2>📭 No Entries to Process</h2>
             <p>No entries were provided for migration.</p>
         </div>
 
@@ -1197,7 +1197,7 @@
 
                     <!-- Hotkey Guide Card (below image) -->
                     <div class="hotkey-card">
-                        <div class="hotkey-card-title">&#xF0;&#x178;&#x8F;&#xB7;&#xEF;&#xB8;&#x8F; Tag Image (Click or Press Key)</div>
+                        <div class="hotkey-card-title">🏷️ Tag Image (Click or Press Key)</div>
                         <div class="hotkey-overlay">
                             <div class="hotkey-item" onclick="tagCurrentImage('Passport')" title="Click to tag or press P">
                                 <div class="hotkey-key">P</div>
@@ -1720,11 +1720,11 @@
             // If at 270&#xC2;&#xB0; and rotating right (+90), should unwind to 0&#xC2;&#xB0; not continue to 360&#xC2;&#xB0;
             // If at 90&#xC2;&#xB0; and rotating left (-90), should unwind to 0&#xC2;&#xB0; not continue to -90&#xC2;&#xB0;
             if (currentRotation === 270 && degrees > 0) {
-                // At 270&#xC2;&#xB0;, rotating right &#xE2;&#x2020;&#x2019; unwind back to 0&#xC2;&#xB0;
+                // At 270&#xC2;&#xB0;, rotating right → unwind back to 0&#xC2;&#xB0;
                 currentRotation = 0;
                 mainImage.style.transform = 'rotate(0deg)';
             } else if (currentRotation === 90 && degrees < 0) {
-                // At 90&#xC2;&#xB0;, rotating left &#xE2;&#x2020;&#x2019; unwind back to 0&#xC2;&#xB0;
+                // At 90&#xC2;&#xB0;, rotating left → unwind back to 0&#xC2;&#xB0;
                 currentRotation = 0;
                 mainImage.style.transform = 'rotate(0deg)';
             } else {
@@ -2476,7 +2476,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '91f50c9';
+    window.__IFRAME_VERSION__ = '158b639';
     console.log('[migration-tagger] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

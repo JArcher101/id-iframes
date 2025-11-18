@@ -131,7 +131,7 @@ Sends request-data message to parent with:
       
       if (idDocumentsSection) {
         idDocumentsSection.classList.remove('hidden');
-        console.log('&#xD83D;&#xDC41;&#xFE0F; ID Documents section shown for Form K');
+        console.log('👁️ ID Documents section shown for Form K');
       }
     },
     
@@ -217,7 +217,7 @@ Sends request-data message to parent with:
       
       if (formKruleSelector) {
         formKruleSelector.classList.remove('hidden');
-        console.log('&#xD83D;&#xDC41;&#xFE0F; Form K rule selector shown');
+        console.log('👁️ Form K rule selector shown');
       }
     },
     
@@ -226,7 +226,7 @@ Sends request-data message to parent with:
       
       if (k3Hint) {
         k3Hint.classList.remove('hidden');
-        console.log('&#x26A0;&#xFE0F; k3Hint shown for Form K');
+        console.log('⚠️ k3Hint shown for Form K');
       }
     },
     
@@ -289,7 +289,7 @@ Sends request-data message to parent with:
       
       if (idImagesSection) {
         idImagesSection.classList.remove('hidden');
-        console.log('&#xD83D;&#xDC41;&#xFE0F; ID Images section shown for Form K Rule 3');
+        console.log('👁️ ID Images section shown for Form K Rule 3');
       }
     },
     
@@ -298,7 +298,7 @@ Sends request-data message to parent with:
       
       if (idImagesSection) {
         idImagesSection.classList.add('hidden');
-        console.log('&#xD83D;&#xDC41;&#xFE0F; ID Images section hidden for Form K');
+        console.log('👁️ ID Images section hidden for Form K');
       }
     },
     
@@ -370,7 +370,7 @@ Sends request-data message to parent with:
       
       if (k3Hint) {
         k3Hint.classList.add('hidden');
-        console.log('&#xD83D;&#xDC41;&#xFE0F; k3Hint hidden');
+        console.log('👁️ k3Hint hidden');
       }
     },
     

@@ -676,7 +676,7 @@ const PHONE_COUNTRY_CODES = [
   { code: 'CL', phone: '+56', flag: '&#xD83C;&#xDDE8;&#xD83C;&#xDDF1;', name: 'Chile', searchTerms: ['chile', 'cl', '56', '+56'] },
   { code: 'CO', phone: '+57', flag: '&#xD83C;&#xDDE8;&#xD83C;&#xDDF4;', name: 'Colombia', searchTerms: ['colombia', 'co', '57', '+57'] },
   { code: 'CR', phone: '+506', flag: '&#xD83C;&#xDDE8;&#xD83C;&#xDDF7;', name: 'Costa Rica', searchTerms: ['costa rica', 'cr', '506', '+506'] },
-  { code: 'CI', phone: '+225', flag: '&#xD83C;&#xDDE8;&#xD83C;&#xDDEE;', name: 'C&#xF4;te d\'Ivoire', searchTerms: ['cote divoire', 'ivory coast', 'ci', '225', '+225'] },
+  { code: 'CI', phone: '+225', flag: '🇨🇮', name: 'C&#xF4;te d\'Ivoire', searchTerms: ['cote divoire', 'ivory coast', 'ci', '225', '+225'] },
   { code: 'EC', phone: '+593', flag: '&#xD83C;&#xDDEA;&#xD83C;&#xDDE8;', name: 'Ecuador', searchTerms: ['ecuador', 'ec', '593', '+593'] },
   { code: 'EG', phone: '+20', flag: '&#xD83C;&#xDDEA;&#xD83C;&#xDDEC;', name: 'Egypt', searchTerms: ['egypt', 'eg', '20', '+20'] },
   { code: 'SV', phone: '+503', flag: '&#xD83C;&#xDDF8;&#xD83C;&#xDDFB;', name: 'El Salvador', searchTerms: ['el salvador', 'sv', '503', '+503'] },
