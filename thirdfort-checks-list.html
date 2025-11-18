@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thirdfort Checks List</title>
+    <link rel="stylesheet" href="css/thirdfort-checks-list.css?v=91f50c9">
+</head>
+<body>
+    <div id="checks-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Thirdfort Checks</h1>
+            <div class="header-controls">
+                <button id="mock-data-btn" class="view-btn mock-btn">Load Mock Data</button>
+            </div>
+        </div>
+
+        <!-- Checks List -->
+        <div id="checks-list" class="checks-list">
+            <!-- Check items will be dynamically inserted here -->
+        </div>
+
+        <!-- Check Detail Modal -->
+        <div id="check-detail-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title">Check Details</h2>
+                    <button id="close-modal" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Check detail content will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Loading checks...</p>
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="empty-state hidden">
+            <div class="empty-icon">📋</div>
+            <h3>No checks found</h3>
+            <p>No checks match your current filters.</p>
+        </div>
+    </div>
+
+    <script src="js/thirdfort-checks-list.js?v=91f50c9"></script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = '91f50c9';
+    console.log('[thirdfort-checks-list] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
+</body>
+</html>
