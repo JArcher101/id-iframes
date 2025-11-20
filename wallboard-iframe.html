@@ -101,10 +101,9 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            width: 900px;
-            max-width: 100%;
+            width: 100%;
             background: white;
-            margin: 0 auto;
+            margin: 0;
         }
 
         /* 
@@ -115,26 +114,10 @@
         .header {
             background: #f5f5f5;
             border-bottom: 2px solid #D4A574; /* Pantone 451C */
-            padding: 15px 20px;
+            padding: 15px 0;
             display: flex;
             flex-direction: column;
             gap: 12px;
-        }
-
-        .header-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .header-title {
-            font-family: 'Transport', 'Quicksand', sans-serif;
-            font-size: 24px;
-            font-weight: 500;
-            color: rgb(0, 60, 113); /* Brand navy blue */
-            margin: 0;
         }
 
         .countdown-text {
@@ -219,7 +202,7 @@
         .view-container {
             flex: 1;
             overflow: auto;
-            padding: 20px;
+            padding: 20px 0;
         }
 
         .wallboard-view {
@@ -452,11 +435,7 @@
         */
         @media (max-width: 768px) {
             .header {
-                padding: 12px 15px;
-            }
-
-            .header-title {
-                font-size: 20px;
+                padding: 12px 0;
             }
 
             .controls-row {
@@ -469,7 +448,7 @@
             }
 
             .view-container {
-                padding: 15px;
+                padding: 15px 0;
             }
 
             .metrics-table {
@@ -487,10 +466,6 @@
         }
 
         @media (max-width: 480px) {
-            .header-title {
-                font-size: 18px;
-            }
-
             .btn, .dropdown {
                 font-size: 12px;
                 padding: 6px 12px;
@@ -511,10 +486,6 @@
     <div class="wallboard-container">
         <!-- Header with controls -->
         <div class="header">
-            <div class="header-row">
-                <h1 class="header-title">ID System Wallboard</h1>
-                <span class="countdown-text" id="countdownText">Refreshing in: 5:00</span>
-            </div>
             <div class="controls-row">
                 <button class="btn" id="refreshBtn" disabled onclick="refreshWallboard()">Refresh</button>
                 <select class="dropdown" id="feeEarnerDropdown" disabled onchange="handleFeeEarnerChange()">
@@ -522,6 +493,7 @@
                 </select>
                 <button class="btn btn-secondary" id="analyticsBtn" disabled onclick="showAnalytics()">Analytics</button>
                 <button class="btn" id="downloadBtn" disabled onclick="downloadWallboardPDF()">Download PDF</button>
+                <span class="countdown-text" id="countdownText">Refreshing in: 5:00</span>
             </div>
         </div>
 
@@ -616,7 +588,7 @@
            Structure: { type: 'fe-analytics', fe: 'SJM' }
         
         PDF DOWNLOADS (no parent communication):
-        - Download button generates PDF locally using jsPDF library
+        - Download button generates PDF locally using html2pdf.js library and opens print dialog with print.js
         - Includes all wallboard metrics in formatted table
         - Auto-downloads with timestamp filename
         
@@ -1004,140 +976,201 @@
         /*
         =====================================================================
         DOWNLOAD WALLBOARD PDF - Generate and download metrics table as PDF
+        Uses html2pdf.js to create PDF and print.js to open print dialog
         =====================================================================
         */
-        function downloadWallboardPDF() {
-            if (!wallboardData || wallboardData.length === 0 || !window.jspdf) {
-                console.error('Cannot generate PDF: missing data or jsPDF library');
+        
+        /*
+        Build HTML template for PDF matching uk-sanctions-checker.html style
+        */
+        function buildPDFHTML() {
+            const generatedDate = new Date().toLocaleString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Build full HTML document (like uk-sanctions-checker)
+            let html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { 
+                            font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
+                            padding: 40px; 
+                            background: white; 
+                            color: #111; 
+                            line-height: 1.5; 
+                            font-size: 14px; 
+                        }
+                        .metrics-table { page-break-inside: avoid; }
+                        @media print { body { padding: 20px; } }
+                    </style>
+                </head>
+                <body>
+                <div>
+                    <!-- PDF Header -->
+                    <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
+                        <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">ID System Wallboard Report</div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px;">
+                            <div style="display: flex; gap: 8px;">
+                                <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Report Date:</span>
+                                <span style="color: #333;">${generatedDate}</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Fee Earners:</span>
+                                <span style="color: #333;">SJM, MB, SKN, EL, EJL, LJD, MLP</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Metrics Count:</span>
+                                <span style="color: #333;">${wallboardData.length} metric${wallboardData.length === 1 ? '' : 's'}</span>
+                            </div>
+                        </div>
+                    </div>
+            `;
+            
+            // Metrics Table
+            if (wallboardData.length > 0) {
+                html += `
+                    <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">Metrics Overview</div>
+                    
+                    <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); border-radius: 8px; overflow: hidden; margin-bottom: 30px;">
+                        <thead>
+                            <tr style="background: #003c71; color: white;">
+                                <th style="padding: 12px 16px; text-align: left; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; min-width: 200px;">Metric</th>
+                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">SJM</th>
+                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">MB</th>
+                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">SKN</th>
+                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">EL</th>
+                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">EJL</th>
+                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">LJD</th>
+                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">MLP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                wallboardData.forEach((row, index) => {
+                    const rowStyle = index % 2 === 0 ? 'background: #f9f9f9;' : 'background: white;';
+                    html += `
+                        <tr style="${rowStyle} border-bottom: 1px solid #eee;">
+                            <td style="padding: 12px 16px; font-size: 14px; font-weight: 600; color: #003c71;">${escapeHtml(row.title || 'Unknown')}</td>
+                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.sjm !== undefined ? row.sjm : '-'}</td>
+                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.mb !== undefined ? row.mb : '-'}</td>
+                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.skn !== undefined ? row.skn : '-'}</td>
+                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.el !== undefined ? row.el : '-'}</td>
+                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.ejl !== undefined ? row.ejl : '-'}</td>
+                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.ljd !== undefined ? row.ljd : '-'}</td>
+                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.mlp !== undefined ? row.mlp : '-'}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                        </tbody>
+                    </table>
+                `;
+            }
+            
+            // PDF Footer
+            html += `
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #dee2e6; text-align: center; font-size: 11px; color: #999;">
+                        <p>This report contains ID system metrics for all active fee earners at the time of generation.</p>
+                        <p style="margin-top: 8px; font-style: italic;">Generated by: Val'ID'ate Wallboard | Report ID: WALL-${Date.now()}</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+            `;
+            
+            return html;
+        }
+        
+        async function downloadWallboardPDF() {
+            if (!wallboardData || wallboardData.length === 0) {
+                console.error('Cannot generate PDF: missing data');
                 return;
             }
             
-            console.log('📄 Generating wallboard PDF...');
+            console.log('📄 Generating wallboard PDF using html2pdf...');
             
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('l', 'pt', 'a4'); // Landscape orientation for wide table
+            if (typeof html2pdf === 'undefined') {
+                console.error('html2pdf library not loaded');
+                return;
+            }
             
-            const generatedDate = new Date().toLocaleString('en-GB', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
-            
-            // A4 Landscape: 842pt wide, 595pt tall
-            const pageWidth = 842;
-            const pageHeight = 595;
-            const margin = 40;
-            let yPosition = margin;
-            
-            // Set font
-            doc.setFont('helvetica');
-            
-            // Header - Thurstan Hoskin branding
-            doc.setFontSize(24);
-            doc.setTextColor(0, 60, 113);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Thurstan Hoskin', margin, yPosition);
-            
-            doc.setFontSize(18);
-            doc.text("Val'ID'ate Wallboard", pageWidth - margin - 180, yPosition);
-            
-            yPosition += 10;
-            
-            // Header border
-            doc.setDrawColor(0, 60, 113);
-            doc.setLineWidth(3);
-            doc.line(margin, yPosition, pageWidth - margin, yPosition);
-            
-            yPosition += 25;
-            
-            // Document title
-            doc.setFontSize(20);
-            doc.setFont('helvetica', 'bold');
-            const title = 'ID System Metrics - Wallboard Report';
-            const titleWidth = doc.getTextWidth(title);
-            doc.text(title, (pageWidth - titleWidth) / 2, yPosition);
-            
-            yPosition += 20;
-            
-            // Generation timestamp
-            doc.setFontSize(12);
-            doc.setTextColor(102, 102, 102);
-            doc.setFont('helvetica', 'normal');
-            const timestamp = `Generated: ${generatedDate}`;
-            const timestampWidth = doc.getTextWidth(timestamp);
-            doc.text(timestamp, (pageWidth - timestampWidth) / 2, yPosition);
-            
-            yPosition += 25;
-            
-            // Build table data
-            const feeEarners = ['sjm', 'mb', 'skn', 'el', 'ejl', 'ljd', 'mlp'];
-            const tableData = wallboardData.map(row => {
-                return [
-                    row.title || 'Unknown',
-                    row.sjm !== undefined ? row.sjm : '-',
-                    row.mb !== undefined ? row.mb : '-',
-                    row.skn !== undefined ? row.skn : '-',
-                    row.el !== undefined ? row.el : '-',
-                    row.ejl !== undefined ? row.ejl : '-',
-                    row.ljd !== undefined ? row.ljd : '-',
-                    row.mlp !== undefined ? row.mlp : '-'
-                ];
-            });
-            
-            // Create table using autoTable
-            doc.autoTable({
-                startY: yPosition,
-                head: [['Metric', 'SJM', 'MB', 'SKN', 'EL', 'EJL', 'LJD', 'MLP']],
-                body: tableData,
-                theme: 'striped',
-                headStyles: {
-                    fillColor: [0, 60, 113],
-                    textColor: 255,
-                    fontSize: 11,
-                    fontStyle: 'bold',
-                    halign: 'center'
-                },
-                bodyStyles: {
-                    fontSize: 10,
-                    textColor: [51, 51, 51]
-                },
-                columnStyles: {
-                    0: { halign: 'left', fontStyle: 'bold', cellWidth: 200 }, // Metric column
-                    1: { halign: 'center' },
-                    2: { halign: 'center' },
-                    3: { halign: 'center' },
-                    4: { halign: 'center' },
-                    5: { halign: 'center' },
-                    6: { halign: 'center' },
-                    7: { halign: 'center' }
-                },
-                alternateRowStyles: {
-                    fillColor: [248, 249, 250]
-                },
-                margin: { left: margin, right: margin }
-            });
-            
-            yPosition = doc.lastAutoTable.finalY + 20;
-            
-            // Footer
-            doc.setFontSize(10);
-            doc.setTextColor(102, 102, 102);
-            doc.setFont('helvetica', 'italic');
-            const footer = 'This report contains ID system metrics for all active fee earners at the time of generation.';
-            const footerWidth = doc.getTextWidth(footer);
-            doc.text(footer, (pageWidth - footerWidth) / 2, yPosition);
-            
-            // Generate filename with timestamp
-            const timestamp_file = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-            const filename = `Wallboard_Report_${timestamp_file}.pdf`;
-            
-            // Download
-            doc.save(filename);
-            console.log('📄 PDF downloaded:', filename);
+            try {
+                // Build HTML template for PDF
+                const pdfHTML = buildPDFHTML();
+                
+                // Create element for html2pdf (like uk-sanctions-checker)
+                // CRITICAL: Do NOT add to document.body to avoid custom font inheritance!
+                const element = document.createElement('div');
+                element.innerHTML = pdfHTML;
+                
+                console.log('📄 HTML content length:', pdfHTML.length);
+                console.log('📄 Element created with', element.children.length, 'children');
+                
+                // Configure html2pdf options (same as uk-sanctions-checker)
+                const options = {
+                    margin: [10, 10, 10, 10],
+                    filename: `Wallboard_Report_${new Date().toISOString().replace(/:/g, '-').split('.')[0]}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 2, 
+                        useCORS: true, 
+                        logging: false
+                    },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: 'css', avoid: '.metrics-table' }
+                };
+                
+                console.log('📄 Starting PDF generation with html2pdf...');
+                
+                // Generate PDF blob using html2pdf (exactly like uk-sanctions-checker)
+                const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+                
+                console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
+                
+                // Open print dialog using Print.js with PDF blob (like uk-sanctions-checker)
+                if (typeof printJS === 'undefined') {
+                    console.error('❌ Print.js library not loaded');
+                    return;
+                }
+                
+                console.log('📄 Opening print dialog with PDF blob...');
+                
+                // Convert blob to object URL for Print.js
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                
+                // Use Print.js to print the PDF directly (preserves all styling)
+                printJS({
+                    printable: pdfUrl,
+                    type: 'pdf',
+                    onPrintDialogClose: () => {
+                        // Clean up blob URL after print dialog closes
+                        URL.revokeObjectURL(pdfUrl);
+                    }
+                });
+                
+                console.log('✅ Print dialog opened with PDF');
+                
+            } catch (error) {
+                console.error('❌ Error generating PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+            }
+        }
+        
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         /*
@@ -2129,13 +2162,16 @@
     <!-- Chart.js library for charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
-    <!-- jsPDF library for PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- html2pdf library for PDF generation (same as uk-sanctions-checker) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Print.js library for print dialog (same as uk-sanctions-checker) -->
+    <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '5baf66e';
+    window.__IFRAME_VERSION__ = '58bf906';
     console.log('[wallboard-iframe] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

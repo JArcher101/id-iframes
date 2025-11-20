@@ -997,229 +997,495 @@
         }
         
         /*
-        Generate and download audit log as PDF
+        =====================================================================
+        PDF GENERATION (using html2pdf.js and print.js)
+        =====================================================================
         */
-        function downloadAuditLogPDF() {
-            if (!auditLog || auditLog.length === 0 || !window.jspdf) {
-                console.error('Cannot generate PDF: missing data or jsPDF library');
-                return;
-            }
-            
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'pt', 'a4');
-            
+        
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        /*
+        Build HTML template for PDF matching thirdfort-checks-manager and uk-sanctions-checker styles
+        */
+        function buildPDFHTML() {
             const generatedDate = new Date().toLocaleString('en-GB', {
+                day: 'numeric',
+                month: 'short',
                 year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
                 hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
+                minute: '2-digit'
             });
             
-            // A4 dimensions: 595pt wide, 842pt tall
-            const pageWidth = 595;
-            const pageHeight = 842;
-            const margin = 40;
-            let yPosition = margin;
-            
-            // Set font
-            doc.setFont('helvetica');
-            
-            // Header
-            doc.setFontSize(24);
-            doc.setTextColor(0, 60, 113);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Thurstan Hoskin', margin, yPosition);
-            
-            doc.setFontSize(18);
-            doc.text("Val'ID'ate", pageWidth - margin - 120, yPosition);
-            
-            yPosition += 10;
-            
-            // Header border
-            doc.setDrawColor(0, 60, 113);
-            doc.setLineWidth(3);
-            doc.line(margin, yPosition, pageWidth - margin, yPosition);
-            
-            yPosition += 25;
-            
-            // Document title
-            doc.setFontSize(20);
-            doc.setFont('helvetica', 'bold');
-            const title = 'Audit Log';
-            const titleWidth = doc.getTextWidth(title);
-            doc.text(title, (pageWidth - titleWidth) / 2, yPosition);
-            
-            yPosition += 20;
-            
-            // Entry count subtitle
-            doc.setFontSize(14);
-            doc.setTextColor(102, 102, 102);
-            doc.setFont('helvetica', 'normal');
-            const subtitle = `${auditLog.length} ${auditLog.length === 1 ? 'Entry' : 'Entries'}`;
-            const subtitleWidth = doc.getTextWidth(subtitle);
-            doc.text(subtitle, (pageWidth - subtitleWidth) / 2, yPosition);
-            
-            yPosition += 30;
+            // Build full HTML document (like checks manager and sanctions checker)
+            let html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { 
+                            font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
+                            padding: 40px; 
+                            background: white; 
+                            color: #111; 
+                            line-height: 1.5; 
+                            font-size: 14px; 
+                        }
+                        .entry-card { page-break-inside: avoid; margin-bottom: 20px; }
+                        .detail-section { page-break-inside: avoid; }
+                        @media print { body { padding: 20px; } }
+                    </style>
+                </head>
+                <body>
+                <div>
+                    <!-- PDF Header -->
+                    <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div style="font-size: 26px; font-weight: bold; color: #003c71;">Thurstan Hoskin</div>
+                            <div style="font-size: 18px; font-weight: bold; color: #003c71;">Val'ID'ate</div>
+                        </div>
+                        <div style="font-size: 20px; font-weight: bold; color: #003c71; margin-bottom: 15px; text-align: center;">Audit Log</div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px;">
+                            <div style="display: flex; gap: 8px;">
+                                <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Total Entries:</span>
+                                <span style="color: #333;">${auditLog.length} ${auditLog.length === 1 ? 'Entry' : 'Entries'}</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Generated:</span>
+                                <span style="color: #333;">${generatedDate}</span>
+                            </div>
+                        </div>
+                    </div>
+            `;
             
             // Process each audit log entry
             auditLog.forEach((entry, index) => {
-                // Check if we need a new page
-                if (yPosition > pageHeight - 100) {
-                    doc.addPage();
-                    yPosition = margin;
-                }
-                
-                // Entry number
-                doc.setFontSize(12);
-                doc.setTextColor(0, 60, 113);
-                doc.setFont('helvetica', 'bold');
-                doc.text(`Entry ${index + 1}`, margin, yPosition);
-                
-                yPosition += 5;
-                doc.setDrawColor(221, 221, 221);
-                doc.setLineWidth(1);
-                doc.line(margin, yPosition, pageWidth - margin, yPosition);
-                
-                yPosition += 15;
-                
-                // Timestamp and user
-                doc.setFontSize(10);
-                doc.setTextColor(102, 102, 102);
-                doc.setFont('helvetica', 'normal');
+                const { formattedDate, timeAgo, combinedTimestamp } = formatTimestamp(entry.timestamp);
                 const timestamp = new Date(entry.timestamp).toLocaleString('en-GB', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
+                    second: '2-digit'
                 });
-                doc.text(`${timestamp} • ${entry.userEmail || 'Unknown User'}`, margin, yPosition);
                 
-                yPosition += 15;
-                
-                // Name and matter
-                doc.setFontSize(11);
-                doc.setTextColor(51, 51, 51);
-                doc.setFont('helvetica', 'bold');
-                doc.text(`Client: ${entry.name || 'Unknown'}`, margin, yPosition);
-                
-                yPosition += 14;
-                
-                doc.setFont('helvetica', 'normal');
-                doc.text(`Matter: ${entry.matterDetails || 'N/A'}`, margin, yPosition);
-                
-                if (entry.matterDescription) {
-                    yPosition += 14;
-                    doc.setTextColor(85, 85, 85);
-                    const descText = doc.splitTextToSize(entry.matterDescription, pageWidth - (margin * 2));
-                    doc.text(descText, margin, yPosition);
-                    yPosition += (descText.length * 12);
-                }
-                
-                yPosition += 10;
-                
-                // Status
                 const primaryStatus = entry.status && entry.status.length > 0 ? entry.status[0] : 'Pending';
                 const statusInfo = statusMap[primaryStatus] || { text: primaryStatus, class: 'pending' };
                 
-                doc.setTextColor(51, 51, 51);
-                doc.setFont('helvetica', 'bold');
-                doc.text(`Status: `, margin, yPosition);
-                doc.setFont('helvetica', 'normal');
-                doc.text(statusInfo.text, margin + 45, yPosition);
+                // Build status badges
+                let statusBadges = `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(statusInfo.text)}</span>`;
                 
-                yPosition += 14;
-                
-                // Trigger page
-                doc.setFont('helvetica', 'bold');
-                doc.text(`Action: `, margin, yPosition);
-                doc.setFont('helvetica', 'normal');
-                doc.text(entry.triggerPage || 'Unknown', margin + 45, yPosition);
-                
-                yPosition += 10;
-                
-                // Flags
-                const flags = [];
-                if (entry.riskIndicator) flags.push('High Risk');
+                if (entry.riskIndicator) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #f8d7da; color: #721c24; margin-right: 6px; margin-bottom: 6px;">High Risk</span>`;
+                }
                 if (entry.pepStatus) {
-                    const pepText = pepStatusMap[entry.pepStatus] || entry.pepStatus;
-                    flags.push(pepText);
+                    let pepClass = entry.pepStatus === 'CPEP' ? 'pep-confirmed' : (entry.pepStatus === 'NPEP' ? 'pep-outruled' : 'pep-potential');
+                    let pepText = entry.pepStatus === 'CPEP' ? 'PEP' : (entry.pepStatus === 'NPEP' ? 'Outruled PEP' : 'Potential PEP');
+                    const pepBg = entry.pepStatus === 'CPEP' ? '#fff3cd' : (entry.pepStatus === 'NPEP' ? '#d4edda' : '#e3f2fd');
+                    const pepColor = entry.pepStatus === 'CPEP' ? '#856404' : (entry.pepStatus === 'NPEP' ? '#155724' : '#1976d2');
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${pepBg}; color: ${pepColor}; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(pepText)}</span>`;
                 }
-                if (entry.pepMonitoring) flags.push('PEP Monitoring Active');
-                if (entry.safeHarbour) flags.push('Safe Harbour');
-                if (entry.amlCharge) flags.push('AML Charge Waived');
-                if (entry.business) flags.push('Business');
-                if (entry.charity) flags.push('Charity');
-                
-                if (flags.length > 0) {
-                    yPosition += 10;
-                    doc.setFontSize(9);
-                    doc.setTextColor(0, 60, 113);
-                    doc.text(`Flags: ${flags.join(', ')}`, margin, yPosition);
-                    yPosition += 10;
+                if (entry.pepMonitoring) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #fff3cd; color: #856404; margin-right: 6px; margin-bottom: 6px;">PEP Monitoring Active</span>`;
                 }
-                
-                // Address if present
-                if (entry.address) {
-                    yPosition += 10;
-                    doc.setFontSize(10);
-                    doc.setTextColor(51, 51, 51);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text('Address:', margin, yPosition);
-                    yPosition += 12;
-                    doc.setFont('helvetica', 'normal');
-                    doc.setFontSize(9);
-                    doc.setTextColor(85, 85, 85);
-                    const addressText = formatAddress(entry.address);
-                    const addressLines = doc.splitTextToSize(addressText, pageWidth - (margin * 2));
-                    doc.text(addressLines, margin, yPosition);
-                    yPosition += (addressLines.length * 11);
+                if (entry.safeHarbour) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #d4edda; color: #155724; margin-right: 6px; margin-bottom: 6px;">Safe Harbour</span>`;
+                }
+                if (entry.amlCharge) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #d4edda; color: #155724; margin-right: 6px; margin-bottom: 6px;">AML Charge Waived</span>`;
+                }
+                if (entry.business) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; margin-right: 6px; margin-bottom: 6px;">Business</span>`;
+                }
+                if (entry.charity) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; margin-right: 6px; margin-bottom: 6px;">Charity</span>`;
                 }
                 
-                // PEP Note if present
+                // Build details sections (matching renderAuditLog structure)
+                let detailsSections = '';
+                
+                // Matter section
+                if (entry.matterDetails) {
+                    const matterParts = entry.matterDetails.split('/');
+                    let matterItems = '';
+                    
+                    if (matterParts.length >= 3) {
+                        matterItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">FE Reference:</span><span style="color: #555;">${escapeHtml(matterParts[0] || 'N/A')}</span></div>`;
+                        matterItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Client Number:</span><span style="color: #555;">${escapeHtml(matterParts[1] || 'N/A')}</span></div>`;
+                        matterItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Matter Number:</span><span style="color: #555;">${escapeHtml(matterParts[2] || 'N/A')}</span></div>`;
+                    } else {
+                        matterItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Reference:</span><span style="color: #555;">${escapeHtml(entry.matterDetails)}</span></div>`;
+                    }
+                    
+                    if (entry.matterDescription) {
+                        matterItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Description:</span><span style="color: #555;">${escapeHtml(entry.matterDescription)}</span></div>`;
+                    }
+                    
+                    detailsSections += `
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #3498db;">
+                            <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">MATTER</div>
+                            ${matterItems}
+                        </div>
+                    `;
+                }
+                
+                // Identity section
+                if (entry.fullName || entry.doB || entry.relation || entry.entityNumber) {
+                    let identityItems = '';
+                    
+                    if (entry.fullName) {
+                        const fullNameParts = [];
+                        if (entry.fullName.prefix) fullNameParts.push(entry.fullName.prefix);
+                        if (entry.fullName.first) fullNameParts.push(entry.fullName.first);
+                        if (entry.fullName.middle) fullNameParts.push(entry.fullName.middle);
+                        if (entry.fullName.last) fullNameParts.push(entry.fullName.last);
+                        if (entry.fullName.business) fullNameParts.push(`(${entry.fullName.business})`);
+                        identityItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Full Name:</span><span style="color: #555;">${escapeHtml(fullNameParts.join(' '))}</span></div>`;
+                    }
+                    
+                    if (entry.nameChange && entry.previousName) {
+                        identityItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Previous Name:</span><span style="color: #e74c3c; font-weight: bold;">${escapeHtml(entry.previousName)}</span></div>`;
+                        if (entry.nameChangeReason) {
+                            identityItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Reason:</span><span style="color: #555;">${escapeHtml(entry.nameChangeReason)}</span></div>`;
+                        }
+                    }
+                    
+                    if (entry.doB) {
+                        identityItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Date of Birth:</span><span style="color: #555;">${escapeHtml(entry.doB)}</span></div>`;
+                    }
+                    
+                    if (entry.relation) {
+                        identityItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Relation:</span><span style="color: #555;">${escapeHtml(entry.relation)}</span></div>`;
+                    }
+                    
+                    if (entry.entityNumber) {
+                        identityItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Entity Number:</span><span style="color: #555;">${escapeHtml(entry.entityNumber)}</span></div>`;
+                    }
+                    
+                    if (entry.photoIdHeld !== undefined || entry.addressIdHeld !== undefined || entry.likenessNotConfirmed !== undefined) {
+                        identityItems += `<div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px;">`;
+                        if (entry.photoIdHeld) identityItems += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2;">Photo ID</span>`;
+                        if (entry.addressIdHeld) identityItems += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2;">Address ID</span>`;
+                        if (entry.likenessNotConfirmed) identityItems += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #f8d7da; color: #721c24;">Likeness Not Confirmed</span>`;
+                        identityItems += `</div>`;
+                    }
+                    
+                    detailsSections += `
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #9b59b6;">
+                            <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">IDENTITY</div>
+                            ${identityItems}
+                        </div>
+                    `;
+                }
+                
+                // Contact section
+                if (entry.email || entry.mobile) {
+                    let contactItems = '';
+                    if (entry.email) {
+                        contactItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Email:</span><span style="color: #555;">${escapeHtml(entry.email)}</span></div>`;
+                    }
+                    if (entry.mobile) {
+                        contactItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Mobile:</span><span style="color: #555;">${escapeHtml(entry.mobile)}</span></div>`;
+                    }
+                    
+                    detailsSections += `
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #16a085;">
+                            <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">CONTACT</div>
+                            ${contactItems}
+                        </div>
+                    `;
+                }
+                
+                // Address section
+                if (entry.address || entry.previousAddress) {
+                    let addressItems = '';
+                    
+                    if (entry.address) {
+                        addressItems += `
+                            <div style="font-size: 13px; margin-bottom: 5px; color: #555;">
+                                <span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Current Address:</span>
+                                ${entry.recentMove ? '<span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; background: #f8d7da; color: #721c24; margin-left: 5px;">Recent Move</span>' : ''}
+                                <div style="color: #555; margin-top: 4px; line-height: 1.5;">${escapeHtml(formatAddress(entry.address))}</div>
+                            </div>
+                        `;
+                    }
+                    
+                    if (entry.previousAddress) {
+                        addressItems += `
+                            <div style="font-size: 13px; margin-top: 8px; color: #555;">
+                                <span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Previous Address:</span>
+                                <div style="color: #555; margin-top: 4px; line-height: 1.5;">${escapeHtml(formatAddress(entry.previousAddress))}</div>
+                            </div>
+                        `;
+                    }
+                    
+                    detailsSections += `
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #f39c12;">
+                            <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">ADDRESS</div>
+                            ${addressItems}
+                        </div>
+                    `;
+                }
+                
+                // eSoF section
+                if (entry.eSoFStatus || entry.eSoFType) {
+                    let esofItems = '';
+                    
+                    if (entry.eSoFStatus) {
+                        const esofText = eSoFStatusMap[entry.eSoFStatus] || entry.eSoFStatus;
+                        esofItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Status:</span><span style="color: #555;">${escapeHtml(esofText)}</span></div>`;
+                    }
+                    
+                    if (entry.eSoFType) {
+                        esofItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Type:</span><span style="color: #555;">${escapeHtml(entry.eSoFType)}</span></div>`;
+                    } else if (entry.eSoFStatus && entry.relation) {
+                        const inferredType = (entry.relation.toLowerCase().includes('giftor') || entry.relation.toLowerCase().includes('gifter')) ? 'Giftor' : 'Purchaser';
+                        esofItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Type:</span><span style="color: #555;">${escapeHtml(inferredType)} (inferred)</span></div>`;
+                    }
+                    
+                    detailsSections += `
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #e74c3c;">
+                            <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">ESOF (SOURCE OF FUNDS)</div>
+                            ${esofItems}
+                        </div>
+                    `;
+                }
+                
+                // Archive section
+                if (entry.archiveDate || entry.archiver || entry.archiveNote) {
+                    let archiveItems = '';
+                    
+                    if (entry.archiveDate) {
+                        archiveItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Archive Date:</span><span style="color: #555;">${escapeHtml(entry.archiveDate)}</span></div>`;
+                    }
+                    if (entry.archiver) {
+                        archiveItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Archived By:</span><span style="color: #555;">${escapeHtml(entry.archiver)}</span></div>`;
+                    }
+                    if (entry.archiveNote) {
+                        archiveItems += `<div style="font-size: 13px; margin-bottom: 5px; color: #555;"><span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Note:</span><span style="color: #555;">${escapeHtml(entry.archiveNote)}</span></div>`;
+                    }
+                    
+                    detailsSections += `
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #95a5a6;">
+                            <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">ARCHIVE</div>
+                            ${archiveItems}
+                        </div>
+                    `;
+                }
+                
+                // PEP Note section
                 if (entry.pepNote) {
-                    yPosition += 10;
-                    doc.setFontSize(10);
-                    doc.setTextColor(51, 51, 51);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text('PEP Note:', margin, yPosition);
-                    yPosition += 12;
-                    doc.setFont('helvetica', 'normal');
-                    doc.setFontSize(9);
-                    doc.setTextColor(85, 85, 85);
-                    const noteLines = doc.splitTextToSize(entry.pepNote, pageWidth - (margin * 2));
-                    doc.text(noteLines, margin, yPosition);
-                    yPosition += (noteLines.length * 11);
+                    detailsSections += `
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #e67e22; grid-column: 1 / -1;">
+                            <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">PEP NOTE</div>
+                            <div style="font-size: 13px; color: #555;">${escapeHtml(entry.pepNote)}</div>
+                        </div>
+                    `;
                 }
                 
-                yPosition += 20;
-                
-                // Separator line between entries
-                if (index < auditLog.length - 1) {
-                    doc.setDrawColor(229, 229, 229);
-                    doc.setLineWidth(1);
-                    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-                    yPosition += 15;
+                // Last Cashiers Log section
+                if (entry.lastLog) {
+                    let logItems = `<div style="font-size: 13px; color: #555;">${escapeHtml(entry.lastLog.message || 'No message')}</div>`;
+                    
+                    if (entry.lastLog.file) {
+                        logItems += `
+                            <div style="margin-top: 8px;">
+                                <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9;">
+                                    📎 ${escapeHtml(entry.lastLog.file.name || 'Attachment')}
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    detailsSections += `
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #16a085; grid-column: 1 / -1;">
+                            <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">LATEST CASHIERS LOG</div>
+                            ${logItems}
+                        </div>
+                    `;
                 }
+                
+                // Last Chat Message section
+                if (entry.lastMessage) {
+                    let messageItems = `<div style="font-size: 13px; color: #555;">${escapeHtml(entry.lastMessage.message || 'No message')}</div>`;
+                    
+                    if (entry.lastMessage.file) {
+                        messageItems += `
+                            <div style="margin-top: 8px;">
+                                <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9;">
+                                    📎 ${escapeHtml(entry.lastMessage.file.name || 'Attachment')}
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    detailsSections += `
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #9b59b6; grid-column: 1 / -1;">
+                            <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">LATEST CHAT MESSAGE</div>
+                            ${messageItems}
+                        </div>
+                    `;
+                }
+                
+                // Issue location tag
+                let issueTag = '';
+                if (entry.issueLocation && primaryStatus === 'Issue') {
+                    const issueText = issueLocationMap[entry.issueLocation] || entry.issueLocation;
+                    issueTag = `<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; font-size: 12px; color: #856404; font-weight: bold;">${escapeHtml(issueText)}</div>`;
+                }
+                
+                // FE Update tags
+                let feUpdateTags = '';
+                if (entry.feUpdate && entry.feUpdate.length > 0) {
+                    const tags = entry.feUpdate.map(tag => {
+                        const tagText = feUpdateMap[tag] || tag;
+                        return `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(tagText)}</span>`;
+                    }).join('');
+                    feUpdateTags = `<div style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px;">${tags}</div>`;
+                }
+                
+                html += `
+                    <!-- Entry ${index + 1} -->
+                    <div class="entry-card" style="background: white; border-radius: 8px; border-left: 4px solid #003c71; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 20px;">
+                        <!-- Entry Header -->
+                        <div style="margin-bottom: 12px;">
+                            <!-- Status Badges Row -->
+                            <div style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px;">
+                                ${statusBadges}
+                            </div>
+                            
+                            <!-- Entry Meta Row -->
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; font-size: 12px; color: #666;">
+                                <div>
+                                    <div style="font-weight: bold; color: #333; margin-bottom: 4px;">${escapeHtml(combinedTimestamp)}</div>
+                                    <div style="color: #666;">${escapeHtml(entry.userEmail || 'Unknown User')}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: bold; color: #333;">${escapeHtml(entry.triggerPage || 'Unknown Action')}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Entry Details -->
+                        <div style="padding: 12px 0; border-top: 1px solid #dee2e6;">
+                            ${issueTag}
+                            ${feUpdateTags}
+                            
+                            ${detailsSections ? `
+                            <!-- Details Sections Grid -->
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px;">
+                                ${detailsSections}
+                            </div>
+                            ` : ''}
+                            
+                            <!-- Entry Metadata Footer -->
+                            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #dee2e6; font-size: 11px; color: #95a5a6;">
+                                <span style="margin-right: 15px;">Entry ID: ${escapeHtml(entry.id || `ENTRY-${index}`)}</span>
+                                ${entry.createdDate ? `<span style="margin-right: 15px;">Created: ${new Date(entry.createdDate).toLocaleDateString('en-GB')}</span>` : ''}
+                                ${entry.updatedDate ? `<span>Last Updated: ${new Date(entry.updatedDate).toLocaleDateString('en-GB')}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
             
-            // Footer on last page
-            doc.setFontSize(10);
-            doc.setTextColor(102, 102, 102);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Generated:', margin, pageHeight - 30);
-            doc.setFont('helvetica', 'normal');
-            doc.text(generatedDate, margin + 70, pageHeight - 30);
+            // PDF Footer
+            html += `
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #dee2e6; text-align: center; font-size: 11px; color: #999;">
+                        <p>This report was generated from Thurstan Hoskin's Val'ID'ate System</p>
+                        <p>Report ID: AUDIT-${Date.now()} | Page 1 of 1</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
             
-            // Generate filename
-            const filename = `Audit_Log_${Date.now()}.pdf`;
+            return html;
+        }
+        
+        /*
+        Generate PDF using html2pdf.js and open print dialog with print.js
+        */
+        async function downloadAuditLogPDF() {
+            if (!auditLog || auditLog.length === 0) {
+                console.error('Cannot generate PDF: missing audit log data');
+                alert('No audit log data available to generate PDF.');
+                return;
+            }
             
-            // Download
-            doc.save(filename);
-            console.log('📄 PDF downloaded:', filename);
+            if (typeof html2pdf === 'undefined') {
+                console.error('Cannot generate PDF: html2pdf library not loaded');
+                alert('PDF library not loaded. Please refresh the page.');
+                return;
+            }
+            
+            try {
+                // Build HTML template for PDF
+                const pdfHTML = buildPDFHTML();
+                
+                // Create element for html2pdf (like checks manager and sanctions checker)
+                // CRITICAL: Do NOT add to document.body to avoid custom font inheritance!
+                const element = document.createElement('div');
+                element.innerHTML = pdfHTML;
+                
+                console.log('📄 HTML content length:', pdfHTML.length);
+                console.log('📄 Starting PDF generation with html2pdf...');
+                
+                // Configure html2pdf options (same as checks manager and sanctions checker)
+                const options = {
+                    margin: [10, 10, 10, 10],
+                    filename: `Audit_Log_${Date.now()}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 2, 
+                        useCORS: true, 
+                        logging: false
+                    },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: 'css', avoid: '.entry-card, .detail-section' }
+                };
+                
+                // Generate PDF blob using html2pdf (exactly like checks manager and sanctions checker)
+                const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+                
+                console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
+                
+                // Open print dialog using Print.js with PDF blob (like checks manager and sanctions checker)
+                if (typeof printJS === 'undefined') {
+                    console.error('❌ Print.js library not loaded');
+                    alert('Print library not loaded. Please refresh the page.');
+                    return;
+                }
+                
+                console.log('📄 Opening print dialog with PDF blob...');
+                
+                // Convert blob to object URL for Print.js
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                
+                // Use Print.js to print the PDF directly (preserves all styling)
+                printJS({
+                    printable: pdfUrl,
+                    type: 'pdf',
+                    onPrintDialogClose: () => {
+                        // Clean up blob URL after print dialog closes
+                        URL.revokeObjectURL(pdfUrl);
+                    }
+                });
+                
+                console.log('✅ Print dialog opened with PDF');
+                
+            } catch (error) {
+                console.error('❌ Error generating PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+            }
         }
         
         // Listen for messages from parent window
@@ -1248,12 +1514,16 @@
         renderAuditLog();
     </script>
     
-    <!-- jsPDF library for PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2pdf library for PDF generation (same as checks manager and sanctions checker) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Print.js library for print dialog -->
+    <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '5baf66e';
+    window.__IFRAME_VERSION__ = '58bf906';
     console.log('[audit-log] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

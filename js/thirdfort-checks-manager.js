@@ -92,6 +92,11 @@ class ThirdfortChecksManager {
                 this.loadChecks(data.checks || []);
                 break;
                 
+            case 'open-check':
+                // Open a specific check by ID
+                this.handleOpenCheck(data);
+                break;
+                
             case 'save-success':
                 console.log('✅ Save successful:', data);
                 this.handleSaveSuccess(data);
@@ -106,6 +111,40 @@ class ThirdfortChecksManager {
                 this.handleCheckImages((data && data.images) || []);
                 break;
         }
+    }
+    
+    handleOpenCheck(data) {
+        if (!data || !data.id) {
+            console.error('❌ open-check message missing id:', data);
+            this.showError('Invalid check ID provided');
+            return;
+        }
+        
+        const checkId = data.id;
+        console.log('🔍 Opening check with ID:', checkId);
+        
+        // Find the check by checkId or transactionId
+        const check = this.checks.find(c => 
+            c.checkId === checkId || c.transactionId === checkId
+        );
+        
+        if (!check) {
+            console.error('❌ Check not found:', checkId);
+            console.log('📊 Available checks:', this.checks.map(c => ({
+                checkId: c.checkId,
+                transactionId: c.transactionId
+            })));
+            this.showError(`Check with ID "${checkId}" not found in the current checks list`);
+            return;
+        }
+        
+        console.log('✅ Found check, opening detail view:', check.checkId || check.transactionId);
+        
+        // Close any open overlays
+        this.closeAllOverlays();
+        
+        // Open the check detail view
+        this.showDetailView(check);
     }
     
     handleSaveSuccess(data) {
@@ -33795,6 +33834,33 @@ class ThirdfortChecksManager {
                 totalTxs += (acc.statement || []).length;
             });
             
+            // Collect all transactions with links, comments, or flags (for summary count)
+            const annotatedTransactions = [];
+            Object.values(accounts).forEach(acc => {
+                (acc.statement || []).forEach(tx => {
+                    const txAnnotations = this.getTransactionAnnotations(tx.id, check);
+                    const hasLink = txAnnotations.linkedFundingMethods && txAnnotations.linkedFundingMethods.length > 0;
+                    const hasComment = txAnnotations.note && txAnnotations.note.trim() !== '';
+                    const hasFlag = txAnnotations.flag && txAnnotations.flag !== '';
+                    const hasMarker = txAnnotations.marker && txAnnotations.marker !== '';
+                    
+                    if (hasLink || hasComment || hasFlag || hasMarker) {
+                        annotatedTransactions.push({
+                            ...tx,
+                            accountName: acc.account?.name || acc.info?.name || 'Account',
+                            annotations: txAnnotations
+                        });
+                    }
+                });
+            });
+            
+            // Sort annotated transactions by date (newest first)
+            annotatedTransactions.sort((a, b) => {
+                const dateA = new Date(a.timestamp || 0);
+                const dateB = new Date(b.timestamp || 0);
+                return dateB - dateA;
+            });
+            
             // Summary header
             bankAnalysisHTML = `
                 <div style="background: white; border-radius: 8px; border-left: 4px solid #39b549; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 24px;">
@@ -33803,6 +33869,7 @@ class ThirdfortChecksManager {
                             <div><strong>Total Accounts Linked:</strong> ${totalAccounts}</div>
                             <div><strong>Statement Period:</strong> 6 months</div>
                             <div><strong>Total Transactions Analyzed:</strong> ${totalTxs}</div>
+                            <div><strong>Transactions with Links/Comments/Flags:</strong> ${annotatedTransactions.length}</div>
                         </div>
                     </div>
                 </div>
@@ -33856,6 +33923,94 @@ class ThirdfortChecksManager {
                     });
                     bankAnalysisHTML += '</div>';
                 }
+                
+                bankAnalysisHTML += '</div>';
+            }
+            
+            // Add section for transactions with links, comments, or flags
+            if (annotatedTransactions.length > 0) {
+                bankAnalysisHTML += '<div style="margin-top: 24px; page-break-inside: avoid;">';
+                bankAnalysisHTML += '<div style="font-weight: bold; font-size: 16px; color: var(--primary-blue); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border-grey);">📋 Transactions with Links, Comments, or Flags</div>';
+                bankAnalysisHTML += `<div style="font-size: 12px; color: #666; margin-bottom: 16px;">${annotatedTransactions.length} transaction${annotatedTransactions.length > 1 ? 's' : ''} with user actions</div>`;
+                
+                annotatedTransactions.forEach(tx => {
+                    const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    const desc = tx.description || tx.merchant_name || 'Transaction';
+                    const amount = tx.amount || 0;
+                    const sign = amount >= 0 ? '+' : '';
+                    const amountColor = amount >= 0 ? '#39b549' : '#d32f2f';
+                    const ann = tx.annotations;
+                    
+                    // Build badges/indicators
+                    let badgesHtml = '';
+                    
+                    // Flags
+                    if (ann.flag === 'cleared') {
+                        badgesHtml += '<span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50; margin-right: 4px;">○ Cleared</span>';
+                    } else if (ann.flag === 'suspicious') {
+                        badgesHtml += '<span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336; margin-right: 4px;">✗ Suspicious</span>';
+                    } else if (ann.flag === 'review') {
+                        badgesHtml += '<span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; margin-right: 4px;">— Review</span>';
+                    } else if (ann.flag === 'linked') {
+                        badgesHtml += '<span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-right: 4px;">✓ Linked</span>';
+                    }
+                    
+                    // Markers
+                    if (ann.marker === 'verified' || ann.marker === 'accepted') {
+                        badgesHtml += '<span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50; margin-right: 4px;">✓ Verified</span>';
+                    } else if (ann.marker === 'rejected') {
+                        badgesHtml += '<span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336; margin-right: 4px;">✗ Rejected</span>';
+                    } else if (ann.marker === 'review') {
+                        badgesHtml += '<span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; margin-right: 4px;">? Review</span>';
+                    }
+                    
+                    // Linked funding methods
+                    if (ann.linkedFundingMethods && ann.linkedFundingMethods.length > 0) {
+                        const typeNames = {
+                            'fund:mortgage': 'Mortgage',
+                            'fund:savings': 'Savings',
+                            'fund:gift': 'Gift',
+                            'fund:sale:property': 'Property Sale',
+                            'fund:sale:assets': 'Asset Sale',
+                            'fund:inheritance': 'Inheritance',
+                            'fund:htb': 'Help to Buy',
+                            'fund:htb_lisa': 'Help to Buy / LISA',
+                            'fund:investment': 'Investment',
+                            'fund:business': 'Business Income',
+                            'fund:loan': 'Loan',
+                            'fund:other': 'Other',
+                            'fund:income': 'Income'
+                        };
+                        ann.linkedFundingMethods.forEach(fundIdxStr => {
+                            const fund = funds[parseInt(fundIdxStr)];
+                            if (fund) {
+                                const fundLabel = typeNames[fund.type] || fund.type.replace('fund:', '').replace(/:/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                badgesHtml += `<span style="display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-right: 4px;">🔗 ${fundLabel}</span>`;
+                            }
+                        });
+                    }
+                    
+                    bankAnalysisHTML += `
+                        <div style="background: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; margin-bottom: 12px; page-break-inside: avoid;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 4px;">${desc}</div>
+                                    <div style="font-size: 11px; color: #666;">${tx.accountName} • ${date}</div>
+                                </div>
+                                <div style="font-size: 14px; font-weight: bold; color: ${amountColor}; margin-left: 12px;">
+                                    ${sign}£${Math.abs(amount).toFixed(2)}
+                                </div>
+                            </div>
+                            ${badgesHtml ? `<div style="margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px;">${badgesHtml}</div>` : ''}
+                            ${ann.note ? `
+                                <div style="background: #fff8e6; border-left: 3px solid #ffd966; padding: 8px 10px; border-radius: 3px; margin-top: 8px;">
+                                    <div style="font-size: 11px; font-weight: bold; color: #856404; margin-bottom: 4px;">COMMENT:</div>
+                                    <div style="font-size: 12px; color: #856404;">${ann.note}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
                 
                 bankAnalysisHTML += '</div>';
             }
