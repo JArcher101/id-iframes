@@ -235,7 +235,7 @@ function selectRequestType(type) {
           }
         }
         
-        console.log('&#x2705; eSoF selected manually → eSoFHint shown, message updated, ejHint preserved');
+        console.log('✅ eSoF selected manually → eSoFHint shown, message updated, ejHint preserved');
         
         // Don't change currentRequestType or call loadRequestTypeContent
         // Form E remains the active module
@@ -340,7 +340,7 @@ function checkOFSIRequirement(type) {
   const hasOFSI = idDocuments.some(doc => doc.type === 'PEP & Sanctions Check');
   
   if (hasOFSI) {
-    console.log('&#x2705; OFSI document found, proceeding with', type);
+    console.log('✅ OFSI document found, proceeding with', type);
     return; // OFSI exists, all good
   }
   
@@ -381,7 +381,7 @@ function handleOFSIPopupCancel() {
   const requestType = popup?.dataset?.requestType;
   
   if (requestType) {
-    console.log('&#x274C; User cancelled OFSI requirement - deselecting', requestType);
+    console.log('❌ User cancelled OFSI requirement - deselecting', requestType);
     
     // Deselect the tag
     const tag = document.querySelector(`[data-type="${requestType}"]`);
@@ -403,7 +403,7 @@ function handleOFSIPopupCancel() {
  * Handle OFSI popup search - open sanctions checker
  */
 function handleOFSIPopupSearch() {
-  console.log('&#xD83D;&#xDD0D; User chose to search UK Sanctions List');
+  console.log('🔍 User chose to search UK Sanctions List');
   hideOFSIRequiredPopup();
   
   // Call the existing openOFSISearch function
@@ -530,15 +530,15 @@ function parseDateString(dateStr) {
  * @returns {Object} - { valid: boolean, formatted: 'DD-MM-YYYY' or null, error: string or null }
  */
 function validateAndFormatDOB(day, month, year) {
-  console.log('&#xD83D;&#xDD0D; DOB Validation - Input values:', { day, month, year });
+  console.log('🔍 DOB Validation - Input values:', { day, month, year });
   
   // Convert to strings and trim
   const dayStr = day ? String(day).trim() : '';
   const monthStr = month ? String(month).trim() : '';
   const yearStr = year ? String(year).trim() : '';
   
-  console.log('&#xD83D;&#xDD0D; DOB Validation - After trim:', { dayStr, monthStr, yearStr });
-  console.log('&#xD83D;&#xDD0D; DOB Validation - Lengths:', { 
+  console.log('🔍 DOB Validation - After trim:', { dayStr, monthStr, yearStr });
+  console.log('🔍 DOB Validation - Lengths:', { 
     day: dayStr.length, 
     month: monthStr.length, 
     year: yearStr.length 
@@ -546,13 +546,13 @@ function validateAndFormatDOB(day, month, year) {
   
   // Check if all fields have values after trimming
   if (!dayStr || !monthStr || !yearStr) {
-    console.log('&#x274C; DOB Validation - Incomplete (empty string)');
+    console.log('❌ DOB Validation - Incomplete (empty string)');
     return { valid: false, formatted: null, error: 'Date of Birth is incomplete' };
   }
   
   // Check if all digits are filled (DD/MM/YYYY = 8 digits)
   if (dayStr.length !== 2 || monthStr.length !== 2 || yearStr.length !== 4) {
-    console.log('&#x274C; DOB Validation - Wrong format');
+    console.log('❌ DOB Validation - Wrong format');
     return { valid: false, formatted: null, error: 'Date of Birth must be in DD/MM/YYYY format' };
   }
   
@@ -590,7 +590,7 @@ function validateAndFormatDOB(day, month, year) {
   // Format as DD-MM-YYYY
   const formatted = `${dayStr}-${monthStr}-${yearStr}`;
   
-  console.log('&#x2705; DOB Validation - Valid date:', formatted);
+  console.log('✅ DOB Validation - Valid date:', formatted);
   return { valid: true, formatted: formatted, error: null };
 }
 
@@ -834,7 +834,7 @@ function handleParentMessage(event) {
         
       case 'save-success':
         // Backend save succeeded - generate PDF for Note/Update requests
-        console.log('&#x2705; Save successful - generating request PDF...');
+        console.log('✅ Save successful - generating request PDF...');
         generateRequestPDF(message);
         break;
         
@@ -878,7 +878,7 @@ function handleInitData(message) {
 function handleClientData(message) {
   const data = message.data || message;
   
-  console.log('&#xD83D;&#xDCE5; Received client data from parent:', data);
+  console.log('📥 Received client data from parent:', data);
   
   // Store user from message
   if (message.user) {
@@ -1012,7 +1012,7 @@ function handleClientData(message) {
       if (phoneCountryCode) setPhoneCode('phoneCountryCode', formattedPhone.countryCode);
       if (phoneNumber) phoneNumber.value = formattedPhone.nationalNumber;
       
-      console.log(`&#xD83D;&#xDCDE; Formatted phone: ${mobileStr} → ${formattedPhone.countryCode} ${formattedPhone.nationalNumber}`);
+      console.log(`📞 Formatted phone: ${mobileStr} → ${formattedPhone.countryCode} ${formattedPhone.nationalNumber}`);
     } else {
       // Fallback to basic parsing if libphonenumber fails
       const phoneNumber = document.getElementById('phoneNumber');
@@ -1044,7 +1044,7 @@ function handleClientData(message) {
       if (isValidAddress) {
         // Valid address - just display it
         currentAddress.value = formatAddressForDisplay(currentAddressObject);
-        console.log('&#x2705; Current address is valid, displaying without API call');
+        console.log('✅ Current address is valid, displaying without API call');
       } else {
         // Invalid/incomplete address - try to search for it via API
         console.warn('⚠️ Current address object is incomplete, attempting to search via API');
@@ -1090,7 +1090,7 @@ function handleClientData(message) {
         if (isValidAddress) {
           // Valid address - just display it
           previousAddress.value = formatAddressForDisplay(previousAddressObject);
-          console.log('&#x2705; Previous address is valid, displaying without API call');
+          console.log('✅ Previous address is valid, displaying without API call');
         } else {
           // Invalid/incomplete address - try to search for it via API
           console.warn('⚠️ Previous address object is incomplete, attempting to search via API');
@@ -1156,7 +1156,7 @@ function handleClientData(message) {
   // === SELECT REQUEST TYPE TAGS FROM uT AND eS FIELDS ===
   // If data includes uT (update type), select those tags
   if (data.uT && Array.isArray(data.uT) && data.uT.length > 0) {
-    console.log('&#xD83D;&#xDCCB; Selecting request types from uT field:', data.uT);
+    console.log('📋 Selecting request types from uT field:', data.uT);
     
     // Clear all existing selections first
     elements.requestTags.forEach(tag => tag.classList.remove('selected'));
@@ -1166,7 +1166,7 @@ function handleClientData(message) {
       const tag = document.querySelector(`[data-type="${requestType}"]`);
       if (tag) {
         tag.classList.add('selected');
-        console.log(`&#x2705; Selected tag: ${requestType}`);
+        console.log(`✅ Selected tag: ${requestType}`);
       } else {
         console.warn(`⚠️ Request type tag not found: ${requestType}`);
       }
@@ -1189,7 +1189,7 @@ function handleClientData(message) {
     if (hasEsofRequested) {
       // eSoF was requested - select the tag
       esofTag.classList.add('selected');
-      console.log('&#x2705; eSoF tag selected (eS includes "Requested")');
+      console.log('✅ eSoF tag selected (eS includes "Requested")');
     } else {
       // eSoF not requested or eS field missing - ensure tag is deselected
       // Only deselect if it's not in the uT array (uT takes precedence)
@@ -1201,8 +1201,8 @@ function handleClientData(message) {
     }
   }
   
-  console.log('&#x2705; Client data loaded and form populated');
-  console.log('&#xD83D;&#xDCCA; Form J Flags - Sufficient Photos:', formJSufficientPhotos, '| Conditions Met:', formJConditionsMet);
+  console.log('✅ Client data loaded and form populated');
+  console.log('📊 Form J Flags - Sufficient Photos:', formJSufficientPhotos, '| Conditions Met:', formJConditionsMet);
 }
 
 function handleDataRequest() {
@@ -1266,7 +1266,7 @@ function resetFormUI(previousType = null, newType = null) {
     }
     console.log('🗑️ Message input cleared (switching between different request categories)');
   } else {
-    console.log('&#xD83D;&#xDCDD; Message input preserved (switching between message-based types)');
+    console.log('📝 Message input preserved (switching between message-based types)');
   }
   
   // Hide request-type-controlled sections only
@@ -1329,7 +1329,7 @@ function resetFormUI(previousType = null, newType = null) {
     submitBtn.disabled = true;
   }
   
-  console.log('&#x2705; Form UI reset to default state (preserving input values and header)');
+  console.log('✅ Form UI reset to default state (preserving input values and header)');
 }
 
 function updateHeaderInfo(data) {
@@ -1534,7 +1534,7 @@ function setupFileHandlers() {
       };
       
       cdfDocumentType.addEventListener('change', handleTypeSelection);
-      console.log('&#xD83D;&#xDCCB; Waiting for document type selection...');
+      console.log('📋 Waiting for document type selection...');
       return;
     }
     
@@ -1576,7 +1576,7 @@ function setupFileHandlers() {
     // Re-evaluate ID Documents UI
     updateIDDocumentsUI(requestData);
     
-    console.log('&#x2705; CDF document added:', docObject);
+    console.log('✅ CDF document added:', docObject);
   };
 
   window.handleCDFDragOver = function(event) {
@@ -1660,7 +1660,7 @@ function setupFileHandlers() {
     // Re-evaluate ID Documents UI
     updateIDDocumentsUI(requestData);
     
-    console.log('&#x2705; OFSI document added:', docObject);
+    console.log('✅ OFSI document added:', docObject);
   };
 
   window.handleOFSIDragOver = function(event) {
@@ -1925,7 +1925,7 @@ function setupClientDetailsHandlers() {
       e.preventDefault();
       
       const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-      console.log('&#xD83D;&#xDCCB; Pasted DOB text:', pastedText);
+      console.log('📋 Pasted DOB text:', pastedText);
       
       // Try to parse the date
       const parsedDate = parseDateString(pastedText);
@@ -1940,7 +1940,7 @@ function setupClientDetailsHandlers() {
         
         dobInputs[7].focus();
         const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
-        console.log('&#x2705; Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
+        console.log('✅ Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
       } else {
         console.warn('⚠️ Could not parse date from pasted text:', pastedText);
       }
@@ -2002,7 +2002,7 @@ function setupBusinessCharityHandlers() {
       companyNameDebounceTimer = setTimeout(() => {
         const isCharity = document.getElementById('charityCheckbox')?.checked || false;
         const searchType = isCharity ? 'charity-search' : 'company-search';
-        console.log(`&#xD83D;&#xDCE1; API call for ${isCharity ? 'charity' : 'company'} search:`, searchTerm);
+        console.log(`📡 API call for ${isCharity ? 'charity' : 'company'} search:`, searchTerm);
         
         window.parent.postMessage({
           type: searchType,
@@ -2050,7 +2050,7 @@ function setupBusinessCharityHandlers() {
       companyNumberDebounceTimer = setTimeout(() => {
         const isCharity = document.getElementById('charityCheckbox')?.checked || false;
         const searchType = isCharity ? 'charity-search' : 'company-search';
-        console.log(`&#xD83D;&#xDCE1; API call for ${isCharity ? 'charity' : 'company'} number search:`, searchTerm);
+        console.log(`📡 API call for ${isCharity ? 'charity' : 'company'} number search:`, searchTerm);
         
         window.parent.postMessage({
           type: searchType,
@@ -2389,7 +2389,7 @@ function setupAddressAutocomplete(field) {
     
     // Debounce 300ms
     const timer = setTimeout(() => {
-      console.log('&#xD83D;&#xDCE1; API call for autocomplete:', searchTerm);
+      console.log('📡 API call for autocomplete:', searchTerm);
       window.parent.postMessage({
         type: 'address-search',
         searchTerm: searchTerm,
@@ -2609,10 +2609,10 @@ function handleAddressData(addressData, field) {
   
   if (field === 'current') {
     currentAddressObject = thirdfortAddress;
-    console.log('&#x2705; Stored current address object:', currentAddressObject);
+    console.log('✅ Stored current address object:', currentAddressObject);
   } else {
     previousAddressObject = thirdfortAddress;
-    console.log('&#x2705; Stored previous address object:', previousAddressObject);
+    console.log('✅ Stored previous address object:', previousAddressObject);
   }
   
   handleCDFProfileFieldChange();
@@ -2623,7 +2623,7 @@ Handle full company/charity data from parent (company-data/charity-data message)
 */
 function handleCompanyData(data) {
   businessData = data;
-  console.log('&#x2705; Received full company/charity data:', businessData);
+  console.log('✅ Received full company/charity data:', businessData);
   
   // Store in requestData
   if (!requestData.cI) requestData.cI = {};
@@ -2696,7 +2696,7 @@ function displayCompanySuggestions(suggestions, searchBy) {
   });
   
   dropdownElement.classList.remove('hidden');
-  console.log(`&#x2705; Displayed ${suggestions.length} ${isCharity ? 'charity' : 'company'} suggestions`);
+  console.log(`✅ Displayed ${suggestions.length} ${isCharity ? 'charity' : 'company'} suggestions`);
 }
 
 /*
@@ -2727,7 +2727,7 @@ function selectCompany(company) {
   
   // Request full company/charity data from parent (directors/trustees, officers, PSCs)
   const apiType = isCharity ? 'charity-lookup' : 'company-lookup';
-  console.log(`&#xD83D;&#xDCE1; Requesting full ${isCharity ? 'charity' : 'company'} data for:`, company.company_number);
+  console.log(`📡 Requesting full ${isCharity ? 'charity' : 'company'} data for:`, company.company_number);
   
   window.parent.postMessage({
     type: apiType,
@@ -2890,14 +2890,14 @@ function populatePeopleCards(companyData) {
     `;
     
     if (person.share) {
-      html += `<div class="people-card-share">&#xD83D;&#xDCCA; ${person.share}</div>`;
+      html += `<div class="people-card-share">📊 ${person.share}</div>`;
     }
     
     card.innerHTML = html;
     peopleRepeater.appendChild(card);
   });
   
-  console.log(`&#x2705; Populated ${allPeople.length} people cards (merged duplicates)`);
+  console.log(`✅ Populated ${allPeople.length} people cards (merged duplicates)`);
 }
 
 /*
@@ -2921,7 +2921,7 @@ function openOfficerAppointments(appointmentsPath) {
       const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
       
       window.open(url, 'charityTrustees', features);
-      console.log('&#xD83D;&#xDC64; Opening charity trustees tab:', url);
+      console.log('👤 Opening charity trustees tab:', url);
     }
     return;
   }
@@ -2936,7 +2936,7 @@ function openOfficerAppointments(appointmentsPath) {
   const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
   
   window.open(url, 'officerAppointments', features);
-  console.log('&#xD83D;&#xDC64; Opening officer appointments:', url);
+  console.log('👤 Opening officer appointments:', url);
 }
 
 /*
@@ -3009,7 +3009,7 @@ function openCompanyRegisterPage() {
   
   if (popup) {
     popup.focus();
-    console.log(`&#xD83D;&#xDD17; Opened ${isCharity ? 'Charity Register' : 'Companies House'} for: ${entityNum}`);
+    console.log(`🔗 Opened ${isCharity ? 'Charity Register' : 'Companies House'} for: ${entityNum}`);
   } else {
     console.error('Failed to open popup - please allow popups for this site');
   }
@@ -3032,7 +3032,7 @@ function refreshCompanyData() {
   const apiType = isCharity ? 'charity-lookup' : 'company-lookup';
   const entityTypeStr = isCharity ? 'charity' : 'business';
   
-  console.log(`&#xD83D;&#xDD04; Refreshing ${entityTypeStr} data for:`, companyNumber);
+  console.log(`🔄 Refreshing ${entityTypeStr} data for:`, companyNumber);
   
   window.parent.postMessage({
     type: apiType,
@@ -3064,7 +3064,7 @@ function autoPopulateRegisteredAddress() {
     const isDifferentAddress = currentDisplayText !== newDisplayText;
     
     if (isDifferentAddress || !currentAddressObject) {
-      console.log('&#xD83D;&#xDCCD; Auto-populating registered office address:', thirdfortAddress);
+      console.log('📍 Auto-populating registered office address:', thirdfortAddress);
       
       // Set UK as country
       if (currentCountry) {
@@ -3081,9 +3081,9 @@ function autoPopulateRegisteredAddress() {
       // Display in the autocomplete field
       currentAddress.value = formatAddressForDisplay(thirdfortAddress);
       
-      console.log('&#x2705; Registered office address converted and stored:', currentAddressObject);
+      console.log('✅ Registered office address converted and stored:', currentAddressObject);
     } else {
-      console.log('&#x2139;&#xFE0F; Registered office address is identical to current address, keeping existing');
+      console.log('ℹ️ Registered office address is identical to current address, keeping existing');
     }
   }
 }
@@ -3132,7 +3132,7 @@ function selectAddressSuggestion(addressId, displayText, isCurrentAddress) {
   dropdownElement.classList.add('hidden');
   
   // Request full address from parent
-  console.log('&#xD83D;&#xDCE1; API call for full address:', addressId);
+  console.log('📡 API call for full address:', addressId);
   window.parent.postMessage({
     type: 'address-lookup',
     addressId: addressId,
@@ -3385,7 +3385,7 @@ function openDocument(documentType) {
     popup.focus();
   }
   
-  console.log('&#xD83D;&#xDCC4; Opened document:', doc.liveUrl);
+  console.log('📄 Opened document:', doc.liveUrl);
 }
 
 // Set up click event listeners for document open buttons
@@ -3442,7 +3442,7 @@ function openOFSISearch() {
   
   const searchType = isEntity ? 'entity' : 'individual';
   
-  console.log('&#xD83D;&#xDCE4; Sending sanctions check request:', { clientName, yearOfBirth, searchType });
+  console.log('📤 Sending sanctions check request:', { clientName, yearOfBirth, searchType });
   
   window.parent.postMessage({
     type: 'sanctions-check-request',
@@ -3462,7 +3462,7 @@ Handle sanctions file uploaded from sanctions checker
 Adds the file object to idDocuments array for validation
 */
 function handleSanctionsFileUploaded(message) {
-  console.log('&#x2705; Received sanctions file from parent:', message);
+  console.log('✅ Received sanctions file from parent:', message);
   
   // Create file object matching request form structure
   const ofsiFile = {
@@ -3516,7 +3516,7 @@ function handleSanctionsFileUploaded(message) {
   // Re-evaluate ID Documents UI (will now pass OFSI validation)
   updateIDDocumentsUI(requestData);
   
-  console.log('&#x2705; OFSI document added to request form');
+  console.log('✅ OFSI document added to request form');
 }
 
 /*
@@ -3542,10 +3542,10 @@ function escapeHtml(text) {
 function getValidationIcon(isValid) {
   if (isValid) {
     // Green checkmark
-    return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; margin-right: 6px;"><span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">&#x2713;</span></div>`;
+    return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; margin-right: 6px;"><span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">✓</span></div>`;
   } else {
     // Red X
-    return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #d32f2f; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; margin-right: 6px;"><span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">&#xD7;</span></div>`;
+    return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #d32f2f; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; vertical-align: middle; margin-right: 6px;"><span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">×</span></div>`;
   }
 }
 
@@ -3554,13 +3554,13 @@ function getValidationIcon(isValid) {
  * Matching request-note-pdf-mockup.html design with full form details
  */
 function buildRequestPDFHTML(messageData) {
-  console.log('&#xD83D;&#xDD28; Building PDF HTML with data:', messageData);
+  console.log('🔨 Building PDF HTML with data:', messageData);
   
   // Use the request payload from save-success message (sent back by parent)
   const requestPayload = messageData.request || messageData.savedData;
   
   if (!requestPayload) {
-    console.error('&#x274C; No request payload in save-success message');
+    console.error('❌ No request payload in save-success message');
     return '<html><body><h1>Error: No request data available</h1></body></html>';
   }
   
@@ -3568,9 +3568,9 @@ function buildRequestPDFHTML(messageData) {
   const requestMessage = requestPayload.message || {};
   const data = requestPayload.data || {};
   
-  console.log('&#xD83D;&#xDCDD; Request type:', requestType);
-  console.log('&#xD83D;&#xDCE4; Using request payload from parent:', requestPayload);
-  console.log('&#xD83D;&#xDCCA; Client/matter data:', data);
+  console.log('📝 Request type:', requestType);
+  console.log('📤 Using request payload from parent:', requestPayload);
+  console.log('📊 Client/matter data:', data);
   
   // Determine badge class and title for all 7 request types
   let badgeClass, badgeText, title, borderColor, messageLabel, badgeStyle;
@@ -3658,7 +3658,7 @@ function buildRequestPDFHTML(messageData) {
   const entryId = requestPayload._id || '';
   const userEmail = requestPayload.user || '';
   
-  console.log('&#xD83D;&#xDC64; Extracted client info:');
+  console.log('👤 Extracted client info:');
   console.log('  - clientName:', clientName);
   console.log('  - clientNumber:', clientNumber);
   console.log('  - feeEarner:', feeEarner);
@@ -3674,7 +3674,7 @@ function buildRequestPDFHTML(messageData) {
   const relation = data.r || '';
   const matterDescription = data.mD || '';
   
-  console.log('&#xD83D;&#xDCCB; Matter details:');
+  console.log('📋 Matter details:');
   console.log('  - workType:', workType);
   console.log('  - relation:', relation);
   console.log('  - matterDescription:', matterDescription);
@@ -3889,7 +3889,7 @@ function buildRequestPDFHTML(messageData) {
         <div style="padding: 12px 16px;">
           <h4 style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center;">
             <div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 8px;">
-              <span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">&#x2713;</span>
+              <span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">✓</span>
             </div>
             Request Successfully Submitted
           </h4>
@@ -3917,10 +3917,10 @@ function buildRequestPDFHTML(messageData) {
  * Opens PDF in popup window and notifies parent
  */
 async function generateRequestPDF(messageData) {
-  console.log('&#xD83D;&#xDCC4; Generating request PDF...');
+  console.log('📄 Generating request PDF...');
   
   if (typeof printJS === 'undefined') {
-    console.error('&#x274C; Print.js library not loaded');
+    console.error('❌ Print.js library not loaded');
     sendMessageToParent({ type: 'pdf-generated', success: false });
     return;
   }
@@ -3928,11 +3928,11 @@ async function generateRequestPDF(messageData) {
   try {
     // Build HTML string
     const pdfHTML = buildRequestPDFHTML(messageData);
-    console.log('&#x2705; HTML built, length:', pdfHTML.length);
+    console.log('✅ HTML built, length:', pdfHTML.length);
     
     // Trigger print dialog with Print.js using RAW HTML
     if (typeof printJS !== 'undefined') {
-      console.log('&#xD83D;&#xDCC4; Triggering Print.js with raw HTML data...');
+      console.log('📄 Triggering Print.js with raw HTML data...');
       
       // Parse HTML to extract body content and styles
       const parser = new DOMParser();
@@ -3945,15 +3945,15 @@ async function generateRequestPDF(messageData) {
       // Extract body HTML
       const bodyHTML = doc.body.innerHTML;
       
-      console.log('&#xD83D;&#xDCC4; Style content length:', styleContent.length);
-      console.log('&#xD83D;&#xDCC4; Body HTML length:', bodyHTML.length);
+      console.log('📄 Style content length:', styleContent.length);
+      console.log('📄 Body HTML length:', bodyHTML.length);
       
       // Open print dialog once
       let printDialogOpened = false;
       
       const handleAfterPrint = () => {
         if (printDialogOpened) {
-          console.log('&#xD83D;&#xDCC4; Print dialog closed - notifying parent');
+          console.log('📄 Print dialog closed - notifying parent');
           window.removeEventListener('afterprint', handleAfterPrint);
           sendMessageToParent({ type: 'pdf-generated', success: true });
         }
@@ -3969,18 +3969,18 @@ async function generateRequestPDF(messageData) {
         scanStyles: false,
         targetStyles: ['*'],
         onLoadingEnd: () => {
-          console.log('&#xD83D;&#xDCC4; Print.js loading ended - dialog open');
+          console.log('📄 Print.js loading ended - dialog open');
           printDialogOpened = true;
         }
       });
       
-      console.log('&#x2705; Print.js dialog triggered with raw HTML');
+      console.log('✅ Print.js dialog triggered with raw HTML');
     } else {
-      console.log('&#x2139;&#xFE0F; Print.js not available, skipping print dialog');
+      console.log('ℹ️ Print.js not available, skipping print dialog');
       sendMessageToParent({ type: 'pdf-generated', success: true });
     }
   } catch (error) {
-    console.error('&#x274C; PDF error:', error);
+    console.error('❌ PDF error:', error);
     sendMessageToParent({ type: 'pdf-generated', success: false });
   }
 }
@@ -4100,7 +4100,7 @@ function updateFormJFlags(images, iconData) {
   // data.i.l = likeness NOT confirmed (so we want this to be false/undefined)
   formJConditionsMet = !!(iconData?.p && iconData?.a && !iconData?.l);
   
-  console.log('&#xD83D;&#xDCCA; Form J Flags Updated:');
+  console.log('📊 Form J Flags Updated:');
   console.log('  - Sufficient Photos:', formJSufficientPhotos);
   console.log('    - Address IDs:', addressIDs.length, '+ DL bonus:', drivingLicenceCount, '= Total:', totalAddressIDs);
   console.log('    - Has Complete Driving License:', hasCompleteDrivingLicense, '(Front + Back)');
@@ -4176,7 +4176,7 @@ function updateClientOrBusinessSection() {
       showError(`${typeName} is not available for ${entityType}`, 'Request Type Not Available');
     }
     
-    console.log('&#xD83D;&#xDC54; Showing Business/Charity Details section | Disabled: Form J, Form E, eSoF');
+    console.log('👔 Showing Business/Charity Details section | Disabled: Form J, Form E, eSoF');
   } else {
     // Show Client Details section, hide Business/Charity
     if (clientDetailsSection) clientDetailsSection.classList.remove('hidden');
@@ -4193,7 +4193,7 @@ function updateClientOrBusinessSection() {
       }
     });
     
-    console.log('&#xD83D;&#xDC64; Showing Client Details section | All request types available');
+    console.log('👤 Showing Client Details section | All request types available');
   }
 }
 
@@ -4298,7 +4298,7 @@ function updateIDDocumentsUI(data) {
     hasLinkedData
   });
   
-  console.log('&#x2705; ID Documents UI updated');
+  console.log('✅ ID Documents UI updated');
 }
 
 function toggleCDFHintsState({ hasCDFDocument, isEntity, hasLinkedData }) {
@@ -4714,8 +4714,8 @@ function handleFormSubmit(event) {
       
       // Show specific validation errors
       const errorMessages = validation?.errors || ['Please complete all required fields before submitting.'];
-      const errorText = errorMessages.join('\n&#x2022; ');
-      showError('&#x2022; ' + errorText, 'Validation Error');
+      const errorText = errorMessages.join('\n• ');
+      showError('• ' + errorText, 'Validation Error');
       return;
     }
     
@@ -4811,7 +4811,7 @@ function uploadFormFiles(files) {
       file: {} // File object can't be serialized
     }));
     
-    console.log('&#xD83D;&#xDCE4; Requesting PUT links for files:', fileMetadata);
+    console.log('📤 Requesting PUT links for files:', fileMetadata);
     
     sendMessageToParent({
       type: 'file-data',
@@ -5051,7 +5051,7 @@ function handleFileUploadResponse(event) {
   const message = event.data;
   
   if (message.type === 'put-links') {
-    console.log('&#xD83D;&#xDCE5; Received PUT links from parent:', message);
+    console.log('📥 Received PUT links from parent:', message);
     
     const links = message.links;
     const s3Keys = message.s3Keys;
@@ -5059,7 +5059,7 @@ function handleFileUploadResponse(event) {
     // Upload to S3
     uploadFilesToS3(localFilesForUpload, links, s3Keys)
       .then((uploadedS3Keys) => {
-        console.log('&#x2705; All files uploaded to S3');
+        console.log('✅ All files uploaded to S3');
         
         // Hide upload progress
         hideUploadProgress();
@@ -5079,7 +5079,7 @@ function handleFileUploadResponse(event) {
         }
       })
       .catch((error) => {
-        console.error('&#x274C; S3 upload failed:', error);
+        console.error('❌ S3 upload failed:', error);
         
         // Hide upload progress
         hideUploadProgress();
@@ -5100,7 +5100,7 @@ function handleFileUploadResponse(event) {
       });
       
   } else if (message.type === 'put-error') {
-    console.error('&#x274C; PUT error from parent:', message);
+    console.error('❌ PUT error from parent:', message);
     
     // Hide upload progress
     hideUploadProgress();
@@ -5134,7 +5134,7 @@ window.addEventListener('message', handleFileUploadResponse);
  */
 async function prepareAndSubmitRequest(requestType, messageObj = null) {
   try {
-    console.log(`&#xD83D;&#xDCE4; Preparing ${requestType} submission`);
+    console.log(`📤 Preparing ${requestType} submission`);
     
     // Check all 3 file upload inputs
     const messageFileInput = document.getElementById('fileInput');
@@ -5169,7 +5169,7 @@ async function prepareAndSubmitRequest(requestType, messageObj = null) {
           lastModified: file.lastModified
         },
         file: file,
-        isMessageFile: true  // &#x2190; Flag for separation
+        isMessageFile: true  // ← Flag for separation
       });
     }
     
@@ -5199,7 +5199,7 @@ async function prepareAndSubmitRequest(requestType, messageObj = null) {
           lastModified: file.lastModified
         },
         file: file,
-        isMessageFile: false  // &#x2190; Document file
+        isMessageFile: false  // ← Document file
       });
     }
     
@@ -5228,13 +5228,13 @@ async function prepareAndSubmitRequest(requestType, messageObj = null) {
           lastModified: file.lastModified
         },
         file: file,
-        isMessageFile: false  // &#x2190; Document file
+        isMessageFile: false  // ← Document file
       });
     }
     
     // Decide whether to upload files or go straight to request-data
     if (filesToUpload.length > 0) {
-      console.log(`&#xD83D;&#xDCC1; Found ${filesToUpload.length} file(s) to upload`);
+      console.log(`📁 Found ${filesToUpload.length} file(s) to upload`);
       
       // Upload files and wait for completion
       const { messageFile, documentFiles } = await uploadFormFiles(filesToUpload);
@@ -5243,14 +5243,14 @@ async function prepareAndSubmitRequest(requestType, messageObj = null) {
       buildAndSendRequestData(requestType, messageObj, messageFile, documentFiles);
       
     } else {
-      console.log('&#xD83D;&#xDCC4; No files to upload, sending request-data immediately');
+      console.log('📄 No files to upload, sending request-data immediately');
       
       // No files - send request-data immediately
       buildAndSendRequestData(requestType, messageObj, null, []);
     }
     
   } catch (error) {
-    console.error('&#x274C; Submission error:', error);
+    console.error('❌ Submission error:', error);
     
     // Re-enable submit button
     const submitBtn = document.getElementById('submitBtn');
@@ -5306,7 +5306,7 @@ function buildAndSendRequestData(requestType, messageObj, messageFile, documentF
     requestDataMessage.newFiles = documentFiles;
   }
   
-  console.log('&#xD83D;&#xDCE4; Sending request-data to parent:', requestDataMessage);
+  console.log('📤 Sending request-data to parent:', requestDataMessage);
   
   // Store for PDF generation when we receive save-success
   lastSentRequestData = requestDataMessage;
@@ -5318,7 +5318,7 @@ function buildAndSendRequestData(requestType, messageObj, messageFile, documentF
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) submitBtn.disabled = false;
   
-  console.log('&#x2705; Request submitted successfully');
+  console.log('✅ Request submitted successfully');
 }
 
 /**
@@ -6115,21 +6115,21 @@ document.addEventListener('DOMContentLoaded', function() {
   
   if (mockClientBtn) {
     mockClientBtn.addEventListener('click', function() {
-      console.log('&#xD83E;&#xDDEA; Loading Individual Mock Data');
+      console.log('🧪 Loading Individual Mock Data');
       handleClientData(mockClientData);
     });
   }
   
   if (mockBusinessBtn) {
     mockBusinessBtn.addEventListener('click', function() {
-      console.log('&#xD83E;&#xDDEA; Loading Business Mock Data');
+      console.log('🧪 Loading Business Mock Data');
       handleClientData(mockBusinessData);
     });
   }
   
   if (mockCharityBtn) {
     mockCharityBtn.addEventListener('click', function() {
-      console.log('&#xD83E;&#xDDEA; Loading Charity Mock Data');
+      console.log('🧪 Loading Charity Mock Data');
       handleClientData(mockCharityData);
     });
   }

@@ -30,7 +30,7 @@ If file present, follows message-iframe.html upload flow:
     uploadingFile: false,
     
     init: function(requestData) {
-      console.log('&#xD83D;&#xDCDD; Initializing PEP Update request');
+      console.log('📝 Initializing PEP Update request');
       
       // Enable submit button (validation happens on submit)
       this.enableSubmitButton();
@@ -38,14 +38,14 @@ If file present, follows message-iframe.html upload flow:
       // Setup file upload listener
       this.setupFileUploadListener();
       
-      console.log('&#x2705; PEP Update request initialized');
+      console.log('✅ PEP Update request initialized');
     },
     
     enableSubmitButton: function() {
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
         submitBtn.disabled = false;
-        console.log('&#x2705; Submit button enabled for PEP Update');
+        console.log('✅ Submit button enabled for PEP Update');
       }
     },
     

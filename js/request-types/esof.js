@@ -25,7 +25,7 @@ Sends request-data message to parent with:
   
   const ESoF = {
     init: function(requestData) {
-      console.log('&#xD83D;&#xDCDD; Initializing eSoF request');
+      console.log('📝 Initializing eSoF request');
       
       // Check if worktype includes purchase (required for eSoF)
       if (!this.validatePurchaseWorktype()) {
@@ -51,7 +51,7 @@ Sends request-data message to parent with:
       // Enable submit button
       this.enableSubmitButton();
       
-      console.log('&#x2705; eSoF request initialized');
+      console.log('✅ eSoF request initialized');
     },
     
     showIDDocumentsSection: function() {
@@ -112,7 +112,7 @@ Sends request-data message to parent with:
         window.RequestFormCore.resetFormUI('esof', null);
       }
       
-      console.log('&#x274C; eSoF not available - worktype does not include purchase');
+      console.log('❌ eSoF not available - worktype does not include purchase');
     },
     
     checkFormECombo: function() {
@@ -148,7 +148,7 @@ Sends request-data message to parent with:
           // eSoF only message
           messageInput.value = 'The client has requested/I would like to send the client an electronic source of funds check, i include the required details below';
         }
-        console.log('&#xD83D;&#xDCDD; eSoF message text populated');
+        console.log('📝 eSoF message text populated');
       }
     },
     
@@ -156,7 +156,7 @@ Sends request-data message to parent with:
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
         submitBtn.disabled = false;
-        console.log('&#x2705; Submit button enabled for eSoF');
+        console.log('✅ Submit button enabled for eSoF');
       }
     },
     

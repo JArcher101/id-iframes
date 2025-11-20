@@ -1785,8 +1785,8 @@
                 </div>
                 
                 <!-- Hidden arrows and counter -->
-                <button class="navigation-arrows nav-left" disabled style="display: none;">&#xC3;&#xA2;&#xE2;&#x201A;&#xAC;&#xC2;&#xB9;</button>
-                <button class="navigation-arrows nav-right" disabled style="display: none;">&#xC3;&#xA2;&#xE2;&#x201A;&#xAC;&#xC2;&#xBA;</button>
+                <button class="navigation-arrows nav-left" disabled style="display: none;">‹</button>
+                <button class="navigation-arrows nav-right" disabled style="display: none;">›</button>
             </div>
             <!-- Disabled add button -->
             <div class="add-more-container" style="margin-top: 10px;">
@@ -1857,7 +1857,7 @@
     <!-- Error Popup -->
     <div class="error-popup" id="errorPopup">
         <div class="error-popup-content">
-            <button class="error-popup-close" id="errorPopupClose">&#xC3;&#x192;&#xE2;&#x20AC;&#x201D;</button>
+            <button class="error-popup-close" id="errorPopupClose">×</button>
             <div class="error-popup-header">Upload Error</div>
             <div class="error-popup-message" id="errorMessage">An error occurred during upload.</div>
         </div>
@@ -2200,7 +2200,7 @@
             
             container.innerHTML = `
                 <div class="image-error">
-                    <div class="image-error-icon">&#xC3;&#xB0;&#xC5;&#xB8;&#xE2;&#x20AC;&#x153;&#xC2;&#xB7;</div>
+                    <div class="image-error-icon">📄</div>
                     <div class="image-error-text">
                         <strong>Image unavailable</strong><br>
                         ${documentType || 'Document image'} could not be loaded
@@ -2218,7 +2218,7 @@
             const container = button.closest('.image-error').parentElement;
             container.innerHTML = `
                 <div class="image-loading">
-                    <div class="image-error-icon">&#xC3;&#xA2;&#xC2;&#x8F;&#xC2;&#xB3;</div>
+                    <div class="image-error-icon">⏳</div>
                     <div class="image-error-text">Loading...</div>
                 </div>
             `;
@@ -3039,7 +3039,7 @@
             
             let completed = 0; // Track completions for progress bar
             
-            console.log(`&#xC3;&#xA2;&#xC5;&#xA1;&#xC2;&#xA1; Uploading ALL ${total} files simultaneously with Promise.all()`);
+            console.log(`⚡ Uploading ALL ${total} files simultaneously with Promise.all()`);
             
             // Create upload promise for each file
             const uploadPromises = files.map(async (fileData, index) => {
@@ -3094,7 +3094,7 @@
             const successCount = results.filter(r => r.success).length;
             const hasErrors = results.some(r => !r.success);
             
-            console.log(`&#xC3;&#xA2;&#xC5;&#x201C;&#xE2;&#x20AC;&#xA6; All uploads complete: ${successCount}/${total} successful`);
+            console.log(`… All uploads complete: ${successCount}/${total} successful`);
             
             // Handle completion
             setTimeout(() => {
@@ -4031,7 +4031,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '158b639';
+    window.__IFRAME_VERSION__ = '5baf66e';
     console.log('[image-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

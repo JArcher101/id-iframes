@@ -2044,12 +2044,12 @@
     <h4 class="error-popup-header">Validation Error</h4>
     <div class="error-popup-content">
       <span id="errorMessage" style="white-space:pre-wrap;"></span>
-      <button type="button" id="closeError">&#xC3;&#x2014;</button>
+      <button type="button" id="closeError">×</button>
     </div>
   </div>
 
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=158b639"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=5baf66e"></script>
   
   <script>
     /*
@@ -2742,7 +2742,7 @@
           const cachedResults = getCachedItem(cacheKey);
           
           if (cachedResults) {
-            console.log('&#xE2;&#x153;&#x2026; Using cached autocomplete results for:', searchTerm);
+            console.log('… Using cached autocomplete results for:', searchTerm);
             dropdownElement.classList.remove('hidden');
             displayAddressSuggestions(cachedResults, isCurrentAddress ? 'current' : 'previous');
             return;
@@ -2831,14 +2831,14 @@
       const cachedAddress = getCachedItem(cacheKey);
       
       if (cachedAddress) {
-        console.log('&#xE2;&#x153;&#x2026; Using cached full address for:', addressId);
+        console.log('… Using cached full address for:', addressId);
         // Use cached address directly
         handleAddressData(cachedAddress, isCurrentAddress ? 'current' : 'previous');
         return;
       }
       
       // Not cached - request from parent
-      console.log('&#xF0;&#x178;&#x201C;&#xA1; Requesting full address from API:', addressId);
+      console.log('📡 Requesting full address from API:', addressId);
       window.parent.postMessage({
         type: 'address-lookup',
         addressId: addressId,
@@ -2963,7 +2963,7 @@
         e.preventDefault();
         
         const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-        console.log('&#xF0;&#x178;&#x201C;&#x2039; Pasted DOB text:', pastedText);
+        console.log('📝 Pasted DOB text:', pastedText);
         
         // Try to parse the date
         const parsedDate = parseDateString(pastedText);
@@ -2978,7 +2978,7 @@
           
           dobInputs[7].focus();
           const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
-          console.log('&#xE2;&#x153;&#x2026; Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
+          console.log('… Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
         } else {
           console.warn('⚠️ Could not parse date from pasted text:', pastedText);
         }
@@ -4432,7 +4432,7 @@
       
       let completed = 0; // Track completions for progress bar
       
-      console.log(`&#xE2;&#x161;&#xA1; Uploading ALL ${total} files simultaneously with Promise.all()`);
+      console.log(`⚡ Uploading ALL ${total} files simultaneously with Promise.all()`);
       
       // Check if files and links arrays match
       if (files.length !== links.length) {
@@ -4488,7 +4488,7 @@
       const successCount = results.filter(r => r.success).length;
       const hasErrors = results.some(r => !r.success);
       
-      console.log(`&#xE2;&#x153;&#x2026; All uploads complete: ${successCount}/${total} successful`);
+      console.log(`… All uploads complete: ${successCount}/${total} successful`);
       
       // Handle completion
       if (hasErrors) {
@@ -4679,9 +4679,9 @@
     function showSection1() {
       if (loadingContainer) {
         loadingContainer.classList.add('hidden'); // Hide loading spinner
-        console.log('&#xF0;&#x178;&#x201D;&#x201E; Loading spinner hidden, showing Section 1');
+        console.log('🔄 Loading spinner hidden, showing Section 1');
       } else {
-        console.error('&#xE2;&#x9D;&#x152; loadingContainer element not found!');
+        console.error('⚠️ loadingContainer element not found!');
       }
       cardTitle.textContent = 'Section 1 - Client Details';
       form.classList.remove('hidden');
@@ -4720,7 +4720,7 @@
     nextBtn.addEventListener('click', (e)=>{
       e.preventDefault(); hideError();
       const errors = validateSection1();
-      if(errors.length){ showError('&#xE2;&#x20AC;&#xA2; ' + errors.join('\n&#xE2;&#x20AC;&#xA2; ')); return; }
+      if(errors.length){ showError('• ' + errors.join('\n• ')); return; }
       
       // Update formData with current Section 1 inputs before proceeding
       updateFormDataFromSection1();
@@ -4880,7 +4880,7 @@
       
       // If user selected "Yes", run validation
       const errs = validateSection2();
-      if(errs.length){ showError('&#xE2;&#x20AC;&#xA2; ' + errs.join('\n&#xE2;&#x20AC;&#xA2; ')); return; }
+      if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
       
       // Collect image data from uploaders
       collectPhotoIdImageData();
@@ -4894,7 +4894,7 @@
     nextToSection4.addEventListener('click', ()=>{
       hideError();
       const errs = validateSection3();
-      if(errs.length){ showError('&#xE2;&#x20AC;&#xA2; ' + errs.join('\n&#xE2;&#x20AC;&#xA2; ')); return; }
+      if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
       
       // Update formData with current Section 3 inputs before proceeding
       updateFormDataFromSection3();
@@ -4920,7 +4920,7 @@
       
       // If user selected "Yes" for Address ID, run validation
       const errs = validateSection4();
-      if(errs.length){ showError('&#xE2;&#x20AC;&#xA2; ' + errs.join('\n&#xE2;&#x20AC;&#xA2; ')); return; }
+      if(errs.length){ showError('• ' + errs.join('\n• ')); return; }
       
       // Collect address ID image data
       collectAddressIdImageData();
@@ -5069,31 +5069,31 @@
       console.log('========================');
       
       if(event.data && event.data.type === 'initiation-data'){
-        console.log('&#xE2;&#x153;&#x2026; Processing initiation-data...');
+        console.log('… Processing initiation-data...');
         // Clear form and reset all data before loading new data
         resetForm();
         loadData(event.data.data || {});
-        console.log('&#xE2;&#x153;&#x2026; Data loaded, form should be visible');
+        console.log('… Data loaded, form should be visible');
       } else if (event.data && event.data.type === 'address-results') {
-        console.log('&#xE2;&#x153;&#x2026; Processing address-results...');
+        console.log('… Processing address-results...');
         
         // Cache the autocomplete results
         if (event.data.searchTerm && event.data.suggestions) {
           const cacheKey = 'auto_' + event.data.searchTerm.toLowerCase();
           setCachedItem(cacheKey, event.data.suggestions, 'autocomplete');
-          console.log('&#xF0;&#x178;&#x2019;&#xBE; Cached autocomplete results for:', event.data.searchTerm);
+          console.log('💾 Cached autocomplete results for:', event.data.searchTerm);
         }
         
         // Display autocomplete suggestions
         displayAddressSuggestions(event.data.suggestions, event.data.field);
       } else if (event.data && event.data.type === 'address-data') {
-        console.log('&#xE2;&#x153;&#x2026; Processing address-data...');
+        console.log('… Processing address-data...');
         
         // Cache the full address object
         if (event.data.addressId && event.data.address) {
           const cacheKey = 'addr_' + event.data.addressId;
           setCachedItem(cacheKey, event.data.address, 'address');
-          console.log('&#xF0;&#x178;&#x2019;&#xBE; Cached full address for ID:', event.data.addressId);
+          console.log('💾 Cached full address for ID:', event.data.addressId);
         }
         
         // Store full address object
@@ -5332,16 +5332,16 @@
     
     // ===== INITIALIZE COUNTRY AUTOCOMPLETE =====
     // Initialize country autocomplete fields immediately
-    console.log('&#xF0;&#x178;&#x201D;&#xA7; Initializing country autocomplete fields...');
+    console.log('🔧 Initializing country autocomplete fields...');
     initializeCountryAutocomplete('currentCountry', 'currentCountryDropdown');
     initializeCountryAutocomplete('previousCountry', 'previousCountryDropdown');
-    console.log('&#xE2;&#x153;&#x2026; Country autocomplete initialization complete');
+    console.log('… Country autocomplete initialization complete');
   </script>
   </div>
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '158b639';
+    window.__IFRAME_VERSION__ = '5baf66e';
     console.log('[image-uploader] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

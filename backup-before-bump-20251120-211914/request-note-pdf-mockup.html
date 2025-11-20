@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Note PDF - Mockup</title>
+    <style>
+        /* ============================================
+           PDF EXPORT STYLES - MATCHES CHECKS MANAGER
+           Font: Trebuchet MS (system font)
+           ============================================ */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-blue: #003c71;
+            --secondary-blue: #1d71b8;
+            --green: #39b549;
+            --orange: #f7931e;
+            --red: #d32f2f;
+            --grey: #6c757d;
+            --light-grey: #f8f9fa;
+            --border-grey: #dee2e6;
+        }
+        
+        body {
+            font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', sans-serif;
+            padding: 40px;
+            background: white;
+            color: #111;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        
+        /* ============================================
+           PDF HEADER
+           ============================================ */
+        
+        .pdf-header {
+            border-bottom: 3px solid var(--primary-blue);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .pdf-title {
+            font-size: 26px;
+            font-weight: bold;
+            color: var(--primary-blue);
+            margin-bottom: 15px;
+        }
+        
+        .entry-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            font-size: 13px;
+        }
+        
+        .entry-info-item {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .entry-info-label {
+            font-weight: bold;
+            color: var(--grey);
+            min-width: 140px;
+        }
+        
+        .entry-info-value {
+            color: #333;
+        }
+        
+        /* ============================================
+           SECTION HEADERS
+           ============================================ */
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-blue);
+            margin: 30px 0 20px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border-grey);
+        }
+        
+        /* ============================================
+           REQUEST/NOTE CARD
+           ============================================ */
+        
+        .request-card {
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary-blue);
+            padding: 16px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .request-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary-blue);
+            flex: 1;
+        }
+        
+        .request-badges {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .request-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .badge-note {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .badge-update {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .badge-pep-update {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        /* Request Details */
+        .request-details {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-grey);
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        
+        .detail-grid div {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .detail-grid strong {
+            color: #333;
+        }
+        
+        /* Message Box */
+        .message-box {
+            background: #f0f7ff;
+            border: 1px solid #90caf9;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .message-box strong {
+            color: #1976d2;
+            font-size: 12px;
+            display: block;
+            margin-bottom: 6px;
+        }
+        
+        .message-text {
+            font-size: 13px;
+            color: #333;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        /* Matter Box */
+        .matter-box {
+            background: #fff9f9;
+            border-left: 3px solid var(--primary-blue);
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .matter-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--grey);
+            margin-bottom: 6px;
+        }
+        
+        .matter-text {
+            font-size: 12px;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        /* Attached File */
+        .attached-file {
+            background: var(--light-grey);
+            border: 1px solid var(--border-grey);
+            border-radius: 4px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+        }
+        
+        .file-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        
+        .file-info {
+            flex: 1;
+        }
+        
+        .file-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .file-size {
+            color: #666;
+            font-size: 11px;
+        }
+        
+        /* Client Info Card */
+        .client-card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border-grey);
+            padding: 16px;
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        
+        .client-header {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary-blue);
+            margin-bottom: 12px;
+        }
+        
+        /* PDF Footer */
+        .pdf-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-grey);
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- =================================================================
+         EXAMPLE 1: NOTE REQUEST WITH FILE ATTACHMENT
+         ================================================================= -->
+    
+    <!-- PDF Header -->
+    <div class="pdf-header">
+        <div class="pdf-title">Request Note</div>
+        <div class="entry-info">
+            <div class="entry-info-item">
+                <span class="entry-info-label">Client Name:</span>
+                <span class="entry-info-value">Jacob Robert Moran</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Client Number:</span>
+                <span class="entry-info-value">FE-24-1234</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Entry ID:</span>
+                <span class="entry-info-value">8d319820-907c-4553-9b4d-d228b48234d2</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Created Date:</span>
+                <span class="entry-info-value">12 Nov 2025, 14:32</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Submitted By:</span>
+                <span class="entry-info-value">jacob.archer-moran@thurstanhoskin.co.uk</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Submission Date:</span>
+                <span class="entry-info-value">12 Nov 2025, 15:45</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Information -->
+    <div class="section-title">Client Information</div>
+    
+    <div class="client-card">
+        <div class="client-header">Personal Details</div>
+        <div class="detail-grid">
+            <div><strong>Full Name:</strong> Jacob Robert Moran</div>
+            <div><strong>Date of Birth:</strong> 15/03/2001</div>
+            <div><strong>Email:</strong> jacob@example.com</div>
+            <div><strong>Phone:</strong> +44 7506430094</div>
+        </div>
+        
+        <div style="margin-top: 12px;">
+            <div class="matter-label">CURRENT ADDRESS:</div>
+            <div class="matter-text">21 Green Lane, Redruth, Cornwall, TR15 2QE, United Kingdom</div>
+        </div>
+    </div>
+    
+    <!-- Request Details -->
+    <div class="section-title">Request Details</div>
+    
+    <div class="request-card">
+        <div class="request-header">
+            <div class="request-title">Note Added to Entry</div>
+            <div class="request-badges">
+                <span class="request-badge badge-note">Note</span>
+            </div>
+        </div>
+        
+        <div class="request-details">
+            <!-- Timestamp -->
+            <div class="detail-grid">
+                <div><strong>Created By:</strong> jacob.archer-moran@thurstanhoskin.co.uk</div>
+                <div><strong>Date & Time:</strong> 12/11/2025, 15:45:32</div>
+            </div>
+            
+            <!-- Matter Details -->
+            <div class="matter-box">
+                <div class="matter-label">MATTER DETAILS:</div>
+                <div class="matter-text">
+                    <strong>Work Type:</strong> Purchase of<br>
+                    <strong>Relation:</strong> Our Client<br>
+                    <strong>Matter Description:</strong> Purchase of 123 High Street, London
+                </div>
+            </div>
+            
+            <!-- Message -->
+            <div class="message-box">
+                <strong>Message:</strong>
+                <div class="message-text">Client has confirmed they can provide proof of funds by Friday. Waiting for bank statements to be sent over. Please chase if not received by end of week.</div>
+            </div>
+            
+            <!-- Attached File -->
+            <div class="matter-label">ATTACHED FILE:</div>
+            <div class="attached-file">
+                <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="#1976d2" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <div class="file-info">
+                    <div class="file-name">proof-of-funds-email.pdf</div>
+                    <div class="file-size">245 KB</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PDF Footer -->
+    <div class="pdf-footer">
+        <p>Generated from Thurstan Hoskin's Thirdfort ID Management System</p>
+        <p>Report ID: NOTE-2025-11-12-1545 | jacob.archer-moran@thurstanhoskin.co.uk</p>
+        <p style="margin-top: 8px; font-style: italic;">This is a system-generated record of the request submission.</p>
+    </div>
+    
+    <!-- PAGE BREAK FOR SECOND EXAMPLE -->
+    <div style="page-break-before: always; margin-top: 60px; border-top: 4px solid #003c71; padding-top: 40px;"></div>
+    
+    <!-- =================================================================
+         EXAMPLE 2: ISSUE UPDATE WITH FORM E REQUEST
+         ================================================================= -->
+    
+    <!-- PDF Header -->
+    <div class="pdf-header">
+        <div class="pdf-title">Issue Update Request</div>
+        <div class="entry-info">
+            <div class="entry-info-item">
+                <span class="entry-info-label">Client Name:</span>
+                <span class="entry-info-value">Acme Corporation Ltd</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Client Number:</span>
+                <span class="entry-info-value">FE-24-5678</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Entity Type:</span>
+                <span class="entry-info-value">Business</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Entry ID:</span>
+                <span class="entry-info-value">92377c23-b427-4c8c-a991-dfb51aefc76e</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Submitted By:</span>
+                <span class="entry-info-value">sarah.jones@thurstanhoskin.co.uk</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Submission Date:</span>
+                <span class="entry-info-value">12 Nov 2025, 16:20</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Information -->
+    <div class="section-title">Client Information</div>
+    
+    <div class="client-card">
+        <div class="client-header">Business Details</div>
+        <div class="detail-grid">
+            <div><strong>Business Name:</strong> Acme Corporation Ltd</div>
+            <div><strong>Registration:</strong> GB (United Kingdom)</div>
+            <div><strong>Company Number:</strong> 12345678</div>
+            <div><strong>Business Type:</strong> Limited Company</div>
+            <div><strong>Email:</strong> info@acmecorp.com</div>
+            <div><strong>Phone:</strong> +44 20 7946 0958</div>
+        </div>
+        
+        <div style="margin-top: 12px;">
+            <div class="matter-label">REGISTERED ADDRESS:</div>
+            <div class="matter-text">1 High Street, London, EC1A 1BB, United Kingdom</div>
+        </div>
+    </div>
+    
+    <!-- Request Details -->
+    <div class="section-title">Update Details</div>
+    
+    <div class="request-card">
+        <div class="request-header">
+            <div class="request-title">Issue Update Submitted</div>
+            <div class="request-badges">
+                <span class="request-badge badge-update">Update</span>
+            </div>
+        </div>
+        
+        <div class="request-details">
+            <!-- Timestamp -->
+            <div class="detail-grid">
+                <div><strong>Created By:</strong> sarah.jones@thurstanhoskin.co.uk</div>
+                <div><strong>Date & Time:</strong> 12/11/2025, 16:20:15</div>
+            </div>
+            
+            <!-- Matter Details -->
+            <div class="matter-box">
+                <div class="matter-label">MATTER DETAILS:</div>
+                <div class="matter-text">
+                    <strong>Work Type:</strong> Sale of<br>
+                    <strong>Relation:</strong> Our Client<br>
+                    <strong>Matter Description:</strong> Sale of commercial property - 45 Business Park Road
+                </div>
+            </div>
+            
+            <!-- Message -->
+            <div class="message-box">
+                <strong>Update Message:</strong>
+                <div class="message-text">Issue with director's proof of address - the utility bill provided is dated more than 3 months ago. Requested updated proof of address for John Smith (Director). Expected to receive by end of business today.</div>
+            </div>
+            
+            <!-- No attached file for this example -->
+        </div>
+    </div>
+    
+    <!-- PDF Footer -->
+    <div class="pdf-footer">
+        <p>Generated from Thurstan Hoskin's Thirdfort ID Management System</p>
+        <p>Report ID: UPD-2025-11-12-1620 | sarah.jones@thurstanhoskin.co.uk</p>
+        <p style="margin-top: 8px; font-style: italic;">This is a system-generated record of the request submission.</p>
+    </div>
+    
+    <!-- PAGE BREAK FOR THIRD EXAMPLE -->
+    <div style="page-break-before: always; margin-top: 60px; border-top: 4px solid #003c71; padding-top: 40px;"></div>
+    
+    <!-- =================================================================
+         EXAMPLE 3: PEP UPDATE
+         ================================================================= -->
+    
+    <!-- PDF Header -->
+    <div class="pdf-header">
+        <div class="pdf-title">PEP Status Update</div>
+        <div class="entry-info">
+            <div class="entry-info-item">
+                <span class="entry-info-label">Client Name:</span>
+                <span class="entry-info-value">Emily Thompson</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Client Number:</span>
+                <span class="entry-info-value">FE-24-9012</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Entry ID:</span>
+                <span class="entry-info-value">a1b2c3d4-e5f6-7890-abcd-ef1234567890</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Created Date:</span>
+                <span class="entry-info-value">10 Nov 2025, 09:15</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Submitted By:</span>
+                <span class="entry-info-value">mark.davies@thurstanhoskin.co.uk</span>
+            </div>
+            <div class="entry-info-item">
+                <span class="entry-info-label">Submission Date:</span>
+                <span class="entry-info-value">12 Nov 2025, 11:30</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Information -->
+    <div class="section-title">Client Information</div>
+    
+    <div class="client-card">
+        <div class="client-header">Personal Details</div>
+        <div class="detail-grid">
+            <div><strong>Full Name:</strong> Emily Thompson</div>
+            <div><strong>Date of Birth:</strong> 22/08/1978</div>
+            <div><strong>Email:</strong> emily.thompson@parliament.uk</div>
+            <div><strong>Phone:</strong> +44 20 7219 3000</div>
+        </div>
+        
+        <div style="margin-top: 12px;">
+            <div class="matter-label">CURRENT ADDRESS:</div>
+            <div class="matter-text">House of Commons, Westminster, London, SW1A 0AA, United Kingdom</div>
+        </div>
+    </div>
+    
+    <!-- Request Details -->
+    <div class="section-title">PEP Update Details</div>
+    
+    <div class="request-card" style="border-left-color: #7b1fa2;">
+        <div class="request-header">
+            <div class="request-title">PEP Status Change Notification</div>
+            <div class="request-badges">
+                <span class="request-badge badge-pep-update">PEP Update</span>
+            </div>
+        </div>
+        
+        <div class="request-details">
+            <!-- Timestamp -->
+            <div class="detail-grid">
+                <div><strong>Created By:</strong> mark.davies@thurstanhoskin.co.uk</div>
+                <div><strong>Date & Time:</strong> 12/11/2025, 11:30:22</div>
+            </div>
+            
+            <!-- Matter Details -->
+            <div class="matter-box">
+                <div class="matter-label">MATTER DETAILS:</div>
+                <div class="matter-text">
+                    <strong>Work Type:</strong> Wills<br>
+                    <strong>Relation:</strong> Our Client<br>
+                    <strong>Matter Description:</strong> Estate planning and will preparation
+                </div>
+            </div>
+            
+            <!-- Message -->
+            <div class="message-box">
+                <strong>PEP Status Update:</strong>
+                <div class="message-text">Client Emily Thompson has been elected as Member of Parliament for Truro and Falmouth constituency as of November 2025. Client is now classified as a Politically Exposed Person (PEP) - Domestic PEP category. Enhanced due diligence procedures have been initiated. Source of wealth and source of funds documentation requested.</div>
+            </div>
+            
+            <!-- Attached File -->
+            <div class="matter-label">ATTACHED FILE:</div>
+            <div class="attached-file">
+                <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="#1976d2" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <div class="file-info">
+                    <div class="file-name">parliament-announcement-2025.pdf</div>
+                    <div class="file-size">1.2 MB</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PDF Footer -->
+    <div class="pdf-footer">
+        <p>Generated from Thurstan Hoskin's Thirdfort ID Management System</p>
+        <p>Report ID: PEP-2025-11-12-1130 | mark.davies@thurstanhoskin.co.uk</p>
+        <p style="margin-top: 8px; font-style: italic;">This is a system-generated record of the request submission.</p>
+    </div>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = '3145240';
+    console.log('[request-note-pdf-mockup] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
+</body>
+</html>
+
+

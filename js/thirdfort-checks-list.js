@@ -49,7 +49,7 @@ class ThirdfortChecksList {
     setupMessageListener() {
         // Listen for postMessage from parent window
         window.addEventListener('message', (event) => {
-            console.log('&#xD83D;&#xDCE8; Received message:', event.data);
+            console.log('📨 Received message:', event.data);
             
             if (event.data && event.data.type === 'client-checks') {
                 this.handleClientChecks(event.data.data);
@@ -58,14 +58,14 @@ class ThirdfortChecksList {
     }
     
     handleClientChecks(checksData) {
-        console.log('&#xD83D;&#xDCCB; Processing client checks data:', checksData);
+        console.log('📋 Processing client checks data:', checksData);
         
         if (Array.isArray(checksData)) {
             this.checks = checksData;
             this.renderChecks();
             this.hideLoading();
         } else {
-            console.error('&#x274C; Invalid checks data format');
+            console.error('❌ Invalid checks data format');
             this.showError('Invalid data format received');
         }
     }
@@ -95,7 +95,7 @@ class ThirdfortChecksList {
     }
     
     loadMockData() {
-        console.log('&#xD83C;&#xDFAD; Loading mock data...');
+        console.log('🎭 Loading mock data...');
         this.showLoading();
         
         // Simulate loading delay
@@ -550,7 +550,7 @@ class ThirdfortChecksList {
                     <span class="check-type">${checkType}</span>
                     ${check.status === 'closed' ? `
                         <span class="status-tag ${assessment.toLowerCase()}">${assessment}</span>
-                        ${isSafeHarbour ? '<span class="safe-harbour-icon">&#xD83D;&#xDD12;</span>' : ''}
+                        ${isSafeHarbour ? '<span class="safe-harbour-icon">🔒</span>' : ''}
                     ` : ''}
                 </div>
                 <div class="initiation-details">
@@ -601,15 +601,15 @@ class ThirdfortChecksList {
     getStatusIcon(status) {
         switch(status) {
             case 'closed':
-                return '&#x2713;';
+                return '✓';
             case 'open':
             case 'processing':
-                return '&#x23F3;';
+                return '⏳';
             case 'aborted':
             case 'cancelled':
-                return '&#x2717;';
+                return '✗';
             default:
-                return '&#x23F3;';
+                return '⏳';
         }
     }
     
@@ -650,7 +650,7 @@ class ThirdfortChecksList {
                     if (outcome.result === 'fail') {
                         warnings.push({
                             type: 'fail',
-                            icon: '&#x2717;',
+                            icon: '✗',
                             message: 'Address count less than 2'
                         });
                     } else if (outcome.data?.quality && outcome.data.quality < 80) {
@@ -677,7 +677,7 @@ class ThirdfortChecksList {
                     if (outcome.data?.integrity && outcome.data.integrity !== 'passed') {
                         warnings.push({
                             type: 'fail',
-                            icon: '&#x2717;',
+                            icon: '✗',
                             message: 'Document integrity failed'
                         });
                     }
@@ -725,7 +725,7 @@ class ThirdfortChecksList {
                     } else if (outcome.result === 'fail') {
                         warnings.push({
                             type: 'fail',
-                            icon: '&#x2717;',
+                            icon: '✗',
                             message: `${taskType} failed`
                         });
                     }

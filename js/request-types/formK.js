@@ -97,7 +97,7 @@ Sends request-data message to parent with:
     ],
     
     init: function(requestData) {
-      console.log('&#xD83D;&#xDCDD; Initializing Form K request');
+      console.log('📝 Initializing Form K request');
       
       // Show ID Documents section
       this.showIDDocumentsSection();
@@ -123,7 +123,7 @@ Sends request-data message to parent with:
       // Enable submit button (will be validated on submit)
       this.enableSubmitButton();
       
-      console.log('&#x2705; Form K request initialized');
+      console.log('✅ Form K request initialized');
     },
     
     showIDDocumentsSection: function() {
@@ -186,7 +186,7 @@ Sends request-data message to parent with:
         }
       }
       
-      console.log(`&#xD83D;&#xDCCB; Form K rules populated for ${isEntity ? 'entity' : 'individual'}${isSaleWorktype ? ' (sale worktype - rules 1&2 excluded)' : ''}${!isValidForRule3 ? ' (rule 3 excluded)' : ''}`);
+      console.log(`📋 Form K rules populated for ${isEntity ? 'entity' : 'individual'}${isSaleWorktype ? ' (sale worktype - rules 1&2 excluded)' : ''}${!isValidForRule3 ? ' (rule 3 excluded)' : ''}`);
     },
     
     checkWorktypeForSale: function() {
@@ -266,7 +266,7 @@ Sends request-data message to parent with:
           // Populate message
           if (selectedRule && messageInput) {
             messageInput.value = selectedRule;
-            console.log('&#xD83D;&#xDCDD; Form K Rule 3 selected, message populated');
+            console.log('📝 Form K Rule 3 selected, message populated');
           }
         } else {
           // Other rules selected - hide ID Images section and k3Hint
@@ -276,12 +276,12 @@ Sends request-data message to parent with:
           // Populate message for other rules
           if (selectedRule && messageInput) {
             messageInput.value = selectedRule;
-            console.log('&#xD83D;&#xDCDD; Form K rule selected, message populated');
+            console.log('📝 Form K rule selected, message populated');
           }
         }
       });
       
-      console.log('&#xD83D;&#xDC42; Form K rule selector listener setup');
+      console.log('👂 Form K rule selector listener setup');
     },
     
     showIDImagesSection: function() {
@@ -362,7 +362,7 @@ Sends request-data message to parent with:
       this.hideIDImagesSection();
       this.hideK3Hint();
       
-      console.log('&#x274C; Form K Rule 3 deselected - requirements not met');
+      console.log('❌ Form K Rule 3 deselected - requirements not met');
     },
     
     hideK3Hint: function() {
@@ -381,7 +381,7 @@ Sends request-data message to parent with:
       const handleCheckboxChange = () => {
         // Re-populate the dropdown when business/charity status changes
         this.populateRuleSelector();
-        console.log('&#xD83D;&#xDD04; Form K rules refreshed due to client type change');
+        console.log('🔄 Form K rules refreshed due to client type change');
       };
       
       if (businessCheckbox) {
@@ -392,7 +392,7 @@ Sends request-data message to parent with:
         charityCheckbox.addEventListener('change', handleCheckboxChange);
       }
       
-      console.log('&#xD83D;&#xDC42; Form K checkbox listeners setup');
+      console.log('👂 Form K checkbox listeners setup');
     },
     
     setupWorktypeListener: function() {
@@ -423,7 +423,7 @@ Sends request-data message to parent with:
           }
           
           this.hideK3Hint();
-          console.log('&#x274C; Form K rule 1 or 2 deselected due to sale worktype');
+          console.log('❌ Form K rule 1 or 2 deselected due to sale worktype');
         }
         
         // Handle Rule 3 validation (only valid for specific worktypes)
@@ -440,7 +440,7 @@ Sends request-data message to parent with:
           }
           
           this.hideK3Hint();
-          console.log('&#x274C; Form K rule 3 deselected due to invalid worktype');
+          console.log('❌ Form K rule 3 deselected due to invalid worktype');
         }
         
         // Show/hide k3Hint based on Rule 3 selection and worktype validity
@@ -452,7 +452,7 @@ Sends request-data message to parent with:
         
         // Re-populate the dropdown to filter rules appropriately
         this.populateRuleSelector();
-        console.log('&#xD83D;&#xDD04; Form K rules refreshed due to worktype change');
+        console.log('🔄 Form K rules refreshed due to worktype change');
       };
       
       if (worktypeDropdown) {
@@ -463,14 +463,14 @@ Sends request-data message to parent with:
         worktypeInput.addEventListener('input', handleWorktypeChange);
       }
       
-      console.log('&#xD83D;&#xDC42; Form K worktype listeners setup');
+      console.log('👂 Form K worktype listeners setup');
     },
     
     enableSubmitButton: function() {
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
         submitBtn.disabled = false;
-        console.log('&#x2705; Submit button enabled for Form K');
+        console.log('✅ Submit button enabled for Form K');
       }
     },
     
@@ -647,7 +647,7 @@ Sends request-data message to parent with:
             errors.push('You must have a successful company/charity link or upload a CDF document');
           }
         } else {
-          console.log('&#x2705; Entity has linked business data - CDF not required');
+          console.log('✅ Entity has linked business data - CDF not required');
         }
         
         // If no successful business link, require business name and entity number

@@ -1043,7 +1043,7 @@
     <h4 class="error-popup-header">Validation Error</h4>
     <div class="error-popup-content">
       <span id="errorMessage" style="white-space:pre-wrap;"></span>
-      <button type="button" id="closeError">&#xC3;&#x2014;</button>
+      <button type="button" id="closeError">×</button>
     </div>
   </div>
 
@@ -1779,7 +1779,7 @@
         const cachedSuggestions = getCachedItem(cacheKey, 'autocomplete');
         
         if (cachedSuggestions) {
-          console.log('&#xE2;&#x153;&#x2026; Cache hit for autocomplete:', searchTerm);
+          console.log('… Cache hit for autocomplete:', searchTerm);
           displayAddressSuggestions(cachedSuggestions, isCurrentAddress ? 'current' : 'previous');
           return;
         }
@@ -1888,7 +1888,7 @@
       const cachedAddress = getCachedItem(cacheKey, 'address');
       
       if (cachedAddress) {
-        console.log('&#xE2;&#x153;&#x2026; Cache hit for full address:', addressId);
+        console.log('… Cache hit for full address:', addressId);
         handleAddressData(cachedAddress, isCurrentAddress ? 'current' : 'previous');
         return;
       }
@@ -2154,7 +2154,7 @@
     */
     function handleCompanyData(data) {
       businessData = data;
-      console.log('&#xE2;&#x153;&#x2026; Received full company data:', businessData);
+      console.log('… Received full company data:', businessData);
       // Company data now includes: directors, officers, PSCs, registered_office_address, etc.
       
       // For charities, extract and store organisation_number in dataset (for URL construction)
@@ -2180,7 +2180,7 @@
           const isDifferentAddress = currentDisplayText !== newDisplayText;
           
           if (isDifferentAddress || !currentAddressObject) {
-            console.log('&#xF0;&#x178;&#x201C;&#x8D; Auto-populating registered office address:', thirdfortAddress);
+            console.log('📍 Auto-populating registered office address:', thirdfortAddress);
             
             // Set UK as country
             setCountry('currentCountry', 'GBR');
@@ -2191,9 +2191,9 @@
             // Display in the autocomplete field
             currentAddress.value = formatThirdfortForDisplay(thirdfortAddress);
             
-            console.log('&#xE2;&#x153;&#x2026; Registered office address converted and stored:', currentAddressObject);
+            console.log('… Registered office address converted and stored:', currentAddressObject);
           } else {
-            console.log('&#xE2;&#x201E;&#xB9;&#xEF;&#xB8;&#x8F; Registered office address is identical to current address, keeping existing');
+            console.log('ℹ️ Registered office address is identical to current address, keeping existing');
           }
         }
       }
@@ -2368,14 +2368,14 @@
         `;
         
         if (person.share) {
-          html += `<div class="people-card-share">&#xF0;&#x178;&#x201C;&#x160; ${person.share}</div>`;
+          html += `<div class="people-card-share">📊 ${person.share}</div>`;
         }
         
         card.innerHTML = html;
         peopleRepeater.appendChild(card);
       });
       
-      console.log(`&#xE2;&#x153;&#x2026; Displayed ${allPeople.length} people cards`);
+      console.log(`… Displayed ${allPeople.length} people cards`);
     }
     
     /*
@@ -2409,7 +2409,7 @@
           const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
           
           window.open(url, 'charityTrustees', features);
-          console.log('&#xF0;&#x178;&#x2018;&#xA4; Opening charity trustees tab:', url);
+          console.log('🔗 Opening charity trustees tab:', url);
         }
         return;
       }
@@ -2424,7 +2424,7 @@
       const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
       
       window.open(url, 'officerAppointments', features);
-      console.log('&#xF0;&#x178;&#x2018;&#xA4; Opening officer appointments:', url);
+      console.log('🔗 Opening officer appointments:', url);
     }
     
     /*
@@ -2462,7 +2462,7 @@
       if (entityNumber?.value?.trim()) {
         const companyNumber = entityNumber.value.trim();
         const apiType = entityType === 'charity' ? 'charity-lookup' : 'company-lookup';
-        console.log(`&#xF0;&#x178;&#x201D;&#x201E; Refreshing ${entityType} data for:`, companyNumber);
+        console.log(`🔄 Refreshing ${entityType} data for:`, companyNumber);
         window.parent.postMessage({
           type: apiType,
           companyNumber: companyNumber,
@@ -2669,8 +2669,8 @@
         doc.setTextColor(51, 51, 51);
         
         const financialInfo = [
-          ['Latest Income:', businessData.charity_income ? `&#xC2;&#xA3;${businessData.charity_income.toLocaleString()}` : 'N/A'],
-          ['Latest Expenditure:', businessData.charity_expenditure ? `&#xC2;&#xA3;${businessData.charity_expenditure.toLocaleString()}` : 'N/A']
+          ['Latest Income:', businessData.charity_income ? `£${businessData.charity_income.toLocaleString()}` : 'N/A'],
+          ['Latest Expenditure:', businessData.charity_expenditure ? `£${businessData.charity_expenditure.toLocaleString()}` : 'N/A']
         ];
         
         financialInfo.forEach(([label, value]) => {
@@ -2715,7 +2715,7 @@
           else if (officer.officer_role === 'trustee') roleType = 'Trustee';
           else roleType = 'Officer';
           
-          const appointedDate = officer.appointed_on ? formatDate(officer.appointed_on) : '&#xE2;&#x20AC;&#x201D;';
+          const appointedDate = officer.appointed_on ? formatDate(officer.appointed_on) : '—';
           
           if (existing) {
             if (!existing.roles.includes(roleType)) {
@@ -2738,7 +2738,7 @@
           const normalizedName = normalizeName(psc.name);
           const existing = peopleMap.get(normalizedName);
           
-          let shareInfo = '&#xE2;&#x20AC;&#x201D;';
+          let shareInfo = '—';
           if (psc.natures_of_control && psc.natures_of_control.length > 0) {
             const control = psc.natures_of_control[0];
             if (control.includes('25-to-50')) shareInfo = '25-50%';
@@ -2757,7 +2757,7 @@
               name: psc.name,
               roles: ['PSC'],
               share: shareInfo,
-              appointed: '&#xE2;&#x20AC;&#x201D;'
+              appointed: '—'
             });
           }
         });
@@ -2781,7 +2781,7 @@
       
       // Helper function to format date
       function formatDate(dateString) {
-        if (!dateString) return '&#xE2;&#x20AC;&#x201D;';
+        if (!dateString) return '—';
         try {
           const date = new Date(dateString);
           return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -2794,7 +2794,7 @@
       const tableData = allPeople.map(person => [
         person.name,
         person.roles.join(', '),
-        person.share || '&#xE2;&#x20AC;&#x201D;',
+        person.share || '—',
         person.appointed
       ]);
       
@@ -2879,7 +2879,7 @@
       
       // Download
       doc.save(filename);
-      console.log('&#xF0;&#x178;&#x201C;&#x201E; PDF downloaded:', filename);
+      console.log('📄 PDF downloaded:', filename);
     }
     
     // ===== FORM VALIDATION =====
@@ -3480,7 +3480,7 @@
         e.preventDefault();
         
         const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-        console.log('&#xF0;&#x178;&#x201C;&#x2039; Pasted DOB text:', pastedText);
+        console.log('📝 Pasted DOB text:', pastedText);
         
         // Try to parse the date
         const parsedDate = parseDateString(pastedText);
@@ -3495,7 +3495,7 @@
           
           dobInputs[7].focus();
           const formattedDate = `${parsedDate.substring(0,2)}/${parsedDate.substring(2,4)}/${parsedDate.substring(4,8)}`;
-          console.log('&#xE2;&#x153;&#x2026; Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
+          console.log('… Pasted DOB filled all fields:', parsedDate, '→', formattedDate);
         } else {
           console.warn('⚠️ Could not parse date from pasted text:', pastedText);
         }
@@ -3515,7 +3515,7 @@
       } else if (event.data && event.data.type === 'allowEdits-false') {
         setEditMode(false);
       } else if (event.data && event.data.type === 'client-data') {
-        console.log('&#xF0;&#x178;&#x201C;&#xA5; Received client-data:', event.data);
+        console.log('📥 Received client-data:', event.data);
         
         // Handle entity flag from message
         if (event.data.entity === true) {
@@ -3547,7 +3547,7 @@
         const errors = validateForm();
         if (errors.length) {
           // Send validation error to parent (don't show error popup in iframe)
-          console.log('&#xE2;&#x9D;&#x152; Validation errors:', errors);
+          console.log('⚠️ Validation errors:', errors);
           window.parent.postMessage({
             type: 'validation-error',
             errors: errors
@@ -3558,7 +3558,7 @@
         // Additional phone validation before sending data
         const phoneValidation = validatePhoneNumber();
         if (!phoneValidation.isValid) {
-          console.log('&#xE2;&#x9D;&#x152; Phone validation failed before sending data:', phoneValidation.error);
+          console.log('⚠️ Phone validation failed before sending data:', phoneValidation.error);
           window.parent.postMessage({
             type: 'validation-error',
             errors: [phoneValidation.error]
@@ -3570,7 +3570,7 @@
         
         // Check if data compilation failed
         if (!data) {
-          console.error('&#xE2;&#x9D;&#x152; Data compilation failed');
+          console.error('⚠️ Data compilation failed');
           window.parent.postMessage({
             type: 'validation-error',
             errors: ['Data compilation error']
@@ -3579,7 +3579,7 @@
         }
         
         // Send to parent (DOB will be in 'dd-mm-yyyy' format)
-        console.log('&#xF0;&#x178;&#x201C;&#xA4; Sending new-data to parent:', data);
+        console.log('📤 Sending new-data to parent:', data);
         window.parent.postMessage({
           type: 'new-data',
           data: data
@@ -3592,7 +3592,7 @@
         if (event.data.searchTerm && event.data.suggestions) {
           const cacheKey = 'auto_' + event.data.searchTerm.toLowerCase();
           setCachedItem(cacheKey, event.data.suggestions, 'autocomplete');
-          console.log('&#xF0;&#x178;&#x2019;&#xBE; Cached autocomplete results for:', event.data.searchTerm);
+          console.log('💾 Cached autocomplete results for:', event.data.searchTerm);
         }
         
         displayAddressSuggestions(event.data.suggestions, event.data.field);
@@ -3601,7 +3601,7 @@
         if (event.data.addressId && event.data.address) {
           const cacheKey = 'addr_' + event.data.addressId;
           setCachedItem(cacheKey, event.data.address, 'address');
-          console.log('&#xF0;&#x178;&#x2019;&#xBE; Cached full address for ID:', event.data.addressId);
+          console.log('💾 Cached full address for ID:', event.data.addressId);
         }
         
         handleAddressData(event.data.address, event.data.field);
@@ -3613,7 +3613,7 @@
         handleCompanyData(event.data.companyData || event.data.charityData);
       } else if (event.data && event.data.type === 'sanctions-check') {
         // Format client data and send back to parent for sanctions lightbox
-        console.log('&#xF0;&#x178;&#x201D;&#x8D; Formatting client data for sanctions check...');
+        console.log('📋 Formatting client data for sanctions check...');
         
         // Compile client name
         let clientName = '';
@@ -3653,7 +3653,7 @@
           }
         };
         
-        console.log('&#xF0;&#x178;&#x201C;&#xA4; Sending sanctions data to parent:', sanctionsData);
+        console.log('📤 Sending sanctions data to parent:', sanctionsData);
         window.parent.postMessage(sanctionsData, '*');
       }
     });
@@ -3746,7 +3746,7 @@
         // Entity type already set by switchToEntityMode() before loadData() is called
         // Only use formData.eT if entityType wasn't explicitly set
         if (formData.eT && formData.eT !== entityType) {
-          console.log(`&#xE2;&#x201E;&#xB9;&#xEF;&#xB8;&#x8F; Preserving entityType from message: '${entityType}' (formData has: '${formData.eT}')`);
+          console.log(`ℹ️ Preserving entityType from message: '${entityType}' (formData has: '${formData.eT}')`);
         }
         
         setJurisdiction('registrationCountry', formData.rC || 'GB');
@@ -3766,7 +3766,7 @@
         updateEntityLabels();
         
         if (businessData) {
-          console.log(`&#xE2;&#x153;&#x2026; Loaded ${entityType} data:`, businessData);
+          console.log(`… Loaded ${entityType} data:`, businessData);
         }
         
         // Update button visibility
@@ -3798,7 +3798,7 @@
             
             setPhoneCode('phoneCountryCode', countryCode);
             phoneNumber.value = nationalNumber;
-            console.log(`&#xF0;&#x178;&#x201C;&#x17E; Formatted phone using libphonenumber: ${cleanPhone} → ${formattedPhone} (${countryCode} + ${nationalNumber})`);
+            console.log(`📞 Formatted phone using libphonenumber: ${cleanPhone} → ${formattedPhone} (${countryCode} + ${nationalNumber})`);
           } catch (error) {
             console.warn('Error parsing formatted phone number:', error);
             // Fall back to original logic
@@ -3807,7 +3807,7 @@
           }
         } else {
           // Couldn't format with libphonenumber - use original logic
-          console.log('&#xF0;&#x178;&#x201C;&#x17E; Could not format phone with libphonenumber, using original logic for:', cleanPhone);
+          console.log('📞 Could not format phone with libphonenumber, using original logic for:', cleanPhone);
           
           // Check if it already has international format (starts with +)
           if (cleanPhone.startsWith('+')) {
@@ -3819,7 +3819,7 @@
               if (cleanPhone.startsWith(code)) {
                 setPhoneCode('phoneCountryCode', code);
                 phoneNumber.value = cleanPhone.substring(code.length);
-                console.log(`&#xF0;&#x178;&#x201C;&#x17E; Loaded international phone: ${code} + ${cleanPhone.substring(code.length)}`);
+                console.log(`📞 Loaded international phone: ${code} + ${cleanPhone.substring(code.length)}`);
                 matched = true;
                 break;
               }
@@ -3831,7 +3831,7 @@
               if (genericMatch) {
                 setPhoneCode('phoneCountryCode', genericMatch[1]);
                 phoneNumber.value = genericMatch[2];
-                console.log(`&#xF0;&#x178;&#x201C;&#x17E; Loaded phone with unrecognized code: ${genericMatch[1]} + ${genericMatch[2]}`);
+                console.log(`📞 Loaded phone with unrecognized code: ${genericMatch[1]} + ${genericMatch[2]}`);
               }
             }
           } 
@@ -3839,19 +3839,19 @@
           else if (cleanPhone.match(/^0[7-9]\d{9}$/)) {
             setPhoneCode('phoneCountryCode', '+44');
             phoneNumber.value = cleanPhone.substring(1); // Remove leading 0: 07700000000 → 7700000000
-            console.log(`&#xF0;&#x178;&#x201C;&#x17E; Converted UK mobile ${cleanPhone} → +44${cleanPhone.substring(1)}`);
+            console.log(`📞 Converted UK mobile ${cleanPhone} → +44${cleanPhone.substring(1)}`);
           }
           // Other UK format (starts with 0) - landlines or other
           else if (cleanPhone.startsWith('0')) {
             setPhoneCode('phoneCountryCode', '+44');
             phoneNumber.value = cleanPhone.substring(1); // Remove leading 0
-            console.log(`&#xF0;&#x178;&#x201C;&#x17E; Converted UK number ${cleanPhone} → +44${cleanPhone.substring(1)}`);
+            console.log(`📞 Converted UK number ${cleanPhone} → +44${cleanPhone.substring(1)}`);
           }
           // No recognized format, store as-is with default country code
           else {
             setPhoneCode('phoneCountryCode', '+44');
             phoneNumber.value = cleanPhone;
-            console.log('&#xF0;&#x178;&#x201C;&#x17E; Loaded phone (no prefix):', cleanPhone, '→ assuming +44');
+            console.log('📞 Loaded phone (no prefix):', cleanPhone, '→ assuming +44');
           }
         }
       } else {
@@ -4009,7 +4009,7 @@
       // Use setTimeout to ensure all DOM updates are complete before enabling change detection
       setTimeout(() => {
         isLoadingData = false;
-        console.log('&#xE2;&#x153;&#x2026; Data loaded successfully, change detection enabled');
+        console.log('… Data loaded successfully, change detection enabled');
         
         // Apply edit mode state (in case it was set before data load)
         setEditMode(allowEdits);
@@ -4080,15 +4080,15 @@
   </script>
   
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=158b639"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=5baf66e"></script>
   <script>
     // Initialize all autocomplete fields immediately (DOM already loaded since scripts are at bottom)
-    console.log('&#xF0;&#x178;&#x201D;&#xA7; Initializing autocomplete fields...');
+    console.log('🔧 Initializing autocomplete fields...');
     initializeCountryAutocomplete('currentCountry', 'currentCountryDropdown');
     initializeCountryAutocomplete('previousCountry', 'previousCountryDropdown');
     initializePhoneCodeAutocomplete('phoneCountryCode', 'phoneCountryCodeDropdown');
     initializeJurisdictionAutocomplete('registrationCountry', 'registrationCountryDropdown');
-    console.log('&#xE2;&#x153;&#x2026; Autocomplete initialization calls complete');
+    console.log('… Autocomplete initialization calls complete');
     
     // Patch elements to have .value getter/setter that work with data attributes
     const currentCountryEl = document.getElementById('currentCountry');
@@ -4168,7 +4168,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '158b639';
+    window.__IFRAME_VERSION__ = '5baf66e';
     console.log('[client-details] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

@@ -32,7 +32,7 @@ Sends request-data message to parent with:
     uploadingFile: false,
     
     init: function(requestData) {
-      console.log('&#xD83D;&#xDCDD; Initializing Form J request');
+      console.log('📝 Initializing Form J request');
       
       // Check Form J requirements FIRST
       const formJSufficientPhotos = window.RequestFormCore.formJSufficientPhotos();
@@ -71,14 +71,14 @@ Sends request-data message to parent with:
       // Setup file upload listener
       this.setupFileUploadListener();
       
-      console.log('&#x2705; Form J request initialized');
+      console.log('✅ Form J request initialized');
     },
     
     enableSubmitButton: function() {
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
         submitBtn.disabled = false;
-        console.log('&#x2705; Submit button enabled for Form J');
+        console.log('✅ Submit button enabled for Form J');
       }
     },
     
@@ -129,7 +129,7 @@ Sends request-data message to parent with:
         window.RequestFormCore.resetFormUI('formJ', null);
       }
       
-      console.log('&#x274C; Form J requirements not met - tag deselected and form reset');
+      console.log('❌ Form J requirements not met - tag deselected and form reset');
     },
     
     showIDSections: function() {
@@ -209,7 +209,7 @@ Sends request-data message to parent with:
         });
       }
       
-      console.log('&#xD83D;&#xDC42; Worktype listeners setup for purchase detection (dropdown + input)');
+      console.log('👂 Worktype listeners setup for purchase detection (dropdown + input)');
     },
     
     populateMessage: function() {
@@ -217,7 +217,7 @@ Sends request-data message to parent with:
       
       if (messageInput) {
         messageInput.value = 'We hold sufficient Photographic and Address ID to perform a Form J check on this client, we attach the CDF and recent OFSI along with the BCDs entered';
-        console.log('&#xD83D;&#xDCDD; Form J message text populated');
+        console.log('📝 Form J message text populated');
       }
     },
     
@@ -226,7 +226,7 @@ Sends request-data message to parent with:
       // Button is enabled when Form J is selected (if requirements met)
       // Full validation only happens on submit
       // This prevents the button from toggling on/off as user types
-      console.log('&#x2705; Form J validation configured (validates on submit only)');
+      console.log('✅ Form J validation configured (validates on submit only)');
     },
     
     setupFileUploadListener: function() {

@@ -1260,7 +1260,7 @@
         <!-- Error Popup (matching image-viewer.html styling) -->
         <div id="errorPopup" class="upload-modal hidden">
             <div class="upload-modal-content" style="background: #dc3545; padding: 20px; max-width: 400px;">
-                <button onclick="hideErrorPopup()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&#xC3;&#x2014;</button>
+                <button onclick="hideErrorPopup()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">×</button>
                 <h2 style="color: white; font-size: 1.1rem; margin-bottom: 10px; font-weight: 600;">Upload Error</h2>
                 <p id="errorMessage" style="color: white; margin: 0; line-height: 1.4; font-size: 0.9rem;"></p>
             </div>
@@ -1716,15 +1716,15 @@
             const nextRotation = (currentRotation + degrees) % 360;
             const normalizedNext = nextRotation < 0 ? nextRotation + 360 : nextRotation;
             
-            // Check if we're crossing 0&#xC2;&#xB0; boundary
-            // If at 270&#xC2;&#xB0; and rotating right (+90), should unwind to 0&#xC2;&#xB0; not continue to 360&#xC2;&#xB0;
-            // If at 90&#xC2;&#xB0; and rotating left (-90), should unwind to 0&#xC2;&#xB0; not continue to -90&#xC2;&#xB0;
+            // Check if we're crossing 0° boundary
+            // If at 270° and rotating right (+90), should unwind to 0° not continue to 360°
+            // If at 90° and rotating left (-90), should unwind to 0° not continue to -90°
             if (currentRotation === 270 && degrees > 0) {
-                // At 270&#xC2;&#xB0;, rotating right → unwind back to 0&#xC2;&#xB0;
+                // At 270°, rotating right → unwind back to 0°
                 currentRotation = 0;
                 mainImage.style.transform = 'rotate(0deg)';
             } else if (currentRotation === 90 && degrees < 0) {
-                // At 90&#xC2;&#xB0;, rotating left → unwind back to 0&#xC2;&#xB0;
+                // At 90°, rotating left → unwind back to 0°
                 currentRotation = 0;
                 mainImage.style.transform = 'rotate(0deg)';
             } else {
@@ -1733,7 +1733,7 @@
                 mainImage.style.transform = `rotate(${currentRotation}deg)`;
             }
             
-            console.log(`&#xF0;&#x178;&#x201D;&#x201E; Image rotated to ${currentRotation}&#xC2;&#xB0;`);
+            console.log(`🔄 Image rotated to ${currentRotation}°`);
         }
 
         function resetRotation() {
@@ -1862,7 +1862,7 @@
         =====================================================================
         */
         async function prefetchEntryImages(entry) {
-            console.log('&#xF0;&#x178;&#x201D;&#x201E; Background pre-fetching images for:', entry.name);
+            console.log('🔄 Background pre-fetching images for:', entry.name);
             
             for (let imgIdx = 0; imgIdx < entry.images.length; imgIdx++) {
                 const img = entry.images[imgIdx];
@@ -1890,9 +1890,9 @@
                         }
                     });
                     
-                    console.log(`&#xE2;&#x153;&#x2026; Pre-fetched: ${entry.name} - Image ${imgIdx + 1}`);
+                    console.log(`… Pre-fetched: ${entry.name} - Image ${imgIdx + 1}`);
                 } catch (error) {
-                    console.warn(`&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Pre-fetch failed for ${entry.name} - Image ${imgIdx + 1}:`, error);
+                    console.warn(`⚠️ Pre-fetch failed for ${entry.name} - Image ${imgIdx + 1}:`, error);
                     // Don't block - will fetch during upload if needed
                 }
             }
@@ -1942,13 +1942,13 @@
                         // Check cache first
                         let blob, metadata;
                         if (imageCache.has(cacheKey)) {
-                            console.log(`&#xF0;&#x178;&#x201C;&#xA6; Using cached blob for: ${entry.name} - Image ${imgIdx + 1}`);
+                            console.log(`💾 Using cached blob for: ${entry.name} - Image ${imgIdx + 1}`);
                             const cached = imageCache.get(cacheKey);
                             blob = cached.blob;
                             metadata = cached.metadata;
                         } else {
                             // Fetch if not cached (fallback)
-                            console.log(`&#xE2;&#x8F;&#xB3; Fetching (not cached): ${entry.name} - Image ${imgIdx + 1}`);
+                            console.log(`⏳ Fetching (not cached): ${entry.name} - Image ${imgIdx + 1}`);
                             try {
                                 const response = await fetch(publicUrl);
                                 blob = await response.blob();
@@ -1958,7 +1958,7 @@
                                     lastModified: Date.now()
                                 };
                             } catch (error) {
-                                console.error(`&#xE2;&#x9D;&#x152; Fetch failed for ${entry.name} - Image ${imgIdx + 1}:`, error);
+                                console.error(`⚠️ Fetch failed for ${entry.name} - Image ${imgIdx + 1}:`, error);
                                 throw error;
                             }
                         }
@@ -1978,11 +1978,11 @@
                     }
                 }
                 
-                console.log(`&#xE2;&#x153;&#x2026; Compiled upload data: ${uploadData.length} images (${imageCache.size} from cache)`);
+                console.log(`… Compiled upload data: ${uploadData.length} images (${imageCache.size} from cache)`);
                 console.log('Upload data details:', uploadData);
                 
                 // Log message before posting
-                console.log('&#xF0;&#x178;&#x201C;&#xA4; Posting image-data to parent:', {
+                console.log('📤 Posting image-data to parent:', {
                     type: 'image-data',
                     images: uploadData.map(item => ({
                         entryId: item.entryId,
@@ -2109,7 +2109,7 @@
             
             let completed = 0; // Track completions for progress bar
             
-            console.log(`&#xE2;&#x161;&#xA1; Uploading ALL ${total} files simultaneously with Promise.all()`);
+            console.log(`⚡ Uploading ALL ${total} files simultaneously with Promise.all()`);
             
             // Create upload promise for each file
             const uploadPromises = uploadDataWithBlobs.map(async (uploadItem, index) => {
@@ -2147,7 +2147,7 @@
                     if (fileItem && badge) {
                         fileItem.classList.remove('uploading');
                         fileItem.classList.add('success');
-                        badge.textContent = 'Success &#xE2;&#x153;&#x201C;';
+                        badge.textContent = 'Success ✓';
                         badge.className = 'file-upload-item-badge badge-success';
                     }
                     
@@ -2167,7 +2167,7 @@
                     if (fileItem && badge) {
                         fileItem.classList.remove('uploading');
                         fileItem.classList.add('error');
-                        badge.textContent = 'Failed &#xE2;&#x153;&#x2014;';
+                        badge.textContent = 'Failed ✗';
                         badge.className = 'file-upload-item-badge badge-error';
                     }
                     
@@ -2188,17 +2188,17 @@
             // Count successes
             const successCount = results.filter(r => r.success).length;
             
-            console.log(`&#xE2;&#x153;&#x2026; All uploads complete: ${successCount}/${total} successful`);
+            console.log(`… All uploads complete: ${successCount}/${total} successful`);
             
             // All uploads complete
             if (successCount === total) {
-                uploadStatus.textContent = '&#xE2;&#x153;&#x2026; All files uploaded successfully!';
+                uploadStatus.textContent = '… All files uploaded successfully!';
                 
                 // Compile results for parent
                 const results = compileUploadResults(s3Keys);
                 
                 // Log message before posting
-                console.log('&#xF0;&#x178;&#x201C;&#xA4; Posting migration-complete to parent:', {
+                console.log('📤 Posting migration-complete to parent:', {
                     type: 'migration-complete',
                     updates: results,
                     batchNumber: currentBatchNumber,
@@ -2216,7 +2216,7 @@
                     }, '*');
                 }, 1000);
             } else {
-                uploadStatus.textContent = `&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Upload completed with errors (${successCount}/${total} successful)`;
+                uploadStatus.textContent = `⚠️ Upload completed with errors (${successCount}/${total} successful)`;
             }
         }
 
@@ -2244,7 +2244,7 @@
             Object.keys(entriesMap).forEach(entryId => {
                 // Validate _id exists and is a valid UUID/GUID format
                 if (!entryId || entryId === 'undefined' || entryId === 'null') {
-                    console.error('&#xE2;&#x161;&#xA0;&#xEF;&#xB8;&#x8F; Invalid entry ID detected:', entryId);
+                    console.error('⚠️ Invalid entry ID detected:', entryId);
                     return;
                 }
                 
@@ -2255,7 +2255,7 @@
                 };
                 
                 // Log each update object for debugging
-                console.log('&#xF0;&#x178;&#x201C;&#x2039; Update object for entry:', {
+                console.log('📝 Update object for entry:', {
                     _id: entryId,
                     imageCount: entriesMap[entryId].length,
                     images: entriesMap[entryId]
@@ -2265,7 +2265,7 @@
             });
             
             // Final validation log
-            console.log('&#xE2;&#x153;&#x2026; Compiled results for bulkUpdate:', {
+            console.log('… Compiled results for bulkUpdate:', {
                 totalEntries: results.length,
                 entryIds: results.map(r => r._id),
                 results: results
@@ -2335,7 +2335,7 @@
             });
             
             // Update summary with keyboard hint
-            confirmSummary.textContent = `${totalToUpload} images will be uploaded${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''} &#xE2;&#x20AC;&#xA2; Press ESC to cancel, ENTER to upload`;
+            confirmSummary.textContent = `${totalToUpload} images will be uploaded${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''} • Press ESC to cancel, ENTER to upload`;
             
             // Build confirmation cards
             confirmCardsContainer.innerHTML = '';
@@ -2438,7 +2438,7 @@
                 return;
             }
             
-            console.log('&#xF0;&#x178;&#x201C;&#xA4; Requesting data from parent with limit:', limit);
+            console.log('📤 Requesting data from parent with limit:', limit);
             
             // Hide all sections and show loading state
             mainInterface.classList.add('hidden');
@@ -2476,7 +2476,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '158b639';
+    window.__IFRAME_VERSION__ = '5baf66e';
     console.log('[migration-tagger] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

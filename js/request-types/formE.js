@@ -26,7 +26,7 @@ Sends request-data message to parent with:
     formattedDOB: null,
     
     init: function(requestData) {
-      console.log('&#xD83D;&#xDCDD; Initializing Form E request');
+      console.log('📝 Initializing Form E request');
       
       // Show ID Documents section
       this.showIDDocumentsSection();
@@ -51,7 +51,7 @@ Sends request-data message to parent with:
       // Enable submit button
       this.enableSubmitButton();
       
-      console.log('&#x2705; Form E request initialized');
+      console.log('✅ Form E request initialized');
     },
     
     showIDDocumentsSection: function() {
@@ -87,7 +87,7 @@ Sends request-data message to parent with:
       if (messageInput) {
         // Form E (with or without eSoF) uses the same message
         messageInput.value = 'The client has requested an electronic check during onboarding, we attach their CDF and recent OFSI along with the BCDs entered';
-        console.log('&#xD83D;&#xDCDD; Form E message text populated');
+        console.log('📝 Form E message text populated');
       }
     },
     
@@ -126,7 +126,7 @@ Sends request-data message to parent with:
         // Auto-select eSoF tag if not already selected
         if (esofTag && !esofTag.classList.contains('selected') && !esofTag.disabled) {
           esofTag.classList.add('selected');
-          console.log('&#x2705; eSoF auto-selected (purchase detected)');
+          console.log('✅ eSoF auto-selected (purchase detected)');
         }
         
         // Show eSoFHint when both Form E + eSoF selected
@@ -191,14 +191,14 @@ Sends request-data message to parent with:
         });
       }
       
-      console.log('&#xD83D;&#xDC42; Worktype listeners setup for purchase detection (dropdown + input)');
+      console.log('👂 Worktype listeners setup for purchase detection (dropdown + input)');
     },
     
     enableSubmitButton: function() {
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
         submitBtn.disabled = false;
-        console.log('&#x2705; Submit button enabled for Form E');
+        console.log('✅ Submit button enabled for Form E');
       }
     },
     

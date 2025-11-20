@@ -35,7 +35,7 @@ class ThirdfortChecksManager {
     }
     
     init() {
-        console.log('&#xD83D;&#xDD0D; Thirdfort Checks Manager initialized');
+        console.log('🔍 Thirdfort Checks Manager initialized');
         
         // Set up event listeners
         this.setupEventListeners();
@@ -81,24 +81,24 @@ class ThirdfortChecksManager {
     handleMessage(event) {
         const { type, data } = event.data;
         
-        console.log('&#xD83D;&#xDCE8; Message received:', type, data);
+        console.log('📨 Message received:', type, data);
         
         switch (type) {
             case 'checks-data':
                 // Close any open overlays and load new data
                 this.closeAllOverlays();
                 this.mode = data.mode || 'edit';
-                console.log(`&#xD83D;&#xDD12; Mode set to: ${this.mode}`);
+                console.log(`🔒 Mode set to: ${this.mode}`);
                 this.loadChecks(data.checks || []);
                 break;
                 
             case 'save-success':
-                console.log('&#x2705; Save successful:', data);
+                console.log('✅ Save successful:', data);
                 this.handleSaveSuccess(data);
                 break;
                 
             case 'error':
-                console.error('&#x274C; Error from parent:', data.message);
+                console.error('❌ Error from parent:', data.message);
                 this.showError(data.message);
                 break;
                 
@@ -137,12 +137,12 @@ class ThirdfortChecksManager {
                             userName: userName
                         });
                     });
-                    console.log(`&#x2705; Added ${savedAnnotations.length} annotations to local check object`);
-                    console.log('&#xD83D;&#xDCCA; Total annotations now:', this.currentCheck.considerAnnotations.length);
+                    console.log(`✅ Added ${savedAnnotations.length} annotations to local check object`);
+                    console.log('📊 Total annotations now:', this.currentCheck.considerAnnotations.length);
                 }
                 
                 // Generate PDF and open in popup (auto-save = true)
-                console.log('&#xD83D;&#xDCC4; Generating consider annotations PDF...');
+                console.log('📄 Generating consider annotations PDF...');
                 this.generateConsiderPDF(true); // Pass true for auto-save
                 // Close overlay after PDF generation starts
                 setTimeout(() => this.closeConsiderOverlay(), 500);
@@ -174,18 +174,18 @@ class ThirdfortChecksManager {
                             });
                         });
                     });
-                    console.log(`&#x2705; Added ${this.pendingSave.dismissals.reduce((sum, b) => sum + b.hits.length, 0)} dismissals to local check object`);
-                    console.log('&#xD83D;&#xDCCA; Total dismissals now:', this.currentCheck.pepDismissals.length);
+                    console.log(`✅ Added ${this.pendingSave.dismissals.reduce((sum, b) => sum + b.hits.length, 0)} dismissals to local check object`);
+                    console.log('📊 Total dismissals now:', this.currentCheck.pepDismissals.length);
                 }
                 
                 // Generate PDF and open in popup (auto-save = true)
-                console.log('&#xD83D;&#xDCC4; Generating PEP dismissals PDF...');
+                console.log('📄 Generating PEP dismissals PDF...');
                 this.generatePepDismissalsPDF(true); // Pass true for auto-save
                 // Close overlay after PDF generation starts
                 setTimeout(() => this.closePepOverlay(), 500);
             } else if (saveType === 'sof') {
                 // Generate PDF and open in popup (auto-save = true)
-                console.log('&#xD83D;&#xDCC4; Generating SoF investigation PDF...');
+                console.log('📄 Generating SoF investigation PDF...');
                 this.generateSofPDF(true); // Pass true for auto-save
                 // Close overlay after PDF generation starts
                 setTimeout(() => this.closeSofOverlay(), 500);
@@ -226,7 +226,7 @@ class ThirdfortChecksManager {
                 cursor: pointer;
                 padding: 0 5px;
                 line-height: 1;
-            ">&#xD7;</button>
+            ">×</button>
         `;
         
         // Add to current visible view
@@ -289,7 +289,7 @@ class ThirdfortChecksManager {
     // ===================================================================
     
     loadChecks(checks) {
-        console.log('&#xD83D;&#xDCCA; Loading checks:', checks.length);
+        console.log('📊 Loading checks:', checks.length);
         
         this.checkIdentityImages = {};
         this.currentCheck = null;
@@ -312,7 +312,7 @@ class ThirdfortChecksManager {
      * @param {string} view - 'loading' | 'empty' | 'list' | 'detail'
      */
     switchView(view) {
-        console.log('&#xD83D;&#xDD04; Switching view to:', view);
+        console.log('🔄 Switching view to:', view);
         
         // Step 1: Hide ALL views
         this.loadingState.classList.add('hidden');
@@ -540,7 +540,7 @@ class ThirdfortChecksManager {
     // ===================================================================
     
     renderDetailView(check) {
-        console.log('&#xD83D;&#xDCCB; Rendering detail view for check:', check);
+        console.log('📋 Rendering detail view for check:', check);
         
         // Render top action buttons
         this.renderTopActionButtons(check);
@@ -679,7 +679,7 @@ class ThirdfortChecksManager {
         
         const thirdfortUrl = `${baseUrl}${urlPath}`;
         
-        console.log('&#xD83D;&#xDD17; Opening Thirdfort transaction:', {
+        console.log('🔗 Opening Thirdfort transaction:', {
             checkType,
             transactionId,
             env,
@@ -870,7 +870,7 @@ class ThirdfortChecksManager {
         
         const canAbort = isOpenStatus && isV2Transaction;
         
-        console.log('&#xD83D;&#xDD0D; Abort card check:', {
+        console.log('🔍 Abort card check:', {
             status: check.status,
             isOpenStatus,
             checkId,
@@ -924,7 +924,7 @@ class ThirdfortChecksManager {
                             `${screeningLiteData['name:lite'].first || ''} ${screeningLiteData['name:lite'].last || ''}`.trim() : '') ||
                         (idvProperties ? `${idvProperties.first_name || ''} ${idvProperties.last_name || ''}`.trim() : '') ||
                         (expectations.name?.data ? `${expectations.name.data.first || ''} ${expectations.name.data.last || ''}`.trim() : '') ||
-                        (piiData.name ? `${piiData.name.first || ''} ${piiData.name.last || ''}`.trim() : '')) || '&#x2014;';
+                        (piiData.name ? `${piiData.name.first || ''} ${piiData.name.last || ''}`.trim() : '')) || '—';
             
             // For screening:lite, use yob (year of birth) instead of full DOB
             const dob = isScreeningLite && screeningLiteData.yob 
@@ -932,10 +932,10 @@ class ThirdfortChecksManager {
                 : idvProperties?.date_of_birth 
                     ? new Date(idvProperties.date_of_birth).toLocaleDateString('en-GB')
                     : (expectations.dob?.data ? new Date(expectations.dob.data).toLocaleDateString('en-GB') : '')
-                    || (piiData.dob ? new Date(piiData.dob).toLocaleDateString('en-GB') : '&#x2014;');
+                    || (piiData.dob ? new Date(piiData.dob).toLocaleDateString('en-GB') : '—');
             
-            const mobile = check.consumerPhone || check.thirdfortResponse?.request?.actor?.phone || '&#x2014;';
-            const email = check.consumerEmail || check.thirdfortResponse?.request?.actor?.email || '&#x2014;';
+            const mobile = check.consumerPhone || check.thirdfortResponse?.request?.actor?.phone || '—';
+            const email = check.consumerEmail || check.thirdfortResponse?.request?.actor?.email || '—';
             
             // Address - use piiData first, then expectations for lite-screen
             const address = piiData.address || expectations.address?.data || {};
@@ -946,11 +946,11 @@ class ThirdfortChecksManager {
                 address.town,
                 address.postcode,
                 address.country
-            ].filter(Boolean).join(', ') || '&#x2014;';
+            ].filter(Boolean).join(', ') || '—';
             
             const docInfo = check.taskOutcomes?.['document']?.data || {};
             const docNumber = docInfo.number || piiData.document?.number || 
-                            (idvProperties?.document_numbers?.[0]?.value) || '&#x2014;';
+                            (idvProperties?.document_numbers?.[0]?.value) || '—';
             const mrz = piiData.document?.mrz_line1 && piiData.document?.mrz_line2
                 ? `${piiData.document.mrz_line1}\n${piiData.document.mrz_line2}`
                 : '';
@@ -966,7 +966,7 @@ class ThirdfortChecksManager {
             // Build client details grid items (only show if data exists)
             const gridItems = [];
             
-            if (name && name !== '&#x2014;') {
+            if (name && name !== '—') {
                 gridItems.push(`
                     <div class="detail-item">
                         <div class="detail-label">Name</div>
@@ -975,7 +975,7 @@ class ThirdfortChecksManager {
                 `);
             }
             
-            if (dob && dob !== '&#x2014;') {
+            if (dob && dob !== '—') {
                 const dobLabel = isScreeningLite ? 'Year of Birth' : 'Date of Birth';
                 gridItems.push(`
                     <div class="detail-item">
@@ -1007,7 +1007,7 @@ class ThirdfortChecksManager {
                 `);
             }
             
-            if (mobile && mobile !== '&#x2014;' && !isScreeningLite) {
+            if (mobile && mobile !== '—' && !isScreeningLite) {
                 gridItems.push(`
                     <div class="detail-item">
                         <div class="detail-label">Mobile</div>
@@ -1016,7 +1016,7 @@ class ThirdfortChecksManager {
                 `);
             }
             
-            if (email && email !== '&#x2014;' && !isScreeningLite) {
+            if (email && email !== '—' && !isScreeningLite) {
                 gridItems.push(`
                     <div class="detail-item">
                         <div class="detail-label">Email</div>
@@ -1030,7 +1030,7 @@ class ThirdfortChecksManager {
                     <div class="details-title">Client Details</div>
                 </div>
                 ${gridItems.length > 0 ? `<div class="details-grid">${gridItems.join('')}</div>` : ''}
-                ${fullAddress && fullAddress !== '&#x2014;' && check.checkType !== 'idv' && !isScreeningLite ? `
+                ${fullAddress && fullAddress !== '—' && check.checkType !== 'idv' && !isScreeningLite ? `
                 <div class="detail-item" style="margin-top: 12px;">
                     <div class="detail-label">Address</div>
                     <div class="detail-value">${fullAddress}</div>
@@ -1046,7 +1046,7 @@ class ThirdfortChecksManager {
                     if (hasDetailedDocProps) return '';
                     
                     // Otherwise show document number in client details
-                    if ((docNumber !== '&#x2014;' || mrz) && check.checkType !== 'idv' && !isScreeningLite) {
+                    if ((docNumber !== '—' || mrz) && check.checkType !== 'idv' && !isScreeningLite) {
                         return `
                             <div class="detail-item" style="margin-top: 12px;">
                                 <div class="detail-label">Document Number</div>
@@ -1064,19 +1064,19 @@ class ThirdfortChecksManager {
             const companySummary = check.taskOutcomes?.['company:summary']?.breakdown || {};
             
             // Prefer data from company:summary as it's more comprehensive
-            const companyName = check.companyName || companySummary.name || companyData.name || '&#x2014;';
-            const companyNumber = companySummary.registration_number || companyData.number || '&#x2014;';
-            const jurisdiction = companyData.jurisdiction || companySummary.country || '&#x2014;';
-            const legalForm = companySummary.legal_form || '&#x2014;';
-            const status = companySummary.status || companySummary.detailed_operating_status || '&#x2014;';
+            const companyName = check.companyName || companySummary.name || companyData.name || '—';
+            const companyNumber = companySummary.registration_number || companyData.number || '—';
+            const jurisdiction = companyData.jurisdiction || companySummary.country || '—';
+            const legalForm = companySummary.legal_form || '—';
+            const status = companySummary.status || companySummary.detailed_operating_status || '—';
             const incorporationDate = companySummary.date_of_incorporation 
                 ? new Date(companySummary.date_of_incorporation).toLocaleDateString('en-GB') 
-                : '&#x2014;';
+                : '—';
             
             // Address
             const addr = companySummary.formatted_address || {};
             const fullAddress = [addr.street, addr.city, addr.zip, addr.country]
-                .filter(Boolean).join(', ') || '&#x2014;';
+                .filter(Boolean).join(', ') || '—';
             
             const tradingAddr = companySummary.trading_address || {};
             const tradingAddress = [tradingAddr.street, tradingAddr.city, tradingAddr.zip, tradingAddr.country]
@@ -1089,7 +1089,7 @@ class ThirdfortChecksManager {
             // Build company details grid items (only show if data exists)
             const gridItems = [];
             
-            if (companyName && companyName !== '&#x2014;') {
+            if (companyName && companyName !== '—') {
                 gridItems.push(`
                     <div class="detail-item">
                         <div class="detail-label">Company Name</div>
@@ -1098,7 +1098,7 @@ class ThirdfortChecksManager {
                 `);
             }
             
-            if (companyNumber && companyNumber !== '&#x2014;') {
+            if (companyNumber && companyNumber !== '—') {
                 gridItems.push(`
                     <div class="detail-item">
                         <div class="detail-label">Company Number</div>
@@ -1107,7 +1107,7 @@ class ThirdfortChecksManager {
                 `);
             }
             
-            if (jurisdiction && jurisdiction !== '&#x2014;') {
+            if (jurisdiction && jurisdiction !== '—') {
                 gridItems.push(`
                     <div class="detail-item">
                         <div class="detail-label">Jurisdiction</div>
@@ -1116,7 +1116,7 @@ class ThirdfortChecksManager {
                 `);
             }
             
-            if (legalForm && legalForm !== '&#x2014;') {
+            if (legalForm && legalForm !== '—') {
                 gridItems.push(`
                     <div class="detail-item">
                         <div class="detail-label">Legal Form</div>
@@ -1125,7 +1125,7 @@ class ThirdfortChecksManager {
                 `);
             }
             
-            if (status && status !== '&#x2014;') {
+            if (status && status !== '—') {
                 const isActive = status.toLowerCase() === 'active';
                 const statusIcon = isActive 
                     ? `<svg class="detail-status-icon" viewBox="0 0 300 300"><path fill="#39b549" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>`
@@ -1138,7 +1138,7 @@ class ThirdfortChecksManager {
                 `);
             }
             
-            if (incorporationDate && incorporationDate !== '&#x2014;') {
+            if (incorporationDate && incorporationDate !== '—') {
                 gridItems.push(`
                     <div class="detail-item">
                         <div class="detail-label">Incorporation Date</div>
@@ -1179,7 +1179,7 @@ class ThirdfortChecksManager {
                     <div class="details-title">Company Details</div>
                 </div>
                 ${gridItems.length > 0 ? `<div class="details-grid">${gridItems.join('')}</div>` : ''}
-                ${fullAddress && fullAddress !== '&#x2014;' ? `
+                ${fullAddress && fullAddress !== '—' ? `
                 <div class="detail-item" style="margin-top: 12px;">
                     <div class="detail-label">Registered Address</div>
                     <div class="detail-value">${fullAddress}</div>
@@ -1576,7 +1576,7 @@ class ThirdfortChecksManager {
         // Priority 1: Use pre-calculated red flags from backend (transaction:pdf webhook)
         // These are generated once and stored with the check object
         if (check.redFlags && Array.isArray(check.redFlags) && check.redFlags.length > 0) {
-            console.log('&#xD83D;&#xDEA9; Using stored red flags:', check.redFlags.length);
+            console.log('🚩 Using stored red flags:', check.redFlags.length);
             return check.redFlags;
         }
         
@@ -1787,7 +1787,7 @@ class ThirdfortChecksManager {
                 html += '<div class="annotation-mini-card">';
                 html += '<div class="annotation-mini-header">';
                 html += '<div class="annotation-mini-meta">';
-                html += '<strong>' + (ann.userName || ann.user) + '</strong> &#x2022; ' + date;
+                html += '<strong>' + (ann.userName || ann.user) + '</strong> • ' + date;
                 html += '</div>';
                 html += '</div>';
                 html += '<div class="annotation-mini-body">';
@@ -1845,7 +1845,7 @@ class ThirdfortChecksManager {
             const giftor = giftFund.data?.giftor || {};
             const giftFundIndex = sofTask.breakdown.funds.findIndex(f => f === giftFund);
             
-            html += `<div class="red-flag-amount">&#xA3;${(amount / 100).toLocaleString()}</div>`;
+            html += `<div class="red-flag-amount">£${(amount / 100).toLocaleString()}</div>`;
             
             // Giftor details
             if (giftor.name) {
@@ -1917,7 +1917,7 @@ class ThirdfortChecksManager {
                     const tx = getTransactionById(txId);
                     if (tx) {
                         const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                        const currencySymbol = '&#xA3;';
+                        const currencySymbol = '£';
                         const txAmount = tx.amount >= 0 ? '+' : '';
                         
                         // Get comprehensive annotations for this transaction
@@ -1927,22 +1927,22 @@ class ThirdfortChecksManager {
                         const marker = txAnnotations.marker;
                         let markerBadge = '';
                         if (marker === 'accepted') {
-                            markerBadge = '<span class="tx-marker-badge accepted">&#x2713; Accepted</span>';
+                            markerBadge = '<span class="tx-marker-badge accepted">✓ Accepted</span>';
                         } else if (marker === 'rejected') {
-                            markerBadge = '<span class="tx-marker-badge rejected">&#x2717; Rejected</span>';
+                            markerBadge = '<span class="tx-marker-badge rejected">✗ Rejected</span>';
                         }
                         
                         // Check if has flag
                         const flag = txAnnotations.flag;
                         let flagBadge = '';
                         if (flag === 'cleared') {
-                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50; margin-left: 4px;">&#x25CB; Cleared</span>';
+                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50; margin-left: 4px;">○ Cleared</span>';
                         } else if (flag === 'suspicious') {
-                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336; margin-left: 4px;">&#x2717; Suspicious</span>';
+                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336; margin-left: 4px;">✗ Suspicious</span>';
                         } else if (flag === 'review') {
-                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; margin-left: 4px;">&#x2014; Review</span>';
+                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; margin-left: 4px;">— Review</span>';
                         } else if (flag === 'linked') {
-                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-left: 4px;">&#x2713; Linked</span>';
+                            flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-left: 4px;">✓ Linked</span>';
                         }
                         
                         // Check if transaction is part of repeating group and get user comment
@@ -2033,7 +2033,7 @@ class ThirdfortChecksManager {
         
         html += `<div class="red-flag-subsection">`;
         html += `<div class="red-flag-detail-title">Declared Savings</div>`;
-        html += `<div class="red-flag-amount">&#xA3;${(totalDeclared / 100).toLocaleString()}</div>`;
+        html += `<div class="red-flag-amount">£${(totalDeclared / 100).toLocaleString()}</div>`;
         
         // Show people contributing to savings
         savingsFunds.forEach(fund => {
@@ -2105,7 +2105,7 @@ class ThirdfortChecksManager {
             }
         });
         
-        html += `<div class="red-flag-amount">&#xA3;${totalActual.toLocaleString()}</div>`;
+        html += `<div class="red-flag-amount">£${totalActual.toLocaleString()}</div>`;
         
         // Breakdown by provider
         Object.values(providerTotals).forEach(provider => {
@@ -2118,18 +2118,18 @@ class ThirdfortChecksManager {
             if (hasLogo) {
                 html += `<div class="red-flag-bank-logo">${logoHtml}</div>`;
                 html += `<div class="red-flag-provider-details">`;
-                html += `<div class="red-flag-provider-total">&#xA3;${provider.total.toLocaleString()}</div>`;
+                html += `<div class="red-flag-provider-total">£${provider.total.toLocaleString()}</div>`;
                 provider.accounts.forEach(acc => {
-                    html += `<div class="red-flag-provider-account">${acc.name}: &#xA3;${acc.balance.toLocaleString()}</div>`;
+                    html += `<div class="red-flag-provider-account">${acc.name}: £${acc.balance.toLocaleString()}</div>`;
                 });
                 html += `</div>`;
             } else {
                 // No logo - show name and accounts
                 html += `<div class="red-flag-provider-details-full">`;
                 html += `<div class="red-flag-provider-name-header">${provider.name}</div>`;
-                html += `<div class="red-flag-provider-total">&#xA3;${provider.total.toLocaleString()}</div>`;
+                html += `<div class="red-flag-provider-total">£${provider.total.toLocaleString()}</div>`;
                 provider.accounts.forEach(acc => {
-                    html += `<div class="red-flag-provider-account">${acc.name}: &#xA3;${acc.balance.toLocaleString()}</div>`;
+                    html += `<div class="red-flag-provider-account">${acc.name}: £${acc.balance.toLocaleString()}</div>`;
                 });
                 html += `</div>`;
             }
@@ -2205,7 +2205,7 @@ class ThirdfortChecksManager {
                 const tx = getTransactionById(txId);
                 if (tx) {
                     const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                    const currencySymbol = '&#xA3;';
+                    const currencySymbol = '£';
                     const txAmount = tx.amount >= 0 ? '+' : '';
                     
                     // Get comprehensive annotations
@@ -2221,31 +2221,31 @@ class ThirdfortChecksManager {
                     const isAutoMatched = autoMatchedTxIds.has(txId);
                     let sourceBadge = '';
                     if (isLinkedToSavings && !isAutoMatched) {
-                        sourceBadge = '<span class="tx-source-badge user-linked">&#xD83D;&#xDC64; User Linked</span>';
+                        sourceBadge = '<span class="tx-source-badge user-linked">👤 User Linked</span>';
                     } else if (isLinkedToSavings && isAutoMatched) {
-                        sourceBadge = '<span class="tx-source-badge both-matched">&#x2713; Confirmed</span>';
+                        sourceBadge = '<span class="tx-source-badge both-matched">✓ Confirmed</span>';
                     }
                     
                     // Check if has marker
                     const marker = txAnnotations.marker;
                     let markerBadge = '';
                     if (marker === 'accepted') {
-                        markerBadge = '<span class="tx-marker-badge accepted">&#x2713; Accepted</span>';
+                        markerBadge = '<span class="tx-marker-badge accepted">✓ Accepted</span>';
                     } else if (marker === 'rejected') {
-                        markerBadge = '<span class="tx-marker-badge rejected">&#x2717; Rejected</span>';
+                        markerBadge = '<span class="tx-marker-badge rejected">✗ Rejected</span>';
                     }
                     
                     // Check if has flag
                     const flag = txAnnotations.flag;
                     let flagBadge = '';
                     if (flag === 'cleared') {
-                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50; margin-left: 4px;">&#x25CB; Cleared</span>';
+                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50; margin-left: 4px;">○ Cleared</span>';
                     } else if (flag === 'suspicious') {
-                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336; margin-left: 4px;">&#x2717; Suspicious</span>';
+                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336; margin-left: 4px;">✗ Suspicious</span>';
                     } else if (flag === 'review') {
-                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; margin-left: 4px;">&#x2014; Review</span>';
+                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; margin-left: 4px;">— Review</span>';
                     } else if (flag === 'linked') {
-                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-left: 4px;">&#x2713; Linked</span>';
+                        flagBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-left: 4px;">✓ Linked</span>';
                     }
                     
                     // Check if transaction is part of repeating group and get user comment
@@ -2321,7 +2321,7 @@ class ThirdfortChecksManager {
         const propertyPrice = property.price || 0;
         html += `<div class="red-flag-detail-section">`;
         html += `<div class="red-flag-detail-title">Property Details</div>`;
-        html += `<div class="red-flag-amount">&#xA3;${(propertyPrice / 100).toLocaleString()}</div>`;
+        html += `<div class="red-flag-amount">£${(propertyPrice / 100).toLocaleString()}</div>`;
         if (property.address) {
             const addr = property.address;
             html += `<div class="red-flag-detail-item">${addr.building_number || ''} ${addr.street || ''}, ${addr.town || ''}, ${addr.postcode || ''}</div>`;
@@ -2345,7 +2345,7 @@ class ThirdfortChecksManager {
         
         cryptoFunds.forEach(fund => {
             const amount = fund.data?.amount || 0;
-            html += `<div class="red-flag-amount">&#xA3;${(amount / 100).toLocaleString()}</div>`;
+            html += `<div class="red-flag-amount">£${(amount / 100).toLocaleString()}</div>`;
             if (fund.data?.description) {
                 html += `<div class="red-flag-detail-item">${fund.data.description}</div>`;
             }
@@ -2372,7 +2372,7 @@ class ThirdfortChecksManager {
         overseasFunds.forEach(fund => {
             const amount = fund.data?.amount || 0;
             const location = fund.data?.location || '';
-            html += `<div class="red-flag-amount">&#xA3;${(amount / 100).toLocaleString()}</div>`;
+            html += `<div class="red-flag-amount">£${(amount / 100).toLocaleString()}</div>`;
             html += `<div class="red-flag-detail-item">Source: ${location}</div>`;
         });
         
@@ -2404,7 +2404,7 @@ class ThirdfortChecksManager {
         const taskOutcomes = check.taskOutcomes || {};
         const isOpen = check.status === 'open' || check.status === 'processing';
         
-        console.log('&#xD83C;&#xDFAF; renderTasksSection called');
+        console.log('🎯 renderTasksSection called');
         console.log('  - Check status:', check.status);
         console.log('  - taskOutcomes keys:', Object.keys(taskOutcomes));
         console.log('  - taskOutcomes:', taskOutcomes);
@@ -2443,12 +2443,12 @@ class ThirdfortChecksManager {
         
         // For closed checks or checks with outcomes
         if (Object.keys(taskOutcomes).length === 0) {
-            console.log('&#x274C; No taskOutcomes found - returning early');
+            console.log('❌ No taskOutcomes found - returning early');
             this.tasksSection.innerHTML = '';
             return;
         }
         
-        console.log('&#x2705; Processing taskOutcomes for closed check');
+        console.log('✅ Processing taskOutcomes for closed check');
         
         // Convert screening:lite or peps to screening (combined PEP + Sanctions + Adverse Media for individuals)
         // For individual checks, PEP and Sanctions are combined into "Screening"
@@ -2629,7 +2629,7 @@ class ThirdfortChecksManager {
                     <span class="chain-card-account">${chain.source.accountName}</span>
                     <span class="chain-card-amount positive">+${flag}${sourceAmount}</span>
                 </div>
-                <div class="chain-connector">&#x2193;</div>
+                <div class="chain-connector">↓</div>
             `;
         }
         
@@ -2652,7 +2652,7 @@ class ThirdfortChecksManager {
             const inAmount = Math.abs(chain.in.amount).toFixed(2);
             
             html += `
-                <div class="chain-connector">&#x2193;</div>
+                <div class="chain-connector">↓</div>
                 <div class="chain-card">
                     <span class="chain-card-date">${inDate}</span>
                     <span class="chain-card-desc">${chain.in.description || chain.in.merchant_name || 'Transfer'}</span>
@@ -2668,7 +2668,7 @@ class ThirdfortChecksManager {
             const paymentAmount = Math.abs(chain.payment.amount).toFixed(2);
             
             html += `
-                <div class="chain-connector">&#x2193;</div>
+                <div class="chain-connector">↓</div>
                 <div class="chain-card">
                     <span class="chain-card-date">${paymentDate}</span>
                     <span class="chain-card-desc">${chain.payment.description || chain.payment.merchant_name || 'Payment'}</span>
@@ -2833,20 +2833,20 @@ class ThirdfortChecksManager {
                     
                     // Marker badges
                     if (txAnnotations.marker === 'accepted') {
-                        badgesHtml += '<span class="tx-marker-badge accepted">&#x2713; Accepted</span>';
+                        badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
                     } else if (txAnnotations.marker === 'rejected') {
-                        badgesHtml += '<span class="tx-marker-badge rejected">&#x2717; Rejected</span>';
+                        badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
                     }
                     
                     // Flag badges
                     if (txAnnotations.flag === 'cleared') {
-                        badgesHtml += '<span class="tx-marker-badge cleared">&#x25CB; Cleared</span>';
+                        badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
                     } else if (txAnnotations.flag === 'suspicious') {
-                        badgesHtml += '<span class="tx-marker-badge suspicious">&#x2717; Suspicious</span>';
+                        badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
                     } else if (txAnnotations.flag === 'review') {
-                        badgesHtml += '<span class="tx-marker-badge review">&#x2014; Review</span>';
+                        badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
                     } else if (txAnnotations.flag === 'linked') {
-                        badgesHtml += '<span class="tx-marker-badge linked">&#x2713; Linked</span>';
+                        badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
                     }
                     
                     // User note badge
@@ -2876,20 +2876,20 @@ class ThirdfortChecksManager {
                     
                     // Marker badges
                     if (txAnnotations.marker === 'accepted') {
-                        badgesHtml += '<span class="tx-marker-badge accepted">&#x2713; Accepted</span>';
+                        badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
                     } else if (txAnnotations.marker === 'rejected') {
-                        badgesHtml += '<span class="tx-marker-badge rejected">&#x2717; Rejected</span>';
+                        badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
                     }
                     
                     // Flag badges
                     if (txAnnotations.flag === 'cleared') {
-                        badgesHtml += '<span class="tx-marker-badge cleared">&#x25CB; Cleared</span>';
+                        badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
                     } else if (txAnnotations.flag === 'suspicious') {
-                        badgesHtml += '<span class="tx-marker-badge suspicious">&#x2717; Suspicious</span>';
+                        badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
                     } else if (txAnnotations.flag === 'review') {
-                        badgesHtml += '<span class="tx-marker-badge review">&#x2014; Review</span>';
+                        badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
                     } else if (txAnnotations.flag === 'linked') {
-                        badgesHtml += '<span class="tx-marker-badge linked">&#x2713; Linked</span>';
+                        badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
                     }
                     
                     // User note badge
@@ -2956,11 +2956,11 @@ class ThirdfortChecksManager {
                 
                 if (groupAnnotation && groupAnnotation.flag) {
                     if (groupAnnotation.flag === 'cleared') {
-                        groupBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50; margin-left: 8px;">&#x2713; Cleared</span>';
+                        groupBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50; margin-left: 8px;">✓ Cleared</span>';
                     } else if (groupAnnotation.flag === 'suspicious') {
-                        groupBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336; margin-left: 8px;">&#x2717; Suspicious</span>';
+                        groupBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336; margin-left: 8px;">✗ Suspicious</span>';
                     } else if (groupAnnotation.flag === 'review') {
-                        groupBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; margin-left: 8px;">&#x2014; Review</span>';
+                        groupBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; margin-left: 8px;">— Review</span>';
                     }
                 }
                 
@@ -3007,7 +3007,7 @@ class ThirdfortChecksManager {
                         <div class="bank-analysis-link-row" style="border-left: 4px solid #2196f3; padding: 6px 10px; margin: 6px 0; background: #f5f5f5; border-radius: 3px;">
                             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                                 <div style="flex: 1; min-width: 150px; font-size: 11px;">
-                                    <strong>${userName}</strong> &#x2022; ${date}
+                                    <strong>${userName}</strong> • ${date}
                                 </div>
                                 <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
                                     ${fundingBadge}
@@ -3027,7 +3027,7 @@ class ThirdfortChecksManager {
                     <div class="analysis-item-card">
                         <div class="analysis-card-header">
                             <div class="analysis-card-title">
-                                ${currencySymbol}${Math.abs(amount).toFixed(2)} &#xD7; ${frequency}
+                                ${currencySymbol}${Math.abs(amount).toFixed(2)} × ${frequency}
                                 ${groupBadge}
                             </div>
                             <div class="analysis-card-meta">
@@ -3420,7 +3420,7 @@ class ThirdfortChecksManager {
                 let fundDetailsHtml = '';
                 if (matchingFund) {
                     const fundData = matchingFund.data || {};
-                    const fundAmount = fundData.amount ? `&#xA3;${(fundData.amount / 100).toLocaleString()}` : '';
+                    const fundAmount = fundData.amount ? `£${(fundData.amount / 100).toLocaleString()}` : '';
                     
                     let detailsContent = '';
                     
@@ -3657,9 +3657,9 @@ class ThirdfortChecksManager {
                     let markerBadge = '';
                     let markerClass = '';
                     if (marker === 'accepted') {
-                        markerBadge = '<span class="tx-marker-badge accepted">&#x2713; Accepted</span>';
+                        markerBadge = '<span class="tx-marker-badge accepted">✓ Accepted</span>';
                     } else if (marker === 'rejected') {
-                        markerBadge = '<span class="tx-marker-badge rejected">&#x2717; Rejected</span>';
+                        markerBadge = '<span class="tx-marker-badge rejected">✗ Rejected</span>';
                         markerClass = ' marked-rejected';
                     }
                     
@@ -3667,13 +3667,13 @@ class ThirdfortChecksManager {
                     const flag = txAnnotations.flag;
                     let flagBadge = '';
                     if (flag === 'cleared') {
-                        flagBadge = '<span class="tx-marker-badge cleared">&#x25CB; Cleared</span>';
+                        flagBadge = '<span class="tx-marker-badge cleared">○ Cleared</span>';
                     } else if (flag === 'suspicious') {
-                        flagBadge = '<span class="tx-marker-badge suspicious">&#x2717; Suspicious</span>';
+                        flagBadge = '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
                     } else if (flag === 'review') {
-                        flagBadge = '<span class="tx-marker-badge review">&#x2014; Review</span>';
+                        flagBadge = '<span class="tx-marker-badge review">— Review</span>';
                     } else if (flag === 'linked') {
-                        flagBadge = '<span class="tx-marker-badge linked">&#x2713; Linked</span>';
+                        flagBadge = '<span class="tx-marker-badge linked">✓ Linked</span>';
                     }
                     
                     // Add source badge
@@ -3681,9 +3681,9 @@ class ThirdfortChecksManager {
                     const isUserLinked = matchSets.userLinked.has(txId);
                     let sourceBadge = '';
                     if (isUserLinked && !isAutoMatched) {
-                        sourceBadge = '<span class="tx-source-badge user-linked">&#xD83D;&#xDC64; User Linked</span>';
+                        sourceBadge = '<span class="tx-source-badge user-linked">👤 User Linked</span>';
                     } else if (isUserLinked && isAutoMatched) {
-                        sourceBadge = '<span class="tx-source-badge both-matched">&#x2713; Confirmed</span>';
+                        sourceBadge = '<span class="tx-source-badge both-matched">✓ Confirmed</span>';
                     }
                     
                     // Check if this transaction is part of a repeating group
@@ -3979,22 +3979,22 @@ class ThirdfortChecksManager {
                     // Marker badges for transaction
                     if (directAnnotations.marker) {
                         if (directAnnotations.marker === 'accepted') {
-                            txInlineBadges += '<span class="tx-marker-badge accepted">&#x2713; Accepted</span>';
+                            txInlineBadges += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
                         } else if (directAnnotations.marker === 'rejected') {
-                            txInlineBadges += '<span class="tx-marker-badge rejected">&#x2717; Rejected</span>';
+                            txInlineBadges += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
                         }
                     }
                     
                     // Flag badges for transaction
                     if (directAnnotations.flag) {
                         if (directAnnotations.flag === 'cleared') {
-                            txInlineBadges += '<span class="tx-marker-badge cleared">&#x25CB; Cleared</span>';
+                            txInlineBadges += '<span class="tx-marker-badge cleared">○ Cleared</span>';
                         } else if (directAnnotations.flag === 'suspicious') {
-                            txInlineBadges += '<span class="tx-marker-badge suspicious">&#x2717; Suspicious</span>';
+                            txInlineBadges += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
                         } else if (directAnnotations.flag === 'review') {
-                            txInlineBadges += '<span class="tx-marker-badge review">&#x2014; Review</span>';
+                            txInlineBadges += '<span class="tx-marker-badge review">— Review</span>';
                         } else if (directAnnotations.flag === 'linked') {
-                            txInlineBadges += '<span class="tx-marker-badge linked">&#x2713; Linked</span>';
+                            txInlineBadges += '<span class="tx-marker-badge linked">✓ Linked</span>';
                         }
                     }
                     
@@ -4014,7 +4014,7 @@ class ThirdfortChecksManager {
                                     'fund:income': 'Income'
                                 };
                                 const fundLabel = typeMap[fund.type] || fund.type.replace('fund:', '');
-                                txInlineBadges += `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-left: 4px;">&#xD83D;&#xDD17; ${fundLabel}</span>`;
+                                txInlineBadges += `<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3; margin-left: 4px;">🔗 ${fundLabel}</span>`;
                             }
                         });
                     }
@@ -4284,20 +4284,20 @@ class ThirdfortChecksManager {
                 
                 // Marker badges
                 if (txAnnotations.marker === 'accepted') {
-                    badgesHtml += '<span class="tx-marker-badge accepted">&#x2713; Accepted</span>';
+                    badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
                 } else if (txAnnotations.marker === 'rejected') {
-                    badgesHtml += '<span class="tx-marker-badge rejected">&#x2717; Rejected</span>';
+                    badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
                 }
                 
                 // Flag badges
                 if (txAnnotations.flag === 'cleared') {
-                    badgesHtml += '<span class="tx-marker-badge cleared">&#x25CB; Cleared</span>';
+                    badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
                 } else if (txAnnotations.flag === 'suspicious') {
-                    badgesHtml += '<span class="tx-marker-badge suspicious">&#x2717; Suspicious</span>';
+                    badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
                 } else if (txAnnotations.flag === 'review') {
-                    badgesHtml += '<span class="tx-marker-badge review">&#x2014; Review</span>';
+                    badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
                 } else if (txAnnotations.flag === 'linked') {
-                    badgesHtml += '<span class="tx-marker-badge linked">&#x2713; Linked</span>';
+                    badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
                 }
                 
                 // User note badge
@@ -4333,20 +4333,20 @@ class ThirdfortChecksManager {
                 
                 // Marker badges
                 if (txAnnotations.marker === 'accepted') {
-                    badgesHtml += '<span class="tx-marker-badge accepted">&#x2713; Accepted</span>';
+                    badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
                 } else if (txAnnotations.marker === 'rejected') {
-                    badgesHtml += '<span class="tx-marker-badge rejected">&#x2717; Rejected</span>';
+                    badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
                 }
                 
                 // Flag badges
                 if (txAnnotations.flag === 'cleared') {
-                    badgesHtml += '<span class="tx-marker-badge cleared">&#x25CB; Cleared</span>';
+                    badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
                 } else if (txAnnotations.flag === 'suspicious') {
-                    badgesHtml += '<span class="tx-marker-badge suspicious">&#x2717; Suspicious</span>';
+                    badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
                 } else if (txAnnotations.flag === 'review') {
-                    badgesHtml += '<span class="tx-marker-badge review">&#x2014; Review</span>';
+                    badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
                 } else if (txAnnotations.flag === 'linked') {
-                    badgesHtml += '<span class="tx-marker-badge linked">&#x2713; Linked</span>';
+                    badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
                 }
                 
                 // User note badge
@@ -5010,7 +5010,7 @@ class ThirdfortChecksManager {
         let accountBadgesHtml = '';
         
         if (isReviewed) {
-            accountBadgesHtml += `<span class="account-tag reviewed">&#x2713; Reviewed</span>`;
+            accountBadgesHtml += `<span class="account-tag reviewed">✓ Reviewed</span>`;
         }
         if (linkedCount > 0) {
             accountBadgesHtml += `<span class="account-tag linked">${linkedCount} transaction${linkedCount > 1 ? 's' : ''} linked</span>`;
@@ -5107,7 +5107,7 @@ class ThirdfortChecksManager {
         const accountName = info.name || 'Bank Account';
         const currency = info.currency || 'GBP';
         const currencyFlag = this.getCurrencyFlag(currency);
-        const currencySymbol = currency === 'GBP' ? '&#xA3;' : currency === 'EUR' ? '&#x20AC;' : currency === 'USD' ? '$' : currency;
+        const currencySymbol = currency === 'GBP' ? '£' : currency === 'EUR' ? '&#x20AC;' : currency === 'USD' ? '$' : currency;
         
         // Get bank logo and brand colors
         const bankLogo = this.getBankLogo(provider.id, provider.name);
@@ -5170,7 +5170,7 @@ class ThirdfortChecksManager {
             const isDebit = tx.amount < 0;
             const amountOut = isDebit ? Math.abs(tx.amount).toFixed(2) : '';
             const amountIn = !isDebit ? tx.amount.toFixed(2) : '';
-            const runningBal = tx.running_balance ? tx.running_balance.toFixed(2) : '&#x2014;';
+            const runningBal = tx.running_balance ? tx.running_balance.toFixed(2) : '—';
             const amountClass = isDebit ? 'negative' : 'positive';
             
             // Check for annotations on this transaction
@@ -5226,7 +5226,7 @@ class ThirdfortChecksManager {
                         const fund = funds[parseInt(fundIdxStr)];
                         if (fund) {
                             const fundType = fund.type || '';
-                            const fundAmount = fund.data?.amount ? `&#xA3;${(fund.data.amount / 100).toLocaleString()}` : '';
+                            const fundAmount = fund.data?.amount ? `£${(fund.data.amount / 100).toLocaleString()}` : '';
                             const fundLabel = fundType.replace('fund:', '').replace(/[-:_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                             expandedDetailsHtml += `<div class="tx-linked-fund-item" style="padding: 4px 8px; background: #e3f2fd; border-radius: 3px; margin-bottom: 4px;">
                                 <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: middle;"><path fill="#1976d2" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
@@ -5271,8 +5271,8 @@ class ThirdfortChecksManager {
                         ${description}
                         ${annotationBadges ? `<span class="statement-tx-badges">${annotationBadges}</span>` : ''}
                     </div>
-                    <div class="statement-tx-out">${amountOut ? currencySymbol + amountOut : '&#x2014;'}</div>
-                    <div class="statement-tx-in">${amountIn ? currencySymbol + amountIn : '&#x2014;'}</div>
+                    <div class="statement-tx-out">${amountOut ? currencySymbol + amountOut : '—'}</div>
+                    <div class="statement-tx-in">${amountIn ? currencySymbol + amountIn : '—'}</div>
                     <div class="statement-tx-balance">${currencySymbol}${runningBal}</div>
                 </div>
                 ${expandedDetailsHtml}
@@ -5626,7 +5626,7 @@ class ThirdfortChecksManager {
     createFundingSourceCard(fund, check, index, sofMatches = {}, accounts = {}) {
         const type = fund.type || 'unknown';
         const data = fund.data || {};
-        const amount = data.amount ? `&#xA3;${(data.amount / 100).toLocaleString()}` : 'Not specified';
+        const amount = data.amount ? `£${(data.amount / 100).toLocaleString()}` : 'Not specified';
         const originBadge = this.getFundingOriginBadge(data.location);
         
         // Get matched bank transactions for this funding type
@@ -5811,22 +5811,22 @@ class ThirdfortChecksManager {
                     const marker = transactionMarkers[txId];
                     let markerBadge = '';
                     if (marker === 'accepted') {
-                        markerBadge = '<span class="tx-marker-badge accepted">&#x2713; Accepted</span>';
+                        markerBadge = '<span class="tx-marker-badge accepted">✓ Accepted</span>';
                     } else if (marker === 'rejected') {
-                        markerBadge = '<span class="tx-marker-badge rejected">&#x2717; Rejected</span>';
+                        markerBadge = '<span class="tx-marker-badge rejected">✗ Rejected</span>';
                     }
                     
                     // Check if this transaction has a flag (from bank analysis or direct links)
                     const flag = transactionFlags[txId];
                     let flagBadge = '';
                     if (flag === 'cleared') {
-                        flagBadge = '<span class="tx-marker-badge cleared">&#x25CB; Cleared</span>';
+                        flagBadge = '<span class="tx-marker-badge cleared">○ Cleared</span>';
                     } else if (flag === 'suspicious') {
-                        flagBadge = '<span class="tx-marker-badge suspicious">&#x2717; Suspicious</span>';
+                        flagBadge = '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
                     } else if (flag === 'review') {
-                        flagBadge = '<span class="tx-marker-badge review">&#x2014; Review</span>';
+                        flagBadge = '<span class="tx-marker-badge review">— Review</span>';
                     } else if (flag === 'linked') {
-                        flagBadge = '<span class="tx-marker-badge linked">&#x2713; Linked</span>';
+                        flagBadge = '<span class="tx-marker-badge linked">✓ Linked</span>';
                     }
                     
                     // Add source badge
@@ -5834,9 +5834,9 @@ class ThirdfortChecksManager {
                     const isAutoMatched = autoMatchedTxIds.has(txId);
                     let sourceBadge = '';
                     if (isUserLinked && !isAutoMatched) {
-                        sourceBadge = '<span class="tx-source-badge user-linked">&#xD83D;&#xDC64; User Linked</span>';
+                        sourceBadge = '<span class="tx-source-badge user-linked">👤 User Linked</span>';
                     } else if (isUserLinked && isAutoMatched) {
-                        sourceBadge = '<span class="tx-source-badge both-matched">&#x2713; Confirmed</span>';
+                        sourceBadge = '<span class="tx-source-badge both-matched">✓ Confirmed</span>';
                     }
                     
                     // Check if this transaction is part of a repeating group
@@ -5971,7 +5971,7 @@ class ThirdfortChecksManager {
                             fundAnnotationsHtml += '<div class="annotation-mini-card">';
                             fundAnnotationsHtml += '<div class="annotation-mini-header">';
                             fundAnnotationsHtml += '<div class="annotation-mini-meta">';
-                            fundAnnotationsHtml += '<strong>' + (ann.userName || ann.user) + '</strong> &#x2022; ' + date;
+                            fundAnnotationsHtml += '<strong>' + (ann.userName || ann.user) + '</strong> • ' + date;
                             fundAnnotationsHtml += '</div>';
                             fundAnnotationsHtml += '</div>';
                             fundAnnotationsHtml += '<div class="annotation-mini-body">';
@@ -6050,8 +6050,8 @@ class ThirdfortChecksManager {
         if (property.address) {
             const addr = property.address;
             const fullAddress = `${addr.building_number || ''} ${addr.street || ''}, ${addr.town || ''}, ${addr.postcode || ''}`.trim();
-            const price = property.price ? `&#xA3;${(property.price / 100).toLocaleString()}` : 'Not specified';
-            const sdlt = property.stamp_duty ? `&#xA3;${(property.stamp_duty / 100).toLocaleString()}` : 'Not specified';
+            const price = property.price ? `£${(property.price / 100).toLocaleString()}` : 'Not specified';
+            const sdlt = property.stamp_duty ? `£${(property.stamp_duty / 100).toLocaleString()}` : 'Not specified';
             const newBuild = property.new_build ? 'Yes' : 'No';
             
             // Check for property SOF annotations
@@ -6090,7 +6090,7 @@ class ThirdfortChecksManager {
                         propertyAnnotationsHtml += '<div class="annotation-mini-card">';
                         propertyAnnotationsHtml += '<div class="annotation-mini-header">';
                         propertyAnnotationsHtml += '<div class="annotation-mini-meta">';
-                        propertyAnnotationsHtml += '<strong>' + userName + '</strong> &#x2022; ' + date;
+                        propertyAnnotationsHtml += '<strong>' + userName + '</strong> • ' + date;
                         propertyAnnotationsHtml += '</div>';
                         propertyAnnotationsHtml += '</div>';
                         propertyAnnotationsHtml += '<div class="annotation-mini-body">';
@@ -6120,7 +6120,7 @@ class ThirdfortChecksManager {
                 <div class="sof-property-details">
                     <div class="property-bullet">&#xD83D;&#xDCCD; <strong>Property:</strong> ${fullAddress}</div>
                     <div class="property-bullet">&#xD83D;&#xDCB7; <strong>Purchase Price:</strong> ${price}</div>
-                    <div class="property-bullet">&#xD83D;&#xDCCB; <strong>Stamp Duty:</strong> ${sdlt}</div>
+                    <div class="property-bullet">📋 <strong>Stamp Duty:</strong> ${sdlt}</div>
                     <div class="property-bullet">🏗️ <strong>New Build:</strong> ${newBuild}</div>
                     ${propertyAnnotationsHtml}
                 </div>
@@ -6879,7 +6879,7 @@ class ThirdfortChecksManager {
                         callbacks: {
                             label: (context) => {
                                 const value = context.parsed;
-                                return `${context.label}: &#xA3;${value.toLocaleString()}`;
+                                return `${context.label}: £${value.toLocaleString()}`;
                             }
                         }
                     }
@@ -7059,7 +7059,7 @@ class ThirdfortChecksManager {
         }
         
         if (shareDetails.length > 0) {
-            shareInfo = `<div class="people-card-share">&#xD83D;&#xDCCA; ${shareDetails.join(' | ')}</div>`;
+            shareInfo = `<div class="people-card-share">📊 ${shareDetails.join(' | ')}</div>`;
         }
         
         return `
@@ -7097,12 +7097,12 @@ class ThirdfortChecksManager {
     getTaskCheckIconCSS(status, isRed = false) {
         if (status === 'CL') {
             // Green circle with white checkmark using pseudo-elements
-            return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; position: relative; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center;"><span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">&#x2713;</span></div>`;
+            return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; position: relative; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center;"><span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">✓</span></div>`;
         } else if (status === 'CO' || status === 'CN') {
             const color = isRed ? '#d32f2f' : '#f7931e';
             return `<div style="width: 16px; height: 16px; border-radius: 50%; background: ${color}; position: relative; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center;"><span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">&#x2212;</span></div>`;
         } else if (status === 'AL' || status === 'FA') {
-            return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #ff0000; position: relative; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center;"><span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">&#xD7;</span></div>`;
+            return `<div style="width: 16px; height: 16px; border-radius: 50%; background: #ff0000; position: relative; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center;"><span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">×</span></div>`;
         }
         return '';
     }
@@ -7110,11 +7110,11 @@ class ThirdfortChecksManager {
     // CSS-based status icons for PDF (larger size for task headers)
     getStatusIconCSS(status) {
         if (status === 'clear') {
-            return `<div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">&#x2713;</span></div>`;
+            return `<div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">✓</span></div>`;
         } else if (status === 'consider') {
             return `<div style="width: 20px; height: 20px; border-radius: 50%; background: #f7931e; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 18px; font-weight: bold; line-height: 1;">&#x2212;</span></div>`;
         } else if (status === 'fail') {
-            return `<div style="width: 20px; height: 20px; border-radius: 50%; background: #ff0000; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">&#xD7;</span></div>`;
+            return `<div style="width: 20px; height: 20px; border-radius: 50%; background: #ff0000; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 16px; font-weight: bold; line-height: 1;">×</span></div>`;
         }
         return '';
     }
@@ -7459,7 +7459,7 @@ class ThirdfortChecksManager {
         return this.formatFundingLabel(value);
     }
 
-    formatCurrencyMinor(amount, { fallback = 'Not provided', currency = '&#xA3;' } = {}) {
+    formatCurrencyMinor(amount, { fallback = 'Not provided', currency = '£' } = {}) {
         if (typeof amount !== 'number' || Number.isNaN(amount)) return fallback;
         const isWhole = amount % 100 === 0;
         const absolute = amount / 100;
@@ -7639,7 +7639,7 @@ class ThirdfortChecksManager {
         return this.formatFundingLabel(value);
     }
 
-    formatCurrencyMinor(amount, { fallback = 'Not provided', currency = '&#xA3;' } = {}) {
+    formatCurrencyMinor(amount, { fallback = 'Not provided', currency = '£' } = {}) {
         if (typeof amount !== 'number' || Number.isNaN(amount)) {
             return fallback;
         }
@@ -8699,7 +8699,7 @@ class ThirdfortChecksManager {
                     if (flagTypes.length > 0) {
                         if (flagTypes.some(f => f.includes('pep'))) {
                             hitType = 'PEP';
-                            hitIcon = '&#xD83D;&#xDC64;';
+                            hitIcon = '👤';
                         }
                         if (flagTypes.some(f => f.includes('sanction'))) {
                             hitType = hitType ? `${hitType} + Sanctions` : 'Sanctions';
@@ -8712,7 +8712,7 @@ class ThirdfortChecksManager {
                     } else {
                         // Default to PEP if no flag types (simple peps format)
                         hitType = 'PEP';
-                        hitIcon = '&#xD83D;&#xDC64;';
+                        hitIcon = '👤';
                     }
                     
                     // Check if this hit has been dismissed
@@ -9045,12 +9045,12 @@ class ThirdfortChecksManager {
     // ===================================================================
     
     viewPDF(s3Key) {
-        console.log('&#xD83D;&#xDCC4; Viewing PDF:', s3Key);
+        console.log('📄 Viewing PDF:', s3Key);
         this.sendMessage('view-pdf', { s3Key });
     }
     
     toggleMonitoring(currentlyEnabled) {
-        console.log('&#xD83D;&#xDD04; Toggling monitoring:', !currentlyEnabled);
+        console.log('🔄 Toggling monitoring:', !currentlyEnabled);
         
         const check = this.currentCheck;
         this.sendMessage('monitoring-patch', {
@@ -9371,7 +9371,7 @@ class ThirdfortChecksManager {
                               {
                                 "date": "0001-01-01T00:00:00Z",
                                 "snippet": "As deputies attempted to place Moran into custody for his warrant, Moran began to physically resist deputies. While resisting, Moran twice attempted to unholster a deputy's service firearm. After a brief struggle, Moran was arrested and then booked into the Humboldt County Correctional Facility on fresh charges of attempting to remove a peace officer's firearm (PC 148(d)) and resisting a peace officer (PC 148(a)(1)), in addition to his warrant charges of assault (PC 240) and battery (PC 242).",
-                                "title": "News Flash &#x2022; County of Humboldt &#x2022; CivicEngage",
+                                "title": "News Flash • County of Humboldt • CivicEngage",
                                 "url": "https://humboldtgov.org/CivicAlerts.aspx?AID=4279"
                               },
                               {
@@ -10025,7 +10025,7 @@ class ThirdfortChecksManager {
                               "id": "ob-hsbc",
                               "name": "HSBC"
                             },
-                            "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "_key": "••••••",
                             "balance": {
                               "available": 0.01,
                               "current": 0.01,
@@ -10041,7 +10041,7 @@ class ThirdfortChecksManager {
                                 "addresses": null
                               }
                             ],
-                            "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "credentials_id": "••••••",
                             "currency": "GBP",
                             "metadata": {
                               "created_at": 1762991927038,
@@ -10068,7 +10068,7 @@ class ThirdfortChecksManager {
                               "id": "ob-hsbc",
                               "name": "HSBC"
                             },
-                            "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "_key": "••••••",
                             "balance": {
                               "available": 0.15,
                               "current": 0.15,
@@ -10084,7 +10084,7 @@ class ThirdfortChecksManager {
                                 "addresses": null
                               }
                             ],
-                            "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "credentials_id": "••••••",
                             "currency": "GBP",
                             "metadata": {
                               "created_at": 1762991926840,
@@ -10111,7 +10111,7 @@ class ThirdfortChecksManager {
                               "id": "ob-hsbc",
                               "name": "HSBC"
                             },
-                            "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "_key": "••••••",
                             "balance": {
                               "available": 67.53,
                               "current": 67.53,
@@ -10127,7 +10127,7 @@ class ThirdfortChecksManager {
                                 "addresses": null
                               }
                             ],
-                            "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "credentials_id": "••••••",
                             "currency": "GBP",
                             "metadata": {
                               "created_at": 1762991926654,
@@ -10154,7 +10154,7 @@ class ThirdfortChecksManager {
                               "id": "ob-hsbc",
                               "name": "HSBC"
                             },
-                            "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "_key": "••••••",
                             "balance": {
                               "available": 50.3,
                               "current": 50.3,
@@ -10170,7 +10170,7 @@ class ThirdfortChecksManager {
                                 "addresses": null
                               }
                             ],
-                            "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "credentials_id": "••••••",
                             "currency": "GBP",
                             "metadata": {
                               "created_at": 1762991926938,
@@ -10197,7 +10197,7 @@ class ThirdfortChecksManager {
                               "id": "ob-hsbc",
                               "name": "HSBC"
                             },
-                            "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "_key": "••••••",
                             "balance": {
                               "available": 0.19,
                               "current": 0.19,
@@ -10213,7 +10213,7 @@ class ThirdfortChecksManager {
                                 "addresses": null
                               }
                             ],
-                            "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "credentials_id": "••••••",
                             "currency": "GBP",
                             "metadata": {
                               "created_at": 1762991926753,
@@ -10253,7 +10253,7 @@ class ThirdfortChecksManager {
                                 "id": "ob-hsbc",
                                 "name": "HSBC"
                               },
-                              "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                              "_key": "••••••",
                               "balance": {
                                 "available": 0.01,
                                 "current": 0.01,
@@ -10269,7 +10269,7 @@ class ThirdfortChecksManager {
                                   "addresses": null
                                 }
                               ],
-                              "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                              "credentials_id": "••••••",
                               "currency": "GBP",
                               "metadata": {
                                 "created_at": 1762991927038,
@@ -10297,7 +10297,7 @@ class ThirdfortChecksManager {
                                 "id": "ob-hsbc",
                                 "name": "HSBC"
                               },
-                              "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                              "_key": "••••••",
                               "balance": {
                                 "available": 0.15,
                                 "current": 0.15,
@@ -10313,7 +10313,7 @@ class ThirdfortChecksManager {
                                   "addresses": null
                                 }
                               ],
-                              "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                              "credentials_id": "••••••",
                               "currency": "GBP",
                               "metadata": {
                                 "created_at": 1762991926840,
@@ -10341,7 +10341,7 @@ class ThirdfortChecksManager {
                                 "id": "ob-hsbc",
                                 "name": "HSBC"
                               },
-                              "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                              "_key": "••••••",
                               "balance": {
                                 "available": 67.53,
                                 "current": 67.53,
@@ -10357,7 +10357,7 @@ class ThirdfortChecksManager {
                                   "addresses": null
                                 }
                               ],
-                              "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                              "credentials_id": "••••••",
                               "currency": "GBP",
                               "metadata": {
                                 "created_at": 1762991926654,
@@ -12725,7 +12725,7 @@ class ThirdfortChecksManager {
                                 "id": "ob-hsbc",
                                 "name": "HSBC"
                               },
-                              "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                              "_key": "••••••",
                               "balance": {
                                 "available": 50.3,
                                 "current": 50.3,
@@ -12741,7 +12741,7 @@ class ThirdfortChecksManager {
                                   "addresses": null
                                 }
                               ],
-                              "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                              "credentials_id": "••••••",
                               "currency": "GBP",
                               "metadata": {
                                 "created_at": 1762991926938,
@@ -13023,7 +13023,7 @@ class ThirdfortChecksManager {
                                 "id": "ob-hsbc",
                                 "name": "HSBC"
                               },
-                              "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                              "_key": "••••••",
                               "balance": {
                                 "available": 0.19,
                                 "current": 0.19,
@@ -13039,7 +13039,7 @@ class ThirdfortChecksManager {
                                   "addresses": null
                                 }
                               ],
-                              "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                              "credentials_id": "••••••",
                               "currency": "GBP",
                               "metadata": {
                                 "created_at": 1762991926753,
@@ -14135,7 +14135,7 @@ class ThirdfortChecksManager {
                             {
                               "date": "0001-01-01T00:00:00Z",
                               "snippet": "As deputies attempted to place Moran into custody for his warrant, Moran began to physically resist deputies. While resisting, Moran twice attempted to unholster a deputy's service firearm. After a brief struggle, Moran was arrested and then booked into the Humboldt County Correctional Facility on fresh charges of attempting to remove a peace officer's firearm (PC 148(d)) and resisting a peace officer (PC 148(a)(1)), in addition to his warrant charges of assault (PC 240) and battery (PC 242).",
-                              "title": "News Flash &#x2022; County of Humboldt &#x2022; CivicEngage",
+                              "title": "News Flash • County of Humboldt • CivicEngage",
                               "url": "https://humboldtgov.org/CivicAlerts.aspx?AID=4279"
                             },
                             {
@@ -15854,7 +15854,7 @@ class ThirdfortChecksManager {
                             {
                               "date": "0001-01-01T00:00:00Z",
                               "snippet": "As deputies attempted to place Moran into custody for his warrant, Moran began to physically resist deputies. While resisting, Moran twice attempted to unholster a deputy's service firearm. After a brief struggle, Moran was arrested and then booked into the Humboldt County Correctional Facility on fresh charges of attempting to remove a peace officer's firearm (PC 148(d)) and resisting a peace officer (PC 148(a)(1)), in addition to his warrant charges of assault (PC 240) and battery (PC 242).",
-                              "title": "News Flash &#x2022; County of Humboldt &#x2022; CivicEngage",
+                              "title": "News Flash • County of Humboldt • CivicEngage",
                               "url": "https://humboldtgov.org/CivicAlerts.aspx?AID=4279"
                             },
                             {
@@ -19892,14 +19892,14 @@ class ThirdfortChecksManager {
     "redFlags": [
       {
         "description": "Gifts Received",
-        "supporting_data": "1 gift received - &#xA3;5,000",
+        "supporting_data": "1 gift received - £5,000",
         "threshold_amount": "Any gifts flagged",
         "source": "Source of Funds"
       },
       {
         "description": "Declared savings > actual savings",
-        "declared": "&#xA3;5,000",
-        "actual": "&#xA3;2.75",
+        "declared": "£5,000",
+        "actual": "£2.75",
         "source": "Bank Linking"
       }
     ],
@@ -20584,7 +20584,7 @@ class ThirdfortChecksManager {
                               {
                                 "merchant_name": "",
                                 "timestamp": "2025-09-15T00:00:00Z",
-                                "description": "Buy BTW2509122529521 amount in EUR364.19 on 12 SEP reference exchange rate 1.155709 Final GBP amount inc. margin &#xA3;8.92",
+                                "description": "Buy BTW2509122529521 amount in EUR364.19 on 12 SEP reference exchange rate 1.155709 Final GBP amount inc. margin £8.92",
                                 "amount": -324.04,
                                 "id": "a340d0e9eecc82a393a2c4cfd23d5688",
                                 "account_id": "91c6769dcb61767289208a454930c7b7",
@@ -21150,7 +21150,7 @@ class ThirdfortChecksManager {
                               {
                                 "merchant_name": "",
                                 "timestamp": "2025-09-15T00:00:00Z",
-                                "description": "Buy BTW2509122529521 amount in EUR364.19 on 12 SEP reference exchange rate 1.155709 Final GBP amount inc. margin &#xA3;8.92",
+                                "description": "Buy BTW2509122529521 amount in EUR364.19 on 12 SEP reference exchange rate 1.155709 Final GBP amount inc. margin £8.92",
                                 "amount": -324.04,
                                 "id": "a340d0e9eecc82a393a2c4cfd23d5688",
                                 "account_id": "91c6769dcb61767289208a454930c7b7",
@@ -21262,7 +21262,7 @@ class ThirdfortChecksManager {
                             "id": "ob-barclays",
                             "name": "BARCLAYS"
                           },
-                          "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                          "_key": "••••••",
                           "balance": {
                             "available": 20.54,
                             "current": 20.54,
@@ -21278,7 +21278,7 @@ class ThirdfortChecksManager {
                               "addresses": null
                             }
                           ],
-                          "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                          "credentials_id": "••••••",
                           "currency": "EUR",
                           "metadata": {
                             "created_at": 1762452286148,
@@ -21305,7 +21305,7 @@ class ThirdfortChecksManager {
                             "id": "ob-barclays",
                             "name": "BARCLAYS"
                           },
-                          "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                          "_key": "••••••",
                           "balance": {
                             "available": 8.84,
                             "current": 8.84,
@@ -21321,7 +21321,7 @@ class ThirdfortChecksManager {
                               "addresses": null
                             }
                           ],
-                          "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                          "credentials_id": "••••••",
                           "currency": "GBP",
                           "metadata": {
                             "created_at": 1762452286048,
@@ -21348,7 +21348,7 @@ class ThirdfortChecksManager {
                             "id": "ob-hsbc",
                             "name": "HSBC"
                           },
-                          "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                          "_key": "••••••",
                           "balance": {
                             "available": 5.83,
                             "current": 5.83,
@@ -21364,7 +21364,7 @@ class ThirdfortChecksManager {
                               "addresses": null
                             }
                           ],
-                          "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                          "credentials_id": "••••••",
                           "currency": "GBP",
                           "metadata": {
                             "created_at": 1762452195837,
@@ -21391,7 +21391,7 @@ class ThirdfortChecksManager {
                             "id": "ob-hsbc",
                             "name": "HSBC"
                           },
-                          "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                          "_key": "••••••",
                           "balance": {
                             "available": 50.3,
                             "current": 50.3,
@@ -21407,7 +21407,7 @@ class ThirdfortChecksManager {
                               "addresses": null
                             }
                           ],
-                          "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                          "credentials_id": "••••••",
                           "currency": "GBP",
                           "metadata": {
                             "created_at": 1762452195941,
@@ -21434,7 +21434,7 @@ class ThirdfortChecksManager {
                             "id": "ob-tsb",
                             "name": "TSB"
                           },
-                          "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                          "_key": "••••••",
                           "balance": {
                             "available": 168.2,
                             "current": 168.2,
@@ -21450,7 +21450,7 @@ class ThirdfortChecksManager {
                               "addresses": null
                             }
                           ],
-                          "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                          "credentials_id": "••••••",
                           "currency": "GBP",
                           "metadata": {
                             "created_at": 1762452231890,
@@ -21490,7 +21490,7 @@ class ThirdfortChecksManager {
                               "id": "ob-barclays",
                               "name": "BARCLAYS"
                             },
-                            "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "_key": "••••••",
                             "balance": {
                               "available": 20.54,
                               "current": 20.54,
@@ -21506,7 +21506,7 @@ class ThirdfortChecksManager {
                                 "addresses": null
                               }
                             ],
-                            "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "credentials_id": "••••••",
                             "currency": "EUR",
                             "metadata": {
                               "created_at": 1762452286148,
@@ -21774,7 +21774,7 @@ class ThirdfortChecksManager {
                               "id": "ob-barclays",
                               "name": "BARCLAYS"
                             },
-                            "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "_key": "••••••",
                             "balance": {
                               "available": 8.84,
                               "current": 8.84,
@@ -21790,7 +21790,7 @@ class ThirdfortChecksManager {
                                 "addresses": null
                               }
                             ],
-                            "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "credentials_id": "••••••",
                             "currency": "GBP",
                             "metadata": {
                               "created_at": 1762452286048,
@@ -21808,7 +21808,7 @@ class ThirdfortChecksManager {
                             {
                               "merchant_name": "",
                               "timestamp": "2025-09-15T00:00:00Z",
-                              "description": "Buy BTW2509122529521 amount in EUR364.19 on 12 SEP reference exchange rate 1.155709 Final GBP amount inc. margin &#xA3;8.92",
+                              "description": "Buy BTW2509122529521 amount in EUR364.19 on 12 SEP reference exchange rate 1.155709 Final GBP amount inc. margin £8.92",
                               "amount": -324.04,
                               "id": "a340d0e9eecc82a393a2c4cfd23d5688",
                               "account_id": "91c6769dcb61767289208a454930c7b7",
@@ -21876,7 +21876,7 @@ class ThirdfortChecksManager {
                               "id": "ob-hsbc",
                               "name": "HSBC"
                             },
-                            "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "_key": "••••••",
                             "balance": {
                               "available": 5.83,
                               "current": 5.83,
@@ -21892,7 +21892,7 @@ class ThirdfortChecksManager {
                                 "addresses": null
                               }
                             ],
-                            "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "credentials_id": "••••••",
                             "currency": "GBP",
                             "metadata": {
                               "created_at": 1762452195837,
@@ -24078,7 +24078,7 @@ class ThirdfortChecksManager {
                               "id": "ob-hsbc",
                               "name": "HSBC"
                             },
-                            "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "_key": "••••••",
                             "balance": {
                               "available": 50.3,
                               "current": 50.3,
@@ -24094,7 +24094,7 @@ class ThirdfortChecksManager {
                                 "addresses": null
                               }
                             ],
-                            "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "credentials_id": "••••••",
                             "currency": "GBP",
                             "metadata": {
                               "created_at": 1762452195941,
@@ -24376,7 +24376,7 @@ class ThirdfortChecksManager {
                               "id": "ob-tsb",
                               "name": "TSB"
                             },
-                            "_key": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "_key": "••••••",
                             "balance": {
                               "available": 168.2,
                               "current": 168.2,
@@ -24392,7 +24392,7 @@ class ThirdfortChecksManager {
                                 "addresses": null
                               }
                             ],
-                            "credentials_id": "&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;",
+                            "credentials_id": "••••••",
                             "currency": "GBP",
                             "metadata": {
                               "created_at": 1762452231890,
@@ -25657,14 +25657,14 @@ class ThirdfortChecksManager {
                 "redFlags": [
                   {
                     "description": "Gifts Received",
-                    "supporting_data": "1 gift received - &#xA3;10,000.00",
+                    "supporting_data": "1 gift received - £10,000.00",
                     "threshold_amount": "Any gifts flagged",
                     "source": "Source of Funds"
                   },
                   {
                     "description": "Declared savings > actual savings",
-                    "declared": "&#xA3;20,000.00",
-                    "actual": "&#xA3;253.71",
+                    "declared": "£20,000.00",
+                    "actual": "£253.71",
                     "source": "Bank Linking"
                   }
                 ],
@@ -26436,7 +26436,7 @@ class ThirdfortChecksManager {
                             {
                               "date": "0001-01-01T00:00:00Z",
                               "snippet": "As deputies attempted to place Moran into custody for his warrant, Moran began to physically resist deputies. While resisting, Moran twice attempted to unholster a deputy's service firearm. After a brief struggle, Moran was arrested and then booked into the Humboldt County Correctional Facility on fresh charges of attempting to remove a peace officer's firearm (PC 148(d)) and resisting a peace officer (PC 148(a)(1)), in addition to his warrant charges of assault (PC 240) and battery (PC 242).",
-                              "title": "News Flash &#x2022; County of Humboldt &#x2022; CivicEngage",
+                              "title": "News Flash • County of Humboldt • CivicEngage",
                               "url": "https://humboldtgov.org/CivicAlerts.aspx?AID=4279"
                             },
                             {
@@ -27260,7 +27260,7 @@ class ThirdfortChecksManager {
                             },
                             {
                               "date": "2018-03-13T00:00:00Z",
-                              "snippet": "While Nigel Farage's successor-but-one Paul \"Dr Nutty\" Nuttall protests that he never doctored a CV with an invented university PhD, Ukip's ritzy nonpareil continues to enjoy the high life. My informant spied Farage, the self-appointed people's chief revolter, relaxing in first class on a British Airways flight from New York to Blighty. Drinking three types of champagne doesn't come cheap at &#xA3;8,00 0 one-way, so either the Brexit elitist is earning big bucks or he has found a sugar daddy.",
+                              "snippet": "While Nigel Farage's successor-but-one Paul \"Dr Nutty\" Nuttall protests that he never doctored a CV with an invented university PhD, Ukip's ritzy nonpareil continues to enjoy the high life. My informant spied Farage, the self-appointed people's chief revolter, relaxing in first class on a British Airways flight from New York to Blighty. Drinking three types of champagne doesn't come cheap at £8,00 0 one-way, so either the Brexit elitist is earning big bucks or he has found a sugar daddy.",
                               "title": "Commons Confidential: Money for old Gove",
                               "url": "https://www.newstatesman.com/politics/uk/2016/12/commons-confidential-money-old-gove?page=2&qt-trending=1"
                             },
@@ -27350,7 +27350,7 @@ class ThirdfortChecksManager {
                             },
                             {
                               "date": "2025-11-03T00:00:00Z",
-                              "snippet": "Manifesto tax cuts 'only ever aspirations' But Mr Farage is also being accused of U-turning on the tax cuts he pledged in Reform UK's 2024 general election manifesto, which was called \"Our Contract With You\". Key measures in the document included raising the minimum threshold of income tax to &#xA3;20,000, raising the higher rate threshold from &#xA3;50,271 to &#xA3;70,000, abolishing stamp duty for properties below &#xA3;750,000, and abolishing taxes on inheritances below &#xA3;2m.",
+                              "snippet": "Manifesto tax cuts 'only ever aspirations' But Mr Farage is also being accused of U-turning on the tax cuts he pledged in Reform UK's 2024 general election manifesto, which was called \"Our Contract With You\". Key measures in the document included raising the minimum threshold of income tax to £20,000, raising the higher rate threshold from £50,271 to £70,000, abolishing stamp duty for properties below £750,000, and abolishing taxes on inheritances below £2m.",
                               "title": "Nigel Farage says Reform UK could cut minimum wage for young people - and defends U-turn on tax pledges",
                               "url": "https://news.sky.com/story/nigel-farage-says-reform-uk-could-cut-minimum-wage-for-young-people-and-defends-u-turn-on-tax-pledges-13463252"
                             },
@@ -27790,7 +27790,7 @@ class ThirdfortChecksManager {
                 html += '<div class="annotation-mini-card">';
                 html += '<div class="annotation-mini-header">';
                 html += '<div class="annotation-mini-meta">';
-                html += '<strong>' + group.user + '</strong> &#x2022; ' + date;
+                html += '<strong>' + group.user + '</strong> • ' + date;
                 html += '</div>';
                 html += '</div>';
                 html += '<div class="annotation-mini-body">';
@@ -27902,7 +27902,7 @@ class ThirdfortChecksManager {
                 html += '<div class="annotation-card-header" onclick="toggleSofAnnotationCard(event, ' + noteIdx + ')">';
                 html += '<div class="annotation-header-main">';
                 html += '<div class="annotation-mini-meta">';
-                html += '<strong>' + userName + '</strong> &#x2022; ' + date;
+                html += '<strong>' + userName + '</strong> • ' + date;
                 html += '</div>';
                 html += '<span class="expand-indicator">&#x25BC;</span>';
                 html += '</div>';
@@ -28145,7 +28145,7 @@ class ThirdfortChecksManager {
                     html += '<div class="annotation-card-header" onclick="toggleBankReviewCard(event, ' + reviewIdx + ')">';
                     html += '<div class="annotation-header-main">';
                     html += '<div class="annotation-mini-meta">';
-                    html += '<strong>' + userName + '</strong> &#x2022; ' + date;
+                    html += '<strong>' + userName + '</strong> • ' + date;
                     html += '</div>';
                     html += '<span class="expand-indicator">&#x25BC;</span>';
                     html += '</div>';
@@ -28675,7 +28675,7 @@ class ThirdfortChecksManager {
                 overlayHTML += '<div class="annotation-mini-card">';
                 overlayHTML += '<div class="annotation-mini-header">';
                 overlayHTML += '<div class="annotation-mini-meta">';
-                overlayHTML += '<strong>' + group.user + '</strong> &#x2022; ' + date;
+                overlayHTML += '<strong>' + group.user + '</strong> • ' + date;
                 overlayHTML += '</div>';
                 overlayHTML += '</div>';
                 overlayHTML += '<div class="annotation-mini-body">';
@@ -28933,8 +28933,8 @@ class ThirdfortChecksManager {
         if (property.address) {
             const addr = property.address;
             const fullAddress = `${addr.building_number || ''} ${addr.street || ''}, ${addr.town || ''}, ${addr.postcode || ''}`.trim();
-            const price = property.price ? `&#xA3;${(property.price / 100).toLocaleString()}` : 'Not specified';
-            const sdlt = property.stamp_duty ? `&#xA3;${(property.stamp_duty / 100).toLocaleString()}` : 'Not specified';
+            const price = property.price ? `£${(property.price / 100).toLocaleString()}` : 'Not specified';
+            const sdlt = property.stamp_duty ? `£${(property.stamp_duty / 100).toLocaleString()}` : 'Not specified';
             const newBuild = property.new_build ? 'Yes' : 'No';
             
             // Check for existing property review
@@ -28947,7 +28947,7 @@ class ThirdfortChecksManager {
             overlayHTML += '<div class="sof-property-details">';
             overlayHTML += `<div class="property-bullet">&#xD83D;&#xDCCD; <strong>Property:</strong> ${fullAddress}</div>`;
             overlayHTML += `<div class="property-bullet">&#xD83D;&#xDCB7; <strong>Purchase Price:</strong> ${price}</div>`;
-            overlayHTML += `<div class="property-bullet">&#xD83D;&#xDCCB; <strong>Stamp Duty:</strong> ${sdlt}</div>`;
+            overlayHTML += `<div class="property-bullet">📋 <strong>Stamp Duty:</strong> ${sdlt}</div>`;
             overlayHTML += `<div class="property-bullet">🏗️ <strong>New Build:</strong> ${newBuild}</div>`;
             overlayHTML += '</div>';
             
@@ -29181,10 +29181,10 @@ class ThirdfortChecksManager {
                     
                     if (Object.keys(flagCounts).length > 0) {
                         overlayHTML += '<div class="prev-tx-flags" style="margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap;">';
-                        if (flagCounts.linked) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3;">&#x2713; ' + flagCounts.linked + ' linked</span>';
-                        if (flagCounts.suspicious) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336;">&#x2717; ' + flagCounts.suspicious + ' suspicious</span>';
-                        if (flagCounts.review) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800;">&#x2014; ' + flagCounts.review + ' review</span>';
-                        if (flagCounts.cleared) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50;">&#x25CB; ' + flagCounts.cleared + ' cleared</span>';
+                        if (flagCounts.linked) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e3f2fd; color: #2196f3; border: 1px solid #2196f3;">✓ ' + flagCounts.linked + ' linked</span>';
+                        if (flagCounts.suspicious) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #ffebee; color: #f44336; border: 1px solid #f44336;">✗ ' + flagCounts.suspicious + ' suspicious</span>';
+                        if (flagCounts.review) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #ff9800; border: 1px solid #ff9800;">— ' + flagCounts.review + ' review</span>';
+                        if (flagCounts.cleared) overlayHTML += '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; background: #e8f5e9; color: #4caf50; border: 1px solid #4caf50;">○ ' + flagCounts.cleared + ' cleared</span>';
                         overlayHTML += '</div>';
                     }
                     overlayHTML += '</div>';
@@ -29365,7 +29365,7 @@ class ThirdfortChecksManager {
             html += ' <svg viewBox="0 0 300 300" style="width: 14px; height: 14px; vertical-align: middle; margin-left: 4px;"><path fill="#388e3c" d="M300 150c0 82.843-67.157 150-150 150S0 232.843 0 150 67.157 0 150 0s150 67.157 150 150"/><path fill="#ffffff" d="m123.03 224.25-62.17-62.17 21.22-21.21 40.95 40.95 95.46-95.46 21.21 21.21z"/></svg>';
         }
         html += `</div>`;
-        html += `<div class="account-investigation-balance">Balance: &#xA3;${balance.toLocaleString()}</div>`;
+        html += `<div class="account-investigation-balance">Balance: £${balance.toLocaleString()}</div>`;
         
         // Add summary tags
         html += '<div class="account-summary-tags">';
@@ -29461,7 +29461,7 @@ class ThirdfortChecksManager {
                 funds.forEach((fund, fIdx) => {
                     const fundType = fund.type || '';
                     const fundData = fund.data || {};
-                    const fundAmount = fundData.amount ? `&#xA3;${(fundData.amount / 100).toLocaleString()}` : '';
+                    const fundAmount = fundData.amount ? `£${(fundData.amount / 100).toLocaleString()}` : '';
                     const fundLabel = fundType.replace('fund:', '').replace(/:/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                     const isSelected = linkedFundIdx === fIdx.toString();
                     html += `<option value="${fIdx}" ${isSelected ? 'selected' : ''}>${fundLabel} ${fundAmount}</option>`;
@@ -29514,7 +29514,7 @@ class ThirdfortChecksManager {
     createSofFundingCard(fund, fundIdx, sofMatches, accounts, check, relatedFlags = [], existingAnnotations = []) {
         const type = fund.type || 'unknown';
         const data = fund.data || {};
-        const amount = data.amount ? `&#xA3;${(data.amount / 100).toLocaleString()}` : 'Not specified';
+        const amount = data.amount ? `£${(data.amount / 100).toLocaleString()}` : 'Not specified';
         
         // Get matched transactions (including user-linked ones)
         const matchedTxIds = this.getMatchedTransactions(type, sofMatches, fund, fundIdx, check);
@@ -29627,7 +29627,7 @@ class ThirdfortChecksManager {
         // Summary tags
         html += '<div class="funding-summary-tags">';
         if (verifiedLabels.length > 0) {
-            html += `<span class="funding-tag confirmed">&#x2713; ${verifiedLabels.join(', ')}</span>`;
+            html += `<span class="funding-tag confirmed">✓ ${verifiedLabels.join(', ')}</span>`;
         }
         if (acceptedCount > 0) {
             html += `<span class="funding-tag accepted">${acceptedCount} accepted</span>`;
@@ -29758,8 +29758,8 @@ class ThirdfortChecksManager {
                     });
                     
                     html += `<div class="red-flag-details" style="margin-top: 10px;">`;
-                    html += `<div style="font-size: 12px; color: #666; margin-bottom: 8px;"><strong>Declared:</strong> &#xA3;${(totalDeclared / 100).toLocaleString()}</div>`;
-                    html += `<div style="font-size: 12px; color: #666; margin-bottom: 8px;"><strong>Actual:</strong> &#xA3;${totalActual.toLocaleString()}</div>`;
+                    html += `<div style="font-size: 12px; color: #666; margin-bottom: 8px;"><strong>Declared:</strong> £${(totalDeclared / 100).toLocaleString()}</div>`;
+                    html += `<div style="font-size: 12px; color: #666; margin-bottom: 8px;"><strong>Actual:</strong> £${totalActual.toLocaleString()}</div>`;
                     
                     // Show account breakdown by provider (like in red flags task card)
                     if (Object.keys(providerTotals).length > 0) {
@@ -29778,18 +29778,18 @@ class ThirdfortChecksManager {
                                 );
                                 html += `<div style="width: 90px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${styledLogoHtml}</div>`;
                                 html += `<div style="flex: 1;">`;
-                                html += `<div style="font-size: 13px; font-weight: 600; color: #003c71; margin-bottom: 4px;">&#xA3;${provider.total.toLocaleString()}</div>`;
+                                html += `<div style="font-size: 13px; font-weight: 600; color: #003c71; margin-bottom: 4px;">£${provider.total.toLocaleString()}</div>`;
                                 provider.accounts.forEach((acc, idx) => {
-                                    html += `<div style="font-size: 10px; color: #666; ${idx < provider.accounts.length - 1 ? 'margin-bottom: 1px;' : ''}">${acc.name}: &#xA3;${acc.balance.toLocaleString()}</div>`;
+                                    html += `<div style="font-size: 10px; color: #666; ${idx < provider.accounts.length - 1 ? 'margin-bottom: 1px;' : ''}">${acc.name}: £${acc.balance.toLocaleString()}</div>`;
                                 });
                                 html += `</div>`;
                             } else {
                                 // No logo - show name
                                 html += `<div style="flex: 1;">`;
                                 html += `<div style="font-size: 13px; font-weight: 600; color: #003c71; margin-bottom: 3px;">${provider.name}</div>`;
-                                html += `<div style="font-size: 13px; font-weight: 600; color: #388e3c; margin-bottom: 4px;">&#xA3;${provider.total.toLocaleString()}</div>`;
+                                html += `<div style="font-size: 13px; font-weight: 600; color: #388e3c; margin-bottom: 4px;">£${provider.total.toLocaleString()}</div>`;
                                 provider.accounts.forEach((acc, idx) => {
-                                    html += `<div style="font-size: 10px; color: #666; ${idx < provider.accounts.length - 1 ? 'margin-bottom: 1px;' : ''}">${acc.name}: &#xA3;${acc.balance.toLocaleString()}</div>`;
+                                    html += `<div style="font-size: 10px; color: #666; ${idx < provider.accounts.length - 1 ? 'margin-bottom: 1px;' : ''}">${acc.name}: £${acc.balance.toLocaleString()}</div>`;
                                 });
                                 html += `</div>`;
                             }
@@ -29815,9 +29815,9 @@ class ThirdfortChecksManager {
                 html += '<label><strong>Status:</strong></label>';
                 html += `<select class="red-flag-status-select" data-fund-idx="${fundIdx}" data-flag-idx="${flag.globalIndex}">`;
                 html += '<option value="">-- Select Action --</option>';
-                html += '<option value="confirmed">&#x2717; Confirmed - Requires attention</option>';
-                html += '<option value="dismissed">&#x2713; Clear - Not applicable</option>';
-                html += '<option value="review">&#x2014; Consider - Under review</option>';
+                html += '<option value="confirmed">✗ Confirmed - Requires attention</option>';
+                html += '<option value="dismissed">✓ Clear - Not applicable</option>';
+                html += '<option value="review">— Consider - Under review</option>';
                 html += '</select>';
                 html += '</div>';
                 
@@ -29946,13 +29946,13 @@ class ThirdfortChecksManager {
                 const flag = transactionFlags[txId];
                 let flagBadge = '';
                 if (flag === 'cleared') {
-                    flagBadge = '<span class="tx-marker-badge cleared">&#x25CB; Cleared</span>';
+                    flagBadge = '<span class="tx-marker-badge cleared">○ Cleared</span>';
                 } else if (flag === 'suspicious') {
-                    flagBadge = '<span class="tx-marker-badge suspicious">&#x2717; Suspicious</span>';
+                    flagBadge = '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
                 } else if (flag === 'review') {
-                    flagBadge = '<span class="tx-marker-badge review">&#x2014; Review</span>';
+                    flagBadge = '<span class="tx-marker-badge review">— Review</span>';
                 } else if (flag === 'linked') {
-                    flagBadge = '<span class="tx-marker-badge linked">&#x2713; Linked</span>';
+                    flagBadge = '<span class="tx-marker-badge linked">✓ Linked</span>';
                 }
                 
                 // Determine source badge
@@ -29960,9 +29960,9 @@ class ThirdfortChecksManager {
                 const isAutoMatched = autoMatchedTxIds.has(txId);
                 let sourceBadge = '';
                 if (isUserLinked && !isAutoMatched) {
-                    sourceBadge = '<span class="tx-source-badge user-linked" title="Manually linked by cashier">&#xD83D;&#xDC64; User Linked</span>';
+                    sourceBadge = '<span class="tx-source-badge user-linked" title="Manually linked by cashier">👤 User Linked</span>';
                 } else if (isUserLinked && isAutoMatched) {
-                    sourceBadge = '<span class="tx-source-badge both-matched" title="Auto-matched by Thirdfort and confirmed by cashier">&#x2713; Confirmed</span>';
+                    sourceBadge = '<span class="tx-source-badge both-matched" title="Auto-matched by Thirdfort and confirmed by cashier">✓ Confirmed</span>';
                 }
                 
                 // Get transaction note
@@ -30024,7 +30024,7 @@ class ThirdfortChecksManager {
         
         const createCheckbox = (value, label) => {
             const wasVerified = previouslyVerified.has(value);
-            const indicator = wasVerified ? ' <span style="color: #39b549; font-size: 11px;">(Previously verified &#x2713;)</span>' : '';
+            const indicator = wasVerified ? ' <span style="color: #39b549; font-size: 11px;">(Previously verified ✓)</span>' : '';
             return `<label><input type="checkbox" name="verification" value="${value}"> ${label}${indicator}</label>`;
         };
         
@@ -30161,12 +30161,12 @@ class ThirdfortChecksManager {
         
         if (chain.source) {
             const sourceAmount = Math.abs(chain.source.amount).toFixed(2);
-            html += `<span class="chain-step">&#xA3;${sourceAmount} (${chain.source.description || 'Income'})</span>`;
+            html += `<span class="chain-step">£${sourceAmount} (${chain.source.description || 'Income'})</span>`;
             html += ' &#x2192; ';
         }
         
         const outAmount = Math.abs(chain.out.amount).toFixed(2);
-        html += `<span class="chain-step">&#xA3;${outAmount} (${chain.out.description || 'Transfer'})</span>`;
+        html += `<span class="chain-step">£${outAmount} (${chain.out.description || 'Transfer'})</span>`;
         
         html += '</div>';
         
@@ -30784,7 +30784,7 @@ class ThirdfortChecksManager {
                 
                 overlayHTML += '<div class="tx-annotation-card">';
                 overlayHTML += '<div class="tx-annotation-header">';
-                overlayHTML += `<strong>${ann.user}</strong> &#x2022; ${annDate}`;
+                overlayHTML += `<strong>${ann.user}</strong> • ${annDate}`;
                 overlayHTML += '</div>';
                 
                 // Flag status
@@ -30815,7 +30815,7 @@ class ThirdfortChecksManager {
                         const fund = funds[parseInt(fundIdxStr)];
                         if (fund) {
                             const fundType = fund.type || '';
-                            const fundAmount = fund.data?.amount ? `&#xA3;${(fund.data.amount / 100).toLocaleString()}` : '';
+                            const fundAmount = fund.data?.amount ? `£${(fund.data.amount / 100).toLocaleString()}` : '';
                             const fundLabel = fundType.replace('fund:', '').replace(/[-:_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                             return `${fundLabel} ${fundAmount}`;
                         }
@@ -31239,7 +31239,7 @@ class ThirdfortChecksManager {
         if (hit.dob) {
             html += '<span class="pep-label">Date of Birth:</span> <span class="pep-value">' + hit.dob + '</span>';
         } else {
-            html += '<span class="pep-label">Date of Birth:</span> <span class="pep-value">&#x2014;</span>';
+            html += '<span class="pep-label">Date of Birth:</span> <span class="pep-value">—</span>';
         }
         html += '</div>';
         
@@ -31248,7 +31248,7 @@ class ThirdfortChecksManager {
         if (hit.score) {
             html += '<span class="pep-label">Match Score:</span> <span class="pep-value">' + hit.score + '</span>';
         } else {
-            html += '<span class="pep-label">Match Score:</span> <span class="pep-value">&#x2014;</span>';
+            html += '<span class="pep-label">Match Score:</span> <span class="pep-value">—</span>';
         }
         html += '</div>';
         
@@ -31259,7 +31259,7 @@ class ThirdfortChecksManager {
             const extra = hit.politicalPositions.length > 1 ? ' (+' + (hit.politicalPositions.length - 1) + ' more)' : '';
             html += '<span class="pep-label">Position:</span> <span class="pep-value">' + pos + extra + '</span>';
         } else {
-            html += '<span class="pep-label">Position:</span> <span class="pep-value">&#x2014;</span>';
+            html += '<span class="pep-label">Position:</span> <span class="pep-value">—</span>';
         }
         html += '</div>';
         
@@ -31268,7 +31268,7 @@ class ThirdfortChecksManager {
         if (hit.fields && hit.fields.length > 0) {
             html += '<span class="pep-label">Data Sources:</span> <span class="pep-value">' + hit.fields.length + '</span>';
         } else {
-            html += '<span class="pep-label">Data Sources:</span> <span class="pep-value">&#x2014;</span>';
+            html += '<span class="pep-label">Data Sources:</span> <span class="pep-value">—</span>';
         }
         html += '</div>';
         
@@ -31277,7 +31277,7 @@ class ThirdfortChecksManager {
         if (hit.associates && hit.associates.length > 0) {
             html += '<span class="pep-label">Associates:</span> <span class="pep-value">' + hit.associates.length + '</span>';
         } else {
-            html += '<span class="pep-label">Associates:</span> <span class="pep-value">&#x2014;</span>';
+            html += '<span class="pep-label">Associates:</span> <span class="pep-value">—</span>';
         }
         html += '</div>';
         
@@ -31286,7 +31286,7 @@ class ThirdfortChecksManager {
         if (hit.media && hit.media.length > 0) {
             html += '<span class="pep-label">Media Articles:</span> <span class="pep-value">' + hit.media.length + '</span>';
         } else {
-            html += '<span class="pep-label">Media Articles:</span> <span class="pep-value">&#x2014;</span>';
+            html += '<span class="pep-label">Media Articles:</span> <span class="pep-value">—</span>';
         }
         html += '</div>';
         
@@ -31385,7 +31385,7 @@ class ThirdfortChecksManager {
             queueHTML += '<p class="dismissal-reason">' + dismissal.reason + '</p>';
             queueHTML += '<div class="dismissed-hits-list">';
             dismissal.hits.forEach(hit => {
-                queueHTML += '<span class="dismissed-hit-name">&#x2022; ' + hit.name + '</span>';
+                queueHTML += '<span class="dismissed-hit-name">• ' + hit.name + '</span>';
             });
             queueHTML += '</div>';
             queueHTML += '</div></div>';
@@ -31532,18 +31532,18 @@ class ThirdfortChecksManager {
     generateConsiderPDF(autoSave = false) {
         const check = this.currentCheck;
         if (!check) {
-            console.error('&#x274C; No current check for PDF generation');
+            console.error('❌ No current check for PDF generation');
             return;
         }
         
         const annotations = check.considerAnnotations || [];
         
-        console.log('&#xD83D;&#xDCC4; Generating PDF with annotations:', annotations.length);
-        console.log('&#xD83D;&#xDCC4; Annotations:', annotations);
+        console.log('📄 Generating PDF with annotations:', annotations.length);
+        console.log('📄 Annotations:', annotations);
         
         // If no annotations exist, there's nothing to generate
         if (annotations.length === 0) {
-            console.error('&#x274C; No annotations to generate PDF for');
+            console.error('❌ No annotations to generate PDF for');
             alert('No annotations found to generate PDF');
             return;
         }
@@ -31551,7 +31551,7 @@ class ThirdfortChecksManager {
         const checkName = check.consumerName || check.companyName || 'Unknown';
         const checkRef = check.thirdfortResponse?.ref || check.transactionId || check.checkId;
         const checkType = this.getElectronicIDType(check) || check.checkType || 'Thirdfort Check';
-        const matterName = check.thirdfortResponse?.name || check.matterName || '&#x2014;';
+        const matterName = check.thirdfortResponse?.name || check.matterName || '—';
         const checkStatus = check.status === 'closed' ? 'Closed' : 'Open';
         const now = new Date();
         const generatedDate = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -31756,7 +31756,7 @@ class ThirdfortChecksManager {
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
                             <div style="font-size: 12px; color: #666;">
                                 <span style="font-weight: bold; color: #333;">${ann.userName}</span>
-                                <span> &#x2022; </span>
+                                <span> • </span>
                                 <span style="font-style: italic; font-size: 11px; color: #999;">${date}, ${time}</span>
                             </div>
                             <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${miniStatusColor}; color: ${miniStatusTextColor};">
@@ -31850,18 +31850,18 @@ class ThirdfortChecksManager {
             pagebreak: { mode: 'css', avoid: 'div[style*="page-break-inside: avoid"]' }
         };
         
-        console.log('&#xD83D;&#xDCC4; Checking for html2pdf library...');
-        console.log('&#xD83D;&#xDCC4; html2pdf available:', typeof html2pdf !== 'undefined');
+        console.log('📄 Checking for html2pdf library...');
+        console.log('📄 html2pdf available:', typeof html2pdf !== 'undefined');
         
         if (typeof html2pdf !== 'undefined') {
-            console.log('&#xD83D;&#xDCC4; Starting PDF generation...');
+            console.log('📄 Starting PDF generation...');
             // Generate PDF as blob and open in print dialog
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
-                console.log('&#x2705; PDF blob generated:', pdfBlob.size, 'bytes');
+                console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
                 
                 // Check if Print.js is available
                 if (typeof printJS !== 'undefined') {
-                    console.log('&#xD83D;&#xDCC4; Opening print dialog with Print.js...');
+                    console.log('📄 Opening print dialog with Print.js...');
                 const pdfUrl = URL.createObjectURL(pdfBlob);
                     
                     // Use Print.js to open print dialog with PDF
@@ -31879,7 +31879,7 @@ class ThirdfortChecksManager {
                     const pdfUrl = URL.createObjectURL(pdfBlob);
                 const printWindow = window.open(pdfUrl, '_blank');
                 if (!printWindow) {
-                    console.error('&#x274C; Popup blocked by browser');
+                    console.error('❌ Popup blocked by browser');
                     alert('PDF generated but popup was blocked. Please allow popups for this site.');
                 } else {
                     // Trigger print dialogue when PDF loads
@@ -31902,7 +31902,7 @@ class ThirdfortChecksManager {
                     console.log('&#x2139;&#xFE0F; Manual export - not sending pdf-generated message');
                 }
             }).catch(err => {
-                console.error('&#x274C; Error generating PDF:', err);
+                console.error('❌ Error generating PDF:', err);
                 alert('Error generating PDF: ' + err.message);
                 // Still notify parent even on error so data can refresh (only if auto-save)
                 if (autoSave) {
@@ -31913,7 +31913,7 @@ class ThirdfortChecksManager {
                 }
             });
         } else {
-            console.error('&#x274C; html2pdf library not loaded');
+            console.error('❌ html2pdf library not loaded');
             alert('PDF library not loaded. Please refresh the page.');
             // Notify parent so data can refresh (only if auto-save)
             if (autoSave) {
@@ -32201,7 +32201,7 @@ class ThirdfortChecksManager {
         
         annotation.notes.bankAnalysisItems.push(newItem);
         
-        console.log('&#x2705; Saved analysis item flag:', newItem);
+        console.log('✅ Saved analysis item flag:', newItem);
     }
     
     removeAnalysisItemFlag(itemType, itemKey) {
@@ -32414,7 +32414,7 @@ class ThirdfortChecksManager {
                                 <option value="">-- Select funding method --</option>
                                 ${sofFunds.map((fund, fundIdx) => {
                                     const fundLabel = fund.data?.amount ? 
-                                        `${fund.type.replace('fund:', '').toUpperCase()}: &#xA3;${(fund.data.amount / 100).toLocaleString()}` :
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.data.amount / 100).toLocaleString()}` :
                                         fund.type.replace('fund:', '').toUpperCase();
                                     return `<option value="${fundIdx}" ${chainLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
                                 }).join('')}
@@ -32476,7 +32476,7 @@ class ThirdfortChecksManager {
                                 <option value="">-- Select funding method --</option>
                                 ${sofFunds.map((fund, fundIdx) => {
                                     const fundLabel = fund.data?.amount ? 
-                                        `${fund.type.replace('fund:', '').toUpperCase()}: &#xA3;${(fund.data.amount / 100).toLocaleString()}` :
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.data.amount / 100).toLocaleString()}` :
                                         fund.type.replace('fund:', '').toUpperCase();
                                     return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
                                 }).join('')}
@@ -32521,7 +32521,7 @@ class ThirdfortChecksManager {
                                 <option value="">-- Select funding method --</option>
                                 ${sofFunds.map((fund, fundIdx) => {
                                     const fundLabel = fund.data?.amount ? 
-                                        `${fund.type.replace('fund:', '').toUpperCase()}: &#xA3;${(fund.data.amount / 100).toLocaleString()}` :
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.data.amount / 100).toLocaleString()}` :
                                         fund.type.replace('fund:', '').toUpperCase();
                                     return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
                                 }).join('')}
@@ -32796,7 +32796,7 @@ class ThirdfortChecksManager {
                                     <option value="">-- Select funding method --</option>
                                     ${sofFunds.map((fund, fundIdx) => {
                                         const fundLabel = fund.data?.amount ? 
-                                            `${fund.type.replace('fund:', '').toUpperCase()}: &#xA3;${(fund.data.amount / 100).toLocaleString()}` :
+                                            `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.data.amount / 100).toLocaleString()}` :
                                             fund.type.replace('fund:', '').toUpperCase();
                                         // Convert both to strings for comparison to avoid type mismatch
                                         return `<option value="${fundIdx}" ${String(chainLinkedFund) === String(fundIdx) ? 'selected' : ''}>${fundLabel}</option>`;
@@ -32838,20 +32838,20 @@ class ThirdfortChecksManager {
                     
                     // Marker badges
                     if (txAnnotations.marker === 'accepted') {
-                        badgesHtml += '<span class="tx-marker-badge accepted">&#x2713; Accepted</span>';
+                        badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
                     } else if (txAnnotations.marker === 'rejected') {
-                        badgesHtml += '<span class="tx-marker-badge rejected">&#x2717; Rejected</span>';
+                        badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
                     }
                     
                     // Flag badges
                     if (txAnnotations.flag === 'cleared') {
-                        badgesHtml += '<span class="tx-marker-badge cleared">&#x25CB; Cleared</span>';
+                        badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
                     } else if (txAnnotations.flag === 'suspicious') {
-                        badgesHtml += '<span class="tx-marker-badge suspicious">&#x2717; Suspicious</span>';
+                        badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
                     } else if (txAnnotations.flag === 'review') {
-                        badgesHtml += '<span class="tx-marker-badge review">&#x2014; Review</span>';
+                        badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
                     } else if (txAnnotations.flag === 'linked') {
-                        badgesHtml += '<span class="tx-marker-badge linked">&#x2713; Linked</span>';
+                        badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
                     }
                     
                     // User note badge
@@ -32881,20 +32881,20 @@ class ThirdfortChecksManager {
                     
                     // Marker badges
                     if (txAnnotations.marker === 'accepted') {
-                        badgesHtml += '<span class="tx-marker-badge accepted">&#x2713; Accepted</span>';
+                        badgesHtml += '<span class="tx-marker-badge accepted">✓ Accepted</span>';
                     } else if (txAnnotations.marker === 'rejected') {
-                        badgesHtml += '<span class="tx-marker-badge rejected">&#x2717; Rejected</span>';
+                        badgesHtml += '<span class="tx-marker-badge rejected">✗ Rejected</span>';
                     }
                     
                     // Flag badges
                     if (txAnnotations.flag === 'cleared') {
-                        badgesHtml += '<span class="tx-marker-badge cleared">&#x25CB; Cleared</span>';
+                        badgesHtml += '<span class="tx-marker-badge cleared">○ Cleared</span>';
                     } else if (txAnnotations.flag === 'suspicious') {
-                        badgesHtml += '<span class="tx-marker-badge suspicious">&#x2717; Suspicious</span>';
+                        badgesHtml += '<span class="tx-marker-badge suspicious">✗ Suspicious</span>';
                     } else if (txAnnotations.flag === 'review') {
-                        badgesHtml += '<span class="tx-marker-badge review">&#x2014; Review</span>';
+                        badgesHtml += '<span class="tx-marker-badge review">— Review</span>';
                     } else if (txAnnotations.flag === 'linked') {
-                        badgesHtml += '<span class="tx-marker-badge linked">&#x2713; Linked</span>';
+                        badgesHtml += '<span class="tx-marker-badge linked">✓ Linked</span>';
                     }
                     
                     // User note badge
@@ -32969,7 +32969,7 @@ class ThirdfortChecksManager {
                                 <option value="">-- Select funding method --</option>
                                 ${sofFunds.map((fund, fundIdx) => {
                                     const fundLabel = fund.data?.amount ? 
-                                        `${fund.type.replace('fund:', '').toUpperCase()}: &#xA3;${(fund.data.amount / 100).toLocaleString()}` :
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.data.amount / 100).toLocaleString()}` :
                                         fund.type.replace('fund:', '').toUpperCase();
                                     // Convert both to strings for comparison to avoid type mismatch
                                     return `<option value="${fundIdx}" ${String(groupLinkedFund) === String(fundIdx) ? 'selected' : ''}>${fundLabel}</option>`;
@@ -32983,7 +32983,7 @@ class ThirdfortChecksManager {
                     <div class="analysis-item-card" data-group-index="${groupIdx}">
                         <div class="analysis-card-header">
                             <div class="analysis-card-title">
-                                ${currencySymbol}${Math.abs(amount).toFixed(2)} &#xD7; ${frequency}
+                                ${currencySymbol}${Math.abs(amount).toFixed(2)} × ${frequency}
                             </div>
                             <div class="analysis-card-meta">
                                 ${accountsSet.length > 1 ? `Between: ${accountsSet.join(' &#x2194; ')}` : `Account: ${accountsSet[0]}`}
@@ -33150,7 +33150,7 @@ class ThirdfortChecksManager {
                                     <option value="">-- Select funding method --</option>
                                     ${sofFunds.map((fund, fundIdx) => {
                                         const fundLabel = fund.amount ? 
-                                            `${fund.type.replace('fund:', '').toUpperCase()}: &#xA3;${(fund.amount / 100).toLocaleString()}` :
+                                            `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.amount / 100).toLocaleString()}` :
                                             fund.type.replace('fund:', '').toUpperCase();
                                         return `<option value="${fundIdx}" ${chainLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
                                     }).join('')}
@@ -33199,7 +33199,7 @@ class ThirdfortChecksManager {
                                 <option value="">-- Select funding method --</option>
                                 ${sofFunds.map((fund, fundIdx) => {
                                     const fundLabel = fund.amount ? 
-                                        `${fund.type.replace('fund:', '').toUpperCase()}: &#xA3;${(fund.amount / 100).toLocaleString()}` :
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.amount / 100).toLocaleString()}` :
                                         fund.type.replace('fund:', '').toUpperCase();
                                     return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
                                 }).join('')}
@@ -33244,7 +33244,7 @@ class ThirdfortChecksManager {
                                 <option value="">-- Select funding method --</option>
                                 ${sofFunds.map((fund, fundIdx) => {
                                     const fundLabel = fund.amount ? 
-                                        `${fund.type.replace('fund:', '').toUpperCase()}: &#xA3;${(fund.amount / 100).toLocaleString()}` :
+                                        `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.amount / 100).toLocaleString()}` :
                                         fund.type.replace('fund:', '').toUpperCase();
                                     return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
                                 }).join('')}
@@ -33328,7 +33328,7 @@ class ThirdfortChecksManager {
             // This is more reliable than grouping the IDs ourselves
             const bankSummary = check?.taskOutcomes?.['bank:summary'];
             const summaryByCcy = bankSummary?.breakdown?.summary?.by_ccy;
-            console.log('&#xD83D;&#xDCCA; Summary by currency available?', !!summaryByCcy);
+            console.log('📊 Summary by currency available?', !!summaryByCcy);
             
             // Try to use summaryByCcy first, otherwise fall back to grouping the IDs
             if (summaryByCcy && Object.keys(summaryByCcy).length > 0) {
@@ -33391,7 +33391,7 @@ class ThirdfortChecksManager {
                                     <option value="">-- Select funding method --</option>
                                     ${sofFunds.map((fund, fundIdx) => {
                                         const fundLabel = fund.amount ? 
-                                            `${fund.type.replace('fund:', '').toUpperCase()}: &#xA3;${(fund.amount / 100).toLocaleString()}` :
+                                            `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.amount / 100).toLocaleString()}` :
                                             fund.type.replace('fund:', '').toUpperCase();
                                         return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
                                     }).join('')}
@@ -33428,7 +33428,7 @@ class ThirdfortChecksManager {
                 });
             } else {
                 // Fallback: Group by currency from the transaction IDs
-                console.log('&#xD83D;&#xDCCA; Using fallback grouping for largest transactions');
+                console.log('📊 Using fallback grouping for largest transactions');
                 const byCurrency = {};
                 analysis.largest_individual_transactions.forEach(txId => {
                     const tx = getTransactionById(txId);
@@ -33466,7 +33466,7 @@ class ThirdfortChecksManager {
                                         <option value="">-- Select funding method --</option>
                                         ${sofFunds.map((fund, fundIdx) => {
                                             const fundLabel = fund.amount ? 
-                                                `${fund.type.replace('fund:', '').toUpperCase()}: &#xA3;${(fund.amount / 100).toLocaleString()}` :
+                                                `${fund.type.replace('fund:', '').toUpperCase()}: £${(fund.amount / 100).toLocaleString()}` :
                                                 fund.type.replace('fund:', '').toUpperCase();
                                             return `<option value="${fundIdx}" ${txLinkedFund == fundIdx ? 'selected' : ''}>${fundLabel}</option>`;
                                         }).join('')}
@@ -33523,17 +33523,17 @@ class ThirdfortChecksManager {
     }
     
     generateSofPDF(autoSave = false) {
-        console.log('&#xD83D;&#xDCC4; Starting SoF PDF generation...');
+        console.log('📄 Starting SoF PDF generation...');
         const check = this.currentCheck;
         if (!check) {
-            console.error('&#x274C; No current check for SoF PDF generation');
+            console.error('❌ No current check for SoF PDF generation');
             return;
         }
         
         const checkName = check.consumerName || check.companyName || 'Unknown';
         const checkRef = check.thirdfortResponse?.ref || check.transactionId || check.checkId;
         const checkType = this.getElectronicIDType(check) || check.checkType || 'Thirdfort Check';
-        const matterName = check.thirdfortResponse?.name || check.matterName || '&#x2014;';
+        const matterName = check.thirdfortResponse?.name || check.matterName || '—';
         const now = new Date();
         const generatedDate = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
         const generatedTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -33561,8 +33561,8 @@ class ThirdfortChecksManager {
         if (property.address) {
             const addr = property.address;
             const fullAddress = `${addr.building_number || ''} ${addr.street || ''}, ${addr.town || ''}, ${addr.postcode || ''}`.trim();
-            const price = property.price ? `&#xA3;${(property.price / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Not specified';
-            const sdlt = property.stamp_duty ? `&#xA3;${(property.stamp_duty / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Not specified';
+            const price = property.price ? `£${(property.price / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Not specified';
+            const sdlt = property.stamp_duty ? `£${(property.stamp_duty / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Not specified';
             const newBuild = property.new_build ? 'Yes' : 'No';
             
             propertyHTML = `
@@ -33582,7 +33582,7 @@ class ThirdfortChecksManager {
         funds.forEach((fund, fundIdx) => {
             const type = fund.type || 'unknown';
             const data = fund.data || {};
-            const amount = data.amount ? `&#xA3;${(data.amount / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Amount not specified';
+            const amount = data.amount ? `£${(data.amount / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Amount not specified';
             
             // Get type name
             const typeNames = {
@@ -33683,10 +33683,10 @@ class ThirdfortChecksManager {
                         const date = new Date(tx.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
                         const txMarker = transactionMarkers[tx.id];
                         const markerStyle = txMarker === 'rejected' ? 'opacity: 0.65;' : '';
-                        const markerText = txMarker === 'verified' ? ' &#x2713; VERIFIED' : (txMarker === 'rejected' ? ' &#x2715; REJECTED' : (txMarker === 'review' ? ' ? REVIEW' : ''));
+                        const markerText = txMarker === 'verified' ? ' ✓ VERIFIED' : (txMarker === 'rejected' ? ' &#x2715; REJECTED' : (txMarker === 'review' ? ' ? REVIEW' : ''));
                         const markerColor = txMarker === 'verified' ? '#39b549' : (txMarker === 'rejected' ? '#d32f2f' : '#f7931e');
                         
-                        fundingCardsHTML += `<div style="margin-bottom: 6px; ${markerStyle}"><strong>${date}:</strong> ${tx.description || 'Transaction'} &#x2014; <span style="color: #39b549;">+&#xA3;${Math.abs(tx.amount).toFixed(2)}</span><span style="color: ${markerColor}; font-weight: bold; margin-left: 8px;">${markerText}</span></div>`;
+                        fundingCardsHTML += `<div style="margin-bottom: 6px; ${markerStyle}"><strong>${date}:</strong> ${tx.description || 'Transaction'} — <span style="color: #39b549;">+£${Math.abs(tx.amount).toFixed(2)}</span><span style="color: ${markerColor}; font-weight: bold; margin-left: 8px;">${markerText}</span></div>`;
                     });
                     if (matchedTxs.length > 5) {
                         fundingCardsHTML += `<div style="font-style: italic; color: #999; margin-top: 6px;">... and ${matchedTxs.length - 5} more</div>`;
@@ -33713,7 +33713,7 @@ class ThirdfortChecksManager {
                 fundingCardsHTML += `<div style="display: flex; gap: 8px; align-items: center; font-size: 12px; flex-wrap: wrap;">`;
                 verifiedItems.forEach(item => {
                     const itemLabel = item.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    fundingCardsHTML += `<span style="color: #39b549;">&#x2713;</span> ${itemLabel}`;
+                    fundingCardsHTML += `<span style="color: #39b549;">✓</span> ${itemLabel}`;
                 });
                 fundingCardsHTML += `</div></div>`;
             }
@@ -33823,7 +33823,7 @@ class ThirdfortChecksManager {
                         const avgAmount = group.average_amount || 0;
                         const merchant = group.merchant_name || 'Unknown';
                         bankAnalysisHTML += `<div style="padding: 8px; background: #f8f9fa; border-radius: 4px; margin-bottom: 6px; font-size: 12px;">`;
-                        bankAnalysisHTML += `<strong>${merchant}</strong> - ${count} payments, avg &#xA3;${Math.abs(avgAmount).toFixed(2)}`;
+                        bankAnalysisHTML += `<strong>${merchant}</strong> - ${count} payments, avg £${Math.abs(avgAmount).toFixed(2)}`;
                         bankAnalysisHTML += `</div>`;
                     });
                     bankAnalysisHTML += '</div>';
@@ -33831,7 +33831,7 @@ class ThirdfortChecksManager {
                 
                 // Transaction Chains
                 if (analysis.chain_analysis && analysis.chain_analysis.length > 0) {
-                    bankAnalysisHTML += '<div style="margin-bottom: 16px;"><div style="font-weight: bold; font-size: 14px; color: var(--primary-blue); margin-bottom: 8px;">&#xD83D;&#xDD17; Transaction Chains</div>';
+                    bankAnalysisHTML += '<div style="margin-bottom: 16px;"><div style="font-weight: bold; font-size: 14px; color: var(--primary-blue); margin-bottom: 8px;">🔗 Transaction Chains</div>';
                     analysis.chain_analysis.slice(0, 5).forEach((chain, cIdx) => {
                         const count = chain.transactions?.length || 0;
                         bankAnalysisHTML += `<div style="padding: 8px; background: #f8f9fa; border-radius: 4px; margin-bottom: 6px; font-size: 12px;">`;
@@ -33851,7 +33851,7 @@ class ThirdfortChecksManager {
                         const sign = amount >= 0 ? '+' : '';
                         const amountColor = amount >= 0 ? '#39b549' : '#d32f2f';
                         bankAnalysisHTML += `<div style="padding: 8px; background: #f8f9fa; border-radius: 4px; margin-bottom: 6px; font-size: 12px;">`;
-                        bankAnalysisHTML += `<span style="color: ${amountColor}; font-weight: bold;">${sign}&#xA3;${Math.abs(amount).toFixed(2)}</span> - ${desc} <span style="color: #6c757d;">(${date})</span>`;
+                        bankAnalysisHTML += `<span style="color: ${amountColor}; font-weight: bold;">${sign}£${Math.abs(amount).toFixed(2)}</span> - ${desc} <span style="color: #6c757d;">(${date})</span>`;
                         bankAnalysisHTML += `</div>`;
                     });
                     bankAnalysisHTML += '</div>';
@@ -33920,7 +33920,7 @@ class ThirdfortChecksManager {
                         <div class="check-info-item"><span class="check-info-label">Check Reference:</span><span class="check-info-value">${checkRef}</span></div>
                         <div class="check-info-item"><span class="check-info-label">Check ID:</span><span class="check-info-value">${check.checkId || check.transactionId}</span></div>
                         <div class="check-info-item"><span class="check-info-label">Matter:</span><span class="check-info-value">${matterName}</span></div>
-                        <div class="check-info-item"><span class="check-info-label">Property:</span><span class="check-info-value">${property.address ? `${property.address.building_number || ''} ${property.address.street || ''}, ${property.address.town || ''}, ${property.address.postcode || ''}`.trim() : '&#x2014;'}</span></div>
+                        <div class="check-info-item"><span class="check-info-label">Property:</span><span class="check-info-value">${property.address ? `${property.address.building_number || ''} ${property.address.street || ''}, ${property.address.town || ''}, ${property.address.postcode || ''}`.trim() : '—'}</span></div>
                         <div class="check-info-item"><span class="check-info-label">Generated:</span><span class="check-info-value">${generatedDate}, ${generatedTime}</span></div>
                     </div>
                 </div>
@@ -33949,13 +33949,13 @@ class ThirdfortChecksManager {
         };
         
         if (typeof html2pdf !== 'undefined') {
-            console.log('&#xD83D;&#xDCC4; Generating SoF PDF with html2pdf...');
+            console.log('📄 Generating SoF PDF with html2pdf...');
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
-                console.log('&#x2705; SoF PDF generated:', pdfBlob.size, 'bytes');
+                console.log('✅ SoF PDF generated:', pdfBlob.size, 'bytes');
                 
                 // Check if Print.js is available
                 if (typeof printJS !== 'undefined') {
-                    console.log('&#xD83D;&#xDCC4; Opening SoF print dialog with Print.js...');
+                    console.log('📄 Opening SoF print dialog with Print.js...');
                 const pdfUrl = URL.createObjectURL(pdfBlob);
                     
                     // Use Print.js to open print dialog with PDF
@@ -33973,7 +33973,7 @@ class ThirdfortChecksManager {
                     const pdfUrl = URL.createObjectURL(pdfBlob);
                 const printWindow = window.open(pdfUrl, '_blank');
                 if (!printWindow) {
-                    console.error('&#x274C; Popup blocked by browser');
+                    console.error('❌ Popup blocked by browser');
                     alert('PDF generated but popup was blocked. Please allow popups for this site.');
                 } else {
                     // Trigger print dialogue when PDF loads
@@ -33996,7 +33996,7 @@ class ThirdfortChecksManager {
                     console.log('&#x2139;&#xFE0F; Manual export - not sending pdf-generated message');
                 }
             }).catch(err => {
-                console.error('&#x274C; Error generating SoF PDF:', err);
+                console.error('❌ Error generating SoF PDF:', err);
                 alert('Error generating SoF PDF: ' + err.message);
                 // Still notify parent even on error so data can refresh (only if auto-save)
                 if (autoSave) {
@@ -34007,7 +34007,7 @@ class ThirdfortChecksManager {
                 }
             });
         } else {
-            console.error('&#x274C; html2pdf library not loaded');
+            console.error('❌ html2pdf library not loaded');
             alert('PDF library not loaded. Please refresh the page.');
             // Notify parent so data can refresh (only if auto-save)
             if (autoSave) {
@@ -34149,7 +34149,7 @@ class ThirdfortChecksManager {
                 hitCardsHTML += `
                         <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; padding: 12px; margin-top: 12px;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">&#x2713;</span></div>
+                                <div style="width: 16px; height: 16px; border-radius: 50%; background: #39b549; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="color: white; font-size: 12px; font-weight: bold; line-height: 1;">✓</span></div>
                                 <strong style="font-size: 13px; color: #155724;">Dismissal Confirmed</strong>
                             </div>
                             <div style="font-size: 12px; color: #155724; margin-bottom: 6px;">
@@ -34172,7 +34172,7 @@ class ThirdfortChecksManager {
         // Build summary card
         const summaryBorderColor = outstandingCount === 0 ? '#39b549' : '#f7931e';
         const summaryMessage = outstandingCount === 0 
-            ? '&#x2713; All hits have been reviewed and dismissed'
+            ? '✓ All hits have been reviewed and dismissed'
             : `&#x26A0; ${outstandingCount} hit${outstandingCount > 1 ? 's' : ''} require${outstandingCount === 1 ? 's' : ''} review`;
         const summaryBgColor = outstandingCount === 0 ? '#e8f5e9' : '#fff3e0';
         const summaryTextColor = outstandingCount === 0 ? '#155724' : '#856404';
@@ -34247,14 +34247,14 @@ class ThirdfortChecksManager {
         };
         
         if (typeof html2pdf !== 'undefined') {
-            console.log('&#xD83D;&#xDCC4; Generating PEP dismissals PDF with html2pdf...');
+            console.log('📄 Generating PEP dismissals PDF with html2pdf...');
             // Generate PDF as blob and open in print dialog
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
-                console.log('&#x2705; PEP dismissals PDF generated:', pdfBlob.size, 'bytes');
+                console.log('✅ PEP dismissals PDF generated:', pdfBlob.size, 'bytes');
                 
                 // Check if Print.js is available
                 if (typeof printJS !== 'undefined') {
-                    console.log('&#xD83D;&#xDCC4; Opening PEP print dialog with Print.js...');
+                    console.log('📄 Opening PEP print dialog with Print.js...');
                 const pdfUrl = URL.createObjectURL(pdfBlob);
                     
                     // Use Print.js to open print dialog with PDF
@@ -34272,7 +34272,7 @@ class ThirdfortChecksManager {
                     const pdfUrl = URL.createObjectURL(pdfBlob);
                 const printWindow = window.open(pdfUrl, '_blank');
                 if (!printWindow) {
-                    console.error('&#x274C; Popup blocked by browser');
+                    console.error('❌ Popup blocked by browser');
                     alert('PDF generated but popup was blocked. Please allow popups for this site.');
                 } else {
                     // Trigger print dialogue when PDF loads
@@ -34295,7 +34295,7 @@ class ThirdfortChecksManager {
                     console.log('&#x2139;&#xFE0F; Manual export - not sending pdf-generated message');
                 }
             }).catch(err => {
-                console.error('&#x274C; Error generating PEP dismissals PDF:', err);
+                console.error('❌ Error generating PEP dismissals PDF:', err);
                 alert('Error generating PDF: ' + err.message);
                 // Still notify parent even on error so data can refresh (only if auto-save)
                 if (autoSave) {
@@ -34306,7 +34306,7 @@ class ThirdfortChecksManager {
                 }
             });
         } else {
-            console.error('&#x274C; html2pdf library not loaded');
+            console.error('❌ html2pdf library not loaded');
             alert('PDF library not loaded. Please refresh the page.');
             // Notify parent so data can refresh (only if auto-save)
             if (autoSave) {

@@ -11,8 +11,8 @@
         =====================================================================
         CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
         =====================================================================
-        Transport Medium &#xE2;&#x2020;&#x2019; fallback to Quicksand Bold (700)
-        Rotis fonts &#xE2;&#x2020;&#x2019; fallback to Quicksand Regular (400/600)
+        Transport Medium → fallback to Quicksand Bold (700)
+        Rotis fonts → fallback to Quicksand Regular (400/600)
         =====================================================================
         */
         
@@ -219,7 +219,7 @@
         <div class="header-row">
             <div style="width: 80px;"></div> <!-- Spacer for centering -->
             <div class="chart-header" id="chartTitle">Chart Viewer</div>
-            <button class="expand-btn" id="expandBtn" onclick="expandChart()" style="display: none;">&#xE2;&#xA4;&#xA2; Expand</button>
+            <button class="expand-btn" id="expandBtn" onclick="expandChart()" style="display: none;">⤢ Expand</button>
         </div>
         <div class="chart-description" id="chartDescription"></div>
         
@@ -414,11 +414,11 @@
             }
             
             if (data.description) {
-                // Check if description contains bullet points (&#xE2;&#x20AC;&#xA2;) and convert to separate lines
-                if (data.description.includes('&#xE2;&#x20AC;&#xA2;')) {
-                    const items = data.description.split('&#xE2;&#x20AC;&#xA2;').map(item => item.trim()).filter(item => item);
+                // Check if description contains bullet points (•) and convert to separate lines
+                if (data.description.includes('•')) {
+                    const items = data.description.split('•').map(item => item.trim()).filter(item => item);
                     chartDescription.innerHTML = items.map(item => 
-                        `<span class="chart-description-item">&#xE2;&#x20AC;&#xA2; ${item}</span>`
+                        `<span class="chart-description-item">• ${item}</span>`
                     ).join('');
                 } else {
                     chartDescription.textContent = data.description;
@@ -612,7 +612,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '158b639';
+    window.__IFRAME_VERSION__ = '5baf66e';
     console.log('[single-chart-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

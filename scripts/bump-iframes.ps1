@@ -20,6 +20,20 @@ function New-ShortUuid {
     return ([guid]::NewGuid().ToString('N').Substring(0, 7)).ToLower()
 }
 
+function Read-Utf8File {
+    param([string] $FilePath)
+    $bytes = [System.IO.File]::ReadAllBytes($FilePath)
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    return $utf8NoBom.GetString($bytes)
+}
+
+function Write-Utf8File {
+    param([string] $FilePath, [string] $Content)
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $bytes = $utf8NoBom.GetBytes($Content)
+    [System.IO.File]::WriteAllBytes($FilePath, $bytes)
+}
+
 function Update-AssetVersions {
     param(
         [string] $Content,
@@ -101,14 +115,14 @@ if (-not $htmlFiles) {
     throw "No HTML files found to update."
 }
 
-$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-
 foreach ($file in $htmlFiles) {
-    $content = [System.IO.File]::ReadAllText($file.FullName)
+    # Read using byte-level operations to preserve Unicode emojis
+    $content = Read-Utf8File $file.FullName
     $updated = Update-AssetVersions -Content $content -Uuid $uuid
     $updated = Ensure-VersionBlock -Content $updated -IframeName $file.BaseName -Uuid $uuid
     if ($content -ne $updated) {
-        [System.IO.File]::WriteAllText($file.FullName, $updated, $utf8NoBom)
+        # Write using byte-level operations to preserve Unicode emojis
+        Write-Utf8File $file.FullName $updated
         Write-Host "Updated $($file.Name)"
     } else {
         Write-Host "No changes needed for $($file.Name)"
@@ -118,17 +132,28 @@ foreach ($file in $htmlFiles) {
 if (-not $SkipLog) {
     $logJsonPath = Join-Path $repoRoot 'iframe-version-log.json'
     if (-not (Test-Path $logJsonPath)) {
-        Set-Content -Path $logJsonPath -Value '[]' -Encoding UTF8
+        Write-Utf8File $logJsonPath '[]'
     }
 
-    $rawJson = Get-Content -Path $logJsonPath -Raw
+    $rawJson = Read-Utf8File $logJsonPath
     $existingEntries = @()
     if (-not [string]::IsNullOrWhiteSpace($rawJson)) {
-        $converted = $rawJson | ConvertFrom-Json
-        if ($converted -is [System.Collections.IEnumerable]) {
-            $existingEntries = @($converted)
-        } elseif ($converted) {
-            $existingEntries = @($converted)
+        try {
+            $rawJson = $rawJson.Trim()  # Remove any trailing whitespace
+            if ($rawJson -match '^\s*\[\s*\]\s*$') {
+                # Empty array - no entries
+                $existingEntries = @()
+            } else {
+                $converted = $rawJson | ConvertFrom-Json
+                if ($converted -is [System.Collections.IEnumerable]) {
+                    $existingEntries = @($converted)
+                } elseif ($converted) {
+                    $existingEntries = @($converted)
+                }
+            }
+        } catch {
+            Write-Host "Warning: Could not parse JSON log file, starting fresh." -ForegroundColor Yellow
+            $existingEntries = @()
         }
     }
 
@@ -156,7 +181,7 @@ if (-not $SkipLog) {
     }
 
     $jsonOutput = $updatedEntries | ConvertTo-Json -Depth 6
-    Set-Content -Path $logJsonPath -Value $jsonOutput -Encoding UTF8
+    Write-Utf8File $logJsonPath $jsonOutput
     Write-Host "Logged bump to iframe-version-log.json"
 } else {
     Write-Host "Skipping log update."

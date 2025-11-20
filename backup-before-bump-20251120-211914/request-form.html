@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Request Form</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
+  
+  <!-- Core CSS -->
+  <link rel="stylesheet" href="styles.css?v=3145240" />
+  
+  <!-- Request Form Specific CSS -->
+  <link rel="stylesheet" href="css/request-form.css?v=3145240" />
+</head>
+<body>
+  <div class="container">
+    <!-- TEMPORARY: Mock Data Testing Buttons -->
+    <div id="mockDataSection" class="section" style="background: #fff3cd; border: 2px solid #ffc107;">
+      <h3 style="color: #856404; margin: 0 0 10px 0;">🧪 Testing: Mock Client Data</h3>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="mock-btn" id="mockClientBtn" style="flex: 1; padding: 10px; background: #4A90E2; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Load Individual</button>
+        <button type="button" class="mock-btn" id="mockBusinessBtn" style="flex: 1; padding: 10px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Load Business</button>
+        <button type="button" class="mock-btn" id="mockCharityBtn" style="flex: 1; padding: 10px; background: #e67e22; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Load Charity</button>
+      </div>
+    </div>
+    
+    <!-- Header Section -->
+    <div id="headerSection" class="section">
+      <!-- Client info display (FE initials, client number, name) -->
+      <div id="headerInfo">
+        <div class="header-left">
+          <div class="header-badge client-number" id="clientNumberBadge">
+            <div class="header-badge" id="titleBadge"><span></span></div>
+            <span id="clientMatterNumber"></span>
+              </div>
+          <div class="header-name" id="clientName"></div>
+            </div>
+        <div class="header-right">
+          <img src="https://static.wixstatic.com/media/a86acc_e7a12ea3b5b84594bb3768ccf1271339~mv2.png" alt="Address ID" class="header-icon hidden" id="addressIcon" title="Address ID Uploaded" />
+          <img src="https://static.wixstatic.com/shapes/a86acc_a27d29e447fd40d58f51ddc48752cc5f.svg" alt="Photo ID" class="header-icon hidden" id="photoIcon" title="Photo ID Uploaded" />
+          <img src="https://static.wixstatic.com/shapes/a86acc_c0791819480d4257976efb1136cf67a5.svg" alt="Likeness Confirmed" class="header-icon hidden" id="liknessIcon" title="Likeness Confirmed" />
+          </div>
+              </div>
+            </div>
+
+    <!-- Matter Details Section -->
+    <div class="section" id="matterDetailsSection">
+      <h3>Matter Details</h3>
+      <div class="matter-grid">
+        <!-- Top Left: Work Type -->
+        <div class="matter-grid-item">
+          <label for="worktype" class="required">Work Type</label>
+          <input type="text" id="worktype" name="worktype" required class="worktype-input" />
+          <select id="worktypeDropdown" class="worktype-dropdown">
+            <option value="">or choose from list...</option>
+            <option value="Sale of">Sale of</option>
+            <option value="Purchase of">Purchase of</option>
+            <option value="Transfer of">Transfer of</option>
+            <option value="1st Registration">1st Registration</option>
+            <option value="Equity Release">Equity Release</option>
+            <option value="Auction">Auction</option>
+            <option value="Wills">Wills</option>
+            <option value="Lasting Power of Attorney">Lasting Power of Attorney</option>
+            <option value="Change of Name Deed">Change of Name Deed</option>
+            <option value="Estates">Estates</option>
+            <option value="Deeds & Declarations">Deeds & Declarations</option>
+            <option value="Assent">Assent</option>
+            <option value="Adverse Possesion">Adverse Possesion</option>
+          </select>
+        </div>
+        
+        <!-- Top Right: Relation -->
+        <div class="matter-grid-item">
+          <label for="relation" class="required">Relation</label>
+          <input type="text" id="relation" name="relation" required class="relation-input" />
+          <select id="relationDropdown" class="relation-dropdown">
+            <option value="">or choose from list...</option>
+            <option value="Our Client">Our Client</option>
+            <option value="Gifter">Gifter</option>
+            <option value="Executor">Executor</option>
+            <option value="Beneficiary">Beneficiary</option>
+            <option value="Occupier">Occupier</option>
+            <option value="Leaseholder">Leaseholder</option>
+            <option value="Freeholder">Freeholder</option>
+            <option value="Tenant">Tenant</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        
+        <!-- Bottom Left: Matter Description -->
+        <div class="matter-grid-item">
+          <label for="matterDescription" class="required">Matter Description</label>
+          <input type="text" id="matterDescription" name="matterDescription" placeholder="Enter matter description..." />
+        </div>
+        
+        <!-- Bottom Right: Business/Charity checkboxes -->
+        <div class="matter-grid-item checkbox-container">
+          <label class="checkbox-group-label">Type</label>
+          <div class="checkbox-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="businessCheckbox" name="businessCheckbox" />
+              <span class="checkbox-text">Business</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="charityCheckbox" name="charityCheckbox" />
+              <span class="checkbox-text">Charity</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+            
+    <!-- Request Type Selector -->
+    <div class="section" id="requestTypeSection">
+      <h3>Select a request type<span class="required-asterisk"> *</span></h3>
+      <div class="tag-selector">
+        <button type="button" class="request-tag" data-type="formJ">Form J Request</button>
+        <button type="button" class="request-tag" data-type="formK">Form K Request</button>
+        <button type="button" class="request-tag" data-type="formE">Form E Request</button>
+        <button type="button" class="request-tag" data-type="esof">eSoF Request</button>
+        <button type="button" class="request-tag" data-type="note">Note</button>
+        <button type="button" class="request-tag" data-type="update">Issue Update</button>
+        <button type="button" class="request-tag" data-type="updatePep">PEP Update</button>
+              </div>
+      <div id="k3Hint" class="request-hint hidden">
+        &#9888;&#65039; If there is any financial transaction or aspect, i.e. Property &amp; Financial LPA or Beneficiary receiving a legacy, this route is not sufficient and a Form J or E must be used
+      </div>
+      <div id="ejHint" class="request-hint hidden">
+        &#9888;&#65039; This entry appears to meet Form J requirements, please double check the client's chosen ID route
+      </div>
+      <div id="eSoFHint" class="request-hint request-hint-info hidden">
+        &#8505;&#65039; This ID check will include an electronic source of funds questionnaire and source of wealth bank linking task
+      </div>
+      <div id="eSoFSkipHint" class="request-hint request-hint-error hidden">
+        &#9888;&#65039; This client will not undergo eSoF and you MUST collect evidence and complete investigations using the manual route
+      </div>
+      <div id="eSoFOnlyHint" class="request-hint request-hint-info hidden">
+        &#8505;&#65039; This is just the source of funds questionnaire and source of wealth bank linking task, to include address and photo ID checks please select Form E
+      </div>
+      <select id="formKruleSelector" class="form-select hidden">
+        <option value="" disabled selected>Select a rule</option>
+            </select>
+      <div class="input-row">
+        <textarea class="text-input required" placeholder="Type your message here..." id="messageInput" required></textarea>
+        <div class="upload-area" onclick="triggerFileInput()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" id="uploadArea">
+          <div class="upload-icon" id="uploadIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="rgb(0, 60, 113)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17,8 12,3 7,8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="upload-text" id="uploadText">Upload</div>
+          <input type="file" class="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/rtf" id="fileInput" onchange="handleFileSelect(event)">
+          </div>
+      </div>
+    </div>
+
+    <!-- ID Images Section -->
+    <div class="section hidden" id="idImagesSection">
+      <h3>ID Images</h3>
+      <div class="id-images-carousel">
+        <div class="carousel-container">
+          <div class="carousel-wrapper" id="idImagesCarousel">
+            <!-- Image cards will be dynamically added here -->
+            <div class="id-image-card" data-image-id="1">
+              <div class="image-preview">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyNSIgdmlld0JveD0iMCAwIDIwMCAxMjUiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTI1IiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik04MCA2MEg0MEw4MCA0MHY0MHptODAgMGg0MHY0MEgxNjBWNTB6bTAgODBINDJWMTAwSDE2MFYxNDB6TTgwIDE2MEg0MnYtNDBoNDB2NDB6IiBmaWxsPSIjQ0NDQ0NDIi8+Cjwvc3ZnPg==" alt="Driving License Front" />
+              </div>
+              <div class="image-details">
+                <div class="details-row">
+                  <span class="document-type-title">Driving License</span>
+                  <span class="side-tag">FRONT</span>
+                  <button class="open-image-btn" onclick="openIDImage(this)" title="Open image" data-image-id="1">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="upload-info">Uploaded by email@domain.com on 15/12/2023 14:30:45</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Carousel Navigation -->
+          <button class="carousel-nav prev-nav" id="idImagesPrevBtn" onclick="navigateCarousel('prev')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15,18 9,12 15,6"></polyline>
+            </svg>
+          </button>
+          <button class="carousel-nav next-nav" id="idImagesNextBtn" onclick="navigateCarousel('next')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9,18 15,12 9,6"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- ID Images Confirmation Card -->
+      <div class="confirmation-card">
+        <label class="confirmation-checkbox-label">
+          <input type="checkbox" id="idImagesConfirmationCheckbox" name="idImagesConfirmationCheckbox" />
+          <span class="confirmation-text">I confirm there are two forms of Address ID and one form of Photo ID attached for the client. I have verified the details match those presented by the client across all sources. I have verified the photos meet the requirements and are not blurry. All documents pictured are valid and meet our standards.</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Client Details Section -->
+    <div class="section hidden" id="clientDetailsSection">
+      <h3>Client Details</h3>
+      <div class="client-details-grid">
+        <!-- Title, First, Middle, Last Name Row -->
+        <div class="row name-row">
+          <div>
+            <label for="titlePrefix">Title</label>
+            <select id="titlePrefix" name="titlePrefix">
+              <option value="">Select...</option>
+              <option value="Mr">Mr</option>
+              <option value="Mrs">Mrs</option>
+              <option value="Ms">Ms</option>
+              <option value="Miss">Miss</option>
+              <option value="Master">Master</option>
+              <option value="Dr">Dr</option>
+              <option value="Lord">Lord</option>
+              <option value="Rev">Rev</option>
+              <option value="Mx">Mx</option>
+              <option value="Lad">Lad</option>
+              <option value="Dame">Dame</option>
+            </select>
+          </div>
+          <div>
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" name="firstName" />
+          </div>
+          <div>
+            <label for="middleName">Middle Name</label>
+            <input type="text" id="middleName" name="middleName" />
+          </div>
+          <div>
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" name="lastName" />
+          </div>
+        </div>
+
+        <!-- Name Verification Hint -->
+        <div class="cdf-hint hidden" id="nameVerificationHint">
+          &#9888;&#65039; Ensure the name matches the above Photo ID Exactly. If they are known by a different name please indicate this below.
+        </div>
+
+        <!-- Date of Birth Row -->
+        <div class="row dob-row">
+          <div class="dob-container">
+            <label>Date of Birth</label>
+            <div class="birthdate-inputs">
+              <input type="text" maxlength="1" id="dob1" />
+              <input type="text" maxlength="1" id="dob2" />
+              <input type="text" maxlength="1" id="dob3" />
+              <input type="text" maxlength="1" id="dob4" />
+              <input type="text" maxlength="1" id="dob5" />
+              <input type="text" maxlength="1" id="dob6" />
+              <input type="text" maxlength="1" id="dob7" />
+              <input type="text" maxlength="1" id="dob8" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Previous/Known as Name Toggle Row -->
+        <div class="row toggle-row">
+          <div class="toggle-container">
+            <label>Previous/Known as name</label>
+            <label class="toggle" title="If the client has changed their name in the last three years or is known by another name please select the toggle">
+              <input type="checkbox" id="recentNameChange" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Previous/Known as Name Fields (hidden by default) -->
+        <div id="nameChangeFields" class="hidden">
+          <div class="row name-change-row">
+            <div>
+              <label for="previousName">Previous/Known as name</label>
+              <input type="text" id="previousName" name="previousName" />
+            </div>
+            <div>
+              <label for="reasonForNameChange">Reason for Name Change</label>
+              <input type="text" id="reasonForNameChange" name="reasonForNameChange" placeholder="Marriage/Divorce, Name change by deed poll, Known as..." />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Business/Charity Details Section -->
+    <div class="section hidden" id="businessCharitySection">
+      <h3>Business/Charity Details</h3>
+      <div class="business-charity-grid">
+        <!-- Business Name Row -->
+          <div class="row">
+            <label for="businessName">Business Name</label>
+            <div class="company-buttons-container">
+              <div class="address-autocomplete-container">
+                <input type="text" id="businessName" name="businessName" autocomplete="off" placeholder="Search by company name..." />
+                <div id="businessNameDropdown" class="address-dropdown hidden"></div>
+              </div>
+            <!-- Companies House Link Button -->
+            <button type="button" id="companyLinkBtn" class="hidden" title="View on Companies House">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+              </button>
+            <!-- Refresh Company Data Button -->
+            <button type="button" id="companyRefreshBtn" class="hidden" title="Refresh company data from Companies House">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+        <!-- Entity Grid Row -->
+          <div class="entity-grid">
+            <div class="entity-left">
+              <div>
+                <label for="registrationCountry">Registration Country</label>
+                <div class="address-autocomplete-container">
+                  <input type="text" id="registrationCountry" name="registrationCountry" autocomplete="off" placeholder="Search country..." value="United Kingdom" data-jurisdiction-code="GB" class="country-dropdown" />
+                  <div id="registrationCountryDropdown" class="address-dropdown hidden"></div>
+                </div>
+              </div>
+              <div>
+              <label for="entityNumber">Entity Number</label>
+                <div class="address-autocomplete-container">
+                  <input type="text" id="entityNumber" name="entityNumber" autocomplete="off" placeholder="Search by company number..." data-organisation-number="" />
+                  <div id="entityNumberDropdown" class="address-dropdown hidden"></div>
+                </div>
+              </div>
+            </div>
+            <div class="entity-right">
+            <h4>People</h4>
+            <div class="people-warning">
+              &#9888;&#65039; Ensure all directors and people with &gt; 25% share have undergone appropriate AML &amp; ID checks
+            </div>
+              <div class="people-scrollable">
+                <div id="peopleRepeater">
+                  <div class="no-people-message">Link a company to view officers, directors, and PSCs</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+
+    <!-- Contact Details Section -->
+    <div class="section" id="contactDetailsSection">
+      <h3>Contact Details</h3>
+      <div class="contact-details-grid">
+        <!-- Phone and Email Row -->
+        <div class="row phone-email-row">
+          <div>
+            <label for="phoneCountryCode">Code</label>
+            <div class="address-autocomplete-container">
+              <input type="text" id="phoneCountryCode" name="phoneCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
+              <div id="phoneCountryCodeDropdown" class="address-dropdown hidden"></div>
+            </div>
+          </div>
+          <div>
+            <label for="phoneNumber">Phone Number</label>
+            <input type="tel" id="phoneNumber" name="phoneNumber" />
+          </div>
+          <div>
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" placeholder="name@example.com" />
+          </div>
+        </div>
+
+        <!-- Address Section -->
+        <div class="address-section">
+          <div class="row address-row">
+          <div>
+            <label for="currentCountry">Country</label>
+            <div class="address-autocomplete-container">
+              <input type="text" id="currentCountry" name="currentCountry" autocomplete="off" placeholder="Search country..." value="United Kingdom" data-country-code="GBR" class="country-dropdown" />
+              <div id="currentCountryDropdown" class="address-dropdown hidden"></div>
+            </div>
+          </div>
+            <div class="address-autocomplete-row">
+              <label for="currentAddress">Search Address</label>
+            <div class="address-autocomplete-container">
+              <input type="text" id="currentAddress" name="currentAddress" autocomplete="off" placeholder="Start typing address or postcode..." />
+              <div id="currentAddressDropdown" class="address-dropdown hidden"></div>
+            </div>
+          </div>
+        </div>
+
+          <!-- Address Not Listed Checkbox -->
+          <div class="row address-controls-row">
+            <div class="checkbox-container">
+              <input type="checkbox" id="addressNotListed" />
+              <label for="addressNotListed">Address not listed (enter manually)</label>
+          </div>
+        </div>
+
+          <!-- Manual Address Fields (hidden by default) -->
+        <div id="manualAddressFields" class="hidden">
+            <div class="manual-address-grid">
+        <div class="row row-grid-25-25-50">
+          <div>
+            <label for="flatNumber">Flat Number</label>
+            <input type="text" id="flatNumber" name="flatNumber" />
+          </div>
+          <div>
+            <label for="buildingNumber">Building Number</label>
+            <input type="text" id="buildingNumber" name="buildingNumber" />
+          </div>
+          <div>
+            <label for="buildingName">Building Name</label>
+            <input type="text" id="buildingName" name="buildingName" />
+          </div>
+        </div>
+        
+        <div class="row row-grid-50-50">
+          <div>
+            <label for="street">Street</label>
+            <input type="text" id="street" name="street" />
+          </div>
+          <div>
+            <label for="subStreet">Sub Street</label>
+            <input type="text" id="subStreet" name="subStreet" />
+          </div>
+        </div>
+        
+        <div class="row row-grid-50-50">
+          <div>
+            <label for="town">Town/City</label>
+            <input type="text" id="town" name="town" />
+          </div>
+          <div>
+            <label for="postcode">Postcode</label>
+            <input type="text" id="postcode" name="postcode" />
+                </div>
+          </div>
+        </div>
+        </div>
+
+          <!-- Previous Address Toggle -->
+          <div class="row previous-address-row">
+            <div class="toggle-container">
+              <label>Recent Move (within last year)</label>
+              <label class="toggle" title="If the client has moved home in the past 1 year please enter their previous address">
+                <input type="checkbox" id="recentMove" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Previous Address Fields (hidden by default) -->
+        <div id="previousAddressFields" class="hidden">
+            <div class="row address-row">
+            <div>
+              <label for="previousCountry">Country</label>
+              <div class="address-autocomplete-container">
+                <input type="text" id="previousCountry" name="previousCountry" autocomplete="off" placeholder="Search country..." value="United Kingdom" data-country-code="GBR" class="country-dropdown" />
+                <div id="previousCountryDropdown" class="address-dropdown hidden"></div>
+              </div>
+            </div>
+              <div class="address-autocomplete-row">
+                <label for="previousAddress">Search Address</label>
+              <div class="address-autocomplete-container">
+                <input type="text" id="previousAddress" name="previousAddress" autocomplete="off" placeholder="Start typing address or postcode..." />
+                <div id="previousAddressDropdown" class="address-dropdown hidden"></div>
+              </div>
+            </div>
+          </div>
+
+            <!-- Previous Address Not Listed Checkbox -->
+            <div class="row address-controls-row">
+              <div class="checkbox-container">
+                <input type="checkbox" id="previousAddressNotListed" />
+                <label for="previousAddressNotListed">Address not listed (enter manually)</label>
+            </div>
+          </div>
+        
+            <!-- Previous Address Manual Fields -->
+            <div id="previousManualAddressFields" class="hidden">
+              <div class="manual-address-grid">
+          <div class="row row-grid-25-25-50">
+            <div>
+              <label for="prevFlatNumber">Flat Number</label>
+              <input type="text" id="prevFlatNumber" name="prevFlatNumber" />
+            </div>
+            <div>
+              <label for="prevBuildingNumber">Building Number</label>
+              <input type="text" id="prevBuildingNumber" name="prevBuildingNumber" />
+            </div>
+            <div>
+              <label for="prevBuildingName">Building Name</label>
+              <input type="text" id="prevBuildingName" name="prevBuildingName" />
+            </div>
+          </div>
+          
+          <div class="row row-grid-50-50">
+            <div>
+              <label for="prevStreet">Street</label>
+              <input type="text" id="prevStreet" name="prevStreet" />
+            </div>
+            <div>
+              <label for="prevSubStreet">Sub Street</label>
+              <input type="text" id="prevSubStreet" name="prevSubStreet" />
+            </div>
+          </div>
+          
+          <div class="row row-grid-50-50">
+            <div>
+              <label for="prevTown">Town/City</label>
+              <input type="text" id="prevTown" name="prevTown" />
+            </div>
+            <div>
+              <label for="prevPostcode">Postcode</label>
+              <input type="text" id="prevPostcode" name="prevPostcode" />
+            </div>
+          </div>
+        </div>
+        </div>
+          </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- ID Documents Section -->
+    <div class="section hidden" id="idDocumentsSection">
+      <h3>ID Documents</h3>
+      <div class="id-documents-grid">
+        <!-- Left Column: Client Details Form -->
+        <div class="id-documents-column">
+          <div class="column-header">
+            <h4>Client Details Form</h4>
+    </div>
+          <div class="document-card hidden" id="cdfDocumentCard">
+            <div class="document-content">
+              <div class="document-title">Client Details Form</div>
+              <div class="document-upload-info">Uploaded by email@domain.com 15/12/2023, 14:30:45</div>
+            </div>
+            <button type="button" class="document-open-btn hidden" id="cdfOpenBtn" title="Open document">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          &#9888;&#65039; Please upload the Client Details Form (CDF) or complete all required personal details (title, full name, contact method, DOB, current address)
+        </div>
+          &#9888;&#65039; Please Link the charity/company using the entity number or name input or supply:<br>
+          &bull; Print out from companies house or charity register<br>
+          &bull; Proof of address for partnerships<br>
+          &bull; Proof of registration for SRA/FCA regulated entities<br>
+          &bull; Proof of authority for all other commercial work
+        </div>
+          &#10003; Entity data linked
+        </div>
+        <div class="entity-linked-hint hidden" id="cdfProfileCompleteHint">
+          ✓ Full client data entered — CDF upload optional for this request
+        </div>
+
+          <!-- CDF Uploader -->
+          <div class="uploader-section">
+            <div class="upload-area" onclick="triggerCDFFileInput()" ondrop="handleCDFDrop(event)" ondragover="handleCDFDragOver(event)" ondragleave="handleCDFDragLeave(event)" id="cdfUploadArea">
+              <div class="upload-icon" id="cdfUploadIcon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="rgb(0, 60, 113)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17,8 12,3 7,8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <div class="upload-text" id="cdfUploadText">Upload Document</div>
+              <input type="file" class="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/rtf" id="cdfFileInput" onchange="handleCDFFileSelect(event)">
+            </div>
+            <select id="cdfDocumentType" class="form-select hidden">
+              <option value="">Select document type...</option>
+              <option value="client-details">Client Details Form</option>
+              <option value="beneficiary-details">Beneficiary Details Form</option>
+              <option value="proof-of-address">Proof of Address</option>
+              <option value="sra-registration">SRA Registration</option>
+              <option value="fca-registration">FCA Registration</option>
+              <option value="companies-house">Companies House Printout</option>
+              <option value="charity-register">Charity Register Printout</option>
+              <option value="partnership-address">Proof of Address for Partnerships</option>
+              <option value="commercial-authority">Proof of Authority for Commercial Work</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Right Column: OFSI Screening -->
+        <div class="id-documents-column">
+          <div class="column-header">
+            <h4>OFSI Screening</h4>
+            <button type="button" class="ofsi-search-btn" onclick="openOFSISearch()" title="Open OFSI Consolidated Sanctions Search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="document-card hidden" id="ofsiDocumentCard">
+            <div class="document-content">
+              <div class="document-title">OFSI Screening</div>
+              <div class="document-upload-info">Uploaded by email@domain.com 15/12/2023, 14:30:45</div>
+            </div>
+            <button type="button" class="document-open-btn hidden" id="ofsiOpenBtn" title="Open document">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <div class="ofsi-hint hidden" id="ofsiHint">
+            &#9888;&#65039; Please supply a recent OFSI search report
+          </div>
+          
+          <!-- OFSI Uploader -->
+          <div class="uploader-section">
+            <div class="upload-area" onclick="triggerOFSIFileInput()" ondrop="handleOFSIDrop(event)" ondragover="handleOFSIDragOver(event)" ondragleave="handleOFSIDragLeave(event)" id="ofsiUploadArea">
+              <div class="upload-icon" id="ofsiUploadIcon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="rgb(0, 60, 113)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17,8 12,3 7,8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <div class="upload-text" id="ofsiUploadText">Upload Document</div>
+              <input type="file" class="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/rtf" id="ofsiFileInput" onchange="handleOFSIFileSelect(event)">
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Confirmation Card -->
+      <div class="confirmation-card">
+        <label class="confirmation-checkbox-label">
+          <input type="checkbox" id="confirmationCheckbox" name="confirmationCheckbox" />
+          <span class="confirmation-text">I understand if incomplete this request will NOT be processed and will be placed in the relevant F/E's 'ISSUE' Section. All of the information submitted here is correct and accurate to the best of my knowledge and I confirm I have cross-checked the details across all sources.</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="form-actions">
+      <button type="submit" id="submitBtn" class="submit-btn" disabled>Submit Request</button>
+    </div>
+
+    <!-- Dynamic Content Container -->
+    <div id="dynamicContentContainer"></div>
+
+    <!-- OFSI Required Popup -->
+    <div id="ofsiRequiredPopup" class="modal-overlay hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>&#9888;&#65039; OFSI Screening Required</h3>
+        </div>
+        <div class="modal-body">
+          <p>This request type requires a PEP & Sanctions screening document.</p>
+          <p style="margin-top: 10px; font-weight: 600;">Would you like to search the UK Sanctions List now?</p>
+          <p style="margin-top: 10px; font-size: 13px; color: #666;">This will open the OFSI search tool with your client's details pre-filled. After completing the search and uploading the PDF, you'll return to this form with your data intact.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="ofsiRequiredCancel" class="modal-btn modal-btn-secondary">Cancel</button>
+          <button type="button" id="ofsiRequiredSearch" class="modal-btn modal-btn-primary">Search UK Sanctions List</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Popup -->
+  <div id="errorPopup" class="error-popup hidden">
+      <div class="error-popup-header">Error</div>
+    <div class="error-popup-content">
+        <span id="errorMessage"></span>
+        <button id="closeError">&times;</button>
+          </div>
+  </div>
+          </div>
+
+  <!-- Print.js library for print dialog -->
+  <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
+  
+  <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
+  <script src="js/jurisdiction-autocomplete.js?v=3145240"></script>
+  
+  <!-- Google libphonenumber for phone validation (must load before core script) -->
+  <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
+  
+  <!-- Core JavaScript -->
+    <script src="js/request-form-core.js?v=3145240"></script>
+  
+  <!-- Request Type Modules -->
+  <script src="js/request-types/formJ.js?v=3145240"></script>
+  <script src="js/request-types/formK.js?v=3145240"></script>
+  <script src="js/request-types/formE.js?v=3145240"></script>
+  <script src="js/request-types/esof.js?v=3145240"></script>
+  <script src="js/request-types/note.js?v=3145240"></script>
+  <script src="js/request-types/update.js?v=3145240"></script>
+  <script src="js/request-types/updatePep.js?v=3145240"></script>
+  
+  <!-- Initialize Autocomplete Fields -->
+  <script>
+    // Initialize all autocomplete fields immediately (DOM already loaded since scripts are at bottom)
+    console.log('🔍 Initializing autocomplete fields in request-form...');
+    initializeCountryAutocomplete('currentCountry', 'currentCountryDropdown');
+    initializeCountryAutocomplete('previousCountry', 'previousCountryDropdown');
+    initializePhoneCodeAutocomplete('phoneCountryCode', 'phoneCountryCodeDropdown');
+    initializeJurisdictionAutocomplete('registrationCountry', 'registrationCountryDropdown');
+    console.log('\u2705 Autocomplete initialization complete');
+  </script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = '3145240';
+    console.log('[request-form] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
+</body>
+</html>

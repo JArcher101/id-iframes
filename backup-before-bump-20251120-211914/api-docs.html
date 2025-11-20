@@ -1,0 +1,3631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID iFrames - API Documentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-main: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-code: #1e293b;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --sidebar-width: 280px;
+            --header-height: 64px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-primary);
+            line-height: 1.6;
+            background: var(--bg-secondary);
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--bg-main);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .header-subtitle {
+            margin-left: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            margin-top: var(--header-height);
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background: var(--bg-main);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 2rem 0;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            padding: 0 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 0.625rem 1.5rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.15s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover {
+            background: var(--bg-secondary);
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            background: var(--bg-secondary);
+            color: var(--primary);
+            border-left-color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 3rem;
+            max-width: 1200px;
+        }
+
+        .section {
+            background: var(--bg-main);
+            border-radius: 12px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .section h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            color: var(--text-primary);
+        }
+
+        .section h4 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .section p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        /* Message Type Badge */
+        .message-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin: 1rem 0;
+        }
+
+        .message-type.incoming {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .message-type.outgoing {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .arrow {
+            font-size: 1rem;
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background: var(--bg-code);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            border: 1px solid #334155;
+        }
+
+        .code-block pre {
+            margin: 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            line-height: 1.7;
+            color: #e2e8f0;
+        }
+
+        .code-block .keyword { color: #c678dd; }
+        .code-block .string { color: #98c379; }
+        .code-block .number { color: #d19a66; }
+        .code-block .comment { color: #5c6370; font-style: italic; }
+        .code-block .function { color: #61afef; }
+        .code-block .property { color: #e06c75; }
+
+        /* Live Demo */
+        .demo-container {
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .demo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .demo-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .demo-iframe {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            margin-bottom: 1rem;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .demo-output {
+            background: var(--bg-code);
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        /* Table */
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.875rem;
+        }
+
+        .api-table th {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .api-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .api-table code {
+            background: var(--bg-secondary);
+            padding: 0.125rem 0.375rem;
+            border-radius: 3px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8125rem;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .badge-required {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-optional {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.25rem;
+            margin: 1.5rem 0;
+            border-radius: 6px;
+        }
+
+        .info-box-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid var(--warning);
+        }
+
+        .warning-box .info-box-title {
+            color: #92400e;
+        }
+
+        /* Scroll to top */
+        .scroll-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.15s ease;
+        }
+
+        .scroll-top:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .scroll-top.visible {
+            display: flex;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            :root {
+                --sidebar-width: 280px;
+            }
+        }
+
+        /* Syntax highlighting helpers */
+        .hl-json { color: #e2e8f0; }
+        .hl-key { color: #e06c75; }
+        .hl-string { color: #98c379; }
+        .hl-number { color: #d19a66; }
+        .hl-boolean { color: #c678dd; }
+        .hl-null { color: #c678dd; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>ID iFrames</h1>
+        <span class="header-subtitle">API Documentation v1.0</span>
+    </header>
+
+    <!-- Container -->
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar" id="sidebar">
+            <div class="nav-section">
+                <div class="nav-section-title">Getting Started</div>
+                <a href="#introduction" class="nav-link">Introduction</a>
+                <a href="#integration" class="nav-link">Integration Guide</a>
+                <a href="#security" class="nav-link">Security</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Components</div>
+                <a href="#thirdfort-check" class="nav-link">Thirdfort Check Manager</a>
+                <a href="#audit-log" class="nav-link">Audit Log Viewer</a>
+                <a href="#wallboard" class="nav-link">Wallboard Dashboard</a>
+                <a href="#client-details" class="nav-link">Client Details Form</a>
+                <a href="#single-image-viewer" class="nav-link">Single Image Viewer</a>
+                <a href="#image-viewer" class="nav-link">Image Viewer</a>
+                <a href="#migration-tagger" class="nav-link">Migration Tagger</a>
+                <a href="#image-uploader" class="nav-link">Image Uploader</a>
+                <a href="#document-viewer" class="nav-link">Document Viewer</a>
+                <a href="#message-iframe" class="nav-link">Message iframe</a>
+                <a href="#report-uploader" class="nav-link">Report Uploader</a>
+                <a href="#cashiers-log" class="nav-link">Cashiers Log</a>
+                <a href="#request-form" class="nav-link">Request Form</a>
+                <a href="#chart-viewer" class="nav-link">Chart Viewer</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Reference</div>
+                <a href="#message-types" class="nav-link">Message Types</a>
+                <a href="#data-structures" class="nav-link">Data Structures</a>
+                <a href="#error-handling" class="nav-link">Error Handling</a>
+                <a href="#troubleshooting" class="nav-link">Troubleshooting</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Thirdfort Check Manager -->
+            <section id="thirdfort-check" class="section">
+                <h2>Thirdfort Check Manager</h2>
+                <p><strong>File:</strong> <code>thirdfort-check.html</code></p>
+                <p>Comprehensive check creation and management interface for Thirdfort API integration. Supports four check types (IDV, Lite Screen, Electronic ID, KYB) with intelligent routing, dynamic task configuration, and full validation.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> client-data, address-results, address-data<br>
+                    <strong>Sends:</strong> request-thirdfort-check, address-search, address-lookup<br>
+                    <strong>Check Types:</strong> IDV, Lite Screen, Electronic ID, KYB</p>
+                </div>
+
+                <h3>Key Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li><strong>Four Check Types:</strong> IDV (Identity Verification), Lite Screen, Electronic ID, KYB (Know Your Business)</li>
+                    <li><strong>Matter Category Routing:</strong> Conveyancing, Property Other, Private Client, Other</li>
+                    <li><strong>Intelligent Auto-Selection:</strong> Based on work type, relation, and client tags (Form E, eSoF Requested)</li>
+                    <li><strong>Electronic ID Types:</strong> Standard ID (KYC + IDV) or Additional Tasks Only</li>
+                    <li><strong>Dynamic Task Configuration:</strong> Context-aware checkbox visibility and auto-selection</li>
+                    <li><strong>IDV Image Selection:</strong> Exact document type matching with front/back side handling</li>
+                    <li><strong>Popup Viewer Integration:</strong> Opens images in <code>single-image-viewer.html</code></li>
+                    <li><strong>Google libphonenumber:</strong> Country-aware mobile validation and E.164 formatting</li>
+                    <li><strong>Searchable Autocomplete:</strong> Phone codes, countries, jurisdictions with blue code badges</li>
+                    <li><strong>Address Lookup:</strong> getaddress.io integration via parent proxy</li>
+                    <li><strong>Multi-Endpoint Support:</strong> Constructs separate requests for different Thirdfort APIs</li>
+                    <li><strong>Mock Data Testing:</strong> Built-in test scenarios for development</li>
+                </ul>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>client-data</code>
+                </div>
+                <p>Loads complete client data including ID images, matter details, and tags for intelligent auto-selection.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"client-data"</span>,
+  <span class="property">"data"</span>: {
+    <span class="property">"_id"</span>: <span class="string">"bd8bee6a-465b-4d43-9a8a-396f9081b649"</span>,
+    <span class="property">"cD"</span>: {
+      <span class="property">"fe"</span>: <span class="string">"BA"</span>,
+      <span class="property">"n"</span>: <span class="string">"Mr J Archer"</span>,
+      <span class="property">"cN"</span>: <span class="number">50</span>,
+      <span class="property">"mN"</span>: <span class="string">"52"</span>
+    },
+    <span class="property">"wT"</span>: <span class="string">"Purchase of"</span>,
+    <span class="property">"r"</span>: <span class="string">"Our Client"</span>,
+    <span class="property">"mD"</span>: <span class="string">"21 Green Lane"</span>,
+    <span class="property">"tags"</span>: [<span class="string">"formE"</span>, <span class="string">"eSoF Requested"</span>],
+    <span class="property">"i"</span>: {<span class="property">"a"</span>: <span class="keyword">true</span>, <span class="property">"p"</span>: <span class="keyword">true</span>, <span class="property">"l"</span>: <span class="keyword">false</span>},
+    <span class="property">"cI"</span>: {
+      <span class="property">"n"</span>: {<span class="property">"t"</span>: <span class="string">"Mr"</span>, <span class="property">"f"</span>: <span class="string">"Jacob"</span>, <span class="property">"m"</span>: <span class="string">"Robert"</span>, <span class="property">"l"</span>: <span class="string">"Archer-Moran"</span>},
+      <span class="property">"b"</span>: <span class="string">"11-01-2001"</span>,
+      <span class="property">"m"</span>: <span class="string">"+447506430094"</span>,
+      <span class="property">"e"</span>: <span class="string">"jacob@example.com"</span>,
+      <span class="property">"a"</span>: {
+        <span class="property">"building_number"</span>: <span class="string">"94"</span>,
+        <span class="property">"street"</span>: <span class="string">"Southgate Street"</span>,
+        <span class="property">"town"</span>: <span class="string">"Redruth"</span>,
+        <span class="property">"postcode"</span>: <span class="string">"TR15 2ND"</span>,
+        <span class="property">"country"</span>: <span class="string">"GBR"</span>
+      }
+    },
+    <span class="property">"idI"</span>: [
+      {
+        <span class="property">"type"</span>: <span class="string">"PhotoID"</span>,
+        <span class="property">"document"</span>: <span class="string">"Passport"</span>,
+        <span class="property">"side"</span>: <span class="string">"Single"</span>,
+        <span class="property">"s3Key"</span>: <span class="string">"protected/passport-key.jpg"</span>,
+        <span class="property">"liveUrl"</span>: <span class="string">"https://s3.amazonaws.com/..."</span>
+      }
+    ]
+  }
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+                
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>request-thirdfort-check</code>
+                </div>
+                <p>Submits complete check request with validation. Returns 1-3 request objects for different Thirdfort API endpoints.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"request-thirdfort-check"</span>,
+  <span class="property">"checkData"</span>: {
+    <span class="property">"_id"</span>: <span class="string">"bd8bee6a-465b-4d43-9a8a-396f9081b649"</span>,
+    <span class="property">"checkType"</span>: <span class="string">"electronic-id"</span>,
+    <span class="property">"matterCategory"</span>: <span class="string">"conveyancing"</span>,
+    <span class="property">"matterSubCategory"</span>: <span class="string">"purchaser"</span>,
+    <span class="property">"electronicIdType"</span>: <span class="string">"standard"</span>
+  },
+  <span class="property">"apiRequests"</span>: [
+    {
+      <span class="property">"endpoint"</span>: <span class="string">"electronic-id"</span>,
+      <span class="property">"requestData"</span>: {
+        <span class="property">"actor"</span>: {
+          <span class="property">"full_name"</span>: <span class="string">"Jacob Robert Archer-Moran"</span>,
+          <span class="property">"phone"</span>: <span class="string">"+447506430094"</span>,
+          <span class="property">"email"</span>: <span class="string">"jacob@example.com"</span>
+        },
+        <span class="property">"check_reference"</span>: <span class="string">"21 Green Lane"</span>
+      }
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Check Types</h3>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Check Type</th>
+                            <th>Description</th>
+                            <th>Requirements</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>IDV</code></td>
+                            <td>Identity Verification with document image selection</td>
+                            <td>Document type, front/back images from existing Photo IDs</td>
+                        </tr>
+                        <tr>
+                            <td><code>Lite Screen</code></td>
+                            <td>Basic identity verification</td>
+                            <td>Country, address, optional PEP monitoring</td>
+                        </tr>
+                        <tr>
+                            <td><code>Electronic ID</code></td>
+                            <td>Full digital ID check with tasks</td>
+                            <td>Matter category, personal details, dynamic task configuration</td>
+                        </tr>
+                        <tr>
+                            <td><code>KYB</code></td>
+                            <td>Know Your Business verification</td>
+                            <td>Business name, entity details or linking</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Matter Categories</h3>
+                <div class="info-box">
+                    <div class="info-box-title">🎯 Intelligent Routing</div>
+                    <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
+                        <li><strong>Conveyancing:</strong> Sale, Purchase, Transfer, Lease → Purchaser/Gifter/Seller/Other</li>
+                        <li><strong>Property Other:</strong> Equity Release, Re-mortgaging, Auction → Purchaser/Seller/Landlord/Tenant</li>
+                        <li><strong>Private Client:</strong> Wills, LPA, Probate, Estates, Deeds</li>
+                        <li><strong>Other:</strong> Unrecognized work types</li>
+                    </ul>
+                </div>
+
+                <h3>Dynamic Task Configuration</h3>
+                <p>Electronic ID tasks are automatically configured based on matter category, sub-type, work type, and client tags:</p>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><strong>Proof of Address:</strong> Always auto-selected</li>
+                    <li><strong>Proof of Ownership:</strong> Sellers, Landlords, specific scenarios</li>
+                    <li><strong>eSoF Questionnaire:</strong> Purchase scenarios (unless Form E without eSoF tag)</li>
+                    <li><strong>eSoW Bank Linking:</strong> Purchase scenarios (unless Form E without eSoF tag)</li>
+                    <li><strong>PEP Monitoring:</strong> Standard ID check type only</li>
+                    <li><strong>International Address Verification:</strong> Non-GBR addresses only</li>
+                </ul>
+
+                <h3>Autocomplete System</h3>
+                <p>All forms use a shared autocomplete system with blue code badges:</p>
+                <div class="code-block">
+                    <pre><code><span class="comment">// Phone Country Code</span>
+<span class="string">"🇬🇧 +44 UK"</span>  <span class="comment">// Display</span>
+<span class="property">data-phone-code</span>=<span class="string">"+44"</span>  <span class="comment">// Stored value</span>
+
+<span class="comment">// Address Country</span>
+<span class="string">"United Kingdom [GBR]"</span>  <span class="comment">// Display with blue badge</span>
+<span class="property">data-country-code</span>=<span class="string">"GBR"</span>  <span class="comment">// Stored value</span>
+
+<span class="comment">// Business Jurisdiction</span>
+<span class="string">"United Kingdom [GB]"</span>  <span class="comment">// Display with blue badge</span>
+<span class="property">data-jurisdiction-code</span>=<span class="string">"GB"</span>  <span class="comment">// Stored value</span></code></pre>
+                </div>
+
+                <h3>Example Integration</h3>
+                <div class="code-block">
+                    <pre><code><span class="keyword">const</span> thirdfortFrame = document.getElementById(<span class="string">'thirdfortCheck'</span>).contentWindow;
+
+<span class="comment">// Send client data</span>
+thirdfortFrame.postMessage({
+  <span class="property">type</span>: <span class="string">'client-data'</span>,
+  <span class="property">data</span>: {
+    <span class="property">_id</span>: <span class="string">'client-id-123'</span>,
+    <span class="property">cD</span>: {<span class="property">fe</span>: <span class="string">'BA'</span>, <span class="property">n</span>: <span class="string">'Mr J Archer'</span>, <span class="property">cN</span>: <span class="number">50</span>, <span class="property">mN</span>: <span class="string">'52'</span>},
+    <span class="property">wT</span>: <span class="string">'Purchase of'</span>,
+    <span class="property">r</span>: <span class="string">'Our Client'</span>,
+    <span class="property">mD</span>: <span class="string">'21 Green Lane'</span>,
+    <span class="property">tags</span>: [<span class="string">'formE'</span>, <span class="string">'eSoF Requested'</span>],
+    <span class="property">cI</span>: {...}
+  }
+}, <span class="string">'*'</span>);
+
+<span class="comment">// Listen for check submission</span>
+window.addEventListener(<span class="string">'message'</span>, (event) => {
+  <span class="keyword">if</span> (event.data.type === <span class="string">'request-thirdfort-check'</span>) {
+    <span class="keyword">const</span> {checkData, apiRequests} = event.data;
+    
+    <span class="comment">// Process each API request object</span>
+    apiRequests.forEach(<span class="property">req</span> => {
+      <span class="keyword">if</span> (req.endpoint === <span class="string">'electronic-id'</span>) {
+        submitToThirdfortElectronicID(req.requestData);
+      } <span class="keyword">else if</span> (req.endpoint === <span class="string">'idv-check'</span>) {
+        submitToThirdfortIDV(req.requestData);
+      }
+    });
+  }
+});</code></pre>
+                </div>
+            </section>
+
+            <!-- Introduction -->
+            <section id="introduction" class="section">
+                <h2>Introduction</h2>
+                <p>ID iFrames is a collection of standalone HTML components designed for image viewing, document management, and communication interfaces. All components use the <code>window.postMessage()</code> API for secure parent-child communication.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">Why postMessage?</div>
+                    <p style="margin: 0; color: var(--text-secondary);">The postMessage API enables secure cross-origin communication between the parent window and embedded iframes, allowing data exchange without compromising security.</p>
+                </div>
+
+                <div class="warning-box info-box">
+                    <div class="info-box-title">Version Tracking</div>
+                    <p style="margin: 0; color: var(--text-secondary);">
+                        Every iframe logs <code>[iframe-name] version &lt;uuid&gt;</code> when it loads. Run <code>scripts/bump-iframes.ps1</code> before committing to generate the UUID, cache-bust local CSS/JS with <code>?v=&lt;uuid&gt;</code>, and append the deployment to <code>iframe-version-log.md</code>. Commit titles must include the UUID (the script appends <code>[uuid]</code> automatically) so you can correlate console output with a repo state instantly.
+                    </p>
+                </div>
+
+                <h3>Key Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Standalone HTML files - no build process required</li>
+                    <li>Searchable autocomplete dropdowns - phone codes, countries, jurisdictions with blue [CODE] badges</li>
+                    <li>S3 direct upload with presigned URLs</li>
+                    <li>Google libphonenumber - international phone validation and E.164 formatting</li>
+                    <li>Custom typography with automatic fallbacks</li>
+                    <li>Responsive design across all components</li>
+                    <li>Consistent API patterns across iframes</li>
+                    <li>Thirdfort API compliance - proper address formatting and validation</li>
+                </ul>
+                
+                <div class="info-box">
+                    <div class="info-box-title">🔍 Autocomplete System</div>
+                    <p style="margin: 0; color: var(--text-secondary);">All forms use a shared autocomplete infrastructure (<code>js/jurisdiction-autocomplete.js</code>) for consistent UX. Displays country names with blue code badges (e.g., "United Kingdom [GBR]") and stores codes in dataset attributes for proper API integration.</p>
+                </div>
+            </section>
+
+            <!-- Integration Guide -->
+            <section id="integration" class="section">
+                <h2>Integration Guide</h2>
+                
+                <h3>Basic Setup</h3>
+                <p>Embed an iframe and set up bidirectional communication:</p>
+
+                <div class="code-block">
+                    <pre><code><span class="keyword">&lt;iframe</span> 
+  <span class="property">id</span>=<span class="string">"imageViewer"</span>
+  <span class="property">src</span>=<span class="string">"image-viewer.html"</span>
+  <span class="property">width</span>=<span class="string">"100%"</span>
+  <span class="property">height</span>=<span class="string">"800"</span><span class="keyword">&gt;&lt;/iframe&gt;</span>
+
+<span class="keyword">&lt;script&gt;</span>
+  <span class="keyword">const</span> iframe = <span class="function">document.getElementById</span>(<span class="string">'imageViewer'</span>).contentWindow;
+  
+  <span class="comment">// Listen for messages from iframe</span>
+  window.<span class="function">addEventListener</span>(<span class="string">'message'</span>, <span class="keyword">function</span>(event) {
+    <span class="function">console.log</span>(<span class="string">'Received:'</span>, event.data);
+    
+    <span class="keyword">if</span> (event.data.type === <span class="string">'image-data'</span>) {
+      <span class="comment">// Handle upload request</span>
+      <span class="function">handleImageUpload</span>(event.data);
+    }
+  });
+  
+  <span class="comment">// Send data to iframe after it loads</span>
+  <span class="function">document.getElementById</span>(<span class="string">'imageViewer'</span>).<span class="function">addEventListener</span>(<span class="string">'load'</span>, <span class="keyword">function</span>() {
+    iframe.<span class="function">postMessage</span>({
+      type: <span class="string">'display-images'</span>,
+      data: [],
+      allowUploads: <span class="keyword">true</span>,
+      clientData: { fe: <span class="string">'TL'</span>, clientNumber: <span class="string">'12345'</span> },
+      userEmail: <span class="string">'user@example.com'</span>
+    }, <span class="string">'*'</span>);
+  });
+<span class="keyword">&lt;/script&gt;</span></code></pre>
+                </div>
+
+                <div class="warning-box info-box">
+                    <div class="info-box-title">⚠️ Production Security</div>
+                    <p style="margin: 0; color: #78350f;">Replace <code>'*'</code> with your specific origin (e.g., <code>'https://yourdomain.com'</code>) and always validate <code>event.origin</code> in message listeners.</p>
+                </div>
+            </section>
+
+            <!-- Security -->
+            <section id="security" class="section">
+                <h2>Security</h2>
+                
+                <h3>Origin Validation</h3>
+                <p>Always validate message origins in production:</p>
+
+                <div class="code-block">
+                    <pre><code>window.<span class="function">addEventListener</span>(<span class="string">'message'</span>, <span class="keyword">function</span>(event) {
+  <span class="keyword">const</span> allowedOrigins = [<span class="string">'https://yourdomain.com'</span>];
+  
+  <span class="keyword">if</span> (!allowedOrigins.<span class="function">includes</span>(event.origin)) {
+    <span class="function">console.warn</span>(<span class="string">'Blocked message from:'</span>, event.origin);
+    <span class="keyword">return</span>;
+  }
+  
+  <span class="comment">// Process message safely</span>
+  <span class="function">handleMessage</span>(event.data);
+});</code></pre>
+                </div>
+            </section>
+
+            <!-- Audit Log Viewer -->
+            <section id="audit-log" class="section">
+                <h2>Audit Log Viewer</h2>
+                <p><strong>File:</strong> <code>audit-log.html</code></p>
+                <p>Timeline-based audit trail viewer that displays case activity, status changes, and matter details. Features visual badges for status tracking, risk indicators, PEP status, and PDF export capability.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> log-data, clear-data, audit-download<br>
+                    <strong>Sends:</strong> None (display-only component)</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="auditLogDemo" 
+                        src="audit-log.html" 
+                        class="demo-iframe" 
+                        height="600"
+                        title="Audit Log Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendAuditLogData()">Load Sample Audit Log</button>
+                        <button class="btn btn-secondary" onclick="sendClearAuditLog()">Clear Log</button>
+                        <button class="btn btn-secondary" onclick="sendDownloadAudit()">Download PDF</button>
+                    </div>
+                    <div class="demo-output" id="auditLogConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>log-data</code>
+                </div>
+                <p>Sends audit log entries to display in timeline format.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"log-data"</span>,
+  <span class="property">"data"</span>: [
+    {
+      <span class="property">"timestamp"</span>: <span class="string">"2025-10-14T10:30:00Z"</span>,
+      <span class="property">"action"</span>: <span class="string">"Status Change"</span>,
+      <span class="property">"user"</span>: <span class="string">"staff@example.com"</span>,
+      <span class="property">"status"</span>: [<span class="string">"InProgress"</span>, <span class="string">"Verified"</span>],
+      <span class="property">"riskIndicator"</span>: <span class="keyword">false</span>,
+      <span class="property">"pepStatus"</span>: <span class="string">"NPEP"</span>,
+      <span class="property">"pepMonitoring"</span>: <span class="keyword">false</span>,
+      <span class="property">"safeHarbour"</span>: <span class="keyword">true</span>,
+      <span class="property">"matterClient"</span>: <span class="string">"John Doe"</span>,
+      <span class="property">"matterNumber"</span>: <span class="string">"12345"</span>,
+      <span class="property">"matterFE"</span>: <span class="string">"TL"</span>,
+      <span class="property">"matterDescription"</span>: <span class="string">"Property Purchase"</span>,
+      <span class="property">"lastLog"</span>: {
+        <span class="property">"message"</span>: <span class="string">"Client ID verified in person"</span>,
+        <span class="property">"user"</span>: <span class="string">"cashier@example.com"</span>,
+        <span class="property">"time"</span>: <span class="string">"10/14/2025, 2:15:00 PM"</span>,
+        <span class="property">"file"</span>: {
+          <span class="property">"name"</span>: <span class="string">"scan.pdf"</span>
+        }
+      },
+      <span class="property">"lastMessage"</span>: {
+        <span class="property">"message"</span>: <span class="string">"Documents uploaded to system"</span>,
+        <span class="property">"user"</span>: <span class="string">"staff@example.com"</span>,
+        <span class="property">"time"</span>: <span class="string">"10/14/2025, 2:20:00 PM"</span>,
+        <span class="property">"type"</span>: <span class="string">"Staff"</span>,
+        <span class="property">"file"</span>: {
+          <span class="property">"name"</span>: <span class="string">"report.pdf"</span>
+        }
+      }
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>clear-data</code>
+                </div>
+                <p>Clears all audit log entries and returns to empty state.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"clear-data"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>audit-download</code>
+                </div>
+                <p>Triggers PDF download of the audit log.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"audit-download"</span>
+}</code></pre>
+                </div>
+
+                <h3>Status & Badges</h3>
+                <div class="info-box">
+                    <div class="info-box-title">Status Values</div>
+                    <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
+                        <li><code>Pending</code> - Initial state</li>
+                        <li><code>InProgress</code> - Work in progress</li>
+                        <li><code>Pass</code> - Checks passed</li>
+                        <li><code>Fail</code> - Checks failed</li>
+                        <li><code>Completed</code> - Fully completed</li>
+                    </ul>
+                </div>
+
+                <div class="info-box" style="margin-top: 1rem;">
+                    <div class="info-box-title">PEP Status Values</div>
+                    <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
+                        <li><code>CPEP</code> - Confirmed PEP (displays as "PEP")</li>
+                        <li><code>PPEP</code> - Potential PEP (displays as "Potential PEP")</li>
+                        <li><code>NPEP</code> - Not PEP (displays as "Outruled PEP")</li>
+                    </ul>
+                </div>
+
+                <h3>Example Usage</h3>
+                <div class="code-block">
+                    <pre><code><span class="comment">// Display audit log with multiple entries</span>
+<span class="keyword">const</span> auditFrame = document.getElementById(<span class="string">'auditLog'</span>).contentWindow;
+
+auditFrame.postMessage({
+  <span class="property">type</span>: <span class="string">'log-data'</span>,
+  <span class="property">data</span>: [
+    {
+      <span class="property">timestamp</span>: <span class="keyword">new</span> Date().toISOString(),
+      <span class="property">action</span>: <span class="string">'EID Check Completed'</span>,
+      <span class="property">user</span>: <span class="string">'system@example.com'</span>,
+      <span class="property">status</span>: [<span class="string">'Pass'</span>],
+      <span class="property">riskIndicator</span>: <span class="keyword">false</span>,
+      <span class="property">pepStatus</span>: <span class="string">'NPEP'</span>,
+      <span class="property">matterClient</span>: <span class="string">'Jane Smith'</span>,
+      <span class="property">matterNumber</span>: <span class="string">'M67890'</span>,
+      <span class="property">matterFE</span>: <span class="string">'JS'</span>
+    }
+  ]
+}, <span class="string">'*'</span>);
+
+<span class="comment">// Clear the log</span>
+auditFrame.postMessage({ <span class="property">type</span>: <span class="string">'clear-data'</span> }, <span class="string">'*'</span>);
+
+<span class="comment">// Download PDF</span>
+auditFrame.postMessage({ <span class="property">type</span>: <span class="string">'audit-download'</span> }, <span class="string">'*'</span>);</code></pre>
+                </div>
+            </section>
+
+            <!-- Wallboard Dashboard -->
+            <section id="wallboard" class="section">
+                <h2>Wallboard Dashboard</h2>
+                <p><strong>File:</strong> <code>wallboard-iframe.html</code></p>
+                <p>Real-time metrics dashboard displaying case statistics across fee earners. Features auto-refresh countdown timer, interactive analytics with charts, and PDF export.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> wallboard-data, analytics-data, analytics-error<br>
+                    <strong>Sends:</strong> refresh-request, fe-analytics</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="wallboardDemo" 
+                        src="wallboard-iframe.html" 
+                        class="demo-iframe" 
+                        height="800"
+                        title="Wallboard Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendWallboardData()">Load Wallboard Data</button>
+                        <button class="btn btn-secondary" onclick="sendWallboardAnalytics()">Send Analytics (SJM)</button>
+                        <button class="btn btn-secondary" onclick="clearWallboardConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="wallboardConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>wallboard-data</code>
+                </div>
+                <p>Sends metrics data and fee earner options.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"wallboard-data"</span>,
+  <span class="property">"wallboard"</span>: [
+    {
+      <span class="property">"title"</span>: <span class="string">"Outstanding total"</span>,
+      <span class="property">"sjm"</span>: <span class="number">5</span>,
+      <span class="property">"mb"</span>: <span class="number">3</span>,
+      <span class="property">"tl"</span>: <span class="number">8</span>,
+      <span class="property">"total"</span>: <span class="number">16</span>
+    }
+  ],
+  <span class="property">"feeEarnerOptions"</span>: [
+    { <span class="property">"label"</span>: <span class="string">"ALL"</span>, <span class="property">"value"</span>: <span class="string">"ALL"</span> },
+    { <span class="property">"label"</span>: <span class="string">"Stephen Morrison"</span>, <span class="property">"value"</span>: <span class="string">"SJM"</span> }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>refresh-request</code>
+                </div>
+                <p>Requests fresh wallboard data (auto-sent every 5 minutes).</p>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>fe-analytics</code>
+                </div>
+                <p>Requests detailed analytics for a fee earner.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"fe-analytics"</span>,
+  <span class="property">"fe"</span>: <span class="string">"SJM"</span>
+}</code></pre>
+                </div>
+
+                <h3>Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>5-minute auto-refresh countdown timer</li>
+                    <li>Interactive fee earner dropdown</li>
+                    <li>Analytics view with chart visualizations</li>
+                    <li>PDF export functionality</li>
+                    <li>Supports aggregate (ALL) and individual views</li>
+                </ul>
+            </section>
+
+            <!-- Client Details Form -->
+            <section id="client-details" class="section">
+                <h2>Client Details Form</h2>
+                <p><strong>File:</strong> <code>client-details.html</code></p>
+                <p>Lightweight client details and address form (NO file uploads). Features searchable autocomplete dropdowns for phone codes, countries, and jurisdictions with blue code badges. Focuses on personal information and Thirdfort-formatted addresses. Mobile phone numbers are validated using Google's libphonenumber library.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> client-data, entity-true, entity-false, allowEdits-true/false, request-data, address-results, address-data<br>
+                    <strong>Sends:</strong> new-data, address-search, address-lookup, validation-error, disable-close<br>
+                    <strong>Autocomplete:</strong> Phone codes, countries, jurisdictions with blue [CODE] badges</p>
+                </div>
+
+                <h3>Key Difference</h3>
+                <div class="info-box warning">
+                    <div class="info-box-title">⚠️ No File Uploads</div>
+                    <p style="margin: 0; color: var(--text-secondary);">Unlike <code>image-uploader.html</code>, this form does NOT handle file uploads. Use this for lightweight client data collection only.</p>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>client-data</code>
+                </div>
+                <p>Loads client data into form.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"client-data"</span>,
+  <span class="property">"entity"</span>: <span class="keyword">false</span>,
+  <span class="property">"allowEdits"</span>: <span class="keyword">true</span>,
+  <span class="property">"clientData"</span>: {
+    <span class="property">"n"</span>: {<span class="property">"t"</span>: <span class="string">"Mr"</span>, <span class="property">"f"</span>: <span class="string">"John"</span>, <span class="property">"l"</span>: <span class="string">"Doe"</span>},
+    <span class="property">"b"</span>: <span class="string">"01-01-1990"</span>,
+    <span class="property">"a"</span>: {<span class="property">"street"</span>: <span class="string">"Baker St"</span>, <span class="property">"town"</span>: <span class="string">"London"</span>, <span class="property">"postcode"</span>: <span class="string">"NW1 6XE"</span>}
+  }
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>new-data</code>
+                </div>
+                <p>Sends validated form data. Phone numbers are validated using Google's libphonenumber library and formatted in E.164 international format.</p>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>address-search</code>
+                </div>
+                <p>Requests address autocomplete.</p>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>validation-error</code>
+                </div>
+                <p>Notifies parent of validation failures, including phone number validation using Google's libphonenumber library.</p>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>disable-close</code>
+                </div>
+                <p>Prevents parent from closing due to unsaved changes.</p>
+
+                <h3>Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li><strong>Searchable Autocomplete:</strong> Phone codes, countries, jurisdictions with blue code badges</li>
+                    <li><strong>Entity Mode:</strong> Toggle between individual and business/charity</li>
+                    <li><strong>Address Autocomplete:</strong> getaddress.io integration</li>
+                    <li><strong>Automatic Thirdfort Formatting:</strong> Proper API address format conversion</li>
+                    <li><strong>30-Day LRU Cache:</strong> Fast address lookups</li>
+                    <li><strong>Google libphonenumber:</strong> Country-aware mobile validation</li>
+                    <li><strong>E.164 Phone Format:</strong> International phone number output</li>
+                    <li><strong>25/25/50 Manual Address Layout:</strong> Flat, building number, building name on one row</li>
+                    <li><strong>Blue Code Badges:</strong> Visual consistency across all forms</li>
+                    <li><strong>Business Data Handling:</strong> Returns basic info even without API link</li>
+                    <li><strong>Real-Time Validation:</strong> Immediate feedback on field errors</li>
+                </ul>
+            </section>
+
+            <!-- Single Image Viewer -->
+            <section id="single-image-viewer" class="section">
+                <h2>Single Image Viewer</h2>
+                <p><strong>File:</strong> <code>single-image-viewer.html</code></p>
+                <p>Standalone fullscreen image viewer with zoom and pan controls. <strong>Note:</strong> This component uses URL hash for data (not postMessage API).</p>
+
+                <div class="info-box warning">
+                    <div class="info-box-title">⚠️ Different Integration Pattern</div>
+                    <p style="margin: 0; color: var(--text-secondary);">This viewer does NOT use postMessage. Data is passed via URL hash parameter (base64 JSON).</p>
+                </div>
+
+                <h3>Integration</h3>
+                <div class="code-block">
+                    <pre><code><span class="comment">// Prepare image data</span>
+<span class="keyword">const</span> imageData = {
+  <span class="property">url</span>: <span class="string">'https://example.com/passport.jpg'</span>,
+  <span class="property">documentType</span>: <span class="string">'Passport'</span>,
+  <span class="property">side</span>: <span class="string">'Front'</span>,
+  <span class="property">uploader</span>: <span class="string">'staff@example.com'</span>,
+  <span class="property">date</span>: <span class="string">'2025-10-14 12:30:45'</span>
+};
+
+<span class="comment">// Encode as base64 JSON</span>
+<span class="keyword">const</span> encoded = <span class="function">btoa</span>(<span class="function">JSON.stringify</span>(imageData));
+
+<span class="comment">// Open in new window</span>
+window.<span class="function">open</span>(<span class="string">`single-image-viewer.html#${encoded}`</span>, <span class="string">'_blank'</span>);
+
+<span class="comment">// Or load in iframe</span>
+document.<span class="function">getElementById</span>(<span class="string">'viewer'</span>).src = <span class="string">`single-image-viewer.html#${encoded}`</span>;</code></pre>
+                </div>
+
+                <h3>Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>Zoom controls (In/Out buttons, mouse wheel, pinch)</li>
+                    <li>Pan with mouse drag or touch</li>
+                    <li>Double-click to reset zoom</li>
+                    <li>Document details banner</li>
+                    <li>Fullscreen display</li>
+                    <li>Touch gesture support</li>
+                </ul>
+
+                <h3>Data Fields</h3>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"url"</span>: <span class="string">"string"</span>,          <span class="comment">// Required - Image URL</span>
+  <span class="property">"documentType"</span>: <span class="string">"string"</span>,  <span class="comment">// Optional - e.g., "Passport"</span>
+  <span class="property">"side"</span>: <span class="string">"string"</span>,          <span class="comment">// Optional - "Front"/"Back"/"Single"</span>
+  <span class="property">"uploader"</span>: <span class="string">"string"</span>,      <span class="comment">// Optional - Email or name</span>
+  <span class="property">"date"</span>: <span class="string">"string"</span>           <span class="comment">// Optional - Any date format</span>
+}</code></pre>
+                </div>
+            </section>
+
+            <!-- Image Viewer -->
+            <section id="image-viewer" class="section">
+                <h2>Image Viewer</h2>
+                <p><strong>File:</strong> <code>image-viewer.html</code></p>
+                <p>Displays ID images (Photo ID and Address ID documents) with upload capabilities and image carousel.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-images, image-display, put-links, put-error, button-enable, button-disable<br>
+                    <strong>Sends:</strong> image-data, upload-success, refresh-images</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="imageViewerDemo" 
+                        src="image-viewer.html" 
+                        class="demo-iframe" 
+                        height="600"
+                        title="Image Viewer Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendDisplayImages()">Load Sample Images</button>
+                        <button class="btn btn-secondary" onclick="sendEmptyDisplay()">Clear Images</button>
+                        <button class="btn btn-secondary" onclick="clearConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="imageViewerConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>display-images</code>
+                </div>
+                <p>Initial display of existing images with upload permissions.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"display-images"</span>,
+  <span class="property">"data"</span>: [
+    {
+      <span class="property">"url"</span>: <span class="string">"https://example.com/image1.jpg"</span>,
+      <span class="property">"documentType"</span>: <span class="string">"Passport"</span>,
+      <span class="property">"date"</span>: <span class="string">"2025-10-01T12:00:00Z"</span>
+    }
+  ],
+  <span class="property">"allowUploads"</span>: <span class="keyword">true</span>,
+  <span class="property">"clientData"</span>: {
+    <span class="property">"fe"</span>: <span class="string">"TL"</span>,
+    <span class="property">"clientNumber"</span>: <span class="string">"12345"</span>,
+    <span class="property">"matterNumber"</span>: <span class="string">"M001"</span>,
+    <span class="property">"name"</span>: <span class="string">"John Doe"</span>
+  },
+  <span class="property">"userEmail"</span>: <span class="string">"user@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>put-links</code>
+                </div>
+                <p>Provides S3 PUT URLs for uploading images.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"put-links"</span>,
+  <span class="property">"links"</span>: [
+    {
+      <span class="property">"url"</span>: <span class="string">"https://s3.amazonaws.com/bucket/presigned-url"</span>,
+      <span class="property">"contentType"</span>: <span class="string">"image/jpeg"</span>
+    }
+  ],
+  <span class="property">"s3Keys"</span>: [...],
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>image-data</code>
+                </div>
+                <p>Requests PUT links for image upload.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"image-data"</span>,
+  <span class="property">"images"</span>: [
+    {
+      <span class="property">"documentType"</span>: <span class="string">"Passport"</span>,
+      <span class="property">"s3Key"</span>: <span class="keyword">null</span>,
+      <span class="property">"file"</span>: {
+        <span class="property">"name"</span>: <span class="string">"passport.jpg"</span>,
+        <span class="property">"type"</span>: <span class="string">"image/jpeg"</span>,
+        <span class="property">"size"</span>: <span class="number">1024000</span>
+      }
+    }
+  ],
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>upload-success</code>
+                </div>
+                <p>Notifies completion of successful upload.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"upload-success"</span>,
+  <span class="property">"docType"</span>: <span class="string">"Photo ID"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>check-images</code>
+                </div>
+                <p>Streams the latest selfie and passport image references so downstream iframes (for example, the Thirdfort Checks Manager) can render them inline without duplicating uploads.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"check-images"</span>,
+  <span class="property">"images"</span>: [
+    {
+      <span class="property">"s3Key"</span>: <span class="string">"protected/abc123"</span>,
+      <span class="property">"url"</span>: <span class="string">"https://s3.amazonaws.com/.../abc123?X-Amz-SignedHeaders=..."</span>,
+      <span class="property">"transactionId"</span>: <span class="string">"d4ahx6c23amg030yrxng"</span>,
+      <span class="property">"documentId"</span>: <span class="string">"d4ahxa523amg030yrxp0"</span>,
+      <span class="property">"type"</span>: <span class="string">"Selfie"</span>
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>refresh-images</code>
+                </div>
+                <p>Requests parent to reload image data (e.g., after successful upload).</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"refresh-images"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>
+}</code></pre>
+                </div>
+
+                <h3>Expected Message Flow</h3>
+                <ol style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Parent sends <code>display-images</code> to initialize the iframe</li>
+                    <li>User selects images to upload</li>
+                    <li>iframe sends <code>image-data</code> with file metadata</li>
+                    <li>Parent generates presigned URLs and sends <code>put-links</code> back</li>
+                    <li>iframe uploads directly to S3 using PUT requests</li>
+                    <li>iframe sends <code>upload-success</code> when complete</li>
+                    <li>iframe sends <code>refresh-images</code> to reload updated data</li>
+                </ol>
+
+                <h3>Properties Reference</h3>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>data</code></td>
+                            <td>Array</td>
+                            <td><span class="badge badge-required">Required</span></td>
+                            <td>Array of image objects to display</td>
+                        </tr>
+                        <tr>
+                            <td><code>allowUploads</code></td>
+                            <td>Boolean</td>
+                            <td><span class="badge badge-optional">Optional</span></td>
+                            <td>Enable/disable upload functionality</td>
+                        </tr>
+                        <tr>
+                            <td><code>clientData</code></td>
+                            <td>Object</td>
+                            <td><span class="badge badge-required">Required</span></td>
+                            <td>Client information object</td>
+                        </tr>
+                        <tr>
+                            <td><code>userEmail</code></td>
+                            <td>String</td>
+                            <td><span class="badge badge-required">Required</span></td>
+                            <td>Current user's email address</td>
+                        </tr>
+                        <tr>
+                            <td><code>_id</code></td>
+                            <td>String</td>
+                            <td><span class="badge badge-required">Required</span></td>
+                            <td>Database item identifier</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Migration Tagger -->
+            <section id="migration-tagger" class="section">
+                <h2>Migration Tagger</h2>
+                <p><strong>File:</strong> <code>migration-tagger.html</code></p>
+                <p>ID image migration tool for transferring existing Wix Media Gallery images to S3. Features hotkey-based tagging, batch processing (1-10 entries), and simplified document type classification.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> migration-batch, put-links, put-error, backend-error, network-error<br>
+                    <strong>Sends:</strong> image-data, migration-complete<br>
+                    <strong>Hotkeys:</strong> P, DF, DB, OS, OF, OB, A, Backspace, Enter</p>
+                </div>
+
+                <h3>Key Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li><strong>Batch Processing:</strong> 1-10 entries at a time for manageable migration</li>
+                    <li><strong>Split Layout:</strong> Image list (left) + Main tagging area (right)</li>
+                    <li><strong>Hotkey Tagging:</strong> P, DF, DB, OS, OF, OB, A for rapid classification</li>
+                    <li><strong>Clickable Hints:</strong> All hotkey badges are clickable for mouse/touch users</li>
+                    <li><strong>Auto-Progression:</strong> Automatically moves to next image after tagging</li>
+                    <li><strong>Entry Confirmation:</strong> Press Enter to confirm and move to next entry</li>
+                    <li><strong>Visual Feedback:</strong> Tagged images show badges, completed entries turn green</li>
+                    <li><strong>Backspace Navigation:</strong> Go back to re-tag previous images</li>
+                    <li><strong>Card-Based Upload:</strong> Each document shows upload status (Pending/Uploading/Success/Error)</li>
+                    <li><strong>System Transfer Marker:</strong> "System transfer" uploader for legacy migrations</li>
+                    <li><strong>Error Handling:</strong> Red popup for backend/network errors</li>
+                    <li><strong>wixData.bulkSave():</strong> Minimal update objects for efficient database updates</li>
+                </ul>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>migration-batch</code>
+                </div>
+                <p>Sends a batch of entries (1-10) with Wix Media Gallery images to tag and migrate.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"migration-batch"</span>,
+  <span class="property">"entries"</span>: [
+    {
+      <span class="property">"_id"</span>: <span class="string">"entry-id-123"</span>,
+      <span class="property">"cD"</span>: {
+        <span class="property">"c"</span>: <span class="number">23361</span>,
+        <span class="property">"m"</span>: <span class="string">"1"</span>,
+        <span class="property">"f"</span>: <span class="string">"LJD"</span>,
+        <span class="property">"n"</span>: <span class="string">"Mr N W-T Carne"</span>
+      },
+      <span class="property">"images"</span>: [
+        {
+          <span class="property">"src"</span>: <span class="string">"wix:image://v1/2b7d2d_65d4a6acd87f430cac26aae0f818300e~mv2.jpg/image.jpg"</span>,
+          <span class="property">"type"</span>: <span class="string">"image"</span>
+        }
+      ]
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+                
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>image-data</code>
+                </div>
+                <p>Requests PUT links for all tagged images (same format as image-viewer.html).</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"image-data"</span>,
+  <span class="property">"images"</span>: [
+    {
+      <span class="property">"type"</span>: <span class="string">"PhotoID"</span>,
+      <span class="property">"document"</span>: <span class="string">"Passport"</span>,
+      <span class="property">"side"</span>: <span class="string">"Single"</span>,
+      <span class="property">"name"</span>: <span class="string">"LJD-23361-1 - Mr N W-T Carne - Passport"</span>,
+      <span class="property">"uploader"</span>: <span class="string">"System transfer"</span>,
+      <span class="property">"date"</span>: <span class="string">"21/10/2025, 15:30:00"</span>,
+      <span class="property">"url"</span>: <span class="string">"wix:image://..."</span>,
+      <span class="property">"entryId"</span>: <span class="string">"entry-id-123"</span>
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>migration-complete</code>
+                </div>
+                <p>Notifies parent that all images uploaded. Returns minimal objects for wixData.bulkSave().</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"migration-complete"</span>,
+  <span class="property">"updates"</span>: [
+    {
+      <span class="property">"_id"</span>: <span class="string">"entry-id-123"</span>,
+      <span class="property">"idImages"</span>: [
+        {
+          <span class="property">"type"</span>: <span class="string">"PhotoID"</span>,
+          <span class="property">"document"</span>: <span class="string">"Passport"</span>,
+          <span class="property">"side"</span>: <span class="string">"Single"</span>,
+          <span class="property">"s3Key"</span>: <span class="string">"protected/LJD-23361-1-passport-xyz"</span>,
+          <span class="property">"uploader"</span>: <span class="string">"System transfer"</span>
+        }
+      ],
+      <span class="property">"imagesTransferred"</span>: <span class="keyword">true</span>
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Hotkey Controls</h3>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Hotkey</th>
+                            <th>Action</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>P</code></td>
+                            <td>Passport</td>
+                            <td>Tag as Passport (Single) → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>DF</code></td>
+                            <td>Driving Licence Front</td>
+                            <td>Tag as DL Front → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>DB</code></td>
+                            <td>Driving Licence Back</td>
+                            <td>Tag as DL Back → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>OS</code></td>
+                            <td>Other Photo ID Single</td>
+                            <td>Tag as Other Single → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>OF</code></td>
+                            <td>Other Photo ID Front</td>
+                            <td>Tag as Other Front → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>OB</code></td>
+                            <td>Other Photo ID Back</td>
+                            <td>Tag as Other Back → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>A</code></td>
+                            <td>Address ID</td>
+                            <td>Tag as Address ID (Other) → Auto-advance</td>
+                        </tr>
+                        <tr>
+                            <td><code>Backspace</code></td>
+                            <td>Previous Image</td>
+                            <td>Go back to re-tag previous image (cross-entry)</td>
+                        </tr>
+                        <tr>
+                            <td><code>Enter</code></td>
+                            <td>Confirm Entry</td>
+                            <td>Mark entry complete → Move to next entry</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Workflow</h3>
+                <ol style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Parent sends <code>migration-batch</code> with 1-10 entries</li>
+                    <li>User tags images using hotkeys or clicks</li>
+                    <li>Auto-progression to next image after each tag</li>
+                    <li>Entry turns green when all images tagged</li>
+                    <li>Press <code>Enter</code> to confirm and move to next entry</li>
+                    <li>Once all entries tagged, "Upload to S3" button enables</li>
+                    <li>Click upload → iframe sends <code>image-data</code></li>
+                    <li>Parent generates PUT links → sends <code>put-links</code></li>
+                    <li>iframe uploads to S3 from Wix public URLs</li>
+                    <li>iframe sends <code>migration-complete</code> with minimal updates</li>
+                    <li>Parent calls <code>wixData.bulkSave()</code></li>
+                </ol>
+
+                <h3>wixData.bulkSave() Integration</h3>
+                <div class="info-box">
+                    <div class="info-box-title">📝 Minimal Updates</div>
+                    <p style="margin: 0; color: var(--text-secondary);">The <code>migration-complete</code> message returns minimal objects containing only <code>_id</code>, <code>idImages</code>, and <code>imagesTransferred</code>. When passed to <code>wixData.bulkSave()</code>, only these fields are updated - all other entry fields remain unchanged.</p>
+                </div>
+
+                <div class="code-block">
+                    <pre><code><span class="comment">// Minimal update objects</span>
+<span class="keyword">const</span> updates = [
+  {
+    <span class="property">_id</span>: <span class="string">'entry-id-123'</span>,
+    <span class="property">idImages</span>: [...],
+    <span class="property">imagesTransferred</span>: <span class="keyword">true</span>
+  }
+];
+
+<span class="comment">// wixData.bulkSave() ONLY updates these fields</span>
+<span class="keyword">await</span> wixData.<span class="function">bulkSave</span>(<span class="string">'OutstandingID'</span>, updates, { <span class="property">suppressAuth</span>: <span class="keyword">true</span> });
+
+<span class="comment">// All other fields remain unchanged:</span>
+<span class="comment">// - name, clientNumber, status, etc.</span>
+<span class="comment">// - Original photoId (Wix Media Gallery) intact</span></code></pre>
+                </div>
+
+                <h3>Example Integration</h3>
+                <div class="code-block">
+                    <pre><code><span class="keyword">const</span> migrationFrame = document.getElementById(<span class="string">'migrationTagger'</span>).contentWindow;
+
+<span class="comment">// Load next batch</span>
+<span class="keyword">async function</span> <span class="function">loadNextBatch</span>() {
+  <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="function">getIDPhotos</span>(<span class="number">10</span>);
+  
+  <span class="keyword">if</span> (!response.success) {
+    migrationFrame.<span class="function">postMessage</span>({
+      <span class="property">type</span>: <span class="string">'backend-error'</span>,
+      <span class="property">message</span>: response.result
+    }, <span class="string">'*'</span>);
+    <span class="keyword">return</span>;
+  }
+  
+  migrationFrame.<span class="function">postMessage</span>({
+    <span class="property">type</span>: <span class="string">'migration-batch'</span>,
+    <span class="property">entries</span>: response.items
+  }, <span class="string">'*'</span>);
+}
+
+<span class="comment">// Listen for messages</span>
+window.<span class="function">addEventListener</span>(<span class="string">'message'</span>, <span class="keyword">async</span> (event) => {
+  <span class="keyword">if</span> (event.data.type === <span class="string">'image-data'</span>) {
+    <span class="keyword">const</span> { links, s3Keys } = <span class="keyword">await</span> <span class="function">generatePUTsBackend</span>(event.data.images);
+    migrationFrame.<span class="function">postMessage</span>({ <span class="property">type</span>: <span class="string">'put-links'</span>, links, s3Keys }, <span class="string">'*'</span>);
+  }
+  
+  <span class="keyword">if</span> (event.data.type === <span class="string">'migration-complete'</span>) {
+    <span class="keyword">await</span> <span class="function">updateIDPhotos</span>(event.data.updates);
+    <span class="function">loadNextBatch</span>();  <span class="comment">// Load next batch automatically</span>
+  }
+});</code></pre>
+                </div>
+            </section>
+
+            <!-- Image Uploader -->
+            <section id="image-uploader" class="section">
+                <h2>Image Uploader</h2>
+                <p><strong>File:</strong> <code>image-uploader.html</code></p>
+                <p>Client onboarding form for collecting personal details and ID documents.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> initiation-data, put-links, put-error<br>
+                    <strong>Sends:</strong> image-data, upload-success</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="imageUploaderDemo" 
+                        src="image-uploader.html" 
+                        class="demo-iframe" 
+                        height="700"
+                        title="Image Uploader Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendInitiationData()">Initialize Form</button>
+                        <button class="btn btn-secondary" onclick="clearUploaderConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="imageUploaderConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>initiation-data</code>
+                </div>
+                <p>Populates the form with client data.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"initiation-data"</span>,
+  <span class="property">"clientData"</span>: {
+    <span class="property">"fe"</span>: <span class="string">"TL"</span>,
+    <span class="property">"clientNumber"</span>: <span class="string">"12345"</span>,
+    <span class="property">"matterNumber"</span>: <span class="string">"M001"</span>,
+    <span class="property">"name"</span>: <span class="string">"John Doe"</span>,
+    <span class="property">"titlePrefix"</span>: <span class="string">"Mr"</span>,
+    <span class="property">"firstName"</span>: <span class="string">"John"</span>,
+    <span class="property">"worktype"</span>: <span class="string">"Purchase"</span>
+  }
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+                
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>image-data</code>
+                </div>
+                <p>Sends form data and image metadata for processing.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"image-data"</span>,
+  <span class="property">"images"</span>: [
+    {
+      <span class="property">"documentType"</span>: <span class="string">"Passport"</span>,
+      <span class="property">"s3Key"</span>: <span class="keyword">null</span>,
+      <span class="property">"file"</span>: {
+        <span class="property">"name"</span>: <span class="string">"passport.jpg"</span>,
+        <span class="property">"type"</span>: <span class="string">"image/jpeg"</span>,
+        <span class="property">"size"</span>: <span class="number">1024000</span>
+      }
+    }
+  ],
+  <span class="property">"formData"</span>: {
+    <span class="property">"titlePrefix"</span>: <span class="string">"Mr"</span>,
+    <span class="property">"firstName"</span>: <span class="string">"John"</span>,
+    <span class="property">"surname"</span>: <span class="string">"Doe"</span>,
+    <span class="comment">// ... other form fields</span>
+  }
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>upload-success</code>
+                </div>
+                <p>Final submission with all form data and uploaded images.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"upload-success"</span>,
+  <span class="property">"docType"</span>: <span class="string">"Photo ID"</span>
+}</code></pre>
+                </div>
+
+                <h3>Expected Message Flow</h3>
+                <ol style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Parent sends <code>initiation-data</code> to pre-populate form fields</li>
+                    <li>User fills out form and selects ID images</li>
+                    <li>User clicks submit</li>
+                    <li>iframe sends <code>image-data</code> with form data and file metadata</li>
+                    <li>Parent generates presigned URLs and sends <code>put-links</code></li>
+                    <li>iframe uploads files to S3</li>
+                    <li>iframe sends <code>upload-success</code> when complete</li>
+                </ol>
+            </section>
+
+            <!-- Document Viewer -->
+            <section id="document-viewer" class="section">
+                <h2>Document Viewer</h2>
+                <p><strong>File:</strong> <code>document-viewer.html</code></p>
+                <p>Displays and manages compliance documents and other file uploads.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-documents, display-images, put-links, put-error, button-enable, button-disable<br>
+                    <strong>Sends:</strong> file-data, upload-success, refresh-images</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="documentViewerDemo" 
+                        src="document-viewer.html" 
+                        class="demo-iframe" 
+                        height="600"
+                        title="Document Viewer Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendDisplayDocuments()">Load Sample Documents</button>
+                        <button class="btn btn-secondary" onclick="clearDocConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="documentViewerConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Message Flow</h3>
+                <p>Similar to Image Viewer but handles various document types including PDFs.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">Document Types Supported</div>
+                    <p style="margin: 0; color: var(--text-secondary);">Bank Statement, Utility Bill, GOV Letter, Official Letter, NHS Letter, Home Insurance, Council Tax Bill, Voter Registration, Tenancy Agreement, and more.</p>
+                </div>
+            </section>
+
+            <!-- Message iframe -->
+            <section id="message-iframe" class="section">
+                <h2>Message iframe</h2>
+                <p><strong>File:</strong> <code>message-iframe.html</code></p>
+                <p>Chat interface for communication between staff and cashiers with file attachment support.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> message-data, put-links, put-error, button-enable, button-disable<br>
+                    <strong>Sends:</strong> message-sent, dismiss-notification, file-data (for attachments)</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="messageDemo" 
+                        src="message-iframe.html" 
+                        class="demo-iframe" 
+                        height="500"
+                        title="Message iframe Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendMessageData()">Load Sample Chat</button>
+                        <button class="btn btn-secondary" onclick="clearMessageConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="messageConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>message-data</code>
+                </div>
+                <p>Complete chat data including messages, notifications, and user context.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"message-data"</span>,
+  <span class="property">"userEmail"</span>: <span class="string">"staff@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-id"</span>,
+  <span class="property">"notification"</span>: <span class="keyword">true</span>,
+  <span class="property">"white"</span>: <span class="string">"Staff"</span>,
+  <span class="property">"tags"</span>: [<span class="string">"note"</span>, <span class="string">"pepUpdate"</span>],
+  <span class="property">"chat"</span>: [
+    {
+      <span class="property">"user"</span>: <span class="string">"staff@example.com"</span>,
+      <span class="property">"timestamp"</span>: <span class="string">"2025-10-09T10:30:00Z"</span>,
+      <span class="property">"message"</span>: <span class="string">"Hello from staff"</span>,
+      <span class="property">"type"</span>: <span class="string">"text"</span>,
+      <span class="property">"attachments"</span>: []
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+                
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>message-sent</code>
+                </div>
+                <p>New message to be saved to database.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"message-sent"</span>,
+  <span class="property">"message"</span>: <span class="string">"Hello, I need help with this case."</span>,
+  <span class="property">"messageType"</span>: <span class="string">"text"</span>,
+  <span class="property">"userEmail"</span>: <span class="string">"staff@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"chat-id"</span>,
+  <span class="property">"timestamp"</span>: <span class="string">"2025-10-09T10:30:00Z"</span>,
+  <span class="property">"attachments"</span>: []
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>dismiss-notification</code>
+                </div>
+                <p>Requests to clear notification indicator.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"dismiss-notification"</span>,
+  <span class="property">"_id"</span>: <span class="string">"chat-id"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>file-data</code>
+                </div>
+                <p>Requests PUT links for file attachments.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"file-data"</span>,
+  <span class="property">"files"</span>: [
+    {
+      <span class="property">"name"</span>: <span class="string">"document.pdf"</span>,
+      <span class="property">"type"</span>: <span class="string">"application/pdf"</span>,
+      <span class="property">"size"</span>: <span class="number">1024000</span>
+    }
+  ],
+  <span class="property">"_id"</span>: <span class="string">"chat-id"</span>
+}</code></pre>
+                </div>
+
+                <h3>Expected Message Flow</h3>
+                <ol style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Parent sends <code>message-data</code> with chat history</li>
+                    <li>iframe displays messages and notification indicator</li>
+                    <li>User types message and clicks send</li>
+                    <li>iframe sends <code>message-sent</code> to parent</li>
+                    <li>Parent saves message and refreshes iframe with updated data</li>
+                    <li>If user attaches files: iframe sends <code>file-data</code> for PUT links</li>
+                    <li>iframe sends <code>dismiss-notification</code> when user views messages</li>
+                </ol>
+            </section>
+
+            <!-- Report Uploader -->
+            <section id="report-uploader" class="section">
+                <h2>Report Uploader</h2>
+                <p><strong>File:</strong> <code>report-uploader.html</code></p>
+                <p>Upload system for standard report documents (EID, SA302, P60, payslips, etc.).</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> display-data, put-links, put-error<br>
+                    <strong>Sends:</strong> file-data, upload-success</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="reportUploaderDemo" 
+                        src="report-uploader.html" 
+                        class="demo-iframe" 
+                        height="600"
+                        title="Report Uploader Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendReportDisplayData()">Initialize Uploader</button>
+                        <button class="btn btn-secondary" onclick="clearReportConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="reportConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>display-data</code>
+                </div>
+                <p>Initializes the uploader with client context.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"display-data"</span>,
+  <span class="property">"clientData"</span>: {
+    <span class="property">"fe"</span>: <span class="string">"TL"</span>,
+    <span class="property">"clientNumber"</span>: <span class="string">"12345"</span>,
+    <span class="property">"matterNumber"</span>: <span class="string">"M001"</span>,
+    <span class="property">"name"</span>: <span class="string">"John Doe"</span>
+  },
+  <span class="property">"userEmail"</span>: <span class="string">"user@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-id"</span>
+}</code></pre>
+                </div>
+
+                <h3>Outgoing Messages</h3>
+                
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>file-data</code>
+                </div>
+                <p>Requests PUT links for selected report documents.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"file-data"</span>,
+  <span class="property">"files"</span>: [
+    {
+      <span class="property">"reportType"</span>: <span class="string">"EID Report"</span>,
+      <span class="property">"name"</span>: <span class="string">"eid-report-2025.pdf"</span>,
+      <span class="property">"type"</span>: <span class="string">"application/pdf"</span>,
+      <span class="property">"size"</span>: <span class="number">2048000</span>
+    }
+  ],
+  <span class="property">"_id"</span>: <span class="string">"item-id"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>upload-success</code>
+                </div>
+                <p>Confirms successful upload of all report files.</p>
+
+                <h3>Key Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Pre-configured report types with auto-naming</li>
+                    <li>Multi-file upload support</li>
+                    <li>Drag-and-drop interface</li>
+                    <li>Real-time validation</li>
+                </ul>
+
+                <h3>Expected Message Flow</h3>
+                <ol style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>Parent sends <code>display-data</code> to initialize uploader</li>
+                    <li>User selects report type and files</li>
+                    <li>iframe sends <code>file-data</code> with file metadata</li>
+                    <li>Parent generates presigned URLs and sends <code>put-links</code></li>
+                    <li>iframe uploads files to S3</li>
+                    <li>iframe sends <code>upload-success</code> when complete</li>
+                </ol>
+            </section>
+
+            <!-- Cashiers Log -->
+            <section id="cashiers-log" class="section">
+                <h2>Cashiers Log</h2>
+                <p><strong>File:</strong> <code>cashiers-log.html</code></p>
+                <p>Activity log display for cashier operations with dynamic pagination and responsive height.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> log-data<br>
+                    <strong>Sends:</strong> None (display-only component)</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="cashiersLogDemo" 
+                        src="cashiers-log.html" 
+                        class="demo-iframe" 
+                        height="500"
+                        title="Cashiers Log Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendCashiersLogData()">Load Sample Logs</button>
+                        <button class="btn btn-secondary" onclick="clearCashiersConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="cashiersConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>log-data</code>
+                </div>
+                <p>Sends complete array of log entries to display.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"log-data"</span>,
+  <span class="property">"logs"</span>: [
+    {
+      <span class="property">"user"</span>: <span class="string">"cashier@example.com"</span>,
+      <span class="property">"message"</span>: <span class="string">"Client ID checked and approved"</span>,
+      <span class="property">"time"</span>: <span class="string">"10/14/2025, 2:30:00 PM"</span>
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>Responsive height with dynamic card loading</li>
+                    <li>"Load more" pagination (no infinite scroll)</li>
+                    <li>Automatically fits logs to container height</li>
+                    <li>Custom fonts for user emails, messages, timestamps</li>
+                </ul>
+            </section>
+
+            <!-- Request Form -->
+            <section id="request-form" class="section">
+                <h2>Request Form</h2>
+                <p><strong>File:</strong> <code>request-form.html</code></p>
+                <p>Comprehensive request management form supporting 7 request types with dynamic validation, ID image management, client details collection, and business/charity entity handling.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> client-data, entity-data, address-results, put-links, put-error<br>
+                    <strong>Sends:</strong> request-data, address-search, file-data, upload-success<br>
+                    <strong>Request Types:</strong> Form J, Form K, Form E, eSoF, Note, Issue Update, PEP Update</p>
+                </div>
+
+                <h3>Architecture</h3>
+                <p>Modular design with a core file (<code>request-form-core.js</code>) and separate modules for each request type:</p>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><code>formJ.js</code> - Full ID checks with electronic verification</li>
+                    <li><code>formK.js</code> - ID on file (11 conditional rules)</li>
+                    <li><code>formE.js</code> - Enhanced checks with Source of Funds</li>
+                    <li><code>esof.js</code> - Standalone Source of Funds questionnaire</li>
+                    <li><code>note.js</code> - Internal notes</li>
+                    <li><code>update.js</code> - Issue updates</li>
+                    <li><code>updatePep.js</code> - PEP status updates</li>
+                </ul>
+
+                <h3>Request Types</h3>
+
+                <h4>Form J - Full ID Check</h4>
+                <p>Complete identity verification with electronic checks. Requires:</p>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>2 forms of Address ID</li>
+                    <li>1 form of Photo ID (Front/Back or Single)</li>
+                    <li>Likeness confirmation</li>
+                    <li>Client details (name, DOB, address)</li>
+                    <li>CDF (Client Details Form) upload unless all individual client data fields are completed (entities can satisfy this via linked company/charity data)</li>
+                    <li>OFSI screening report</li>
+                </ul>
+
+                <h4>Form K - ID on File</h4>
+                <p>Uses existing ID held on file. Features 11 conditional rules based on client type and worktype:</p>
+                <table class="api-table" style="margin-top: 1rem;">
+                    <thead>
+                        <tr>
+                            <th>Rule</th>
+                            <th>Description</th>
+                            <th>Availability</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Rule 1</code></td>
+                            <td>ID on file < 3 months (same matter type)</td>
+                            <td>Not for Sale worktypes</td>
+                        </tr>
+                        <tr>
+                            <td><code>Rule 2</code></td>
+                            <td>ID on file < 3 months (different matter type)</td>
+                            <td>Not for Sale worktypes</td>
+                        </tr>
+                        <tr>
+                            <td><code>Rule 3</code></td>
+                            <td>Out of scope - collect ID for future use</td>
+                            <td>Wills/LPA/Deeds only (requires Form J ID)</td>
+                        </tr>
+                        <tr>
+                            <td><code>Rule 4-6</code></td>
+                            <td>Existing client rules</td>
+                            <td>Entities only</td>
+                        </tr>
+                        <tr>
+                            <td><code>Rule 7-9</code></td>
+                            <td>Professional client rules</td>
+                            <td>Entities only</td>
+                        </tr>
+                        <tr>
+                            <td><code>Rule 10-11</code></td>
+                            <td>Residual and special cases</td>
+                            <td>All client types</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Form E - Enhanced Check</h4>
+                <p>Full ID check + Source of Funds. Combines Form J requirements with eSoF questionnaire.</p>
+
+                <h4>eSoF - Source of Funds Only</h4>
+                <p>Standalone source of funds questionnaire without ID collection. Used when ID checks are already complete.</p>
+
+                <h4>Note</h4>
+                <p>Internal note submission with optional file attachments. No ID or client details required.</p>
+
+                <h4>Issue Update</h4>
+                <p>Updates for items in the "ISSUE" section. Message only, no additional requirements.</p>
+
+                <h4>PEP Update</h4>
+                <p>PEP (Politically Exposed Person) status updates. Message only.</p>
+
+                <h3>Dynamic Sections</h3>
+                <p>The form intelligently shows/hides sections based on selected request type:</p>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Shown For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ID Images</td>
+                            <td>Form J, Form E, Form K Rule 3</td>
+                        </tr>
+                        <tr>
+                            <td>Client Details</td>
+                            <td>Form J, Form K Rule 3, Form E</td>
+                        </tr>
+                        <tr>
+                            <td>Business/Charity Details</td>
+                            <td>When Business or Charity checkbox is checked</td>
+                        </tr>
+                        <tr>
+                            <td>ID Documents (CDF/OFSI)</td>
+                            <td>Form J, Form K Rule 3, Form E</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>client-data</code>
+                </div>
+                <p>Pre-populates form with client information and existing ID images/documents.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"client-data"</span>,
+  <span class="property">"user"</span>: <span class="string">"user@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"bd8bee6a-465b-4d43-9a8a-396f9081b649"</span>,
+  <span class="property">"data"</span>: {
+    <span class="property">"cD"</span>: {
+      <span class="property">"cN"</span>: <span class="number">50</span>,           <span class="comment">// Client Number</span>
+      <span class="property">"mN"</span>: <span class="string">"52"</span>,         <span class="comment">// Matter Number</span>
+      <span class="property">"fe"</span>: <span class="string">"BA"</span>,         <span class="comment">// Fee Earner</span>
+      <span class="property">"n"</span>: <span class="string">"John Doe"</span>     <span class="comment">// Full Name</span>
+    },
+    <span class="property">"r"</span>: <span class="string">"Our Client"</span>,   <span class="comment">// Relation</span>
+    <span class="property">"wT"</span>: <span class="string">"Purchase of"</span>,  <span class="comment">// Work Type</span>
+    <span class="property">"i"</span>: {
+      <span class="property">"a"</span>: <span class="keyword">true</span>,         <span class="comment">// Has Address ID</span>
+      <span class="property">"p"</span>: <span class="keyword">true</span>,         <span class="comment">// Has Photo ID</span>
+      <span class="property">"l"</span>: <span class="keyword">false</span>         <span class="comment">// Likeness Confirmed</span>
+    },
+    <span class="property">"cI"</span>: {
+      <span class="property">"n"</span>: {
+        <span class="property">"t"</span>: <span class="string">"Mr"</span>,       <span class="comment">// Title</span>
+        <span class="property">"f"</span>: <span class="string">"John"</span>,     <span class="comment">// First Name</span>
+        <span class="property">"m"</span>: <span class="string">"William"</span>,  <span class="comment">// Middle Name</span>
+        <span class="property">"l"</span>: <span class="string">"Doe"</span>       <span class="comment">// Last Name</span>
+      },
+      <span class="property">"b"</span>: <span class="string">"01-01-1990"</span>, <span class="comment">// Birthdate (DD-MM-YYYY)</span>
+      <span class="property">"a"</span>: {
+        <span class="property">"building_number"</span>: <span class="string">"42"</span>,
+        <span class="property">"street"</span>: <span class="string">"Baker Street"</span>,
+        <span class="property">"town"</span>: <span class="string">"London"</span>,
+        <span class="property">"postcode"</span>: <span class="string">"NW1 6XE"</span>,
+        <span class="property">"country"</span>: <span class="string">"GBR"</span>
+      },
+      <span class="property">"m"</span>: <span class="string">"+447506430094"</span>, <span class="comment">// Mobile</span>
+      <span class="property">"e"</span>: <span class="string">"john@example.com"</span> <span class="comment">// Email</span>
+    },
+    <span class="property">"idI"</span>: [
+      {
+        <span class="property">"url"</span>: <span class="string">"https://s3.amazonaws.com/..."</span>,
+        <span class="property">"document"</span>: <span class="string">"Passport"</span>,
+        <span class="property">"side"</span>: <span class="string">"Front"</span>,
+        <span class="property">"type"</span>: <span class="string">"PhotoID"</span>,
+        <span class="property">"uploader"</span>: <span class="string">"user@example.com"</span>,
+        <span class="property">"date"</span>: <span class="string">"10/10/2025, 11:41:42"</span>
+      }
+    ],
+    <span class="property">"idD"</span>: [
+      {
+        <span class="property">"liveUrl"</span>: <span class="string">"https://s3.amazonaws.com/..."</span>,
+        <span class="property">"document"</span>: <span class="string">"Client Details form"</span>,
+        <span class="property">"type"</span>: <span class="string">"Details form"</span>,
+        <span class="property">"uploader"</span>: <span class="string">"user@example.com"</span>,
+        <span class="property">"date"</span>: <span class="string">"08/10/2025, 12:05:22"</span>
+      }
+    ]
+  }
+}</code></pre>
+                </div>
+
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>address-results</code>
+                </div>
+                <p>Returns address autocomplete results from getaddress.io API.</p>
+
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>put-links</code>
+                </div>
+                <p>Provides S3 presigned URLs for document uploads (CDF/OFSI).</p>
+
+                <h3>Outgoing Messages</h3>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>request-data</code>
+                </div>
+                <p>Submits complete request with all collected data using the same shortened field format.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"request-data"</span>,
+  <span class="property">"requestType"</span>: <span class="string">"formE"</span>,
+  <span class="property">"user"</span>: <span class="string">"user@example.com"</span>,
+  <span class="property">"_id"</span>: <span class="string">"bd8bee6a-465b-4d43-9a8a-396f9081b649"</span>,
+  <span class="property">"eSoF"</span>: <span class="keyword">true</span>,  <span class="comment">// Only present when requestType is 'formE'</span>
+  <span class="property">"data"</span>: {
+    <span class="property">"_id"</span>: <span class="string">"bd8bee6a-465b-4d43-9a8a-396f9081b649"</span>,
+    <span class="property">"cD"</span>: {
+      <span class="property">"cN"</span>: <span class="number">50</span>,
+      <span class="property">"mN"</span>: <span class="string">"52"</span>,
+      <span class="property">"fe"</span>: <span class="string">"BA"</span>,
+      <span class="property">"n"</span>: <span class="string">"John Doe"</span>
+    },
+    <span class="property">"mD"</span>: <span class="string">"Property purchase at 42 Baker St"</span>,
+    <span class="property">"r"</span>: <span class="string">"Our Client"</span>,
+    <span class="property">"wT"</span>: <span class="string">"Purchase of"</span>,
+    <span class="property">"b"</span>: <span class="keyword">false</span>,
+    <span class="property">"c"</span>: <span class="keyword">false</span>,
+    <span class="property">"s"</span>: [<span class="string">"Pending"</span>, <span class="string">"AWF"</span>],
+    <span class="property">"i"</span>: {
+      <span class="property">"a"</span>: <span class="keyword">true</span>,
+      <span class="property">"p"</span>: <span class="keyword">true</span>,
+      <span class="property">"l"</span>: <span class="keyword">false</span>
+    },
+    <span class="property">"cI"</span>: {
+      <span class="property">"n"</span>: {
+        <span class="property">"t"</span>: <span class="string">"Mr"</span>,
+        <span class="property">"f"</span>: <span class="string">"John"</span>,
+        <span class="property">"m"</span>: <span class="string">"William"</span>,
+        <span class="property">"l"</span>: <span class="string">"Doe"</span>
+      },
+      <span class="property">"b"</span>: <span class="string">"01-01-1990"</span>,
+      <span class="property">"a"</span>: {
+        <span class="property">"building_number"</span>: <span class="string">"42"</span>,
+        <span class="property">"street"</span>: <span class="string">"Baker Street"</span>,
+        <span class="property">"town"</span>: <span class="string">"London"</span>,
+        <span class="property">"postcode"</span>: <span class="string">"NW1 6XE"</span>,
+        <span class="property">"country"</span>: <span class="string">"GBR"</span>
+      },
+      <span class="property">"pA"</span>: {...},  <span class="comment">// Previous address if rM is true</span>
+      <span class="property">"rM"</span>: <span class="keyword">false</span>,  <span class="comment">// Recent move flag</span>
+      <span class="property">"nC"</span>: <span class="keyword">false</span>,  <span class="comment">// Name change flag</span>
+      <span class="property">"pN"</span>: <span class="string">""</span>,  <span class="comment">// Previous name (if nC is true)</span>
+      <span class="property">"rNC"</span>: <span class="string">""</span>,  <span class="comment">// Reason for name change</span>
+      <span class="property">"m"</span>: <span class="string">"+447506430094"</span>,  <span class="comment">// Mobile (E.164)</span>
+      <span class="property">"e"</span>: <span class="string">"john@example.com"</span>
+    }
+  },
+  <span class="property">"message"</span>: {
+    <span class="property">"time"</span>: <span class="string">"16/10/2025, 17:33:45"</span>,
+    <span class="property">"user"</span>: <span class="string">"user@example.com"</span>,
+    <span class="property">"type"</span>: <span class="string">"Staff"</span>,
+    <span class="property">"message"</span>: <span class="string">"Please process this Form E request"</span>,
+    <span class="property">"file"</span>: {
+      <span class="property">"name"</span>: <span class="string">"attachment.pdf"</span>,
+      <span class="property">"size"</span>: <span class="number">512000</span>,
+      <span class="property">"type"</span>: <span class="string">"application/pdf"</span>,
+      <span class="property">"s3Key"</span>: <span class="string">"protected/abc123"</span>
+    }
+  },
+  <span class="property">"newFiles"</span>: [
+    {
+      <span class="property">"type"</span>: <span class="string">"Details form"</span>,
+      <span class="property">"document"</span>: <span class="string">"Client Details Form"</span>,
+      <span class="property">"s3Key"</span>: <span class="string">"protected/def456"</span>,
+      <span class="property">"uploader"</span>: <span class="string">"user@example.com"</span>,
+      <span class="property">"date"</span>: <span class="string">"16/10/2025, 17:33:45"</span>
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>address-search</code>
+                </div>
+                <p>Requests address autocomplete suggestions.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"address-search"</span>,
+  <span class="property">"searchTerm"</span>: <span class="string">"TR15"</span>,
+  <span class="property">"field"</span>: <span class="string">"current"</span>  <span class="comment">// or "previous"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>address-lookup</code>
+                </div>
+                <p>Requests full address data by ID.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"address-lookup"</span>,
+  <span class="property">"addressId"</span>: <span class="string">"abc123xyz"</span>,
+  <span class="property">"field"</span>: <span class="string">"current"</span>  <span class="comment">// or "previous"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>company-search</code>
+                </div>
+                <p>Requests company search from Companies House.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"company-search"</span>,
+  <span class="property">"searchTerm"</span>: <span class="string">"THURSTAN HOSKIN"</span>,
+  <span class="property">"searchBy"</span>: <span class="string">"name"</span>  <span class="comment">// or "number"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>charity-search</code>
+                </div>
+                <p>Requests charity search from Charity Commission.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"charity-search"</span>,
+  <span class="property">"searchTerm"</span>: <span class="string">"British Red Cross"</span>,
+  <span class="property">"searchBy"</span>: <span class="string">"name"</span>  <span class="comment">// or "number"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>company-lookup</code>
+                </div>
+                <p>Requests full company data from Companies House.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"company-lookup"</span>,
+  <span class="property">"companyNumber"</span>: <span class="string">"OC421980"</span>,
+  <span class="property">"entityType"</span>: <span class="string">"business"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>charity-lookup</code>
+                </div>
+                <p>Requests full charity data from Charity Commission.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"charity-lookup"</span>,
+  <span class="property">"companyNumber"</span>: <span class="string">"220949"</span>,
+  <span class="property">"entityType"</span>: <span class="string">"charity"</span>
+}</code></pre>
+                </div>
+
+                <div class="message-type outgoing">
+                    <span class="arrow">→</span>
+                    <code>file-data</code>
+                </div>
+                <p>Requests PUT links for CDF/OFSI document uploads and message attachments.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"file-data"</span>,
+  <span class="property">"_id"</span>: <span class="string">"item-database-id"</span>,
+  <span class="property">"files"</span>: [
+    {
+      <span class="property">"type"</span>: <span class="string">"Details form"</span>,
+      <span class="property">"document"</span>: <span class="string">"Client Details Form"</span>,
+      <span class="property">"uploader"</span>: <span class="string">"user@example.com"</span>,
+      <span class="property">"date"</span>: <span class="string">"16/10/2025, 17:33:45"</span>,
+      <span class="property">"data"</span>: {
+        <span class="property">"type"</span>: <span class="string">"application/pdf"</span>,
+        <span class="property">"size"</span>: <span class="number">117237</span>,
+        <span class="property">"name"</span>: <span class="string">"cdf-form.pdf"</span>,
+        <span class="property">"lastModified"</span>: <span class="number">1643802796878</span>
+      },
+      <span class="property">"isMessageFile"</span>: <span class="keyword">false</span>
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Validation</h3>
+                <p>Each request type has specific validation requirements:</p>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><strong>Form J:</strong> ID images (2 Address + 1 Photo), likeness, client details, OFSI, confirmation checkbox, and either a CDF upload or a fully completed client profile (title, names, DOB, contact, current/previous address)</li>
+                    <li><strong>Form K:</strong> Rule selection, rule-specific requirements (e.g., Rule 3 requires Form J ID)</li>
+                    <li><strong>Form E:</strong> Same as Form J (includes eSoF automatically) – CDF upload becomes optional when all required personal data points are entered for individuals</li>
+                    <li><strong>eSoF:</strong> Message only</li>
+                    <li><strong>Note/Updates:</strong> Message only</li>
+                </ul>
+
+                <h3>Smart Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><strong>Auto-detection:</strong> Worktype dropdown syncs with manual input</li>
+                    <li><strong>Companies House Integration:</strong> Auto-populate entity data from company number</li>
+                    <li><strong>Charity Register Integration:</strong> Search and link charity data</li>
+                    <li><strong>People Management:</strong> Displays directors, officers, PSCs with role merging</li>
+                    <li><strong>Address Autocomplete:</strong> UK address lookup with 30-day LRU cache</li>
+                    <li><strong>Phone Validation:</strong> Google libphonenumber for international numbers</li>
+                    <li><strong>ID Image Carousel:</strong> Side tags (Front/Back/Single), open-in-viewer</li>
+                    <li><strong>Conditional Hints:</strong> Dynamic warnings based on selections</li>
+                </ul>
+
+                <h3>Example Integration</h3>
+                <div class="code-block">
+                    <pre><code><span class="comment">// Initialize Request Form with client data</span>
+<span class="keyword">const</span> requestFrame = document.getElementById(<span class="string">'requestForm'</span>).contentWindow;
+
+<span class="comment">// Send client data on load</span>
+document.getElementById(<span class="string">'requestForm'</span>).addEventListener(<span class="string">'load'</span>, <span class="keyword">function</span>() {
+  requestFrame.postMessage({
+    <span class="property">type</span>: <span class="string">'client-data'</span>,
+    <span class="property">user</span>: <span class="string">'user@example.com'</span>,
+    <span class="property">_id</span>: <span class="string">'item-database-id'</span>,
+    <span class="property">data</span>: {
+      <span class="property">cD</span>: {
+        <span class="property">cN</span>: <span class="number">50</span>,
+        <span class="property">mN</span>: <span class="string">'52'</span>,
+        <span class="property">fe</span>: <span class="string">'TL'</span>,
+        <span class="property">n</span>: <span class="string">'John Doe'</span>
+      },
+      <span class="property">r</span>: <span class="string">'Our Client'</span>,
+      <span class="property">wT</span>: <span class="string">'Purchase of'</span>,
+      <span class="property">i</span>: { <span class="property">a</span>: <span class="keyword">false</span>, <span class="property">p</span>: <span class="keyword">false</span>, <span class="property">l</span>: <span class="keyword">false</span> },
+      <span class="property">idI</span>: [],
+      <span class="property">idD</span>: []
+    }
+  }, <span class="string">'*'</span>);
+});
+
+<span class="comment">// Listen for submitted requests</span>
+window.addEventListener(<span class="string">'message'</span>, <span class="keyword">function</span>(event) {
+  <span class="keyword">if</span> (event.data.type === <span class="string">'request-data'</span>) {
+    <span class="function">console.log</span>(<span class="string">'Request submitted:'</span>, event.data);
+    <span class="comment">// Process the request...</span>
+  }
+  
+  <span class="keyword">if</span> (event.data.type === <span class="string">'address-search'</span>) {
+    <span class="comment">// Fetch address results from getaddress.io</span>
+    <span class="function">fetchAddresses</span>(event.data.postcode).then(<span class="property">results</span> => {
+      requestFrame.postMessage({
+        <span class="property">type</span>: <span class="string">'address-results'</span>,
+        <span class="property">results</span>: results
+      }, <span class="string">'*'</span>);
+    });
+  }
+});</code></pre>
+                </div>
+
+                <h3>Data Structure Reference</h3>
+                
+                <h4>Individual vs Entity Data</h4>
+                <p>The form supports both individual clients and business/charity entities. The <code>data</code> object structure varies based on the <code>b</code> (business) or <code>c</code> (charity) flags.</p>
+                
+                <div class="info-box">
+                    <div class="info-box-title">🔍 Detecting Entity Type</div>
+                    <ul style="margin: 0.5rem 0 0 1.5rem; color: var(--text-secondary);">
+                        <li><code>b: true</code> - Business entity</li>
+                        <li><code>c: true</code> - Charity entity</li>
+                        <li>Neither flag present - Individual client</li>
+                    </ul>
+                </div>
+
+                <h4>Common Field Names</h4>
+                <p>These fields use shortened names for efficiency:</p>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Full Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>cD</code></td>
+                            <td>Client Details</td>
+                            <td>Object</td>
+                            <td>Basic client/matter information</td>
+                        </tr>
+                        <tr>
+                            <td><code>cD.cN</code></td>
+                            <td>Client Number</td>
+                            <td>Number</td>
+                            <td>Unique client identifier</td>
+                        </tr>
+                        <tr>
+                            <td><code>cD.mN</code></td>
+                            <td>Matter Number</td>
+                            <td>String</td>
+                            <td>Matter/case reference</td>
+                        </tr>
+                        <tr>
+                            <td><code>cD.fe</code></td>
+                            <td>Fee Earner</td>
+                            <td>String</td>
+                            <td>Fee earner initials</td>
+                        </tr>
+                        <tr>
+                            <td><code>cD.n</code></td>
+                            <td>Name</td>
+                            <td>String</td>
+                            <td>Client full name</td>
+                        </tr>
+                        <tr>
+                            <td><code>r</code></td>
+                            <td>Relation</td>
+                            <td>String</td>
+                            <td>Client relationship (e.g., "Our Client")</td>
+                        </tr>
+                        <tr>
+                            <td><code>wT</code></td>
+                            <td>Work Type</td>
+                            <td>String</td>
+                            <td>Type of legal work (e.g., "Purchase of")</td>
+                        </tr>
+                        <tr>
+                            <td><code>mD</code></td>
+                            <td>Matter Description</td>
+                            <td>String</td>
+                            <td>Brief description of the matter</td>
+                        </tr>
+                        <tr>
+                            <td><code>b</code></td>
+                            <td>Business</td>
+                            <td>Boolean</td>
+                            <td>True if business entity</td>
+                        </tr>
+                        <tr>
+                            <td><code>c</code></td>
+                            <td>Charity</td>
+                            <td>Boolean</td>
+                            <td>True if charity entity</td>
+                        </tr>
+                        <tr>
+                            <td><code>s</code></td>
+                            <td>Status</td>
+                            <td>Array</td>
+                            <td>Status tags (e.g., ["Pending", "AWF"])</td>
+                        </tr>
+                        <tr>
+                            <td><code>i</code></td>
+                            <td>Indicators</td>
+                            <td>Object</td>
+                            <td>ID status flags</td>
+                        </tr>
+                        <tr>
+                            <td><code>i.a</code></td>
+                            <td>Address ID</td>
+                            <td>Boolean</td>
+                            <td>Has address ID uploaded</td>
+                        </tr>
+                        <tr>
+                            <td><code>i.p</code></td>
+                            <td>Photo ID</td>
+                            <td>Boolean</td>
+                            <td>Has photo ID uploaded</td>
+                        </tr>
+                        <tr>
+                            <td><code>i.l</code></td>
+                            <td>Likeness</td>
+                            <td>Boolean</td>
+                            <td>Likeness confirmed</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI</code></td>
+                            <td>Client Info</td>
+                            <td>Object</td>
+                            <td>Detailed client information</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.n</code></td>
+                            <td>Name</td>
+                            <td>Object</td>
+                            <td>Name components (t, f, m, l)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.b</code></td>
+                            <td>Birthdate</td>
+                            <td>String</td>
+                            <td>Date of birth (DD-MM-YYYY)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.a</code></td>
+                            <td>Address</td>
+                            <td>Object</td>
+                            <td>Current address (Thirdfort format)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.m</code></td>
+                            <td>Mobile</td>
+                            <td>String</td>
+                            <td>Mobile phone number (E.164)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.pA</code></td>
+                            <td>Previous Address</td>
+                            <td>Object</td>
+                            <td>Previous address (Thirdfort format, if rM is true)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.rM</code></td>
+                            <td>Recent Move</td>
+                            <td>Boolean</td>
+                            <td>Recent move flag (within last year)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.nC</code></td>
+                            <td>Name Change</td>
+                            <td>Boolean</td>
+                            <td>Recent name change flag</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.pN</code></td>
+                            <td>Previous Name</td>
+                            <td>String</td>
+                            <td>Previous name (if nC is true)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.rNC</code></td>
+                            <td>Reason Name Change</td>
+                            <td>String</td>
+                            <td>Reason for name change (if nC is true)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.m</code></td>
+                            <td>Mobile</td>
+                            <td>String</td>
+                            <td>Mobile phone number (E.164 format)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.e</code></td>
+                            <td>Email</td>
+                            <td>String</td>
+                            <td>Email address</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.eN</code></td>
+                            <td>Entity Number</td>
+                            <td>String</td>
+                            <td>Company/charity registration number (entities only)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.bD</code></td>
+                            <td>Business Data</td>
+                            <td>Object</td>
+                            <td>Companies House/Charity Register data (entities only)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cI.n.b</code></td>
+                            <td>Business Name</td>
+                            <td>String</td>
+                            <td>Entity name (entities only)</td>
+                        </tr>
+                        <tr>
+                            <td><code>idI</code></td>
+                            <td>ID Images</td>
+                            <td>Array</td>
+                            <td>Photo ID and Address ID images</td>
+                        </tr>
+                        <tr>
+                            <td><code>idD</code></td>
+                            <td>ID Documents</td>
+                            <td>Array</td>
+                            <td>CDF, OFSI, and other documents</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Business Data Structure</h4>
+                <p>When <code>b: true</code> or <code>c: true</code>, the <code>cI.bD</code> object contains full Companies House or Charity Register data:</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"company_name"</span>: <span class="string">"EXAMPLE LTD"</span>,
+  <span class="property">"company_number"</span>: <span class="string">"12345678"</span>,
+  <span class="property">"company_type"</span>: <span class="string">"ltd"</span>,
+  <span class="property">"company_status"</span>: <span class="string">"active"</span>,
+  <span class="property">"date_of_creation"</span>: <span class="string">"2020-01-01"</span>,
+  <span class="property">"registered_office_address"</span>: {...},
+  <span class="property">"officers"</span>: [
+    {
+      <span class="property">"name"</span>: <span class="string">"SMITH, John"</span>,
+      <span class="property">"officer_role"</span>: <span class="string">"director"</span>,
+      <span class="property">"appointed_on"</span>: <span class="string">"2020-01-01"</span>,
+      <span class="property">"date_of_birth"</span>: {<span class="property">"month"</span>: <span class="number">7</span>, <span class="property">"year"</span>: <span class="number">1980</span>}
+    }
+  ],
+  <span class="property">"pscs"</span>: [
+    {
+      <span class="property">"name"</span>: <span class="string">"Mr John Smith"</span>,
+      <span class="property">"kind"</span>: <span class="string">"individual-person-with-significant-control"</span>,
+      <span class="property">"natures_of_control"</span>: [<span class="string">"ownership-of-shares-25-to-50-percent"</span>]
+    }
+  ]
+}</code></pre>
+                </div>
+
+                <h3>Key Features</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>7 request types with individual validation logic</li>
+                    <li>11 Form K conditional rules with dynamic filtering</li>
+                    <li>Entity support (Business/Charity) with Companies House/Register integration</li>
+                    <li>ID image carousel with side tags</li>
+                    <li>Real-time validation with detailed error messages</li>
+                    <li>Dynamic section visibility based on selections</li>
+                    <li>Address autocomplete with caching</li>
+                    <li>Phone number validation (Google libphonenumber)</li>
+                    <li>CDF and OFSI document upload with S3 integration, plus automatic CDF override when all individual client details are completed</li>
+                    <li>Previous name/address toggle fields</li>
+                    <li>People cards for directors and PSCs</li>
+                </ul>
+            </section>
+
+            <!-- Chart Viewer -->
+            <section id="chart-viewer" class="section">
+                <h2>Chart Viewer</h2>
+                <p><strong>File:</strong> <code>single-chart-viewer.html</code></p>
+                <p>Dynamic chart visualization component powered by Chart.js. Displays data in various chart formats with automatic chart updates and empty state handling.</p>
+
+                <div class="info-box">
+                    <div class="info-box-title">📋 Quick Reference</div>
+                    <p style="margin: 0; color: var(--text-secondary);"><strong>Receives:</strong> chart-data<br>
+                    <strong>Sends:</strong> Nothing (display-only component)<br>
+                    <strong>Chart Types:</strong> bar, line, pie, doughnut, radar, polarArea, bubble, scatter</p>
+                </div>
+
+                <h3>Live Demo</h3>
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <span class="demo-title">Interactive Example</span>
+                    </div>
+                    <iframe 
+                        id="chartViewerDemo" 
+                        src="single-chart-viewer.html" 
+                        class="demo-iframe" 
+                        height="600"
+                        title="Chart Viewer Demo">
+                    </iframe>
+                    <div class="demo-controls">
+                        <button class="btn btn-primary" onclick="sendAwaitingChart()">Awaiting Chart</button>
+                        <button class="btn btn-primary" onclick="sendPassesChart()">Passes Chart</button>
+                        <button class="btn btn-primary" onclick="sendIssuesChart()">Issues Chart</button>
+                        <button class="btn btn-primary" onclick="sendBioChart()">E-ID Chart</button>
+                        <button class="btn btn-secondary" onclick="clearChartConsole()">Clear Console</button>
+                    </div>
+                    <div class="demo-output" id="chartConsole">
+                        <div style="color: #94a3b8;">Console output will appear here...</div>
+                    </div>
+                </div>
+
+                <h3>Incoming Messages</h3>
+                
+                <div class="message-type incoming">
+                    <span class="arrow">→</span>
+                    <code>chart-data</code>
+                </div>
+                <p>Sends chart configuration and data to render a visualization.</p>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"type"</span>: <span class="string">"chart-data"</span>,
+  <span class="property">"chartType"</span>: <span class="string">"doughnut"</span>,
+  <span class="property">"title"</span>: <span class="string">"Outstanding & Requests Breakdown"</span>,
+  <span class="property">"description"</span>: <span class="string">"Total: 223 items"</span>,
+  <span class="property">"chartData"</span>: {
+    <span class="property">"labels"</span>: [
+      <span class="string">"Added in last 7 days"</span>,
+      <span class="string">"8 - 30 Days"</span>,
+      <span class="string">"Over 30 Days Old"</span>
+    ],
+    <span class="property">"datasets"</span>: [{
+      <span class="property">"label"</span>: <span class="string">"Outstanding Items"</span>,
+      <span class="property">"data"</span>: [<span class="number">8</span>, <span class="number">21</span>, <span class="number">127</span>],
+      <span class="property">"backgroundColor"</span>: [
+        <span class="string">"rgba(0, 204, 102, 0.6)"</span>,
+        <span class="string">"rgba(255, 206, 86, 0.6)"</span>,
+        <span class="string">"rgba(255, 99, 132, 0.6)"</span>
+      ],
+      <span class="property">"borderColor"</span>: [
+        <span class="string">"rgba(0, 204, 102, 1)"</span>,
+        <span class="string">"rgba(255, 206, 86, 1)"</span>,
+        <span class="string">"rgba(255, 99, 132, 1)"</span>
+      ],
+      <span class="property">"borderWidth"</span>: <span class="number">1</span>
+    }]
+  },
+  <span class="property">"options"</span>: {
+    <span class="property">"plugins"</span>: {
+      <span class="property">"legend"</span>: {
+        <span class="property">"position"</span>: <span class="string">"right"</span>
+      }
+    }
+  }
+}</code></pre>
+                </div>
+
+                <h3>Chart Behavior</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><strong>Dynamic Updates:</strong> Receiving new chart-data destroys the current chart and renders the new one</li>
+                    <li><strong>Empty Data Handling:</strong> If all dataset values are 0, the iframe remains blank</li>
+                    <li><strong>Responsive:</strong> Charts automatically resize to fit container</li>
+                    <li><strong>Custom Fonts:</strong> Uses Transport and Rotis fonts with Quicksand fallback</li>
+                </ul>
+
+                <h3>Supported Chart Types</h3>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Chart Type</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>doughnut</code></td>
+                            <td>Pie chart with hollow center - ideal for proportional data</td>
+                        </tr>
+                        <tr>
+                            <td><code>pie</code></td>
+                            <td>Circular pie chart - proportional data visualization</td>
+                        </tr>
+                        <tr>
+                            <td><code>bar</code></td>
+                            <td>Vertical bar chart - comparing values across categories</td>
+                        </tr>
+                        <tr>
+                            <td><code>line</code></td>
+                            <td>Line chart - showing trends over time</td>
+                        </tr>
+                        <tr>
+                            <td><code>radar</code></td>
+                            <td>Spider/radar chart - multivariate data</td>
+                        </tr>
+                        <tr>
+                            <td><code>polarArea</code></td>
+                            <td>Polar area chart - similar to pie but with variable radii</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Message Types Reference -->
+            <section id="message-types" class="section">
+                <h2>Message Types Reference</h2>
+                
+                <h3>Common Patterns</h3>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Message Type</th>
+                            <th>Direction</th>
+                            <th>Purpose</th>
+                            <th>Used By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>display-images</code></td>
+                            <td>Parent → iframe</td>
+                            <td>Initialize/update image display</td>
+                            <td>Image Viewer, Document Viewer</td>
+                        </tr>
+                        <tr>
+                            <td><code>image-data</code></td>
+                            <td>iframe → Parent</td>
+                            <td>Request PUT links for images</td>
+                            <td>Image Viewer, Image Uploader</td>
+                        </tr>
+                        <tr>
+                            <td><code>file-data</code></td>
+                            <td>iframe → Parent</td>
+                            <td>Request PUT links for files</td>
+                            <td>Document Viewer, Message iframe, Report Uploader</td>
+                        </tr>
+                        <tr>
+                            <td><code>put-links</code></td>
+                            <td>Parent → iframe</td>
+                            <td>Provide S3 upload URLs</td>
+                            <td>All upload-enabled iframes</td>
+                        </tr>
+                        <tr>
+                            <td><code>put-error</code></td>
+                            <td>Parent → iframe</td>
+                            <td>Signal upload error</td>
+                            <td>All upload-enabled iframes</td>
+                        </tr>
+                        <tr>
+                            <td><code>upload-success</code></td>
+                            <td>iframe → Parent</td>
+                            <td>Confirm upload completion</td>
+                            <td>All upload-enabled iframes</td>
+                        </tr>
+                        <tr>
+                            <td><code>refresh-images</code></td>
+                            <td>iframe → Parent</td>
+                            <td>Request data refresh</td>
+                            <td>Image Viewer, Document Viewer</td>
+                        </tr>
+                        <tr>
+                            <td><code>message-sent</code></td>
+                            <td>iframe → Parent</td>
+                            <td>Save new chat message</td>
+                            <td>Message iframe</td>
+                        </tr>
+                        <tr>
+                            <td><code>chart-data</code></td>
+                            <td>Parent → iframe</td>
+                            <td>Display chart visualization</td>
+                            <td>Chart Viewer</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Data Structures -->
+            <section id="data-structures" class="section">
+                <h2>Data Structures</h2>
+                
+                <h3>ClientData Object</h3>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"fe"</span>: <span class="string">"TL"</span>,              <span class="comment">// Fee earner initials</span>
+  <span class="property">"clientNumber"</span>: <span class="string">"12345"</span>, <span class="comment">// Client reference</span>
+  <span class="property">"matterNumber"</span>: <span class="string">"M001"</span>,  <span class="comment">// Matter reference</span>
+  <span class="property">"name"</span>: <span class="string">"John Doe"</span>       <span class="comment">// Client full name</span>
+}</code></pre>
+                </div>
+
+                <h3>Image/Document Object</h3>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"url"</span>: <span class="string">"https://example.com/image.jpg"</span>,
+  <span class="property">"s3Key"</span>: <span class="string">"uploads/abc123.jpg"</span>,
+  <span class="property">"documentType"</span>: <span class="string">"Passport"</span>,
+  <span class="property">"date"</span>: <span class="string">"2025-10-01T12:00:00Z"</span>,
+  <span class="property">"fe"</span>: <span class="string">"TL"</span>,
+  <span class="property">"clientNumber"</span>: <span class="string">"12345"</span>,
+  <span class="property">"matterNumber"</span>: <span class="string">"M001"</span>,
+  <span class="property">"name"</span>: <span class="string">"John Doe"</span>
+}</code></pre>
+                </div>
+
+                <h3>File Metadata Object</h3>
+                <div class="code-block">
+                    <pre><code>{
+  <span class="property">"name"</span>: <span class="string">"document.pdf"</span>,
+  <span class="property">"type"</span>: <span class="string">"application/pdf"</span>,
+  <span class="property">"size"</span>: <span class="number">1024000</span>,
+  <span class="property">"lastModified"</span>: <span class="number">1234567890000</span>
+}</code></pre>
+                </div>
+            </section>
+
+            <!-- Error Handling -->
+            <section id="error-handling" class="section">
+                <h2>Error Handling</h2>
+                
+                <h3>PUT Link Generation Errors</h3>
+                <p>When the parent cannot generate PUT links, send an error message:</p>
+                <div class="code-block">
+                    <pre><code>iframe.<span class="function">postMessage</span>({
+  type: <span class="string">'put-error'</span>,
+  error: <span class="string">'Failed to generate upload URLs. Please try again.'</span>
+}, <span class="string">'*'</span>);</code></pre>
+                </div>
+
+                <p>The iframe will automatically:</p>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>Display error message to user</li>
+                    <li>Reset to previous state</li>
+                    <li>Allow user to retry</li>
+                </ul>
+
+                <h3>Upload Failures</h3>
+                <p>iframes handle S3 upload failures with automatic retry logic (typically 3 attempts with exponential backoff).</p>
+            </section>
+
+            <!-- Troubleshooting -->
+            <section id="troubleshooting" class="section">
+                <h2>Troubleshooting</h2>
+                
+                <h3>iframe not receiving messages</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Ensure iframe has loaded: use <code>iframe.addEventListener('load', ...)</code></li>
+                    <li>Check console for CORS errors</li>
+                    <li>Verify <code>contentWindow</code> is accessible</li>
+                </ul>
+
+                <h3>Messages not sending from iframe</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>Verify <code>window.parent</code> is accessible</li>
+                    <li>Check browser console for postMessage errors</li>
+                    <li>Ensure message data is serializable (no circular references)</li>
+                </ul>
+
+                <h3>File objects not transferring</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-bottom: 1rem;">
+                    <li>File objects cannot be cloned by postMessage</li>
+                    <li>Send only file metadata, keep File objects in iframe</li>
+                    <li>Upload directly from iframe using PUT URLs</li>
+                </ul>
+
+                <h3>Upload failures</h3>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>Check S3 presigned URL expiration</li>
+                    <li>Verify CORS configuration on S3 bucket</li>
+                    <li>Ensure content-type matches between metadata and upload</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        ↑
+    </button>
+
+    <script>
+        // Console logging helper
+        function logToConsole(consoleId, message, type = 'info') {
+            const console = document.getElementById(consoleId);
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#94a3b8';
+            
+            const line = document.createElement('div');
+            line.style.color = color;
+            line.style.marginBottom = '0.25rem';
+            line.innerHTML = `<span style="color: #64748b;">[${timestamp}]</span> ${message}`;
+            
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('imageViewerConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        function clearUploaderConsole() {
+            document.getElementById('imageUploaderConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        function clearDocConsole() {
+            document.getElementById('documentViewerConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        function clearMessageConsole() {
+            document.getElementById('messageConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        function clearReportConsole() {
+            document.getElementById('reportConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        function clearChartConsole() {
+            document.getElementById('chartConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        // Audit Log Viewer Demo Functions
+        function sendAuditLogData() {
+            const iframe = document.getElementById('auditLogDemo').contentWindow;
+            const message = {
+                type: 'log-data',
+                data: [
+                    {
+                        timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+                        action: 'EID Check Completed',
+                        user: 'system@example.com',
+                        status: ['Pass', 'Verified'],
+                        riskIndicator: false,
+                        pepStatus: 'NPEP',
+                        pepMonitoring: false,
+                        safeHarbour: true,
+                        matterClient: 'John Doe',
+                        matterNumber: '12345',
+                        matterFE: 'TL',
+                        matterDescription: 'Property Purchase - 42 Baker Street',
+                        addresses: [
+                            {
+                                building_number: '42',
+                                street: 'Baker Street',
+                                town: 'London',
+                                postcode: 'NW1 6XE',
+                                country: 'GBR'
+                            }
+                        ],
+                        documents: [
+                            { documentType: 'Passport', url: '#' },
+                            { documentType: 'Bank Statement', url: '#' }
+                        ]
+                    },
+                    {
+                        timestamp: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+                        action: 'PEP Check Started',
+                        user: 'compliance@example.com',
+                        status: ['InProgress'],
+                        riskIndicator: false,
+                        pepStatus: 'PPEP',
+                        pepMonitoring: true,
+                        safeHarbour: false,
+                        matterClient: 'John Doe',
+                        matterNumber: '12345',
+                        matterFE: 'TL',
+                        matterDescription: 'Property Purchase - 42 Baker Street'
+                    },
+                    {
+                        timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+                        action: 'Case Initiated',
+                        user: 'staff@example.com',
+                        status: ['Pending'],
+                        riskIndicator: false,
+                        pepStatus: null,
+                        pepMonitoring: false,
+                        safeHarbour: false,
+                        matterClient: 'John Doe',
+                        matterNumber: '12345',
+                        matterFE: 'TL',
+                        matterDescription: 'Property Purchase - 42 Baker Street'
+                    }
+                ]
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('auditLogConsole', `Sent: log-data with ${message.data.length} audit entries`, 'success');
+        }
+
+        function sendClearAuditLog() {
+            const iframe = document.getElementById('auditLogDemo').contentWindow;
+            const message = { type: 'clear-data' };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('auditLogConsole', 'Sent: clear-data (log cleared)', 'success');
+        }
+
+        function sendDownloadAudit() {
+            const iframe = document.getElementById('auditLogDemo').contentWindow;
+            const message = { type: 'audit-download' };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('auditLogConsole', 'Sent: audit-download (PDF download triggered)', 'success');
+        }
+
+        // Wallboard Dashboard Demo Functions
+        function sendWallboardData() {
+            const iframe = document.getElementById('wallboardDemo').contentWindow;
+            const message = {
+                type: 'wallboard-data',
+                wallboard: [
+                    { title: 'Outstanding total', sjm: 5, mb: 3, tl: 8, total: 16 },
+                    { title: 'Outstanding With Photo ID', sjm: 2, mb: 1, tl: 4, total: 7 },
+                    { title: 'Outstanding With Address ID', sjm: 1, mb: 1, tl: 2, total: 4 },
+                    { title: 'Requests', sjm: 0, mb: 1, tl: 2, total: 3 },
+                    { title: 'Pass 90 days', sjm: 115, mb: 87, tl: 203, total: 405 },
+                    { title: 'Fail 90 days', sjm: 8, mb: 5, tl: 12, total: 25 }
+                ],
+                feeEarnerOptions: [
+                    { label: 'ALL', value: 'ALL' },
+                    { label: 'Stephen Morrison', value: 'SJM' },
+                    { label: 'Mark Brown', value: 'MB' },
+                    { label: 'Tony Lawrence', value: 'TL' }
+                ]
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('wallboardConsole', 'Sent: wallboard-data with metrics and options', 'success');
+        }
+
+        function sendWallboardAnalytics() {
+            const iframe = document.getElementById('wallboardDemo').contentWindow;
+            const message = {
+                type: 'analytics-data',
+                fe: 'SJM',
+                analyticsData: {
+                    totalAwaiting: 156,
+                    totalRequests: 0,
+                    pass90: 115,
+                    fail90: 8,
+                    passRate: 93.5,
+                    avgProcessingDays: 12
+                }
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('wallboardConsole', 'Sent: analytics-data for SJM', 'success');
+        }
+
+        function clearWallboardConsole() {
+            document.getElementById('wallboardConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        // Image Viewer Demo Functions
+        function sendDisplayImages() {
+            const iframe = document.getElementById('imageViewerDemo').contentWindow;
+            const message = {
+                type: 'display-images',
+                data: [
+                    {
+                        url: 'https://via.placeholder.com/800x600/4F46E5/ffffff?text=Sample+Passport',
+                        documentType: 'Passport',
+                        date: new Date().toISOString()
+                    },
+                    {
+                        url: 'https://via.placeholder.com/800x600/10B981/ffffff?text=Sample+Driving+Licence',
+                        documentType: 'Driving Licence',
+                        date: new Date().toISOString()
+                    }
+                ],
+                allowUploads: true,
+                clientData: {
+                    fe: 'TL',
+                    clientNumber: '12345',
+                    matterNumber: 'M001',
+                    name: 'John Doe'
+                },
+                userEmail: 'demo@example.com',
+                _id: 'demo-item-123'
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('imageViewerConsole', `Sent: display-images with ${message.data.length} images`, 'success');
+        }
+
+        function sendEmptyDisplay() {
+            const iframe = document.getElementById('imageViewerDemo').contentWindow;
+            const message = {
+                type: 'display-images',
+                data: [],
+                allowUploads: true,
+                clientData: {
+                    fe: 'TL',
+                    clientNumber: '12345',
+                    matterNumber: 'M001',
+                    name: 'John Doe'
+                },
+                userEmail: 'demo@example.com'
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('imageViewerConsole', 'Sent: display-images with empty data', 'success');
+        }
+
+        // Image Uploader Demo Functions
+        function sendInitiationData() {
+            const iframe = document.getElementById('imageUploaderDemo').contentWindow;
+            const message = {
+                type: 'initiation-data',
+                clientData: {
+                    fe: 'TL',
+                    clientNumber: '12345',
+                    matterNumber: 'M001',
+                    name: 'John Doe',
+                    titlePrefix: 'Mr',
+                    firstName: 'John',
+                    middleNames: 'William',
+                    surname: 'Doe',
+                    worktype: 'Purchase'
+                }
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('imageUploaderConsole', 'Sent: initiation-data with client info', 'success');
+        }
+
+        // Document Viewer Demo Functions
+        function sendDisplayDocuments() {
+            const iframe = document.getElementById('documentViewerDemo').contentWindow;
+            const message = {
+                type: 'display-documents',
+                documents: [
+                    {
+                        url: 'https://via.placeholder.com/800x1000/EF4444/ffffff?text=Bank+Statement',
+                        documentType: 'Bank Statement',
+                        date: new Date().toISOString()
+                    }
+                ],
+                allowUploads: true,
+                clientData: {
+                    fe: 'TL',
+                    clientNumber: '12345',
+                    matterNumber: 'M001',
+                    name: 'John Doe'
+                },
+                userEmail: 'demo@example.com',
+                _id: 'demo-doc-123'
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('documentViewerConsole', 'Sent: display-documents with sample data', 'success');
+        }
+
+        // Message iframe Demo Functions
+        function sendMessageData() {
+            const iframe = document.getElementById('messageDemo').contentWindow;
+            const message = {
+                type: 'message-data',
+                userEmail: 'staff@example.com',
+                _id: 'demo-chat-123',
+                notification: true,
+                white: 'Staff',
+                tags: ['note', 'pepUpdate'],
+                chat: [
+                    {
+                        user: 'staff@example.com',
+                        timestamp: new Date(Date.now() - 3600000).toISOString(),
+                        message: 'Hello! How can I help you today?',
+                        type: 'text',
+                        attachments: []
+                    },
+                    {
+                        user: 'cashier@example.com',
+                        timestamp: new Date(Date.now() - 1800000).toISOString(),
+                        message: 'I need assistance with document verification.',
+                        type: 'text',
+                        attachments: []
+                    },
+                    {
+                        user: 'staff@example.com',
+                        timestamp: new Date().toISOString(),
+                        message: 'I can help with that. Please upload the documents.',
+                        type: 'text',
+                        attachments: []
+                    }
+                ]
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('messageConsole', `Sent: message-data with ${message.chat.length} messages`, 'success');
+        }
+
+        // Report Uploader Demo Functions
+        function sendReportDisplayData() {
+            const iframe = document.getElementById('reportUploaderDemo').contentWindow;
+            const message = {
+                type: 'display-data',
+                clientData: {
+                    fe: 'TL',
+                    clientNumber: '12345',
+                    matterNumber: 'M001',
+                    name: 'John Doe'
+                },
+                userEmail: 'demo@example.com',
+                _id: 'demo-report-123'
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('reportConsole', 'Sent: display-data to initialize uploader', 'success');
+        }
+
+        // Cashiers Log Demo Functions
+        function sendCashiersLogData() {
+            const iframe = document.getElementById('cashiersLogDemo').contentWindow;
+            const message = {
+                type: 'log-data',
+                logs: [
+                    {
+                        user: 'cashier1@example.com',
+                        message: 'Pass issued to John Doe',
+                        time: new Date(Date.now() - 600000).toLocaleString('en-US')
+                    },
+                    {
+                        user: 'reception@example.com',
+                        message: 'ID documents verified',
+                        time: new Date(Date.now() - 1800000).toLocaleString('en-US')
+                    },
+                    {
+                        user: 'cashier2@example.com',
+                        message: 'Client collected pass',
+                        time: new Date(Date.now() - 3600000).toLocaleString('en-US')
+                    },
+                    {
+                        user: 'staff@example.com',
+                        message: 'Documents uploaded to system',
+                        time: new Date(Date.now() - 7200000).toLocaleString('en-US')
+                    },
+                    {
+                        user: 'cashier1@example.com',
+                        message: 'New client registration started',
+                        time: new Date(Date.now() - 86400000).toLocaleString('en-US')
+                    }
+                ]
+            };
+            
+            iframe.postMessage(message, '*');
+            logToConsole('cashiersConsole', `Sent: log-data with ${message.logs.length} log entries`, 'success');
+        }
+
+        function clearCashiersConsole() {
+            document.getElementById('cashiersConsole').innerHTML = '<div style="color: #94a3b8;">Console cleared...</div>';
+        }
+
+        // Chart Viewer Demo Functions
+        function sendAwaitingChart() {
+            const iframe = document.getElementById('chartViewerDemo').contentWindow;
+            const message = {
+                type: 'chart-data',
+                chartType: 'doughnut',
+                title: 'Outstanding & Requests Breakdown',
+                description: 'Total: 223 items',
+                chartData: {
+                    labels: ['Added in last 7 days', '8 - 30 Days', 'Over 30 Days Old', 'With Photo ID', 'Requests', 'Pending'],
+                    datasets: [{
+                        label: 'Outstanding & Requests Breakdown',
+                        data: [8, 21, 127, 16, 0, 21],
+                        backgroundColor: ['rgba(0, 204, 102, 0.6)', 'rgba(255, 206, 86, 0.6)', 'rgba(255, 99, 132, 0.6)', 'rgba(255, 255, 102, 0.6)', 'rgba(211, 211, 211, 0.6)', 'rgba(173, 216, 230, 0.6)'],
+                        borderWidth: 1
+                    }]
+                }
+            };
+            iframe.postMessage(message, '*');
+            logToConsole('chartConsole', 'Sent: Awaiting chart with doughnut type', 'success');
+        }
+
+        function sendPassesChart() {
+            const iframe = document.getElementById('chartViewerDemo').contentWindow;
+            const message = {
+                type: 'chart-data',
+                chartType: 'doughnut',
+                title: 'Passes by Type',
+                description: 'Last 90 days - 117 total passes',
+                chartData: {
+                    labels: ['Pass', 'ePass', 'ID Held'],
+                    datasets: [{
+                        label: 'Passes by Type',
+                        data: [59, 39, 19],
+                        backgroundColor: ['rgba(166, 157, 108, 0.6)', 'rgba(0, 57, 96, 0.6)', 'rgba(0, 255, 128, 0.6)'],
+                        borderWidth: 1
+                    }]
+                }
+            };
+            iframe.postMessage(message, '*');
+            logToConsole('chartConsole', 'Sent: Passes chart with doughnut type', 'success');
+        }
+
+        function sendIssuesChart() {
+            const iframe = document.getElementById('chartViewerDemo').contentWindow;
+            const message = {
+                type: 'chart-data',
+                chartType: 'doughnut',
+                title: 'Issue Breakdown',
+                description: 'Total: 12 issues',
+                chartData: {
+                    labels: ['Issues in last 7 Days', 'Issues over 1 week old'],
+                    datasets: [{
+                        label: 'Issue Breakdown',
+                        data: [5, 7],
+                        backgroundColor: ['rgba(255, 206, 86, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                        borderWidth: 1
+                    }]
+                }
+            };
+            iframe.postMessage(message, '*');
+            logToConsole('chartConsole', 'Sent: Issues chart with doughnut type', 'success');
+        }
+
+        function sendBioChart() {
+            const iframe = document.getElementById('chartViewerDemo').contentWindow;
+            const message = {
+                type: 'chart-data',
+                chartType: 'doughnut',
+                title: 'E-ID Breakdown',
+                description: 'Total: 5 E-ID requests in progress',
+                chartData: {
+                    labels: ['E-ID initiated in last 7 Days', 'E-ID over 1 week old'],
+                    datasets: [{
+                        label: 'E-ID Breakdown',
+                        data: [2, 3],
+                        backgroundColor: ['rgba(255, 206, 86, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                        borderWidth: 1
+                    }]
+                }
+            };
+            iframe.postMessage(message, '*');
+            logToConsole('chartConsole', 'Sent: E-ID chart with doughnut type', 'success');
+        }
+
+        // Global message listener for all demos
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            
+            // Determine which console to log to based on message type
+            let consoleId = 'imageViewerConsole';
+            
+            if (data.type === 'image-data' || data.type === 'upload-success' && data.docType === 'Photo ID') {
+                consoleId = 'imageViewerConsole';
+            } else if (data.type === 'file-data') {
+                consoleId = 'documentViewerConsole';
+            } else if (data.type === 'message-sent' || data.type === 'dismiss-notification') {
+                consoleId = 'messageConsole';
+            }
+            
+            // Format message for display
+            const messageStr = JSON.stringify(data, null, 2)
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            logToConsole(consoleId, `<strong>Received from iframe:</strong><br><pre style="margin: 0.5rem 0 0 0; font-size: 0.7rem; color: #cbd5e1;">${messageStr}</pre>`);
+        });
+
+        // Active nav link highlighting on scroll
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        function highlightNav() {
+            let current = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (window.pageYOffset >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', highlightNav);
+        highlightNav(); // Initial call
+
+        // Scroll to top button
+        const scrollTopBtn = document.getElementById('scrollTop');
+        
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+        });
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const target = document.getElementById(targetId);
+                
+                if (target) {
+                    const headerHeight = 64; // matches --header-height CSS variable
+                    const offsetTop = target.offsetTop - headerHeight - 20;
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = '3145240';
+    console.log('[api-docs] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
+</body>
+</html>
+
+
