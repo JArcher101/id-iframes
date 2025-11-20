@@ -35,3 +35,25 @@ iframe-version-log-viewer.html
 
 # Backup directories created by scripts
 backup-before-bump-*/
+
+# Test files
+test-*.html
+test-*.ps1
+
+# PDF mockups
+*-mockup*.html
+
+# Utility scripts (non-essential)
+scripts/backup-html.ps1
+
+# Documentation files (non-standard, keep only README/CHANGELOG/API.md)
+QUICK-START.md
+WIX-CODE-*.md
+.gitignore-updates-needed.md
+
+# Backend/Integration code
+backend/
+*-integration*.js
+*-example*.js
+*-integration*.web.js
+*-example*.web.js
