@@ -97,6 +97,11 @@ class ThirdfortChecksManager {
                 this.handleOpenCheck(data);
                 break;
                 
+            case 'current-check':
+                // Respond with the currently open check ID
+                this.handleCurrentCheck();
+                break;
+                
             case 'save-success':
                 console.log('✅ Save successful:', data);
                 this.handleSaveSuccess(data);
@@ -111,6 +116,23 @@ class ThirdfortChecksManager {
                 this.handleCheckImages((data && data.images) || []);
                 break;
         }
+    }
+    
+    handleCurrentCheck() {
+        // Determine the current check ID if a check is open
+        let checkId = undefined;
+        
+        if (this.currentCheck) {
+            // A check is currently open - get its ID
+            checkId = this.currentCheck.transactionId || this.currentCheck.checkId;
+            console.log('📤 Responding with current check ID:', checkId);
+        } else {
+            // No check is open - we're in list view
+            console.log('📤 Responding with undefined (no check open, in list view)');
+        }
+        
+        // Send response back to parent
+        this.sendMessage('refresh-entry', { check_id: checkId });
     }
     
     handleOpenCheck(data) {
