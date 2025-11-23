@@ -1044,7 +1044,6 @@
                     </style>
                 </head>
                 <body>
-                <div>
                     <!-- PDF Header -->
                     <div style="border-bottom: 3px solid #003c71; padding-bottom: 20px; margin-bottom: 30px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -1068,26 +1067,17 @@
             // Process each audit log entry
             auditLog.forEach((entry, index) => {
                 const { formattedDate, timeAgo, combinedTimestamp } = formatTimestamp(entry.timestamp);
-                const timestamp = new Date(entry.timestamp).toLocaleString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
                 
                 const primaryStatus = entry.status && entry.status.length > 0 ? entry.status[0] : 'Pending';
                 const statusInfo = statusMap[primaryStatus] || { text: primaryStatus, class: 'pending' };
                 
-                // Build status badges
+                // Build status badges (using plain text, no emojis for PDF compatibility)
                 let statusBadges = `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(statusInfo.text)}</span>`;
                 
                 if (entry.riskIndicator) {
                     statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #f8d7da; color: #721c24; margin-right: 6px; margin-bottom: 6px;">High Risk</span>`;
                 }
                 if (entry.pepStatus) {
-                    let pepClass = entry.pepStatus === 'CPEP' ? 'pep-confirmed' : (entry.pepStatus === 'NPEP' ? 'pep-outruled' : 'pep-potential');
                     let pepText = entry.pepStatus === 'CPEP' ? 'PEP' : (entry.pepStatus === 'NPEP' ? 'Outruled PEP' : 'Potential PEP');
                     const pepBg = entry.pepStatus === 'CPEP' ? '#fff3cd' : (entry.pepStatus === 'NPEP' ? '#d4edda' : '#e3f2fd');
                     const pepColor = entry.pepStatus === 'CPEP' ? '#856404' : (entry.pepStatus === 'NPEP' ? '#155724' : '#1976d2');
@@ -1299,7 +1289,7 @@
                         logItems += `
                             <div style="margin-top: 8px;">
                                 <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9;">
-                                    📎 ${escapeHtml(entry.lastLog.file.name || 'Attachment')}
+                                    [ATTACHMENT] ${escapeHtml(entry.lastLog.file.name || 'Attachment')}
                                 </span>
                             </div>
                         `;
@@ -1321,7 +1311,7 @@
                         messageItems += `
                             <div style="margin-top: 8px;">
                                 <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9;">
-                                    📎 ${escapeHtml(entry.lastMessage.file.name || 'Attachment')}
+                                    [ATTACHMENT] ${escapeHtml(entry.lastMessage.file.name || 'Attachment')}
                                 </span>
                             </div>
                         `;
@@ -1403,7 +1393,6 @@
                         <p>This report was generated from Thurstan Hoskin's Val'ID'ate System</p>
                         <p>Report ID: AUDIT-${Date.now()} | Page 1 of 1</p>
                     </div>
-                </div>
             </body>
             </html>
             `;
@@ -1431,12 +1420,18 @@
                 // Build HTML template for PDF
                 const pdfHTML = buildPDFHTML();
                 
+                console.log('📄 HTML content length:', pdfHTML.length);
+                console.log('📄 HTML preview (first 500 chars):', pdfHTML.substring(0, 500));
+                
                 // Create element for html2pdf (like checks manager and sanctions checker)
                 // CRITICAL: Do NOT add to document.body to avoid custom font inheritance!
                 const element = document.createElement('div');
                 element.innerHTML = pdfHTML;
                 
-                console.log('📄 HTML content length:', pdfHTML.length);
+                // Wait a moment for innerHTML to parse
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                console.log('📄 Element created with', element.children.length, 'children');
                 console.log('📄 Starting PDF generation with html2pdf...');
                 
                 // Configure html2pdf options (same as checks manager and sanctions checker)
@@ -1523,7 +1518,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'eca233e';
+    window.__IFRAME_VERSION__ = '5ee6026';
     console.log('[audit-log] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

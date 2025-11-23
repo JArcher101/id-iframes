@@ -1000,6 +1000,65 @@ body {
     display: block;
 }
 
+/* Dismissed Hits Section */
+.dismissed-hits-section {
+    margin-top: 16px;
+    border-top: 1px solid var(--border-grey);
+    padding-top: 12px;
+}
+
+.dismissed-hits-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+    user-select: none;
+}
+
+.dismissed-hits-header:hover {
+    background: #f0f0f0;
+}
+
+.dismissed-hits-title {
+    font-family: 'Transport', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.dismissed-hits-count {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 12px;
+    color: #6c757d;
+    background: #e9ecef;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.dismissed-hits-arrow {
+    width: 16px;
+    height: 16px;
+    margin-left: auto;
+    transition: transform 0.2s;
+    color: #6c757d;
+}
+
+.dismissed-hits-section.expanded .dismissed-hits-arrow {
+    transform: rotate(180deg);
+}
+
+.dismissed-hits-content {
+    display: none;
+    margin-top: 12px;
+}
+
+.dismissed-hits-content.expanded {
+    display: block;
+}
+
 .pep-hit-item {
     background: #f9f9f9;
     border: 1px solid var(--border-grey);
@@ -6583,6 +6642,12 @@ body {
 .hit-count-badge.badge-outstanding {
     background: #fff3cd;
     color: #856404;
+}
+
+.hit-count-badge.badge-closed {
+    background: #e9ecef;
+    color: #6c757d;
+    margin-left: 8px;
 }
 
 /* Dismissed Hit Styling */
