@@ -665,12 +665,28 @@
             timeline.innerHTML = auditLog.map((entry, index) => {
                 const { formattedDate, timeAgo, combinedTimestamp } = formatTimestamp(entry.timestamp);
                 
-                // Determine primary status
-                const primaryStatus = entry.status && entry.status.length > 0 ? entry.status[0] : 'Pending';
-                const statusInfo = statusMap[primaryStatus] || { text: primaryStatus, class: 'pending' };
+                // Show ALL status badges from the status array (AWF, Issue, BIO, E-PASS, PASS, IDHeld, Pending, Archived, Reception)
+                let statusBadges = '';
+                let primaryStatusInfo = null; // For timeline marker
+                if (entry.status && Array.isArray(entry.status) && entry.status.length > 0) {
+                    entry.status.forEach((status, idx) => {
+                        const statusInfo = statusMap[status] || { text: status, class: 'pending' };
+                        statusBadges += `<span class="badge badge-status ${statusInfo.class}">${statusInfo.text}</span>`;
+                        // Use first status for timeline marker
+                        if (idx === 0) {
+                            primaryStatusInfo = statusInfo;
+                        }
+                    });
+                } else {
+                    // Fallback to Pending if no status
+                    primaryStatusInfo = statusMap['Pending'] || { text: 'Pending', class: 'pending' };
+                    statusBadges = `<span class="badge badge-status ${primaryStatusInfo.class}">${primaryStatusInfo.text}</span>`;
+                }
                 
-                // Build status badges
-                let statusBadges = `<span class="badge badge-status ${statusInfo.class}">${statusInfo.text}</span>`;
+                // Ensure we have a primaryStatusInfo for timeline marker
+                if (!primaryStatusInfo) {
+                    primaryStatusInfo = statusMap['Pending'] || { text: 'Pending', class: 'pending' };
+                }
                 
                 // Add flags
                 if (entry.riskIndicator) {
@@ -707,6 +723,14 @@
                 }
                 if (entry.charity) {
                     statusBadges += `<span class="badge badge-flag charity">Charity</span>`;
+                }
+                
+                // FE Update tags (show as secondary badges alongside status badges)
+                if (entry.feUpdate && entry.feUpdate.length > 0) {
+                    entry.feUpdate.forEach(tag => {
+                        const tagText = feUpdateMap[tag] || tag;
+                        statusBadges += `<span class="badge badge-flag fe-update">${tagText}</span>`;
+                    });
                 }
                 
                 // Build details sections
@@ -936,26 +960,17 @@
                     `;
                 }
                 
-                // Issue location tag
+                // Issue location tag (only show if Issue is in status array)
                 let issueTag = '';
-                if (entry.issueLocation && primaryStatus === 'Issue') {
+                const hasIssueStatus = entry.status && Array.isArray(entry.status) && entry.status.includes('Issue');
+                if (entry.issueLocation && hasIssueStatus) {
                     const issueText = issueLocationMap[entry.issueLocation] || entry.issueLocation;
                     issueTag = `<div class="issue-tag">${issueText}</div>`;
                 }
                 
-                // FE Update tags
-                let feUpdateTags = '';
-                if (entry.feUpdate && entry.feUpdate.length > 0) {
-                    const tags = entry.feUpdate.map(tag => {
-                        const tagText = feUpdateMap[tag] || tag;
-                        return `<span class="fe-tag">${tagText}</span>`;
-                    }).join('');
-                    feUpdateTags = `<div class="fe-updates">${tags}</div>`;
-                }
-                
                 return `
                     <div class="timeline-entry" onclick="toggleEntry(event, ${index})">
-                        <div class="timeline-marker status-${statusInfo.class}"></div>
+                        <div class="timeline-marker status-${primaryStatusInfo.class}"></div>
                         
                         <div class="entry-header">
                             <div class="entry-badges-row">
@@ -973,7 +988,6 @@
                         
                         <div class="entry-collapsible">
                             ${issueTag}
-                            ${feUpdateTags}
                             
                             ${detailsSections ? `<div class="entry-details">${detailsSections}</div>` : ''}
                             
@@ -1068,11 +1082,68 @@
             auditLog.forEach((entry, index) => {
                 const { formattedDate, timeAgo, combinedTimestamp } = formatTimestamp(entry.timestamp);
                 
-                const primaryStatus = entry.status && entry.status.length > 0 ? entry.status[0] : 'Pending';
-                const statusInfo = statusMap[primaryStatus] || { text: primaryStatus, class: 'pending' };
+                // Show ALL status badges from the status array (AWF, Issue, BIO, E-PASS, PASS, IDHeld, Pending, Archived, Reception)
+                let statusBadges = '';
+                // Use appropriate badge color based on status class
+                const badgeColors = {
+                    'reception': { bg: '#d4edda', color: '#155724', border: '#155724' },
+                    'awf': { bg: '#fff3cd', color: '#856404', border: '#856404' },
+                    'bio': { bg: '#e3f2fd', color: '#1976d2', border: '#1976d2' },
+                    'issue': { bg: '#f8d7da', color: '#721c24', border: '#721c24' },
+                    'pass': { bg: '#d4edda', color: '#155724', border: '#155724' },
+                    'epass': { bg: '#d4edda', color: '#155724', border: '#155724' },
+                    'idheld': { bg: '#fff3cd', color: '#856404', border: '#856404' },
+                    'pending': { bg: '#e3f2fd', color: '#1976d2', border: '#1976d2' },
+                    'archived': { bg: '#e2e3e5', color: '#383d41', border: '#383d41' }
+                };
                 
-                // Build status badges (with borders for print visibility - background colors don't print well)
-                let statusBadges = `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; border: 1px solid #1976d2; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(statusInfo.text)}</span>`;
+                if (entry.status && Array.isArray(entry.status) && entry.status.length > 0) {
+                    entry.status.forEach(status => {
+                        const statusInfo = statusMap[status] || { text: status, class: 'pending' };
+                        const colors = badgeColors[statusInfo.class] || { bg: '#e3f2fd', color: '#1976d2', border: '#1976d2' };
+                        statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${colors.bg}; color: ${colors.color}; border: 1px solid ${colors.border}; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(statusInfo.text)}</span>`;
+                    });
+                } else {
+                    // Fallback to Pending if no status
+                    const statusInfo = statusMap['Pending'] || { text: 'Pending', class: 'pending' };
+                    const colors = badgeColors['pending'] || { bg: '#e3f2fd', color: '#1976d2', border: '#1976d2' };
+                    statusBadges = `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${colors.bg}; color: ${colors.color}; border: 1px solid ${colors.border}; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(statusInfo.text)}</span>`;
+                }
+                
+                // Add flags (all badges together)
+                if (entry.riskIndicator) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #f8d7da; color: #721c24; border: 1px solid #721c24; margin-right: 6px; margin-bottom: 6px;">High Risk</span>`;
+                }
+                if (entry.pepStatus) {
+                    let pepText = entry.pepStatus === 'CPEP' ? 'PEP' : (entry.pepStatus === 'NPEP' ? 'Outruled PEP' : 'Potential PEP');
+                    const pepBg = entry.pepStatus === 'CPEP' ? '#fff3cd' : (entry.pepStatus === 'NPEP' ? '#d4edda' : '#e3f2fd');
+                    const pepColor = entry.pepStatus === 'CPEP' ? '#856404' : (entry.pepStatus === 'NPEP' ? '#155724' : '#1976d2');
+                    const pepBorder = entry.pepStatus === 'CPEP' ? '#856404' : (entry.pepStatus === 'NPEP' ? '#155724' : '#1976d2');
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${pepBg}; color: ${pepColor}; border: 1px solid ${pepBorder}; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(pepText)}</span>`;
+                }
+                if (entry.pepMonitoring) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #fff3cd; color: #856404; border: 1px solid #856404; margin-right: 6px; margin-bottom: 6px;">PEP Monitoring Active</span>`;
+                }
+                if (entry.safeHarbour) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #d4edda; color: #155724; border: 1px solid #155724; margin-right: 6px; margin-bottom: 6px;">Safe Harbour</span>`;
+                }
+                if (entry.amlCharge) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #d4edda; color: #155724; border: 1px solid #155724; margin-right: 6px; margin-bottom: 6px;">AML Charge Waived</span>`;
+                }
+                if (entry.business) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; border: 1px solid #1976d2; margin-right: 6px; margin-bottom: 6px;">Business</span>`;
+                }
+                if (entry.charity) {
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; border: 1px solid #1976d2; margin-right: 6px; margin-bottom: 6px;">Charity</span>`;
+                }
+                
+                // FE Update tags (show as secondary badges alongside status badges - with borders for print visibility)
+                if (entry.feUpdate && entry.feUpdate.length > 0) {
+                    entry.feUpdate.forEach(tag => {
+                        const tagText = feUpdateMap[tag] || tag;
+                        statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; border: 1px solid #1976d2; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(tagText)}</span>`;
+                    });
+                }
                 
                 if (entry.riskIndicator) {
                     statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #f8d7da; color: #721c24; border: 1px solid #721c24; margin-right: 6px; margin-bottom: 6px;">High Risk</span>`;
@@ -1326,21 +1397,12 @@
                     `;
                 }
                 
-                // Issue location tag
+                // Issue location tag (only show if Issue is in status array)
                 let issueTag = '';
-                if (entry.issueLocation && primaryStatus === 'Issue') {
+                const hasIssueStatus = entry.status && Array.isArray(entry.status) && entry.status.includes('Issue');
+                if (entry.issueLocation && hasIssueStatus) {
                     const issueText = issueLocationMap[entry.issueLocation] || entry.issueLocation;
                     issueTag = `<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; font-size: 12px; color: #856404; font-weight: bold;">${escapeHtml(issueText)}</div>`;
-                }
-                
-                // FE Update tags (with borders for print visibility)
-                let feUpdateTags = '';
-                if (entry.feUpdate && entry.feUpdate.length > 0) {
-                    const tags = entry.feUpdate.map(tag => {
-                        const tagText = feUpdateMap[tag] || tag;
-                        return `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; border: 1px solid #1976d2; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(tagText)}</span>`;
-                    }).join('');
-                    feUpdateTags = `<div style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px;">${tags}</div>`;
                 }
                 
                 html += `
@@ -1348,7 +1410,7 @@
                     <div class="entry-card" style="background: white; border-radius: 8px; border-left: 4px solid #003c71; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); margin-bottom: 20px;">
                         <!-- Entry Header -->
                         <div style="margin-bottom: 12px;">
-                            <!-- Status Badges Row -->
+                            <!-- Status Badges Row - All badges together (status, flags, FE updates) -->
                             <div style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px;">
                                 ${statusBadges}
                             </div>
@@ -1368,7 +1430,6 @@
                         <!-- Entry Details -->
                         <div style="padding: 12px 0; border-top: 1px solid #dee2e6;">
                             ${issueTag}
-                            ${feUpdateTags}
                             
                             ${detailsSections ? `
                             <!-- Details Sections Grid -->
@@ -1501,7 +1562,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'da3086a';
+    window.__IFRAME_VERSION__ = '7917796';
     console.log('[audit-log] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
