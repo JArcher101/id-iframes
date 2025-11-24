@@ -1071,32 +1071,33 @@
                 const primaryStatus = entry.status && entry.status.length > 0 ? entry.status[0] : 'Pending';
                 const statusInfo = statusMap[primaryStatus] || { text: primaryStatus, class: 'pending' };
                 
-                // Build status badges (using plain text, no emojis for PDF compatibility)
-                let statusBadges = `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(statusInfo.text)}</span>`;
+                // Build status badges (with borders for print visibility - background colors don't print well)
+                let statusBadges = `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; border: 1px solid #1976d2; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(statusInfo.text)}</span>`;
                 
                 if (entry.riskIndicator) {
-                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #f8d7da; color: #721c24; margin-right: 6px; margin-bottom: 6px;">High Risk</span>`;
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #f8d7da; color: #721c24; border: 1px solid #721c24; margin-right: 6px; margin-bottom: 6px;">High Risk</span>`;
                 }
                 if (entry.pepStatus) {
                     let pepText = entry.pepStatus === 'CPEP' ? 'PEP' : (entry.pepStatus === 'NPEP' ? 'Outruled PEP' : 'Potential PEP');
                     const pepBg = entry.pepStatus === 'CPEP' ? '#fff3cd' : (entry.pepStatus === 'NPEP' ? '#d4edda' : '#e3f2fd');
                     const pepColor = entry.pepStatus === 'CPEP' ? '#856404' : (entry.pepStatus === 'NPEP' ? '#155724' : '#1976d2');
-                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${pepBg}; color: ${pepColor}; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(pepText)}</span>`;
+                    const pepBorder = entry.pepStatus === 'CPEP' ? '#856404' : (entry.pepStatus === 'NPEP' ? '#155724' : '#1976d2');
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${pepBg}; color: ${pepColor}; border: 1px solid ${pepBorder}; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(pepText)}</span>`;
                 }
                 if (entry.pepMonitoring) {
-                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #fff3cd; color: #856404; margin-right: 6px; margin-bottom: 6px;">PEP Monitoring Active</span>`;
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #fff3cd; color: #856404; border: 1px solid #856404; margin-right: 6px; margin-bottom: 6px;">PEP Monitoring Active</span>`;
                 }
                 if (entry.safeHarbour) {
-                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #d4edda; color: #155724; margin-right: 6px; margin-bottom: 6px;">Safe Harbour</span>`;
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #d4edda; color: #155724; border: 1px solid #155724; margin-right: 6px; margin-bottom: 6px;">Safe Harbour</span>`;
                 }
                 if (entry.amlCharge) {
-                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #d4edda; color: #155724; margin-right: 6px; margin-bottom: 6px;">AML Charge Waived</span>`;
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #d4edda; color: #155724; border: 1px solid #155724; margin-right: 6px; margin-bottom: 6px;">AML Charge Waived</span>`;
                 }
                 if (entry.business) {
-                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; margin-right: 6px; margin-bottom: 6px;">Business</span>`;
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; border: 1px solid #1976d2; margin-right: 6px; margin-bottom: 6px;">Business</span>`;
                 }
                 if (entry.charity) {
-                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; margin-right: 6px; margin-bottom: 6px;">Charity</span>`;
+                    statusBadges += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; border: 1px solid #1976d2; margin-right: 6px; margin-bottom: 6px;">Charity</span>`;
                 }
                 
                 // Build details sections (matching renderAuditLog structure)
@@ -1120,7 +1121,7 @@
                     }
                     
                     detailsSections += `
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #3498db;">
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #3498db; border: 1px solid #dee2e6; border-left-width: 3px;">
                             <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">MATTER</div>
                             ${matterItems}
                         </div>
@@ -1162,14 +1163,14 @@
                     
                     if (entry.photoIdHeld !== undefined || entry.addressIdHeld !== undefined || entry.likenessNotConfirmed !== undefined) {
                         identityItems += `<div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px;">`;
-                        if (entry.photoIdHeld) identityItems += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2;">Photo ID</span>`;
-                        if (entry.addressIdHeld) identityItems += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2;">Address ID</span>`;
-                        if (entry.likenessNotConfirmed) identityItems += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #f8d7da; color: #721c24;">Likeness Not Confirmed</span>`;
+                        if (entry.photoIdHeld) identityItems += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; border: 1px solid #1976d2;">Photo ID</span>`;
+                        if (entry.addressIdHeld) identityItems += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; border: 1px solid #1976d2;">Address ID</span>`;
+                        if (entry.likenessNotConfirmed) identityItems += `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #f8d7da; color: #721c24; border: 1px solid #721c24;">Likeness Not Confirmed</span>`;
                         identityItems += `</div>`;
                     }
                     
                     detailsSections += `
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #9b59b6;">
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #9b59b6; border: 1px solid #dee2e6; border-left-width: 3px;">
                             <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">IDENTITY</div>
                             ${identityItems}
                         </div>
@@ -1187,7 +1188,7 @@
                     }
                     
                     detailsSections += `
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #16a085;">
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #16a085; border: 1px solid #dee2e6; border-left-width: 3px;">
                             <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">CONTACT</div>
                             ${contactItems}
                         </div>
@@ -1202,7 +1203,7 @@
                         addressItems += `
                             <div style="font-size: 13px; margin-bottom: 5px; color: #555;">
                                 <span style="font-weight: bold; color: #7f8c8d; font-size: 11px; margin-right: 8px;">Current Address:</span>
-                                ${entry.recentMove ? '<span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; background: #f8d7da; color: #721c24; margin-left: 5px;">Recent Move</span>' : ''}
+                                ${entry.recentMove ? '<span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; background: #f8d7da; color: #721c24; border: 1px solid #721c24; margin-left: 5px;">Recent Move</span>' : ''}
                                 <div style="color: #555; margin-top: 4px; line-height: 1.5;">${escapeHtml(formatAddress(entry.address))}</div>
                             </div>
                         `;
@@ -1218,7 +1219,7 @@
                     }
                     
                     detailsSections += `
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #f39c12;">
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #f39c12; border: 1px solid #dee2e6; border-left-width: 3px;">
                             <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">ADDRESS</div>
                             ${addressItems}
                         </div>
@@ -1242,7 +1243,7 @@
                     }
                     
                     detailsSections += `
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #e74c3c;">
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #e74c3c; border: 1px solid #dee2e6; border-left-width: 3px;">
                             <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">ESOF (SOURCE OF FUNDS)</div>
                             ${esofItems}
                         </div>
@@ -1264,7 +1265,7 @@
                     }
                     
                     detailsSections += `
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #95a5a6;">
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #95a5a6; border: 1px solid #dee2e6; border-left-width: 3px;">
                             <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">ARCHIVE</div>
                             ${archiveItems}
                         </div>
@@ -1274,7 +1275,7 @@
                 // PEP Note section
                 if (entry.pepNote) {
                     detailsSections += `
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #e67e22; grid-column: 1 / -1;">
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #e67e22; border: 1px solid #dee2e6; border-left-width: 3px; grid-column: 1 / -1;">
                             <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">PEP NOTE</div>
                             <div style="font-size: 13px; color: #555;">${escapeHtml(entry.pepNote)}</div>
                         </div>
@@ -1288,7 +1289,7 @@
                     if (entry.lastLog.file) {
                         logItems += `
                             <div style="margin-top: 8px;">
-                                <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9;">
+                                <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1565c0; border: 1px solid #1565c0;">
                                     [ATTACHMENT] ${escapeHtml(entry.lastLog.file.name || 'Attachment')}
                                 </span>
                             </div>
@@ -1296,7 +1297,7 @@
                     }
                     
                     detailsSections += `
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #16a085; grid-column: 1 / -1;">
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #16a085; border: 1px solid #dee2e6; border-left-width: 3px; grid-column: 1 / -1;">
                             <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">LATEST CASHIERS LOG</div>
                             ${logItems}
                         </div>
@@ -1310,7 +1311,7 @@
                     if (entry.lastMessage.file) {
                         messageItems += `
                             <div style="margin-top: 8px;">
-                                <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9;">
+                                <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1565c0; border: 1px solid #1565c0;">
                                     [ATTACHMENT] ${escapeHtml(entry.lastMessage.file.name || 'Attachment')}
                                 </span>
                             </div>
@@ -1318,7 +1319,7 @@
                     }
                     
                     detailsSections += `
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #9b59b6; grid-column: 1 / -1;">
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #9b59b6; border: 1px solid #dee2e6; border-left-width: 3px; grid-column: 1 / -1;">
                             <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">LATEST CHAT MESSAGE</div>
                             ${messageItems}
                         </div>
@@ -1332,12 +1333,12 @@
                     issueTag = `<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; font-size: 12px; color: #856404; font-weight: bold;">${escapeHtml(issueText)}</div>`;
                 }
                 
-                // FE Update tags
+                // FE Update tags (with borders for print visibility)
                 let feUpdateTags = '';
                 if (entry.feUpdate && entry.feUpdate.length > 0) {
                     const tags = entry.feUpdate.map(tag => {
                         const tagText = feUpdateMap[tag] || tag;
-                        return `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(tagText)}</span>`;
+                        return `<span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2; border: 1px solid #1976d2; margin-right: 6px; margin-bottom: 6px;">${escapeHtml(tagText)}</span>`;
                     }).join('');
                     feUpdateTags = `<div style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px;">${tags}</div>`;
                 }
@@ -1401,85 +1402,70 @@
         }
         
         /*
-        Generate PDF using html2pdf.js and open print dialog with print.js
+        Generate and print audit log using print.js directly
         */
-        async function downloadAuditLogPDF() {
+        function downloadAuditLogPDF() {
             if (!auditLog || auditLog.length === 0) {
-                console.error('Cannot generate PDF: missing audit log data');
-                alert('No audit log data available to generate PDF.');
+                console.error('Cannot print: missing audit log data');
+                alert('No audit log data available to print.');
                 return;
             }
             
-            if (typeof html2pdf === 'undefined') {
-                console.error('Cannot generate PDF: html2pdf library not loaded');
-                alert('PDF library not loaded. Please refresh the page.');
+            if (typeof printJS === 'undefined') {
+                console.error('Print.js library not loaded');
+                alert('Print library not loaded. Please refresh the page.');
                 return;
             }
             
             try {
-                // Build HTML template for PDF
-                const pdfHTML = buildPDFHTML();
+                // Build HTML template for printing
+                const printHTML = buildPDFHTML();
                 
-                console.log('📄 HTML content length:', pdfHTML.length);
-                console.log('📄 HTML preview (first 500 chars):', pdfHTML.substring(0, 500));
+                console.log('📄 HTML content length:', printHTML.length);
                 
-                // Create element for html2pdf (like checks manager and sanctions checker)
-                // CRITICAL: Do NOT add to document.body to avoid custom font inheritance!
-                const element = document.createElement('div');
-                element.innerHTML = pdfHTML;
+                // Create a temporary container element for print.js
+                const printContainer = document.createElement('div');
+                printContainer.innerHTML = printHTML;
+                printContainer.style.position = 'absolute';
+                printContainer.style.left = '-9999px';
+                printContainer.style.top = '-9999px';
                 
-                // Wait a moment for innerHTML to parse
-                await new Promise(resolve => setTimeout(resolve, 100));
+                // Temporarily add to DOM so print.js can access it
+                document.body.appendChild(printContainer);
                 
-                console.log('📄 Element created with', element.children.length, 'children');
-                console.log('📄 Starting PDF generation with html2pdf...');
-                
-                // Configure html2pdf options (same as checks manager and sanctions checker)
-                const options = {
-                    margin: [10, 10, 10, 10],
-                    filename: `Audit_Log_${Date.now()}.pdf`,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { 
-                        scale: 2, 
-                        useCORS: true, 
-                        logging: false
-                    },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak: { mode: 'css', avoid: '.entry-card, .detail-section' }
-                };
-                
-                // Generate PDF blob using html2pdf (exactly like checks manager and sanctions checker)
-                const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
-                
-                console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
-                
-                // Open print dialog using Print.js with PDF blob (like checks manager and sanctions checker)
-                if (typeof printJS === 'undefined') {
-                    console.error('❌ Print.js library not loaded');
-                    alert('Print library not loaded. Please refresh the page.');
-                    return;
-                }
-                
-                console.log('📄 Opening print dialog with PDF blob...');
-                
-                // Convert blob to object URL for Print.js
-                const pdfUrl = URL.createObjectURL(pdfBlob);
-                
-                // Use Print.js to print the PDF directly (preserves all styling)
+                // Use Print.js to print HTML directly
                 printJS({
-                    printable: pdfUrl,
-                    type: 'pdf',
+                    printable: printContainer.innerHTML,
+                    type: 'raw-html',
+                    style: `
+                        @media print {
+                            @page {
+                                margin: 10mm;
+                            }
+                            body {
+                                padding: 20px;
+                            }
+                            .entry-card {
+                                page-break-inside: avoid;
+                                margin-bottom: 20px;
+                            }
+                            .detail-section {
+                                page-break-inside: avoid;
+                            }
+                        }
+                    `,
                     onPrintDialogClose: () => {
-                        // Clean up blob URL after print dialog closes
-                        URL.revokeObjectURL(pdfUrl);
+                        // Clean up temporary container
+                        document.body.removeChild(printContainer);
+                        console.log('✅ Print dialog closed, container removed');
                     }
                 });
                 
-                console.log('✅ Print dialog opened with PDF');
+                console.log('✅ Print dialog opened');
                 
             } catch (error) {
-                console.error('❌ Error generating PDF:', error);
-                alert('Failed to generate PDF. Please try again.');
+                console.error('❌ Error printing:', error);
+                alert('Failed to open print dialog. Please try again.');
             }
         }
         
@@ -1509,16 +1495,13 @@
         renderAuditLog();
     </script>
     
-    <!-- html2pdf library for PDF generation (same as checks manager and sanctions checker) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
     <!-- Print.js library for print dialog -->
     <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '5ee6026';
+    window.__IFRAME_VERSION__ = 'da3086a';
     console.log('[audit-log] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
