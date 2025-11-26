@@ -50,12 +50,6 @@ class ThirdfortChecksManager {
     setupEventListeners() {
         // Back button
         this.backBtn?.addEventListener('click', () => this.showListView());
-        
-        // Load mock checks button
-        const loadMockBtn = document.getElementById('load-mock-checks-btn');
-        if (loadMockBtn) {
-            loadMockBtn.addEventListener('click', () => this.loadMockChecks());
-        }
     }
     
     // ===================================================================
@@ -370,676 +364,6 @@ class ThirdfortChecksManager {
         }
     }
     
-    loadMockChecks() {
-        console.log('🎭 Loading mock checks');
-        
-        const mockChecks = [
-            {
-                "taskOutcomes": {
-                    "identity:lite": {
-                        "breakdown": {
-                            "document": {
-                                "name": "document",
-                                "breakdown": {
-                                    "compromised_document": {
-                                        "result": "clear"
-                                    },
-                                    "data_consistency": {
-                                        "breakdown": {
-                                            "first_name": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "date_of_expiry": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "date_of_birth": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "last_name": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "nationality": {
-                                                "properties": {},
-                                                "result": null
-                                            },
-                                            "issuing_country": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "document_numbers": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "document_type": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "gender": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            }
-                                        },
-                                        "result": "clear"
-                                    },
-                                    "data_comparison": {
-                                        "breakdown": {
-                                            "first_name": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "date_of_expiry": {
-                                                "properties": {},
-                                                "result": null
-                                            },
-                                            "date_of_birth": {
-                                                "properties": {},
-                                                "result": null
-                                            },
-                                            "last_name": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "issuing_country": {
-                                                "properties": {},
-                                                "result": null
-                                            },
-                                            "document_numbers": {
-                                                "properties": {},
-                                                "result": null
-                                            },
-                                            "document_type": {
-                                                "properties": {},
-                                                "result": null
-                                            },
-                                            "gender": {
-                                                "properties": {},
-                                                "result": null
-                                            }
-                                        },
-                                        "result": "clear"
-                                    },
-                                    "data_validation": {
-                                        "breakdown": {
-                                            "mrz": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "date_of_birth": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "document_numbers": {
-                                                "properties": {
-                                                    "document_number": "clear"
-                                                },
-                                                "result": "clear"
-                                            },
-                                            "expiry_date": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "document_expiration": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "gender": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            }
-                                        },
-                                        "result": "clear"
-                                    },
-                                    "image_integrity": {
-                                        "breakdown": {
-                                            "colour_picture": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "conclusive_document_quality": {
-                                                "properties": {
-                                                    "digital_document": "clear",
-                                                    "obscured_security_features": "clear",
-                                                    "punctured_document": "clear",
-                                                    "obscured_data_points": "clear",
-                                                    "abnormal_document_features": "clear",
-                                                    "corner_removed": "clear",
-                                                    "watermarks_digital_text_overlay": "clear",
-                                                    "missing_back": "clear"
-                                                },
-                                                "result": "clear"
-                                            },
-                                            "image_quality": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "supported_document": {
-                                                "properties": {
-                                                    "custom_supported_document": "clear",
-                                                    "issuing_country_subject_to_sanctions": "clear",
-                                                    "onfido_supported_document": "clear"
-                                                },
-                                                "result": "clear"
-                                            }
-                                        },
-                                        "result": "clear"
-                                    },
-                                    "visual_authenticity": {
-                                        "breakdown": {
-                                            "face_detection": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "fonts": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "picture_face_integrity": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "original_document_present": {
-                                                "properties": {
-                                                    "document_on_printed_paper": "clear",
-                                                    "photo_of_screen": "clear",
-                                                    "scan": "clear",
-                                                    "screenshot": "clear"
-                                                },
-                                                "result": "clear"
-                                            },
-                                            "security_features": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "digital_tampering": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "template": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            },
-                                            "other": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            }
-                                        },
-                                        "result": "clear"
-                                    },
-                                    "age_validation": {
-                                        "breakdown": {
-                                            "minimum_accepted_age": {
-                                                "properties": {},
-                                                "result": "clear"
-                                            }
-                                        },
-                                        "result": "clear"
-                                    },
-                                    "police_record": {
-                                        "result": "clear"
-                                    }
-                                },
-                                "result": "clear",
-                                "documents": [
-                                    {
-                                        "id": "2da893ae-11c5-45dd-a3b7-55968b0ec543"
-                                    }
-                                ],
-                                "id": "e52d5bb1-3698-49ea-8efd-099005cfb9e9",
-                                "properties": {
-                                    "first_name": "JACOB ROBERT",
-                                    "mrz_line1": "P<GBRMORAN<<JACOB<ROBERT<<<<<<<<<<<<<<<<<<<<",
-                                    "issuing_authority": "HMPO",
-                                    "date_of_expiry": "2027-02-27",
-                                    "place_of_birth": "SALFORD",
-                                    "issuing_date": "2017-02-27",
-                                    "date_of_birth": "2001-01-11",
-                                    "last_name": "MORAN",
-                                    "nationality": "GBR",
-                                    "issuing_country": "GBR",
-                                    "document_numbers": [
-                                        {
-                                            "type": "document_number",
-                                            "value": "543849156"
-                                        }
-                                    ],
-                                    "document_type": "passport",
-                                    "mrz_line2": "5438491565GBR0101114M2702272<<<<<<<<<<<<<<04",
-                                    "gender": "Male"
-                                },
-                                "status": "complete",
-                                "created_at": "2025-11-26T20:00:56Z",
-                                "href": "/v3.6/reports/e52d5bb1-3698-49ea-8efd-099005cfb9e9",
-                                "sub_result": "clear"
-                            }
-                        },
-                        "data": {
-                            "name": {
-                                "first": "Jacob",
-                                "last": "Archer-Moran",
-                                "other": "Robert"
-                            }
-                        },
-                        "result": "clear",
-                        "documents": [
-                            "d4kns0423amg030ajteg"
-                        ],
-                        "id": "d4knrzv23amg030ajtdg",
-                        "status": "closed",
-                        "createdAt": "2025-11-26T20:01:03.845Z"
-                    }
-                },
-                "updatedAt": "2025-11-26T20:01:12.134Z",
-                "pdfReady": true,
-                "checkType": "idv",
-                "completedAt": "2025-11-26T20:01:12.134Z",
-                "documentsUploaded": true,
-                "initiatedAt": "2025-11-26T18:47:55.737Z",
-                "pdfS3Key": "protected/nHbKyIX",
-                "updates": [
-                    {
-                        "timestamp": "2025-11-26T18:47:55.737Z",
-                        "update": "IDV check initiated by amelia.roberts@thurstanhoskin.co.uk"
-                    },
-                    {
-                        "timestamp": "2025-11-26T20:01:12.134Z",
-                        "update": "Check completed - awaiting PDF"
-                    },
-                    {
-                        "timestamp": "2025-11-26T20:01:17.328Z",
-                        "update": "PDF received and uploaded to S3 - CLEAR"
-                    }
-                ],
-                "status": "closed",
-                "initiatedBy": "amelia.roberts@thurstanhoskin.co.uk",
-                "documentType": "passport",
-                "hasMonitoring": false,
-                "thirdfortResponse": {
-                    "name": "Jacob Robert Archer-Moran - Document Verification",
-                    "request": {
-                        "data": {
-                            "name": {
-                                "first": "Jacob",
-                                "last": "Archer-Moran",
-                                "other": "Robert"
-                            }
-                        },
-                        "reports": [
-                            {
-                                "type": "identity:lite"
-                            }
-                        ]
-                    },
-                    "ref": "Val'ID'ate: 50/997 TEST",
-                    "id": "d4kmppj23amg030mv2hg",
-                    "reports": [],
-                    "status": "open",
-                    "metadata": {
-                        "notify": {
-                            "type": "http",
-                            "data": {
-                                "hmac_key": "mxgTWQa9h8fLO6OHHRZg88Yx3qh5khAfUcv6IOqqiqw=",
-                                "method": "POST",
-                                "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
-                            }
-                        },
-                        "created_by": "d4ji9qa9io6g0092b0n0",
-                        "print": {
-                            "team": "Cashiers",
-                            "tenant": "Thurstan Hoskin Solicitors",
-                            "user": "Amelia Roberts"
-                        },
-                        "context": {
-                            "gid": "d4ji28i9io6g0092avp0",
-                            "uid": "d4ji9qa9io6g0092b0n0",
-                            "team_id": "d4ji28i9io6g0092avp0",
-                            "tenant_id": "d4jf3v29io6g0092akc0"
-                        },
-                        "ce": {
-                            "uri": "/v1/checks/4605398534"
-                        },
-                        "created_at": "2025-11-26T18:47:54.797Z"
-                    },
-                    "type": "document"
-                },
-                "companyData": {
-                    "name": {
-                        "first": "Jacob",
-                        "last": "Archer-Moran",
-                        "other": "Robert"
-                    },
-                    "numbers": []
-                },
-                "checkId": "d4kmppj23amg030mv2hg",
-                "hasAlerts": false,
-                "webhookProcessing": {
-                    "check": "2025-11-26T20:01:11.785Z"
-                },
-                "pdfAddedAt": "2025-11-26T20:01:17.328Z"
-            },
-            {
-                "taskOutcomes": {
-                    "address": {
-                        "result": "clear",
-                        "status": "closed",
-                        "data": {
-                            "quality": 50,
-                            "sources": 7
-                        }
-                    },
-                    "peps": {
-                        "breakdown": {
-                            "total_hits": 0,
-                            "hits": []
-                        },
-                        "data": {
-                            "dob": "2001-01-11T00:00:00.000Z",
-                            "name": {
-                                "first": "Jacob",
-                                "last": "Archer-Moran",
-                                "other": "Robert"
-                            },
-                            "address": {
-                                "postcode": "TR15 2ND",
-                                "country": "GBR",
-                                "street": "Southgate Street",
-                                "building_number": "94",
-                                "town": "Redruth"
-                            }
-                        },
-                        "result": "clear",
-                        "documents": [
-                            "d4kmpqa23amg030mv2q0"
-                        ],
-                        "id": "d4kmpq223amg030yt9gg",
-                        "status": "closed",
-                        "createdAt": "2025-11-26T18:47:56.090Z"
-                    },
-                    "footprint": {
-                        "breakdown": {
-                            "service_name": "Authenticateplus",
-                            "data_quality": {
-                                "properties": {
-                                    "score": 50
-                                },
-                                "result": "clear"
-                            },
-                            "rules": [],
-                            "data_count": {
-                                "properties": {
-                                    "count": 7,
-                                    "score": 0
-                                },
-                                "result": "clear"
-                            }
-                        },
-                        "data": {
-                            "dob": "2001-01-11T00:00:00.000Z",
-                            "name": {
-                                "first": "Jacob",
-                                "last": "Archer-Moran",
-                                "other": "Robert"
-                            },
-                            "address": {
-                                "postcode": "TR15 2ND",
-                                "country": "GBR",
-                                "street": "Southgate Street",
-                                "building_number": "94",
-                                "town": "Redruth"
-                            }
-                        },
-                        "result": "clear",
-                        "documents": [],
-                        "id": "d4kmppt23amg030mv2kg",
-                        "status": "closed",
-                        "createdAt": "2025-11-26T18:47:55.060Z"
-                    }
-                },
-                "pdfReady": true,
-                "checkType": "lite-screen",
-                "initiatedAt": "2025-11-26T18:47:54.174Z",
-                "pdfS3Key": "protected/8AX1P2Z",
-                "consumerName": "Jacob Archer-Moran",
-                "tasks": [
-                    "report:footprint",
-                    "report:peps"
-                ],
-                "updates": [
-                    {
-                        "timestamp": "2025-11-26T18:47:54.174Z",
-                        "update": "Lite Screen check initiated by amelia.roberts@thurstanhoskin.co.uk"
-                    },
-                    {
-                        "timestamp": "2025-11-26T18:48:05.696Z",
-                        "update": "PDF received and uploaded to S3 - CLEAR"
-                    }
-                ],
-                "status": "closed",
-                "initiatedBy": "amelia.roberts@thurstanhoskin.co.uk",
-                "piiData": {
-                    "name": {
-                        "first": "Jacob",
-                        "last": "Archer-Moran",
-                        "other": "Robert"
-                    },
-                    "address": {
-                        "postcode": "TR15 2ND",
-                        "country": "GBR",
-                        "street": "Southgate Street",
-                        "building_number": "94",
-                        "town": "Redruth"
-                    },
-                    "dob": "2001-01-11T00:00:00.000Z",
-                    "document": {}
-                },
-                "hasMonitoring": true,
-                "thirdfortResponse": {
-                    "name": "Jacob Archer-Moran - Lite Screening",
-                    "request": {
-                        "tasks": [
-                            {
-                                "opts": {
-                                    "consent": false
-                                },
-                                "type": "report:footprint"
-                            },
-                            {
-                                "opts": {
-                                    "monitored": true
-                                },
-                                "type": "report:peps"
-                            }
-                        ]
-                    },
-                    "ref": "Val'ID'ate: 50/997 TEST",
-                    "id": "d4kmppa23amg030yt9f0",
-                    "reports": [],
-                    "status": "open",
-                    "metadata": {
-                        "notify": {
-                            "type": "http",
-                            "data": {
-                                "hmac_key": "mxgTWQa9h8fLO6OHHRZg88Yx3qh5khAfUcv6IOqqiqw=",
-                                "method": "POST",
-                                "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
-                            }
-                        },
-                        "created_by": "d4ji9qa9io6g0092b0n0",
-                        "print": {
-                            "team": "Cashiers",
-                            "tenant": "Thurstan Hoskin Solicitors",
-                            "user": "Amelia Roberts"
-                        },
-                        "context": {
-                            "gid": "d4ji28i9io6g0092avp0",
-                            "uid": "d4ji9qa9io6g0092b0n0",
-                            "team_id": "d4ji28i9io6g0092avp0",
-                            "tenant_id": "d4jf3v29io6g0092akc0"
-                        },
-                        "ce": {
-                            "uri": "/v1/checks/4605398362"
-                        },
-                        "created_at": "2025-11-26T18:47:53.213Z"
-                    },
-                    "type": "v2",
-                    "opts": {
-                        "peps": {
-                            "monitored": true
-                        }
-                    }
-                },
-                "expectations": {
-                    "name": {
-                        "data": {
-                            "first": "Jacob",
-                            "last": "Archer-Moran",
-                            "other": "Robert"
-                        }
-                    },
-                    "dob": {
-                        "data": "2001-01-11T00:00:00.000Z"
-                    },
-                    "address": {
-                        "data": {
-                            "postcode": "TR15 2ND",
-                            "country": "GBR",
-                            "building_name": "",
-                            "flat_number": "",
-                            "street": "Southgate Street",
-                            "building_number": "94",
-                            "sub_street": "",
-                            "town": "Redruth"
-                        }
-                    }
-                },
-                "hasAlerts": false,
-                "webhookProcessing": {},
-                "pdfAddedAt": "2025-11-26T18:48:05.690Z",
-                "transactionId": "d4kmppa23amg030yt9f0"
-            },
-            {
-                "updatedAt": "2025-11-26T20:03:56.714Z",
-                "consumerPhone": "+447506430094",
-                "checkType": "electronic-id",
-                "initiatedAt": "2025-11-26T18:46:50.335Z",
-                "consumerName": "Jacob Robert Archer-Moran",
-                "tasks": [
-                    "report:identity",
-                    "report:footprint",
-                    "report:peps",
-                    "documents:poa",
-                    "report:sof-v1",
-                    "report:bank-statement",
-                    "report:bank-summary"
-                ],
-                "updates": [
-                    {
-                        "timestamp": "2025-11-26T18:46:50.335Z",
-                        "update": "Electronic ID check initiated by amelia.roberts@thurstanhoskin.co.uk"
-                    },
-                    {
-                        "timestamp": "2025-11-26T20:03:50.708Z",
-                        "update": "Check aborted by amelia.roberts@thurstanhoskin.co.uk"
-                    },
-                    {
-                        "timestamp": "2025-11-26T20:03:56.714Z",
-                        "update": "Transaction aborted"
-                    }
-                ],
-                "status": "aborted",
-                "initiatedBy": "amelia.roberts@thurstanhoskin.co.uk",
-                "hasMonitoring": true,
-                "thirdfortResponse": {
-                    "name": "Purchase of 21 Green Lane",
-                    "request": {
-                        "actor": {
-                            "name": "Jacob Robert Archer-Moran",
-                            "phone": "+447506430094"
-                        },
-                        "tasks": [
-                            {
-                                "opts": {
-                                    "nfc": "preferred"
-                                },
-                                "type": "report:identity"
-                            },
-                            {
-                                "opts": {
-                                    "consent": false
-                                },
-                                "type": "report:footprint"
-                            },
-                            {
-                                "opts": {
-                                    "monitored": true
-                                },
-                                "type": "report:peps"
-                            },
-                            {
-                                "type": "documents:poa"
-                            },
-                            {
-                                "type": "report:sof-v1"
-                            },
-                            {
-                                "type": "report:bank-statement"
-                            },
-                            {
-                                "type": "report:bank-summary"
-                            }
-                        ]
-                    },
-                    "ref": "Val'ID'ate: 50/997 TEST",
-                    "id": "d4kmp6823amg030yt72g",
-                    "reports": [],
-                    "status": "open",
-                    "metadata": {
-                        "notify": {
-                            "type": "http",
-                            "data": {
-                                "hmac_key": "mxgTWQa9h8fLO6OHHRZg88Yx3qh5khAfUcv6IOqqiqw=",
-                                "method": "POST",
-                                "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
-                            }
-                        },
-                        "created_by": "d4ji9qa9io6g0092b0n0",
-                        "print": {
-                            "team": "Cashiers",
-                            "tenant": "Thurstan Hoskin Solicitors",
-                            "user": "Amelia Roberts"
-                        },
-                        "context": {
-                            "gid": "d4ji28i9io6g0092avp0",
-                            "uid": "d4ji9qa9io6g0092b0n0",
-                            "team_id": "d4ji28i9io6g0092avp0",
-                            "tenant_id": "d4jf3v29io6g0092akc0"
-                        },
-                        "ce": {
-                            "uri": "/v1/checks/4605394251"
-                        },
-                        "created_at": "2025-11-26T18:46:49.292Z"
-                    },
-                    "type": "v2",
-                    "opts": {
-                        "peps": {
-                            "monitored": true
-                        }
-                    }
-                },
-                "webhookProcessing": {
-                    "transaction": "2025-11-26T20:03:56.391Z"
-                },
-                "smsSent": true,
-                "transactionId": "d4kmp6823amg030yt72g"
-            }
-        ];
-        
-        this.loadChecks(mockChecks);
-    }
-    
     // ===================================================================
     // VIEW MANAGEMENT
     // ===================================================================
@@ -1060,18 +384,17 @@ class ThirdfortChecksManager {
         if (view === 'loading') {
             this.loadingState.classList.remove('hidden');
         } else if (view === 'empty') {
-            // Empty state uses list-view container with message
-            this.checksList.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No Thirdfort checks found</div>';
-            this.listView.classList.remove('hidden');
+            this.emptyState.classList.remove('hidden');
         } else if (view === 'list') {
             this.listView.classList.remove('hidden');
         } else if (view === 'detail') {
             this.detailView.classList.remove('hidden');
         }
-        
-        // Step 3: Update state
-        this.currentView = view;
     }
+    
+    /**
+     * Show list view
+     */
     
     showListView() {
         // Close any open overlays when going back to list
@@ -3337,19 +2660,48 @@ class ThirdfortChecksManager {
     
     renderTasksSection(check) {
         const taskOutcomes = check.taskOutcomes || {};
-        const isOpen = check.status === 'open' || check.status === 'processing';
+        const isOpen = check.status === 'open' || check.status === 'processing' || check.status === 'pending';
         const isAborted = check.status === 'aborted';
         
         console.log('🎯 renderTasksSection called');
         console.log('  - Check status:', check.status);
+        console.log('  - Check type:', check.checkType);
         console.log('  - taskOutcomes keys:', Object.keys(taskOutcomes));
         console.log('  - taskOutcomes:', taskOutcomes);
+        console.log('  - thirdfortResponse?.request?.tasks:', check.thirdfortResponse?.request?.tasks);
+        console.log('  - check.tasks:', check.tasks);
         
         // For open or aborted checks, show minimized task cards based on requested tasks
         if ((isOpen || isAborted) && Object.keys(taskOutcomes).length === 0) {
-            const requestTasks = check.thirdfortResponse?.request?.tasks || check.tasks || [];
+            // Get requested tasks from multiple possible locations
+            let requestTasks = [];
+            
+            // Check thirdfortResponse.request.tasks first (most common)
+            if (check.thirdfortResponse?.request?.tasks) {
+                requestTasks = check.thirdfortResponse.request.tasks;
+            }
+            // Fallback to check.tasks array
+            else if (check.tasks && Array.isArray(check.tasks)) {
+                requestTasks = check.tasks;
+            }
+            // Check for reports in thirdfortResponse.request.reports
+            else if (check.thirdfortResponse?.request?.reports) {
+                requestTasks = check.thirdfortResponse.request.reports;
+            }
+            // Check for reports in thirdfortResponse.reports
+            else if (check.thirdfortResponse?.reports) {
+                requestTasks = check.thirdfortResponse.reports;
+            }
+            
+            console.log('  - requestTasks from thirdfortResponse.request.tasks:', check.thirdfortResponse?.request?.tasks);
+            console.log('  - requestTasks from check.tasks:', check.tasks);
+            console.log('  - requestTasks from thirdfortResponse.request.reports:', check.thirdfortResponse?.request?.reports);
+            console.log('  - requestTasks from thirdfortResponse.reports:', check.thirdfortResponse?.reports);
+            console.log('  - Final requestTasks:', requestTasks);
+            console.log('  - requestTasks.length:', requestTasks.length);
             
             if (requestTasks.length === 0) {
+                console.log('  - No requestTasks found - showing empty tasks section');
                 this.tasksSection.innerHTML = '';
                 return;
             }
@@ -3371,7 +2723,7 @@ class ThirdfortChecksManager {
                 }
                 
                 displayedTasks.add(displayType);
-                tasksHtml += this.createOpenTaskCard(displayType);
+                tasksHtml += this.createOpenTaskCard(displayType, check.status);
             });
             
             this.tasksSection.innerHTML = tasksHtml;
@@ -3526,8 +2878,12 @@ class ThirdfortChecksManager {
         return typeMap[taskType] || taskType;
     }
     
-    createOpenTaskCard(taskType) {
+    createOpenTaskCard(taskType, checkStatus) {
         const taskTitle = this.getTaskTitle(taskType);
+        const isAborted = checkStatus === 'aborted';
+        
+        // Only show "Task in progress" for open/processing checks, not aborted
+        const summaryText = isAborted ? '' : '<div class="task-summary-inline">Task in progress</div>';
         
         return `
             <div class="task-card open-task non-expandable">
@@ -3538,7 +2894,7 @@ class ThirdfortChecksManager {
                         <circle cx="150" cy="150" r="30" fill="#fff"/>
                     </svg>
                 </div>
-                <div class="task-summary-inline">Task in progress</div>
+                ${summaryText}
             </div>
         `;
     }
