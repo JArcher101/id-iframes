@@ -50,6 +50,12 @@ class ThirdfortChecksManager {
     setupEventListeners() {
         // Back button
         this.backBtn?.addEventListener('click', () => this.showListView());
+        
+        // Load mock checks button
+        const loadMockBtn = document.getElementById('load-mock-checks-btn');
+        if (loadMockBtn) {
+            loadMockBtn.addEventListener('click', () => this.loadMockChecks());
+        }
     }
     
     // ===================================================================
@@ -364,6 +370,676 @@ class ThirdfortChecksManager {
         }
     }
     
+    loadMockChecks() {
+        console.log('🎭 Loading mock checks');
+        
+        const mockChecks = [
+            {
+                "taskOutcomes": {
+                    "identity:lite": {
+                        "breakdown": {
+                            "document": {
+                                "name": "document",
+                                "breakdown": {
+                                    "compromised_document": {
+                                        "result": "clear"
+                                    },
+                                    "data_consistency": {
+                                        "breakdown": {
+                                            "first_name": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "date_of_expiry": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "date_of_birth": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "last_name": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "nationality": {
+                                                "properties": {},
+                                                "result": null
+                                            },
+                                            "issuing_country": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "document_numbers": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "document_type": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "gender": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            }
+                                        },
+                                        "result": "clear"
+                                    },
+                                    "data_comparison": {
+                                        "breakdown": {
+                                            "first_name": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "date_of_expiry": {
+                                                "properties": {},
+                                                "result": null
+                                            },
+                                            "date_of_birth": {
+                                                "properties": {},
+                                                "result": null
+                                            },
+                                            "last_name": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "issuing_country": {
+                                                "properties": {},
+                                                "result": null
+                                            },
+                                            "document_numbers": {
+                                                "properties": {},
+                                                "result": null
+                                            },
+                                            "document_type": {
+                                                "properties": {},
+                                                "result": null
+                                            },
+                                            "gender": {
+                                                "properties": {},
+                                                "result": null
+                                            }
+                                        },
+                                        "result": "clear"
+                                    },
+                                    "data_validation": {
+                                        "breakdown": {
+                                            "mrz": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "date_of_birth": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "document_numbers": {
+                                                "properties": {
+                                                    "document_number": "clear"
+                                                },
+                                                "result": "clear"
+                                            },
+                                            "expiry_date": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "document_expiration": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "gender": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            }
+                                        },
+                                        "result": "clear"
+                                    },
+                                    "image_integrity": {
+                                        "breakdown": {
+                                            "colour_picture": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "conclusive_document_quality": {
+                                                "properties": {
+                                                    "digital_document": "clear",
+                                                    "obscured_security_features": "clear",
+                                                    "punctured_document": "clear",
+                                                    "obscured_data_points": "clear",
+                                                    "abnormal_document_features": "clear",
+                                                    "corner_removed": "clear",
+                                                    "watermarks_digital_text_overlay": "clear",
+                                                    "missing_back": "clear"
+                                                },
+                                                "result": "clear"
+                                            },
+                                            "image_quality": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "supported_document": {
+                                                "properties": {
+                                                    "custom_supported_document": "clear",
+                                                    "issuing_country_subject_to_sanctions": "clear",
+                                                    "onfido_supported_document": "clear"
+                                                },
+                                                "result": "clear"
+                                            }
+                                        },
+                                        "result": "clear"
+                                    },
+                                    "visual_authenticity": {
+                                        "breakdown": {
+                                            "face_detection": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "fonts": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "picture_face_integrity": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "original_document_present": {
+                                                "properties": {
+                                                    "document_on_printed_paper": "clear",
+                                                    "photo_of_screen": "clear",
+                                                    "scan": "clear",
+                                                    "screenshot": "clear"
+                                                },
+                                                "result": "clear"
+                                            },
+                                            "security_features": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "digital_tampering": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "template": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            },
+                                            "other": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            }
+                                        },
+                                        "result": "clear"
+                                    },
+                                    "age_validation": {
+                                        "breakdown": {
+                                            "minimum_accepted_age": {
+                                                "properties": {},
+                                                "result": "clear"
+                                            }
+                                        },
+                                        "result": "clear"
+                                    },
+                                    "police_record": {
+                                        "result": "clear"
+                                    }
+                                },
+                                "result": "clear",
+                                "documents": [
+                                    {
+                                        "id": "2da893ae-11c5-45dd-a3b7-55968b0ec543"
+                                    }
+                                ],
+                                "id": "e52d5bb1-3698-49ea-8efd-099005cfb9e9",
+                                "properties": {
+                                    "first_name": "JACOB ROBERT",
+                                    "mrz_line1": "P<GBRMORAN<<JACOB<ROBERT<<<<<<<<<<<<<<<<<<<<",
+                                    "issuing_authority": "HMPO",
+                                    "date_of_expiry": "2027-02-27",
+                                    "place_of_birth": "SALFORD",
+                                    "issuing_date": "2017-02-27",
+                                    "date_of_birth": "2001-01-11",
+                                    "last_name": "MORAN",
+                                    "nationality": "GBR",
+                                    "issuing_country": "GBR",
+                                    "document_numbers": [
+                                        {
+                                            "type": "document_number",
+                                            "value": "543849156"
+                                        }
+                                    ],
+                                    "document_type": "passport",
+                                    "mrz_line2": "5438491565GBR0101114M2702272<<<<<<<<<<<<<<04",
+                                    "gender": "Male"
+                                },
+                                "status": "complete",
+                                "created_at": "2025-11-26T20:00:56Z",
+                                "href": "/v3.6/reports/e52d5bb1-3698-49ea-8efd-099005cfb9e9",
+                                "sub_result": "clear"
+                            }
+                        },
+                        "data": {
+                            "name": {
+                                "first": "Jacob",
+                                "last": "Archer-Moran",
+                                "other": "Robert"
+                            }
+                        },
+                        "result": "clear",
+                        "documents": [
+                            "d4kns0423amg030ajteg"
+                        ],
+                        "id": "d4knrzv23amg030ajtdg",
+                        "status": "closed",
+                        "createdAt": "2025-11-26T20:01:03.845Z"
+                    }
+                },
+                "updatedAt": "2025-11-26T20:01:12.134Z",
+                "pdfReady": true,
+                "checkType": "idv",
+                "completedAt": "2025-11-26T20:01:12.134Z",
+                "documentsUploaded": true,
+                "initiatedAt": "2025-11-26T18:47:55.737Z",
+                "pdfS3Key": "protected/nHbKyIX",
+                "updates": [
+                    {
+                        "timestamp": "2025-11-26T18:47:55.737Z",
+                        "update": "IDV check initiated by amelia.roberts@thurstanhoskin.co.uk"
+                    },
+                    {
+                        "timestamp": "2025-11-26T20:01:12.134Z",
+                        "update": "Check completed - awaiting PDF"
+                    },
+                    {
+                        "timestamp": "2025-11-26T20:01:17.328Z",
+                        "update": "PDF received and uploaded to S3 - CLEAR"
+                    }
+                ],
+                "status": "closed",
+                "initiatedBy": "amelia.roberts@thurstanhoskin.co.uk",
+                "documentType": "passport",
+                "hasMonitoring": false,
+                "thirdfortResponse": {
+                    "name": "Jacob Robert Archer-Moran - Document Verification",
+                    "request": {
+                        "data": {
+                            "name": {
+                                "first": "Jacob",
+                                "last": "Archer-Moran",
+                                "other": "Robert"
+                            }
+                        },
+                        "reports": [
+                            {
+                                "type": "identity:lite"
+                            }
+                        ]
+                    },
+                    "ref": "Val'ID'ate: 50/997 TEST",
+                    "id": "d4kmppj23amg030mv2hg",
+                    "reports": [],
+                    "status": "open",
+                    "metadata": {
+                        "notify": {
+                            "type": "http",
+                            "data": {
+                                "hmac_key": "mxgTWQa9h8fLO6OHHRZg88Yx3qh5khAfUcv6IOqqiqw=",
+                                "method": "POST",
+                                "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                            }
+                        },
+                        "created_by": "d4ji9qa9io6g0092b0n0",
+                        "print": {
+                            "team": "Cashiers",
+                            "tenant": "Thurstan Hoskin Solicitors",
+                            "user": "Amelia Roberts"
+                        },
+                        "context": {
+                            "gid": "d4ji28i9io6g0092avp0",
+                            "uid": "d4ji9qa9io6g0092b0n0",
+                            "team_id": "d4ji28i9io6g0092avp0",
+                            "tenant_id": "d4jf3v29io6g0092akc0"
+                        },
+                        "ce": {
+                            "uri": "/v1/checks/4605398534"
+                        },
+                        "created_at": "2025-11-26T18:47:54.797Z"
+                    },
+                    "type": "document"
+                },
+                "companyData": {
+                    "name": {
+                        "first": "Jacob",
+                        "last": "Archer-Moran",
+                        "other": "Robert"
+                    },
+                    "numbers": []
+                },
+                "checkId": "d4kmppj23amg030mv2hg",
+                "hasAlerts": false,
+                "webhookProcessing": {
+                    "check": "2025-11-26T20:01:11.785Z"
+                },
+                "pdfAddedAt": "2025-11-26T20:01:17.328Z"
+            },
+            {
+                "taskOutcomes": {
+                    "address": {
+                        "result": "clear",
+                        "status": "closed",
+                        "data": {
+                            "quality": 50,
+                            "sources": 7
+                        }
+                    },
+                    "peps": {
+                        "breakdown": {
+                            "total_hits": 0,
+                            "hits": []
+                        },
+                        "data": {
+                            "dob": "2001-01-11T00:00:00.000Z",
+                            "name": {
+                                "first": "Jacob",
+                                "last": "Archer-Moran",
+                                "other": "Robert"
+                            },
+                            "address": {
+                                "postcode": "TR15 2ND",
+                                "country": "GBR",
+                                "street": "Southgate Street",
+                                "building_number": "94",
+                                "town": "Redruth"
+                            }
+                        },
+                        "result": "clear",
+                        "documents": [
+                            "d4kmpqa23amg030mv2q0"
+                        ],
+                        "id": "d4kmpq223amg030yt9gg",
+                        "status": "closed",
+                        "createdAt": "2025-11-26T18:47:56.090Z"
+                    },
+                    "footprint": {
+                        "breakdown": {
+                            "service_name": "Authenticateplus",
+                            "data_quality": {
+                                "properties": {
+                                    "score": 50
+                                },
+                                "result": "clear"
+                            },
+                            "rules": [],
+                            "data_count": {
+                                "properties": {
+                                    "count": 7,
+                                    "score": 0
+                                },
+                                "result": "clear"
+                            }
+                        },
+                        "data": {
+                            "dob": "2001-01-11T00:00:00.000Z",
+                            "name": {
+                                "first": "Jacob",
+                                "last": "Archer-Moran",
+                                "other": "Robert"
+                            },
+                            "address": {
+                                "postcode": "TR15 2ND",
+                                "country": "GBR",
+                                "street": "Southgate Street",
+                                "building_number": "94",
+                                "town": "Redruth"
+                            }
+                        },
+                        "result": "clear",
+                        "documents": [],
+                        "id": "d4kmppt23amg030mv2kg",
+                        "status": "closed",
+                        "createdAt": "2025-11-26T18:47:55.060Z"
+                    }
+                },
+                "pdfReady": true,
+                "checkType": "lite-screen",
+                "initiatedAt": "2025-11-26T18:47:54.174Z",
+                "pdfS3Key": "protected/8AX1P2Z",
+                "consumerName": "Jacob Archer-Moran",
+                "tasks": [
+                    "report:footprint",
+                    "report:peps"
+                ],
+                "updates": [
+                    {
+                        "timestamp": "2025-11-26T18:47:54.174Z",
+                        "update": "Lite Screen check initiated by amelia.roberts@thurstanhoskin.co.uk"
+                    },
+                    {
+                        "timestamp": "2025-11-26T18:48:05.696Z",
+                        "update": "PDF received and uploaded to S3 - CLEAR"
+                    }
+                ],
+                "status": "closed",
+                "initiatedBy": "amelia.roberts@thurstanhoskin.co.uk",
+                "piiData": {
+                    "name": {
+                        "first": "Jacob",
+                        "last": "Archer-Moran",
+                        "other": "Robert"
+                    },
+                    "address": {
+                        "postcode": "TR15 2ND",
+                        "country": "GBR",
+                        "street": "Southgate Street",
+                        "building_number": "94",
+                        "town": "Redruth"
+                    },
+                    "dob": "2001-01-11T00:00:00.000Z",
+                    "document": {}
+                },
+                "hasMonitoring": true,
+                "thirdfortResponse": {
+                    "name": "Jacob Archer-Moran - Lite Screening",
+                    "request": {
+                        "tasks": [
+                            {
+                                "opts": {
+                                    "consent": false
+                                },
+                                "type": "report:footprint"
+                            },
+                            {
+                                "opts": {
+                                    "monitored": true
+                                },
+                                "type": "report:peps"
+                            }
+                        ]
+                    },
+                    "ref": "Val'ID'ate: 50/997 TEST",
+                    "id": "d4kmppa23amg030yt9f0",
+                    "reports": [],
+                    "status": "open",
+                    "metadata": {
+                        "notify": {
+                            "type": "http",
+                            "data": {
+                                "hmac_key": "mxgTWQa9h8fLO6OHHRZg88Yx3qh5khAfUcv6IOqqiqw=",
+                                "method": "POST",
+                                "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                            }
+                        },
+                        "created_by": "d4ji9qa9io6g0092b0n0",
+                        "print": {
+                            "team": "Cashiers",
+                            "tenant": "Thurstan Hoskin Solicitors",
+                            "user": "Amelia Roberts"
+                        },
+                        "context": {
+                            "gid": "d4ji28i9io6g0092avp0",
+                            "uid": "d4ji9qa9io6g0092b0n0",
+                            "team_id": "d4ji28i9io6g0092avp0",
+                            "tenant_id": "d4jf3v29io6g0092akc0"
+                        },
+                        "ce": {
+                            "uri": "/v1/checks/4605398362"
+                        },
+                        "created_at": "2025-11-26T18:47:53.213Z"
+                    },
+                    "type": "v2",
+                    "opts": {
+                        "peps": {
+                            "monitored": true
+                        }
+                    }
+                },
+                "expectations": {
+                    "name": {
+                        "data": {
+                            "first": "Jacob",
+                            "last": "Archer-Moran",
+                            "other": "Robert"
+                        }
+                    },
+                    "dob": {
+                        "data": "2001-01-11T00:00:00.000Z"
+                    },
+                    "address": {
+                        "data": {
+                            "postcode": "TR15 2ND",
+                            "country": "GBR",
+                            "building_name": "",
+                            "flat_number": "",
+                            "street": "Southgate Street",
+                            "building_number": "94",
+                            "sub_street": "",
+                            "town": "Redruth"
+                        }
+                    }
+                },
+                "hasAlerts": false,
+                "webhookProcessing": {},
+                "pdfAddedAt": "2025-11-26T18:48:05.690Z",
+                "transactionId": "d4kmppa23amg030yt9f0"
+            },
+            {
+                "updatedAt": "2025-11-26T20:03:56.714Z",
+                "consumerPhone": "+447506430094",
+                "checkType": "electronic-id",
+                "initiatedAt": "2025-11-26T18:46:50.335Z",
+                "consumerName": "Jacob Robert Archer-Moran",
+                "tasks": [
+                    "report:identity",
+                    "report:footprint",
+                    "report:peps",
+                    "documents:poa",
+                    "report:sof-v1",
+                    "report:bank-statement",
+                    "report:bank-summary"
+                ],
+                "updates": [
+                    {
+                        "timestamp": "2025-11-26T18:46:50.335Z",
+                        "update": "Electronic ID check initiated by amelia.roberts@thurstanhoskin.co.uk"
+                    },
+                    {
+                        "timestamp": "2025-11-26T20:03:50.708Z",
+                        "update": "Check aborted by amelia.roberts@thurstanhoskin.co.uk"
+                    },
+                    {
+                        "timestamp": "2025-11-26T20:03:56.714Z",
+                        "update": "Transaction aborted"
+                    }
+                ],
+                "status": "aborted",
+                "initiatedBy": "amelia.roberts@thurstanhoskin.co.uk",
+                "hasMonitoring": true,
+                "thirdfortResponse": {
+                    "name": "Purchase of 21 Green Lane",
+                    "request": {
+                        "actor": {
+                            "name": "Jacob Robert Archer-Moran",
+                            "phone": "+447506430094"
+                        },
+                        "tasks": [
+                            {
+                                "opts": {
+                                    "nfc": "preferred"
+                                },
+                                "type": "report:identity"
+                            },
+                            {
+                                "opts": {
+                                    "consent": false
+                                },
+                                "type": "report:footprint"
+                            },
+                            {
+                                "opts": {
+                                    "monitored": true
+                                },
+                                "type": "report:peps"
+                            },
+                            {
+                                "type": "documents:poa"
+                            },
+                            {
+                                "type": "report:sof-v1"
+                            },
+                            {
+                                "type": "report:bank-statement"
+                            },
+                            {
+                                "type": "report:bank-summary"
+                            }
+                        ]
+                    },
+                    "ref": "Val'ID'ate: 50/997 TEST",
+                    "id": "d4kmp6823amg030yt72g",
+                    "reports": [],
+                    "status": "open",
+                    "metadata": {
+                        "notify": {
+                            "type": "http",
+                            "data": {
+                                "hmac_key": "mxgTWQa9h8fLO6OHHRZg88Yx3qh5khAfUcv6IOqqiqw=",
+                                "method": "POST",
+                                "uri": "https://www.thurstanhoskin.co.uk/_functions-dev/thirdfortWebhook"
+                            }
+                        },
+                        "created_by": "d4ji9qa9io6g0092b0n0",
+                        "print": {
+                            "team": "Cashiers",
+                            "tenant": "Thurstan Hoskin Solicitors",
+                            "user": "Amelia Roberts"
+                        },
+                        "context": {
+                            "gid": "d4ji28i9io6g0092avp0",
+                            "uid": "d4ji9qa9io6g0092b0n0",
+                            "team_id": "d4ji28i9io6g0092avp0",
+                            "tenant_id": "d4jf3v29io6g0092akc0"
+                        },
+                        "ce": {
+                            "uri": "/v1/checks/4605394251"
+                        },
+                        "created_at": "2025-11-26T18:46:49.292Z"
+                    },
+                    "type": "v2",
+                    "opts": {
+                        "peps": {
+                            "monitored": true
+                        }
+                    }
+                },
+                "webhookProcessing": {
+                    "transaction": "2025-11-26T20:03:56.391Z"
+                },
+                "smsSent": true,
+                "transactionId": "d4kmp6823amg030yt72g"
+            }
+        ];
+        
+        this.loadChecks(mockChecks);
+    }
+    
     // ===================================================================
     // VIEW MANAGEMENT
     // ===================================================================
@@ -462,7 +1138,8 @@ class ThirdfortChecksManager {
         const div = document.createElement('div');
         div.className = 'pep-icon';
         
-        if (check.hasMonitoring) {
+        // Don't show monitoring badge for aborted checks
+        if (check.hasMonitoring && check.status !== 'aborted') {
             const badge = document.createElement('div');
             badge.className = 'pep-badge';
             div.appendChild(badge);
@@ -783,7 +1460,7 @@ class ThirdfortChecksManager {
             ? `<span class="safe-harbour-icon" title="Safe Harbour Compliant"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><g><path d="M115.238 149.524H84.762c-13.304 0-24.127-10.823-24.127-24.127V105.08c0-7.702 6.266-13.968 13.968-13.968h50.794c7.702 0 13.968 6.266 13.968 13.968v20.317c0 13.303-10.823 24.127-24.127 24.127zM74.603 98.73a6.356 6.356 0 0 0-6.349 6.349v20.317c0 9.102 7.405 16.508 16.508 16.508h30.476c9.103 0 16.508-7.406 16.508-16.508v-20.317a6.356 6.356 0 0 0-6.349-6.349H74.603z" fill="#112F5B" data-color="1"></path><path d="M125.397 98.73a3.81 3.81 0 0 1-3.81-3.81V74.603c0-9.102-7.405-16.508-16.508-16.508H94.921c-9.103 0-16.508 7.406-16.508 16.508V94.92a3.81 3.81 0 1 1-7.62 0V74.603c0-13.304 10.823-24.127 24.127-24.127h10.159c13.304 0 24.127 10.823 24.127 24.127V94.92a3.809 3.809 0 0 1-3.809 3.81z" fill="#112F5B" data-color="1"></path><path d="M100 129.206a3.81 3.81 0 0 1-3.81-3.81v-10.159a3.81 3.81 0 1 1 7.62 0v10.159a3.81 3.81 0 0 1-3.81 3.81z" fill="#112F5B" data-color="1"></path><path d="M166.032 180H33.968C26.266 180 20 173.734 20 166.032V33.968C20 26.266 26.266 20 33.968 20h132.064C173.734 20 180 26.266 180 33.968v132.064c0 7.702-6.266 13.968-13.968 13.968zM33.968 27.619a6.356 6.356 0 0 0-6.349 6.349v132.064a6.356 6.356 0 0 0 6.349 6.349h132.064a6.356 6.356 0 0 0 6.349-6.349V33.968a6.356 6.356 0 0 0-6.349-6.349H33.968z" fill="#112F5B" data-color="1"></path></g></svg></span>` 
             : '';
         
-        const pepMonIcon = check.hasMonitoring ? '<span class="pep-badge" style="margin-right: 8px;"></span>' : '';
+        const pepMonIcon = (check.hasMonitoring && check.status !== 'aborted') ? '<span class="pep-badge" style="margin-right: 8px;"></span>' : '';
         
         // Build meta items dynamically (only show if data exists)
         const metaItems = [];
@@ -2661,14 +3338,15 @@ class ThirdfortChecksManager {
     renderTasksSection(check) {
         const taskOutcomes = check.taskOutcomes || {};
         const isOpen = check.status === 'open' || check.status === 'processing';
+        const isAborted = check.status === 'aborted';
         
         console.log('🎯 renderTasksSection called');
         console.log('  - Check status:', check.status);
         console.log('  - taskOutcomes keys:', Object.keys(taskOutcomes));
         console.log('  - taskOutcomes:', taskOutcomes);
         
-        // For open checks, show minimized task cards based on requested tasks
-        if (isOpen && Object.keys(taskOutcomes).length === 0) {
+        // For open or aborted checks, show minimized task cards based on requested tasks
+        if ((isOpen || isAborted) && Object.keys(taskOutcomes).length === 0) {
             const requestTasks = check.thirdfortResponse?.request?.tasks || check.tasks || [];
             
             if (requestTasks.length === 0) {
@@ -2676,7 +3354,8 @@ class ThirdfortChecksManager {
                 return;
             }
             
-            let tasksHtml = '<div class="tasks-open-header">Requested Tasks (Processing)</div>';
+            const headerText = isAborted ? 'Requested Tasks (Cancelled)' : 'Requested Tasks (Processing)';
+            let tasksHtml = `<div class="tasks-open-header">${headerText}</div>`;
             
             // Track unique task types (merge bank tasks)
             const displayedTasks = new Set();
@@ -6487,6 +7166,68 @@ class ThirdfortChecksManager {
             }
         }
         
+        // Recalculate address result BEFORE reading it (for footprint-converted addresses)
+        if (taskType === 'address' && outcome.breakdown) {
+            const breakdown = outcome.breakdown;
+            const data = outcome.data || {};
+            
+            // Check if this has footprint breakdown structure
+            const dataQuality = breakdown.data_quality;
+            const dataCount = breakdown.data_count;
+            
+            if (dataQuality || dataCount) {
+                // Use breakdown results to determine overall status
+                let hasFail = false;
+                let hasConsider = false;
+                
+                if (dataQuality) {
+                    const qualityResult = dataQuality.result;
+                    if (qualityResult === 'fail') hasFail = true;
+                    else if (qualityResult === 'consider') hasConsider = true;
+                    // If no result, check score
+                    else if (!qualityResult) {
+                        const score = dataQuality.properties?.score || 0;
+                        if (score === 0) hasFail = true;
+                        else if (score < 80) hasConsider = true;
+                    }
+                }
+                
+                if (dataCount) {
+                    const countResult = dataCount.result;
+                    if (countResult === 'fail') hasFail = true;
+                    else if (countResult === 'consider') hasConsider = true;
+                    // If no result, check count/score
+                    else if (!countResult) {
+                        const count = dataCount.properties?.count !== undefined ? dataCount.properties.count : (dataCount.properties?.score || 0);
+                        if (count === 0) hasFail = true;
+                        else if (count < 2) hasConsider = true;
+                    }
+                }
+                
+                // Update outcome result based on breakdown
+                if (hasFail) {
+                    outcome.result = 'fail';
+                } else if (hasConsider) {
+                    outcome.result = 'consider';
+                } else {
+                    outcome.result = 'clear';
+                }
+            } else {
+                // Use standard address data structure
+                const quality = data.quality !== undefined ? data.quality : 0;
+                const sources = data.sources !== undefined ? data.sources : 0;
+                
+                // Recalculate based on quality and sources
+                if (quality === 0 || sources === 0) {
+                    outcome.result = 'fail';
+                } else if (quality < 80 || sources < 2) {
+                    outcome.result = 'consider';
+                } else {
+                    outcome.result = 'clear';
+                }
+            }
+        }
+        
         const result = outcome.result || 'unknown';
         let borderClass = '';
         let statusIcon = '';
@@ -9107,14 +9848,47 @@ class ThirdfortChecksManager {
             // Address verification - includes footprint data from electronic-id checks or lite screen data
             const data = outcome.data || {};
             const breakdown = outcome.breakdown || {};
-            const quality = data.quality !== undefined ? data.quality : 0;
-            const sources = data.sources !== undefined ? data.sources : 0;
             
-            // Determine status based on quality and sources
-            // Quality: 0% = fail, 1-79% = consider, 80%+ = clear
-            // Sources: 0 = fail, 1 = consider, 2+ = clear
-            let qualityStatus = quality === 0 ? 'AL' : (quality >= 80 ? 'CL' : 'CO');
-            let sourcesStatus = sources === 0 ? 'AL' : (sources >= 2 ? 'CL' : 'CO');
+            // Check if this is a footprint-converted address (has breakdown fields)
+            const hasFootprintBreakdown = breakdown.data_quality || breakdown.data_count;
+            
+            let quality, sources, qualityStatus, sourcesStatus;
+            
+            if (hasFootprintBreakdown) {
+                // Use footprint breakdown structure - prioritize breakdown over data
+                const dataQuality = breakdown.data_quality || {};
+                const dataCount = breakdown.data_count || {};
+                
+                // Map footprint breakdown to quality/sources
+                // For footprint: data_quality.score = quality, data_count.count = sources
+                quality = dataQuality.properties?.score !== undefined ? dataQuality.properties.score : (data.quality !== undefined ? data.quality : 0);
+                sources = dataCount.properties?.count !== undefined ? dataCount.properties.count : (dataCount.properties?.score !== undefined ? dataCount.properties.score : (data.sources !== undefined ? data.sources : 0));
+                
+                // Use breakdown result if available, otherwise calculate from score
+                if (dataQuality.result) {
+                    qualityStatus = dataQuality.result === 'clear' ? 'CL' : (dataQuality.result === 'fail' ? 'AL' : 'CO');
+                } else {
+                    qualityStatus = quality === 0 ? 'AL' : (quality >= 80 ? 'CL' : 'CO');
+                }
+                
+                if (dataCount.result) {
+                    sourcesStatus = dataCount.result === 'clear' ? 'CL' : (dataCount.result === 'fail' ? 'AL' : 'CO');
+                } else {
+                    // For data_count, count >= 2 is clear, count === 1 is consider, count === 0 is fail
+                    const count = dataCount.properties?.count !== undefined ? dataCount.properties.count : sources;
+                    sourcesStatus = count === 0 ? 'AL' : (count >= 2 ? 'CL' : 'CO');
+                }
+            } else {
+                // Use standard address data structure
+                quality = data.quality !== undefined ? data.quality : 0;
+                sources = data.sources !== undefined ? data.sources : 0;
+                
+                // Determine status based on quality and sources
+                // Quality: 0% = fail, 1-79% = consider, 80%+ = clear
+                // Sources: 0 = fail, 1 = consider, 2+ = clear
+                qualityStatus = quality === 0 ? 'AL' : (quality >= 80 ? 'CL' : 'CO');
+                sourcesStatus = sources === 0 ? 'AL' : (sources >= 2 ? 'CL' : 'CO');
+            }
             
             // Overall status is the worst of the two
             let overallStatus = 'CL';
@@ -9125,11 +9899,12 @@ class ThirdfortChecksManager {
             }
             
             // Check for footprint rules/warnings
+            // Only show "No address verification data available" if we don't have footprint breakdown
             const rules = breakdown.rules || [];
             let inlineWarning = '';
             if (rules.length > 0 && rules[0].text) {
                 inlineWarning = rules[0].text;
-            } else if (quality === 0 && sources === 0) {
+            } else if (!hasFootprintBreakdown && quality === 0 && sources === 0) {
                 inlineWarning = 'No address verification data available';
             }
             
@@ -9153,7 +9928,15 @@ class ThirdfortChecksManager {
                 });
             }
             
-            // Address verification summary
+            // Address verification summary - show sources in collapsed state for clear results
+            if (outcome.result === 'clear' && sources > 0) {
+                checks.push({
+                    status: 'CL',
+                    text: `${sources} source${sources !== 1 ? 's' : ''} verified`
+                });
+            }
+            
+            // Address verification details (shown when expanded)
             checks.push({
                 status: qualityStatus,
                 text: `Verification Quality: ${quality}%`,
@@ -9167,28 +9950,17 @@ class ThirdfortChecksManager {
             });
             
             // Add footprint details if available (from electronic-id checks)
-            if (breakdown.data_count) {
-                const score = breakdown.data_count.properties?.score || 0;
-                const result = breakdown.data_count.result || '';
-                // Score: 0 = fail, 1-79 = consider, 80+ = clear
-                const scoreStatus = score === 0 ? 'AL' : (score >= 80 ? 'CL' : 'CO');
-                checks.push({
-                    status: scoreStatus,
-                    text: `Data Count Score: ${score}`,
-                    indented: true
-                });
-            }
-            
-            if (breakdown.data_quality) {
-                const score = breakdown.data_quality.properties?.score || 0;
-                const result = breakdown.data_quality.result || '';
-                // Score: 0 = fail, 1-79 = consider, 80+ = clear
-                const scoreStatus = score === 0 ? 'AL' : (score >= 80 ? 'CL' : 'CO');
-                checks.push({
-                    status: scoreStatus,
-                    text: `Data Quality Score: ${score}`,
-                    indented: true
-                });
+            // When using footprint breakdown, the main quality/sources already show the breakdown values
+            // So we only show additional breakdown details if they provide extra information
+            if (hasFootprintBreakdown) {
+                // Show service name if available
+                if (breakdown.service_name) {
+                    checks.push({
+                        status: 'CL',
+                        text: `Service: ${breakdown.service_name}`,
+                        indented: true
+                    });
+                }
             }
         }
         else if (taskType === 'screening') {
