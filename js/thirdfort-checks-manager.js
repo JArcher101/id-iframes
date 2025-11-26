@@ -6767,7 +6767,7 @@ class ThirdfortChecksManager {
                     ${statusIcon}
                 </div>
                 ${headerChecksHtml}
-                ${outcome.status === 'closed' || outcome.status === 'unobtainable' ? `
+                ${check.status === 'closed' || outcome.status === 'unobtainable' ? `
                 <div class="task-details">
                     ${outcome.status !== 'unobtainable' ? `<div class="task-summary">${taskSummary}</div>` : ''}
                     ${checksHtml}
