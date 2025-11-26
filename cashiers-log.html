@@ -458,7 +458,7 @@
         */
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'log-data') {
-                console.log('Received log data:', event.data);
+                // console.log('Received log data:', event.data); // Commented out to avoid logging client data
                 displayLogs(event.data.logs);
             }
         });
@@ -636,7 +636,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '7917796';
+    window.__IFRAME_VERSION__ = 'e70d7ad';
     console.log('[cashiers-log] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

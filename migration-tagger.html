@@ -1348,7 +1348,7 @@
         });
 
         function handleBatchData(data) {
-            console.log('Received migration batch:', data);
+            // console.log('Received migration batch:', data); // Commented out to avoid logging client data
             
             // Hide loading state
             loadingState.classList.add('hidden');
@@ -2084,7 +2084,7 @@
         }
 
         function handlePutLinks(data) {
-            console.log('Received PUT links:', data);
+            // console.log('Received PUT links:', data); // Commented out to avoid logging client data
             const links = data.links;
             const s3Keys = data.s3Keys;
             
@@ -2476,7 +2476,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '7917796';
+    window.__IFRAME_VERSION__ = 'e70d7ad';
     console.log('[migration-tagger] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

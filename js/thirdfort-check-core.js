@@ -306,8 +306,6 @@ function initializeEventListeners() {
     idvBackOpenBtn.addEventListener('click', () => openIDVImage('back'));
   }
   
-  // Mock Data Buttons
-  initializeMockDataButtons();
   
   // Form Inputs Validation
   const requiredInputs = document.querySelectorAll('input[required], select[required], textarea[required]');
@@ -391,7 +389,7 @@ function handlePostMessage(event) {
   const data = event.data;
   
   if (data.type === 'client-data') {
-    console.log('Received client data:', data.data);
+    // console.log('Received client data:', data.data); // Commented out to avoid logging client data
     checkState.clientData = data.data;
     populateClientData(data.data);
     
@@ -408,12 +406,12 @@ function handlePostMessage(event) {
   }
   
   if (data.type === 'check-response') {
-    console.log('Received check response from parent:', data.data);
+    // console.log('Received check response from parent:', data.data); // Commented out to avoid logging client data
     handleCheckResponse(data.data);
   }
   
   if (data.type === 'company-results') {
-    console.log('Received company search results:', data);
+    // console.log('Received company search results:', data); // Commented out to avoid logging client data
     // Handle different data structures: data.companies, data.data, or data itself
     let companies = [];
     if (data.companies && Array.isArray(data.companies)) {
@@ -423,7 +421,7 @@ function handlePostMessage(event) {
     } else if (Array.isArray(data)) {
       companies = data;
     }
-    console.log('Extracted companies array:', companies);
+    // console.log('Extracted companies array:', companies); // Commented out to avoid logging client data
     displayKYBSearchResults(companies);
   }
   
@@ -445,12 +443,12 @@ function handlePostMessage(event) {
   }
   
   if (data.type === 'address-results') {
-    console.log('Received address autocomplete results:', data.suggestions);
+    // console.log('Received address autocomplete results:', data.suggestions); // Commented out to avoid logging client data
     displayAddressSuggestions(data.suggestions, data.field);
   }
   
   if (data.type === 'address-data') {
-    console.log('Received full address data:', data.address);
+    // console.log('Received full address data:', data.address); // Commented out to avoid logging client data
     handleAddressData(data.address, data.field);
   }
 }
@@ -848,7 +846,7 @@ function handleAddressData(addressData, field) {
   // Store the Thirdfort-formatted address in the appropriate variable
   if (field === 'lite' || field === 'current') {
     liteCurrentAddressObject = thirdfortAddress;
-    console.log('✅ Lite Screen address stored:', liteCurrentAddressObject);
+    // console.log('✅ Lite Screen address stored:', liteCurrentAddressObject); // Commented out to avoid logging client data
     
     // Update address card display text
     const currentAddressText = document.getElementById('liteCurrentAddressText');
@@ -884,7 +882,7 @@ function handleAddressData(addressData, field) {
   // If it's a previous address (in case we add that later)
   if (field === 'previous') {
     litePreviousAddressObject = thirdfortAddress;
-    console.log('✅ Lite Screen previous address stored:', litePreviousAddressObject);
+    // console.log('✅ Lite Screen previous address stored:', litePreviousAddressObject); // Commented out to avoid logging client data
     
     // Update previous address card display
     const previousAddressText = document.getElementById('litePreviousAddressText');
@@ -982,7 +980,7 @@ function setupLiteAddressAutocomplete(inputElement, dropdownElement) {
  * Check and populate IDV images from client data
  */
 function checkAndPopulateIDVImages(data) {
-  console.log('🔍 Checking IDV images...', data.idI);
+  // console.log('🔍 Checking IDV images...', data.idI); // Commented out to avoid logging client data
   
   // Get IDV elements
   const idvYesBtn = document.querySelector('[data-idv-answer="yes"]');
@@ -1046,7 +1044,7 @@ function checkAndPopulateIDVImages(data) {
     return;
   }
   
-  console.log('✅ Found suitable photo ID images:', availableImages);
+  // console.log('✅ Found suitable photo ID images:', availableImages); // Commented out to avoid logging client data
   
   // Enable IDV buttons (in case they were disabled)
   if (idvYesBtn) idvYesBtn.disabled = false;
@@ -1413,11 +1411,11 @@ function configureElectronicIdOptions(category, subtype, workType, relation) {
   
   // Get client data tags for conditional logic
   const clientData = checkState.clientData;
-  console.log('📊 Client data for tag detection:', { 
-    uT: clientData?.uT, 
-    eS: clientData?.eS, 
-    hasClientData: !!clientData 
-  });
+  // console.log('📊 Client data for tag detection:', { 
+  //   uT: clientData?.uT, 
+  //   eS: clientData?.eS, 
+  //   hasClientData: !!clientData 
+  // }); // Commented out to avoid logging client data
   const hasFormE = clientData?.uT && Array.isArray(clientData.uT) && clientData.uT.includes('formE');
   const hasEsofRequested = clientData?.eS && Array.isArray(clientData.eS) && clientData.eS.includes('Requested');
   
@@ -1564,7 +1562,7 @@ function configureElectronicIdCheckboxes(data) {
  * Populate client data into the form
  */
 function populateClientData(data) {
-  console.log('Populating client data:', data);
+  // console.log('Populating client data:', data); // Commented out to avoid logging client data
   
   // Reset PEP monitoring initialization flag for new client data
   checkState.pepMonitoringInitialized = false;
@@ -1703,7 +1701,7 @@ function populateClientData(data) {
       matterRelationElement.textContent = data.r || '—';
     }
     
-    console.log('✅ Populated matter details card:', { wT: data.wT, mD: data.mD, r: data.r });
+    // console.log('✅ Populated matter details card:', { wT: data.wT, mD: data.mD, r: data.r }); // Commented out to avoid logging client data
   }
   
   // ===== Check Reference =====
@@ -1809,7 +1807,7 @@ function populateLatestMessage(message) {
  * Triggers auto-search if sufficient data is available
  */
 function autoPopulateKYBSection(data) {
-  console.log('Auto-populating KYB section with business data:', data);
+  // console.log('Auto-populating KYB section with business data:', data); // Commented out to avoid logging client data
   
   const jurisdictionInput = document.getElementById('kybJurisdiction');
   const companyNameInput = document.getElementById('kybCompanyName');
@@ -2348,7 +2346,7 @@ function autoSelectIDVLiteScreen() {
  * Fills name, DOB, address, and shows/hides sections based on data
  */
 function populateLiteScreenFields(data) {
-  console.log('Populating Lite Screen fields with client data:', data);
+  // console.log('Populating Lite Screen fields with client data:', data); // Commented out to avoid logging client data
   
   if (!data.cI) {
     console.warn('No client information (cI) available');
@@ -2363,17 +2361,17 @@ function populateLiteScreenFields(data) {
     
     if (firstNameInput && data.cI.n.f) {
       firstNameInput.value = data.cI.n.f;
-      console.log('✅ Populated first name:', data.cI.n.f);
+      // console.log('✅ Populated first name:', data.cI.n.f); // Commented out to avoid logging client data
     }
     
     if (middleNameInput && data.cI.n.m) {
       middleNameInput.value = data.cI.n.m;
-      console.log('✅ Populated middle name:', data.cI.n.m);
+      // console.log('✅ Populated middle name:', data.cI.n.m); // Commented out to avoid logging client data
     }
     
     if (lastNameInput && data.cI.n.l) {
       lastNameInput.value = data.cI.n.l;
-      console.log('✅ Populated last name:', data.cI.n.l);
+      // console.log('✅ Populated last name:', data.cI.n.l); // Commented out to avoid logging client data
     }
   }
   
@@ -2399,7 +2397,7 @@ function populateLiteScreenFields(data) {
       }
     });
     
-    console.log('✅ Populated date of birth:', data.cI.b);
+    // console.log('✅ Populated date of birth:', data.cI.b); // Commented out to avoid logging client data
   }
   
   // ===== Current Address =====
@@ -2479,7 +2477,7 @@ function populateLiteScreenFields(data) {
       const italicText = reason.includes('deed poll') ? 'Changed by deed poll' : data.cI.rNC;
       previousNameHint.innerHTML = `Previous/Known as name: <strong>${data.cI.pN}</strong> <em>- ${italicText}</em>`;
       
-      console.log('✅ Showing previous name hint:', data.cI.pN, '-', data.cI.rNC);
+      // console.log('✅ Showing previous name hint:', data.cI.pN, '-', data.cI.rNC); // Commented out to avoid logging client data
     } else {
       previousNameHint.classList.add('hidden');
       console.log('ℹ️ Hiding previous name hint (no data)');
@@ -2492,7 +2490,7 @@ function populateLiteScreenFields(data) {
  * Fills name fields from client data
  */
 function populateIDVFields(data) {
-  console.log('Populating IDV fields with client data:', data);
+  // console.log('Populating IDV fields with client data:', data); // Commented out to avoid logging client data
   
   if (!data.cI) {
     console.warn('No client information (cI) available');
@@ -2507,17 +2505,17 @@ function populateIDVFields(data) {
     
     if (idvFirstNameInput && data.cI.n.f) {
       idvFirstNameInput.value = data.cI.n.f;
-      console.log('✅ Populated IDV first name:', data.cI.n.f);
+      // console.log('✅ Populated IDV first name:', data.cI.n.f); // Commented out to avoid logging client data
     }
     
     if (idvMiddleNameInput && data.cI.n.m) {
       idvMiddleNameInput.value = data.cI.n.m;
-      console.log('✅ Populated IDV middle name:', data.cI.n.m);
+      // console.log('✅ Populated IDV middle name:', data.cI.n.m); // Commented out to avoid logging client data
     }
     
     if (idvLastNameInput && data.cI.n.l) {
       idvLastNameInput.value = data.cI.n.l;
-      console.log('✅ Populated IDV last name:', data.cI.n.l);
+      // console.log('✅ Populated IDV last name:', data.cI.n.l); // Commented out to avoid logging client data
     }
   }
 }
@@ -2623,7 +2621,7 @@ function populateElectronicIdReference(category) {
  * Fills name, phone, email, reference, and shows/hides sections based on data
  */
 function populateElectronicIdFields(data) {
-  console.log('Populating Electronic ID fields with client data:', data);
+  // console.log('Populating Electronic ID fields with client data:', data); // Commented out to avoid logging client data
   
   if (!data.cI) {
     console.warn('No client information (cI) available');
@@ -2680,7 +2678,7 @@ function populateElectronicIdFields(data) {
     const emailInput = document.getElementById('electronicIdEmail');
     if (emailInput) {
       emailInput.value = data.cI.e;
-      console.log('✅ Populated email:', data.cI.e);
+      // console.log('✅ Populated email:', data.cI.e); // Commented out to avoid logging client data
     }
   }
   
@@ -2689,7 +2687,7 @@ function populateElectronicIdFields(data) {
     const countryInput = document.getElementById('electronicIdCountry');
     if (countryInput && typeof setCountry === 'function') {
       setCountry('electronicIdCountry', data.cI.a.country);
-      console.log('✅ Set Electronic ID country:', data.cI.a.country);
+      // console.log('✅ Set Electronic ID country:', data.cI.a.country); // Commented out to avoid logging client data
       
       // Update International Address Verification visibility
       updateElectronicIdInternationalAddressVisibility(data.cI.a.country);
@@ -3392,7 +3390,7 @@ function validateLiteManualAddress() {
   const town = document.getElementById('liteTown')?.value?.trim();
   const postcode = document.getElementById('litePostcode')?.value?.trim();
   
-  console.log('🔍 Validating address:', { flatNumber, buildingNumber, buildingName, town, postcode });
+  // console.log('🔍 Validating address:', { flatNumber, buildingNumber, buildingName, town, postcode }); // Commented out to avoid logging client data
   
   // Minimum requirements per Thirdfort API:
   // 1. Must have town
@@ -4019,7 +4017,7 @@ function showAllTasks() {
  * Called when parent sends address data in initialization
  */
 function populateLiteScreenAddress(address) {
-  console.log('Populating lite screen address:', address);
+  // console.log('Populating lite screen address:', address); // Commented out to avoid logging client data
   
   // Populate country if available
   if (address.country && typeof setCountry === 'function') {
@@ -4250,13 +4248,13 @@ function displayKYBSearchResults(companies) {
     const statusClass = company.status === 'active' ? 'active' : 'dissolved';
     
     // Debug: Log company data structure to understand what we're getting
-    console.log('Company data structure:', {
-      name: company.name,
-      numbers: company.numbers,
-      number: company.number,
-      tag: company.tag,
-      jurisdiction: company.jurisdiction
-    });
+    // console.log('Company data structure:', {
+    //   name: company.name,
+    //   numbers: company.numbers,
+    //   number: company.number,
+    //   tag: company.tag,
+    //   jurisdiction: company.jurisdiction
+    // }); // Commented out to avoid logging client data
     
     // Extract company number from numbers array (Thirdfort API uses plural)
     // Handle cases where numbers array might be undefined (name searches)
@@ -4327,7 +4325,7 @@ function handleKYBCompanySelection(event) {
     jurisdiction: card.dataset.jurisdiction
   };
   
-  console.log('Company selected:', companyData);
+  // console.log('Company selected:', companyData); // Commented out to avoid logging client data
   
   // Store in checkState
   checkState.kybCompany = companyData;
@@ -4519,344 +4517,6 @@ function handleKYBChangeCompany() {
   enableKYBSearchInputs();
   
   console.log('Company selection cleared - ready for new search');
-}
-
-/* ===================================
-   MOCK DATA FOR TESTING
-   =================================== */
-
-/**
- * Initialize mock data button event listeners
- */
-function initializeMockDataButtons() {
-  console.log('Initializing mock data buttons...');
-  
-  // Individual (Blank) - No tags, clean slate
-  const mockIndBlank = document.getElementById('mockIndividualBlank');
-  if (mockIndBlank) {
-    mockIndBlank.addEventListener('click', () => {
-      console.log('Mock Individual Blank clicked!');
-      loadMockData({
-      type: 'client-data',
-      data: {
-        _id: 'mock-ind-blank',
-        idI: [],
-        idD: [],
-        cD: { cN: 50, mN: '55', fe: 'JT', n: 'Mr John Smith' },
-        r: 'Our Client',
-        wT: 'General Matter',
-        s: ['Pending'],
-        i: {},
-        cI: {
-          n: { t: 'Mr', f: 'John', m: '', l: 'Smith' },
-          b: '01-01-1980',
-          a: { postcode: 'TR1 1AA', country: 'GBR', street: 'High Street', building_number: '10', town: 'Truro' },
-          pN: 'John Jones',
-          rNC: 'Marriage',
-          m: '+447700900000',
-          e: 'john.smith@example.com'
-        }
-      }
-      });
-    });
-  }
-  
-  // Individual + Form J (with Photo ID and Address ID)
-  const mockIndFormJ = document.getElementById('mockIndividualFormJ');
-  console.log('Found mockIndividualFormJ button:', mockIndFormJ);
-  
-  if (mockIndFormJ) {
-    mockIndFormJ.addEventListener('click', () => {
-      console.log('Mock Individual Form J clicked!');
-      loadMockData({
-      type: 'client-data',
-      data: {
-        _id: 'bd8bee6a-465b-4d43-9a8a-396f9081b649',
-        idI: [
-          { side: 'Front', name: '50-52 - Master J R Archer-Moran - Driving Licence Front', document: 'Driving Licence', type: 'PhotoID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:41:42', s3Key: 'protected/mockDLFront.jpg', url: 'https://d3example.cloudfront.net/protected/mockDLFront.jpg' },
-          { side: 'Back', name: '50-52 - Master J R Archer-Moran - Driving Licence Back', document: 'Driving Licence', type: 'PhotoID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:41:42', s3Key: 'protected/mockDLBack.jpg', url: 'https://d3example.cloudfront.net/protected/mockDLBack.jpg' },
-          { side: 'Single', name: 'BA-50-52 - Master J R Archer-Moran - Passport', document: 'Passport', type: 'PhotoID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:34:14', s3Key: 'protected/mockPassport.jpg', url: 'https://d3example.cloudfront.net/protected/mockPassport.jpg' },
-          { side: 'Single', name: 'BA-50-52 - Master J R Archer-Moran - Address ID 1 - Tenancy Agreement', document: 'Tenancy Agreement', type: 'Address ID', uploader: 'jacob.archer-moran@thurstanhoskin.co.uk', date: '10/10/2025, 11:40:28', s3Key: 'protected/mockTenancy.jpg', url: 'https://d3example.cloudfront.net/protected/mockTenancy.jpg' }
-        ],
-        idD: [],
-        cD: { cN: 50, mN: '52', fe: 'BA', n: 'Master J R Archer-Moran' },
-        mD: 'Purchase of 94 Southgate Street, Redruth',
-        r: 'Our Client',
-        wT: 'Purchase of',
-        uT: ['formJ'],
-        eS: [],
-        s: ['AWF'],
-        i: { a: true, p: true, l: false },
-        cI: {
-          n: { t: 'Master', f: 'Jacob', m: 'Robert', l: 'Archer-Moran' },
-          b: '11-01-2001',
-          a: { postcode: 'TR15 2ND', country: 'GBR', street: 'Southgate Street', building_number: '94', town: 'Redruth' },
-          pA: { postcode: 'TR4 8QJ', country: 'GBR', street: 'Buckinghams Terrace', building_number: '4', sub_street: 'Greenbottom', town: 'Truro' },
-          m: '+447506430094',
-          e: 'jacob.archer-moran@thurstanhoskin.co.uk'
-        },
-        lM: {
-          _id: 'pCryZed',
-          message: 'I have conducted In-person verification with Master Jacob Archer-Moran and obtained Photo ID where likeness has been confirmed & Address ID pictures which are uploaded. Please review them and check if the client meets the requirements for a Form J',
-          time: '10/10/2025, 11:41:45',
-          type: 'Reception',
-          user: 'jacob.archer-moran@thurstanhoskin.co.uk'
-        }
-      }
-      });
-    });
-  }
-  
-  // Individual + Form E + eSoF
-  const mockIndFormE = document.getElementById('mockIndividualFormE');
-  if (mockIndFormE) {
-    mockIndFormE.addEventListener('click', () => {
-      console.log('Mock Individual Form E + eSoF clicked!');
-      loadMockData({
-      type: 'client-data',
-      data: {
-        _id: 'mock-ind-forme-esof',
-        idI: [],
-        idD: [],
-        cD: { cN: 50, mN: '53', fe: 'HS', n: 'Mrs Sarah Williams' },
-        mD: '21 Green Lane',
-        r: 'Gifter',
-        wT: 'Purchase of',
-        uT: ['formE'],
-        eS: ['Requested'],
-        s: ['Pending'],
-        i: { a: false, p: false, l: false },
-        cI: {
-          n: { t: 'Mrs', f: 'Sarah', m: 'Jane', l: 'Williams' },
-          b: '15-05-1985',
-          a: { postcode: 'TR14 7PQ', country: 'GBR', street: 'Oak Grove', building_number: '15', town: 'Camborne' },
-          m: '+447700900123',
-          e: 'sarah.williams@example.com'
-        }
-      }
-      });
-    });
-  }
-  
-  // Individual + Form E (no eSoF)
-  const mockIndFormEOnly = document.getElementById('mockIndividualFormEOnly');
-  if (mockIndFormEOnly) {
-    mockIndFormEOnly.addEventListener('click', () => {
-      console.log('Mock Individual Form E only clicked!');
-      loadMockData({
-      type: 'client-data',
-      data: {
-        _id: 'mock-ind-forme-only',
-        idI: [],
-        idD: [],
-        cD: { cN: 50, mN: '56', fe: 'TH', n: 'Mr Robert Davies' },
-        mD: '21 Green Lane',
-        r: 'Our Client',
-        wT: 'Sale of',
-        uT: ['formE'],
-        eS: [],
-        s: ['Pending'],
-        i: { a: false, p: false, l: false },
-        cI: {
-          n: { t: 'Mr', f: 'Robert', m: 'James', l: 'Davies' },
-          b: '22-03-1978',
-          a: { postcode: 'TR1 2QN', country: 'GBR', street: 'Green Lane', building_number: '21', town: 'Truro' },
-          m: '+447800456789',
-          e: 'robert.davies@example.com'
-        }
-      }
-      });
-    });
-  }
-  
-  // Individual + eSoF Requested only
-  const mockIndEsofOnly = document.getElementById('mockIndividualEsofOnly');
-  if (mockIndEsofOnly) {
-    mockIndEsofOnly.addEventListener('click', () => {
-      console.log('Mock Individual eSoF only clicked!');
-      loadMockData({
-      type: 'client-data',
-      data: {
-        _id: 'mock-ind-esof-only',
-        idI: [],
-        idD: [],
-        cD: { cN: 50, mN: '57', fe: 'CM', n: 'Ms Emma Thompson' },
-        mD: '21 Green Lane',
-        r: 'Our Client',
-        wT: 'Purchase of',
-        uT: [],
-        eS: ['Requested'],
-        s: ['Pending'],
-        i: { a: false, p: false, l: false },
-        cI: {
-          n: { t: 'Ms', f: 'Emma', m: 'Louise', l: 'Thompson' },
-          b: '10-07-1990',
-          a: { postcode: 'TR1 2QN', country: 'GBR', street: 'Green Lane', building_number: '21', town: 'Truro' },
-          m: '+447900123456',
-          e: 'emma.thompson@example.com'
-        }
-      }
-      });
-    });
-  }
-  
-  // Individual + Form E for LPA
-  const mockIndFormELpa = document.getElementById('mockIndividualFormELpa');
-  if (mockIndFormELpa) {
-    mockIndFormELpa.addEventListener('click', () => {
-      console.log('Mock Individual Form E (LPA) clicked!');
-      loadMockData({
-      type: 'client-data',
-      data: {
-        _id: 'mock-ind-forme-lpa',
-        idI: [],
-        idD: [],
-        cD: { cN: 50, mN: '58', fe: 'AB', n: 'Mrs Patricia Brown' },
-        mD: 'Your LPAs',
-        r: 'Our Client',
-        wT: 'Lasting Powers of Attorney',
-        uT: ['formE'],
-        eS: [],
-        s: ['Pending'],
-        i: { a: false, p: false, l: false },
-        cI: {
-          n: { t: 'Mrs', f: 'Patricia', m: 'Anne', l: 'Brown' },
-          b: '05-11-1955',
-          a: { postcode: 'TR7 3PL', country: 'GBR', street: 'Cliff Road', building_number: '12', town: 'Newquay' },
-          m: '+447600789012',
-          e: 'patricia.brown@example.com'
-        }
-      }
-      });
-    });
-  }
-  
-  // Business + Form K
-  const mockBusFormK = document.getElementById('mockBusinessFormK');
-  if (mockBusFormK) {
-    mockBusFormK.addEventListener('click', () => {
-      console.log('Mock Business Form K clicked!');
-      loadMockData({
-      type: 'client-data',
-      data: {
-        _id: '04f255e4-36fc-40db-a5af-7a9ee3de2712',
-        idI: [],
-        idD: [],
-        cD: { cN: 50, mN: '52', fe: 'BA', n: 'THURSTAN HOSKIN SOLICITORS LLP' },
-        mD: '21 Green lane',
-        r: 'Our Client',
-        wT: 'Purchase of',
-        b: true,
-        s: ['Pending'],
-        i: {},
-        cI: {
-          n: { b: 'THURSTAN HOSKIN SOLICITORS LLP' },
-          a: { postcode: 'TR15 2BY', country: 'GBR', street: 'Chynoweth', town: 'Redruth' },
-          eN: 'OC421980',
-          bD: {
-            company_type: 'llp',
-            company_name: 'THURSTAN HOSKIN SOLICITORS LLP',
-            company_number: 'OC421980',
-            company_status: 'active',
-            registered_office_address: {
-              country: 'United Kingdom',
-              postal_code: 'TR15 2BY',
-              locality: 'Redruth',
-              address_line_1: 'Chynoweth',
-              address_line_2: 'Chapel Street'
-            }
-          }
-        }
-      }
-      });
-    });
-  }
-  
-  // Individual + Form K
-  const mockIndFormK = document.getElementById('mockIndividualFormK');
-  if (mockIndFormK) {
-    mockIndFormK.addEventListener('click', () => {
-      console.log('Mock Individual Form K clicked!');
-      loadMockData({
-      type: 'client-data',
-      data: {
-        _id: 'mock-ind-formk',
-        idI: [],
-        idD: [],
-        cD: { cN: 50, mN: '54', fe: 'JT', n: 'Mr David Thompson' },
-        mD: 'Private Client - Estate Planning',
-        r: 'Our Client',
-        wT: 'Private Client Matter',
-        uT: ['formK'],
-        eS: [],
-        s: ['AWF'],
-        i: { a: false, p: false, l: undefined },
-        cI: {
-          n: { t: 'Mr', f: 'David', m: 'James', l: 'Thompson' },
-          b: '22-08-1972',
-          a: { postcode: 'TR7 1QN', country: 'GBR', street: 'Cliff Road', building_number: '8', town: 'Newquay' },
-          m: '+447800123456',
-          e: 'david.thompson@example.com'
-        }
-      }
-      });
-    });
-  }
-  
-  // Charity + Form K
-  const mockCharityFormK = document.getElementById('mockCharityFormK');
-  if (mockCharityFormK) {
-    mockCharityFormK.addEventListener('click', () => {
-      console.log('Mock Charity Form K clicked!');
-      loadMockData({
-      type: 'client-data',
-      data: {
-        _id: 'b836fd51-cd1f-4c19-9bde-1ab0b2d75e30',
-        idI: [],
-        idD: [],
-        cD: { cN: 50, mN: '52', fe: 'BA', n: 'Teenage cancer trust' },
-        r: 'Connected Party',
-        wT: 'Property Matter',
-        c: true,
-        s: ['AWF'],
-        i: {},
-        cI: {
-          n: { b: 'TEENAGE CANCER TRUST' },
-          a: { postcode: 'WC1V 7AA', country: 'GBR', street: 'The Place', town: 'London' },
-          rNC: 'GB',
-          eN: '03350311',
-          bD: {
-            company_type: 'private-limited-guarant-nsc-limited-exemption',
-            company_name: 'TEENAGE CANCER TRUST',
-            company_number: '03350311',
-            company_status: 'active',
-            registered_office_address: {
-              country: 'England',
-              postal_code: 'WC1V 7AA',
-              locality: 'London',
-              address_line_1: 'The Place',
-              address_line_2: '175 High Holborn'
-            }
-          }
-        },
-        lM: {
-          _id: 'wew8AcW',
-          user: 'jacob.archer-moran@thurstanhoskin.co.uk',
-          message: 'I have added an entry for Teenage cancer trust as they were not listed on the system but are connected to this matter',
-          time: '10/11/2025, 12:49:25 PM'
-        }
-      }
-      });
-    });
-  }
-}
-
-/**
- * Load mock data (simulate postMessage)
- */
-function loadMockData(message) {
-  // Simulate receiving a postMessage
-  handlePostMessage({ data: message });
 }
 
 /**

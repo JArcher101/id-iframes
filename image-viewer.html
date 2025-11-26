@@ -1925,7 +1925,7 @@
         let s3Keys = null;
         let itemId = null; // Store the item _id for later use
         let uploadedImages = null;
-        let imageSlider, prevBtn, nextBtn, loadingState, awaitingState, imageDisplaySection, reelContainer, mockBtn, addMoreContainer, addMoreBtn, clientHeading;
+        let imageSlider, prevBtn, nextBtn, loadingState, awaitingState, imageDisplaySection, reelContainer, addMoreContainer, addMoreBtn, clientHeading;
         let idUploaderSection, uploaderSubheading, uploaderCardsContainer, uploadAllBtn, cancelHeaderBtn, errorPopup, errorMessage, errorPopupClose, dynamicHint;
         let comparisonView, selfieTile, faceTile, selfieImageEl, faceImageEl, selfieMetaEl, faceMetaEl, viewAllButton, backToComparisonBtn;
         let comparisonEligible = false;
@@ -1941,7 +1941,6 @@
         awaitingState = document.getElementById('awaitingState');
         imageDisplaySection = document.getElementById('imageDisplaySection');
         reelContainer = document.getElementById('reelContainer');
-        mockBtn = document.getElementById('mockBtn');
         addMoreContainer = document.getElementById('addMoreContainer');
         addMoreBtn = document.getElementById('addMoreBtn');
         clientHeading = document.getElementById('clientHeading');
@@ -2544,62 +2543,6 @@
             }
         }
 
-        // Mock data for testing
-        function loadMockData() {
-            const mockClientData = {
-                fe: 'BA',
-                clientNumber: '50',
-                matterNumber: '52',
-                name: 'Mr J R Archer-Moran'
-            };
-            
-            const mockImages = [
-                {
-                    document: 'Driving Licence',
-                    side: 'Front',
-                    name: '50-52 - Mr J R Archer-Moran - Driving Licence Front',
-                    liveUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop',
-                    uploader: 'reception@thurstanhoskin.co.uk',
-                    date: '12/20/2023, 10:30:45 AM'
-                },
-                {
-                    document: 'Driving Licence',
-                    side: 'Back',
-                    name: '50-52 - Mr J R Archer-Moran - Driving Licence Back',
-                    liveUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop',
-                    uploader: 'reception@thurstanhoskin.co.uk',
-                    date: '12/20/2023, 10:30:45 AM'
-                },
-                {
-                    document: 'Passport',
-                    side: 'Single',
-                    name: '50-52 - Mr J R Archer-Moran - Passport',
-                    liveUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop',
-                    uploader: 'reception@thurstanhoskin.co.uk',
-                    date: '12/20/2023, 10:35:12 AM'
-                },
-                {
-                    document: 'Bank Statement',
-                    side: 'Single',
-                    name: '50-52 - Mr J R Archer-Moran - Bank Statement',
-                    liveUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop',
-                    uploader: 'reception@thurstanhoskin.co.uk',
-                    date: '12/20/2023, 10:40:30 AM'
-                },
-                {
-                    document: 'Utility Bill',
-                    side: 'Single',
-                    name: '50-52 - Mr J R Archer-Moran - Utility Bill',
-                    liveUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop',
-                    uploader: 'reception@thurstanhoskin.co.uk',
-                    date: '12/20/2023, 10:45:15 AM'
-                }
-            ];
-            
-            // Simulate receiving the message
-            const mockUserEmail = 'reception@thurstanhoskin.co.uk';
-            displayImages(mockImages, true, mockClientData, mockUserEmail);
-        }
 
         // Update counter
         function updateCounter() {
@@ -3841,10 +3784,6 @@
             updateCounter();
         });
 
-        // Mock button removed from UI
-        // mockBtn.addEventListener('click', () => {
-        //     loadMockData();
-        // });
 
         addMoreBtn.addEventListener('click', () => {
             showUploader();
@@ -3940,7 +3879,7 @@
                 console.log('Received reset message - returning to awaiting state');
                 returnToAwaitingData();
             } else if (event.data && event.data.type === 'image-display') {
-                console.log('Received image display data:', event.data);
+                // console.log('Received image display data:', event.data); // Commented out to avoid logging client data
                 
                 // If we're currently in uploader mode, reset everything first
                 if (!idUploaderSection.classList.contains('hidden')) {
@@ -3987,7 +3926,7 @@
 
         // Handle display images data from parent
         function handleDisplayImages(data) {
-            console.log('Received display-images data from parent:', data);
+            // console.log('Received display-images data from parent:', data); // Commented out to avoid logging client data
             
             // Store the item ID for later use
             itemId = data._id;
@@ -4008,7 +3947,7 @@
 
         // Handle PUT links for uploading files to S3
         function handlePutLinks(data) {
-            console.log('Received PUT links:', data);
+            // console.log('Received PUT links:', data); // Commented out to avoid logging client data
             // This will be handled by the upload logic when files are ready
             // The links and s3Keys are stored for use during upload
         }
@@ -4031,7 +3970,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '7917796';
+    window.__IFRAME_VERSION__ = 'e70d7ad';
     console.log('[image-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

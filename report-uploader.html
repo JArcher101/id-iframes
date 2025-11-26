@@ -1354,7 +1354,7 @@
         */
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'display-data') {
-                console.log('Received display-data from parent:', event.data);
+                // console.log('Received display-data from parent:', event.data); // Commented out to avoid logging client data
                 
                 // Store client data and enable button
                 clientData = event.data.clientData || {};
@@ -1366,7 +1366,7 @@
                 
                 console.log('Client data received, button enabled');
             } else if (event.data && event.data.type === 'put-links') {
-                console.log('Received PUT links:', event.data);
+                // console.log('Received PUT links:', event.data); // Commented out to avoid logging client data
                 
                 // Store s3Keys and upload files to S3
                 itemId = event.data._id;
@@ -1403,7 +1403,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '7917796';
+    window.__IFRAME_VERSION__ = 'e70d7ad';
     console.log('[report-uploader] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

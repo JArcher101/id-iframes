@@ -813,9 +813,55 @@
       background:rgba(74, 144, 226, 0.1); 
       flex:1;
       font-size:0.9rem;
+      position: relative;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
     .photo-upload:hover { background:rgba(74, 144, 226, 0.2); }
     .photo-upload svg { width:22px; height:22px; vertical-align:middle; margin-right:6px; fill:none; stroke:currentColor; }
+    
+    /* Thumbnail preview styles */
+    .photo-upload.has-image {
+      padding: 10px;
+      border: 2px solid #4A90E2;
+      border-style: solid;
+      cursor: default;
+    }
+    .photo-upload.has-image:hover {
+      background: rgba(74, 144, 226, 0.1);
+    }
+    .upload-thumbnail {
+      width: 100%;
+      max-width: 200px;
+      max-height: 150px;
+      object-fit: contain;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      background: #f5f5f5;
+    }
+    .change-image-btn {
+      margin-top: 8px;
+      font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: none;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+      font-weight: 500;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .change-image-btn:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+    .change-image-btn:active {
+      transform: translateY(1px);
+    }
     /* Dynamic hint text shown below upload areas */
     .photo-hint { 
       font-size:.85rem; 
@@ -1405,6 +1451,7 @@
       font-weight: 500;
       color: #666;
     }
+    
   </style>
 </head>
 <body>
@@ -2049,7 +2096,7 @@
   </div>
 
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=7917796"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=e70d7ad"></script>
   
   <script>
     /*
@@ -2134,8 +2181,6 @@
 
     // DOB inputs (8 individual digit fields)
     const dobInputs = Array.from(document.querySelectorAll('.birthdate-inputs input'));
-    // Mock button removed from UI
-    // const mockBtn = document.getElementById('mockBtn');
     const nextBtn = document.getElementById('nextBtn');
 
     // Section 2: Photo ID upload elements
@@ -3315,6 +3360,9 @@
       input.accept = 'image/*';
       input.style.display = 'none';
       
+      // Store click handler reference for removal
+      const wrapClickHandler = () => input.click();
+      
       const handleFile = (files) => {
         if (files && files[0]) {
           const file = files[0];
@@ -3324,11 +3372,46 @@
             showError('Please select a valid image file. Only image files are allowed.');
             input.value = ''; // Clear the invalid file
             wrap.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Select image or drag & drop`;
+            wrap.classList.remove('has-image');
             return;
           }
           
           input.files = files;
-          wrap.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> ${file.name}`;
+          
+          // Create thumbnail preview using FileReader
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            wrap.classList.add('has-image');
+            wrap.innerHTML = `
+              <img src="${e.target.result}" alt="Preview" class="upload-thumbnail" />
+              <button type="button" class="change-image-btn">Change image</button>
+            `;
+            
+            // Add click handler to change button
+            const changeBtn = wrap.querySelector('.change-image-btn');
+            changeBtn.addEventListener('click', (e) => {
+              e.stopPropagation(); // Prevent triggering wrap click
+              input.value = ''; // Reset input to allow selecting same file again
+              input.click();
+            });
+            
+            // Remove click handler from wrap when image is selected (prevents accidental clicks)
+            wrap.removeEventListener('click', wrapClickHandler);
+          };
+          reader.onerror = () => {
+            // Fallback to filename if image read fails
+            wrap.classList.add('has-image');
+            wrap.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> ${file.name}<br><button type="button" class="change-image-btn">Change image</button>`;
+            const changeBtn = wrap.querySelector('.change-image-btn');
+            changeBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              input.value = ''; // Reset input to allow selecting same file again
+              input.click();
+            });
+            wrap.removeEventListener('click', wrapClickHandler);
+          };
+          reader.readAsDataURL(file);
+          
           if(onChangeCb) onChangeCb();
         }
       };
@@ -3337,8 +3420,8 @@
         handleFile(input.files);
       });
       
-      // Click functionality
-      wrap.addEventListener('click', ()=> input.click());
+      // Click functionality - only when no image is selected
+      wrap.addEventListener('click', wrapClickHandler);
       
       // Keyboard accessibility
       wrap.addEventListener('keypress', (e)=>{ 
@@ -3368,7 +3451,11 @@
         
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-          handleFile(files);
+          // Create a FileList-like object and set it to input
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(files[0]);
+          input.files = dataTransfer.files;
+          handleFile(input.files);
         }
       });
       
@@ -3463,7 +3550,6 @@
       loadingContainer.classList.add('hidden'); // Hide loading spinner
       cardTitle.textContent = 'Section 2 - Photo ID';
       form.classList.add('hidden'); section2.classList.remove('hidden'); section3.classList.add('hidden');
-      // mockBtn.classList.add('hidden'); // Mock button removed
       
       // Reset button states first
       photoYesBtn.classList.remove('selected');
@@ -3490,7 +3576,6 @@
       loadingContainer.classList.add('hidden'); // Hide loading spinner
       cardTitle.textContent = 'Section 3 - Address History';
       form.classList.add('hidden'); section2.classList.add('hidden'); section3.classList.remove('hidden'); section4.classList.add('hidden');
-      // mockBtn.classList.add('hidden'); // Mock button removed
       updateHeader();
     }
 
@@ -3498,7 +3583,6 @@
       loadingContainer.classList.add('hidden'); // Hide loading spinner
       cardTitle.textContent = 'Section 4 - Address ID';
       form.classList.add('hidden'); section2.classList.add('hidden'); section3.classList.add('hidden'); section4.classList.remove('hidden'); section5.classList.add('hidden');
-      // mockBtn.classList.add('hidden'); // Mock button removed
       
       // Reset button states first
       addressIdYesBtn.classList.remove('selected');
@@ -4228,7 +4312,6 @@
       section3.classList.add('hidden'); 
       section4.classList.add('hidden'); 
       section5.classList.remove('hidden');
-      // mockBtn.classList.add('hidden'); // Mock button removed
       
       // Reset progress
       progressFill.style.width = '0%';
@@ -4379,7 +4462,7 @@
       if (event.data.type === 'put-links') {
         const links = event.data.links;
         s3Keys = event.data.s3Keys; // Store S3 keys
-        console.log('Received links:', { linksCount: links.length, links: links });
+        // console.log('Received links:', { linksCount: links.length, links: links }); // Commented out to avoid logging client data
         uploadFiles(links);
       } else if (event.data.type === 'put-error') {
         // Show specific error message and go back to address ID section
@@ -4671,7 +4754,6 @@
       // Reset header and title
       cardTitle.textContent = '';
       headerInfo.classList.add('hidden');
-      // mockBtn.classList.remove('hidden'); // Mock button removed
     }
 
     // ===== SECTION NAVIGATION FUNCTIONS =====
@@ -4689,7 +4771,6 @@
       section3.classList.add('hidden');
       section4.classList.add('hidden');
       section5.classList.add('hidden');
-      // mockBtn.classList.add('hidden'); // Mock button removed
       updateHeader();
     }
 
@@ -5062,11 +5143,11 @@
     console.log('Image uploader iframe loaded and ready');
     
     window.addEventListener('message', (event)=>{
-      console.log('=== MESSAGE RECEIVED ===');
-      console.log('Origin:', event.origin);
-      console.log('Type:', event.data?.type);
-      console.log('Full data:', event.data);
-      console.log('========================');
+      // console.log('=== MESSAGE RECEIVED ===');
+      // console.log('Origin:', event.origin);
+      // console.log('Type:', event.data?.type);
+      // console.log('Full data:', event.data); // Commented out to avoid logging client data
+      // console.log('========================');
       
       if(event.data && event.data.type === 'initiation-data'){
         console.log('… Processing initiation-data...');
@@ -5266,62 +5347,6 @@
       updateAddressIdTakenMarker(); // Update marker based on existing images
     }
 
-    // ===== MOCK DATA =====
-    // Mock button removed from UI
-    // mockBtn.addEventListener('click', ()=>{
-    //   loadData({
-    //     fe: 'BA',
-    //     clientNumber: '50',
-    //     matterNumber: '52',
-    //     name: 'Mr J R Archer-Moran',
-    //     _id: 'mock-database-id-123',
-    //     uploader: 'test@example.com',
-    //     titlePrefix: 'Mr', firstName: 'Jacob', middleNames: 'Robert', surname: 'Archer-Moran',
-    //     worktype: 'Sale of',
-    //     relation: 'Our Client',
-    //     matterDesc: 'Property sale transaction',
-    //     birthdate: '11-01-2001', 
-    //     photographicIdTaken: true, 
-    //     likenessNOTConfirmed: false,
-    //     address: '123 Main Street, London, SW1A 1AA',
-    //     clientRecentHomeMove: false,
-    //     previousAddress: '',
-    //     addressIdTaken: false,
-    //     idImages: [
-    //       {
-    //         type: 'PhotoID',
-    //         document: 'Driving Licence',
-    //         side: 'Front',
-    //         name: '50-52 - Mr J R Archer-Moran - Driving Licence Front',
-    //         data: {
-    //           type: 'image/jpeg',
-    //           size: 1234567,
-    //           name: 'driving-licence-front.jpg',
-    //           lastModified: 1703001234567
-    //         },
-    //         s3Key: 'protected/mock-dl-front-12345',
-    //         date: '12/20/2023, 10:30:45 AM',
-    //         uploader: 'reception@thurstanhoskin.co.uk'
-    //       },
-    //       {
-    //         type: 'PhotoID',
-    //         document: 'Driving Licence',
-    //         side: 'Back',
-    //         name: '50-52 - Mr J R Archer-Moran - Driving Licence Back',
-    //         data: {
-    //           type: 'image/jpeg',
-    //           size: 1156789,
-    //           name: 'driving-licence-back.jpg',
-    //           lastModified: 1703001234567
-    //         },
-    //         s3Key: 'protected/mock-dl-back-67890',
-    //         date: '12/20/2023, 10:30:45 AM',
-    //         uploader: 'reception@thurstanhoskin.co.uk'
-    //       }
-    //     ]
-    //   });
-    // });
-
     // Ensure finish button starts disabled on page load
     finishBtn.disabled = true;
     
@@ -5341,7 +5366,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '7917796';
+    window.__IFRAME_VERSION__ = 'e70d7ad';
     console.log('[image-uploader] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

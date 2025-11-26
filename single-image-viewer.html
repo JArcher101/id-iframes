@@ -314,27 +314,6 @@
             line-height: 1.4;
         }
 
-        .mock-data-btn {
-            font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: white;
-            color: #dc3545;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .mock-data-btn:hover {
-            background: #f8f9fa;
-            transform: translateY(-1px);
-        }
-
-        .mock-data-btn:active {
-            transform: translateY(0);
-        }
 
         /* Zoom indicator */
         .zoom-indicator {
@@ -837,30 +816,11 @@
                     <div class="error-popup-content">
                         <div class="error-message">${title}</div>
                         <div class="error-details">${message}</div>
-                        <button class="mock-data-btn" onclick="loadMockData()">Load Mock Data</button>
                     </div>
                 </div>
             `;
         }
 
-        // Load mock data for testing
-        function loadMockData() {
-            imageData = {
-                document: 'Passport',
-                side: 'Single',
-                name: '50-52 - Mr J R Archer-Moran - Passport',
-                liveUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&h=600&fit=crop',
-                uploader: 'reception@thurstanhoskin.co.uk',
-                date: '12/20/2023, 10:30:45 AM'
-            };
-            
-            // Reset zoom state
-            currentZoom = 1;
-            translateX = 0;
-            translateY = 0;
-            
-            displayImage(imageData);
-        }
 
         // Event listeners
         document.getElementById('zoomInBtn').addEventListener('click', zoomIn);
@@ -888,7 +848,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '7917796';
+    window.__IFRAME_VERSION__ = 'e70d7ad';
     console.log('[single-image-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

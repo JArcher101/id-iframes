@@ -817,7 +817,7 @@ function handleParentMessage(event) {
       case 'company-results':
       case 'charity-results':
         // Display company/charity search results in dropdown
-        console.log('Received company/charity results:', message);
+        // console.log('Received company/charity results:', message); // Commented out to avoid logging client data
         displayCompanySuggestions(message.companies, message.searchBy);
         break;
         
@@ -878,7 +878,7 @@ function handleInitData(message) {
 function handleClientData(message) {
   const data = message.data || message;
   
-  console.log('📥 Received client data from parent:', data);
+  // console.log('📥 Received client data from parent:', data); // Commented out to avoid logging client data
   
   // Store user from message
   if (message.user) {
@@ -1156,7 +1156,7 @@ function handleClientData(message) {
   // === SELECT REQUEST TYPE TAGS FROM uT AND eS FIELDS ===
   // If data includes uT (update type), select those tags
   if (data.uT && Array.isArray(data.uT) && data.uT.length > 0) {
-    console.log('📋 Selecting request types from uT field:', data.uT);
+    // console.log('📋 Selecting request types from uT field:', data.uT); // Commented out to avoid logging client data
     
     // Clear all existing selections first
     elements.requestTags.forEach(tag => tag.classList.remove('selected'));
@@ -2623,7 +2623,7 @@ Handle full company/charity data from parent (company-data/charity-data message)
 */
 function handleCompanyData(data) {
   businessData = data;
-  console.log('✅ Received full company/charity data:', businessData);
+  // console.log('✅ Received full company/charity data:', businessData); // Commented out to avoid logging client data
   
   // Store in requestData
   if (!requestData.cI) requestData.cI = {};
@@ -3442,7 +3442,7 @@ function openOFSISearch() {
   
   const searchType = isEntity ? 'entity' : 'individual';
   
-  console.log('📤 Sending sanctions check request:', { clientName, yearOfBirth, searchType });
+  // console.log('📤 Sending sanctions check request:', { clientName, yearOfBirth, searchType }); // Commented out to avoid logging client data
   
   window.parent.postMessage({
     type: 'sanctions-check-request',
@@ -3554,7 +3554,7 @@ function getValidationIcon(isValid) {
  * Matching request-note-pdf-mockup.html design with full form details
  */
 function buildRequestPDFHTML(messageData) {
-  console.log('🔨 Building PDF HTML with data:', messageData);
+  // console.log('🔨 Building PDF HTML with data:', messageData); // Commented out to avoid logging client data
   
   // Use the request payload from save-success message (sent back by parent)
   const requestPayload = messageData.request || messageData.savedData;
@@ -3570,7 +3570,7 @@ function buildRequestPDFHTML(messageData) {
   
   console.log('📝 Request type:', requestType);
   console.log('📤 Using request payload from parent:', requestPayload);
-  console.log('📊 Client/matter data:', data);
+  // console.log('📊 Client/matter data:', data); // Commented out to avoid logging client data
   
   // Determine badge class and title for all 7 request types
   let badgeClass, badgeText, title, borderColor, messageLabel, badgeStyle;
@@ -3658,12 +3658,12 @@ function buildRequestPDFHTML(messageData) {
   const entryId = requestPayload._id || '';
   const userEmail = requestPayload.user || '';
   
-  console.log('👤 Extracted client info:');
-  console.log('  - clientName:', clientName);
-  console.log('  - clientNumber:', clientNumber);
-  console.log('  - feeEarner:', feeEarner);
-  console.log('  - entryId:', entryId);
-  console.log('  - userEmail:', userEmail);
+  // console.log('👤 Extracted client info:'); // Commented out to avoid logging client data
+  // console.log('  - clientName:', clientName); // Commented out to avoid logging client data
+  // console.log('  - clientNumber:', clientNumber); // Commented out to avoid logging client data
+  // console.log('  - feeEarner:', feeEarner); // Commented out to avoid logging client data
+  // console.log('  - entryId:', entryId); // Commented out to avoid logging client data
+  // console.log('  - userEmail:', userEmail); // Commented out to avoid logging client data
   
   // Determine if entity or individual
   const isEntity = data.cI?.bD && Object.keys(data.cI.bD).length > 0;
@@ -4726,7 +4726,7 @@ function handleFormSubmit(event) {
     setLoading(true);
     
     // Log the submission data (for debugging)
-    console.log('Submitting form data:', formData);
+    // console.log('Submitting form data:', formData); // Commented out to avoid logging client data
     
     // Here you would typically send the data to your backend
     // For now, we'll simulate a successful submission
@@ -4811,7 +4811,7 @@ function uploadFormFiles(files) {
       file: {} // File object can't be serialized
     }));
     
-    console.log('📤 Requesting PUT links for files:', fileMetadata);
+    // console.log('📤 Requesting PUT links for files:', fileMetadata); // Commented out to avoid logging client data
     
     sendMessageToParent({
       type: 'file-data',
@@ -5051,7 +5051,7 @@ function handleFileUploadResponse(event) {
   const message = event.data;
   
   if (message.type === 'put-links') {
-    console.log('📥 Received PUT links from parent:', message);
+    // console.log('📥 Received PUT links from parent:', message); // Commented out to avoid logging client data
     
     const links = message.links;
     const s3Keys = message.s3Keys;
@@ -5306,7 +5306,7 @@ function buildAndSendRequestData(requestType, messageObj, messageFile, documentF
     requestDataMessage.newFiles = documentFiles;
   }
   
-  console.log('📤 Sending request-data to parent:', requestDataMessage);
+  // console.log('📤 Sending request-data to parent:', requestDataMessage); // Commented out to avoid logging client data
   
   // Store for PDF generation when we receive save-success
   lastSentRequestData = requestDataMessage;
@@ -5516,621 +5516,3 @@ window.RequestFormCore = {
   hasCompleteIndividualProfile
 };
 
-// ===== TEMPORARY: MOCK DATA FOR TESTING =====
-
-// Mock data for individual client
-const mockClientData = {
-  type: 'client-data',
-  user: 'staff@domain.com',
-  data: {
-    "_id": "bd8bee6a-465b-4d43-9a8a-396f9081b649",
-    "idI": [
-      {
-        "side": "Front",
-        "name": "50-52 - Master J R Archer-Moran - Driving Licence Front",
-        "document": "Driving Licence",
-        "data": {
-          "type": "image/png",
-          "size": 21378,
-          "name": "ss-straight-yellow-insert.png",
-          "lastModified": 1758829899134
-        },
-        "date": "10/10/2025, 11:41:42",
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "file": {},
-        "type": "PhotoID",
-        "s3Key": "protected/ybwBFKT5eSrpdaiz",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/ybwBFKT5eSrpdaiz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=61cd6c3d580d1f15eca5d8203c903048e34f2dcde706e2599d2aa2750e787fd4&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      },
-      {
-        "side": "Back",
-        "name": "50-52 - Master J R Archer-Moran - Driving Licence Back",
-        "document": "Driving Licence",
-        "data": {
-          "type": "image/png",
-          "size": 895772,
-          "name": "retrostyle-cinema-marquee-sign-with-glowing-lights-symbolizing-entertainment-movies-and-classic-theater-experience-in-a-bold-vintage-design-vector.png",
-          "lastModified": 1757696547004
-        },
-        "date": "10/10/2025, 11:41:42",
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "file": {},
-        "type": "PhotoID",
-        "s3Key": "protected/UdEHCCFUlkwyPmCh",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/UdEHCCFUlkwyPmCh?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=7c4bdfbbe71f04adf3be184ec19965421e9f943891cb8f2894e71862dea0a10a&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      },
-      {
-        "side": "Single",
-        "name": "BA-50-52 - Master J R Archer-Moran - Address ID 1 - Tenancy Agreement",
-        "document": "Tenancy Agreement",
-        "data": {
-          "type": "image/jpeg",
-          "size": 183232,
-          "name": "5990353245_08b19ec64d_c.jpg",
-          "lastModified": 1759265544765
-        },
-        "date": "10/10/2025, 11:40:28",
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "type": "Address ID",
-        "s3Key": "protected/7s06LuUEtr5fdsMs",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/7s06LuUEtr5fdsMs?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=b14219ced8521450e092e662ea2025f040ee17cfb08a3e81babfd7f32fde1efe&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      },
-      {
-        "side": "Single",
-        "name": "BA-50-52 - Master J R Archer-Moran - Address ID 1 - Tenancy Agreement",
-        "document": "Tenancy Agreement",
-        "data": {
-          "type": "image/jpeg",
-          "size": 183232,
-          "name": "5990353245_08b19ec64d_c.jpg",
-          "lastModified": 1759265544765
-        },
-        "date": "10/10/2025, 11:40:28",
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "type": "Address ID",
-        "s3Key": "protected/7s06LuUEtr5fdsMs",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/7s06LuUEtr5fdsMs?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=b14219ced8521450e092e662ea2025f040ee17cfb08a3e81babfd7f32fde1efe&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      },
-      {
-        "side": "Single",
-        "name": "BA-50-52 - Master J R Archer-Moran - Passport",
-        "document": "Passport",
-        "data": {
-          "type": "image/jpeg",
-          "size": 30652,
-          "name": "BA-50-52 - Master J R Archer-Moran - Bank Statement.jpeg",
-          "lastModified": 1759867516593
-        },
-        "date": "10/10/2025, 11:34:14",
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "type": "PhotoID",
-        "s3Key": "protected/QuPjbtxqHLX9YQWL",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/QuPjbtxqHLX9YQWL?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=782652624b3e0b8c35cdb7f8d67c39d3d5dafe9126212589638c167349471f78&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      },
-      {
-        "side": "Single",
-        "name": "BA-50-52 - Master J R Archer-Moran - Address ID 1 - NHS Letter",
-        "document": "NHS Letter",
-        "data": {
-          "type": "image/png",
-          "size": 40943,
-          "name": "Water.PNG",
-          "lastModified": 1758831268131
-        },
-        "date": "10/10/2025, 11:34:56",
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "type": "Address ID",
-        "s3Key": "protected/TFrnvmrPUcWfJeor",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/TFrnvmrPUcWfJeor?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=d8d6e31c08ad4e0e7b5b5fb0a721869f102d9835cab6fe64674bb791f57a0a85&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      },
-      {
-        "side": "Single",
-        "name": "BA-50-52 - Master J R Archer-Moran - Address ID 2 - Bank Statement",
-        "document": "Bank Statement",
-        "data": {
-          "type": "image/png",
-          "size": 40982,
-          "name": "Co2.PNG",
-          "lastModified": 1758831312282
-        },
-        "date": "10/10/2025, 11:34:56",
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "type": "Address ID",
-        "s3Key": "protected/kAj11mjAiFttIdXo",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/kAj11mjAiFttIdXo?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=4bfd69cd88b21bfbf9f53ecf4e12a08f27a97f158c3324b47ee8d2b4544c92f5&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      }
-    ],
-    "idD": [
-      {
-        "document": "Beneficiary details form",
-        "data": {
-          "type": "application/pdf",
-          "size": 32279,
-          "name": "BA-Unknown-Unknown - Unknown - Beneficiary details form",
-          "lastModified": 1758798972710
-        },
-        "date": "14/10/2025, 19:55:42",
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "file": {},
-        "type": "Details form",
-        "s3Key": "protected/5hqZxK7RDkcBHwBT",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/5hqZxK7RDkcBHwBT?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=35536230673ecacd7391775ece9a5ea7e470e8e9b6f22eb0bd05e21930131e51&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      },
-      {
-        "document": "OFSI Sanctions Search",
-        "data": {
-          "type": "application/pdf",
-          "size": 32545,
-          "name": "BA-Unknown-Unknown - Unknown - OFSI Sanctions Search",
-          "lastModified": 1758799014256
-        },
-        "date": "14/10/2025, 19:53:28",
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "file": {},
-        "type": "PEP & Sanctions Check",
-        "s3Key": "protected/WgFX070SKFzaHJ5O",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/WgFX070SKFzaHJ5O?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=8823c4c2d72cb61f8ee7c6e91fef1ccc5b66c01fd39711fbde6746ebb9303b99&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      },
-      {
-        "name": "50-52 - Master J R Archer-Moran - Lite Screen",
-        "document": "Lite Screen",
-        "data": {
-          "type": "document/pdf",
-          "size": 1675231,
-          "name": "DSC01737.pdf",
-          "lastModified": 1698860392000
-        },
-        "date": "05/10/2025, 17:33:04",
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "file": {},
-        "type": "AML Check",
-        "s3Key": "protected/oLLkjjeuIRn9p4QF",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/oLLkjjeuIRn9p4QF?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=64fe56449913a9550980f666382d25c90e1796e0b540a024117e8bceab3d9431&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      },
-      {
-        "document": "Enhanced ID",
-        "data": {
-          "type": "application/pdf",
-          "size": 208237,
-          "name": "BA-50-52 - Master J R Archer-Moran - Enhanced ID",
-          "lastModified": 1759851790193
-        },
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "file": {},
-        "type": "AML Check",
-        "s3Key": "protected/Tk5UvXivOyBr3PP2",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/Tk5UvXivOyBr3PP2?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=cecbffbfe9fcc9134b8dd46984da2cbfd6fc8780f4b63d28f1acc6fe5862a8f9&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      },
-      {
-        "document": "Client Details form",
-        "data": {
-          "type": "application/pdf",
-          "size": 117237,
-          "name": "BA-50-52 - Master J R Archer-Moran - Client Details form",
-          "lastModified": 1643802796878
-        },
-        "date": "08/10/2025, 12:05:22",
-        "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
-        "file": {},
-        "type": "Details form",
-        "s3Key": "protected/Iy2bK2K6xnRuZ4tY",
-        "liveUrl": "https://outstanding-id-images-bucket.s3.eu-north-1.amazonaws.com/protected/Iy2bK2K6xnRuZ4tY?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZ5QDGL22IHU7VVXM%2F20251016%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251016T113825Z&X-Amz-Expires=300&X-Amz-Signature=8f081c6410b1571b48370c41eba0432ba515f8533c43a4d4009cd23359e3fa58&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-      }
-    ],
-    "cD": {
-      "cN": 50,
-      "mN": "52",
-      "fe": "BA",
-      "n": "Master J R Archer-Moran"
-    },
-    "r": "Our Client",
-    "wT": "Purchase of",
-    "s": [
-      "AWF"
-    ],
-    "i": {
-      "a": true,
-      "p": true,
-      "l": false
-    },
-    "cI": {
-      "n": {
-        "t": "Master",
-        "f": "Jacob",
-        "m": "Robert",
-        "l": "Archer-Moran"
-      },
-      "b": "11-01-2001",
-      "a": {
-        "postcode": "TR15 2ND",
-        "country": "GBR",
-        "building_name": "",
-        "flat_number": "",
-        "street": "Southgate Street",
-        "building_number": "94",
-        "sub_street": "",
-        "town": "Redruth"
-      },
-      "m": "+447506430094",
-      "e": "jacob.archer-moran@thurstanhoskin.co.uk"
-    },
-    "b": false,
-    "c": false
-  }
-};
-
-// Mock data for business
-const mockBusinessData = {
-  type: 'client-data',
-  user: 'staff@domain.com',
-  data: {
-    "_id": "04f255e4-36fc-40db-a5af-7a9ee3de2712",
-    "idI": [],
-    "idD": [],
-    "cD": {
-      "cN": 50,
-      "mN": "52",
-      "fe": "BA",
-      "n": "THURSTAN HOSKIN SOLICITORS LLP"
-    },
-    "mD": "21 Green lane",
-    "r": "Our Client",
-    "wT": "Purchase of",
-    "b": true,
-    "s": [
-      "Pending"
-    ],
-    "i": {},
-    "cI": {
-      "n": {
-        "b": "THURSTAN HOSKIN SOLICITORS LLP"
-      },
-      "a": {
-        "postcode": "TR15 2BY",
-        "country": "GBR",
-        "building_name": "",
-        "flat_number": "",
-        "street": "Chynoweth",
-        "building_number": "",
-        "sub_street": "",
-        "town": "Redruth"
-      },
-      "eN": "OC421980",
-      "bD": {
-        "company_type": "llp",
-        "officers": [
-          {
-            "etag": "b0b08a3f257cbf6f8994468fa457a22fa7cf94bf",
-            "name": "ARCHER, Barbara",
-            "appointed_on": "2018-04-12",
-            "links": {
-              "self": "/company/OC421980/appointments/ghdFOyJWcfPqJQgK8NfDwR7bilM",
-              "officer": {
-                "appointments": "/officers/bpMu7qGX6X5mbywa163wfmsVQtU/appointments"
-              }
-            },
-            "date_of_birth": {
-              "month": 7,
-              "year": 1974
-            },
-            "is_pre_1992_appointment": false,
-            "country_of_residence": "United Kingdom",
-            "address": {
-              "premises": "Chynoweth",
-              "country": "United Kingdom",
-              "postal_code": "TR15 2BY",
-              "region": "Cornwall",
-              "locality": "Redruth",
-              "address_line_1": "Chapel Street"
-            },
-            "person_number": "245243370001",
-            "officer_role": "llp-designated-member"
-          },
-          {
-            "etag": "b0b08a3f257cbf6f8994468fa457a22fa7cf94bf",
-            "name": "MORRISON, Stephen John Duncan",
-            "appointed_on": "2018-04-12",
-            "links": {
-              "self": "/company/OC421980/appointments/cGTjhpGLyetE8EkadB-_wmpQUp4",
-              "officer": {
-                "appointments": "/officers/GLYKbY1MSXrx-0bckTxUZ-lVExQ/appointments"
-              }
-            },
-            "date_of_birth": {
-              "month": 7,
-              "year": 1972
-            },
-            "is_pre_1992_appointment": false,
-            "country_of_residence": "United Kingdom",
-            "address": {
-              "premises": "Chynoweth",
-              "country": "United Kingdom",
-              "postal_code": "TR15 2BY",
-              "region": "Cornwall",
-              "locality": "Redruth",
-              "address_line_1": "Chapel Street"
-            },
-            "person_number": "245243350001",
-            "officer_role": "llp-designated-member"
-          }
-        ],
-        "confirmation_statement": {
-          "last_made_up_to": "2025-04-11",
-          "next_due": "2026-04-25",
-          "next_made_up_to": "2026-04-11",
-          "overdue": false
-        },
-        "company_name": "THURSTAN HOSKIN SOLICITORS LLP",
-        "company_status": "active",
-        "registered_office_address": {
-          "country": "United Kingdom",
-          "address_line_2": "Chapel Street",
-          "postal_code": "TR15 2BY",
-          "region": "Cornwall",
-          "locality": "Redruth",
-          "address_line_1": "Chynoweth"
-        },
-        "date_of_creation": "2018-04-12",
-        "sic_codes": [],
-        "has_been_liquidated": false,
-        "has_insolvency_history": false,
-        "company_number": "OC421980",
-        "accounts": {
-          "overdue": false,
-          "next_made_up_to": "2026-03-31",
-          "next_accounts": {
-            "due_on": "2026-12-31",
-            "overdue": false,
-            "period_end_on": "2026-03-31",
-            "period_start_on": "2025-04-01"
-          },
-          "accounting_reference_date": {
-            "day": "31",
-            "month": "03"
-          },
-          "last_accounts": {
-            "made_up_to": "2025-03-31",
-            "period_end_on": "2025-03-31",
-            "period_start_on": "2024-04-01",
-            "type": "total-exemption-full"
-          },
-          "next_due": "2026-12-31"
-        },
-        "pscs": [
-          {
-            "etag": "159127babc57cea133e83a5d6ae0dc8cb6dd8281",
-            "name": "Ms Barbara Archer",
-            "ceased": false,
-            "notified_on": "2018-04-12",
-            "links": {
-              "self": "/company/OC421980/persons-with-significant-control/individual/BcrfjeumXNsqkEqDDKRKk73DcZQ"
-            },
-            "date_of_birth": {
-              "month": 7,
-              "year": 1974
-            },
-            "natures_of_control": [
-              "voting-rights-25-to-50-percent-limited-liability-partnership",
-              "right-to-share-surplus-assets-25-to-50-percent-limited-liability-partnership"
-            ],
-            "nationality": "British",
-            "country_of_residence": "United Kingdom",
-            "address": {
-              "premises": "Chynoweth",
-              "country": "United Kingdom",
-              "postal_code": "TR15 2BY",
-              "region": "Cornwall",
-              "locality": "Redruth",
-              "address_line_1": "Chapel Street"
-            },
-            "kind": "individual-person-with-significant-control",
-            "name_elements": {
-              "title": "Ms",
-              "surname": "Archer",
-              "forename": "Barbara"
-            }
-          },
-          {
-            "etag": "3fe017b054a2c3ae858d3e3122c2b3723b1594b6",
-            "name": "Mr Stephen John Duncan Morrison",
-            "ceased": false,
-            "notified_on": "2018-04-12",
-            "links": {
-              "self": "/company/OC421980/persons-with-significant-control/individual/yQLo-H0eKa1RTksp-ac31wouYYE"
-            },
-            "date_of_birth": {
-              "month": 7,
-              "year": 1972
-            },
-            "natures_of_control": [
-              "voting-rights-25-to-50-percent-limited-liability-partnership",
-              "right-to-share-surplus-assets-25-to-50-percent-limited-liability-partnership"
-            ],
-            "nationality": "British",
-            "country_of_residence": "United Kingdom",
-            "address": {
-              "premises": "Chynoweth",
-              "country": "United Kingdom",
-              "postal_code": "TR15 2BY",
-              "region": "Cornwall",
-              "locality": "Redruth",
-              "address_line_1": "Chapel Street"
-            },
-            "kind": "individual-person-with-significant-control",
-            "name_elements": {
-              "title": "Mr",
-              "surname": "Morrison",
-              "forename": "Stephen",
-              "middle_name": "John Duncan"
-            }
-          }
-        ]
-      }
-    }
-  }
-};
-
-// Mock data for charity
-const mockCharityData = {
-  type: 'client-data',
-  user: 'staff@domain.com',
-  data: {
-    "_id": "b836fd51-cd1f-4c19-9bde-1ab0b2d75e30",
-    "idI": [],
-    "idD": [],
-    "cD": {
-      "cN": 50,
-      "mN": "52",
-      "fe": "BA",
-      "n": "Teenage cancer trust"
-    },
-    "c": true,
-    "s": [
-      "AWF"
-    ],
-    "i": {},
-    "cI": {
-      "n": {
-        "b": "TEENAGE CANCER TRUST"
-      },
-      "a": {
-        "postcode": "WC1V 7AA",
-        "country": "GBR",
-        "building_name": "",
-        "flat_number": "",
-        "street": "The Place",
-        "building_number": "",
-        "sub_street": "",
-        "town": "London"
-      },
-      "rNC": "GB",
-      "eN": "03350311",
-      "bD": {
-        "company_type": "private-limited-guarant-nsc-limited-exemption",
-        "officers": [
-          {
-            "etag": "58e523c4b16736ddf84f5fddb74e2019bfe24365",
-            "name": "CROCKFORD, George William",
-            "appointed_on": "2023-02-24",
-            "links": {
-              "self": "/company/03350311/appointments/s8uE2dbbZ1lJZTTjkwlvNRWh1SE",
-              "officer": {
-                "appointments": "/officers/oxV7f9pXg6RzHJEWNwIdD-ouTdI/appointments"
-              }
-            },
-            "is_pre_1992_appointment": false,
-            "address": {
-              "premises": "The Place",
-              "country": "England",
-              "postal_code": "WC1V 7AA",
-              "locality": "London",
-              "address_line_1": "175 High Holborn"
-            },
-            "person_number": "306384830001",
-            "officer_role": "secretary"
-          },
-          {
-            "etag": "58e523c4b16736ddf84f5fddb74e2019bfe24365",
-            "name": "CARR, Gurinderjit Kaur",
-            "appointed_on": "2022-02-10",
-            "links": {
-              "self": "/company/03350311/appointments/n-Pp1HtovuE6jz4I9WiYsk9-OKc",
-              "officer": {
-                "appointments": "/officers/3omf0iBgWPSnPZlIUlJTvg4Vdlg/appointments"
-              }
-            },
-            "date_of_birth": {
-              "month": 2,
-              "year": 1968
-            },
-            "is_pre_1992_appointment": false,
-            "nationality": "British",
-            "country_of_residence": "United Kingdom",
-            "address": {
-              "premises": "The Place",
-              "country": "England",
-              "postal_code": "WC1V 7AA",
-              "locality": "London",
-              "address_line_1": "175 High Holborn"
-            },
-            "person_number": "292069390001",
-            "occupation": "Partner, Consulting",
-            "officer_role": "director"
-          }
-        ],
-        "confirmation_statement": {
-          "last_made_up_to": "2025-03-02",
-          "next_due": "2026-03-16",
-          "next_made_up_to": "2026-03-02",
-          "overdue": false
-        },
-        "company_name": "TEENAGE CANCER TRUST",
-        "company_status": "active",
-        "registered_office_address": {
-          "country": "England",
-          "address_line_2": "175 High Holborn",
-          "postal_code": "WC1V 7AA",
-          "locality": "London",
-          "address_line_1": "The Place"
-        },
-        "date_of_creation": "1997-04-10",
-        "sic_codes": [
-          "86900"
-        ],
-        "has_been_liquidated": false,
-        "has_insolvency_history": false,
-        "company_number": "03350311",
-        "accounts": {
-          "overdue": false,
-          "next_made_up_to": "2025-12-31",
-          "next_accounts": {
-            "due_on": "2026-09-30",
-            "overdue": false,
-            "period_end_on": "2025-12-31",
-            "period_start_on": "2025-01-01"
-          },
-          "accounting_reference_date": {
-            "day": "31",
-            "month": "12"
-          },
-          "last_accounts": {
-            "made_up_to": "2024-12-31",
-            "period_end_on": "2024-12-31",
-            "period_start_on": "2024-01-01",
-            "type": "group"
-          },
-          "next_due": "2026-09-30"
-        },
-        "pscs": []
-      }
-    }
-  }
-};
-
-// Setup mock data buttons
-document.addEventListener('DOMContentLoaded', function() {
-  const mockClientBtn = document.getElementById('mockClientBtn');
-  const mockBusinessBtn = document.getElementById('mockBusinessBtn');
-  const mockCharityBtn = document.getElementById('mockCharityBtn');
-  
-  if (mockClientBtn) {
-    mockClientBtn.addEventListener('click', function() {
-      console.log('🧪 Loading Individual Mock Data');
-      handleClientData(mockClientData);
-    });
-  }
-  
-  if (mockBusinessBtn) {
-    mockBusinessBtn.addEventListener('click', function() {
-      console.log('🧪 Loading Business Mock Data');
-      handleClientData(mockBusinessData);
-    });
-  }
-  
-  if (mockCharityBtn) {
-    mockCharityBtn.addEventListener('click', function() {
-      console.log('🧪 Loading Charity Mock Data');
-      handleClientData(mockCharityData);
-    });
-  }
-});

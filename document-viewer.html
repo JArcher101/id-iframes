@@ -2174,7 +2174,7 @@
         let itemId = null; // Store the item _id for later use
         let uploadedImages = null;
         let localFilesForUpload = []; // Store actual File objects locally (can't be sent via postMessage)
-        let imageSlider, prevBtn, nextBtn, loadingState, awaitingState, imageDisplaySection, reelContainer, mockBtn, addMoreContainer, addMoreBtn, clientHeading;
+        let imageSlider, prevBtn, nextBtn, loadingState, awaitingState, imageDisplaySection, reelContainer, addMoreContainer, addMoreBtn, clientHeading;
         let idUploaderSection, uploaderSubheading, uploaderCardsContainer, uploadAllBtn, cancelHeaderBtn, errorPopup, errorMessage, errorPopupClose, dynamicHint;
 
         /*
@@ -2193,7 +2193,6 @@
             awaitingState = document.getElementById('awaitingState');
             imageDisplaySection = document.getElementById('imageDisplaySection');
             reelContainer = document.getElementById('reelContainer');
-            mockBtn = document.getElementById('mockBtn');
             addMoreContainer = document.getElementById('addMoreContainer');
             addMoreBtn = document.getElementById('addMoreBtn');
             clientHeading = document.getElementById('clientHeading');
@@ -2723,93 +2722,6 @@
             }
         }
 
-        /*
-        =====================================================================
-        MOCK DATA FOR TESTING
-        - Generates sample document data for development/testing
-        - Includes various document types (AML, SoF, PEP checks)
-        - Uses publicly available sample PDF files
-        =====================================================================
-        */
-        function loadMockData() {
-            const mockClientData = {
-                fe: 'BA',
-                clientNumber: '50',
-                matterNumber: '52',
-                name: 'Mr J R Archer-Moran'
-            };
-            
-            const mockDocuments = [
-                {
-                    name: "50-52 - Master J R Archer-Moran - Lite Screen",
-                    document: "Lite Screen",
-                    data: {
-                        type: "document/pdf",
-                        size: 1675231,
-                        name: "DSC01737.pdf",
-                        lastModified: 1698860392000
-                    },
-                    date: "05/10/2025, 17:33:04",
-                    uploader: "jacob.archer-moran@thurstanhoskin.co.uk",
-                    file: {},
-                    type: "AML Check",
-                    s3Key: "protected/oLLkjjeuIRn9p4QF",
-                    liveUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-                },
-                {
-                    name: "50-52 - Master J R Archer-Moran - Source of Funds",
-                    document: "Source of Funds Questionnaire",
-                    data: {
-                        type: "application/pdf",
-                        size: 2456789,
-                        name: "source-of-funds.pdf",
-                        lastModified: 1698860400000
-                    },
-                    date: "05/10/2025, 17:35:12",
-                    uploader: "jacob.archer-moran@thurstanhoskin.co.uk",
-                    file: {},
-                    type: "SoF/Sow Check",
-                    s3Key: "protected/sof-check-12345",
-                    liveUrl: "https://www.learningcontainer.com/wp-content/uploads/2019/09/sample-pdf-file.pdf"
-                },
-                {
-                    name: "50-52 - Master J R Archer-Moran - Combined Check",
-                    document: "Enhanced ID Check",
-                    data: {
-                        type: "application/pdf",
-                        size: 1892345,
-                        name: "combined-check.pdf",
-                        lastModified: 1698860410000
-                    },
-                    date: "05/10/2025, 17:36:50",
-                    uploader: "jacob.archer-moran@thurstanhoskin.co.uk",
-                    file: {},
-                    type: "Combined AML & SoF",
-                    s3Key: "protected/combined-check-67890",
-                    liveUrl: "https://www.africau.edu/images/default/sample.pdf"
-                },
-                {
-                    name: "50-52 - Master J R Archer-Moran - Other Document",
-                    document: "PEP Screening",
-                    data: {
-                        type: "application/pdf",
-                        size: 1234567,
-                        name: "other-document.pdf",
-                        lastModified: 1698860420000
-                    },
-                    date: "05/10/2025, 17:37:00",
-                    uploader: "jacob.archer-moran@thurstanhoskin.co.uk",
-                    file: {},
-                    type: "PEP & Sanctions Check",
-                    s3Key: "protected/other-document-11111",
-                    liveUrl: "https://www.orimi.com/pdf-test.pdf"
-                }
-            ];
-            
-            // Simulate receiving the message
-            const mockUserEmail = 'jacob.archer-moran@thurstanhoskin.co.uk';
-            displayDocuments(mockDocuments, true, mockClientData, mockUserEmail);
-        }
 
         // Update counter
         function updateCounter() {
@@ -4032,9 +3944,9 @@
                     console.log('Secondary dropdown value:', secondaryDropdown.value);
                     
                     // Generate filename with fallback values if clientData is not available
-                    console.log('clientData:', clientData);
-                    console.log('userEmail:', userEmail);
-                    console.log('file object:', file);
+                    // console.log('clientData:', clientData); // Commented out to avoid logging client data
+                    // console.log('userEmail:', userEmail); // Commented out to avoid logging client data
+                    // console.log('file object:', file); // Commented out to avoid logging client data
                     
                     const fe = String(clientData?.fe || 'Unknown').replace(/\//g, '-');
                     const clientNumber = String(clientData?.clientNumber || 'Unknown').replace(/\//g, '-');
@@ -4212,12 +4124,6 @@
                 });
             }
 
-            // Mock button removed from UI
-            // if (mockBtn) {
-            //     mockBtn.addEventListener('click', () => {
-            //         loadMockData();
-            //     });
-            // }
 
             if (addMoreBtn) {
                 addMoreBtn.addEventListener('click', () => {
@@ -4326,7 +4232,7 @@
                 // Handle Thirdfort check PDF viewing request
                 handleThirdfortDocument(event.data);
             } else if (event.data && event.data.type === 'display-documents') {
-                console.log('Received document display data:', event.data);
+                // console.log('Received document display data:', event.data); // Commented out to avoid logging client data
                 
                 // Store the item ID for later use
                 itemId = event.data._id ? event.data._id : null;
@@ -4339,7 +4245,7 @@
                 // Display the new documents
                 displayDocuments(event.data.documents, event.data.allowUploads, event.data.clientData, event.data.userEmail);
             } else if (event.data && event.data.type === 'image-display') {
-                console.log('Received image display data:', event.data);
+                // console.log('Received image display data:', event.data); // Commented out to avoid logging client data
                 
                 // Store the item ID for later use
                 itemId = event.data._id ? event.data._id : null;
@@ -4389,7 +4295,7 @@
         =====================================================================
         */
         function handleThirdfortDocument(data) {
-            console.log('📄 Thirdfort document request received:', data);
+            // console.log('📄 Thirdfort document request received:', data); // Commented out to avoid logging client data
             
             if (!data || !data.s3Key) {
                 console.error('No s3Key provided in thirdfort-document message');
@@ -4434,7 +4340,7 @@
 
         // Handle display images data from parent
         function handleDisplayImages(data) {
-            console.log('Received display-images data from parent:', data);
+            // console.log('Received display-images data from parent:', data); // Commented out to avoid logging client data
             
             // Store the item ID for later use
             itemId = data._id;
@@ -4454,7 +4360,7 @@
 
         // Handle PUT links for uploading files to S3
         function handlePutLinks(data) {
-            console.log('Received PUT links:', data);
+            // console.log('Received PUT links:', data); // Commented out to avoid logging client data
             // Store the item ID from PUT links response
             itemId = data._id;
             // Extract links and s3Keys from the data
@@ -4486,7 +4392,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '7917796';
+    window.__IFRAME_VERSION__ = 'e70d7ad';
     console.log('[document-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

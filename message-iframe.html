@@ -1071,8 +1071,8 @@
                 const links = event.data.links;
                 const s3Keys = event.data.s3Keys;
                 
-                console.log('Received PUT links for file upload:', links);
-                console.log('File objects with S3 Keys:', s3Keys);
+                // console.log('Received PUT links for file upload:', links); // Commented out to avoid logging client data
+                // console.log('File objects with S3 Keys:', s3Keys); // Commented out to avoid logging client data
                 
                 // Extract s3Key from the full file object returned by parent
                 // Parent returns our fileData with s3Key property added
@@ -1736,7 +1736,7 @@
                     _id: itemId
                 }, '*');
                 
-                console.log('File data sent to parent for PUT links:', fileData);
+                // console.log('File data sent to parent for PUT links:', fileData); // Commented out to avoid logging client data
                 
                 // Don't clear inputs or re-enable button yet
                 // Wait for 'put-links' response, then uploadFileToS3() will complete the process
@@ -2111,7 +2111,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '7917796';
+    window.__IFRAME_VERSION__ = 'e70d7ad';
     console.log('[message-iframe] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

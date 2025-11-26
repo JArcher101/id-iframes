@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thirdfort Checks Manager</title>
-    <link rel="stylesheet" href="css/thirdfort-checks-manager.css?v=7917796"> 
+    <link rel="stylesheet" href="css/thirdfort-checks-manager.css?v=e70d7ad"> 
 </head>
 <body>
     <div id="app-container">
@@ -14,20 +14,10 @@
             <p style="margin-top: 20px; font-family: 'RotisRegular', sans-serif; color: #666;">
                 Waiting for data...
             </p>
-            <button class="mock-btn" onclick="if(window.manager) manager.loadMockData()" style="margin-top: 20px;">
-                Load Mock Data
-            </button>
         </div>
 
         <!-- List View -->
         <div id="list-view" class="list-view hidden">
-            <!-- Mock Data Button (for testing) -->
-            <div style="margin-bottom: 10px; text-align: right;">
-                <button id="mock-data-btn" class="mock-btn" onclick="manager.loadMockData()">
-                    Load Mock Data
-                </button>
-            </div>
-            
             <div id="checks-list" class="checks-list">
                 <!-- Check items will be dynamically inserted here -->
             </div>
@@ -100,11 +90,11 @@
     <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
     
-    <script src="js/thirdfort-checks-manager.js?v=7917796"></script>
+    <script src="js/thirdfort-checks-manager.js?v=e70d7ad"></script>
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '7917796';
+    window.__IFRAME_VERSION__ = 'e70d7ad';
     console.log('[thirdfort-checks-manager] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
