@@ -6836,6 +6836,74 @@ class ThirdfortChecksManager {
         `;
     }
     
+    renderTaskAnnotations(taskType, check) {
+        const annotations = check.considerAnnotations || [];
+        const taskAnnotations = annotations.filter(ann => ann.taskType === taskType);
+        
+        if (taskAnnotations.length === 0) {
+            return '';
+        }
+        
+        // Group annotations by user/timestamp/status (same grouping logic as elsewhere)
+        const groups = {};
+        taskAnnotations.forEach(ann => {
+            const groupKey = `${ann.user}_${ann.timestamp}_${ann.newStatus}`;
+            if (!groups[groupKey]) {
+                groups[groupKey] = [];
+            }
+            groups[groupKey].push(ann);
+        });
+        
+        let html = '<div class="task-annotations-section">';
+        html += '<div class="task-annotations-header">Cashier Updates</div>';
+        
+        // Render each group as a card (most recent first)
+        const sortedGroups = Object.values(groups).sort((a, b) => {
+            return new Date(b[0].timestamp) - new Date(a[0].timestamp);
+        });
+        
+        sortedGroups.forEach(group => {
+            const ann = group[0]; // Use first annotation in group for metadata
+            const date = new Date(ann.timestamp).toLocaleDateString('en-GB', { 
+                day: '2-digit', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+            const time = new Date(ann.timestamp).toLocaleTimeString('en-GB', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            const statusClass = ann.newStatus === 'clear' ? 'clear' : 
+                               (ann.newStatus === 'fail' ? 'fail' : 'consider');
+            
+            html += `<div class="task-annotation-card ${statusClass}">`;
+            html += '<div class="task-annotation-header">';
+            html += `<div class="annotation-meta"><strong>${ann.userName || ann.user}</strong> • ${date}, ${time}</div>`;
+            html += '</div>';
+            html += '<div class="task-annotation-body">';
+            
+            // Show affected objectives if any
+            if (ann.objectives && ann.objectives.length > 0) {
+                ann.objectives.forEach(obj => {
+                    const objectivePath = this.formatObjectivePath(obj.path);
+                    html += `<div class="annotation-objective-path">${objectivePath}</div>`;
+                });
+            }
+            
+            // Show reason
+            if (ann.reason) {
+                html += `<div class="annotation-reason">${ann.reason}</div>`;
+            }
+            
+            html += '</div>';
+            html += '</div>';
+        });
+        
+        html += '</div>';
+        return html;
+    }
+    
     renderUpdatesSection(check) {
         const updates = check.updates || [];
         
