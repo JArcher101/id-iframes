@@ -7,12 +7,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
   
   <!-- Core CSS -->
-  <link rel="stylesheet" href="styles.css?v=e70d7ad" />
+  <link rel="stylesheet" href="styles.css?v=d4aa9c6" />
   
   <!-- Request Form Specific CSS -->
-  <link rel="stylesheet" href="css/request-form.css?v=e70d7ad" />
+  <link rel="stylesheet" href="css/request-form.css?v=d4aa9c6" />
 </head>
 <body>
+  <!-- Loading State - shown while waiting for parent data -->
+  <div id="loadingContainer" class="loading-container">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading client data...</div>
+    <button type="button" id="mockDataBtn" class="mock-data-btn">Load Mock Data</button>
+  </div>
+
   <div class="container">
     <!-- Header Section -->
     <div id="headerSection" class="section">
@@ -530,7 +537,7 @@
         <div class="id-documents-column">
           <div class="column-header">
             <h4>Client Details Form</h4>
-    </div>
+          </div>
           <div class="document-card hidden" id="cdfDocumentCard">
             <div class="document-content">
               <div class="document-title">Client Details Form</div>
@@ -543,19 +550,30 @@
               </svg>
             </button>
           </div>
-          &#9888;&#65039; Please upload the Client Details Form (CDF) or complete all required personal details (title, full name, contact method, DOB, current address)
-        </div>
-          &#9888;&#65039; Please Link the charity/company using the entity number or name input or supply:<br>
-          &bull; Print out from companies house or charity register<br>
-          &bull; Proof of address for partnerships<br>
-          &bull; Proof of registration for SRA/FCA regulated entities<br>
-          &bull; Proof of authority for all other commercial work
-        </div>
-          &#10003; Entity data linked
-        </div>
-        <div class="entity-linked-hint hidden" id="cdfProfileCompleteHint">
-          ✓ Full client data entered — CDF upload optional for this request
-        </div>
+          
+          <!-- CDF Hint (orange) - shown when no CDF and no full client data -->
+          <div class="cdf-hint hidden" id="cdfPeopleHint">
+            &#9888;&#65039; Please upload the Client Details Form (CDF) or complete all required personal details (title, full name, contact method, DOB, current address)
+          </div>
+          
+          <!-- Business/Charity Hint (orange) - shown when business/charity selected but not linked -->
+          <div class="cdf-hint hidden" id="cdfEntityHint">
+            &#9888;&#65039; Please Link the charity/company using the entity number or name input or supply:<br>
+            &bull; Print out from companies house or charity register<br>
+            &bull; Proof of address for partnerships<br>
+            &bull; Proof of registration for SRA/FCA regulated entities<br>
+            &bull; Proof of authority for all other commercial work
+          </div>
+          
+          <!-- Entity Linked Hint (green) - shown when entity data linked -->
+          <div class="entity-linked-hint hidden" id="entityLinkedHint">
+            &#10003; Entity data linked
+          </div>
+          
+          <!-- Full Profile Complete Hint (green) - shown when full client data entered -->
+          <div class="entity-linked-hint hidden" id="cdfProfileCompleteHint">
+            ✓ Full details entered
+          </div>
 
           <!-- CDF Uploader -->
           <div class="uploader-section">
@@ -680,22 +698,22 @@
   <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
   
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=e70d7ad"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=d4aa9c6"></script>
   
   <!-- Google libphonenumber for phone validation (must load before core script) -->
   <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
   <!-- Core JavaScript -->
-    <script src="js/request-form-core.js?v=e70d7ad"></script>
+    <script src="js/request-form-core.js?v=d4aa9c6"></script>
   
   <!-- Request Type Modules -->
-  <script src="js/request-types/formJ.js?v=e70d7ad"></script>
-  <script src="js/request-types/formK.js?v=e70d7ad"></script>
-  <script src="js/request-types/formE.js?v=e70d7ad"></script>
-  <script src="js/request-types/esof.js?v=e70d7ad"></script>
-  <script src="js/request-types/note.js?v=e70d7ad"></script>
-  <script src="js/request-types/update.js?v=e70d7ad"></script>
-  <script src="js/request-types/updatePep.js?v=e70d7ad"></script>
+  <script src="js/request-types/formJ.js?v=d4aa9c6"></script>
+  <script src="js/request-types/formK.js?v=d4aa9c6"></script>
+  <script src="js/request-types/formE.js?v=d4aa9c6"></script>
+  <script src="js/request-types/esof.js?v=d4aa9c6"></script>
+  <script src="js/request-types/note.js?v=d4aa9c6"></script>
+  <script src="js/request-types/update.js?v=d4aa9c6"></script>
+  <script src="js/request-types/updatePep.js?v=d4aa9c6"></script>
   
   <!-- Initialize Autocomplete Fields -->
   <script>
@@ -710,7 +728,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'e70d7ad';
+    window.__IFRAME_VERSION__ = 'd4aa9c6';
     console.log('[request-form] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

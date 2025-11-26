@@ -888,3 +888,315 @@ function setPhoneCode(inputId, code) {
   }
 }
 
+/* ===================================
+   COUNTRY CODE NORMALIZATION
+   ===================================
+   
+   Normalize country codes to 3-letter ISO format (GBR, USA, CAN)
+   Handles various input formats: "United Kingdom", "UK", "GB", "GBR"
+   
+   ===================================
+*/
+
+/**
+ * Normalize country code to 3-letter ISO format (GBR, USA, CAN, etc.)
+ * Uses comprehensive mapping from ADDRESS_COUNTRIES and THIRDFORT_JURISDICTIONS
+ * @param {string} country - Country name or code in any format
+ * @returns {string} - Normalized 3-letter ISO code (defaults to 'GBR' if invalid)
+ */
+function normalizeCountryCode(country) {
+  if (!country) return 'GBR';
+  
+  const countryStr = country.toString().trim();
+  const countryUpper = countryStr.toUpperCase();
+  const countryLower = countryStr.toLowerCase();
+  
+  // Build 2-letter to 3-letter mapping from THIRDFORT_JURISDICTIONS
+  // This maps jurisdiction codes (2-letter) to address country codes (3-letter)
+  const twoToThreeMap = {};
+  THIRDFORT_JURISDICTIONS.forEach(j => {
+    // Skip US states and UAE emirates (they have special codes like US-AL, AE-AZ)
+    if (j.code.includes('-')) return;
+    
+    // Find matching 3-letter code in ADDRESS_COUNTRIES by name
+    const match = ADDRESS_COUNTRIES.find(c => 
+      c.name.toLowerCase() === j.name.toLowerCase()
+    );
+    if (match) {
+      twoToThreeMap[j.code] = match.code;
+    }
+  });
+  
+  // Additional common 2-letter mappings that might not be in jurisdictions
+  const additionalTwoToThree = {
+    'GB': 'GBR',
+    'US': 'USA',
+    'CA': 'CAN',
+    'AU': 'AUS',
+    'NZ': 'NZL',
+    'IE': 'IRL',
+    'FR': 'FRA',
+    'DE': 'DEU',
+    'ES': 'ESP',
+    'IT': 'ITA',
+    'PT': 'PRT',
+    'NL': 'NLD',
+    'BE': 'BEL',
+    'CH': 'CHE',
+    'AT': 'AUT',
+    'DK': 'DNK',
+    'SE': 'SWE',
+    'NO': 'NOR',
+    'FI': 'FIN',
+    'PL': 'POL',
+    'GR': 'GRC',
+    'TR': 'TUR',
+    'RU': 'RUS',
+    'CN': 'CHN',
+    'JP': 'JPN',
+    'IN': 'IND',
+    'BR': 'BRA',
+    'MX': 'MEX',
+    'ZA': 'ZAF',
+    'AE': 'ARE',
+    'SA': 'SAU',
+    'SG': 'SGP',
+    'HK': 'HKG',
+    'KR': 'KOR',
+    'AR': 'ARG',
+    'CL': 'CHL',
+    'CO': 'COL',
+    'PE': 'PER',
+    'VE': 'VEN',
+    'EG': 'EGY',
+    'NG': 'NGA',
+    'KE': 'KEN',
+    'MA': 'MAR',
+    'TH': 'THA',
+    'VN': 'VNM',
+    'MY': 'MYS',
+    'ID': 'IDN',
+    'PH': 'PHL',
+    'PK': 'PAK',
+    'BD': 'BGD',
+    'IL': 'ISR',
+    'CZ': 'CZE',
+    'HU': 'HUN',
+    'RO': 'ROU',
+    'BG': 'BGR',
+    'HR': 'HRV',
+    'SK': 'SVK',
+    'SI': 'SVN',
+    'EE': 'EST',
+    'LV': 'LVA',
+    'LT': 'LTU',
+    'IS': 'ISL',
+    'LU': 'LUX',
+    'MT': 'MLT',
+    'CY': 'CYP',
+    'UA': 'UKR',
+    'BY': 'BLR',
+    'RS': 'SRB',
+    'BA': 'BIH',
+    'AL': 'ALB',
+    'MK': 'MKD',
+    'ME': 'MNE',
+    'KZ': 'KAZ',
+    'GE': 'GEO',
+    'AM': 'ARM',
+    'AZ': 'AZE',
+    'IR': 'IRN',
+    'IQ': 'IRQ',
+    'JO': 'JOR',
+    'LB': 'LBN',
+    'KW': 'KWT',
+    'OM': 'OMN',
+    'QA': 'QAT',
+    'BH': 'BHR',
+    'YE': 'YEM',
+    'SY': 'SYR',
+    'AF': 'AFG',
+    'LK': 'LKA',
+    'NP': 'NPL',
+    'MM': 'MMR',
+    'KH': 'KHM',
+    'LA': 'LAO',
+    'TW': 'TWN',
+    'MN': 'MNG',
+    'KP': 'PRK'
+  };
+  
+  // Merge additional mappings
+  Object.assign(twoToThreeMap, additionalTwoToThree);
+  
+  // Common name variations and aliases
+  const nameVariations = {
+    'united kingdom': 'GBR',
+    'uk': 'GBR',
+    'great britain': 'GBR',
+    'britain': 'GBR',
+    'england': 'GBR',
+    'scotland': 'GBR',
+    'wales': 'GBR',
+    'northern ireland': 'GBR',
+    'united states': 'USA',
+    'us': 'USA',
+    'united states of america': 'USA',
+    'america': 'USA',
+    'usa': 'USA',
+    'canada': 'CAN',
+    'australia': 'AUS',
+    'new zealand': 'NZL',
+    'ireland': 'IRL',
+    'republic of ireland': 'IRL',
+    'france': 'FRA',
+    'germany': 'DEU',
+    'spain': 'ESP',
+    'italy': 'ITA',
+    'portugal': 'PRT',
+    'netherlands': 'NLD',
+    'holland': 'NLD',
+    'belgium': 'BEL',
+    'switzerland': 'CHE',
+    'austria': 'AUT',
+    'denmark': 'DNK',
+    'sweden': 'SWE',
+    'norway': 'NOR',
+    'finland': 'FIN',
+    'poland': 'POL',
+    'greece': 'GRC',
+    'turkey': 'TUR',
+    'russia': 'RUS',
+    'russian federation': 'RUS',
+    'china': 'CHN',
+    'japan': 'JPN',
+    'india': 'IND',
+    'brazil': 'BRA',
+    'mexico': 'MEX',
+    'south africa': 'ZAF',
+    'united arab emirates': 'ARE',
+    'uae': 'ARE',
+    'emirates': 'ARE',
+    'saudi arabia': 'SAU',
+    'singapore': 'SGP',
+    'hong kong': 'HKG',
+    'south korea': 'KOR',
+    'korea': 'KOR',
+    'argentina': 'ARG',
+    'chile': 'CHL',
+    'colombia': 'COL',
+    'peru': 'PER',
+    'venezuela': 'VEN',
+    'egypt': 'EGY',
+    'nigeria': 'NGA',
+    'kenya': 'KEN',
+    'morocco': 'MAR',
+    'thailand': 'THA',
+    'vietnam': 'VNM',
+    'malaysia': 'MYS',
+    'indonesia': 'IDN',
+    'philippines': 'PHL',
+    'pakistan': 'PAK',
+    'bangladesh': 'BGD',
+    'israel': 'ISR',
+    'czech republic': 'CZE',
+    'czechia': 'CZE',
+    'hungary': 'HUN',
+    'romania': 'ROU',
+    'bulgaria': 'BGR',
+    'croatia': 'HRV',
+    'slovakia': 'SVK',
+    'slovenia': 'SVN',
+    'estonia': 'EST',
+    'latvia': 'LVA',
+    'lithuania': 'LTU',
+    'iceland': 'ISL',
+    'luxembourg': 'LUX',
+    'malta': 'MLT',
+    'cyprus': 'CYP',
+    'ukraine': 'UKR',
+    'belarus': 'BLR',
+    'serbia': 'SRB',
+    'bosnia and herzegovina': 'BIH',
+    'bosnia': 'BIH',
+    'albania': 'ALB',
+    'north macedonia': 'MKD',
+    'macedonia': 'MKD',
+    'montenegro': 'MNE',
+    'kazakhstan': 'KAZ',
+    'georgia': 'GEO',
+    'armenia': 'ARM',
+    'azerbaijan': 'AZE',
+    'iran': 'IRN',
+    'iraq': 'IRQ',
+    'jordan': 'JOR',
+    'lebanon': 'LBN',
+    'kuwait': 'KWT',
+    'oman': 'OMN',
+    'qatar': 'QAT',
+    'bahrain': 'BHR',
+    'yemen': 'YEM',
+    'syria': 'SYR',
+    'afghanistan': 'AFG',
+    'sri lanka': 'LKA',
+    'nepal': 'NPL',
+    'myanmar': 'MMR',
+    'burma': 'MMR',
+    'cambodia': 'KHM',
+    'laos': 'LAO',
+    'taiwan': 'TWN',
+    'mongolia': 'MNG',
+    'north korea': 'PRK',
+    'democratic people\'s republic of korea': 'PRK',
+    'dprk': 'PRK'
+  };
+  
+  // Check if it's already a valid 3-letter code (uppercase)
+  if (/^[A-Z]{3}$/.test(countryStr)) {
+    // Verify it exists in ADDRESS_COUNTRIES
+    const exists = ADDRESS_COUNTRIES.find(c => c.code === countryUpper);
+    return exists ? countryUpper : 'GBR';
+  }
+  
+  // Check if it's a 2-letter code and convert to 3-letter
+  if (/^[A-Z]{2}$/.test(countryStr)) {
+    return twoToThreeMap[countryUpper] || 'GBR';
+  }
+  
+  // Try to find in ADDRESS_COUNTRIES by exact name match (case-insensitive)
+  const exactMatch = ADDRESS_COUNTRIES.find(c => 
+    c.name.toLowerCase() === countryLower ||
+    c.code.toLowerCase() === countryLower
+  );
+  if (exactMatch) {
+    return exactMatch.code;
+  }
+  
+  // Try to find in ADDRESS_COUNTRIES by partial name match
+  const partialMatch = ADDRESS_COUNTRIES.find(c => 
+    c.name.toLowerCase().includes(countryLower) ||
+    countryLower.includes(c.name.toLowerCase())
+  );
+  if (partialMatch) {
+    return partialMatch.code;
+  }
+  
+  // Try name variations
+  if (nameVariations[countryLower]) {
+    return nameVariations[countryLower];
+  }
+  
+  // Try to find in THIRDFORT_JURISDICTIONS by name and map to 3-letter code
+  const jurisdictionMatch = THIRDFORT_JURISDICTIONS.find(j => 
+    j.name.toLowerCase() === countryLower ||
+    j.code.toLowerCase() === countryLower
+  );
+  if (jurisdictionMatch && !jurisdictionMatch.code.includes('-')) {
+    const mapped = twoToThreeMap[jurisdictionMatch.code];
+    if (mapped) return mapped;
+  }
+  
+  // Default to GBR if no match found
+  return 'GBR';
+}
+

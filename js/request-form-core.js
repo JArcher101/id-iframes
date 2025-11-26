@@ -66,6 +66,9 @@ function initializeForm() {
   
   // Initialize request tags
   initializeRequestTags();
+  
+  // Setup mock data button
+  setupMockDataButton();
 }
 
 function setupEventListeners() {
@@ -108,6 +111,142 @@ function setupEventListeners() {
 
   // Track profile completeness for CDF overrides
   setupCDFProfileListeners();
+}
+
+function setupMockDataButton() {
+  const mockDataBtn = document.getElementById('mockDataBtn');
+  if (mockDataBtn) {
+    mockDataBtn.addEventListener('click', function() {
+      const mockData = {
+        "_id": "6ba36f47-6572-4ea1-a90a-2646ed5b23e7",
+        "idI": [
+          {
+            "side": "Single",
+            "name": "JA-50-997 - Mr J R Moran - Official Letter",
+            "document": "Official Letter",
+            "data": {
+              "type": "image/webp",
+              "size": 200,
+              "lastModified": 1763470438518
+            },
+            "date": "26/11/2025, 17:18:28",
+            "uploader": "amelia.roberts@thurstanhoskin.co.uk",
+            "file": {},
+            "type": "AddressID",
+            "s3Key": "protected/Rlkm5J0aBDaGilKt",
+            "url": "https://id-images.thurstanhoskin.app/protected/Rlkm5J0aBDaGilKt?Expires=1764178416&Key-Pair-Id=KBX1HDLBRBVLP&Signature=PxcGoO4vK-LdQAmn-saKqO0TOcpwXPRsixaFlYNssKH~8-dMBAg8ymbNr3q4kmBRwzxUWkDJY4IETuR7OSu7GZhOgyjTWn2kqBiM5WFaUvujdMWTG~fmBvyW9-tnfZ6FH1IA6fQOI4HHA-qkF2il8sXlyE~9ARaTyzHZcfd~TAdXE6vrh3FYjRv6Shhzylasm7NyZsB036nZ9mpRAPMvRqxuVBIlvlqTH~9js01hbr-PwBE9w1t5z1BOEEDwyfRQAbV62LNQ9PFx0FPXB46TK-7OieDB-oAqETPBmW0XRihCdzPEx~fDZhZOeQMsVDntz8wKyyZWsbEwtqXKrq03Pw__"
+          },
+          {
+            "side": "Single",
+            "name": "50-997 - Mr J R Moran - Passport",
+            "document": "Passport",
+            "data": {
+              "type": "image/jpeg",
+              "size": 2530290,
+              "name": "JRAM PP.jpg",
+              "lastModified": 1762359664749
+            },
+            "date": "26/11/2025, 17:16:12",
+            "uploader": "amelia.roberts@thurstanhoskin.co.uk",
+            "file": {},
+            "type": "PhotoID",
+            "s3Key": "protected/qXArldEAmvn9JHjd",
+            "url": "https://id-images.thurstanhoskin.app/protected/qXArldEAmvn9JHjd?Expires=1764178416&Key-Pair-Id=KBX1HDLBRBVLP&Signature=LcvaQ-yi0WokLA1Zk6ah60Y4AweYKUgeF3JE8M1ajh5Vv7TQ5BeBRxcl5HqBH6IIRknxys4VKoQUUhfpadKCok3vzxV2Av13LipM4JnYzR4HkBWGKpHPEyg54JhY7Y4YVcPfe8bR1nuH8OFgZ1Yab5fzCBbIJAwtJnm0PofoOtcNiCRuvaav0lkv24fiDFUPEn6eZwQmlCdvVVSr-2UcnX751Pua4GGTqRQAuumDkkd7uGeoVukVXuUTcd1fD5LzHKD0OVxJ56hXTHvAu~y384xARgtAHFJJdid3s77gPtrwqjex-CVl9nHWlq3HMCZDRKUbBRAv~Xn1G7GdkCBgpQ__"
+          },
+          {
+            "side": "Single",
+            "name": "50-997 - Mr J R Moran - Address ID 1 - Bank Statement",
+            "document": "Bank Statement",
+            "data": {
+              "type": "image/png",
+              "size": 619626,
+              "name": "Screenshot_20251120-195954.png",
+              "lastModified": 1763668811623
+            },
+            "date": "26/11/2025, 17:16:12",
+            "uploader": "amelia.roberts@thurstanhoskin.co.uk",
+            "file": {},
+            "type": "Address ID",
+            "s3Key": "protected/JqETNkmOKX6OLhtm",
+            "url": "https://id-images.thurstanhoskin.app/protected/JqETNkmOKX6OLhtm?Expires=1764178416&Key-Pair-Id=KBX1HDLBRBVLP&Signature=K8JjwJ4Z83mmzKhdZxtZU1pmJA9UN04-SJ1VrbwZE9QCWeQjO1J0xQ4LIqLJfYb5WOLJA4AQt7BwGpgDO~cNYsoM1s12rnVnNtoweNROzJrZ6GVvXtXgyQzGe~bLvqubfTAEcP6AsnsntnMwOJhQgQ52q0ZMSsQEqIUHH2eqAL-9UR5tts2wJESBhW4GcLbF6LUNrFX1PtBogbMkyskQxQkUmweuqXeWdSGgCYMDuL09WD2D2FVOXFDzZsHcnmBqzSTWjtq2JeKmU0Wy-176J-ClnelZtJ78FfcHmQCSuDY~83Ot6LgPMO4revo~HMd5z3EftFaAJ-7L-iI9DV-hKA__"
+          }
+        ],
+        "idD": [
+          {
+            "document": "UK Sanctions List Search",
+            "data": {
+              "type": "application/pdf",
+              "size": 195590,
+              "name": "UK_Sanctions_Search_Jacob_Robert_Moran_1764177423143",
+              "lastModified": 1764177423144
+            },
+            "date": "26/11/2025, 17:17:03",
+            "uploader": "amelia.roberts@thurstanhoskin.co.uk",
+            "type": "PEP & Sanctions Check",
+            "s3Key": "protected/T1oLkCYTQmbwwFrH",
+            "liveUrl": "https://id-documents.thurstanhoskin.app/protected/T1oLkCYTQmbwwFrH?Expires=1764178417&Key-Pair-Id=KBX1HDLBRBVLP&Signature=cbVSAWqhoKzM-RUCgemZyBozNHsGuOPprKiywdmuGrJn1Li5ueiG0O6JMzPmz1ciOV20bsbTK8GN7A7w5yRZBSexMUIF0PTjLVTVuo39kLyQj6px~G8ke7qRQwQQCLeLu6-1P0yVJCkLll9l7ow12-VeikhwYMjnk4wqG5b2JI9usaa-iGoxCMx5Ec2xd0PVRV2RTj91a3ygnx1kBfgq6d3qJlxFmhW-H~E0Y8J7APNQqNfJRAHZzmJYbQefLEIJAj-IQZ-CXf35LupgE~gQerRb3PfW-WTVeRsBdSIUtkoMKJy408dN2OLrmfps7aq0y6jVSgUWPyUORxifur5oeQ__"
+          }
+        ],
+        "cD": {
+          "cN": 50,
+          "mN": "997",
+          "fe": "JA",
+          "n": "Mr J R Moran"
+        },
+        "mD": "21 Green Lane",
+        "r": "Our Client",
+        "wT": "Purchase of",
+        "s": [
+          "AWF",
+          "Reception"
+        ],
+        "i": {
+          "a": true,
+          "p": true,
+          "l": false
+        },
+        "cI": {
+          "n": {
+            "t": "Mr",
+            "f": "Jacob",
+            "m": "Robert",
+            "l": "Moran"
+          },
+          "b": "11-01-2001",
+          "m": "+447506430094",
+          "e": "jacob@example.com",
+          "a": {
+            "postcode": "TR15 2ND",
+            "country": "GBR",
+            "building_name": "",
+            "flat_number": "",
+            "street": "Southgate Street",
+            "building_number": "94",
+            "sub_street": "",
+            "town": "Redruth"
+          },
+          "rM": false,
+          "nC": true,
+          "pN": "Archer-Moran",
+          "rNC": "Known as but not changed on passport"
+        },
+        "lM": {
+          "_id": "5GYB1fU",
+          "message": "UK Sanctions List Search report uploaded by amelia.roberts@thurstanhoskin.co.uk",
+          "time": "11/26/2025, 5:17:04 PM",
+          "type": "system",
+          "user": "Thirdfort API"
+        }
+      };
+      
+      // Simulate receiving client-data message
+      handleClientData({
+        type: 'client-data',
+        user: 'amelia.roberts@thurstanhoskin.co.uk',
+        data: mockData
+      });
+    });
+  }
 }
 
 function initializeRequestTags() {
@@ -878,6 +1017,12 @@ function handleInitData(message) {
 function handleClientData(message) {
   const data = message.data || message;
   
+  // Hide loading container when client data is received
+  const loadingContainer = document.getElementById('loadingContainer');
+  if (loadingContainer) {
+    loadingContainer.classList.add('hidden');
+  }
+  
   // console.log('📥 Received client data from parent:', data); // Commented out to avoid logging client data
   
   // Store user from message
@@ -1033,9 +1178,15 @@ function handleClientData(message) {
     const currentCountry = document.getElementById('currentCountry');
     
     if (currentAddress && currentAddressObject) {
-      // Set country
-      if (currentCountry && currentAddressObject.country) {
-        setCountry('currentCountry', currentAddressObject.country);
+      // Normalize country code (convert "United Kingdom" to "GBR")
+      if (currentAddressObject.country) {
+        const countryCode = normalizeCountryCode(currentAddressObject.country);
+        currentAddressObject.country = countryCode;
+        
+        // Set country in form
+        if (currentCountry) {
+          setCountry('currentCountry', countryCode);
+        }
       }
       
       // Check if address object is properly formatted
@@ -1149,6 +1300,9 @@ function handleClientData(message) {
   
   // Update ID Documents UI (cards and hints)
   updateIDDocumentsUI(data);
+  
+  // Refresh CDF hints after data is loaded (to check profile completeness)
+  refreshCDFHintsForProfileChange();
   
   // Show appropriate section: Client Details OR Business/Charity Details
   updateClientOrBusinessSection();
@@ -2235,8 +2389,16 @@ function setupCDFProfileListeners() {
   handleCDFProfileFieldChange();
 }
 
+let cdfProfileChangeDebounceTimer = null;
+
 function handleCDFProfileFieldChange() {
-  refreshCDFHintsForProfileChange();
+  // Debounce to avoid excessive validation calls
+  if (cdfProfileChangeDebounceTimer) {
+    clearTimeout(cdfProfileChangeDebounceTimer);
+  }
+  cdfProfileChangeDebounceTimer = setTimeout(() => {
+    refreshCDFHintsForProfileChange();
+  }, 300); // Wait 300ms after last input before validating
 }
 
 function refreshCDFHintsForProfileChange() {
@@ -2606,6 +2768,11 @@ function handleAddressData(addressData, field) {
   const previousCountry = document.getElementById('previousCountry');
   const country = field === 'current' ? (currentCountry?.dataset.countryCode || 'GBR') : (previousCountry?.dataset.countryCode || 'GBR');
   const thirdfortAddress = formatToThirdfort(addressData, country);
+  
+  // Ensure country is set
+  if (thirdfortAddress) {
+    thirdfortAddress.country = country;
+  }
   
   if (field === 'current') {
     currentAddressObject = thirdfortAddress;
@@ -3146,58 +3313,103 @@ function selectAddressSuggestion(addressId, displayText, isCurrentAddress) {
 Build address objects from manual fields when needed
 This is called before form submission to ensure we have proper address data
 */
+// Guard to prevent infinite loops
+let isBuildingAddressObjects = false;
+
 function buildAddressObjects() {
-  // Build current address object
-  const addressNotListed = document.getElementById('addressNotListed');
-  const currentCountry = document.getElementById('currentCountry');
-  const isCurrentUK = currentCountry?.value === 'GBR';
+  // Prevent infinite loops
+  if (isBuildingAddressObjects) {
+    return;
+  }
   
-  if (addressNotListed?.checked || !document.getElementById('currentAddress')?.value?.trim()) {
-    // Build from manual fields or if no autocomplete address
+  isBuildingAddressObjects = true;
+  
+  try {
+    // Build current address object
+    const addressNotListed = document.getElementById('addressNotListed');
+    const currentCountry = document.getElementById('currentCountry');
+    const currentCountryRaw = currentCountry?.dataset.countryCode || currentCountry?.value || 'GBR';
+    const currentCountryNormalized = normalizeCountryCode(currentCountryRaw);
+    const isCurrentUK = currentCountryNormalized === 'GBR';
+  const currentAddressInput = document.getElementById('currentAddress');
+  
+  // Check if we need to build from manual fields
+  const shouldBuildFromManual = addressNotListed?.checked || !currentAddressInput?.value?.trim();
+  
+  // Validate existing currentAddressObject if it exists
+  const existingAddressValid = currentAddressObject && validateThirdfortAddress(currentAddressObject);
+  
+  if (shouldBuildFromManual || !existingAddressValid) {
+    // Build from manual fields or if no autocomplete address or if existing address is invalid
     if (isCurrentUK) {
       // UK manual: Individual fields only (no address_1/address_2)
-      currentAddressObject = {
-        building_name: document.getElementById('buildingName')?.value?.trim() || '',
-        building_number: document.getElementById('buildingNumber')?.value?.trim() || '',
-        flat_number: document.getElementById('flatNumber')?.value?.trim() || '',
-        postcode: document.getElementById('postcode')?.value?.trim() || '',
-        street: document.getElementById('street')?.value?.trim() || '',
-        sub_street: document.getElementById('subStreet')?.value?.trim() || '',
-        town: document.getElementById('town')?.value?.trim() || '',
-        country: 'GBR'
-      };
+      const buildingName = document.getElementById('buildingName')?.value?.trim() || '';
+      const buildingNumber = document.getElementById('buildingNumber')?.value?.trim() || '';
+      const flatNumber = document.getElementById('flatNumber')?.value?.trim() || '';
+      const postcode = document.getElementById('postcode')?.value?.trim() || '';
+      const street = document.getElementById('street')?.value?.trim() || '';
+      const town = document.getElementById('town')?.value?.trim() || '';
+      
+      // If we have manual fields, use them; otherwise try to preserve existing object fields
+      if (shouldBuildFromManual || buildingName || buildingNumber || flatNumber || postcode || street || town) {
+        currentAddressObject = {
+          building_name: buildingName || currentAddressObject?.building_name || '',
+          building_number: buildingNumber || currentAddressObject?.building_number || '',
+          flat_number: flatNumber || currentAddressObject?.flat_number || '',
+          postcode: postcode || currentAddressObject?.postcode || '',
+          street: street || currentAddressObject?.street || '',
+          sub_street: document.getElementById('subStreet')?.value?.trim() || currentAddressObject?.sub_street || '',
+          town: town || currentAddressObject?.town || '',
+          country: currentCountryNormalized
+        };
+      } else if (currentAddressObject) {
+        // Preserve existing object but ensure country is set
+        currentAddressObject.country = currentCountryNormalized;
+      }
     } else {
       // Non-UK: address_1, address_2 (no individual building fields)
-      currentAddressObject = {
-        address_1: document.getElementById('buildingName')?.value?.trim() || 
-                  document.getElementById('buildingNumber')?.value?.trim() || 
-                  document.getElementById('flatNumber')?.value?.trim() || 
-                  document.getElementById('street')?.value?.trim() || '',
-        address_2: document.getElementById('subStreet')?.value?.trim() || '',
-        postcode: document.getElementById('postcode')?.value?.trim() || '',
-        street: document.getElementById('street')?.value?.trim() || '',
-        sub_street: document.getElementById('subStreet')?.value?.trim() || '',
-        town: document.getElementById('town')?.value?.trim() || '',
-        state: '',
-        country: currentCountry?.value || 'GBR'
-      };
+      const buildingName = document.getElementById('buildingName')?.value?.trim() || '';
+      const buildingNumber = document.getElementById('buildingNumber')?.value?.trim() || '';
+      const flatNumber = document.getElementById('flatNumber')?.value?.trim() || '';
+      const street = document.getElementById('street')?.value?.trim() || '';
+      const town = document.getElementById('town')?.value?.trim() || '';
+      
+      if (shouldBuildFromManual || buildingName || buildingNumber || flatNumber || street || town) {
+        currentAddressObject = {
+          address_1: buildingName || buildingNumber || flatNumber || street || currentAddressObject?.address_1 || '',
+          address_2: document.getElementById('subStreet')?.value?.trim() || currentAddressObject?.address_2 || '',
+          postcode: document.getElementById('postcode')?.value?.trim() || currentAddressObject?.postcode || '',
+          street: street || currentAddressObject?.street || '',
+          sub_street: document.getElementById('subStreet')?.value?.trim() || currentAddressObject?.sub_street || '',
+          town: town || currentAddressObject?.town || '',
+          state: document.getElementById('state')?.value?.trim() || currentAddressObject?.state || '',
+          country: currentCountryNormalized
+        };
+      } else if (currentAddressObject) {
+        // Preserve existing object but ensure country is set
+        currentAddressObject.country = currentCountryNormalized;
+      }
     }
   }
   
   // Ensure country is set even if object was from API
   if (currentAddressObject) {
-    currentAddressObject.country = currentCountry?.value || 'GBR';
+    const currentCountryRaw = currentCountry?.dataset.countryCode || currentCountry?.value || 'GBR';
+    currentAddressObject.country = normalizeCountryCode(currentCountryRaw);
   }
   
   // Build previous address object
   const recentMove = document.getElementById('recentMove');
   if (recentMove?.checked) {
     const previousCountry = document.getElementById('previousCountry');
-    const isPreviousUK = previousCountry?.value === 'GBR';
     const previousAddressNotListed = document.getElementById('previousAddressNotListed');
+    const previousCountryRaw = previousCountry?.dataset.countryCode || previousCountry?.value || 'GBR';
+    const previousCountryNormalized = normalizeCountryCode(previousCountryRaw);
+    const isPreviousUK = previousCountryNormalized === 'GBR';
     
     if (!isPreviousUK || previousAddressNotListed?.checked) {
       // Build from manual fields
+      
       if (isPreviousUK) {
         // UK manual: Individual fields only (no address_1/address_2)
         previousAddressObject = {
@@ -3208,7 +3420,7 @@ function buildAddressObjects() {
           street: document.getElementById('prevStreet')?.value?.trim() || '',
           sub_street: document.getElementById('prevSubStreet')?.value?.trim() || '',
           town: document.getElementById('prevTown')?.value?.trim() || '',
-          country: 'GBR'
+          country: previousCountryNormalized
         };
       } else {
         // Non-UK: address_1, address_2 (no individual building fields)
@@ -3223,15 +3435,18 @@ function buildAddressObjects() {
           sub_street: document.getElementById('prevSubStreet')?.value?.trim() || '',
           town: document.getElementById('prevTown')?.value?.trim() || '',
           state: '',
-          country: previousCountry?.value || 'GBR'
+          country: previousCountryNormalized
         };
       }
       
       // Ensure country is set
       if (previousAddressObject) {
-        previousAddressObject.country = previousCountry?.value || 'GBR';
+        previousAddressObject.country = previousCountryNormalized;
       }
     }
+  }
+  } finally {
+    isBuildingAddressObjects = false;
   }
 }
 
@@ -3255,56 +3470,73 @@ function hasCompleteIndividualProfile() {
   return computeIndividualProfileCompleteness();
 }
 
+// Guard to prevent infinite loops during validation
+let isComputingProfileCompleteness = false;
+
 function computeIndividualProfileCompleteness() {
-  const businessCheckbox = document.getElementById('businessCheckbox');
-  const charityCheckbox = document.getElementById('charityCheckbox');
-  const entityFromData = requestData?.b || requestData?.c || requestData?.data?.b || requestData?.data?.c;
-  const isEntity = !!(businessCheckbox?.checked || charityCheckbox?.checked || entityFromData);
-  
-  if (isEntity) {
+  // Prevent infinite loops
+  if (isComputingProfileCompleteness) {
     return false;
   }
   
-  const clientData = requestData?.cI || requestData?.data?.cI || {};
-  const nameData = clientData?.n || {};
+  isComputingProfileCompleteness = true;
   
-  const getValue = (id, fallback = '') => {
-    const element = document.getElementById(id);
-    if (element && typeof element.value === 'string') {
-      return element.value.trim() || fallback || '';
+  try {
+    const businessCheckbox = document.getElementById('businessCheckbox');
+    const charityCheckbox = document.getElementById('charityCheckbox');
+    const entityFromData = requestData?.b || requestData?.c || requestData?.data?.b || requestData?.data?.c;
+    const isEntity = !!(businessCheckbox?.checked || charityCheckbox?.checked || entityFromData);
+    
+    if (isEntity) {
+      return false;
     }
-    return fallback || '';
-  };
-  
-  const title = getValue('titlePrefix', nameData.t || '');
-  const firstName = getValue('firstName', nameData.f || '');
-  const lastName = getValue('lastName', nameData.l || '');
-  
-  if (!title || !firstName || !lastName) {
-    return false;
-  }
-  
-  const dobFromInputs = collectDOBFromInputs();
-  const dateOfBirth = dobFromInputs || clientData.b || '';
-  if (!dateOfBirth) {
-    return false;
-  }
-  
-  const email = getValue('email', clientData.e || '');
-  const phoneInput = getValue('phoneNumber', '');
-  const storedPhone = clientData.m || '';
-  if (!email && !phoneInput && !storedPhone) {
-    return false;
-  }
-  
-  // Ensure manual address objects are up to date
-  buildAddressObjects();
+    
+    const clientData = requestData?.cI || requestData?.data?.cI || {};
+    const nameData = clientData?.n || {};
+    
+    const getValue = (id, fallback = '') => {
+      const element = document.getElementById(id);
+      if (element && typeof element.value === 'string') {
+        return element.value.trim() || fallback || '';
+      }
+      return fallback || '';
+    };
+    
+    const title = getValue('titlePrefix', nameData.t || '');
+    const firstName = getValue('firstName', nameData.f || '');
+    const lastName = getValue('lastName', nameData.l || '');
+    
+    if (!title || !firstName || !lastName) {
+      return false;
+    }
+    
+    const dobFromInputs = collectDOBFromInputs();
+    const dateOfBirth = dobFromInputs || clientData.b || '';
+    
+    if (!dateOfBirth) {
+      return false;
+    }
+    
+    const email = getValue('email', clientData.e || '');
+    const phoneInput = getValue('phoneNumber', '');
+    const storedPhone = clientData.m || '';
+    
+    if (!email && !phoneInput && !storedPhone) {
+      return false;
+    }
+    
+    // Ensure manual address objects are up to date (only if not already building)
+    if (!isBuildingAddressObjects) {
+      buildAddressObjects();
+    }
   
   const activeAddress = (currentAddressObject && Object.keys(currentAddressObject).length > 0)
     ? currentAddressObject
     : clientData.a || {};
   
-  if (!validateThirdfortAddress(activeAddress)) {
+  const addressValid = validateThirdfortAddress(activeAddress);
+  
+  if (!addressValid) {
     return false;
   }
   
@@ -3337,6 +3569,9 @@ function computeIndividualProfileCompleteness() {
   }
   
   return true;
+  } finally {
+    isComputingProfileCompleteness = false;
+  }
 }
 
 function collectDOBFromInputs() {
@@ -4357,25 +4592,31 @@ function toggleCDFHintsState({ hasCDFDocument, isEntity, hasLinkedData }) {
  * USA/CAN: Requires town, state, postcode, address_1, country
  * Other: Requires town, address_1, country
  */
+/**
+ * Normalize country code/name to Thirdfort format (GBR, USA, CAN, etc.)
+ */
+// normalizeCountryCode is now provided by js/jurisdiction-autocomplete.js
+
 function validateThirdfortAddress(addressObject) {
   if (!addressObject || typeof addressObject !== 'object') return false;
   
-  const country = addressObject.country || 'GBR';
+  // Normalize country code before validation
+  const normalizedCountry = normalizeCountryCode(addressObject.country || 'GBR');
   
   // UK validation
-  if (country === 'GBR') {
-    const hasRequiredFields = addressObject.town && addressObject.postcode && addressObject.country;
+  if (normalizedCountry === 'GBR') {
+    const hasRequiredFields = addressObject.town && addressObject.postcode;
     const hasOneBuilding = addressObject.flat_number || addressObject.building_number || addressObject.building_name;
     return hasRequiredFields && hasOneBuilding;
   }
   
   // USA/Canada validation
-  if (country === 'USA' || country === 'CAN') {
-    return !!(addressObject.town && addressObject.state && addressObject.postcode && addressObject.address_1 && addressObject.country);
+  if (normalizedCountry === 'USA' || normalizedCountry === 'CAN') {
+    return !!(addressObject.town && addressObject.state && addressObject.postcode && addressObject.address_1);
   }
   
   // Default validation (other countries)
-  return !!(addressObject.town && addressObject.address_1 && addressObject.country);
+  return !!(addressObject.town && addressObject.address_1);
 }
 
 /**

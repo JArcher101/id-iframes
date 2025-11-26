@@ -1585,8 +1585,11 @@
     function formatToThirdfort(getAddressData, country = 'GBR') {
       if (!getAddressData) return null;
       
+      // Normalize country code to 3-letter ISO format
+      const normalizedCountry = normalizeCountryCode(country);
+      
       // UK addresses: Individual fields only (no address_1, address_2)
-      if (country === 'GBR') {
+      if (normalizedCountry === 'GBR') {
         // Strategy: Use explicit fields when available, intelligently extract from line_* when not
         // Complex parsing to handle all getaddress.io response variations
         
@@ -1650,12 +1653,12 @@
           street: getAddressData.thoroughfare || getAddressData.line_3 || getAddressData.street || '',
           sub_street: getAddressData.sub_street || '',
           town: getAddressData.town_or_city || getAddressData.town || '',
-          country: country
+          country: normalizedCountry
         };
   }
       
       // USA/Canada: address_1, address_2, state required
-      if (country === 'USA' || country === 'CAN') {
+      if (normalizedCountry === 'USA' || normalizedCountry === 'CAN') {
         return {
           address_1: getAddressData.line_1 || '',
           address_2: getAddressData.line_2 || getAddressData.line_3 || getAddressData.line_4 || '',
@@ -1664,7 +1667,7 @@
           sub_street: getAddressData.sub_street || '',
           town: getAddressData.town_or_city || getAddressData.town || '',
           state: getAddressData.state || getAddressData.province || '',
-          country: country
+          country: normalizedCountry
         };
       }
       
@@ -1677,7 +1680,7 @@
         sub_street: getAddressData.sub_street || '',
         town: getAddressData.town_or_city || getAddressData.town || '',
         state: '',
-        country: country
+        country: normalizedCountry
       };
     }
     
@@ -1906,7 +1909,8 @@
     Handle full address data from parent
     */
     function handleAddressData(addressData, field) {
-      const country = field === 'current' ? (currentCountry.dataset.countryCode || 'GBR') : (previousCountry.dataset.countryCode || 'GBR');
+      const countryRaw = field === 'current' ? (currentCountry.dataset.countryCode || currentCountry.value || 'GBR') : (previousCountry.dataset.countryCode || previousCountry.value || 'GBR');
+      const country = normalizeCountryCode(countryRaw);
       const thirdfortAddress = formatToThirdfort(addressData, country);
       
       if (field === 'current') {
@@ -3177,7 +3181,9 @@
     function compileFormData() {
       try {
       // Build current address object
-      const isCurrentUK = currentCountry.dataset.countryCode === 'GBR';
+      const currentCountryRaw = currentCountry.dataset.countryCode || currentCountry.value || 'GBR';
+      const currentCountryNormalized = normalizeCountryCode(currentCountryRaw);
+      const isCurrentUK = currentCountryNormalized === 'GBR';
       
       if (!isCurrentUK || addressNotListed?.checked) {
         // Build from manual fields
@@ -3191,7 +3197,7 @@
             street: street?.value?.trim() || '',
             sub_street: subStreet?.value?.trim() || '',
             town: town?.value?.trim() || '',
-            country: 'GBR'
+            country: currentCountryNormalized
           };
         } else {
           // Non-UK: address_1, address_2 (no individual building fields)
@@ -3203,22 +3209,24 @@
             sub_street: subStreet?.value?.trim() || '',
             town: town?.value?.trim() || '',
             state: '',
-            country: currentCountry?.dataset.countryCode || 'GBR'
+            country: currentCountryNormalized
           };
         }
       } else if (!currentAddressObject && currentAddress?.value?.trim()) {
         // Parse from autocomplete text if no object stored
-        currentAddressObject = parseManualAddress(currentAddress.value, currentCountry.dataset.countryCode || 'GBR');
+        currentAddressObject = parseManualAddress(currentAddress.value, currentCountryNormalized);
       }
       
       // Ensure country is set even if object was from API
       if (currentAddressObject) {
-        currentAddressObject.country = currentCountry.dataset.countryCode || 'GBR';
+        currentAddressObject.country = currentCountryNormalized;
       }
       
       // Build previous address object
       if (recentMove?.checked) {
-        const isPreviousUK = previousCountry?.dataset.countryCode === 'GBR';
+        const previousCountryRaw = previousCountry?.dataset.countryCode || previousCountry?.value || 'GBR';
+        const previousCountryNormalized = normalizeCountryCode(previousCountryRaw);
+        const isPreviousUK = previousCountryNormalized === 'GBR';
         
         if (!isPreviousUK || previousAddressNotListed?.checked) {
           // Build from manual fields
@@ -3232,7 +3240,7 @@
               street: prevStreet?.value?.trim() || '',
               sub_street: prevSubStreet?.value?.trim() || '',
               town: prevTown?.value?.trim() || '',
-              country: 'GBR'
+              country: previousCountryNormalized
             };
           } else {
             // Non-UK: address_1, address_2 (no individual building fields)
@@ -3244,12 +3252,17 @@
               sub_street: prevSubStreet?.value?.trim() || '',
             town: prevTown?.value?.trim() || '',
             state: '',
-            country: previousCountry?.dataset.countryCode || 'GBR'
+            country: previousCountryNormalized
             };
           }
         } else if (!previousAddressObject && previousAddress?.value?.trim()) {
           // Parse from autocomplete text if no object stored
-          previousAddressObject = parseManualAddress(previousAddress.value, previousCountry?.dataset.countryCode || 'GBR');
+          previousAddressObject = parseManualAddress(previousAddress.value, previousCountryNormalized);
+        }
+        
+        // Ensure previous address country is normalized
+        if (previousAddressObject) {
+          previousAddressObject.country = previousCountryNormalized;
         }
       }
       
@@ -3891,8 +3904,12 @@
       // Load current address (formData.a is the address object)
       // Show/hide fields based on country in data
       if (formData.a && typeof formData.a === 'object') {
-        currentAddressObject = formData.a;
-        setCountry('currentCountry', formData.a?.country || 'GBR');
+        currentAddressObject = { ...formData.a };
+        // Normalize country code
+        if (currentAddressObject.country) {
+          currentAddressObject.country = normalizeCountryCode(currentAddressObject.country);
+        }
+        setCountry('currentCountry', currentAddressObject.country || 'GBR');
         
         const isCurrentUK = currentCountry.dataset.countryCode === 'GBR';
         
@@ -3939,8 +3956,12 @@
         previousAddressFields.classList.remove('hidden');
         
         if (formData.pA && typeof formData.pA === 'object') {
-          previousAddressObject = formData.pA;
-          setCountry('previousCountry', formData.pA?.country || 'GBR');
+          previousAddressObject = { ...formData.pA };
+          // Normalize country code
+          if (previousAddressObject.country) {
+            previousAddressObject.country = normalizeCountryCode(previousAddressObject.country);
+          }
+          setCountry('previousCountry', previousAddressObject.country || 'GBR');
           
           const isPreviousUK = previousCountry.dataset.countryCode === 'GBR';
           
@@ -4080,7 +4101,7 @@
   </script>
   
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=e70d7ad"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=d4aa9c6"></script>
   <script>
     // Initialize all autocomplete fields immediately (DOM already loaded since scripts are at bottom)
     console.log('🔧 Initializing autocomplete fields...');
@@ -4168,7 +4189,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'e70d7ad';
+    window.__IFRAME_VERSION__ = 'd4aa9c6';
     console.log('[client-details] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

@@ -601,8 +601,11 @@ function notifyParentReady() {
 function formatToThirdfort(getAddressData, country = 'GBR') {
   if (!getAddressData) return null;
   
+  // Normalize country code to 3-letter ISO format
+  const normalizedCountry = normalizeCountryCode(country);
+  
   // UK addresses: Individual fields only (no address_1, address_2)
-  if (country === 'GBR') {
+  if (normalizedCountry === 'GBR') {
     let buildingNumber = getAddressData.building_number || getAddressData.sub_building_number || '';
     let buildingNameFromLine1 = '';
     let flatNumber = getAddressData.flat_number || '';
@@ -659,12 +662,12 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
       street: getAddressData.thoroughfare || getAddressData.line_3 || getAddressData.street || '',
       sub_street: getAddressData.sub_street || '',
       town: getAddressData.town_or_city || getAddressData.town || '',
-      country: country
+      country: normalizedCountry
     };
   }
   
   // USA/Canada: address_1, address_2, state required
-  if (country === 'USA' || country === 'CAN') {
+  if (normalizedCountry === 'USA' || normalizedCountry === 'CAN') {
     return {
       address_1: getAddressData.line_1 || '',
       address_2: getAddressData.line_2 || getAddressData.line_3 || getAddressData.line_4 || '',
@@ -673,7 +676,7 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
       sub_street: getAddressData.sub_street || '',
       town: getAddressData.town_or_city || getAddressData.town || '',
       state: getAddressData.state || getAddressData.province || '',
-      country: country
+      country: normalizedCountry
     };
   }
   
@@ -686,7 +689,7 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
     sub_street: getAddressData.sub_street || '',
     town: getAddressData.town_or_city || getAddressData.town || '',
     state: '',
-    country: country
+    country: normalizedCountry
   };
 }
 
@@ -840,7 +843,8 @@ function selectAddressSuggestion(addressId, displayText) {
  */
 function handleAddressData(addressData, field) {
   const liteCountry = document.getElementById('liteCountry');
-  const country = liteCountry?.dataset.countryCode || 'GBR';
+  const countryRaw = liteCountry?.dataset.countryCode || liteCountry?.value || 'GBR';
+  const country = normalizeCountryCode(countryRaw);
   const thirdfortAddress = formatToThirdfort(addressData, country);
   
   // Store the Thirdfort-formatted address in the appropriate variable
@@ -2405,8 +2409,11 @@ function populateLiteScreenFields(data) {
   const currentAddressText = document.getElementById('liteCurrentAddressText');
   
   if (data.cI.a && typeof data.cI.a === 'object') {
-    // Store current address object
-    liteCurrentAddressObject = data.cI.a;
+    // Store current address object and normalize country
+    liteCurrentAddressObject = { ...data.cI.a };
+    if (liteCurrentAddressObject.country) {
+      liteCurrentAddressObject.country = normalizeCountryCode(liteCurrentAddressObject.country);
+    }
     
     // Update current address card display
     if (currentAddressText) {
@@ -2441,8 +2448,11 @@ function populateLiteScreenFields(data) {
   
   // ===== Previous Address =====
   if (data.cI.pA && typeof data.cI.pA === 'object') {
-    // Store previous address object
-    litePreviousAddressObject = data.cI.pA;
+    // Store previous address object and normalize country
+    litePreviousAddressObject = { ...data.cI.pA };
+    if (litePreviousAddressObject.country) {
+      litePreviousAddressObject.country = normalizeCountryCode(litePreviousAddressObject.country);
+    }
     
     // Update previous address card display
     const previousAddressText = document.getElementById('litePreviousAddressText');
