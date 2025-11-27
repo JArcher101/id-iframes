@@ -224,11 +224,21 @@ class ThirdfortChecksList {
             return check.assessment.outcome;
         }
         
-        // Fallback: check if all task outcomes are clear
+        // Check hasAlerts first (set by backend based on task outcomes)
+        if (check.hasAlerts) {
+            return 'CONSIDER';
+        }
+        
+        // Fallback: check if any task outcomes are not clear
         if (check.taskOutcomes) {
             const outcomes = Object.values(check.taskOutcomes);
-            const hasAlert = outcomes.some(outcome => outcome.result === 'alert' || outcome.result === 'fail');
-            return hasAlert ? 'CONSIDER' : 'CLEAR';
+            // Check for alert, fail, or consider results
+            const hasIssue = outcomes.some(outcome => 
+                outcome.result === 'alert' || 
+                outcome.result === 'fail' || 
+                outcome.result === 'consider'
+            );
+            return hasIssue ? 'CONSIDER' : 'CLEAR';
         }
         
         return 'CLEAR';

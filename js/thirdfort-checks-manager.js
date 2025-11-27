@@ -129,11 +129,8 @@ class ThirdfortChecksManager {
     loadMockData() {
         console.log('🧪 Loading mock check data...');
         
-        const mockCheck = {
-            "taskOutcomes": {
-                "identity:lite": {
-                    "breakdown": {
-                        "document": {
+        const mockChecks = []; // Mock data removed - add test data here if needed
+        
                             "name": "document",
                             "breakdown": {
                                 "compromised_document": {
@@ -338,110 +335,698 @@ class ThirdfortChecksManager {
                                 }
                             },
                             "result": "clear",
-                            "documents": [
-                                {
-                                    "id": "a0f77935-2c80-455d-9e63-40af38f9c468"
-                                },
-                                {
-                                    "id": "3a82c6f9-94ae-4f85-9292-031d33bb9e60"
-                                }
-                            ],
-                            "id": "10925eb6-cc12-4d6e-a8ca-c82e92b9cb3b",
-                            "properties": {
-                                "first_name": "FREDERICK BRIAN",
-                                "issuing_authority": "DVLA",
-                                "date_of_expiry": "2027-05-06",
-                                "place_of_birth": "ENGLAND",
-                                "categorisation": "full",
-                                "issuing_date": "2024-03-05",
-                                "date_of_birth": "1939-05-07",
-                                "last_name": "RULE",
-                                "issuing_country": "GBR",
-                                "document_numbers": [
+                                "documents": [
                                     {
-                                        "type": "document_number",
-                                        "value": "RULE9305079FB9FD"
+                                        "id": "10907219-d321-4db5-a7c8-64adccf4d3a8"
+                                    },
+                                    {
+                                        "id": "7759a5ae-9995-4f75-b6aa-4a97c54abe2e"
                                     }
                                 ],
-                                "document_type": "driving_licence",
-                                "gender": "Male"
+                                "id": "958ea6b7-d955-4c1a-8950-a7d344d8aa73",
+                                "properties": {
+                                    "first_name": "SARA CHRISTINE",
+                                    "issuing_authority": "DVLA",
+                                    "date_of_expiry": "2031-11-12",
+                                    "place_of_birth": "ENGLAND",
+                                    "categorisation": "full",
+                                    "issuing_date": "2021-11-13",
+                                    "date_of_birth": "1973-02-24",
+                                    "last_name": "SANDERS",
+                                    "issuing_country": "GBR",
+                                    "document_numbers": [
+                                        {
+                                            "type": "document_number",
+                                            "value": "SANDE752243SC9AR"
+                                        }
+                                    ],
+                                    "document_type": "driving_licence",
+                                    "gender": "Female"
+                                },
+                                "status": "complete",
+                                "created_at": "2025-11-27T11:23:21Z",
+                                "href": "/v3.6/reports/958ea6b7-d955-4c1a-8950-a7d344d8aa73",
+                                "sub_result": "clear"
+                            }
+                        },
+                        "data": {
+                            "name": {
+                                "first": "Sara",
+                                "last": "Sanders",
+                                "other": "Christine"
+                            }
+                        },
+                        "result": "clear",
+                        "documents": [
+                            "d4m39cd23amg030z6d20"
+                        ],
+                        "id": "d4m39c523amg030z6d10",
+                        "status": "closed",
+                        "createdAt": "2025-11-27T11:23:28.092Z"
+                    }
+                },
+                "updatedAt": "2025-11-27T11:23:32.001Z",
+                "pdfReady": true,
+                "checkType": "idv",
+                "completedAt": "2025-11-27T11:23:32.001Z",
+                "documentsUploaded": true,
+                "initiatedAt": "2025-11-27T11:23:13.836Z",
+                "pdfS3Key": "protected/4cFvvQR",
+                "updates": [
+                    {
+                        "timestamp": "2025-11-27T11:23:13.836Z",
+                        "update": "IDV check initiated by amelia.roberts@thurstanhoskin.co.uk"
+                    },
+                    {
+                        "timestamp": "2025-11-27T11:23:21.694Z",
+                        "update": "Documents uploaded by amelia.roberts@thurstanhoskin.co.uk"
+                    },
+                    {
+                        "timestamp": "2025-11-27T11:23:32.001Z",
+                        "update": "Check completed - awaiting PDF"
+                    },
+                    {
+                        "timestamp": "2025-11-27T11:23:48.450Z",
+                        "update": "PDF received and uploaded to S3 - CLEAR"
+                    }
+                ],
+                "status": "closed",
+                "initiatedBy": "amelia.roberts@thurstanhoskin.co.uk",
+                "documentType": "driving_licence",
+                "hasMonitoring": false,
+                "thirdfortResponse": {
+                    "name": "Sara Christine Sanders - Document Verification",
+                    "request": {
+                        "data": {
+                            "name": {
+                                "first": "Sara",
+                                "last": "Sanders",
+                                "other": "Christine"
+                            }
+                        },
+                        "reports": [
+                            {
+                                "type": "identity:lite"
+                            }
+                        ]
+                    },
+                    "ref": "Val'ID'ate: 23168/1",
+                    "id": "d4m398d23amg030yrcm0",
+                    "reports": [],
+                    "status": "open",
+                    "metadata": {
+                        "notify": {
+                            "type": "http",
+                            "data": {
+                                "hmac_key": "dmYQwWZl3jZ9ryOHf8pCQ2arqW+o/8YbWpr6//34h5c=",
+                                "method": "POST",
+                                "uri": "https://www.thurstanhoskin.co.uk/_functions/thirdfortWebhook"
+                            }
+                        },
+                        "created_by": "d4jf5ha9io6g0092akig",
+                        "print": {
+                            "team": "Cashiers",
+                            "tenant": "Thurstan Hoskin Solicitors",
+                            "user": "Thurstan Hoskin Solicitors Bot"
+                        },
+                        "context": {
+                            "gid": "d4ji28i9io6g0092avp0",
+                            "uid": "d4jf5ha9io6g0092akig",
+                            "team_id": "d4ji28i9io6g0092avp0",
+                            "tenant_id": "d4jf3v29io6g0092akc0"
+                        },
+                        "ce": {
+                            "uri": "/v1/checks/4606885394"
+                        },
+                        "created_at": "2025-11-27T11:23:13.011Z"
+                    },
+                    "type": "document"
+                },
+                "companyData": {
+                    "name": {
+                        "first": "Sara",
+                        "last": "Sanders",
+                        "other": "Christine"
+                    },
+                    "numbers": []
+                },
+                "checkId": "d4m398d23amg030yrcm0",
+                "hasAlerts": false,
+                "webhookProcessing": {
+                    "check": "2025-11-27T11:23:31.574Z"
+                },
+                "pdfAddedAt": "2025-11-27T11:23:48.450Z"
+            },
+        {
+            "processedReportIds": [
+                "d4m3k2c23amg030z726g"
+            ],
+            "taskOutcomes": {
+                "address": {
+                    "result": "clear",
+                    "status": "closed",
+                    "data": {
+                        "quality": 60,
+                        "sources": 16
+                    }
+                },
+                "peps": {
+                    "breakdown": {
+                        "total_hits": 2,
+                        "hits": [
+                            {
+                                "name": "Sarah Sanders",
+                                "assets": [],
+                                "dob": {
+                                    "main": "",
+                                    "other": []
+                                },
+                                "score": 0.2,
+                                "flag_types": [
+                                    "warning"
+                                ],
+                                "source_notes": {
+                                    "united-states-illinois-department-of-financial-and-professional-regulation-enforcement-actions": {
+                                        "aml_types": [
+                                            "warning"
+                                        ],
+                                        "listing_started_utc": "2017-12-01T00:00:00Z",
+                                        "name": "United States Illinois Department of Financial and Professional Regulation Enforcement Actions",
+                                        "url": "https://idfpr.illinois.gov/news/disciplines/discreports.html"
+                                    }
+                                },
+                                "institutions": [],
+                                "spouses": [],
+                                "political_positions": [],
+                                "countries": [],
+                                "aka": [
+                                    "Sarah Sanders"
+                                ],
+                                "id": "GNYXE0Y1O3ATJ69",
+                                "match_types": [
+                                    "equivalent_name",
+                                    "name_variations_removal"
+                                ],
+                                "roles": [],
+                                "fields": [
+                                    {
+                                        "name": "Activation Date",
+                                        "source": "united-states-illinois-department-of-financial-and-professional-regulation-enforcement-actions",
+                                        "value": "2017-12-01 00:00:00"
+                                    },
+                                    {
+                                        "name": "Enforcement Agency",
+                                        "source": "united-states-illinois-department-of-financial-and-professional-regulation-enforcement-actions",
+                                        "value": "United States Illinois Department of Financial and Professional Regulation"
+                                    },
+                                    {
+                                        "name": "Related URL",
+                                        "source": "united-states-illinois-department-of-financial-and-professional-regulation-enforcement-actions",
+                                        "value": "https://idfpr.illinois.gov/content/dam/soi/en/web/idfpr/forms/discpln/2017-12enf.pdf"
+                                    }
+                                ],
+                                "media": [],
+                                "associates": []
                             },
-                            "status": "complete",
-                            "created_at": "2025-11-27T09:55:15Z",
-                            "href": "/v3.6/reports/10925eb6-cc12-4d6e-a8ca-c82e92b9cb3b",
-                            "sub_result": "clear"
+                            {
+                                "name": "Sanders Sarah",
+                                "assets": [],
+                                "dob": {
+                                    "main": "",
+                                    "other": []
+                                },
+                                "score": 0.2,
+                                "flag_types": [
+                                    "fitness-probity"
+                                ],
+                                "source_notes": {
+                                    "united-states-illinois-healthcare-and-family-services-medicaid-sanctions": {
+                                        "aml_types": [
+                                            "fitness-probity"
+                                        ],
+                                        "listing_started_utc": "2019-12-27T00:00:00Z",
+                                        "name": "United States Illinois Healthcare and Family Services Medicaid Sanctions",
+                                        "url": "https://ilhfspartner3.dynamics365portals.us/sanctions/"
+                                    }
+                                },
+                                "institutions": [],
+                                "spouses": [],
+                                "political_positions": [],
+                                "countries": [],
+                                "aka": [
+                                    "Sanders Sarah"
+                                ],
+                                "id": "P7ZILN8EKN9UOF9",
+                                "match_types": [
+                                    "equivalent_name",
+                                    "name_variations_removal"
+                                ],
+                                "roles": [],
+                                "fields": [
+                                    {
+                                        "name": "Activation Date",
+                                        "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                        "value": "12/27/2019"
+                                    },
+                                    {
+                                        "name": "Address",
+                                        "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                        "value": "304 SOUTH ST ANNA IL 629061529"
+                                    },
+                                    {
+                                        "name": "Enforcement Agency",
+                                        "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                        "value": "Illinois Department of Healthcare and Family Services"
+                                    },
+                                    {
+                                        "name": "Enforcement Type",
+                                        "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                        "value": "Terminated"
+                                    },
+                                    {
+                                        "name": "Other Info",
+                                        "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                        "value": ";"
+                                    },
+                                    {
+                                        "name": "Related URL",
+                                        "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                        "value": "https://ilhfspartner3.dynamics365portals.us/sanctions/"
+                                    }
+                                ],
+                                "media": [],
+                                "associates": []
+                            }
+                        ]
+                    },
+                    "data": {
+                        "dob": "1973-02-24T00:00:00.000Z",
+                        "name": {
+                            "first": "Sara",
+                            "last": "Sanders",
+                            "other": "Christine"
+                        },
+                        "address": {
+                            "postcode": "TR16 5QN",
+                            "country": "GBR",
+                            "building_name": "Mullberry House",
+                            "street": "Higher Albion Row",
+                            "town": "Redruth"
+                        }
+                    },
+                    "result": "consider",
+                    "documents": [
+                        "d4m398x23amg0301m46g"
+                    ],
+                    "id": "d4m398n23amg030z6ct0",
+                    "status": "closed",
+                    "createdAt": "2025-11-27T11:23:14.013Z"
+                },
+                "footprint": {
+                    "breakdown": {
+                        "service_name": "Authenticateplus",
+                        "data_quality": {
+                            "properties": {
+                                "score": 60
+                            },
+                            "result": "clear"
+                        },
+                        "rules": [],
+                        "data_count": {
+                            "properties": {
+                                "count": 16,
+                                "score": 0
+                            },
+                            "result": "clear"
                         }
                     },
                     "data": {
+                        "dob": "1973-02-24T00:00:00.000Z",
                         "name": {
-                            "first": "Frederick",
-                            "last": "Rule",
-                            "other": "Brian"
+                            "first": "Sara",
+                            "last": "Sanders",
+                            "other": "Christine"
+                        },
+                        "address": {
+                            "postcode": "TR16 5QN",
+                            "country": "GBR",
+                            "building_name": "Mullberry House",
+                            "street": "Higher Albion Row",
+                            "town": "Redruth"
                         }
                     },
                     "result": "clear",
-                    "documents": [
-                        "d4m202r23amg0301hpe0"
-                    ],
-                    "id": "d4m202823amg0301hpd0",
+                    "documents": [],
+                    "id": "d4m398d23amg0301m430",
                     "status": "closed",
-                    "createdAt": "2025-11-27T09:55:21.471Z"
+                    "createdAt": "2025-11-27T11:23:13.337Z"
                 }
             },
-            "updatedAt": "2025-11-27T09:55:26.264Z",
             "pdfReady": true,
-            "checkType": "idv",
-            "completedAt": "2025-11-27T09:55:26.264Z",
-            "documentsUploaded": true,
-            "initiatedAt": "2025-11-27T09:55:09.330Z",
-            "pdfS3Key": "protected/xyvkLdI",
+            "checkType": "lite-screen",
+            "pepSanctionsUpdates": [
+                {
+                    "taskOutcomes": {
+                        "peps": {
+                            "result": "consider",
+                            "status": "closed",
+                            "data": {
+                                "total_hits": 2
+                            }
+                        }
+                    },
+                    "breakdown": {
+                        "total_hits": 0,
+                        "hits": [],
+                        "dismissals": [],
+                        "outstanding_hits": []
+                    },
+                    "timestamp": "2025-11-27T11:44:14.871Z",
+                    "reportId": "d4m3k2c23amg030z726g",
+                    "detailedReason": "All PEP matches dismissed for Sara Sanders",
+                    "requiresReview": false,
+                    "newHitsCount": 0,
+                    "outcome": "consider",
+                    "reportJson": {
+                        "success": true,
+                        "reportId": "d4m3k2c23amg030z726g",
+                        "data": {
+                            "breakdown": {
+                                "dismissals": [
+                                    {
+                                        "id": "GNYXE0Y1O3ATJ69",
+                                        "reason": "differing legal name to our client",
+                                        "status": "success",
+                                        "metadata": {
+                                            "dismissed_at": "2025-11-27T11:44:09.085Z",
+                                            "dismissed_by": "d4jf5ha9io6g0092akig",
+                                            "print": {
+                                                "user": "Thurstan Hoskin Solicitors Bot"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "id": "P7ZILN8EKN9UOF9",
+                                        "reason": "differing legal name to our client",
+                                        "status": "success",
+                                        "metadata": {
+                                            "dismissed_at": "2025-11-27T11:44:09.085Z",
+                                            "dismissed_by": "d4jf5ha9io6g0092akig",
+                                            "print": {
+                                                "user": "Thurstan Hoskin Solicitors Bot"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "hits": [
+                                    {
+                                        "name": "Sarah Sanders",
+                                        "assets": [],
+                                        "dob": {
+                                            "main": "",
+                                            "other": []
+                                        },
+                                        "score": 0.2,
+                                        "flag_types": [
+                                            "warning"
+                                        ],
+                                        "source_notes": {
+                                            "united-states-illinois-department-of-financial-and-professional-regulation-enforcement-actions": {
+                                                "aml_types": [
+                                                    "warning"
+                                                ],
+                                                "listing_started_utc": "2017-12-01T00:00:00Z",
+                                                "name": "United States Illinois Department of Financial and Professional Regulation Enforcement Actions",
+                                                "url": "https://idfpr.illinois.gov/news/disciplines/discreports.html"
+                                            }
+                                        },
+                                        "institutions": [],
+                                        "spouses": [],
+                                        "political_positions": [],
+                                        "countries": [],
+                                        "aka": [
+                                            "Sarah Sanders"
+                                        ],
+                                        "id": "GNYXE0Y1O3ATJ69",
+                                        "match_types": [
+                                            "equivalent_name",
+                                            "name_variations_removal"
+                                        ],
+                                        "roles": [],
+                                        "fields": [
+                                            {
+                                                "name": "Activation Date",
+                                                "source": "united-states-illinois-department-of-financial-and-professional-regulation-enforcement-actions",
+                                                "value": "2017-12-01 00:00:00"
+                                            },
+                                            {
+                                                "name": "Enforcement Agency",
+                                                "source": "united-states-illinois-department-of-financial-and-professional-regulation-enforcement-actions",
+                                                "value": "United States Illinois Department of Financial and Professional Regulation"
+                                            },
+                                            {
+                                                "name": "Related URL",
+                                                "source": "united-states-illinois-department-of-financial-and-professional-regulation-enforcement-actions",
+                                                "value": "https://idfpr.illinois.gov/content/dam/soi/en/web/idfpr/forms/discpln/2017-12enf.pdf"
+                                            }
+                                        ],
+                                        "media": [],
+                                        "associates": []
+                                    },
+                                    {
+                                        "name": "Sanders Sarah",
+                                        "assets": [],
+                                        "dob": {
+                                            "main": "",
+                                            "other": []
+                                        },
+                                        "score": 0.2,
+                                        "flag_types": [
+                                            "fitness-probity"
+                                        ],
+                                        "source_notes": {
+                                            "united-states-illinois-healthcare-and-family-services-medicaid-sanctions": {
+                                                "aml_types": [
+                                                    "fitness-probity"
+                                                ],
+                                                "listing_started_utc": "2019-12-27T00:00:00Z",
+                                                "name": "United States Illinois Healthcare and Family Services Medicaid Sanctions",
+                                                "url": "https://ilhfspartner3.dynamics365portals.us/sanctions/"
+                                            }
+                                        },
+                                        "institutions": [],
+                                        "spouses": [],
+                                        "political_positions": [],
+                                        "countries": [],
+                                        "aka": [
+                                            "Sanders Sarah"
+                                        ],
+                                        "id": "P7ZILN8EKN9UOF9",
+                                        "match_types": [
+                                            "equivalent_name",
+                                            "name_variations_removal"
+                                        ],
+                                        "roles": [],
+                                        "fields": [
+                                            {
+                                                "name": "Activation Date",
+                                                "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                                "value": "12/27/2019"
+                                            },
+                                            {
+                                                "name": "Address",
+                                                "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                                "value": "304 SOUTH ST ANNA IL 629061529"
+                                            },
+                                            {
+                                                "name": "Enforcement Agency",
+                                                "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                                "value": "Illinois Department of Healthcare and Family Services"
+                                            },
+                                            {
+                                                "name": "Enforcement Type",
+                                                "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                                "value": "Terminated"
+                                            },
+                                            {
+                                                "name": "Other Info",
+                                                "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                                "value": ";"
+                                            },
+                                            {
+                                                "name": "Related URL",
+                                                "source": "united-states-illinois-healthcare-and-family-services-medicaid-sanctions",
+                                                "value": "https://ilhfspartner3.dynamics365portals.us/sanctions/"
+                                            }
+                                        ],
+                                        "media": [],
+                                        "associates": []
+                                    }
+                                ],
+                                "total_hits": 2
+                            },
+                            "data": {
+                                "address": {
+                                    "postcode": "TR16 5QN",
+                                    "country": "GBR",
+                                    "building_name": "Mullberry House",
+                                    "street": "Higher Albion Row",
+                                    "town": "Redruth"
+                                },
+                                "dob": "1973-02-24T00:00:00.000Z",
+                                "name": {
+                                    "first": "Sara",
+                                    "last": "Sanders",
+                                    "other": "Christine"
+                                }
+                            },
+                            "result": "consider",
+                            "documents": [
+                                "d4m3k2w23amg030z728g"
+                            ],
+                            "id": "d4m3k2c23amg030z726g",
+                            "status": "closed",
+                            "metadata": {
+                                "ce": {
+                                    "uri": "/v1/reports/4606885122"
+                                },
+                                "created_at": "2025-11-27T11:44:09.830Z",
+                                "created_by": "ch4e0na23akg009g6i50"
+                            },
+                            "type": "peps",
+                            "opts": {
+                                "monitored": true,
+                                "tenant_id": "d4jf3v29io6g0092akc0"
+                            }
+                        },
+                        "metadata": {
+                            "reportType": "peps",
+                            "reportStatus": "closed",
+                            "fetchedAt": "2025-11-27T11:44:14.564Z"
+                        },
+                        "transactionId": "d4m397w23amg030yrckg"
+                    },
+                    "reason": "All PEP matches dismissed",
+                    "riskLevel": "low",
+                    "outstandingCount": 0,
+                    "alertType": "all_cleared",
+                    "piiData": {
+                        "name": {
+                            "first": "Sara",
+                            "last": "Sanders",
+                            "other": "Christine"
+                        },
+                        "address": {
+                            "postcode": "TR16 5QN",
+                            "country": "GBR",
+                            "building_name": "Mullberry House",
+                            "street": "Higher Albion Row",
+                            "town": "Redruth"
+                        },
+                        "dob": "1973-02-24T00:00:00.000Z",
+                        "document": {}
+                    },
+                    "autoResolved": true,
+                    "type": "pep",
+                    "affectedPerson": "Sara Sanders",
+                    "matchCount": 0,
+                    "alertSeverity": "low"
+                }
+            ],
+            "pepDismissals": [
+                {
+                    "timestamp": "2025-11-27T12:17:37.320Z",
+                    "reportId": "d4m398n23amg030z6ct0",
+                    "_id": "qbK0vro",
+                    "reason": "differing legal name to our client",
+                    "hitName": "Sarah Sanders",
+                    "reportType": "peps",
+                    "hitId": "GNYXE0Y1O3ATJ69",
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                },
+                {
+                    "timestamp": "2025-11-27T12:17:37.320Z",
+                    "reportId": "d4m398n23amg030z6ct0",
+                    "_id": "eemvj88",
+                    "reason": "differing legal name to our client",
+                    "hitName": "Sanders Sarah",
+                    "reportType": "peps",
+                    "hitId": "P7ZILN8EKN9UOF9",
+                    "user": "jacob.archer-moran@thurstanhoskin.co.uk",
+                    "userName": "jacob.archer-moran"
+                }
+            ],
+            "initiatedAt": "2025-11-27T11:23:12.431Z",
+            "considerReasons": [
+                "PEP hits"
+            ],
+            "pdfS3Key": "protected/UCg1JRT",
+            "consumerName": "Sara Sanders",
+            "tasks": [
+                "report:footprint",
+                "report:peps"
+            ],
             "updates": [
                 {
-                    "timestamp": "2025-11-27T09:55:09.330Z",
-                    "update": "IDV check initiated by barbara@thurstanhoskin.co.uk"
+                    "timestamp": "2025-11-27T11:23:12.431Z",
+                    "update": "Lite Screen check initiated by amelia.roberts@thurstanhoskin.co.uk"
                 },
                 {
-                    "timestamp": "2025-11-27T09:55:15.313Z",
-                    "update": "Documents uploaded by barbara@thurstanhoskin.co.uk"
+                    "timestamp": "2025-11-27T11:23:18.737Z",
+                    "update": "PDF received and uploaded to S3 - CONSIDER: PEP hits"
                 },
                 {
-                    "timestamp": "2025-11-27T09:55:26.264Z",
-                    "update": "Check completed - awaiting PDF"
-                },
-                {
-                    "timestamp": "2025-11-27T09:55:43.686Z",
-                    "update": "PDF received and uploaded to S3 - CLEAR"
+                    "timestamp": "2025-11-27T11:44:14.871Z",
+                    "update": "✅ PEP monitoring update - all hits dismissed and confirmed by Thirdfort - CLEAR"
                 }
             ],
             "status": "closed",
-            "initiatedBy": "barbara@thurstanhoskin.co.uk",
-            "documentType": "driving_licence",
-            "hasMonitoring": false,
+            "initiatedBy": "amelia.roberts@thurstanhoskin.co.uk",
+            "piiData": {
+                "name": {
+                    "first": "Sara",
+                    "last": "Sanders",
+                    "other": "Christine"
+                },
+                "address": {
+                    "postcode": "TR16 5QN",
+                    "country": "GBR",
+                    "building_name": "Mullberry House",
+                    "street": "Higher Albion Row",
+                    "town": "Redruth"
+                },
+                "dob": "1973-02-24T00:00:00.000Z",
+                "document": {}
+            },
+            "hasMonitoring": true,
             "thirdfortResponse": {
-                "name": "Frederick Brian Rule - Document Verification",
+                "name": "Sara Sanders - Lite Screening",
                 "request": {
-                    "data": {
-                        "name": {
-                            "first": "Frederick",
-                            "last": "Rule",
-                            "other": "Brian"
-                        }
-                    },
-                    "reports": [
+                    "tasks": [
                         {
-                            "type": "identity:lite"
+                            "opts": {
+                                "consent": false
+                            },
+                            "type": "report:footprint"
+                        },
+                        {
+                            "opts": {
+                                "monitored": true
+                            },
+                            "type": "report:peps"
                         }
                     ]
                 },
-                "ref": "Val'ID'ate: 23427/1",
-                "id": "d4m1zz723amg03007kf0",
+                "ref": "Val'ID'ate: 23168/1",
+                "id": "d4m397w23amg030yrckg",
                 "reports": [],
                 "status": "open",
                 "metadata": {
                     "notify": {
                         "type": "http",
                         "data": {
-                            "hmac_key": "78352JfW2lSlR9IXU6gM/tZxAI7agXevqodq1aIhBnM=",
+                            "hmac_key": "dmYQwWZl3jZ9ryOHf8pCQ2arqW+o/8YbWpr6//34h5c=",
                             "method": "POST",
                             "uri": "https://www.thurstanhoskin.co.uk/_functions/thirdfortWebhook"
                         }
@@ -459,34 +1044,401 @@ class ThirdfortChecksManager {
                         "tenant_id": "d4jf3v29io6g0092akc0"
                     },
                     "ce": {
-                        "uri": "/v1/checks/4606470056"
+                        "uri": "/v1/checks/4606885111"
                     },
-                    "created_at": "2025-11-27T09:55:08.552Z"
+                    "created_at": "2025-11-27T11:23:11.740Z"
+                },
+                "type": "v2",
+                "opts": {
+                    "peps": {
+                        "monitored": true
+                    }
+                }
+            },
+            "expectations": {
+                "name": {
+                    "data": {
+                        "first": "Sara",
+                        "last": "Sanders",
+                        "other": "Christine"
+                    }
+                },
+                "dob": {
+                    "data": "1973-02-24T00:00:00.000Z"
+                },
+                "address": {
+                    "data": {
+                        "postcode": "TR16 5QN",
+                        "country": "GBR",
+                        "building_name": "Mullberry House",
+                        "flat_number": "",
+                        "street": "Higher Albion Row",
+                        "building_number": "",
+                        "sub_street": "",
+                        "town": "Redruth"
+                    }
+                }
+            },
+            "hasAlerts": true,
+            "webhookProcessing": {},
+            "pdfAddedAt": "2025-11-27T11:23:18.729Z",
+            "transactionId": "d4m397w23amg030yrckg"
+        },
+        {
+            "taskOutcomes": {
+                "identity:lite": {
+                    "breakdown": {
+                        "document": {
+                            "name": "document",
+                            "breakdown": {
+                                "image_integrity": {
+                                    "breakdown": {
+                                        "image_quality": {
+                                            "properties": {
+                                                "glare_on_photo": "consider"
+                                            },
+                                            "result": "unidentified"
+                                        },
+                                        "supported_document": {
+                                            "properties": {
+                                                "custom_supported_document": "clear",
+                                                "issuing_country_subject_to_sanctions": "clear",
+                                                "onfido_supported_document": "clear"
+                                            },
+                                            "result": "clear"
+                                        }
+                                    },
+                                    "result": "consider"
+                                }
+                            },
+                            "result": "consider",
+                            "documents": [
+                                {
+                                    "id": "cfc21a9f-3d4e-4a2f-8cbe-02476edbe35c"
+                                }
+                            ],
+                            "id": "6a161961-0d5c-4b05-a380-52b1aad68669",
+                            "properties": {},
+                            "status": "complete",
+                            "created_at": "2025-11-27T11:36:04Z",
+                            "href": "/v3.6/reports/6a161961-0d5c-4b05-a380-52b1aad68669",
+                            "sub_result": "rejected"
+                        }
+                    },
+                    "data": {
+                        "name": {
+                            "first": "Rhona",
+                            "last": "Rutter",
+                            "other": "Gillian"
+                        }
+                    },
+                    "result": "consider",
+                    "documents": [
+                        "d4m3fvz23amg030z6qsg"
+                    ],
+                    "id": "d4m3fvq23amg030z6qrg",
+                    "status": "closed",
+                    "createdAt": "2025-11-27T11:37:18.933Z"
+                }
+            },
+            "updatedAt": "2025-11-27T11:37:21.935Z",
+            "pdfReady": true,
+            "checkType": "idv",
+            "completedAt": "2025-11-27T11:37:21.935Z",
+            "documentsUploaded": true,
+            "initiatedAt": "2025-11-27T11:36:00.717Z",
+            "pdfS3Key": "protected/ejJ6Y5X",
+            "updates": [
+                {
+                    "timestamp": "2025-11-27T11:36:00.717Z",
+                    "update": "IDV check initiated by amelia.roberts@thurstanhoskin.co.uk"
+                },
+                {
+                    "timestamp": "2025-11-27T11:37:21.935Z",
+                    "update": "Check completed - awaiting PDF"
+                },
+                {
+                    "timestamp": "2025-11-27T11:37:30.271Z",
+                    "update": "PDF received and uploaded to S3 - CLEAR"
+                }
+            ],
+            "status": "closed",
+            "initiatedBy": "amelia.roberts@thurstanhoskin.co.uk",
+            "documentType": "passport",
+            "hasMonitoring": false,
+            "thirdfortResponse": {
+                "name": "Rhona Gillian Rutter - Document Verification",
+                "request": {
+                    "data": {
+                        "name": {
+                            "first": "Rhona",
+                            "last": "Rutter",
+                            "other": "Gillian"
+                        }
+                    },
+                    "reports": [
+                        {
+                            "type": "identity:lite"
+                        }
+                    ]
+                },
+                "ref": "Val'ID'ate: 21022/2",
+                "id": "d4m3f7w23amg030z6nj0",
+                "reports": [],
+                "status": "open",
+                "metadata": {
+                    "notify": {
+                        "type": "http",
+                        "data": {
+                            "hmac_key": "qpos009BVb25z0Cy+NlYXQfQkoU9X2dPljJsOBClwYc=",
+                            "method": "POST",
+                            "uri": "https://www.thurstanhoskin.co.uk/_functions/thirdfortWebhook"
+                        }
+                    },
+                    "created_by": "d4jf5ha9io6g0092akig",
+                    "print": {
+                        "team": "Cashiers",
+                        "tenant": "Thurstan Hoskin Solicitors",
+                        "user": "Thurstan Hoskin Solicitors Bot"
+                    },
+                    "context": {
+                        "gid": "d4ji28i9io6g0092avp0",
+                        "uid": "d4jf5ha9io6g0092akig",
+                        "team_id": "d4ji28i9io6g0092avp0",
+                        "tenant_id": "d4jf3v29io6g0092akc0"
+                    },
+                    "ce": {
+                        "uri": "/v1/checks/4606947904"
+                    },
+                    "created_at": "2025-11-27T11:35:59.786Z"
                 },
                 "type": "document"
             },
             "companyData": {
                 "name": {
-                    "first": "Frederick",
-                    "last": "Rule",
-                    "other": "Brian"
+                    "first": "Rhona",
+                    "last": "Rutter",
+                    "other": "Gillian"
                 },
                 "numbers": []
             },
-            "checkId": "d4m1zz723amg03007kf0",
+            "checkId": "d4m3f7w23amg030z6nj0",
+            "hasAlerts": true,
+            "webhookProcessing": {
+                "check": "2025-11-27T11:37:21.541Z"
+            },
+            "pdfAddedAt": "2025-11-27T11:37:30.271Z"
+        },
+        {
+            "taskOutcomes": {
+                "address": {
+                    "result": "clear",
+                    "status": "closed",
+                    "data": {
+                        "quality": 45,
+                        "sources": 4
+                    }
+                },
+                "peps": {
+                    "breakdown": {
+                        "total_hits": 0,
+                        "hits": []
+                    },
+                    "data": {
+                        "dob": "1944-05-12T00:00:00.000Z",
+                        "name": {
+                            "first": "Rhona",
+                            "last": "Rutter",
+                            "other": "Gillian"
+                        },
+                        "address": {
+                            "postcode": "TR27 4PR",
+                            "country": "GBR",
+                            "street": "Philgray Close",
+                            "building_number": "3",
+                            "town": "Hayle"
+                        }
+                    },
+                    "result": "clear",
+                    "documents": [
+                        "d4m3f8n23amg030z6nm0"
+                    ],
+                    "id": "d4m3f8d23amg030ys0q0",
+                    "status": "closed",
+                    "createdAt": "2025-11-27T11:36:01.222Z"
+                },
+                "footprint": {
+                    "breakdown": {
+                        "service_name": "Authenticateplus",
+                        "data_quality": {
+                            "properties": {
+                                "score": 45
+                            },
+                            "result": "clear"
+                        },
+                        "rules": [],
+                        "data_count": {
+                            "properties": {
+                                "count": 4,
+                                "score": 0
+                            },
+                            "result": "clear"
+                        }
+                    },
+                    "data": {
+                        "dob": "1944-05-12T00:00:00.000Z",
+                        "name": {
+                            "first": "Rhona",
+                            "last": "Rutter",
+                            "other": "Gillian"
+                        },
+                        "address": {
+                            "postcode": "TR27 4PR",
+                            "country": "GBR",
+                            "street": "Philgray Close",
+                            "building_number": "3",
+                            "town": "Hayle"
+                        }
+                    },
+                    "result": "clear",
+                    "documents": [],
+                    "id": "d4m3f8523amg030ys0m0",
+                    "status": "closed",
+                    "createdAt": "2025-11-27T11:36:00.285Z"
+                }
+            },
+            "pdfReady": true,
+            "checkType": "lite-screen",
+            "initiatedAt": "2025-11-27T11:35:59.259Z",
+            "pdfS3Key": "protected/17ab07T",
+            "consumerName": "Rhona Rutter",
+            "tasks": [
+                "report:footprint",
+                "report:peps"
+            ],
+            "updates": [
+                {
+                    "timestamp": "2025-11-27T11:35:59.259Z",
+                    "update": "Lite Screen check initiated by amelia.roberts@thurstanhoskin.co.uk"
+                },
+                {
+                    "timestamp": "2025-11-27T11:36:07.038Z",
+                    "update": "PDF received and uploaded to S3 - CLEAR"
+                }
+            ],
+            "status": "closed",
+            "initiatedBy": "amelia.roberts@thurstanhoskin.co.uk",
+            "piiData": {
+                "name": {
+                    "first": "Rhona",
+                    "last": "Rutter",
+                    "other": "Gillian"
+                },
+                "address": {
+                    "postcode": "TR27 4PR",
+                    "country": "GBR",
+                    "street": "Philgray Close",
+                    "building_number": "3",
+                    "town": "Hayle"
+                },
+                "dob": "1944-05-12T00:00:00.000Z",
+                "document": {}
+            },
+            "hasMonitoring": true,
+            "thirdfortResponse": {
+                "name": "Rhona Rutter - Lite Screening",
+                "request": {
+                    "tasks": [
+                        {
+                            "opts": {
+                                "consent": false
+                            },
+                            "type": "report:footprint"
+                        },
+                        {
+                            "opts": {
+                                "monitored": true
+                            },
+                            "type": "report:peps"
+                        }
+                    ]
+                },
+                "ref": "Val'ID'ate: 21022/2",
+                "id": "d4m3f7m23amg030z6nhg",
+                "reports": [],
+                "status": "open",
+                "metadata": {
+                    "notify": {
+                        "type": "http",
+                        "data": {
+                            "hmac_key": "qpos009BVb25z0Cy+NlYXQfQkoU9X2dPljJsOBClwYc=",
+                            "method": "POST",
+                            "uri": "https://www.thurstanhoskin.co.uk/_functions/thirdfortWebhook"
+                        }
+                    },
+                    "created_by": "d4jf5ha9io6g0092akig",
+                    "print": {
+                        "team": "Cashiers",
+                        "tenant": "Thurstan Hoskin Solicitors",
+                        "user": "Thurstan Hoskin Solicitors Bot"
+                    },
+                    "context": {
+                        "gid": "d4ji28i9io6g0092avp0",
+                        "uid": "d4jf5ha9io6g0092akig",
+                        "team_id": "d4ji28i9io6g0092avp0",
+                        "tenant_id": "d4jf3v29io6g0092akc0"
+                    },
+                    "ce": {
+                        "uri": "/v1/checks/4606947716"
+                    },
+                    "created_at": "2025-11-27T11:35:58.578Z"
+                },
+                "type": "v2",
+                "opts": {
+                    "peps": {
+                        "monitored": true
+                    }
+                }
+            },
+            "expectations": {
+                "name": {
+                    "data": {
+                        "first": "Rhona",
+                        "last": "Rutter",
+                        "other": "Gillian"
+                    }
+                },
+                "dob": {
+                    "data": "1944-05-12T00:00:00.000Z"
+                },
+                "address": {
+                    "data": {
+                        "postcode": "TR27 4PR",
+                        "country": "GBR",
+                        "building_name": "",
+                        "flat_number": "",
+                        "street": "Philgray Close",
+                        "building_number": "3",
+                        "sub_street": "",
+                        "town": "Hayle"
+                    }
+                }
+            },
             "hasAlerts": false,
             "webhookProcessing": {
-                "check": "2025-11-27T09:55:25.851Z"
+                "transaction:report": "2025-11-27T11:36:03.779Z"
             },
-            "pdfAddedAt": "2025-11-27T09:55:43.686Z"
-        };
+            "pdfAddedAt": "2025-11-27T11:36:07.032Z",
+            "transactionId": "d4m3f7m23amg030z6nhg"
+        }
+        ];
         
         // Simulate receiving a 'checks-data' message
         this.handleMessage({
             data: {
                 type: 'checks-data',
                 data: {
-                    checks: [mockCheck],
+                    checks: mockChecks,
                     mode: 'edit',
                     thirdfortEnv: 'sandbox'
                 }
@@ -7001,6 +7953,16 @@ class ThirdfortChecksManager {
             }
         }
         
+        // For identity:lite, check if document was rejected (sub_result: "rejected")
+        // This indicates the check failed (e.g., due to glare) and should show as fail
+        if (taskType === 'identity:lite' && outcome.breakdown?.document) {
+            const documentTask = outcome.breakdown.document;
+            if (documentTask.sub_result === 'rejected') {
+                // Document was rejected - show as fail but still show nested breakdown
+                outcome.result = 'fail';
+            }
+        }
+        
         const result = outcome.result || 'unknown';
         let borderClass = '';
         let statusIcon = '';
@@ -8013,7 +8975,8 @@ class ThirdfortChecksManager {
     
     createScreeningHitCard(hitData) {
         const {
-            name, dob, hitType, hitIcon, score, flagTypes, positions, countries, aka, media, associates, fields, match_types, dismissal
+            name, dob, hitType, hitIcon, score, flagTypes, positions, countries, aka, media, associates, fields, match_types, dismissal,
+            source_notes, institutions, spouses, roles, assets, id
         } = hitData;
         
         const uniqueId = `hit-${Math.random().toString(36).substr(2, 9)}`;
@@ -8144,19 +9107,52 @@ class ThirdfortChecksManager {
             html += `<div class="hit-info-row"><span class="hit-info-label">Data Sources:</span> <span class="hit-info-value">${fields.length} source${fields.length !== 1 ? 's' : ''}</span></div>`;
         }
         
+        // Extract URLs from fields and source_notes to add to media
+        let allMedia = media || [];
+        if (fields && fields.length > 0) {
+            fields.forEach(field => {
+                // Extract URLs from fields (e.g., "Related URL")
+                if (field.name && (field.name.toLowerCase().includes('url') || field.name.toLowerCase().includes('link') || field.name.toLowerCase().includes('related')) && field.value) {
+                    const url = field.value;
+                    if (url.startsWith('http') && !allMedia.some(m => m.url === url)) {
+                        allMedia.push({
+                            title: field.name,
+                            url: url,
+                            date: null,
+                            snippet: ''
+                        });
+                    }
+                }
+            });
+        }
+        if (source_notes && Object.keys(source_notes).length > 0) {
+            Object.entries(source_notes).forEach(([sourceKey, sourceData]) => {
+                const sourceUrl = sourceData.url || '';
+                if (sourceUrl && sourceUrl.startsWith('http') && !allMedia.some(m => m.url === sourceUrl)) {
+                    const sourceName = sourceData.name || sourceKey.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    allMedia.push({
+                        title: sourceName,
+                        url: sourceUrl,
+                        date: sourceData.listing_started_utc ? new Date(sourceData.listing_started_utc).toISOString() : null,
+                        snippet: ''
+                    });
+                }
+            });
+        }
+        
         // Media articles - expandable
-        if (media && media.length > 0) {
+        if (allMedia && allMedia.length > 0) {
             html += `
                 <div class="hit-info-row hit-media-section">
                     <span class="hit-info-label">Media Articles:</span> 
                     <span class="hit-info-value hit-media-toggle" onclick="document.getElementById('${uniqueId}-media').classList.toggle('expanded'); event.stopPropagation();">
-                        ${media.length} article${media.length !== 1 ? 's' : ''} ▼
+                        ${allMedia.length} article${allMedia.length !== 1 ? 's' : ''} ▼
                     </span>
                 </div>
                 <div id="${uniqueId}-media" class="hit-media-list">
             `;
             // Show first 10 articles
-            media.slice(0, 10).forEach((article, idx) => {
+            allMedia.slice(0, 10).forEach((article, idx) => {
                 const date = article.date && article.date !== '0001-01-01T00:00:00Z' ? new Date(article.date).toLocaleDateString() : 'Unknown date';
                 const title = article.title || 'Untitled';
                 const snippet = article.snippet ? article.snippet.substring(0, 200) + '...' : '';
@@ -8171,9 +9167,9 @@ class ThirdfortChecksManager {
             });
             
             // Additional articles shown when expanded
-            if (media.length > 10) {
+            if (allMedia.length > 10) {
                 html += `<div id="${uniqueId}-media-extra" class="hit-media-list-extra">`;
-                media.slice(10).forEach((article, idx) => {
+                allMedia.slice(10).forEach((article, idx) => {
                     const date = article.date && article.date !== '0001-01-01T00:00:00Z' ? new Date(article.date).toLocaleDateString() : 'Unknown date';
                     const title = article.title || 'Untitled';
                     const snippet = article.snippet ? article.snippet.substring(0, 200) + '...' : '';
@@ -8187,7 +9183,7 @@ class ThirdfortChecksManager {
                     `;
                 });
                 html += `</div>`;
-                html += `<div class="media-article-more" onclick="document.getElementById('${uniqueId}-media-extra').classList.toggle('expanded'); this.textContent = this.textContent.startsWith('+') ? 'Show less' : '+ ${media.length - 10} more article${media.length - 10 !== 1 ? 's' : ''}'; event.stopPropagation();">+ ${media.length - 10} more article${media.length - 10 !== 1 ? 's' : ''}</div>`;
+                html += `<div class="media-article-more" onclick="document.getElementById('${uniqueId}-media-extra').classList.toggle('expanded'); this.textContent = this.textContent.startsWith('+') ? 'Show less' : '+ ${allMedia.length - 10} more article${allMedia.length - 10 !== 1 ? 's' : ''}'; event.stopPropagation();">+ ${allMedia.length - 10} more article${allMedia.length - 10 !== 1 ? 's' : ''}</div>`;
             }
             html += `</div>`;
         }
@@ -8218,6 +9214,57 @@ class ThirdfortChecksManager {
                         </div>
                     </div>
             `;
+        }
+        
+        // Source Notes (new format from lite screen) - expandable
+        if (source_notes && Object.keys(source_notes).length > 0) {
+            const sourceNotesId = `${uniqueId}-sources`;
+            html += `
+                <div class="hit-info-row hit-source-notes-section">
+                    <span class="hit-info-label">Source Information:</span> 
+                    <span class="hit-info-value hit-source-toggle" onclick="document.getElementById('${sourceNotesId}').classList.toggle('expanded'); event.stopPropagation();">
+                        ${Object.keys(source_notes).length} source${Object.keys(source_notes).length !== 1 ? 's' : ''} ▼
+                    </span>
+                </div>
+                <div id="${sourceNotesId}" class="hit-source-notes-list">
+            `;
+            Object.entries(source_notes).forEach(([sourceKey, sourceData]) => {
+                const sourceName = sourceData.name || sourceKey.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const sourceUrl = sourceData.url || '';
+                const amlTypes = sourceData.aml_types || [];
+                const listingDate = sourceData.listing_started_utc ? new Date(sourceData.listing_started_utc).toLocaleDateString() : '';
+                
+                html += `
+                    <div class="source-note-item">
+                        <div class="source-note-header">
+                            ${sourceUrl ? `<a href="${sourceUrl}" target="_blank" class="source-note-title" onclick="event.stopPropagation(); window.open('${sourceUrl}', '_blank'); return false;">${sourceName}</a>` : `<div class="source-note-title">${sourceName}</div>`}
+                            ${listingDate ? `<div class="source-note-date">Listed: ${listingDate}</div>` : ''}
+                        </div>
+                        ${amlTypes.length > 0 ? `<div class="source-note-types">${amlTypes.map(t => `<span class="source-type-badge">${t.replace(/-/g, ' ')}</span>`).join('')}</div>` : ''}
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+        
+        // Institutions (new format)
+        if (institutions && institutions.length > 0) {
+            html += `<div class="hit-info-row"><span class="hit-info-label">Institution${institutions.length > 1 ? 's' : ''}:</span> <span class="hit-info-value">${institutions.map(inst => inst.name || inst).join(', ')}</span></div>`;
+        }
+        
+        // Spouses (new format)
+        if (spouses && spouses.length > 0) {
+            html += `<div class="hit-info-row"><span class="hit-info-label">Spouse${spouses.length > 1 ? 's' : ''}:</span> <span class="hit-info-value">${spouses.map(spouse => spouse.name || spouse).join(', ')}</span></div>`;
+        }
+        
+        // Roles (new format)
+        if (roles && roles.length > 0) {
+            html += `<div class="hit-info-row"><span class="hit-info-label">Role${roles.length > 1 ? 's' : ''}:</span> <span class="hit-info-value">${roles.map(role => role.name || role.title || role).join(', ')}</span></div>`;
+        }
+        
+        // Assets (new format)
+        if (assets && assets.length > 0) {
+            html += `<div class="hit-info-row"><span class="hit-info-label">Asset${assets.length > 1 ? 's' : ''}:</span> <span class="hit-info-value">${assets.map(asset => asset.description || asset.value || asset).join(', ')}</span></div>`;
         }
         
         // Dismissal information (if hit was dismissed)
@@ -9822,26 +10869,111 @@ class ThirdfortChecksManager {
             const totalHits = breakdown.total_hits || 0;
             const hits = breakdown.hits || [];
             
+            // Count dismissed hits
+            const pepDismissals = check.pepDismissals || [];
+            const dismissedCount = hits.filter(hit => pepDismissals.some(d => d.hitId === hit.id)).length;
+            const outstandingCount = totalHits - dismissedCount;
+            
             checks.push({
                 status: totalHits === 0 ? 'CL' : 'CO',
-                text: `${totalHits} PEP match${totalHits !== 1 ? 'es' : ''} found`
+                text: `${totalHits} PEP match${totalHits !== 1 ? 'es' : ''} found`,
+                dismissedCount: dismissedCount,
+                outstandingCount: outstandingCount
             });
             
-            // Show individual hits if any
+            // Show detailed hit information using hit cards (same format as screening)
             if (hits.length > 0) {
                 hits.forEach(hit => {
                     const name = hit.name || 'Unknown';
+                    const dob = this.extractDob(hit.dob);
+                    const flagTypes = hit.flag_types || [];
                     const positions = hit.political_positions || [];
                     const countries = hit.countries || [];
+                    const aka = hit.aka || [];
+                    const score = hit.score || 0;
                     
-                    let hitText = `${name}`;
-                    if (positions.length > 0) hitText += ` | ${positions.slice(0, 2).join(', ')}`;
-                    if (countries.length > 0) hitText += ` [${countries.slice(0, 3).join(', ')}]`;
+                    // Determine primary hit type
+                    let hitType = 'PEP';
+                    let hitIcon = '👤';
                     
+                    // Check flag types if available (new format from lite screen)
+                    if (flagTypes.length > 0) {
+                        if (flagTypes.some(f => f.includes('pep') || f === 'pep')) {
+                            hitType = 'PEP';
+                            hitIcon = '👤';
+                        }
+                        if (flagTypes.some(f => f.includes('sanction') || f === 'sanction')) {
+                            hitType = hitType ? `${hitType} + Sanctions` : 'Sanctions';
+                            hitIcon = '🚫';
+                        }
+                        if (flagTypes.some(f => f.includes('adverse-media') || f === 'adverse-media')) {
+                            hitType = hitType ? `${hitType} + Adverse Media` : 'Adverse Media';
+                            hitIcon = '📰';
+                        }
+                        // Handle other flag types like 'warning', 'fitness-probity' (from mock data)
+                        if (flagTypes.some(f => f === 'warning' || f === 'fitness-probity')) {
+                            // Keep as PEP but note the flag type
+                            hitType = 'PEP';
+                            hitIcon = '⚠️';
+                        }
+                    }
+                    
+                    // Check if this hit has been dismissed
+                    const dismissal = pepDismissals.find(d => d.hitId === hit.id);
+                    
+                    // Extract media and countries - check multiple possible locations
+                    let mediaData = hit.media || [];
+                    let countriesData = hit.countries || [];
+                    
+                    // Check if media/countries info might be in fields (new format)
+                    if (hit.fields && Array.isArray(hit.fields)) {
+                        // Look for country information in fields
+                        const countryFields = hit.fields.filter(f => 
+                            f.name && (f.name.toLowerCase().includes('country') || f.name.toLowerCase().includes('location'))
+                        );
+                        if (countryFields.length > 0 && countriesData.length === 0) {
+                            countriesData = countryFields.map(f => f.value).filter(Boolean);
+                        }
+                        
+                        // Look for URL/media information in fields
+                        const urlFields = hit.fields.filter(f => 
+                            f.name && (f.name.toLowerCase().includes('url') || f.name.toLowerCase().includes('link') || f.name.toLowerCase().includes('related'))
+                        );
+                        if (urlFields.length > 0 && mediaData.length === 0) {
+                            // Convert URL fields to media format
+                            mediaData = urlFields.map(f => ({
+                                title: f.name || 'Source Link',
+                                url: f.value || '',
+                                date: f.value ? new Date().toISOString() : null
+                            })).filter(m => m.url);
+                        }
+                    }
+                    
+                    // Create a "hit card" structure (same as screening task)
                     checks.push({
-                        status: 'CO',
-                        text: hitText,
-                        indented: true
+                        isHitCard: true,
+                        hitData: {
+                            name,
+                            dob,
+                            hitType,
+                            hitIcon,
+                            score,
+                            flagTypes,
+                            positions,
+                            countries: countriesData,
+                            aka,
+                            media: mediaData,
+                            associates: hit.associates || [],
+                            fields: hit.fields || [],
+                            match_types: hit.match_types || [],
+                            source_notes: hit.source_notes || {}, // New format from lite screen
+                            institutions: hit.institutions || [],
+                            spouses: hit.spouses || [],
+                            roles: hit.roles || [],
+                            assets: hit.assets || [],
+                            id: hit.id || '', // Hit ID for dismissal tracking
+                            dismissal: dismissal // Add dismissal info if exists
+                        }
                     });
                 });
             }
@@ -9980,190 +11112,114 @@ class ThirdfortChecksManager {
                                             
                                             // Check if nested item has properties with specific results
                                             const nestedProperties = nestedCheck.properties || {};
-                                            let displayText = nestedFormattedKey;
                                             
-                                            // If properties contain specific checks (e.g., document_number: "clear")
+                                            // If properties contain specific checks, show them as individual nested items
                                             if (Object.keys(nestedProperties).length > 0) {
                                                 const propertyResults = Object.entries(nestedProperties)
-                                                    .filter(([_, val]) => val === 'clear' || val === 'fail' || val === 'consider')
-                                                    .map(([propKey, propVal]) => {
+                                                    .filter(([_, val]) => val === 'clear' || val === 'fail' || val === 'consider' || val === 'unidentified');
+                                                
+                                                if (propertyResults.length > 0) {
+                                                    // Show the parent nested item (e.g., "Image Quality")
+                                                    checks.push({
+                                                        status: nestedResult === 'clear' ? 'CL' : (nestedResult === 'fail' ? 'AL' : (nestedResult === 'unidentified' ? 'CO' : 'CO')),
+                                                        text: nestedFormattedKey,
+                                                        isChildItem: true,
+                                                        isParent: true  // Mark as parent so properties show as children
+                                                    });
+                                                    
+                                                    // Show each property as a separate nested item with its own status
+                                                    propertyResults.forEach(([propKey, propVal]) => {
                                                         const propName = propKey.replace(/_/g, ' ')
                                                             .split(' ')
                                                             .map(w => w.charAt(0).toUpperCase() + w.slice(1))
                                                             .join(' ');
-                                                        return `${propName}: ${propVal}`;
+                                                        
+                                                        const propStatus = propVal === 'clear' ? 'CL' : (propVal === 'fail' ? 'AL' : 'CO');
+                                                        
+                                                        checks.push({
+                                                            status: propStatus,
+                                                            text: propName,
+                                                            isChildItem: true,
+                                                            indented: true  // Triple indentation for properties
+                                                        });
                                                     });
-                                                
-                                                if (propertyResults.length > 0) {
-                                                    displayText += ` (${propertyResults.join(', ')})`;
+                                                } else {
+                                                    // No property results, just show the nested item itself
+                                                    checks.push({
+                                                        status: nestedResult === 'clear' ? 'CL' : (nestedResult === 'fail' ? 'AL' : (nestedResult === 'unidentified' ? 'CO' : 'CO')),
+                                                        text: nestedFormattedKey,
+                                                        isChildItem: true,
+                                                        indented: true
+                                                    });
                                                 }
+                                            } else {
+                                                // No properties, just show the nested item
+                                                checks.push({
+                                                    status: nestedResult === 'clear' ? 'CL' : (nestedResult === 'fail' ? 'AL' : (nestedResult === 'unidentified' ? 'CO' : 'CO')),
+                                                    text: nestedFormattedKey,
+                                                    isChildItem: true,
+                                                    indented: true
+                                                });
                                             }
-                                            
-                                            checks.push({
-                                                status: nestedResult === 'clear' ? 'CL' : (nestedResult === 'fail' ? 'AL' : 'CO'),
-                                                text: displayText,
-                                                isChildItem: true,
-                                                indented: true  // Double indentation for deeper nesting
-                                            });
                                         });
                                     }
                                 } else {
                                     // Standard nested item with actual result (already filtered to exclude null)
-                                    let displayText = formattedKey;
-                                    
-                                    // Check if it has properties that might be relevant
+                                    // Check if it has properties that should be shown as nested items
                                     if (Object.keys(subProperties).length > 0) {
                                         const propertyResults = Object.entries(subProperties)
-                                            .filter(([_, val]) => val === 'clear' || val === 'fail' || val === 'consider')
-                                            .map(([propKey, propVal]) => {
+                                            .filter(([_, val]) => val === 'clear' || val === 'fail' || val === 'consider' || val === 'unidentified');
+                                        
+                                        if (propertyResults.length > 0) {
+                                            // Show the parent nested item (e.g., "Supported Document")
+                                            checks.push({
+                                                status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : (subResult === 'unidentified' ? 'CO' : 'CO')),
+                                                text: formattedKey,
+                                                isChildItem: true,
+                                                isParent: true  // Mark as parent so properties show as children
+                                            });
+                                            
+                                            // Show each property as a separate nested item with its own status
+                                            propertyResults.forEach(([propKey, propVal]) => {
                                                 const propName = propKey.replace(/_/g, ' ')
                                                     .split(' ')
                                                     .map(w => w.charAt(0).toUpperCase() + w.slice(1))
                                                     .join(' ');
-                                                return `${propName}: ${propVal}`;
-                                            });
-                                        
-                                        if (propertyResults.length > 0) {
-                                            displayText += ` (${propertyResults.join(', ')})`;
-                                        }
-                                    }
-                                    
-                                    checks.push({
-                                        status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'),
-                                        text: displayText,
-                                        isChildItem: true  // Visual indentation in header checks
-                                    });
-                                }
-                            });
-                    } else {
-                        // Parent is clear - check if any nested items have actual results (not null)
-                        // Filter out null results as they mean the check wasn't performed
-                        const nestedItemsWithResults = Object.entries(catBreakdown).filter(([_, subCheck]) => {
-                            const subResult = subCheck.result;
-                            return subResult !== null && subResult !== undefined;
-                        });
-                        
-                        const hasNonClearNested = nestedItemsWithResults.some(([_, subCheck]) => {
-                            const subResult = subCheck.result || '';
-                            return subResult !== 'clear';
-                        });
-                        
-                        if (hasNonClearNested && nestedItemsWithResults.length > 0) {
-                            // Show parent and only nested items with actual results (skip null)
-                            checks.push({
-                                status: catResult === 'clear' ? 'CL' : 'CO',
-                                text: categoryName,
-                                isParent: true
-                            });
-                            
-                            // Add only nested items with actual results (not null)
-                            nestedItemsWithResults.forEach(([key, subCheck]) => {
-                                const subResult = subCheck.result || '';
-                                const subBreakdown = subCheck.breakdown || {};
-                                
-                                // Format the key name
-                                const formattedKey = key.replace(/_/g, ' ')
-                                    .split(' ')
-                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                    .join(' ');
-                                
-                                // If this nested item has its own breakdown (deeper nesting)
-                                if (Object.keys(subBreakdown).length > 0) {
-                                    // Filter out null results from deeper nesting too
-                                    const deeperNestedItems = Object.entries(subBreakdown).filter(([_, nestedCheck]) => {
-                                        const nestedResult = nestedCheck.result;
-                                        return nestedResult !== null && nestedResult !== undefined;
-                                    });
-                                    
-                                    if (deeperNestedItems.length > 0) {
-                                        // Show the nested item as a parent
-                                        checks.push({
-                                            status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'),
-                                            text: formattedKey,
-                                            isChildItem: true,
-                                            isParent: true
-                                        });
-                                        
-                                        // Add its nested items (only those with actual results)
-                                        deeperNestedItems.forEach(([nestedKey, nestedCheck]) => {
-                                            const nestedResult = nestedCheck.result || '';
-                                            const nestedFormattedKey = nestedKey.replace(/_/g, ' ')
-                                                .split(' ')
-                                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                                .join(' ');
-                                            
-                                            // Check if nested item has properties with specific results
-                                            const nestedProperties = nestedCheck.properties || {};
-                                            let displayText = nestedFormattedKey;
-                                            
-                                            // If properties contain specific checks (e.g., document_number: "clear")
-                                            if (Object.keys(nestedProperties).length > 0) {
-                                                const propertyResults = Object.entries(nestedProperties)
-                                                    .filter(([_, val]) => val === 'clear' || val === 'fail' || val === 'consider')
-                                                    .map(([propKey, propVal]) => {
-                                                        const propName = propKey.replace(/_/g, ' ')
-                                                            .split(' ')
-                                                            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                                                            .join(' ');
-                                                        return `${propName}: ${propVal}`;
-                                                    });
                                                 
-                                                if (propertyResults.length > 0) {
-                                                    displayText += ` (${propertyResults.join(', ')})`;
-                                                }
-                                            }
-                                            
-                                            checks.push({
-                                                status: nestedResult === 'clear' ? 'CL' : (nestedResult === 'fail' ? 'AL' : 'CO'),
-                                                text: displayText,
-                                                isChildItem: true,
-                                                indented: true  // Double indentation for deeper nesting
+                                                const propStatus = propVal === 'clear' ? 'CL' : (propVal === 'fail' ? 'AL' : 'CO');
+                                                
+                                                checks.push({
+                                                    status: propStatus,
+                                                    text: propName,
+                                                    isChildItem: true,
+                                                    indented: true  // Double indentation for properties
+                                                });
                                             });
-                                        });
+                                        } else {
+                                            // No property results, just show the nested item itself
+                                            checks.push({
+                                                status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : (subResult === 'unidentified' ? 'CO' : 'CO')),
+                                                text: formattedKey,
+                                                isChildItem: true
+                                            });
+                                        }
                                     } else {
-                                        // No deeper nested items with results, just show the parent nested item
+                                        // No properties, just show the nested item
                                         checks.push({
-                                            status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'),
+                                            status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : (subResult === 'unidentified' ? 'CO' : 'CO')),
                                             text: formattedKey,
                                             isChildItem: true
                                         });
                                     }
-                                } else {
-                                    // Standard nested item with actual result
-                                    const subProperties = subCheck.properties || {};
-                                    let displayText = formattedKey;
-                                    
-                                    // Check if it has properties that might be relevant
-                                    if (Object.keys(subProperties).length > 0) {
-                                        const propertyResults = Object.entries(subProperties)
-                                            .filter(([_, val]) => val === 'clear' || val === 'fail' || val === 'consider')
-                                            .map(([propKey, propVal]) => {
-                                                const propName = propKey.replace(/_/g, ' ')
-                                                    .split(' ')
-                                                    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                                                    .join(' ');
-                                                return `${propName}: ${propVal}`;
-                                            });
-                                        
-                                        if (propertyResults.length > 0) {
-                                            displayText += ` (${propertyResults.join(', ')})`;
-                                        }
-                                    }
-                                    
-                                    checks.push({
-                                        status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'),
-                                        text: displayText,
-                                        isChildItem: true
-                                    });
                                 }
                             });
-                        } else {
-                            // All clear or no items with results - just show the category name
-                            checks.push({
-                                status: 'CL',
-                                text: categoryName
-                            });
-                        }
+                    } else {
+                        // Parent is clear - just show the category name (don't show nested items)
+                        // This is the normal case - only show nested breakdown when there's an issue
+                        checks.push({
+                            status: 'CL',
+                            text: categoryName
+                        });
                     }
                 } else {
                     // No nested breakdown, show the category itself
