@@ -1432,6 +1432,15 @@
         }
 
         /* View/Open button - always top-right corner */
+        .document-card .document-buttons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            order: 4;
+            flex-shrink: 0;
+            align-self: flex-start;
+        }
+        
         .document-card .view-btn,
         .document-card .download-btn {
             background: #f8f9fa;
@@ -1442,16 +1451,10 @@
             cursor: pointer;
             font-size: 12px;
             transition: background 0.2s ease;
-            align-self: flex-start;
-            order: 4;
-            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        
-        .document-card .view-btn {
-            margin-right: 8px;
+            margin: 0;
         }
         
         /* 
@@ -1465,14 +1468,9 @@
             margin-left: 0;
         }
         
-        .documents-grid.layout-mode-2 .document-card .view-btn,
-        .documents-grid.layout-mode-2 .document-card .download-btn {
+        .documents-grid.layout-mode-2 .document-card .document-buttons {
             order: 3;
             margin-left: auto;
-        }
-        
-        .documents-grid.layout-mode-2 .document-card .view-btn {
-            margin-right: 8px;
         }
         
         /* 
@@ -1498,14 +1496,9 @@
             overflow-wrap: break-word;
         }
         
-        .documents-grid.layout-mode-3 .document-card .view-btn,
-        .documents-grid.layout-mode-3 .document-card .download-btn {
+        .documents-grid.layout-mode-3 .document-card .document-buttons {
             order: 2;
             margin-left: auto;
-        }
-        
-        .documents-grid.layout-mode-3 .document-card .view-btn {
-            margin-right: 8px;
         }
         
         /* Category wrapper - contains the tag badge */
@@ -2465,30 +2458,35 @@
             }
             
             // Get document name and size from data object
-            const documentName = documentData.data?.name || documentData.name || 'Document';
+            const documentName = documentData.data?.name || documentData.name || documentData.document || 'Document';
             const documentSize = formatFileSize(documentData.data?.size || 0);
+            
+            // Use friendly name for display, fallback to document type
+            const displayName = documentData.data?.name || documentData.name || documentData.document || 'Unknown Document';
             
             card.innerHTML = `
                 <div class="document-details">
                     <div class="document-header">
                         <div class="document-type">
-                            <span class="document-type-text">${documentData.document || 'Unknown Document'}</span>
+                            <span class="document-type-text">${displayName}</span>
                         </div>
                         ${documentData.type ? `<div class="category-wrapper"><span class="document-category">${documentData.type}</span></div>` : ''}
                         <div class="uploader-info">${uploaderInfo}</div>
-                        <button class="view-btn" onclick="viewDocument(this)" title="Open document" data-document-index="${index}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                              <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                        </button>
-                        <button class="download-btn" onclick="downloadDocument(this)" title="Download document" data-document-index="${index}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7,14 12,19 17,14"/>
-                              <line x1="12" y1="19" x2="12" y2="7"/>
-                            </svg>
-                        </button>
+                        <div class="document-buttons">
+                            <button class="download-btn" onclick="downloadDocument(this)" title="Download document" data-document-index="${index}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                  <polyline points="7,14 12,19 17,14"/>
+                                  <line x1="12" y1="19" x2="12" y2="7"/>
+                                </svg>
+                            </button>
+                            <button class="view-btn" onclick="viewDocument(this)" title="Open document" data-document-index="${index}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                  <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -2762,19 +2760,16 @@
                 const documentType = header.querySelector('.document-type');
                 const documentCategory = header.querySelector('.document-category');
                 const uploaderInfo = header.querySelector('.uploader-info');
-                const viewBtn = header.querySelector('.view-btn');
-                const downloadBtn = header.querySelector('.download-btn');
+                const documentButtons = header.querySelector('.document-buttons');
                 
-                if (!documentType || !uploaderInfo || !viewBtn) return;
+                if (!documentType || !uploaderInfo || !documentButtons) return;
                 
                 const headerWidth = header.offsetWidth;
                 const gap = 8; // CSS gap between flex items
                 const typeWidth = documentType.offsetWidth;
                 const categoryWidth = documentCategory ? documentCategory.offsetWidth : 0;
                 const uploaderWidth = uploaderInfo.offsetWidth;
-                const viewBtnWidth = viewBtn.offsetWidth;
-                const downloadBtnWidth = downloadBtn ? downloadBtn.offsetWidth : 0;
-                const btnWidth = viewBtnWidth + (downloadBtn ? downloadBtnWidth + gap : 0); // Both buttons plus gap between them
+                const btnWidth = documentButtons.offsetWidth; // Button wrapper width includes both buttons and gap
                 
                 // Check if everything fits on one row (mode 1)
                 let totalNeeded = typeWidth + categoryWidth + uploaderWidth + btnWidth;
