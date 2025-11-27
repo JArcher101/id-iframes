@@ -512,11 +512,20 @@ class ThirdfortChecksManager {
         typeLabel.textContent = this.getCheckTypeLabel(check);
         header.appendChild(typeLabel);
         
-        // CLEAR/CONSIDER tag (only if closed AND PDF ready)
+        // CLEAR/CONSIDER/ALERT tag (only if closed AND PDF ready)
         if (check.status === 'closed' && check.pdfReady) {
             const tag = document.createElement('span');
-            tag.className = `outcome-tag ${check.hasAlerts ? 'consider' : 'clear'}`;
-            tag.textContent = check.hasAlerts ? 'CONSIDER' : 'CLEAR';
+            // Check for rejected documents on IDV checks - show as ALERT (red)
+            const isIdvRejected = check.checkType === 'idv' && 
+                check.taskOutcomes?.['identity:lite']?.breakdown?.document?.sub_result === 'rejected';
+            
+            if (isIdvRejected) {
+                tag.className = 'outcome-tag alert';
+                tag.textContent = 'ALERT';
+            } else {
+                tag.className = `outcome-tag ${check.hasAlerts ? 'consider' : 'clear'}`;
+                tag.textContent = check.hasAlerts ? 'CONSIDER' : 'CLEAR';
+            }
             header.appendChild(tag);
         }
         
@@ -766,11 +775,19 @@ class ThirdfortChecksManager {
         } else if (check.status === 'aborted') {
             statusTag = '<span class="status-tag cancelled">CANCELLED</span>';
         } else if (check.status === 'closed') {
-            // Only show CLEAR/CONSIDER if PDF is ready, otherwise show PROCESSING
+            // Only show CLEAR/CONSIDER/ALERT if PDF is ready, otherwise show PROCESSING
             if (check.pdfReady) {
-                statusTag = check.hasAlerts 
-                    ? '<span class="status-tag consider">CONSIDER</span>' 
-                    : '<span class="status-tag clear">CLEAR</span>';
+                // Check for rejected documents on IDV checks - show as ALERT (red)
+                const isIdvRejected = check.checkType === 'idv' && 
+                    check.taskOutcomes?.['identity:lite']?.breakdown?.document?.sub_result === 'rejected';
+                
+                if (isIdvRejected) {
+                    statusTag = '<span class="status-tag alert">ALERT</span>';
+                } else if (check.hasAlerts) {
+                    statusTag = '<span class="status-tag consider">CONSIDER</span>';
+                } else {
+                    statusTag = '<span class="status-tag clear">CLEAR</span>';
+                }
             } else {
                 statusTag = '<span class="status-tag processing">PROCESSING</span>';
             }
@@ -6637,6 +6654,10 @@ class ThirdfortChecksManager {
             if (documentTask.sub_result === 'rejected') {
                 // Document was rejected - show as fail but still show nested breakdown
                 outcome.result = 'fail';
+                // Also update the check's hasAlerts flag so list view shows CONSIDER
+                if (check) {
+                    check.hasAlerts = true;
+                }
             }
         }
         

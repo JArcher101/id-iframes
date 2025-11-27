@@ -224,7 +224,15 @@ class ThirdfortChecksList {
             return check.assessment.outcome;
         }
         
-        // Check hasAlerts first (set by backend based on task outcomes)
+        // Check for rejected documents (sub_result: "rejected") on IDV checks FIRST - indicates check failed, show as ALERT
+        if (check.checkType === 'idv') {
+            const identityLite = check.taskOutcomes?.['identity:lite'];
+            if (identityLite?.breakdown?.document?.sub_result === 'rejected') {
+                return 'ALERT';
+            }
+        }
+        
+        // Check hasAlerts (set by backend based on task outcomes)
         if (check.hasAlerts) {
             return 'CONSIDER';
         }
