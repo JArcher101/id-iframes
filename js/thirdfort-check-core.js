@@ -3509,6 +3509,89 @@ function loadAddressIntoManualFields(addressObject, prefix) {
 }
 
 /**
+ * Build address object from manual input fields
+ * Always reads current values from form inputs to ensure edited addresses are used
+ * @param {string} prefix - Field prefix ('lite' for lite screen)
+ * @returns {Object|null} - Thirdfort-formatted address object or null if invalid
+ */
+function buildAddressFromManualInputs(prefix) {
+  // Get country from element
+  const countryElement = document.getElementById(`${prefix}Country`);
+  if (!countryElement) return null;
+  
+  const countryRaw = countryElement.dataset.countryCode || countryElement.value || 'GBR';
+  const country = normalizeCountryCode(countryRaw);
+  const isUK = country === 'GBR';
+  const isUSAOrCAN = country === 'USA' || country === 'CAN';
+  
+  // Read values from manual input fields
+  const flatNumber = document.getElementById(`${prefix}FlatNumber`)?.value?.trim() || '';
+  const buildingNumber = document.getElementById(`${prefix}BuildingNumber`)?.value?.trim() || '';
+  const buildingName = document.getElementById(`${prefix}BuildingName`)?.value?.trim() || '';
+  const street = document.getElementById(`${prefix}Street`)?.value?.trim() || '';
+  const subStreet = document.getElementById(`${prefix}SubStreet`)?.value?.trim() || '';
+  const town = document.getElementById(`${prefix}Town`)?.value?.trim() || '';
+  const postcode = document.getElementById(`${prefix}Postcode`)?.value?.trim() || '';
+  
+  // UK addresses: Individual fields only (no address_1, address_2)
+  if (isUK) {
+    return {
+      building_name: buildingName,
+      building_number: buildingNumber,
+      flat_number: flatNumber,
+      postcode: postcode,
+      street: street,
+      sub_street: subStreet,
+      town: town,
+      country: country
+    };
+  }
+  
+  // USA/Canada: address_1, address_2, state required
+  if (isUSAOrCAN) {
+    // Build address_1 from available fields (prioritize building name/number, then street)
+    const address1Parts = [
+      flatNumber,
+      buildingNumber,
+      buildingName,
+      street
+    ].filter(p => p && p.trim());
+    const address1 = address1Parts.join(', ') || street || '';
+    
+    return {
+      address_1: address1,
+      address_2: subStreet,
+      postcode: postcode,
+      street: street,
+      sub_street: subStreet,
+      town: town,
+      state: '', // State field not in lite screen manual inputs, leave empty
+      country: country
+    };
+  }
+  
+  // Other countries: address_1, address_2 (no individual building fields)
+  const address1Parts = [
+    flatNumber,
+    buildingNumber,
+    buildingName,
+    street
+  ].filter(p => p && p.trim());
+  const address1 = address1Parts.join(', ') || street || '';
+  
+  return {
+    address_1: address1,
+    address_2: subStreet,
+    postcode: postcode,
+    street: street,
+    sub_street: subStreet,
+    town: town,
+    state: '',
+    country: country
+  };
+}
+
+/**
  * Update address card visual states (selected/unselected)
  */
 function updateLiteAddressCardStates() {
@@ -5058,8 +5141,9 @@ function buildLiteScreenRequest() {
   
   const countryCode = document.getElementById('liteCountry')?.value;
   
-  // Get active address
-  const address = liteActiveAddressType === 'current' ? liteCurrentAddressObject : litePreviousAddressObject;
+  // Build address from manual input fields (always use current form values)
+  // This ensures edited addresses or manually entered addresses are correctly submitted
+  const address = buildAddressFromManualInputs('lite');
   
   // Get monitoring checkbox states (only if visible)
   const pepMonitoringCard = document.getElementById('monitoringCard');
