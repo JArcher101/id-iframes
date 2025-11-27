@@ -18,6 +18,7 @@ class ThirdfortChecksManager {
         this.listView = document.getElementById('list-view');
         this.detailView = document.getElementById('detail-view');
         this.checksList = document.getElementById('checks-list');
+        this.mockDataBtn = document.getElementById('mock-data-btn');
         
         // Detail view elements
         this.backBtn = document.getElementById('back-btn');
@@ -50,6 +51,9 @@ class ThirdfortChecksManager {
     setupEventListeners() {
         // Back button
         this.backBtn?.addEventListener('click', () => this.showListView());
+        
+        // Mock data button (for development/testing)
+        this.mockDataBtn?.addEventListener('click', () => this.loadMockData());
     }
     
     // ===================================================================
@@ -116,6 +120,378 @@ class ThirdfortChecksManager {
                 this.handleCheckImages((data && data.images) || []);
                 break;
         }
+    }
+    
+    // ===================================================================
+    // MOCK DATA (for development/testing)
+    // ===================================================================
+    
+    loadMockData() {
+        console.log('🧪 Loading mock check data...');
+        
+        const mockCheck = {
+            "taskOutcomes": {
+                "identity:lite": {
+                    "breakdown": {
+                        "document": {
+                            "name": "document",
+                            "breakdown": {
+                                "compromised_document": {
+                                    "result": "clear"
+                                },
+                                "data_consistency": {
+                                    "breakdown": {
+                                        "first_name": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "date_of_expiry": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "date_of_birth": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "last_name": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "nationality": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "issuing_country": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "document_numbers": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "document_type": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "gender": {
+                                            "properties": {},
+                                            "result": null
+                                        }
+                                    },
+                                    "result": null
+                                },
+                                "data_comparison": {
+                                    "breakdown": {
+                                        "first_name": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "date_of_expiry": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "date_of_birth": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "last_name": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "issuing_country": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "document_numbers": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "document_type": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "gender": {
+                                            "properties": {},
+                                            "result": null
+                                        }
+                                    },
+                                    "result": "clear"
+                                },
+                                "data_validation": {
+                                    "breakdown": {
+                                        "mrz": {
+                                            "properties": {},
+                                            "result": null
+                                        },
+                                        "date_of_birth": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "document_numbers": {
+                                            "properties": {
+                                                "document_number": "clear"
+                                            },
+                                            "result": "clear"
+                                        },
+                                        "expiry_date": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "document_expiration": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "gender": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        }
+                                    },
+                                    "result": "clear"
+                                },
+                                "image_integrity": {
+                                    "breakdown": {
+                                        "colour_picture": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "conclusive_document_quality": {
+                                            "properties": {
+                                                "digital_document": "clear",
+                                                "obscured_security_features": "clear",
+                                                "punctured_document": "clear",
+                                                "obscured_data_points": "clear",
+                                                "abnormal_document_features": "clear",
+                                                "corner_removed": "clear",
+                                                "watermarks_digital_text_overlay": "clear",
+                                                "missing_back": "clear"
+                                            },
+                                            "result": "clear"
+                                        },
+                                        "image_quality": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "supported_document": {
+                                            "properties": {
+                                                "custom_supported_document": "clear",
+                                                "issuing_country_subject_to_sanctions": "clear",
+                                                "onfido_supported_document": "clear"
+                                            },
+                                            "result": "clear"
+                                        }
+                                    },
+                                    "result": "clear"
+                                },
+                                "visual_authenticity": {
+                                    "breakdown": {
+                                        "face_detection": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "fonts": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "picture_face_integrity": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "original_document_present": {
+                                            "properties": {
+                                                "document_on_printed_paper": "clear",
+                                                "photo_of_screen": "clear",
+                                                "scan": "clear",
+                                                "screenshot": "clear"
+                                            },
+                                            "result": "clear"
+                                        },
+                                        "security_features": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "digital_tampering": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "template": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        },
+                                        "other": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        }
+                                    },
+                                    "result": "clear"
+                                },
+                                "age_validation": {
+                                    "breakdown": {
+                                        "minimum_accepted_age": {
+                                            "properties": {},
+                                            "result": "clear"
+                                        }
+                                    },
+                                    "result": "clear"
+                                },
+                                "police_record": {
+                                    "result": "clear"
+                                }
+                            },
+                            "result": "clear",
+                            "documents": [
+                                {
+                                    "id": "a0f77935-2c80-455d-9e63-40af38f9c468"
+                                },
+                                {
+                                    "id": "3a82c6f9-94ae-4f85-9292-031d33bb9e60"
+                                }
+                            ],
+                            "id": "10925eb6-cc12-4d6e-a8ca-c82e92b9cb3b",
+                            "properties": {
+                                "first_name": "FREDERICK BRIAN",
+                                "issuing_authority": "DVLA",
+                                "date_of_expiry": "2027-05-06",
+                                "place_of_birth": "ENGLAND",
+                                "categorisation": "full",
+                                "issuing_date": "2024-03-05",
+                                "date_of_birth": "1939-05-07",
+                                "last_name": "RULE",
+                                "issuing_country": "GBR",
+                                "document_numbers": [
+                                    {
+                                        "type": "document_number",
+                                        "value": "RULE9305079FB9FD"
+                                    }
+                                ],
+                                "document_type": "driving_licence",
+                                "gender": "Male"
+                            },
+                            "status": "complete",
+                            "created_at": "2025-11-27T09:55:15Z",
+                            "href": "/v3.6/reports/10925eb6-cc12-4d6e-a8ca-c82e92b9cb3b",
+                            "sub_result": "clear"
+                        }
+                    },
+                    "data": {
+                        "name": {
+                            "first": "Frederick",
+                            "last": "Rule",
+                            "other": "Brian"
+                        }
+                    },
+                    "result": "clear",
+                    "documents": [
+                        "d4m202r23amg0301hpe0"
+                    ],
+                    "id": "d4m202823amg0301hpd0",
+                    "status": "closed",
+                    "createdAt": "2025-11-27T09:55:21.471Z"
+                }
+            },
+            "updatedAt": "2025-11-27T09:55:26.264Z",
+            "pdfReady": true,
+            "checkType": "idv",
+            "completedAt": "2025-11-27T09:55:26.264Z",
+            "documentsUploaded": true,
+            "initiatedAt": "2025-11-27T09:55:09.330Z",
+            "pdfS3Key": "protected/xyvkLdI",
+            "updates": [
+                {
+                    "timestamp": "2025-11-27T09:55:09.330Z",
+                    "update": "IDV check initiated by barbara@thurstanhoskin.co.uk"
+                },
+                {
+                    "timestamp": "2025-11-27T09:55:15.313Z",
+                    "update": "Documents uploaded by barbara@thurstanhoskin.co.uk"
+                },
+                {
+                    "timestamp": "2025-11-27T09:55:26.264Z",
+                    "update": "Check completed - awaiting PDF"
+                },
+                {
+                    "timestamp": "2025-11-27T09:55:43.686Z",
+                    "update": "PDF received and uploaded to S3 - CLEAR"
+                }
+            ],
+            "status": "closed",
+            "initiatedBy": "barbara@thurstanhoskin.co.uk",
+            "documentType": "driving_licence",
+            "hasMonitoring": false,
+            "thirdfortResponse": {
+                "name": "Frederick Brian Rule - Document Verification",
+                "request": {
+                    "data": {
+                        "name": {
+                            "first": "Frederick",
+                            "last": "Rule",
+                            "other": "Brian"
+                        }
+                    },
+                    "reports": [
+                        {
+                            "type": "identity:lite"
+                        }
+                    ]
+                },
+                "ref": "Val'ID'ate: 23427/1",
+                "id": "d4m1zz723amg03007kf0",
+                "reports": [],
+                "status": "open",
+                "metadata": {
+                    "notify": {
+                        "type": "http",
+                        "data": {
+                            "hmac_key": "78352JfW2lSlR9IXU6gM/tZxAI7agXevqodq1aIhBnM=",
+                            "method": "POST",
+                            "uri": "https://www.thurstanhoskin.co.uk/_functions/thirdfortWebhook"
+                        }
+                    },
+                    "created_by": "d4jf5ha9io6g0092akig",
+                    "print": {
+                        "team": "Cashiers",
+                        "tenant": "Thurstan Hoskin Solicitors",
+                        "user": "Thurstan Hoskin Solicitors Bot"
+                    },
+                    "context": {
+                        "gid": "d4ji28i9io6g0092avp0",
+                        "uid": "d4jf5ha9io6g0092akig",
+                        "team_id": "d4ji28i9io6g0092avp0",
+                        "tenant_id": "d4jf3v29io6g0092akc0"
+                    },
+                    "ce": {
+                        "uri": "/v1/checks/4606470056"
+                    },
+                    "created_at": "2025-11-27T09:55:08.552Z"
+                },
+                "type": "document"
+            },
+            "companyData": {
+                "name": {
+                    "first": "Frederick",
+                    "last": "Rule",
+                    "other": "Brian"
+                },
+                "numbers": []
+            },
+            "checkId": "d4m1zz723amg03007kf0",
+            "hasAlerts": false,
+            "webhookProcessing": {
+                "check": "2025-11-27T09:55:25.851Z"
+            },
+            "pdfAddedAt": "2025-11-27T09:55:43.686Z"
+        };
+        
+        // Simulate receiving a 'checks-data' message
+        this.handleMessage({
+            data: {
+                type: 'checks-data',
+                data: {
+                    checks: [mockCheck],
+                    mode: 'edit',
+                    thirdfortEnv: 'sandbox'
+                }
+            }
+        });
     }
     
     handleCurrentCheck() {
@@ -1417,8 +1793,19 @@ class ThirdfortChecksManager {
                 </div>
             `);
         } else if (idvProperties.first_name || idvProperties.last_name) {
-            // Se's structure - build from first/last
-            const fullName = [idvProperties.first_name, idvProperties.last_name].filter(Boolean).join(' ');
+            // Se's structure - build from first/last (handle both formats)
+            // New structure may have first_name as full name, or separate first/last
+            let fullName = '';
+            if (idvProperties.first_name && idvProperties.first_name.includes(' ')) {
+                // first_name contains full name (e.g., "FREDERICK BRIAN")
+                fullName = idvProperties.first_name;
+                if (idvProperties.last_name) {
+                    fullName += ` ${idvProperties.last_name}`;
+                }
+            } else {
+                // Separate first and last names
+                fullName = [idvProperties.first_name, idvProperties.last_name].filter(Boolean).join(' ');
+            }
             if (fullName) {
                 gridItems.push(`
                     <div class="detail-item">
@@ -1533,6 +1920,36 @@ class ThirdfortChecksManager {
                 <div class="detail-item">
                     <div class="detail-label">Gender</div>
                     <div class="detail-value">${idvProperties.gender.charAt(0).toUpperCase() + idvProperties.gender.slice(1)}</div>
+                </div>
+            `);
+        }
+        
+        // Place of Birth (new field)
+        if (idvProperties.place_of_birth) {
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Place of Birth</div>
+                    <div class="detail-value">${idvProperties.place_of_birth}</div>
+                </div>
+            `);
+        }
+        
+        // Issuing Authority (new field)
+        if (idvProperties.issuing_authority) {
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Issuing Authority</div>
+                    <div class="detail-value">${idvProperties.issuing_authority}</div>
+                </div>
+            `);
+        }
+        
+        // Categorisation (new field - e.g., "full" for driving licence)
+        if (idvProperties.categorisation) {
+            gridItems.push(`
+                <div class="detail-item">
+                    <div class="detail-label">Categorisation</div>
+                    <div class="detail-value">${idvProperties.categorisation.charAt(0).toUpperCase() + idvProperties.categorisation.slice(1)}</div>
                 </div>
             `);
         }
@@ -9478,12 +9895,17 @@ class ThirdfortChecksManager {
             // IDV document verification - Show detailed breakdown with nested items when needed
             const breakdown = outcome.breakdown?.document?.breakdown || {};
             
-            // Helper function to process category and show nested items when needed (same as electronic-id)
+            // Helper function to process category and show nested items when needed (handles deeper nesting)
             const processCategory = (category, categoryName) => {
                 if (!category) return;
                 
                 const catBreakdown = category.breakdown || {};
-                const catResult = category.result || '';
+                const catResult = category.result;
+                
+                // If category result is null, don't show it at all (check wasn't performed)
+                if (catResult === null || catResult === undefined) {
+                    return;
+                }
                 
                 // If category has nested breakdown
                 if (Object.keys(catBreakdown).length > 0) {
@@ -9496,30 +9918,257 @@ class ThirdfortChecksManager {
                             isParent: true
                         });
                         
-                        // Add all nested items indented
-                        Object.entries(catBreakdown).forEach(([key, subCheck]) => {
-                            const subResult = subCheck.result || '';
-                            const formattedKey = key.replace(/_/g, ' ')
-                                .split(' ')
-                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                .join(' ');
-                            checks.push({
-                                status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'),
-                                text: formattedKey,
-                                isChildItem: true  // Visual indentation in header checks
+                        // Add all nested items indented (handle deeper nesting)
+                        // Skip items with null results (check wasn't performed)
+                        Object.entries(catBreakdown)
+                            .filter(([_, subCheck]) => {
+                                // Only show nested items that have actual results (not null)
+                                const subResult = subCheck.result;
+                                const subBreakdown = subCheck.breakdown || {};
+                                
+                                // Show if it has a result, or if it has nested items with results
+                                if (subResult !== null && subResult !== undefined) {
+                                    return true;
+                                }
+                                
+                                // Check if it has nested items with actual results
+                                if (Object.keys(subBreakdown).length > 0) {
+                                    return Object.values(subBreakdown).some(nestedCheck => {
+                                        const nestedResult = nestedCheck.result;
+                                        return nestedResult !== null && nestedResult !== undefined;
+                                    });
+                                }
+                                
+                                return false;
+                            })
+                            .forEach(([key, subCheck]) => {
+                                const subResult = subCheck.result;
+                                const subBreakdown = subCheck.breakdown || {};
+                                const subProperties = subCheck.properties || {};
+                                
+                                // Format the key name
+                                const formattedKey = key.replace(/_/g, ' ')
+                                    .split(' ')
+                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                    .join(' ');
+                                
+                                // If this nested item has its own breakdown (deeper nesting)
+                                if (Object.keys(subBreakdown).length > 0) {
+                                    // Filter out null results from deeper nesting
+                                    const deeperNestedItems = Object.entries(subBreakdown).filter(([_, nestedCheck]) => {
+                                        const nestedResult = nestedCheck.result;
+                                        return nestedResult !== null && nestedResult !== undefined;
+                                    });
+                                    
+                                    if (deeperNestedItems.length > 0) {
+                                        // Show the nested item as a parent (use actual result or default to consider)
+                                        const nestedStatus = (subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'));
+                                        checks.push({
+                                            status: nestedStatus,
+                                            text: formattedKey,
+                                            isChildItem: true,
+                                            isParent: true
+                                        });
+                                        
+                                        // Add its nested items (only those with actual results)
+                                        deeperNestedItems.forEach(([nestedKey, nestedCheck]) => {
+                                            const nestedResult = nestedCheck.result || '';
+                                            const nestedFormattedKey = nestedKey.replace(/_/g, ' ')
+                                                .split(' ')
+                                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                                .join(' ');
+                                            
+                                            // Check if nested item has properties with specific results
+                                            const nestedProperties = nestedCheck.properties || {};
+                                            let displayText = nestedFormattedKey;
+                                            
+                                            // If properties contain specific checks (e.g., document_number: "clear")
+                                            if (Object.keys(nestedProperties).length > 0) {
+                                                const propertyResults = Object.entries(nestedProperties)
+                                                    .filter(([_, val]) => val === 'clear' || val === 'fail' || val === 'consider')
+                                                    .map(([propKey, propVal]) => {
+                                                        const propName = propKey.replace(/_/g, ' ')
+                                                            .split(' ')
+                                                            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                                                            .join(' ');
+                                                        return `${propName}: ${propVal}`;
+                                                    });
+                                                
+                                                if (propertyResults.length > 0) {
+                                                    displayText += ` (${propertyResults.join(', ')})`;
+                                                }
+                                            }
+                                            
+                                            checks.push({
+                                                status: nestedResult === 'clear' ? 'CL' : (nestedResult === 'fail' ? 'AL' : 'CO'),
+                                                text: displayText,
+                                                isChildItem: true,
+                                                indented: true  // Double indentation for deeper nesting
+                                            });
+                                        });
+                                    }
+                                } else {
+                                    // Standard nested item with actual result (already filtered to exclude null)
+                                    let displayText = formattedKey;
+                                    
+                                    // Check if it has properties that might be relevant
+                                    if (Object.keys(subProperties).length > 0) {
+                                        const propertyResults = Object.entries(subProperties)
+                                            .filter(([_, val]) => val === 'clear' || val === 'fail' || val === 'consider')
+                                            .map(([propKey, propVal]) => {
+                                                const propName = propKey.replace(/_/g, ' ')
+                                                    .split(' ')
+                                                    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                                                    .join(' ');
+                                                return `${propName}: ${propVal}`;
+                                            });
+                                        
+                                        if (propertyResults.length > 0) {
+                                            displayText += ` (${propertyResults.join(', ')})`;
+                                        }
+                                    }
+                                    
+                                    checks.push({
+                                        status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'),
+                                        text: displayText,
+                                        isChildItem: true  // Visual indentation in header checks
+                                    });
+                                }
                             });
-                        });
                     } else {
-                        // Parent is clear - just show the category name
-                        checks.push({
-                            status: 'CL',
-                            text: categoryName
+                        // Parent is clear - check if any nested items have actual results (not null)
+                        // Filter out null results as they mean the check wasn't performed
+                        const nestedItemsWithResults = Object.entries(catBreakdown).filter(([_, subCheck]) => {
+                            const subResult = subCheck.result;
+                            return subResult !== null && subResult !== undefined;
                         });
+                        
+                        const hasNonClearNested = nestedItemsWithResults.some(([_, subCheck]) => {
+                            const subResult = subCheck.result || '';
+                            return subResult !== 'clear';
+                        });
+                        
+                        if (hasNonClearNested && nestedItemsWithResults.length > 0) {
+                            // Show parent and only nested items with actual results (skip null)
+                            checks.push({
+                                status: catResult === 'clear' ? 'CL' : 'CO',
+                                text: categoryName,
+                                isParent: true
+                            });
+                            
+                            // Add only nested items with actual results (not null)
+                            nestedItemsWithResults.forEach(([key, subCheck]) => {
+                                const subResult = subCheck.result || '';
+                                const subBreakdown = subCheck.breakdown || {};
+                                
+                                // Format the key name
+                                const formattedKey = key.replace(/_/g, ' ')
+                                    .split(' ')
+                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                    .join(' ');
+                                
+                                // If this nested item has its own breakdown (deeper nesting)
+                                if (Object.keys(subBreakdown).length > 0) {
+                                    // Filter out null results from deeper nesting too
+                                    const deeperNestedItems = Object.entries(subBreakdown).filter(([_, nestedCheck]) => {
+                                        const nestedResult = nestedCheck.result;
+                                        return nestedResult !== null && nestedResult !== undefined;
+                                    });
+                                    
+                                    if (deeperNestedItems.length > 0) {
+                                        // Show the nested item as a parent
+                                        checks.push({
+                                            status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'),
+                                            text: formattedKey,
+                                            isChildItem: true,
+                                            isParent: true
+                                        });
+                                        
+                                        // Add its nested items (only those with actual results)
+                                        deeperNestedItems.forEach(([nestedKey, nestedCheck]) => {
+                                            const nestedResult = nestedCheck.result || '';
+                                            const nestedFormattedKey = nestedKey.replace(/_/g, ' ')
+                                                .split(' ')
+                                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                                .join(' ');
+                                            
+                                            // Check if nested item has properties with specific results
+                                            const nestedProperties = nestedCheck.properties || {};
+                                            let displayText = nestedFormattedKey;
+                                            
+                                            // If properties contain specific checks (e.g., document_number: "clear")
+                                            if (Object.keys(nestedProperties).length > 0) {
+                                                const propertyResults = Object.entries(nestedProperties)
+                                                    .filter(([_, val]) => val === 'clear' || val === 'fail' || val === 'consider')
+                                                    .map(([propKey, propVal]) => {
+                                                        const propName = propKey.replace(/_/g, ' ')
+                                                            .split(' ')
+                                                            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                                                            .join(' ');
+                                                        return `${propName}: ${propVal}`;
+                                                    });
+                                                
+                                                if (propertyResults.length > 0) {
+                                                    displayText += ` (${propertyResults.join(', ')})`;
+                                                }
+                                            }
+                                            
+                                            checks.push({
+                                                status: nestedResult === 'clear' ? 'CL' : (nestedResult === 'fail' ? 'AL' : 'CO'),
+                                                text: displayText,
+                                                isChildItem: true,
+                                                indented: true  // Double indentation for deeper nesting
+                                            });
+                                        });
+                                    } else {
+                                        // No deeper nested items with results, just show the parent nested item
+                                        checks.push({
+                                            status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'),
+                                            text: formattedKey,
+                                            isChildItem: true
+                                        });
+                                    }
+                                } else {
+                                    // Standard nested item with actual result
+                                    const subProperties = subCheck.properties || {};
+                                    let displayText = formattedKey;
+                                    
+                                    // Check if it has properties that might be relevant
+                                    if (Object.keys(subProperties).length > 0) {
+                                        const propertyResults = Object.entries(subProperties)
+                                            .filter(([_, val]) => val === 'clear' || val === 'fail' || val === 'consider')
+                                            .map(([propKey, propVal]) => {
+                                                const propName = propKey.replace(/_/g, ' ')
+                                                    .split(' ')
+                                                    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                                                    .join(' ');
+                                                return `${propName}: ${propVal}`;
+                                            });
+                                        
+                                        if (propertyResults.length > 0) {
+                                            displayText += ` (${propertyResults.join(', ')})`;
+                                        }
+                                    }
+                                    
+                                    checks.push({
+                                        status: subResult === 'clear' ? 'CL' : (subResult === 'fail' ? 'AL' : 'CO'),
+                                        text: displayText,
+                                        isChildItem: true
+                                    });
+                                }
+                            });
+                        } else {
+                            // All clear or no items with results - just show the category name
+                            checks.push({
+                                status: 'CL',
+                                text: categoryName
+                            });
+                        }
                     }
                 } else {
                     // No nested breakdown, show the category itself
                     checks.push({
-                        status: catResult === 'clear' ? 'CL' : (catResult === 'fail' ? 'AL' : 'CO'),
+                        status: catResult === 'clear' ? 'CL' : (catResult === 'fail' ? 'AL' : (catResult === null ? 'CO' : 'CO')),
                         text: categoryName
                     });
                 }
