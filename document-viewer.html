@@ -1432,17 +1432,7 @@
         }
 
         /* View/Open button - always top-right corner */
-        .document-card .document-buttons {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            order: 4;
-            flex-shrink: 0;
-            align-self: flex-start;
-        }
-        
-        .document-card .view-btn,
-        .document-card .download-btn {
+        .document-card .view-btn {
             background: #f8f9fa;
             color: rgb(0, 60, 113);
             border: none;
@@ -1451,10 +1441,12 @@
             cursor: pointer;
             font-size: 12px;
             transition: background 0.2s ease;
+            align-self: flex-start;
+            order: 4;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0;
         }
         
         /* 
@@ -1468,7 +1460,7 @@
             margin-left: 0;
         }
         
-        .documents-grid.layout-mode-2 .document-card .document-buttons {
+        .documents-grid.layout-mode-2 .document-card .view-btn {
             order: 3;
             margin-left: auto;
         }
@@ -1496,7 +1488,7 @@
             overflow-wrap: break-word;
         }
         
-        .documents-grid.layout-mode-3 .document-card .document-buttons {
+        .documents-grid.layout-mode-3 .document-card .view-btn {
             order: 2;
             margin-left: auto;
         }
@@ -1519,13 +1511,11 @@
             margin-left: 0;
         }
 
-        .document-card .view-btn:hover,
-        .document-card .download-btn:hover {
+        .document-card .view-btn:hover {
             background: #e9ecef;
         }
 
-        .document-card .view-btn svg,
-        .document-card .download-btn svg {
+        .document-card .view-btn svg {
             width: 18px;
             height: 18px;
             stroke: rgb(0, 60, 113);
@@ -2461,8 +2451,8 @@
             const documentName = documentData.data?.name || documentData.name || documentData.document || 'Document';
             const documentSize = formatFileSize(documentData.data?.size || 0);
             
-            // Use friendly name for display, fallback to document type
-            const displayName = documentData.data?.name || documentData.name || documentData.document || 'Unknown Document';
+            // Use friendly document type name for display (not the filename)
+            const displayName = documentData.document || 'Unknown Document';
             
             card.innerHTML = `
                 <div class="document-details">
@@ -2472,21 +2462,12 @@
                         </div>
                         ${documentData.type ? `<div class="category-wrapper"><span class="document-category">${documentData.type}</span></div>` : ''}
                         <div class="uploader-info">${uploaderInfo}</div>
-                        <div class="document-buttons">
-                            <button class="download-btn" onclick="downloadDocument(this)" title="Download document" data-document-index="${index}">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                  <polyline points="7,14 12,19 17,14"/>
-                                  <line x1="12" y1="19" x2="12" y2="7"/>
-                                </svg>
-                            </button>
-                            <button class="view-btn" onclick="viewDocument(this)" title="Open document" data-document-index="${index}">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                  <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                            </button>
-                        </div>
+                        <button class="view-btn" onclick="viewDocument(this)" title="Open document" data-document-index="${index}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                              <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             `;
@@ -2760,16 +2741,16 @@
                 const documentType = header.querySelector('.document-type');
                 const documentCategory = header.querySelector('.document-category');
                 const uploaderInfo = header.querySelector('.uploader-info');
-                const documentButtons = header.querySelector('.document-buttons');
+                const viewBtn = header.querySelector('.view-btn');
                 
-                if (!documentType || !uploaderInfo || !documentButtons) return;
+                if (!documentType || !uploaderInfo || !viewBtn) return;
                 
                 const headerWidth = header.offsetWidth;
                 const gap = 8; // CSS gap between flex items
                 const typeWidth = documentType.offsetWidth;
                 const categoryWidth = documentCategory ? documentCategory.offsetWidth : 0;
                 const uploaderWidth = uploaderInfo.offsetWidth;
-                const btnWidth = documentButtons.offsetWidth; // Button wrapper width includes both buttons and gap
+                const btnWidth = viewBtn.offsetWidth;
                 
                 // Check if everything fits on one row (mode 1)
                 let totalNeeded = typeWidth + categoryWidth + uploaderWidth + btnWidth;
@@ -4433,10 +4414,22 @@
                 
                 const blob = await response.blob();
                 
-                // Get document name for filename
-                const documentName = documentData.data?.name || documentData.name || documentData.document || 'Document';
-                // Ensure filename has .pdf extension
-                const fileName = documentName.endsWith('.pdf') ? documentName : `${documentName}.pdf`;
+                // Generate filename in format: fe-clientnumber-matternumber - name - document type
+                let fileName = 'Document.pdf';
+                
+                if (clientData && clientData.fe && clientData.clientNumber && clientData.matterNumber && clientData.name) {
+                    const fe = String(clientData.fe || 'Unknown').replace(/\//g, '-');
+                    const clientNumber = String(clientData.clientNumber || 'Unknown').replace(/\//g, '-');
+                    const matterNumber = String(clientData.matterNumber || 'Unknown').replace(/\//g, '-');
+                    const clientName = String(clientData.name || 'Unknown').replace(/\//g, '-');
+                    const documentType = documentData.document || 'Document';
+                    
+                    fileName = `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${documentType}.pdf`;
+                } else {
+                    // Fallback if clientData not available
+                    const documentType = documentData.document || 'Document';
+                    fileName = `${documentType}.pdf`;
+                }
                 
                 // Create blob URL
                 const blobUrl = URL.createObjectURL(blob);
