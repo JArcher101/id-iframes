@@ -2527,8 +2527,16 @@
                 
                 const blob = await response.blob();
                 
-                // Create blob URL
-                const blobUrl = URL.createObjectURL(blob);
+                // Get document name for filename and window title
+                const documentName = documentData.data?.name || documentData.name || documentData.document || 'Document';
+                // Ensure filename has .pdf extension
+                const fileName = documentName.endsWith('.pdf') ? documentName : `${documentName}.pdf`;
+                
+                // Create File object with proper filename (browsers may use this when saving)
+                const file = new File([blob], fileName, { type: blob.type || 'application/pdf' });
+                
+                // Create blob URL from File object
+                const blobUrl = URL.createObjectURL(file);
                 
                 // Open document in centered popup window
                 const width = 1000;
@@ -2545,14 +2553,29 @@
                     return;
                 }
                 
-                // Get document name for logging
-                const documentName = documentData.data?.name || documentData.name || documentData.document || 'Document';
+                // Set popup window title to document name
+                // Wait for popup to load, then set title
+                const setTitle = setInterval(() => {
+                    try {
+                        if (popup.document) {
+                            popup.document.title = documentName;
+                            clearInterval(setTitle);
+                        }
+                    } catch (e) {
+                        // Cross-origin or not ready yet, keep trying
+                    }
+                }, 100);
+                
+                // Stop trying after 5 seconds
+                setTimeout(() => clearInterval(setTitle), 5000);
+                
                 console.log('Opening document in popup window:', documentName);
                 
                 // Revoke blob URL when popup closes to free memory
                 const checkClosed = setInterval(() => {
                     if (popup.closed) {
                         clearInterval(checkClosed);
+                        clearInterval(setTitle);
                         URL.revokeObjectURL(blobUrl);
                         console.log('Blob URL revoked for:', documentName);
                     }
