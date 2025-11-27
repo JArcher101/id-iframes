@@ -2496,6 +2496,40 @@
             const documentData = images[index];
             
             if (documentData && documentData.liveUrl) {
+                openDocumentWithBlob(documentData);
+            } else {
+                console.error('No liveUrl available for document:', documentData);
+            }
+        }
+
+        /*
+        =====================================================================
+        OPEN DOCUMENT WITH BLOB
+        - Fetches PDF from liveUrl as blob
+        - Creates blob URL for better filename handling
+        - Opens in popup window
+        - Revokes blob URL when popup closes to free memory
+        =====================================================================
+        */
+        async function openDocumentWithBlob(documentData) {
+            if (!documentData || !documentData.liveUrl) {
+                console.error('No liveUrl available for document:', documentData);
+                showError('Cannot open document: No URL available');
+                return;
+            }
+
+            try {
+                // Fetch PDF as blob
+                const response = await fetch(documentData.liveUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch document: ${response.status} ${response.statusText}`);
+                }
+                
+                const blob = await response.blob();
+                
+                // Create blob URL
+                const blobUrl = URL.createObjectURL(blob);
+                
                 // Open document in centered popup window
                 const width = 1000;
                 const height = 800;
@@ -2503,10 +2537,35 @@
                 const top = (screen.height - height) / 2;
                 const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
                 
-                window.open(documentData.liveUrl, 'documentViewer', features);
-                console.log('Opening document in popup window:', documentData.liveUrl);
-            } else {
-                console.error('No liveUrl available for document:', documentData);
+                const popup = window.open(blobUrl, 'documentViewer', features);
+                
+                if (!popup) {
+                    URL.revokeObjectURL(blobUrl);
+                    showError('Please allow popups to view documents');
+                    return;
+                }
+                
+                // Get document name for logging
+                const documentName = documentData.data?.name || documentData.name || documentData.document || 'Document';
+                console.log('Opening document in popup window:', documentName);
+                
+                // Revoke blob URL when popup closes to free memory
+                const checkClosed = setInterval(() => {
+                    if (popup.closed) {
+                        clearInterval(checkClosed);
+                        URL.revokeObjectURL(blobUrl);
+                        console.log('Blob URL revoked for:', documentName);
+                    }
+                }, 500);
+                
+                // Also revoke on page unload as a safety measure
+                window.addEventListener('beforeunload', () => {
+                    URL.revokeObjectURL(blobUrl);
+                }, { once: true });
+                
+            } catch (error) {
+                console.error('Error opening document with blob:', error);
+                showError(`Cannot open document: ${error.message}`);
             }
         }
 
@@ -4327,15 +4386,8 @@
                 return;
             }
             
-            // Open document in popup window (matching viewDocument function behavior)
-            const width = 1000;
-            const height = 800;
-            const left = (screen.width - width) / 2;
-            const top = (screen.height - height) / 2;
-            const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
-            
-            window.open(document.liveUrl, 'thirdfortDocument', features);
-            console.log('… Opened Thirdfort document:', document.name || document.document, 'URL:', document.liveUrl);
+            // Open document in popup window using blob URL (matching viewDocument function behavior)
+            openDocumentWithBlob(document);
         }
 
         // Handle display images data from parent
