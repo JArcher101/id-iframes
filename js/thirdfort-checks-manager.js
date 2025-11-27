@@ -869,6 +869,23 @@ class ThirdfortChecksManager {
             : `${baseUrl}/checks/${check.checkId}`;
         
         const identityMarkup = this.getIdentityComparisonMarkup(check);
+        
+        // Determine header card border class based on outcome
+        let headerBorderClass = '';
+        if (check.status === 'closed' && check.pdfReady) {
+            const isIdvRejected = check.checkType === 'idv' && 
+                check.taskOutcomes?.['identity:lite']?.breakdown?.document?.sub_result === 'rejected';
+            if (isIdvRejected) {
+                headerBorderClass = 'alert';
+            } else if (check.hasAlerts) {
+                headerBorderClass = 'consider';
+            } else {
+                headerBorderClass = 'clear';
+            }
+        }
+        
+        // Update header card class
+        this.detailHeader.className = `card header-card${headerBorderClass ? ' ' + headerBorderClass : ''}`;
 
         this.detailHeader.innerHTML = `
             <div class="header-top">

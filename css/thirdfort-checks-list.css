@@ -234,6 +234,11 @@ body {
     color: #92400e;
 }
 
+.status-tag.alert {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
 .safe-harbour-icon {
     color: #10b981;
     font-size: 14px;
