@@ -1432,7 +1432,8 @@
         }
 
         /* View/Open button - always top-right corner */
-        .document-card .view-btn {
+        .document-card .view-btn,
+        .document-card .download-btn {
             background: #f8f9fa;
             color: rgb(0, 60, 113);
             border: none;
@@ -1444,6 +1445,13 @@
             align-self: flex-start;
             order: 4;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .document-card .view-btn {
+            margin-right: 8px;
         }
         
         /* 
@@ -1457,9 +1465,14 @@
             margin-left: 0;
         }
         
-        .documents-grid.layout-mode-2 .document-card .view-btn {
+        .documents-grid.layout-mode-2 .document-card .view-btn,
+        .documents-grid.layout-mode-2 .document-card .download-btn {
             order: 3;
             margin-left: auto;
+        }
+        
+        .documents-grid.layout-mode-2 .document-card .view-btn {
+            margin-right: 8px;
         }
         
         /* 
@@ -1485,9 +1498,14 @@
             overflow-wrap: break-word;
         }
         
-        .documents-grid.layout-mode-3 .document-card .view-btn {
+        .documents-grid.layout-mode-3 .document-card .view-btn,
+        .documents-grid.layout-mode-3 .document-card .download-btn {
             order: 2;
             margin-left: auto;
+        }
+        
+        .documents-grid.layout-mode-3 .document-card .view-btn {
+            margin-right: 8px;
         }
         
         /* Category wrapper - contains the tag badge */
@@ -1508,11 +1526,13 @@
             margin-left: 0;
         }
 
-        .document-card .view-btn:hover {
+        .document-card .view-btn:hover,
+        .document-card .download-btn:hover {
             background: #e9ecef;
         }
 
-        .document-card .view-btn svg {
+        .document-card .view-btn svg,
+        .document-card .download-btn svg {
             width: 18px;
             height: 18px;
             stroke: rgb(0, 60, 113);
@@ -2462,6 +2482,13 @@
                               <circle cx="12" cy="12" r="3"/>
                             </svg>
                         </button>
+                        <button class="download-btn" onclick="downloadDocument(this)" title="Download document" data-document-index="${index}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <polyline points="7,14 12,19 17,14"/>
+                              <line x1="12" y1="19" x2="12" y2="7"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             `;
@@ -2496,7 +2523,15 @@
             const documentData = images[index];
             
             if (documentData && documentData.liveUrl) {
-                openDocumentWithBlob(documentData);
+                // Open document in centered popup window using signed URL directly
+                const width = 1000;
+                const height = 800;
+                const left = (screen.width - width) / 2;
+                const top = (screen.height - height) / 2;
+                const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+                
+                window.open(documentData.liveUrl, 'documentViewer', features);
+                console.log('Opening document in popup window:', documentData.liveUrl);
             } else {
                 console.error('No liveUrl available for document:', documentData);
             }
@@ -2504,20 +2539,22 @@
 
         /*
         =====================================================================
-        OPEN DOCUMENT WITH BLOB
+        DOWNLOAD DOCUMENT
         - Fetches PDF from liveUrl as blob
-        - Creates blob URL for better filename handling
-        - Opens in popup window
-        - Revokes blob URL when popup closes to free memory
+        - Forces direct download with friendly filename
+        - Used for download button next to eye button
         =====================================================================
         */
-        async function openDocumentWithBlob(documentData) {
+        async function downloadDocument(button) {
+            const index = parseInt(button.getAttribute('data-document-index'));
+            const documentData = images[index];
+            
             if (!documentData || !documentData.liveUrl) {
                 console.error('No liveUrl available for document:', documentData);
-                showError('Cannot open document: No URL available');
+                showError('Cannot download document: No URL available');
                 return;
             }
-
+            
             try {
                 // Fetch PDF as blob
                 const response = await fetch(documentData.liveUrl);
@@ -2527,68 +2564,35 @@
                 
                 const blob = await response.blob();
                 
-                // Get document name for filename and window title
+                // Get document name for filename
                 const documentName = documentData.data?.name || documentData.name || documentData.document || 'Document';
                 // Ensure filename has .pdf extension
                 const fileName = documentName.endsWith('.pdf') ? documentName : `${documentName}.pdf`;
                 
-                // Create File object with proper filename (browsers may use this when saving)
-                const file = new File([blob], fileName, { type: blob.type || 'application/pdf' });
+                // Create blob URL
+                const blobUrl = URL.createObjectURL(blob);
                 
-                // Create blob URL from File object
-                const blobUrl = URL.createObjectURL(file);
+                // Create temporary download link
+                const downloadLink = document.createElement('a');
+                downloadLink.href = blobUrl;
+                downloadLink.download = fileName;
+                downloadLink.style.display = 'none';
                 
-                // Open document in centered popup window
-                const width = 1000;
-                const height = 800;
-                const left = (screen.width - width) / 2;
-                const top = (screen.height - height) / 2;
-                const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+                // Append to body, click, and remove
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
                 
-                const popup = window.open(blobUrl, 'documentViewer', features);
-                
-                if (!popup) {
+                // Revoke blob URL after a short delay to allow download to start
+                setTimeout(() => {
                     URL.revokeObjectURL(blobUrl);
-                    showError('Please allow popups to view documents');
-                    return;
-                }
-                
-                // Set popup window title to document name
-                // Wait for popup to load, then set title
-                const setTitle = setInterval(() => {
-                    try {
-                        if (popup.document) {
-                            popup.document.title = documentName;
-                            clearInterval(setTitle);
-                        }
-                    } catch (e) {
-                        // Cross-origin or not ready yet, keep trying
-                    }
                 }, 100);
                 
-                // Stop trying after 5 seconds
-                setTimeout(() => clearInterval(setTitle), 5000);
-                
-                console.log('Opening document in popup window:', documentName);
-                
-                // Revoke blob URL when popup closes to free memory
-                const checkClosed = setInterval(() => {
-                    if (popup.closed) {
-                        clearInterval(checkClosed);
-                        clearInterval(setTitle);
-                        URL.revokeObjectURL(blobUrl);
-                        console.log('Blob URL revoked for:', documentName);
-                    }
-                }, 500);
-                
-                // Also revoke on page unload as a safety measure
-                window.addEventListener('beforeunload', () => {
-                    URL.revokeObjectURL(blobUrl);
-                }, { once: true });
+                console.log('Downloaded document:', fileName);
                 
             } catch (error) {
-                console.error('Error opening document with blob:', error);
-                showError(`Cannot open document: ${error.message}`);
+                console.error('Error downloading document:', error);
+                showError(`Cannot download document: ${error.message}`);
             }
         }
 
@@ -2759,6 +2763,7 @@
                 const documentCategory = header.querySelector('.document-category');
                 const uploaderInfo = header.querySelector('.uploader-info');
                 const viewBtn = header.querySelector('.view-btn');
+                const downloadBtn = header.querySelector('.download-btn');
                 
                 if (!documentType || !uploaderInfo || !viewBtn) return;
                 
@@ -2767,7 +2772,9 @@
                 const typeWidth = documentType.offsetWidth;
                 const categoryWidth = documentCategory ? documentCategory.offsetWidth : 0;
                 const uploaderWidth = uploaderInfo.offsetWidth;
-                const btnWidth = viewBtn.offsetWidth;
+                const viewBtnWidth = viewBtn.offsetWidth;
+                const downloadBtnWidth = downloadBtn ? downloadBtn.offsetWidth : 0;
+                const btnWidth = viewBtnWidth + (downloadBtn ? downloadBtnWidth + gap : 0); // Both buttons plus gap between them
                 
                 // Check if everything fits on one row (mode 1)
                 let totalNeeded = typeWidth + categoryWidth + uploaderWidth + btnWidth;
@@ -4409,8 +4416,58 @@
                 return;
             }
             
-            // Open document in popup window using blob URL (matching viewDocument function behavior)
-            openDocumentWithBlob(document);
+            // Force direct download with friendly filename
+            downloadThirdfortDocument(document);
+        }
+
+        /*
+        =====================================================================
+        DOWNLOAD THIRDFORT DOCUMENT
+        - Fetches PDF from liveUrl as blob
+        - Forces direct download with friendly filename
+        - Only used for thirdfort-document messages (not eye button)
+        =====================================================================
+        */
+        async function downloadThirdfortDocument(documentData) {
+            try {
+                // Fetch PDF as blob
+                const response = await fetch(documentData.liveUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch document: ${response.status} ${response.statusText}`);
+                }
+                
+                const blob = await response.blob();
+                
+                // Get document name for filename
+                const documentName = documentData.data?.name || documentData.name || documentData.document || 'Document';
+                // Ensure filename has .pdf extension
+                const fileName = documentName.endsWith('.pdf') ? documentName : `${documentName}.pdf`;
+                
+                // Create blob URL
+                const blobUrl = URL.createObjectURL(blob);
+                
+                // Create temporary download link
+                const downloadLink = document.createElement('a');
+                downloadLink.href = blobUrl;
+                downloadLink.download = fileName;
+                downloadLink.style.display = 'none';
+                
+                // Append to body, click, and remove
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                // Revoke blob URL after a short delay to allow download to start
+                setTimeout(() => {
+                    URL.revokeObjectURL(blobUrl);
+                }, 100);
+                
+                console.log('Downloaded Thirdfort document:', fileName);
+                
+            } catch (error) {
+                console.error('Error downloading Thirdfort document:', error);
+                showError(`Cannot download document: ${error.message}`);
+            }
         }
 
         // Handle display images data from parent
