@@ -4154,9 +4154,17 @@ function buildRequestPDFHTML(messageData) {
 async function generateRequestPDF(messageData) {
   console.log('📄 Generating request PDF using printJS approach (html2canvas + jsPDF)...');
   
-  // Check for html2canvas and jsPDF (available from html2pdf bundle or printJS)
-  if (typeof html2canvas === 'undefined' || typeof jsPDF === 'undefined') {
-    console.error('❌ html2canvas or jsPDF library not loaded');
+  // Check for html2canvas
+  if (typeof html2canvas === 'undefined') {
+    console.error('❌ html2canvas library not loaded');
+    sendMessageToParent({ type: 'pdf-generated', success: false });
+    return;
+  }
+  
+  // Check for jsPDF (may be in jspdf namespace for UMD build)
+  const JSPDF = typeof jsPDF !== 'undefined' ? jsPDF : (typeof jspdf !== 'undefined' && jspdf.jsPDF ? jspdf.jsPDF : null);
+  if (!JSPDF) {
+    console.error('❌ jsPDF library not loaded');
     sendMessageToParent({ type: 'pdf-generated', success: false });
     return;
   }
@@ -4226,7 +4234,7 @@ async function generateRequestPDF(messageData) {
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     
     // Create PDF using jsPDF (same as printJS would)
-    const pdf = new jsPDF({
+    const pdf = new JSPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
