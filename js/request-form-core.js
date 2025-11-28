@@ -3935,12 +3935,16 @@ function buildRequestPDFHTML(messageData) {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root { --primary-blue: #003c71; --secondary-blue: #1d71b8; --green: #39b549; --orange: #f7931e; --red: #d32f2f; --grey: #6c757d; --light-grey: #f8f9fa; --border-grey: #dee2e6; }
         body { 
-          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif; 
-          padding: 40px; 
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; 
+          padding: 10mm; 
+          margin: 0;
           background: white; 
           color: #111; 
           line-height: 1.5; 
           font-size: 14px; 
+        }
+        * {
+          font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
         }
         .pdf-header { border-bottom: 3px solid var(--primary-blue); padding-bottom: 20px; margin-bottom: 30px; page-break-after: avoid; }
         .section-title { font-size: 18px; font-weight: bold; color: var(--primary-blue); margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid var(--border-grey); page-break-after: avoid; }
@@ -4190,9 +4194,10 @@ async function generateRequestPDF(messageData) {
     element.style.position = 'absolute';
     element.style.left = '-9999px';
     element.style.top = '-9999px';
-    element.style.width = '210mm'; // A4 width
+    element.style.width = '190mm'; // A4 width minus margins (210mm - 20mm for 10mm each side)
     element.style.padding = '0';
     element.style.margin = '0';
+    element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
     
     // Apply styles and HTML (same approach as printJS)
     if (styleContent) {
@@ -4227,10 +4232,15 @@ async function generateRequestPDF(messageData) {
     // Remove temporary element
     document.body.removeChild(element);
     
-    // Calculate PDF dimensions (A4: 210mm x 297mm)
+    // Calculate PDF dimensions with margins (A4: 210mm x 297mm)
     const pdfWidth = 210; // A4 width in mm
     const pdfHeight = 297; // A4 height in mm
-    const imgWidth = pdfWidth;
+    const margin = 10; // 10mm margin on all sides
+    const contentWidth = pdfWidth - (margin * 2); // Available width for content
+    const contentHeight = pdfHeight - (margin * 2); // Available height for content
+    
+    // Scale image to fit content width (with margins)
+    const imgWidth = contentWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     
     // Create PDF using jsPDF (same as printJS would)
@@ -4240,28 +4250,28 @@ async function generateRequestPDF(messageData) {
       format: 'a4'
     });
     
-    // Convert canvas to image and add to PDF
+    // Convert canvas to image and add to PDF with margins
     const imgData = canvas.toDataURL('image/jpeg', 0.98);
     
     // Handle multi-page content
-    if (imgHeight <= pdfHeight) {
-      // Single page
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+    if (imgHeight <= contentHeight) {
+      // Single page - add with margins
+      pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
     } else {
       // Multi-page: split across pages
       let heightLeft = imgHeight;
-      let position = 0;
+      let yPosition = margin;
       
       // First page
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
+      pdf.addImage(imgData, 'JPEG', margin, yPosition, imgWidth, imgHeight);
+      heightLeft -= contentHeight;
       
       // Additional pages
       while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
+        yPosition = margin - (imgHeight - heightLeft);
         pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
+        pdf.addImage(imgData, 'JPEG', margin, yPosition, imgWidth, imgHeight);
+        heightLeft -= contentHeight;
       }
     }
     
