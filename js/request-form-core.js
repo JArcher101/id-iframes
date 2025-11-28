@@ -4152,50 +4152,113 @@ function buildRequestPDFHTML(messageData) {
  * Opens PDF in popup window and notifies parent
  */
 async function generateRequestPDF(messageData) {
-  console.log('📄 Generating request PDF...');
+  console.log('📄 Generating request PDF using printJS approach (html2canvas + jsPDF)...');
   
-  if (typeof html2pdf === 'undefined') {
-    console.error('❌ html2pdf library not loaded');
+  // Check for html2canvas and jsPDF (available from html2pdf bundle or printJS)
+  if (typeof html2canvas === 'undefined' || typeof jsPDF === 'undefined') {
+    console.error('❌ html2canvas or jsPDF library not loaded');
     sendMessageToParent({ type: 'pdf-generated', success: false });
     return;
   }
   
   try {
-    // Build HTML string
+    // Build HTML string (same as printJS would use)
     const pdfHTML = buildRequestPDFHTML(messageData);
     console.log('✅ HTML built, length:', pdfHTML.length);
     
-    // Parse HTML to create element for html2pdf
+    // Parse HTML to extract body content and styles (same as printJS does)
     const parser = new DOMParser();
     const doc = parser.parseFromString(pdfHTML, 'text/html');
     
-    // Create element for html2pdf (do NOT add to document.body to avoid custom font inheritance)
+    // Extract inline styles (same as printJS)
+    const headStyles = doc.head.querySelector('style');
+    const styleContent = headStyles ? headStyles.textContent : '';
+    
+    // Extract body HTML (same as printJS)
+    const bodyHTML = doc.body.innerHTML;
+    
+    // Create element and add to DOM temporarily so styles apply (like printJS does)
     const element = document.createElement('div');
-    element.innerHTML = pdfHTML;
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    element.style.top = '-9999px';
+    element.style.width = '210mm'; // A4 width
+    element.style.padding = '0';
+    element.style.margin = '0';
+    
+    // Apply styles and HTML (same approach as printJS)
+    if (styleContent) {
+      const styleEl = document.createElement('style');
+      styleEl.textContent = styleContent;
+      element.appendChild(styleEl);
+    }
+    element.innerHTML = bodyHTML;
+    document.body.appendChild(element);
+    
+    // Wait for styles and images to load
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     // Get request type and client name for friendly filename
     const requestType = lastSentRequestData?.requestType || 'Request';
     const clientName = getClientNameForFilename();
     const filename = getRequestPDFFilename(requestType, clientName);
     
-    // Configure html2pdf options
-    const options = {
-      margin: [10, 10, 10, 10],
-      filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
-        logging: false
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: 'css', avoid: '.hit-card' }
-    };
+    console.log('📄 Starting PDF generation with html2canvas (printJS approach)...');
     
-    console.log('📄 Starting PDF generation with html2pdf...');
+    // Use html2canvas to capture the element (same as printJS does internally)
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight
+    });
     
-    // Generate PDF blob using html2pdf
-    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+    // Remove temporary element
+    document.body.removeChild(element);
+    
+    // Calculate PDF dimensions (A4: 210mm x 297mm)
+    const pdfWidth = 210; // A4 width in mm
+    const pdfHeight = 297; // A4 height in mm
+    const imgWidth = pdfWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    
+    // Create PDF using jsPDF (same as printJS would)
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // Convert canvas to image and add to PDF
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+    
+    // Handle multi-page content
+    if (imgHeight <= pdfHeight) {
+      // Single page
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+    } else {
+      // Multi-page: split across pages
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      // First page
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+      
+      // Additional pages
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+    }
+    
+    // Generate PDF blob
+    const pdfBlob = pdf.output('blob');
     
     console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
     
