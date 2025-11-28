@@ -861,6 +861,16 @@ class ThirdfortChecksManager {
             `);
         }
         
+        // Add Reference for electronic-id checks only (sent to client in SMS)
+        if (check.checkType === 'electronic-id' && check.thirdfortResponse?.ref) {
+            metaItems.push(`
+                <div class="meta-item">
+                    <div class="meta-label">REFERENCE</div>
+                    <div class="meta-value">${check.thirdfortResponse.ref}</div>
+                </div>
+            `);
+        }
+        
         // Get Thirdfort URL
         const env = 'sandbox'; // TODO: Make this dynamic
         const baseUrl = env === 'production' ? 'https://app.thirdfort.io' : 'https://sandbox.thirdfort.io';
