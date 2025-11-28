@@ -4212,9 +4212,20 @@ async function generateRequestPDF(messageData) {
     await new Promise(resolve => setTimeout(resolve, 300));
     
     // Get request type and client name for friendly filename
-    const requestType = lastSentRequestData?.requestType || 'Request';
-    const clientName = getClientNameForFilename();
+    // Try multiple sources for requestType
+    const requestType = messageData?.request?.requestType || 
+                        messageData?.requestType || 
+                        lastSentRequestData?.requestType || 
+                        'Request';
+    
+    // Get client name from messageData first (most reliable), then fallback to requestData
+    const clientNameFromMessage = messageData?.request?.data?.cD?.n || 
+                                  messageData?.savedData?.data?.cD?.n || 
+                                  '';
+    const clientName = clientNameFromMessage || getClientNameForFilename();
     const filename = getRequestPDFFilename(requestType, clientName);
+    
+    console.log('📝 PDF filename generation:', { requestType, clientName, filename });
     
     console.log('📄 Starting PDF generation with html2canvas (printJS approach)...');
     
@@ -4324,22 +4335,35 @@ function downloadPDFBlob(blob, filename) {
  * Get client name for filename (from requestData)
  */
 function getClientNameForFilename() {
-  // Try to get name from various sources
+  // First try to get full name string (most reliable)
+  const fullName = requestData.cD?.n || '';
+  if (fullName) {
+    console.log('📝 Using full name from cD.n:', fullName);
+    return fullName;
+  }
+  
+  // Try to build from individual parts
   const title = requestData.cD?.t || '';
   const firstName = requestData.cD?.fN || '';
   const lastName = requestData.cD?.lN || '';
   
   if (firstName || lastName) {
     const parts = [title, firstName, lastName].filter(p => p).join(' ');
-    return parts || 'Client';
+    if (parts) {
+      console.log('📝 Built name from parts:', parts);
+      return parts;
+    }
   }
   
   // Fallback to business name if individual name not available
   const businessName = requestData.cD?.bN || '';
   if (businessName) {
+    console.log('📝 Using business name:', businessName);
     return businessName;
   }
   
+  console.warn('⚠️ No client name found in requestData, using fallback "Client"');
+  console.log('📝 requestData.cD:', requestData.cD);
   return 'Client';
 }
 
