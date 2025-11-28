@@ -4154,8 +4154,8 @@ function buildRequestPDFHTML(messageData) {
 async function generateRequestPDF(messageData) {
   console.log('📄 Generating request PDF...');
   
-  if (typeof printJS === 'undefined') {
-    console.error('❌ Print.js library not loaded');
+  if (typeof html2pdf === 'undefined') {
+    console.error('❌ html2pdf library not loaded');
     sendMessageToParent({ type: 'pdf-generated', success: false });
     return;
   }
@@ -4165,58 +4165,170 @@ async function generateRequestPDF(messageData) {
     const pdfHTML = buildRequestPDFHTML(messageData);
     console.log('✅ HTML built, length:', pdfHTML.length);
     
-    // Trigger print dialog with Print.js using RAW HTML
-    if (typeof printJS !== 'undefined') {
-      console.log('📄 Triggering Print.js with raw HTML data...');
-      
-      // Parse HTML to extract body content and styles
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(pdfHTML, 'text/html');
-      
-      // Extract inline styles
-      const headStyles = doc.head.querySelector('style');
-      const styleContent = headStyles ? headStyles.textContent : '';
-      
-      // Extract body HTML
-      const bodyHTML = doc.body.innerHTML;
-      
-      console.log('📄 Style content length:', styleContent.length);
-      console.log('📄 Body HTML length:', bodyHTML.length);
-      
-      // Open print dialog once
-      let printDialogOpened = false;
-      
-      const handleAfterPrint = () => {
-        if (printDialogOpened) {
-          console.log('📄 Print dialog closed - notifying parent');
-          window.removeEventListener('afterprint', handleAfterPrint);
-          sendMessageToParent({ type: 'pdf-generated', success: true });
-        }
-      };
-      
-      // Listen for print dialog close
-      window.addEventListener('afterprint', handleAfterPrint);
-      
-      printJS({
-        printable: bodyHTML,
-        type: 'raw-html',
-        style: styleContent,
-        scanStyles: false,
-        targetStyles: ['*'],
-        onLoadingEnd: () => {
-          console.log('📄 Print.js loading ended - dialog open');
-          printDialogOpened = true;
-        }
-      });
-      
-      console.log('✅ Print.js dialog triggered with raw HTML');
+    // Parse HTML to create element for html2pdf
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(pdfHTML, 'text/html');
+    
+    // Create element for html2pdf (do NOT add to document.body to avoid custom font inheritance)
+    const element = document.createElement('div');
+    element.innerHTML = pdfHTML;
+    
+    // Get request type and client name for friendly filename
+    const requestType = lastSentRequestData?.requestType || 'Request';
+    const clientName = getClientNameForFilename();
+    const filename = getRequestPDFFilename(requestType, clientName);
+    
+    // Configure html2pdf options
+    const options = {
+      margin: [10, 10, 10, 10],
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        logging: false
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: 'css', avoid: '.hit-card' }
+    };
+    
+    console.log('📄 Starting PDF generation with html2pdf...');
+    
+    // Generate PDF blob using html2pdf
+    const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+    
+    console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
+    
+    // Download PDF directly (no print dialog)
+    console.log('📥 Downloading PDF:', filename);
+    downloadPDFBlob(pdfBlob, filename);
+    
+    // Notify parent that PDF was generated
+    sendMessageToParent({ type: 'pdf-generated', success: true });
+    
+    // Open osprey link immediately after download starts (if client/matter number available)
+    const clientNumber = requestData.cD?.cN || '';
+    const matterNumber = requestData.cD?.mN || '';
+    
+    if (clientNumber && matterNumber) {
+      const ospreyLink = `https://thurstanhoskinllp.ospreyapproach.com/NewEra/app/#/case-management/matters/matter-workspace/${clientNumber}-${matterNumber}`;
+      console.log('🔗 Opening osprey link in osprey-tab:', ospreyLink);
+      openLinkInTab(ospreyLink);
     } else {
-      console.log('ℹ️ Print.js not available, skipping print dialog');
-      sendMessageToParent({ type: 'pdf-generated', success: true });
+      console.log('⚠️ Client/Matter number not available, skipping osprey link');
     }
+    
   } catch (error) {
     console.error('❌ PDF error:', error);
     sendMessageToParent({ type: 'pdf-generated', success: false });
+  }
+}
+
+/**
+ * Download PDF blob with friendly filename
+ */
+function downloadPDFBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Clean up blob URL after a short delay
+  setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+/**
+ * Get client name for filename (from requestData)
+ */
+function getClientNameForFilename() {
+  // Try to get name from various sources
+  const title = requestData.cD?.t || '';
+  const firstName = requestData.cD?.fN || '';
+  const lastName = requestData.cD?.lN || '';
+  
+  if (firstName || lastName) {
+    const parts = [title, firstName, lastName].filter(p => p).join(' ');
+    return parts || 'Client';
+  }
+  
+  // Fallback to business name if individual name not available
+  const businessName = requestData.cD?.bN || '';
+  if (businessName) {
+    return businessName;
+  }
+  
+  return 'Client';
+}
+
+/**
+ * Generate friendly filename for request PDF
+ */
+function getRequestPDFFilename(requestType, clientName) {
+  // Map request types to display names
+  const typeMap = {
+    'formJ': 'Form J Request',
+    'formK': 'Form K Request',
+    'formE': 'Form E Request',
+    'esof': 'eSoF Request',
+    'note': 'Note',
+    'update': 'Issue Update',
+    'updatePep': 'PEP Update'
+  };
+  
+  const typeName = typeMap[requestType] || 'Request';
+  
+  // Clean client name for filename (remove special chars, limit length)
+  const cleanName = clientName.replace(/[^a-zA-Z0-9\s-]/g, '').trim().substring(0, 50);
+  
+  return `${typeName} - ${cleanName}.pdf`;
+}
+
+/**
+ * Open a link in a new tab, or reuse existing tab named "osprey-tab"
+ * If a tab with the name "osprey-tab" already exists, it will be reused and navigated to the new URL.
+ * Otherwise, opens a new tab with that name.
+ */
+function openLinkInTab(url) {
+  if (!url) {
+    console.warn('⚠️ No URL provided to openLinkInTab');
+    return;
+  }
+  
+  try {
+    // Use fixed window name "osprey-tab"
+    // Browser behavior: if a window with this name already exists,
+    // it will be reused and navigated to the new URL. Otherwise, opens a new tab.
+    const windowName = 'osprey-tab';
+    
+    // Open/reuse window - browser handles tab reuse automatically
+    const targetWindow = window.open(url, windowName);
+    
+    if (targetWindow) {
+      // Success - browser will either reuse existing tab or open new one
+      console.log('✅ Opened/reused osprey-tab for link:', url);
+    } else {
+      // Popup blocked or other error
+      console.warn('⚠️ Failed to open link - popup may be blocked');
+      
+      // Fallback: try to navigate current window (if same origin)
+      try {
+        const urlObj = new URL(url);
+        const targetOrigin = urlObj.origin;
+        const currentOrigin = window.location.origin;
+        if (targetOrigin === currentOrigin) {
+          window.location.href = url;
+          console.log('✅ Navigated current window to link (same origin)');
+        } else {
+          console.error('❌ Cannot navigate to different origin:', targetOrigin);
+        }
+      } catch (e) {
+        console.error('❌ Error handling link fallback:', e);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error opening link:', error);
   }
 }
 

@@ -854,6 +854,8 @@
     let userEmail = '';
     let searchParams = {};
     let returnToRequestFlag = false;  // Flag for request form integration
+    let linkUrl = null;  // Link to open after successful upload
+    let clientName = '';  // Client name for friendly filename
     
     // DOM elements
     const loadingOverlay = document.getElementById('loading-overlay');
@@ -1872,35 +1874,23 @@
         
         console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
         
-        // Handle PDF - either upload to S3 or open print dialog
+        // Generate friendly filename
+        const filename = getSanctionsPDFFilename();
+        
+        // Download PDF directly (no print dialog)
+        console.log('📥 Downloading PDF:', filename);
+        downloadPDFBlob(pdfBlob, filename);
+        
+        // Handle PDF - either upload to S3 or just download
         if (clientEntryId) {
-          // Store blob for print dialog after upload
-          window.pendingPDFForPrinting = pdfBlob;
+          // Upload to S3 (still needed for document storage)
           await uploadPDFBlobToS3(pdfBlob);
-        } else {
-          // Open print dialog using Print.js with PDF blob (no S3 upload, just print)
-          if (typeof printJS === 'undefined') {
-            console.error('❌ Print.js library not loaded');
-            showError('Print library not loaded. Please refresh the page.');
-            return;
-          }
-          
-          console.log('📄 Opening print dialog with PDF blob...');
-          
-          // Convert blob to object URL for Print.js
-          const pdfUrl = URL.createObjectURL(pdfBlob);
-          
-          // Use Print.js to print the PDF directly (preserves all styling)
-          printJS({
-            printable: pdfUrl,
-            type: 'pdf',
-            onPrintDialogClose: () => {
-              // Clean up blob URL after print dialog closes
-              URL.revokeObjectURL(pdfUrl);
-            }
-          });
-          
-          console.log('✅ Print dialog opened with PDF');
+        }
+        
+        // Open osprey-tab immediately after download starts
+        if (linkUrl) {
+          console.log('🔗 Opening link in osprey-tab:', linkUrl);
+          openLinkInTab(linkUrl);
         }
         
       } catch (error) {
@@ -2009,25 +1999,11 @@
         
         uploadingOverlay.classList.remove('show');
         
-        // Open print dialog after successful S3 upload using the same PDF blob
-        const pdfBlobForPrint = window.pendingPDFForPrinting;
-        if (pdfBlobForPrint && typeof printJS !== 'undefined') {
-          console.log('📄 Opening print dialog after S3 upload...');
-          
-          // Convert blob to object URL for Print.js
-          const pdfUrl = URL.createObjectURL(pdfBlobForPrint);
-          
-          // Use Print.js to print the PDF directly (same PDF that was uploaded to S3)
-          printJS({
-            printable: pdfUrl,
-            type: 'pdf',
-            onPrintDialogClose: () => {
-              // Clean up blob URL after print dialog closes
-              URL.revokeObjectURL(pdfUrl);
-            }
-          });
-          
-          console.log('✅ Print dialog opened with PDF after S3 upload');
+        // PDF was already downloaded before S3 upload
+        // Open osprey-tab if link provided (should already be open, but ensure it is)
+        if (linkUrl) {
+          console.log('🔗 Opening link in osprey-tab after S3 upload:', linkUrl);
+          openLinkInTab(linkUrl);
         }
         
         // Show success message
@@ -2100,11 +2076,14 @@
       console.log('  - searchType:', data.searchType);
       console.log('  - clientEntryId:', data.clientEntryId);
       console.log('  - returnToRequest:', data.returnToRequest);
+      console.log('  - link:', data.link);
       
       // Store client entry ID and user email
       clientEntryId = data.clientEntryId || null;
       userEmail = data.userEmail || '';
       returnToRequestFlag = data.returnToRequest || false;  // Store flag for request form integration
+      linkUrl = data.link || null;  // Store link URL if provided
+      clientName = data.clientName || '';  // Store client name for friendly filename
       
       // Pre-populate name
       if (data.clientName) {
@@ -2232,6 +2211,81 @@
       }
     }
     
+    /**
+     * Download PDF blob with friendly filename
+     */
+    function downloadPDFBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Clean up blob URL after a short delay
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    }
+    
+    /**
+     * Generate friendly filename for sanctions PDF
+     */
+    function getSanctionsPDFFilename() {
+      const namePart = clientName || searchParams.searchName || 'Search';
+      // Clean name for filename (remove special chars, limit length)
+      const cleanName = namePart.replace(/[^a-zA-Z0-9\s-]/g, '').trim().substring(0, 50);
+      return `UK Sanctions check - ${cleanName}.pdf`;
+    }
+    
+    /**
+     * Open a link in a new tab, or reuse existing tab named "osprey-tab"
+     * If a tab with the name "osprey-tab" already exists, it will be reused and navigated to the new URL.
+     * Otherwise, opens a new tab with that name.
+     */
+    function openLinkInTab(url) {
+      if (!url) {
+        console.warn('⚠️ No URL provided to openLinkInTab');
+        return;
+      }
+      
+      try {
+        // Use fixed window name "osprey-tab"
+        // Browser behavior: if a window with this name already exists,
+        // it will be reused and navigated to the new URL. Otherwise, opens a new tab.
+        const windowName = 'osprey-tab';
+        
+        // Open/reuse window - browser handles tab reuse automatically
+        const targetWindow = window.open(url, windowName);
+        
+        if (targetWindow) {
+          // Success - browser will either reuse existing tab or open new one
+          console.log('✅ Opened/reused osprey-tab for link:', url);
+        } else {
+          // Popup blocked or other error
+          console.warn('⚠️ Failed to open link - popup may be blocked');
+          
+          // Fallback: try to navigate current window (if same origin)
+          try {
+            const urlObj = new URL(url);
+            const targetOrigin = urlObj.origin;
+            const currentOrigin = window.location.origin;
+            if (targetOrigin === currentOrigin) {
+              window.location.href = url;
+              console.log('✅ Navigated current window to link (same origin)');
+            } else {
+              console.error('❌ Cannot navigate to different origin:', targetOrigin);
+              showError('Unable to open link. Please check your popup blocker settings.');
+            }
+          } catch (e) {
+            console.error('❌ Error handling link fallback:', e);
+            showError('Unable to open link. Please check your popup blocker settings.');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error opening link:', error);
+        showError('Invalid link URL provided.');
+      }
+    }
+    
     /*
     =====================================================================
     EVENT LISTENERS
@@ -2275,7 +2329,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'b3bd9fa';
+    window.__IFRAME_VERSION__ = 'd193f6a';
     console.log('[uk-sanctions-checker] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

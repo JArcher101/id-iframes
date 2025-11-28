@@ -7,10 +7,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
   
   <!-- Core CSS -->
-  <link rel="stylesheet" href="styles.css?v=b3bd9fa" />
+  <link rel="stylesheet" href="styles.css?v=d193f6a" />
   
   <!-- Request Form Specific CSS -->
-  <link rel="stylesheet" href="css/request-form.css?v=b3bd9fa" />
+  <link rel="stylesheet" href="css/request-form.css?v=d193f6a" />
 </head>
 <body>
   <!-- Loading State - shown while waiting for parent data -->
@@ -693,27 +693,30 @@
   </div>
           </div>
 
-  <!-- Print.js library for print dialog -->
+  <!-- html2pdf library for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
+  <!-- Print.js library for print dialog (kept for compatibility, but we use html2pdf for downloads) -->
   <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
   <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
   
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=b3bd9fa"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=d193f6a"></script>
   
   <!-- Google libphonenumber for phone validation (must load before core script) -->
   <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
   <!-- Core JavaScript -->
-    <script src="js/request-form-core.js?v=b3bd9fa"></script>
+    <script src="js/request-form-core.js?v=d193f6a"></script>
   
   <!-- Request Type Modules -->
-  <script src="js/request-types/formJ.js?v=b3bd9fa"></script>
-  <script src="js/request-types/formK.js?v=b3bd9fa"></script>
-  <script src="js/request-types/formE.js?v=b3bd9fa"></script>
-  <script src="js/request-types/esof.js?v=b3bd9fa"></script>
-  <script src="js/request-types/note.js?v=b3bd9fa"></script>
-  <script src="js/request-types/update.js?v=b3bd9fa"></script>
-  <script src="js/request-types/updatePep.js?v=b3bd9fa"></script>
+  <script src="js/request-types/formJ.js?v=d193f6a"></script>
+  <script src="js/request-types/formK.js?v=d193f6a"></script>
+  <script src="js/request-types/formE.js?v=d193f6a"></script>
+  <script src="js/request-types/esof.js?v=d193f6a"></script>
+  <script src="js/request-types/note.js?v=d193f6a"></script>
+  <script src="js/request-types/update.js?v=d193f6a"></script>
+  <script src="js/request-types/updatePep.js?v=d193f6a"></script>
   
   <!-- Initialize Autocomplete Fields -->
   <script>
@@ -728,7 +731,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'b3bd9fa';
+    window.__IFRAME_VERSION__ = 'd193f6a';
     console.log('[request-form] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
