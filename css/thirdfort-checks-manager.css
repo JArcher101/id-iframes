@@ -815,26 +815,28 @@ body {
 
 .retry-btn {
     padding: 10px 20px;
-    background: #ff9800;
-    color: white;
-    border: none;
+    background: white;
+    color: #ff9800;
+    border: 2px solid #ff9800;
     border-radius: 6px;
     font-family: 'Transport', sans-serif;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
     text-transform: uppercase;
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .retry-btn:hover {
-    background: #f57c00;
+    background: #ff9800;
+    color: white;
 }
 
 .retry-btn:active {
-    background: #ef6c00;
+    background: #f57c00;
+    color: white;
 }
 
 /* Monitoring Card */
