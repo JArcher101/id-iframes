@@ -3688,33 +3688,35 @@
             ospreyTab.location.href = link;
             ospreyTab.focus();
             console.log('🔄 Navigated tracked osprey tab to:', link);
-          } catch (e) {
-            // Cross-origin restriction - can't navigate tracked tab directly
-            // Use named target - will reuse existing tab if one exists with that name
-            console.log('⚠️ Could not navigate tracked tab (cross-origin), using named target');
-            ospreyTab = window.open(link, OSPREY_TAB_NAME);
-            if (ospreyTab) {
-              if (ospreyTab.closed === false) {
-                console.log('🔄 Reused existing osprey tab (via named target):', link);
-              } else {
-                console.log('🆕 Opened new osprey tab:', link);
-              }
-            } else {
-              console.error('❌ Failed to open osprey link (popup blocked?)');
-            }
-          }
-        } else {
-          // No tracked tab or it was closed - use named target to check for existing tab
-          // If a window with name 'osprey-tab' already exists, it will navigate that window
+        } catch (e) {
+          // Cross-origin restriction - can't navigate tracked tab directly
+          // Use named target - will reuse existing tab if one exists with that name
+          console.log('⚠️ Could not navigate tracked tab (cross-origin), using named target');
           ospreyTab = window.open(link, OSPREY_TAB_NAME);
           if (ospreyTab) {
-            // Check if this is a reused window (not closed means it existed)
-            // Note: We can't perfectly detect if it was reused vs new, but the browser handles it
-            console.log('🔄 Opened/navigated osprey tab:', link);
+            ospreyTab.focus(); // Focus the tab to bring it to front (PWA/Chrome)
+            if (ospreyTab.closed === false) {
+              console.log('🔄 Reused existing osprey tab (via named target):', link);
+            } else {
+              console.log('🆕 Opened new osprey tab:', link);
+            }
           } else {
             console.error('❌ Failed to open osprey link (popup blocked?)');
           }
         }
+      } else {
+        // No tracked tab or it was closed - use named target to check for existing tab
+        // If a window with name 'osprey-tab' already exists, it will navigate that window
+        ospreyTab = window.open(link, OSPREY_TAB_NAME);
+        if (ospreyTab) {
+          ospreyTab.focus(); // Focus the tab to bring it to front (PWA/Chrome)
+          // Check if this is a reused window (not closed means it existed)
+          // Note: We can't perfectly detect if it was reused vs new, but the browser handles it
+          console.log('🔄 Opened/navigated osprey tab:', link);
+        } else {
+          console.error('❌ Failed to open osprey link (popup blocked?)');
+        }
+      }
       }
     });
     
@@ -4148,7 +4150,7 @@
   </script>
   
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=decdd95"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=3b42f58"></script>
   <script>
     // Initialize all autocomplete fields immediately (DOM already loaded since scripts are at bottom)
     console.log('🔧 Initializing autocomplete fields...');
@@ -4236,7 +4238,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'decdd95';
+    window.__IFRAME_VERSION__ = '3b42f58';
     console.log('[client-details] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
