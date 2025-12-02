@@ -2509,7 +2509,8 @@
                 const top = (screen.height - height) / 2;
                 const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
                 
-                window.open(documentData.liveUrl, 'documentViewer', features);
+                const popup = window.open(documentData.liveUrl, 'documentViewer', features);
+                if (popup) popup.focus(); // Focus the window to bring it to front (PWA/Chrome)
                 console.log('Opening document in popup window:', documentData.liveUrl);
             } else {
                 console.error('No liveUrl available for document:', documentData);
@@ -4512,7 +4513,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '4a31c82';
+    window.__IFRAME_VERSION__ = '741b1a4';
     console.log('[document-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

@@ -3938,57 +3938,57 @@ function buildRequestPDFHTML(messageData) {
         :root { --primary-blue: #003c71; --secondary-blue: #1d71b8; --green: #39b549; --orange: #f7931e; --red: #d32f2f; --grey: #6c757d; --light-grey: #f8f9fa; --border-grey: #dee2e6; }
         body { 
           font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important; 
-          padding: 10mm; 
+          padding: 12mm; 
           margin: 0;
           background: white; 
           color: #111; 
-          line-height: 1.5; 
+          line-height: 1.6; 
           font-size: 14px; 
         }
         * {
           font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
         }
-        .pdf-header { border-bottom: 3px solid var(--primary-blue); padding-bottom: 20px; margin-bottom: 30px; page-break-after: avoid; }
-        .section-title { font-size: 18px; font-weight: bold; color: var(--primary-blue); margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid var(--border-grey); page-break-after: avoid; }
-        .hit-card { page-break-inside: avoid; margin-bottom: 16px; background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); }
-        .pdf-footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border-grey); text-align: center; font-size: 11px; color: #999; page-break-before: avoid; }
+        .pdf-header { border-bottom: 3px solid var(--primary-blue); padding-bottom: 24px; margin-bottom: 32px; page-break-after: avoid; }
+        .section-title { font-size: 18px; font-weight: bold; color: var(--primary-blue); margin: 32px 0 20px 0; padding-bottom: 10px; border-bottom: 2px solid var(--border-grey); page-break-after: avoid; }
+        .hit-card { page-break-inside: avoid; margin-bottom: 20px; background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08); }
+        .pdf-footer { margin-top: 48px; padding-top: 24px; border-top: 2px solid var(--border-grey); text-align: center; font-size: 11px; color: #999; line-height: 1.8; page-break-before: avoid; }
         @media print { body { padding: 20px; } }
       </style>
     </head>
     <body>
     <!-- PDF Header -->
     <div class="pdf-header">
-        <div style="font-size: 26px; font-weight: bold; color: #003c71; margin-bottom: 15px;">
+        <div style="font-size: 28px; font-weight: bold; color: #003c71; margin-bottom: 20px;">
           ${title}
         </div>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 13px;">
-          <div style="display: flex; gap: 8px;">
-            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Client Name:</span>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 20px; font-size: 13px; line-height: 1.8;">
+          <div style="display: flex; gap: 10px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 145px;">Client Name:</span>
             <span style="color: #333;">${escapeHtml(clientName)}</span>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Client Number:</span>
+          <div style="display: flex; gap: 10px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 145px;">Client Number:</span>
             <span style="color: #333;">${feeEarner ? escapeHtml(feeEarner) + ' ' : ''}${escapeHtml(clientNumber)}</span>
           </div>
           ${isEntity ? `
-          <div style="display: flex; gap: 8px;">
-            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Entity Type:</span>
+          <div style="display: flex; gap: 10px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 145px;">Entity Type:</span>
             <span style="color: #333;">${data.cI?.bD?.type || 'Business'}</span>
           </div>
           ` : ''}
-          <div style="display: flex; gap: 8px;">
-            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Request Type:</span>
+          <div style="display: flex; gap: 10px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 145px;">Request Type:</span>
             <span style="color: #333;">
-              <span style="display: inline-block; padding: 4px 10px; border: 2px solid #1976d2; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2;">${badgeText}</span>
-              ${requestPayload.eSoF ? `<span style="display: inline-block; padding: 4px 10px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32; margin-left: 6px;">+ eSoF</span>` : ''}
+              <span style="display: inline-block; padding: 5px 12px; border: 2px solid #1976d2; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e3f2fd; color: #1976d2;">${badgeText}</span>
+              ${requestPayload.eSoF ? `<span style="display: inline-block; padding: 5px 12px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32; margin-left: 8px;">+ eSoF</span>` : ''}
             </span>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Submission Date:</span>
+          <div style="display: flex; gap: 10px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 145px;">Submission Date:</span>
             <span style="color: #333;">${submissionDate}</span>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Submitted By:</span>
+          <div style="display: flex; gap: 10px;">
+            <span style="font-weight: bold; color: #6c757d; min-width: 145px;">Submitted By:</span>
             <span style="color: #333;">${escapeHtml(userEmail)}</span>
           </div>
         </div>
@@ -3996,43 +3996,42 @@ function buildRequestPDFHTML(messageData) {
       
       <div class="hit-card" style="border-left: 4px solid #1d71b8; page-break-inside: avoid;">
         <!-- Client Header with Name and Badges -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <div style="font-size: 16px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(clientName)}</div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="display: inline-block; padding: 4px 10px; border: 2px solid ${isEntity ? '#7b1fa2' : '#1976d2'}; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
-            <span style="display: inline-block; padding: 4px 10px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${feeEarner ? escapeHtml(feeEarner) + ' ' : ''}${escapeHtml(clientNumber)}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #dee2e6;">
+          <div style="font-size: 18px; font-weight: bold; color: #003c71; flex: 1;">${escapeHtml(clientName)}</div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="display: inline-block; padding: 5px 12px; border: 2px solid ${isEntity ? '#7b1fa2' : '#1976d2'}; border-radius: 4px; font-size: 11px; font-weight: bold; ${isEntity ? 'background: #f3e5f5; color: #7b1fa2;' : 'background: #e3f2fd; color: #1976d2;'}">${isEntity ? 'Business' : 'Individual'}</span>
+            <span style="display: inline-block; padding: 5px 12px; border: 2px solid #2e7d32; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f5e9; color: #2e7d32;">${feeEarner ? escapeHtml(feeEarner) + ' ' : ''}${escapeHtml(clientNumber)}</span>
           </div>
         </div>
         
-        <div style="padding: 8px 16px; border-top: 1px solid #dee2e6;">
         <!-- Matter Details in Grey Box -->
-        <div style="background: #f8f9fa; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
-          <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 8px;">MATTER DETAILS:</div>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666;">
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Work Type:</strong> ${escapeHtml(workType)}</div>
-            <div style="display: flex; gap: 4px;"><strong style="color: #333;">Relation:</strong> ${escapeHtml(relation)}</div>
+        <div style="background: #f8f9fa; border-radius: 6px; padding: 14px 16px; margin-bottom: 16px;">
+          <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 10px; letter-spacing: 0.5px;">MATTER DETAILS:</div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 13px; color: #666; line-height: 1.6;">
+            <div style="display: flex; gap: 6px;"><strong style="color: #333;">Work Type:</strong> ${escapeHtml(workType)}</div>
+            <div style="display: flex; gap: 6px;"><strong style="color: #333;">Relation:</strong> ${escapeHtml(relation)}</div>
           </div>
-          <div style="margin-top: 8px; font-size: 12px;">
-            <strong>Description:</strong> ${escapeHtml(matterDescription)}
+          <div style="margin-top: 10px; font-size: 13px; line-height: 1.6;">
+            <strong style="color: #333;">Description:</strong> ${escapeHtml(matterDescription)}
           </div>
         </div>
         ${isEntity ? `
           <!-- Business Details -->
-          <div style="margin-bottom: 16px;">
-            <div style="font-size: 16px; font-weight: bold; color: #003c71; margin-bottom: 12px;">Business Details</div>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666;">
-              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Business Name:</strong> ${escapeHtml(data.cI?.bD?.title || data.cI?.n?.b || '')}</div>
-              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Registration:</strong> ${escapeHtml(data.cI?.bD?.address_snippet?.split(',').pop()?.trim() || 'United Kingdom')}</div>
-              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Company Number:</strong> ${escapeHtml(data.cI?.eN || data.cI?.bD?.company_number || 'Not provided')}</div>
-              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Business Type:</strong> ${escapeHtml(data.cI?.bD?.company_type || 'Not provided')}</div>
-              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(data.cI?.e || 'Not provided')}</div>
-              <div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(data.cI?.m || 'Not provided')}</div>
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 16px; font-weight: bold; color: #003c71; margin-bottom: 14px;">Business Details</div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 16px; font-size: 13px; color: #666; line-height: 1.6;">
+              <div style="display: flex; gap: 6px;"><strong style="color: #333;">Business Name:</strong> ${escapeHtml(data.cI?.bD?.title || data.cI?.n?.b || '')}</div>
+              <div style="display: flex; gap: 6px;"><strong style="color: #333;">Registration:</strong> ${escapeHtml(data.cI?.bD?.address_snippet?.split(',').pop()?.trim() || 'United Kingdom')}</div>
+              <div style="display: flex; gap: 6px;"><strong style="color: #333;">Company Number:</strong> ${escapeHtml(data.cI?.eN || data.cI?.bD?.company_number || 'Not provided')}</div>
+              <div style="display: flex; gap: 6px;"><strong style="color: #333;">Business Type:</strong> ${escapeHtml(data.cI?.bD?.company_type || 'Not provided')}</div>
+              <div style="display: flex; gap: 6px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(data.cI?.e || 'Not provided')}</div>
+              <div style="display: flex; gap: 6px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(data.cI?.m || 'Not provided')}</div>
             </div>
             
             ${data.cI?.a?.formattedAddress ? `
-            <div style="margin-top: 12px;">
-                <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">REGISTERED ADDRESS:</div>
-              <div style="font-size: 12px; color: #333; line-height: 1.6;">
+            <div style="margin-top: 14px;">
+                <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px; letter-spacing: 0.5px;">REGISTERED ADDRESS:</div>
+              <div style="font-size: 13px; color: #333; line-height: 1.6;">
                 ${escapeHtml(formatAddress(data.cI.a))}
               </div>
               </div>
@@ -4040,53 +4039,51 @@ function buildRequestPDFHTML(messageData) {
           </div>
         ` : `
           <!-- Individual Details -->
-          <div style="margin-bottom: 16px;">
-            <div style="font-size: 16px; font-weight: bold; color: #003c71; margin-bottom: 12px;">Personal Information</div>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 12px; color: #666;">
-              ${data.cI?.n?.t ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Title:</strong> ${escapeHtml(data.cI.n.t)}</div>` : ''}
-              ${data.cI?.n?.f ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">First Name:</strong> ${escapeHtml(data.cI.n.f)}</div>` : ''}
-              ${data.cI?.n?.m ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Middle Name:</strong> ${escapeHtml(data.cI.n.m)}</div>` : ''}
-              ${data.cI?.n?.l ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Last Name:</strong> ${escapeHtml(data.cI.n.l)}</div>` : ''}
-              ${data.cI?.b ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Date of Birth:</strong> ${escapeHtml(data.cI.b)}</div>` : ''}
-            ${data.cI?.e ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(data.cI.e)}</div>` : ''}
-            ${data.cI?.m ? `<div style="display: flex; gap: 4px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(data.cI.m)}</div>` : ''}
-              ${data.cI?.nC ? `<div style="display: flex; gap: 4px; grid-column: 1 / -1;"><strong style="color: #333;">Previous/Known As:</strong> ${escapeHtml(data.cI?.pN || '')} ${data.cI?.rNC ? `(${escapeHtml(data.cI.rNC)})` : ''}</div>` : ''}
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 16px; font-weight: bold; color: #003c71; margin-bottom: 14px;">Personal Information</div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 16px; font-size: 13px; color: #666; line-height: 1.6;">
+              ${data.cI?.n?.t ? `<div style="display: flex; gap: 6px;"><strong style="color: #333;">Title:</strong> ${escapeHtml(data.cI.n.t)}</div>` : ''}
+              ${data.cI?.n?.f ? `<div style="display: flex; gap: 6px;"><strong style="color: #333;">First Name:</strong> ${escapeHtml(data.cI.n.f)}</div>` : ''}
+              ${data.cI?.n?.m ? `<div style="display: flex; gap: 6px;"><strong style="color: #333;">Middle Name:</strong> ${escapeHtml(data.cI.n.m)}</div>` : ''}
+              ${data.cI?.n?.l ? `<div style="display: flex; gap: 6px;"><strong style="color: #333;">Last Name:</strong> ${escapeHtml(data.cI.n.l)}</div>` : ''}
+              ${data.cI?.b ? `<div style="display: flex; gap: 6px;"><strong style="color: #333;">Date of Birth:</strong> ${escapeHtml(data.cI.b)}</div>` : ''}
+            ${data.cI?.e ? `<div style="display: flex; gap: 6px;"><strong style="color: #333;">Email:</strong> ${escapeHtml(data.cI.e)}</div>` : ''}
+            ${data.cI?.m ? `<div style="display: flex; gap: 6px;"><strong style="color: #333;">Phone:</strong> ${escapeHtml(data.cI.m)}</div>` : ''}
+              ${data.cI?.nC ? `<div style="display: flex; gap: 6px; grid-column: 1 / -1;"><strong style="color: #333;">Previous/Known As:</strong> ${escapeHtml(data.cI?.pN || '')} ${data.cI?.rNC ? `(${escapeHtml(data.cI.rNC)})` : ''}</div>` : ''}
           </div>
             
           ${data.cI?.a?.formattedAddress ? `
-            <div style="margin-top: 12px;">
-              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">CURRENT ADDRESS:</div>
-              <div style="font-size: 12px; color: #333; line-height: 1.6;">
+            <div style="margin-top: 14px;">
+              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px; letter-spacing: 0.5px;">CURRENT ADDRESS:</div>
+              <div style="font-size: 13px; color: #333; line-height: 1.6;">
                 ${escapeHtml(formatAddress(data.cI.a))}
               </div>
             </div>
           ` : ''}
           ${data.cI?.pA?.formattedAddress ? `
-            <div style="margin-top: 12px;">
-              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 4px;">PREVIOUS ADDRESS:</div>
-              <div style="font-size: 12px; color: #333; line-height: 1.6;">
+            <div style="margin-top: 14px;">
+              <div style="font-size: 11px; font-weight: bold; color: #6c757d; margin-bottom: 6px; letter-spacing: 0.5px;">PREVIOUS ADDRESS:</div>
+              <div style="font-size: 13px; color: #333; line-height: 1.6;">
                 ${escapeHtml(formatAddress(data.cI.pA))}
               </div>
             </div>
           ` : ''}
         </div>
         `}
-        </div>
       </div>
       
       <div class="hit-card" style="border-left: 4px solid #1d71b8; page-break-inside: avoid;">
-        <div style="padding: 8px 16px;">
           <!-- Message Box -->
-          <div style="background: #f0f7ff; border: 1px solid #90caf9; border-radius: 6px; padding: 16px; margin-bottom: 12px;">
-            <div style="font-size: 11px; font-weight: bold; color: #1976d2; margin-bottom: 8px;">MESSAGE:</div>
-            <div style="font-size: 13px; color: #333; line-height: 1.6;">
+          <div style="background: #f0f7ff; border: 1px solid #90caf9; border-radius: 6px; padding: 18px; margin-bottom: 20px;">
+            <div style="font-size: 11px; font-weight: bold; color: #1976d2; margin-bottom: 10px; letter-spacing: 0.5px;">MESSAGE:</div>
+            <div style="font-size: 13px; color: #333; line-height: 1.8;">
               ${messageContent}
             </div>
           </div>
           
           <!-- Document Requirements & Validation Checklist -->
-        <div style="margin-bottom: 12px;">
-            <div style="font-size: 14px; font-weight: bold; color: #003c71; margin-bottom: 10px;">Document Requirements</div>
+        <div style="margin-bottom: 16px;">
+            <div style="font-size: 15px; font-weight: bold; color: #003c71; margin-bottom: 12px;">Document Requirements</div>
           
           ${(() => {
               // CDF and OFSI are ALWAYS required for form submissions - if we're generating PDF, they must exist
@@ -4094,26 +4091,26 @@ function buildRequestPDFHTML(messageData) {
             const cdfRequired = !(isEntity && data.cI?.bD); // CDF not required if entity has linked data
             
             return `
-                <div style="display: grid; gap: 4px; font-size: 12px;">
+                <div style="display: grid; gap: 8px; font-size: 13px;">
                 ${cdfRequired ? `
-                  <div style="display: flex; align-items: center; padding: 6px 8px; background: #e8f5e9; border-radius: 4px;">
+                  <div style="display: flex; align-items: center; padding: 10px 12px; background: #e8f5e9; border-radius: 5px; line-height: 1.6;">
                     ${getValidationIcon(true)}
                     <span style="color: #333;"><strong>Client Details Form (CDF):</strong> Already uploaded</span>
                 </div>
                 ` : `
-                  <div style="display: flex; align-items: center; padding: 6px 8px; background: #e8f5e9; border-radius: 4px;">
+                  <div style="display: flex; align-items: center; padding: 10px 12px; background: #e8f5e9; border-radius: 5px; line-height: 1.6;">
                   ${getValidationIcon(true)}
                   <span style="color: #333;"><strong>Client Details Form (CDF):</strong> Not required (entity data linked)</span>
                 </div>
                 `}
                 
-                  <div style="display: flex; align-items: center; padding: 6px 8px; background: #e8f5e9; border-radius: 4px;">
+                  <div style="display: flex; align-items: center; padding: 10px 12px; background: #e8f5e9; border-radius: 5px; line-height: 1.6;">
                     ${getValidationIcon(true)}
                     <span style="color: #333;"><strong>PEP & Sanctions Screening:</strong> Already uploaded</span>
         </div>
         
                   ${attachedFile ? `
-                  <div style="display: flex; align-items: center; padding: 6px 8px; background: #e8f5e9; border-radius: 4px;">
+                  <div style="display: flex; align-items: center; padding: 10px 12px; background: #e8f5e9; border-radius: 5px; line-height: 1.6;">
                     ${getValidationIcon(true)}
                     <span style="color: #333;"><strong>Additional File:</strong> ${escapeHtml(attachedFile.name || 'Attached with this request')}</span>
                   </div>
@@ -4123,20 +4120,19 @@ function buildRequestPDFHTML(messageData) {
             })()}
           </div>
           </div>
-          </div>
       
       <!-- Submission Confirmation -->
-      <div class="hit-card" style="border-left: 4px solid #39b549; margin-top: 12px; page-break-inside: avoid;">
-        <div style="padding: 12px 16px;">
-          <h4 style="font-size: 14px; font-weight: bold; color: #2e7d32; margin-bottom: 12px; display: flex; align-items: center;">
-            <div style="width: 20px; height: 20px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 8px;">
-              <span style="color: white; font-size: 14px; font-weight: bold; line-height: 1;">✓</span>
+      <div class="hit-card" style="border-left: 4px solid #39b549; margin-top: 16px; page-break-inside: avoid;">
+        <div style="padding: 14px 18px;">
+          <h4 style="font-size: 15px; font-weight: bold; color: #2e7d32; margin-bottom: 14px; display: flex; align-items: center;">
+            <div style="width: 22px; height: 22px; border-radius: 50%; background: #39b549; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 10px;">
+              <span style="color: white; font-size: 15px; font-weight: bold; line-height: 1;">✓</span>
             </div>
             Request Successfully Submitted
           </h4>
-          <div style="font-size: 13px; color: #666; line-height: 1.6;">
-            <p>This request has been submitted to the ID system and will be processed by cashiers.</p>
-            <p style="margin-top: 8px;">Keep this PDF for your records.</p>
+          <div style="font-size: 13px; color: #666; line-height: 1.8;">
+            <p style="margin-bottom: 8px;">This request has been submitted to the ID system and will be processed by cashiers.</p>
+            <p>Keep this PDF for your records.</p>
           </div>
         </div>
       </div>

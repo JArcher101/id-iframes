@@ -2295,7 +2295,8 @@
                 const top = (screen.height - height) / 2;
                 const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
                 
-                window.open(viewerUrl, 'imageViewer', features);
+                const popup = window.open(viewerUrl, 'imageViewer', features);
+                if (popup) popup.focus(); // Focus the window to bring it to front (PWA/Chrome)
                 console.log('Opening image in popup window:', viewerUrl);
                 
             } catch (error) {
@@ -3970,7 +3971,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '4a31c82';
+    window.__IFRAME_VERSION__ = '741b1a4';
     console.log('[image-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

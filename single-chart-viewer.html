@@ -578,6 +578,8 @@
                 return;
             }
             
+            popup.focus(); // Focus the window to bring it to front (PWA/Chrome)
+            
             // Track this popup
             openPopups.set(uniqueId, popup);
             
@@ -612,7 +614,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '4a31c82';
+    window.__IFRAME_VERSION__ = '741b1a4';
     console.log('[single-chart-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
