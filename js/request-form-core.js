@@ -3082,13 +3082,14 @@ function openOfficerAppointments(appointmentsPath) {
       const url = `https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/${orgNum}/trustees`;
       
       const width = 1000;
-      const height = 800;
-      const left = (screen.width - width) / 2;
-      const top = (screen.height - height) / 2;
-      const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
-      
-      window.open(url, 'charityTrustees', features);
-      console.log('👤 Opening charity trustees tab:', url);
+    const height = 800;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+    
+    const popup = window.open(url, 'charityTrustees', features);
+    if (popup) popup.focus(); // Focus the window to bring it to front (PWA/Chrome)
+    console.log('👤 Opening charity trustees tab:', url);
     }
     return;
   }
@@ -3102,7 +3103,8 @@ function openOfficerAppointments(appointmentsPath) {
   const top = (screen.height - height) / 2;
   const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
   
-  window.open(url, 'officerAppointments', features);
+  const popup = window.open(url, 'officerAppointments', features);
+  if (popup) popup.focus(); // Focus the window to bring it to front (PWA/Chrome)
   console.log('👤 Opening officer appointments:', url);
 }
 
@@ -4411,6 +4413,7 @@ function openLinkInTab(url) {
     const targetWindow = window.open(url, windowName);
     
     if (targetWindow) {
+      targetWindow.focus(); // Focus the tab to bring it to front (PWA/Chrome)
       // Success - browser will either reuse existing tab or open new one
       console.log('✅ Opened/reused osprey-tab for link:', url);
     } else {
@@ -5088,6 +5091,8 @@ window.openIDImage = function(button) {
     if (!popup) {
       console.error('Failed to open popup window');
       alert('Please allow popups for this site to view images');
+    } else {
+      popup.focus(); // Focus the window to bring it to front (PWA/Chrome)
     }
     
   } catch (error) {
