@@ -1069,38 +1069,20 @@ class ThirdfortChecksManager {
         const docDescription = hasBack ? `${docTypeName} (front + back)` : `${docTypeName} (front)`;
         
         this.retryCard.classList.remove('hidden');
-        this.retryCard.style.borderLeft = '4px solid #ff9800';
         this.retryCard.innerHTML = `
             <div class="retry-content">
-                <div class="retry-header">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff9800" stroke-width="2">
-                        <path d="M12 2L2 22h20L12 2z" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
-                    </svg>
-                    <h4 style="color: #ff9800; margin: 0; font-family: 'Transport', sans-serif; font-size: 1.1rem;">Document Upload Failed</h4>
-                </div>
-                <div class="retry-body">
-                    <p><strong>Error:</strong> ${errorMessage}</p>
-                    <p><strong>Last attempt:</strong> ${attemptTime} by ${attemptedBy}</p>
-                    <p><strong>Failed images:</strong> ${docDescription}</p>
-                    <p class="retry-hint" style="margin-top: 12px; padding: 10px; background: rgba(255,152,0,0.1); border-radius: 4px; font-size: 0.9rem; line-height: 1.4;">
+                <div class="retry-text">
+                    <div class="retry-title">Document Upload Failed</div>
+                    <div class="retry-description">
+                        <strong>Error:</strong> ${errorMessage}<br>
+                        Last attempt: ${attemptTime} by ${attemptedBy}<br>
+                        Failed images: ${docDescription}
+                    </div>
+                    <div class="retry-hint">
                         ${hintMessage}
-                    </p>
+                    </div>
                 </div>
-                <button class="retry-btn" onclick="manager.retryDocumentUpload()" style="
-                    background: #ff9800;
-                    color: white;
-                    border: none;
-                    padding: 12px 24px;
-                    border-radius: 6px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    font-family: 'Transport', sans-serif;
-                    font-size: 1rem;
-                    margin-top: 15px;
-                    width: 100%;
-                    transition: background 0.2s;
-                ">RETRY DOCUMENT UPLOAD</button>
+                <button class="retry-btn" onclick="manager.retryDocumentUpload()">RETRY UPLOAD</button>
             </div>
         `;
     }

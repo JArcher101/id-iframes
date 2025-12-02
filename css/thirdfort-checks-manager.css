@@ -771,30 +771,62 @@ body {
 
 .retry-content {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
 }
 
-.retry-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.retry-text {
+    flex: 1;
 }
 
-.retry-body p {
-    margin: 8px 0;
-    font-family: 'RotisRegular', 'Quicksand', sans-serif;
-    font-size: 0.95rem;
-    color: #333;
-}
-
-.retry-body strong {
-    font-family: 'RotisBold', 'Quicksand', sans-serif;
+.retry-title {
+    font-family: 'Transport', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
     color: #ff9800;
+    margin-bottom: 8px;
+}
+
+.retry-description {
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+.retry-description strong {
+    font-family: 'RotisBold', sans-serif;
+    font-weight: 600;
+    color: #666;
 }
 
 .retry-hint {
-    font-style: italic;
+    font-family: 'RotisRegular', sans-serif;
+    font-size: 13px;
+    color: #666;
+    padding: 10px;
+    background: rgba(255, 152, 0, 0.08);
+    border-radius: 6px;
+    line-height: 1.4;
+    margin-top: 8px;
+}
+
+.retry-btn {
+    padding: 10px 20px;
+    background: #ff9800;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Transport', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .retry-btn:hover {
