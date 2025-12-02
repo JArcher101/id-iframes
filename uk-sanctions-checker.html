@@ -2253,13 +2253,14 @@
         // it will be reused and navigated to the new URL. Otherwise, opens a new tab.
         const windowName = 'osprey-tab';
         
-        // Open/reuse window - browser handles tab reuse automatically
-        const targetWindow = window.open(url, windowName);
-        
-        if (targetWindow) {
-          // Success - browser will either reuse existing tab or open new one
-          console.log('✅ Opened/reused osprey-tab for link:', url);
-        } else {
+      // Open/reuse window - browser handles tab reuse automatically
+      const targetWindow = window.open(url, windowName);
+      
+      if (targetWindow) {
+        targetWindow.focus(); // Focus the tab to bring it to front (PWA/Chrome)
+        // Success - browser will either reuse existing tab or open new one
+        console.log('✅ Opened/reused osprey-tab for link:', url);
+      } else {
           // Popup blocked or other error
           console.warn('⚠️ Failed to open link - popup may be blocked');
           
@@ -2329,7 +2330,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '3b42f58';
+    window.__IFRAME_VERSION__ = 'a1449f7';
     console.log('[uk-sanctions-checker] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
