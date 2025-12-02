@@ -25,6 +25,7 @@ class ThirdfortChecksManager {
         this.detailHeader = document.getElementById('detail-header');
         this.monitoringCard = document.getElementById('monitoring-card');
         this.abortCard = document.getElementById('abort-card');
+        this.retryCard = document.getElementById('retry-card');
         this.detailsCard = document.getElementById('details-card');
         this.documentDetailsCard = document.getElementById('document-details-card');
         this.pepUpdatesCard = document.getElementById('pep-updates-card');
@@ -512,8 +513,22 @@ class ThirdfortChecksManager {
         typeLabel.textContent = this.getCheckTypeLabel(check);
         header.appendChild(typeLabel);
         
+        // Check outcome tags
+        // ERROR tag for failed uploads (open checks with failed document uploads)
+        const hasFailedUpload = check.status === 'open' && 
+                                check.documentsUploaded === false && 
+                                check.uploadAttempts && 
+                                check.uploadAttempts.length > 0;
+        
+        if (hasFailedUpload) {
+            const tag = document.createElement('span');
+            tag.className = 'outcome-tag error';
+            tag.textContent = 'ERROR';
+            tag.title = 'Document upload failed - retry available';
+            header.appendChild(tag);
+        }
         // CLEAR/CONSIDER/ALERT tag (only if closed AND PDF ready)
-        if (check.status === 'closed' && check.pdfReady) {
+        else if (check.status === 'closed' && check.pdfReady) {
             const tag = document.createElement('span');
             // Check for rejected documents on IDV checks - show as ALERT (red)
             const isIdvRejected = check.checkType === 'idv' && 
@@ -622,6 +637,9 @@ class ThirdfortChecksManager {
         
         // Render abort card FIRST (if applicable) - appears above header
         this.renderAbortCard(check);
+        
+        // Render retry card SECOND (if IDV with failed upload) - appears after abort
+        this.renderRetryCard(check);
         
         // Render header
         this.renderDetailHeader(check);
@@ -1003,6 +1021,86 @@ class ThirdfortChecksManager {
                     <div class="abort-description">If you no longer wish to conduct this check you may cancel it</div>
                 </div>
                 <button class="abort-btn" onclick="manager.abortCheck()">ABORT CHECK</button>
+            </div>
+        `;
+    }
+    
+    renderRetryCard(check) {
+        // Hide in view mode
+        if (this.mode === 'view') {
+            this.retryCard.classList.add('hidden');
+            return;
+        }
+        
+        // Only show retry card for IDV checks with failed upload
+        const hasFailedUpload = check.checkType === 'idv' &&
+                                check.status === 'open' && 
+                                check.documentsUploaded === false && 
+                                check.uploadAttempts && 
+                                check.uploadAttempts.length > 0;
+        
+        if (!hasFailedUpload) {
+            this.retryCard.classList.add('hidden');
+            return;
+        }
+        
+        // Get last upload attempt
+        const lastAttempt = check.uploadAttempts[check.uploadAttempts.length - 1];
+        const errorMessage = lastAttempt.errorMessage || 'Unknown error';
+        const errorType = lastAttempt.errorType || 'unknown';
+        const attemptTime = lastAttempt.timestamp ? new Date(lastAttempt.timestamp).toLocaleString() : 'Unknown';
+        const attemptedBy = lastAttempt.attemptedBy || 'Unknown';
+        
+        // Determine hint message based on error type
+        let hintMessage = '';
+        if (errorType === 'fatal') {
+            hintMessage = 'This image was rejected due to quality issues. The system will automatically search for alternative images when you click retry. If no alternatives are found, please upload a new photo ID first.';
+        } else if (errorType === 'retryable') {
+            hintMessage = 'Network or download error occurred. You can retry with the same images.';
+        } else {
+            hintMessage = 'An error occurred during upload. Click retry to attempt again.';
+        }
+        
+        // Determine document description
+        const docType = check.documentType || 'Unknown';
+        const docTypeName = docType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const hasFront = lastAttempt.frontS3Key;
+        const hasBack = lastAttempt.backS3Key;
+        const docDescription = hasBack ? `${docTypeName} (front + back)` : `${docTypeName} (front)`;
+        
+        this.retryCard.classList.remove('hidden');
+        this.retryCard.style.borderLeft = '4px solid #ff9800';
+        this.retryCard.innerHTML = `
+            <div class="retry-content">
+                <div class="retry-header">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff9800" stroke-width="2">
+                        <path d="M12 2L2 22h20L12 2z" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
+                    </svg>
+                    <h4 style="color: #ff9800; margin: 0; font-family: 'Transport', sans-serif; font-size: 1.1rem;">Document Upload Failed</h4>
+                </div>
+                <div class="retry-body">
+                    <p><strong>Error:</strong> ${errorMessage}</p>
+                    <p><strong>Last attempt:</strong> ${attemptTime} by ${attemptedBy}</p>
+                    <p><strong>Failed images:</strong> ${docDescription}</p>
+                    <p class="retry-hint" style="margin-top: 12px; padding: 10px; background: rgba(255,152,0,0.1); border-radius: 4px; font-size: 0.9rem; line-height: 1.4;">
+                        ${hintMessage}
+                    </p>
+                </div>
+                <button class="retry-btn" onclick="manager.retryDocumentUpload()" style="
+                    background: #ff9800;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 6px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    font-family: 'Transport', sans-serif;
+                    font-size: 1rem;
+                    margin-top: 15px;
+                    width: 100%;
+                    transition: background 0.2s;
+                ">RETRY DOCUMENT UPLOAD</button>
             </div>
         `;
     }
@@ -10158,6 +10256,25 @@ class ThirdfortChecksManager {
         this.sendMessage('cancel-check', {
             id: check.transactionId || check.checkId,
             resourceType: check.transactionId ? 'transaction' : 'check'
+        });
+    }
+    
+    retryDocumentUpload() {
+        console.log('🔄 Retrying document upload for check:', this.currentCheck.checkId);
+        
+        const check = this.currentCheck;
+        
+        // Get last attempt to show in console
+        const lastAttempt = check.uploadAttempts?.[check.uploadAttempts.length - 1];
+        if (lastAttempt) {
+            console.log('📋 Last attempt error type:', lastAttempt.errorType);
+            console.log('📋 Last attempt error:', lastAttempt.errorMessage);
+        }
+        
+        this.sendMessage('retry-idv-upload', {
+            id: check.checkId,
+            documentType: check.documentType,
+            lastAttempt: lastAttempt
         });
     }
 

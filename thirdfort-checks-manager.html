@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thirdfort Checks Manager</title>
-    <link rel="stylesheet" href="css/thirdfort-checks-manager.css?v=d3379e7"> 
+    <link rel="stylesheet" href="css/thirdfort-checks-manager.css?v=2680378"> 
 </head>
 <body>
     <div id="app-container">
@@ -45,7 +45,12 @@
                 <!-- Abort content will be dynamically inserted -->
             </div>
 
-            <!-- Ongoing Monitoring Card (conditional) - appears SECOND when applicable -->
+            <!-- Retry IDV Upload Card (conditional) - appears SECOND for failed uploads -->
+            <div id="retry-card" class="card retry-card hidden">
+                <!-- Retry content will be dynamically inserted -->
+            </div>
+
+            <!-- Ongoing Monitoring Card (conditional) - appears THIRD when applicable -->
             <div id="monitoring-card" class="card monitoring-card hidden">
                 <!-- Monitoring content will be dynamically inserted -->
             </div>
@@ -93,11 +98,11 @@
     <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
     
-    <script src="js/thirdfort-checks-manager.js?v=d3379e7"></script>
+    <script src="js/thirdfort-checks-manager.js?v=2680378"></script>
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'd3379e7';
+    window.__IFRAME_VERSION__ = '2680378';
     console.log('[thirdfort-checks-manager] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

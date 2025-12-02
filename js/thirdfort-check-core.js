@@ -466,7 +466,14 @@ function handleCheckResponse(response) {
   if (response.success) {
     console.log('✅ Check initiated successfully:', response);
     
-    // Build success message based on check type
+    // Detect response type: lite/idv (component-based) or simple (electronic/kyb)
+    const isComponentResponse = response.hasOwnProperty('liteSuccess') || response.hasOwnProperty('idvSuccess');
+    
+    if (isComponentResponse) {
+      // NEW: Component-based display for Lite/IDV checks
+      showComponentSuccessPopup(response);
+    } else {
+      // EXISTING: Simple display for Electronic ID and KYB checks
     let successMessage = response.message || 'Check initiated successfully!';
     let detailsHTML = '';
     
@@ -486,21 +493,11 @@ function handleCheckResponse(response) {
           <strong>Status:</strong> Processing KYB check...
         </div>
       `;
-    } else if (response.checkType === 'lite-idv') {
-      let checks = [];
-      if (response.liteTransactionId) checks.push('Lite Screen');
-      if (response.idvCheckId) checks.push('IDV');
+      }
       
-      detailsHTML = `
-        <div style="margin-top: 10px; font-size: 0.9rem; color: #fff;">
-          <strong>Checks initiated:</strong> ${checks.join(' + ')}<br>
-          ${response.documentsUploaded ? '<strong>Documents:</strong> Uploaded ✓' : ''}
-        </div>
-      `;
-    }
-    
-    // Show success popup
+      // Show simple success popup
     showSuccessPopup(successMessage, detailsHTML);
+    }
     
     // Update button state
     submitBtn.textContent = 'Check Initiated!';
@@ -557,12 +554,215 @@ function showSuccessPopup(message, detailsHTML = '') {
       width: 90%;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     ">
-      <div style="font-size: 3rem; margin-bottom: 15px;">✓</div>
-      <h3 style="color: white; margin: 0 0 10px 0; font-size: 1.3rem;">
+      <svg width="60" height="60" viewBox="0 0 24 24" style="margin-bottom: 15px;">
+        <circle cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="2"/>
+        <path d="M9 12l2 2 4-4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h3 style="color: white; margin: 0 0 10px 0; font-size: 1.3rem; font-family: 'Transport', 'Quicksand', sans-serif; font-weight: 600;">
         ${message}
       </h3>
       ${detailsHTML}
-      <p style="color: rgba(255,255,255,0.9); margin: 15px 0 0 0; font-size: 0.85rem;">
+      <p style="color: rgba(255,255,255,0.9); margin: 15px 0 0 0; font-size: 0.85rem; font-family: 'RotisRegular', 'Quicksand', sans-serif;">
+        Closing in 3 seconds...
+      </p>
+    </div>
+  `;
+  
+  popup.style.display = 'flex';
+}
+
+/**
+ * Show component-based success popup for Lite/IDV checks
+ * Displays individual status cards for each component
+ */
+function showComponentSuccessPopup(response) {
+  // Create or get existing popup
+  let popup = document.getElementById('successPopup');
+  
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'successPopup';
+    popup.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    `;
+    document.body.appendChild(popup);
+  }
+  
+  // Build component cards HTML
+  let componentCardsHTML = '';
+  
+  // Lite Screen component
+  if (response.liteTransactionId) {
+    if (response.liteSuccess) {
+      componentCardsHTML += `
+        <div style="
+          background: rgba(255,255,255,0.15);
+          border: 2px solid rgba(255,255,255,0.3);
+          border-radius: 8px;
+          padding: 15px;
+          margin: 10px 0;
+          text-align: left;
+        ">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="#fff" stroke-width="2"/>
+              <path d="M9 12l2 2 4-4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>
+              <div style="color: white; font-weight: 600; font-family: 'Transport', 'Quicksand', sans-serif; font-size: 1rem;">
+                Lite Screen Initiated
+              </div>
+              <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem; font-family: 'RotisRegular', 'Quicksand', sans-serif; margin-top: 3px;">
+                ID: ${response.liteTransactionId}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      componentCardsHTML += `
+        <div style="
+          background: rgba(220,53,69,0.2);
+          border: 2px solid rgba(220,53,69,0.5);
+          border-radius: 8px;
+          padding: 15px;
+          margin: 10px 0;
+          text-align: left;
+        ">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="#fff" stroke-width="2"/>
+              <path d="M15 9l-6 6M9 9l6 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div>
+              <div style="color: white; font-weight: 600; font-family: 'Transport', 'Quicksand', sans-serif; font-size: 1rem;">
+                Lite Screen Failed
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  }
+  
+  // IDV component
+  if (response.idvCheckId) {
+    if (response.idvSuccess && response.idvDocumentsUploaded && !response.idvAborted) {
+      // Full success - check created and documents uploaded
+      componentCardsHTML += `
+        <div style="
+          background: rgba(255,255,255,0.15);
+          border: 2px solid rgba(255,255,255,0.3);
+          border-radius: 8px;
+          padding: 15px;
+          margin: 10px 0;
+          text-align: left;
+        ">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="#fff" stroke-width="2"/>
+              <path d="M9 12l2 2 4-4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>
+              <div style="color: white; font-weight: 600; font-family: 'Transport', 'Quicksand', sans-serif; font-size: 1rem;">
+                IDV Check Initiated
+              </div>
+              <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem; font-family: 'RotisRegular', 'Quicksand', sans-serif; margin-top: 3px;">
+                ID: ${response.idvCheckId} • Documents uploaded
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (response.idvAborted) {
+      // Check created but documents rejected - ABORTED (no charge)
+      componentCardsHTML += `
+        <div style="
+          background: rgba(255,152,0,0.2);
+          border: 2px solid rgba(255,152,0,0.6);
+          border-radius: 8px;
+          padding: 15px;
+          margin: 10px 0;
+          text-align: left;
+        ">
+          <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 2px;">
+              <path d="M12 2L2 22h20L12 2z" fill="none" stroke="#ff9800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 9v4M12 17h.01" stroke="#ff9800" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div style="flex: 1;">
+              <div style="color: #ff9800; font-weight: 600; font-family: 'Transport', 'Quicksand', sans-serif; font-size: 1rem;">
+                IDV Documents Rejected
+              </div>
+              <div style="color: rgba(255,255,255,0.9); font-size: 0.85rem; font-family: 'RotisRegular', 'Quicksand', sans-serif; margin-top: 5px; line-height: 1.4;">
+                ${response.idvError || 'Document upload failed'}
+              </div>
+              <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem; font-family: 'RotisItalic', 'Quicksand', sans-serif; margin-top: 8px; font-style: italic;">
+                Check aborted (no charge) • Please initiate new check with corrected images
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (response.idvSuccess) {
+      // Check created but no documents provided
+      componentCardsHTML += `
+        <div style="
+          background: rgba(255,255,255,0.15);
+          border: 2px solid rgba(255,255,255,0.3);
+          border-radius: 8px;
+          padding: 15px;
+          margin: 10px 0;
+          text-align: left;
+        ">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="#fff" stroke-width="2"/>
+              <path d="M9 12l2 2 4-4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>
+              <div style="color: white; font-weight: 600; font-family: 'Transport', 'Quicksand', sans-serif; font-size: 1rem;">
+                IDV Check Initiated
+              </div>
+              <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem; font-family: 'RotisRegular', 'Quicksand', sans-serif; margin-top: 3px;">
+                ID: ${response.idvCheckId}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  }
+  
+  // Build main popup with white checkmark and component cards
+  popup.innerHTML = `
+    <div style="
+      background: #28a745;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    ">
+      <svg width="60" height="60" viewBox="0 0 24 24" style="margin-bottom: 15px;">
+        <circle cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="2"/>
+        <path d="M9 12l2 2 4-4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.4rem; font-family: 'Transport', 'Quicksand', sans-serif; font-weight: 600;">
+        Check Submitted
+      </h3>
+      ${componentCardsHTML}
+      <p style="color: rgba(255,255,255,0.9); margin: 20px 0 0 0; font-size: 0.85rem; font-family: 'RotisRegular', 'Quicksand', sans-serif;">
         Closing in 3 seconds...
       </p>
     </div>
