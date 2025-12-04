@@ -72,6 +72,8 @@
             display: flex;
             flex-direction: column;
             min-height: 100%;
+            overflow: visible; /* Allow content to be visible but prevent scroll */
+            box-sizing: border-box;
         }
 
         .header-row {
@@ -234,6 +236,10 @@
         let currentChart = null;
         let currentChartData = null; // Store current chart data for expansion
         let openPopups = new Map(); // Track multiple popup windows with their IDs
+        let lastHeight = 0; // Track last sent height to prevent unnecessary updates
+        let heightNotificationTimeout = null; // Debounce timeout
+        let lastNotificationTime = 0; // Track when last notification was sent
+        const MIN_NOTIFICATION_INTERVAL = 500; // Minimum ms between notifications (cooldown)
         const canvas = document.getElementById('chartCanvas');
         const chartWrapper = document.getElementById('chartWrapper');
         const emptyState = document.getElementById('emptyState');
@@ -510,28 +516,78 @@
                 return;
             }
 
-            // Notify parent window of height change after chart renders
-            setTimeout(() => {
-                notifyParentOfHeight();
-            }, 100);
+            // Notify parent window of height change after chart renders (debounced)
+            debouncedNotifyParentOfHeight();
         }
 
         // Notify parent window of content height (for iframe auto-resize)
         function notifyParentOfHeight() {
-            if (window.parent && window.parent !== window) {
-                // Get the actual content height
-                const height = Math.max(
-                    document.body.scrollHeight,
-                    document.documentElement.scrollHeight,
-                    document.body.offsetHeight,
-                    document.documentElement.offsetHeight
+            // Don't notify if we're in popup mode or no parent window
+            if (popupId || !window.parent || window.parent === window) {
+                return;
+            }
+            
+            // Get the container element height (most reliable - uses offsetHeight which doesn't include scroll)
+            const container = document.querySelector('.container');
+            let height = 0;
+            
+            if (container) {
+                // Use offsetHeight which gives the actual rendered height without scroll areas
+                height = container.offsetHeight;
+            } else {
+                // Fallback to body/document if container not found
+                height = Math.max(
+                    document.body.offsetHeight || 0,
+                    document.documentElement.offsetHeight || 0
                 );
+            }
+            
+            // Ensure we have a valid height
+            if (!height || height <= 0) {
+                console.warn('Invalid height calculated:', height);
+                return;
+            }
+            
+            // Only send if height has actually changed significantly (prevent feedback loops)
+            // Use a threshold (10px) to account for minor rendering differences and prevent micro-updates
+            const heightDiff = Math.abs(height - lastHeight);
+            const timeSinceLastNotification = Date.now() - lastNotificationTime;
+            
+            if (heightDiff > 10 && timeSinceLastNotification >= MIN_NOTIFICATION_INTERVAL) {
+                // Set a reasonable maximum height (10,000px) to prevent runaway growth
+                const maxHeight = 10000;
+                const finalHeight = Math.min(height, maxHeight);
+                
+                // Store before sending to track actual sent value
+                const previousHeight = lastHeight;
+                lastHeight = finalHeight;
+                lastNotificationTime = Date.now();
                 
                 window.parent.postMessage({
                     type: 'iframe-height',
-                    height: height
+                    height: finalHeight
                 }, '*');
+                
+                console.log('Height notification sent:', finalHeight, 'px (previous:', previousHeight, 'px, change:', (finalHeight - previousHeight), 'px)');
+            } else if (heightDiff <= 10) {
+                console.log('Height notification skipped - no significant change:', height, 'px (last:', lastHeight, 'px, diff:', heightDiff, 'px)');
+            } else {
+                console.log('Height notification skipped - cooldown active:', Math.ceil((MIN_NOTIFICATION_INTERVAL - timeSinceLastNotification) / 1000), 's remaining');
             }
+        }
+        
+        // Debounced version to prevent rapid-fire notifications
+        function debouncedNotifyParentOfHeight() {
+            // Clear any pending notification
+            if (heightNotificationTimeout) {
+                clearTimeout(heightNotificationTimeout);
+            }
+            
+            // Send notification after a short delay (allows DOM to settle)
+            heightNotificationTimeout = setTimeout(() => {
+                notifyParentOfHeight();
+                heightNotificationTimeout = null;
+            }, 150);
         }
 
         // Deep merge helper function

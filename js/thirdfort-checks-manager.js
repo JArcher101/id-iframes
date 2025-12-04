@@ -6925,6 +6925,82 @@ class ThirdfortChecksManager {
             `;
         }
         
+        // Special handling for IDV (identity:lite) - always expanded, all objectives in top section, annotations below linebreak
+        if (taskType === 'identity:lite') {
+            // Count annotation GROUPS for this task
+            const taskAnnotations = (check.considerAnnotations || []).filter(ann => ann.taskType === taskType);
+            const annotationGroups = {};
+            taskAnnotations.forEach(ann => {
+                const groupKey = `${ann.user}_${ann.timestamp}_${ann.newStatus}`;
+                if (!annotationGroups[groupKey]) {
+                    annotationGroups[groupKey] = true;
+                }
+            });
+            const taskAnnotationCount = Object.keys(annotationGroups).length;
+            
+            // Get latest annotation status for badge color
+            let badgeClass = '';
+            if (taskAnnotations.length > 0) {
+                const latestStatus = taskAnnotations[0].newStatus;
+                if (latestStatus === 'clear') badgeClass = ' badge-clear';
+                else if (latestStatus === 'consider') badgeClass = ' badge-consider';
+                else if (latestStatus === 'fail') badgeClass = ' badge-fail';
+            }
+            
+            const annotationBadge = taskAnnotationCount > 0 ? `<span class="annotation-count-badge${badgeClass}">${taskAnnotationCount} Update${taskAnnotationCount > 1 ? 's' : ''}</span>` : '';
+            const badgesHtml = annotationBadge ? `<div class="task-header-badges">${annotationBadge}</div>` : '';
+            
+            // Render all checks in top section (no separation between header/detail)
+            let allChecksHtml = '';
+            if (taskChecks.length > 0) {
+                allChecksHtml = '<div class="task-header-checks">';
+                taskChecks.forEach(checkItem => {
+                    // Handle person profile cards
+                    if (checkItem.isPersonCard === true && checkItem.personData) {
+                        allChecksHtml += this.createPersonProfileCard(checkItem.personData);
+                    }
+                    // Handle screening hit cards
+                    else if (checkItem.isHitCard === true && checkItem.hitData) {
+                        allChecksHtml += this.createScreeningHitCard(checkItem.hitData);
+                    }
+                    // Handle nested cards
+                    else if (checkItem.isNestedCard === true) {
+                        allChecksHtml += this.createNestedTaskCard(checkItem);
+                    }
+                    // Standard check item
+                    else {
+                        const checkIcon = this.getTaskCheckIcon(checkItem.status);
+                        const indentStyle = checkItem.isChildItem ? ' style="padding-left: 24px;"' : '';
+                        const indentedClass = checkItem.indented ? ' indented' : '';
+                        const sectionHeaderClass = checkItem.isSectionHeader ? ' section-header' : '';
+                        
+                        allChecksHtml += `
+                            <div class="task-check-item${indentedClass}${sectionHeaderClass}"${indentStyle}>
+                                ${checkIcon}
+                                <span class="task-check-text">${checkItem.text}</span>
+                            </div>
+                        `;
+                    }
+                });
+                allChecksHtml += '</div>';
+            }
+            
+            // Render annotations below linebreak
+            const annotationsHtml = this.renderTaskAnnotations(taskType, check);
+            
+            return `
+                <div class="task-card ${borderClass} non-expandable">
+                    <div class="task-header">
+                        <div class="task-title">${taskTitle}</div>
+                        ${badgesHtml}
+                        ${statusIcon}
+                    </div>
+                    ${allChecksHtml}
+                    ${annotationsHtml ? `<div style="border-top: 1px solid #e0e0e0; margin-top: 16px; padding-top: 16px;">${annotationsHtml}</div>` : ''}
+                </div>
+            `;
+        }
+        
         // Standard expandable task card
         let taskSummary = outcome.result ? this.formatResult(outcome.result) : 'Pending';
         
