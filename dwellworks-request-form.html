@@ -7,12 +7,37 @@
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
   
   <!-- Core CSS -->
-  <link rel="stylesheet" href="styles.css?v=c55a6f6" />
+  <link rel="stylesheet" href="styles.css?v=adca3ee" />
   
   <!-- Dwellworks Request Form Specific CSS -->
-  <link rel="stylesheet" href="css/dwellworks-request-form.css?v=c55a6f6" />
+  <link rel="stylesheet" href="css/dwellworks-request-form.css?v=adca3ee" />
 </head>
 <body>
+  <!-- Session Countdown Header -->
+  <div id="sessionCountdownHeader" class="session-countdown-header hidden">
+    <div class="countdown-content">
+      <span class="countdown-label">Session expires in:</span>
+      <span id="countdownTimer" class="countdown-timer">10:00</span>
+    </div>
+  </div>
+
+  <!-- Session Expiry Overlay -->
+  <div id="sessionExpiryOverlay" class="session-expiry-overlay hidden">
+    <div class="session-expiry-modal">
+      <div class="session-expiry-header">
+        <h3>⚠️ Session Expiring Soon</h3>
+      </div>
+      <div class="session-expiry-content">
+        <p>Your session will expire in <span id="overlayCountdown" class="overlay-countdown">60</span> seconds.</p>
+        <p>Please renew your session to continue, or cancel your submission.</p>
+      </div>
+      <div class="session-expiry-actions">
+        <button type="button" id="renewSessionBtn" class="session-btn session-btn-primary">Renew Session</button>
+        <button type="button" id="cancelSubmissionBtn" class="session-btn session-btn-secondary">Cancel Submission</button>
+      </div>
+    </div>
+  </div>
+
   <div class="container">
     <!-- Your Details Section -->
     <div class="section" id="yourDetailsSection">
@@ -716,7 +741,7 @@
 
     <!-- Submit Button -->
     <div class="form-actions">
-      <button type="submit" id="submitBtn" class="submit-btn" disabled>Submit Request</button>
+      <button type="submit" id="submitBtn" class="submit-btn">Submit Request</button>
     </div>
 
     <!-- Error Popup -->
@@ -730,13 +755,13 @@
   </div>
 
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=c55a6f6"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=adca3ee"></script>
   
   <!-- Google libphonenumber for phone validation (must load before core script) -->
   <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
   <!-- Core JavaScript -->
-  <script src="js/dwellworks-request-form-core.js?v=c55a6f6"></script>
+  <script src="js/dwellworks-request-form-core.js?v=adca3ee"></script>
   
   <!-- Initialize Autocomplete Fields -->
   <script>
@@ -752,7 +777,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'c55a6f6';
+    window.__IFRAME_VERSION__ = 'adca3ee';
     console.log('[dwellworks-request-form] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
