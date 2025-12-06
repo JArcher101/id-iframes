@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dwellworks Request Form</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
+  
+  <!-- Core CSS -->
+  <link rel="stylesheet" href="styles.css?v=fb79eb2" />
+  
+  <!-- Dwellworks Request Form Specific CSS -->
+  <link rel="stylesheet" href="css/dwellworks-request-form.css?v=fb79eb2" />
+</head>
+<body>
+  <div class="container">
+    <!-- Your Details Section -->
+    <div class="section" id="yourDetailsSection">
+      <h3>Your details</h3>
+      <div class="form-grid">
+        <div class="row">
+          <div>
+            <label for="submitterFirstName" class="required">First Name</label>
+            <input type="text" id="submitterFirstName" name="submitterFirstName" required />
+          </div>
+          <div>
+            <label for="submitterLastName" class="required">Last Name</label>
+            <input type="text" id="submitterLastName" name="submitterLastName" required />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="dwellworksReference" class="required">Dwellworks Reference</label>
+            <input type="text" id="dwellworksReference" name="dwellworksReference" required />
+          </div>
+          <div>
+            <label for="submitterPhone" class="required">Contact Telephone</label>
+            <div class="phone-row">
+              <div class="phone-country-code">
+                <div class="address-autocomplete-container">
+                  <input type="text" id="submitterPhoneCountryCode" name="submitterPhoneCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
+                  <div id="submitterPhoneCountryCodeDropdown" class="address-dropdown hidden"></div>
+                </div>
+              </div>
+              <div class="phone-number">
+                <input type="tel" id="submitterPhone" name="submitterPhone" required />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="submitterEmail" class="required">Email Address</label>
+            <input type="email" id="submitterEmail" name="submitterEmail" placeholder="name@example.com" required />
+          </div>
+          <div>
+            <label for="shareEmail">Share Email</label>
+            <input type="email" id="shareEmail" name="shareEmail" placeholder="add a users email second dwellworks email here to share the submission with them" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lease Section -->
+    <div class="section" id="leaseSection">
+      <h3>Property & Lease details</h3>
+      <div class="form-grid">
+        <!-- SDLT Address and Move In Date -->
+        <div class="address-section">
+          <div class="row sdlt-address-date-row">
+            <div class="sdlt-move-in-date">
+              <label for="moveInDate" class="required">SDLT Address Move In Date</label>
+              <input type="date" id="moveInDate" name="moveInDate" required />
+            </div>
+            <div class="sdlt-address-autocomplete">
+              <label for="sdltAddress" class="required">SDLT Address</label>
+              <div class="address-autocomplete-container">
+                <input type="text" id="sdltAddress" name="sdltAddress" autocomplete="off" placeholder="Start typing address or postcode..." required />
+                <div id="sdltAddressDropdown" class="address-dropdown hidden"></div>
+              </div>
+              <div class="address-controls-row">
+                <div class="checkbox-container">
+                  <input type="checkbox" id="sdltAddressNotListed" />
+                  <label for="sdltAddressNotListed">Address not listed (enter manually)</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="sdltManualAddressFields" class="hidden">
+            <div class="manual-address-container">
+              <div class="manual-address-grid">
+                <div class="row row-grid-25-25-50">
+                  <div>
+                    <label for="sdltFlatNumber" class="required">Flat Number</label>
+                    <input type="text" id="sdltFlatNumber" name="sdltFlatNumber" />
+                  </div>
+                  <div class="or-separator">
+                    <span class="or-text">OR</span>
+                  </div>
+                  <div>
+                    <label for="sdltBuildingNumber" class="required">Building Number</label>
+                    <input type="text" id="sdltBuildingNumber" name="sdltBuildingNumber" />
+                  </div>
+                  <div class="or-separator">
+                    <span class="or-text">OR</span>
+                  </div>
+                  <div>
+                    <label for="sdltBuildingName" class="required">Building Name</label>
+                    <input type="text" id="sdltBuildingName" name="sdltBuildingName" />
+                  </div>
+                </div>
+                <div class="row row-grid-50-50">
+                  <div>
+                    <label for="sdltStreet" class="required">Street</label>
+                    <input type="text" id="sdltStreet" name="sdltStreet" />
+                  </div>
+                  <div>
+                    <label for="sdltSubStreet">Sub Street</label>
+                    <input type="text" id="sdltSubStreet" name="sdltSubStreet" />
+                  </div>
+                </div>
+                <div class="row row-grid-50-50">
+                  <div>
+                    <label for="sdltTown" class="required">Town/City</label>
+                    <input type="text" id="sdltTown" name="sdltTown" />
+                  </div>
+                  <div>
+                    <label for="sdltPostcode" class="required">Postcode</label>
+                    <input type="text" id="sdltPostcode" name="sdltPostcode" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lease Document Upload and Note -->
+        <div class="row lease-document-row">
+          <div class="lease-document-upload">
+            <label for="leaseDocument" class="required">Lease Document</label>
+            <div class="upload-area" onclick="triggerLeaseFileInput()" ondrop="handleLeaseDrop(event)" ondragover="handleLeaseDragOver(event)" ondragleave="handleLeaseDragLeave(event)" id="leaseUploadArea">
+              <div class="upload-icon" id="leaseUploadIcon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="rgb(0, 60, 113)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17,8 12,3 7,8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <div class="upload-text" id="leaseUploadText">Upload Document</div>
+              <input type="file" class="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/rtf" id="leaseFileInput" onchange="handleLeaseFileSelect(event)">
+            </div>
+          </div>
+          <div class="lease-note">
+            <label for="leaseNote">Lease Note</label>
+            <textarea id="leaseNote" name="leaseNote" rows="3" placeholder="Enter any additional notes about the lease..."></textarea>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="radio-group">
+            <label class="required">Whose name is the lease under?</label>
+            <div class="radio-options">
+              <label class="radio-label">
+                <input type="radio" name="leaseUnder" value="tenant" />
+                <span>Tenant</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="leaseUnder" value="tenants-employer" />
+                <span>Tenant's Employer</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="leaseUnder" value="dwellworks" />
+                <span>Dwellworks</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="leaseUnder" value="other" />
+                <span>Other</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Other Lease Details (hidden by default) -->
+        <div id="leaseOtherFields" class="hidden">
+          <div class="nested-card">
+            <h4>Other Leasee Details</h4>
+            <div class="form-grid">
+              <div class="row">
+                <div>
+                  <label for="leaseOtherName" class="required">Name</label>
+                  <input type="text" id="leaseOtherName" name="leaseOtherName" />
+                </div>
+                <div>
+                  <label for="leaseOtherRelation" class="required">Relation</label>
+                  <input type="text" id="leaseOtherRelation" name="leaseOtherRelation" />
+                </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label for="leaseOtherDobEntity" class="required">DOB/Entity Number</label>
+                  <input type="text" id="leaseOtherDobEntity" name="leaseOtherDobEntity" placeholder="Enter DOB or entity number" required />
+                </div>
+                <div>
+                  <label for="leaseOtherTel">Telephone</label>
+                  <input type="tel" id="leaseOtherTel" name="leaseOtherTel" />
+                </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label for="leaseOtherEmail">Email</label>
+                  <input type="email" id="leaseOtherEmail" name="leaseOtherEmail" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tenant Details Section -->
+    <div class="section" id="tenantDetailsSection">
+      <h3>Tenant details</h3>
+      <div class="form-grid">
+        <!-- First Tenant -->
+        <div id="tenant1Fields">
+          <div class="row">
+            <div>
+              <label for="tenant1FirstName" class="required">First Name</label>
+              <input type="text" id="tenant1FirstName" name="tenant1FirstName" required />
+            </div>
+            <div>
+              <label for="tenant1LastName" class="required">Last Name</label>
+              <input type="text" id="tenant1LastName" name="tenant1LastName" required />
+            </div>
+          </div>
+          <div class="row">
+            <div class="dob-container">
+              <label class="required">Date of Birth</label>
+              <div class="birthdate-inputs">
+                <input type="text" maxlength="1" id="tenant1Dob1" />
+                <input type="text" maxlength="1" id="tenant1Dob2" />
+                <input type="text" maxlength="1" id="tenant1Dob3" />
+                <input type="text" maxlength="1" id="tenant1Dob4" />
+                <input type="text" maxlength="1" id="tenant1Dob5" />
+                <input type="text" maxlength="1" id="tenant1Dob6" />
+                <input type="text" maxlength="1" id="tenant1Dob7" />
+                <input type="text" maxlength="1" id="tenant1Dob8" />
+              </div>
+            </div>
+            <div>
+              <label for="tenant1Mobile" class="required">Mobile</label>
+              <div class="phone-row">
+                <div class="phone-country-code">
+                  <div class="address-autocomplete-container">
+                    <input type="text" id="tenant1MobileCountryCode" name="tenant1MobileCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
+                    <div id="tenant1MobileCountryCodeDropdown" class="address-dropdown hidden"></div>
+                  </div>
+                </div>
+                <div class="phone-number">
+                  <input type="tel" id="tenant1Mobile" name="tenant1Mobile" required />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="tenant1Email">Email Address</label>
+              <input type="email" id="tenant1Email" name="tenant1Email" placeholder="name@example.com" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Previous Address -->
+        <div class="address-section previous-address-section">
+          <div class="row previous-address-row">
+            <div class="previous-address-country">
+              <label for="previousAddressCountry" class="required">Previous Address Country</label>
+              <div class="address-autocomplete-container">
+                <input type="text" id="previousAddressCountry" name="previousAddressCountry" autocomplete="off" placeholder="Search country..." value="United Kingdom" data-country-code="GBR" class="country-dropdown" />
+                <div id="previousAddressCountryDropdown" class="address-dropdown hidden"></div>
+              </div>
+            </div>
+            <div class="address-autocomplete-row" id="previousAddressUkRow">
+              <label for="previousAddress" class="required">Previous Address</label>
+              <div class="address-autocomplete-container">
+                <input type="text" id="previousAddress" name="previousAddress" autocomplete="off" placeholder="Start typing address or postcode..." />
+                <div id="previousAddressDropdown" class="address-dropdown hidden"></div>
+              </div>
+              <div class="address-controls-row" id="previousAddressUkControls">
+                <div class="checkbox-container">
+                  <input type="checkbox" id="previousAddressNotListed" />
+                  <label for="previousAddressNotListed">Address not listed (enter manually)</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="previousManualAddressFields" class="hidden">
+            <div class="manual-address-container">
+              <div class="manual-address-grid">
+                <div class="row row-grid-25-25-50">
+                  <div>
+                    <label for="prevFlatNumber" class="required">Flat Number</label>
+                    <input type="text" id="prevFlatNumber" name="prevFlatNumber" />
+                  </div>
+                  <div class="or-separator">
+                    <span class="or-text">OR</span>
+                  </div>
+                  <div>
+                    <label for="prevBuildingNumber" class="required">Building Number</label>
+                    <input type="text" id="prevBuildingNumber" name="prevBuildingNumber" />
+                  </div>
+                  <div class="or-separator">
+                    <span class="or-text">OR</span>
+                  </div>
+                  <div>
+                    <label for="prevBuildingName" class="required">Building Name</label>
+                    <input type="text" id="prevBuildingName" name="prevBuildingName" />
+                  </div>
+                </div>
+                <div class="row row-grid-50-50">
+                  <div>
+                    <label for="prevStreet" class="required">Street</label>
+                    <input type="text" id="prevStreet" name="prevStreet" />
+                  </div>
+                  <div>
+                    <label for="prevSubStreet">Sub Street</label>
+                    <input type="text" id="prevSubStreet" name="prevSubStreet" />
+                  </div>
+                </div>
+                <div class="row row-grid-50-50">
+                  <div>
+                    <label for="prevTown" class="required">Town/City</label>
+                    <input type="text" id="prevTown" name="prevTown" />
+                  </div>
+                  <div>
+                    <label for="prevPostcode" class="required">Postcode</label>
+                    <input type="text" id="prevPostcode" name="prevPostcode" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Employers Details (Nested Card) -->
+        <div class="nested-card" id="employersDetailsSection">
+          <h4>Employers details</h4>
+          <div class="form-grid">
+            <div class="row employer-details-row">
+              <div>
+                <label for="employerCountry" class="required">Country</label>
+                <div class="address-autocomplete-container">
+                  <input type="text" id="employerCountry" name="employerCountry" autocomplete="off" placeholder="Search country..." value="United Kingdom" data-jurisdiction-code="GB" class="country-dropdown" />
+                  <div id="employerCountryDropdown" class="address-dropdown hidden"></div>
+                </div>
+              </div>
+              <div>
+                <label for="employerName" class="required">Name</label>
+                <div class="company-buttons-container">
+                  <div class="address-autocomplete-container">
+                    <input type="text" id="employerName" name="employerName" autocomplete="off" placeholder="Search by company name..." />
+                    <div id="employerNameDropdown" class="address-dropdown hidden"></div>
+                  </div>
+                  <button type="button" id="employerLinkBtn" class="hidden" title="View on Companies House">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </button>
+                  <button type="button" id="employerRefreshBtn" class="hidden" title="Refresh company data from Companies House">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <polyline points="1 20 1 14 7 14"></polyline>
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label for="employerNumber" class="required">Number</label>
+                <div class="address-autocomplete-container">
+                  <input type="text" id="employerNumber" name="employerNumber" autocomplete="off" placeholder="Search by company number..." data-organisation-number="" />
+                  <div id="employerNumberDropdown" class="address-dropdown hidden"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Second Tenant -->
+        <div class="row">
+          <div class="yes-no-container add-second-tenant-container">
+            <h4>Add Second Tenant</h4>
+            <div class="yes-no-buttons add-second-tenant-buttons">
+              <button type="button" class="yes-no-btn" data-field="addSecondTenant" data-value="yes">Yes</button>
+              <button type="button" class="yes-no-btn" data-field="addSecondTenant" data-value="no">No</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Second Tenant Fields (hidden by default) -->
+        <div id="tenant2Fields" class="hidden">
+          <h4 style="margin-top: 20px; margin-bottom: 10px; color: var(--primary);">Second Tenant</h4>
+          <div class="row">
+            <div>
+              <label for="tenant2FirstName" class="required">First Name</label>
+              <input type="text" id="tenant2FirstName" name="tenant2FirstName" />
+            </div>
+            <div>
+              <label for="tenant2LastName" class="required">Last Name</label>
+              <input type="text" id="tenant2LastName" name="tenant2LastName" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="dob-container">
+              <label class="required">Date of Birth</label>
+              <div class="birthdate-inputs">
+                <input type="text" maxlength="1" id="tenant2Dob1" />
+                <input type="text" maxlength="1" id="tenant2Dob2" />
+                <input type="text" maxlength="1" id="tenant2Dob3" />
+                <input type="text" maxlength="1" id="tenant2Dob4" />
+                <input type="text" maxlength="1" id="tenant2Dob5" />
+                <input type="text" maxlength="1" id="tenant2Dob6" />
+                <input type="text" maxlength="1" id="tenant2Dob7" />
+                <input type="text" maxlength="1" id="tenant2Dob8" />
+              </div>
+            </div>
+            <div>
+              <label for="tenant2Mobile" class="required">Mobile</label>
+              <div class="phone-row">
+                <div class="phone-country-code">
+                  <div class="address-autocomplete-container">
+                    <input type="text" id="tenant2MobileCountryCode" name="tenant2MobileCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
+                    <div id="tenant2MobileCountryCodeDropdown" class="address-dropdown hidden"></div>
+                  </div>
+                </div>
+                <div class="phone-number">
+                  <input type="tel" id="tenant2Mobile" name="tenant2Mobile" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="tenant2Email">Email Address</label>
+              <input type="email" id="tenant2Email" name="tenant2Email" placeholder="name@example.com" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accounts Information Section -->
+    <div class="section" id="accountsSection">
+      <h3>Accounts information</h3>
+      
+      <!-- Legal Fee -->
+      <div class="fee-subsection">
+        <h4>Legal Fee</h4>
+        <div class="form-grid">
+          <div class="row">
+            <div class="radio-group">
+              <label class="required">Who is responsible for paying the legal fees?</label>
+              <div class="radio-options">
+                <label class="radio-label">
+                  <input type="radio" name="legalFeePayee" value="tenant" />
+                  <span>Tenant</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="legalFeePayee" value="tenant-employer" />
+                  <span>Tenant's Employer</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="legalFeePayee" value="dwellworks" />
+                  <span>Dwellworks</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="legalFeePayee" value="other" />
+                  <span>Other</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legal Fee Other Fields -->
+          <div id="legalFeeOtherFields" class="hidden">
+            <div class="nested-card">
+              <h4>Other Legal Fee Payee Details</h4>
+              <div class="form-grid">
+                <div class="row">
+                  <div>
+                    <label for="legalFeeOtherName" class="required">Name</label>
+                    <input type="text" id="legalFeeOtherName" name="legalFeeOtherName" />
+                  </div>
+                  <div>
+                    <label for="legalFeeOtherRelation" class="required">Relation</label>
+                    <input type="text" id="legalFeeOtherRelation" name="legalFeeOtherRelation" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="legalFeeOtherDobEntity" class="required">DOB/Entity Number</label>
+                    <input type="text" id="legalFeeOtherDobEntity" name="legalFeeOtherDobEntity" placeholder="Enter DOB or entity number" required />
+                  </div>
+                  <div>
+                    <label for="legalFeeOtherTel">Telephone</label>
+                    <input type="tel" id="legalFeeOtherTel" name="legalFeeOtherTel" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="legalFeeOtherEmail">Email</label>
+                    <input type="email" id="legalFeeOtherEmail" name="legalFeeOtherEmail" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legal Fee Employer Details -->
+          <div id="legalFeeEmployerFields" class="hidden">
+            <div class="nested-card">
+              <h4>Legal Fee Employer Payee Details</h4>
+              <div class="form-grid">
+                <div class="row">
+                  <div>
+                    <label for="legalFeeEmployerName" class="required">Employer Accounts Name</label>
+                    <input type="text" id="legalFeeEmployerName" name="legalFeeEmployerName" />
+                  </div>
+                  <div>
+                    <label for="legalFeeEmployerContact" class="required">Contact</label>
+                    <input type="text" id="legalFeeEmployerContact" name="legalFeeEmployerContact" placeholder="Email or telephone number" required />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legal Fee Direct Send -->
+          <div id="legalFeeDirectSendContainer" class="hidden">
+            <div class="row">
+              <div class="yes-no-container add-second-tenant-container">
+                <h4>Should we send the invoice direct to them?</h4>
+                <div class="yes-no-buttons add-second-tenant-buttons">
+                  <button type="button" class="yes-no-btn" data-field="legalFeeDirectSend" data-value="yes">Yes</button>
+                  <button type="button" class="yes-no-btn" data-field="legalFeeDirectSend" data-value="no">No</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SDLT Fee -->
+      <div class="fee-subsection">
+        <h4>SDLT Fee</h4>
+        <div class="form-grid">
+          <div class="row">
+            <div class="radio-group">
+              <label class="required">Who is responsible for paying the SDLT fees?</label>
+              <div class="radio-options">
+                <label class="radio-label">
+                  <input type="radio" name="sdltFeePayee" value="tenant" />
+                  <span>Tenant</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="sdltFeePayee" value="tenant-employer" />
+                  <span>Tenant's Employer</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="sdltFeePayee" value="dwellworks" />
+                  <span>Dwellworks</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="sdltFeePayee" value="other" />
+                  <span>Other</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- SDLT Fee Other Fields -->
+          <div id="sdltFeeOtherFields" class="hidden">
+            <div class="nested-card">
+              <h4>Other SDLT Fee Payee Details</h4>
+              <div class="form-grid">
+                <div class="row">
+                  <div>
+                    <label for="sdltFeeOtherName" class="required">Name</label>
+                    <input type="text" id="sdltFeeOtherName" name="sdltFeeOtherName" />
+                  </div>
+                  <div>
+                    <label for="sdltFeeOtherRelation" class="required">Relation</label>
+                    <input type="text" id="sdltFeeOtherRelation" name="sdltFeeOtherRelation" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="sdltFeeOtherDobEntity" class="required">DOB/Entity Number</label>
+                    <input type="text" id="sdltFeeOtherDobEntity" name="sdltFeeOtherDobEntity" placeholder="Enter DOB or entity number" required />
+                  </div>
+                  <div>
+                    <label for="sdltFeeOtherTel">Telephone</label>
+                    <input type="tel" id="sdltFeeOtherTel" name="sdltFeeOtherTel" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label for="sdltFeeOtherEmail">Email</label>
+                    <input type="email" id="sdltFeeOtherEmail" name="sdltFeeOtherEmail" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SDLT Fee Employer Details Match -->
+          <div id="sdltFeeEmployerMatchContainer" class="hidden">
+            <div class="row">
+              <div class="yes-no-container add-second-tenant-container">
+                <h4>Employer's account details match</h4>
+                <div class="yes-no-buttons add-second-tenant-buttons">
+                  <button type="button" class="yes-no-btn selected" data-field="sdltFeeEmployerMatch" data-value="yes">Yes</button>
+                  <button type="button" class="yes-no-btn" data-field="sdltFeeEmployerMatch" data-value="no">No</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SDLT Fee Employer Details (shown when checkbox unchecked) -->
+          <div id="sdltFeeEmployerFields" class="hidden">
+            <div class="nested-card">
+              <h4>SDLT Fee Employer Payee Details</h4>
+              <div class="form-grid">
+                <div class="row">
+                  <div>
+                    <label for="sdltFeeEmployerName" class="required">Employer Accounts Name</label>
+                    <input type="text" id="sdltFeeEmployerName" name="sdltFeeEmployerName" />
+                  </div>
+                  <div>
+                    <label for="sdltFeeEmployerContact" class="required">Contact</label>
+                    <input type="text" id="sdltFeeEmployerContact" name="sdltFeeEmployerContact" placeholder="Email or telephone number" required />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SDLT Fee Direct Send -->
+          <div id="sdltFeeDirectSendContainer" class="hidden">
+            <div class="row">
+              <div class="yes-no-container add-second-tenant-container">
+                <h4>Should we send the invoice direct to them?</h4>
+                <div class="yes-no-buttons add-second-tenant-buttons">
+                  <button type="button" class="yes-no-btn" data-field="sdltFeeDirectSend" data-value="yes">Yes</button>
+                  <button type="button" class="yes-no-btn" data-field="sdltFeeDirectSend" data-value="no">No</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Details Section -->
+    <div class="section" id="additionalDetailsSection">
+      <h3>Additional details</h3>
+      <div class="form-grid">
+        <div class="row">
+          <div>
+            <textarea id="additionalDetails" name="additionalDetails" rows="4" placeholder="Enter any additional information..."></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div class="yes-no-container add-second-tenant-container">
+            <h4>Upload additional documents</h4>
+            <div class="yes-no-buttons add-second-tenant-buttons">
+              <button type="button" class="yes-no-btn" data-field="addAdditionalDocuments" data-value="yes">Yes</button>
+              <button type="button" class="yes-no-btn" data-field="addAdditionalDocuments" data-value="no">No</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Documents Container -->
+        <div id="additionalDocumentsContainer" class="hidden">
+          <div id="additionalDocumentsList">
+            <!-- Document items will be added here dynamically -->
+          </div>
+          <button type="button" class="add-document-btn" id="addAnotherDocumentBtn" onclick="addAnotherDocument()">Add Another Document</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Checkboxes -->
+    <div class="confirmation-checkboxes-container">
+      <div class="monitoring-card">
+        <label class="monitoring-label">
+          <input type="checkbox" id="privacyCheckbox" name="privacyCheckbox" required />
+          <span class="confirmation-text">I understand information submitted will be handled in line with your <a href="https://www.thurstanhoskin.co.uk/privacy" target="_blank" style="color: var(--primary); text-decoration: underline;">Privacy Policy</a></span>
+        </label>
+      </div>
+      <div class="monitoring-card">
+        <label class="monitoring-label">
+          <input type="checkbox" id="consentCheckbox" name="consentCheckbox" required />
+          <span class="confirmation-text">I have the authority from all named parties to submit their information via this form and they understand and agree to the processing of their data as described in our <a href="https://www.thurstanhoskin.co.uk/privacy" target="_blank" style="color: var(--primary); text-decoration: underline;">Privacy Policy</a></span>
+        </label>
+      </div>
+      <div class="monitoring-card">
+        <label class="monitoring-label">
+          <input type="checkbox" id="termsCheckbox" name="termsCheckbox" required />
+          <span class="confirmation-text">I understand and agree to the <a href="/file-upload/log-in/?system=Dwellworks&terms=true" target="_blank" style="color: var(--primary); text-decoration: underline;">Terms of Use</a> linked in the footer</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="form-actions">
+      <button type="submit" id="submitBtn" class="submit-btn" disabled>Submit Request</button>
+    </div>
+
+    <!-- Error Popup -->
+    <div id="errorPopup" class="error-popup hidden">
+      <div class="error-popup-header">Error</div>
+      <div class="error-popup-content">
+        <span id="errorMessage"></span>
+        <button id="closeError">&times;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
+  <script src="js/jurisdiction-autocomplete.js?v=fb79eb2"></script>
+  
+  <!-- Google libphonenumber for phone validation (must load before core script) -->
+  <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
+  
+  <!-- Core JavaScript -->
+  <script src="js/dwellworks-request-form-core.js?v=fb79eb2"></script>
+  
+  <!-- Initialize Autocomplete Fields -->
+  <script>
+    // Initialize all autocomplete fields immediately (DOM already loaded since scripts are at bottom)
+    console.log('🔍 Initializing autocomplete fields in dwellworks-request-form...');
+    initializeCountryAutocomplete('previousAddressCountry', 'previousAddressCountryDropdown');
+    initializePhoneCodeAutocomplete('submitterPhoneCountryCode', 'submitterPhoneCountryCodeDropdown');
+    initializePhoneCodeAutocomplete('tenant1MobileCountryCode', 'tenant1MobileCountryCodeDropdown');
+    initializePhoneCodeAutocomplete('tenant2MobileCountryCode', 'tenant2MobileCountryCodeDropdown');
+    initializeJurisdictionAutocomplete('employerCountry', 'employerCountryDropdown');
+    console.log('✅ Autocomplete initialization complete');
+  </script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = 'fb79eb2';
+    console.log('[dwellworks-request-form] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
+</body>
+</html>
+

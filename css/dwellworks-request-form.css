@@ -1,0 +1,1018 @@
+/*
+=====================================================================
+DWELLWORKS REQUEST FORM - STYLE SECTION
+=====================================================================
+Modular CSS for the dwellworks request form.
+Based on request-form.css but customized for dwellworks-specific sections.
+=====================================================================
+*/
+
+/* CSS Variables */
+:root { 
+  --gap: 10px;
+  --primary:#003C71; 
+  --error:#e02424; 
+  --success: #10a37f;
+  --warning: #ffc107;
+}
+
+/* Section spacing - all cards have 20px gap between them */
+.section {
+  margin-bottom: 20px !important;
+  padding: 20px !important;
+}
+
+.section:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Section Headers */
+.section h3 {
+  color: var(--primary) !important;
+  margin: 0 0 20px 0 !important;
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.section h4 {
+  color: var(--primary);
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0 0 20px 0;
+}
+
+/* Form Grid */
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.row > div:only-child {
+  grid-column: 1 / -1;
+}
+
+/* Labels */
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 400;
+  font-size: 0.9rem;
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+}
+
+label.required::after {
+  content: " *";
+  color: var(--error);
+  margin-left: 4px;
+}
+
+/* Form inputs */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="date"],
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 300;
+  transition: border .2s, box-shadow .2s;
+  box-sizing: border-box;
+  font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="tel"]:focus,
+input[type="date"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0,59,92,.2);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Date of Birth Inputs */
+.dob-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.birthdate-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0;
+}
+
+.birthdate-inputs input {
+  width: 40px;
+  max-width: 40px;
+  height: 40px;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  flex-shrink: 0;
+}
+
+/* YES/NO Buttons */
+.yes-no-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Nested Card */
+.nested-card {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.nested-card h4 {
+  color: var(--primary);
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0 0 20px 0;
+}
+
+.employer-details-row {
+  display: grid;
+  grid-template-columns: 2fr 6fr 2fr;
+  gap: 20px;
+}
+
+.add-second-tenant-container h4 {
+  color: var(--primary);
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0 0 10px 0;
+}
+
+.yes-no-buttons {
+  display: flex;
+  gap: 20px;
+}
+
+.add-second-tenant-buttons {
+  width: 40%;
+  gap: 10px;
+}
+
+.add-second-tenant-buttons .yes-no-btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.yes-no-btn {
+  flex: 1;
+  background: #f5f5f5;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--primary);
+  min-height: 44px;
+}
+
+.yes-no-btn:hover {
+  background: #e8f4f8;
+  border-color: rgba(0, 60, 113, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.yes-no-btn.selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 60, 113, 0.25);
+}
+
+/* Radio Buttons */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.radio-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 8px;
+}
+
+.radio-label input[type="radio"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+.radio-label span {
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* Phone Row - 30/70 split accounting for gap */
+.phone-row {
+  display: grid;
+  grid-template-columns: 3fr 7fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Lease Document Row - 30/70 split accounting for gap */
+.lease-document-row {
+  display: grid;
+  grid-template-columns: 3fr 7fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* SDLT Address and Move In Date Row - 30/70 split accounting for gap */
+.sdlt-address-date-row {
+  display: grid;
+  grid-template-columns: 3fr 7fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.sdlt-address-date-row .address-controls-row {
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+
+.sdlt-address-autocomplete {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.sdlt-address-autocomplete label {
+  width: 100%;
+}
+
+.sdlt-address-autocomplete .address-autocomplete-container {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.sdlt-move-in-date {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.sdlt-move-in-date label {
+  width: 100%;
+}
+
+.sdlt-move-in-date input[type="date"] {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.lease-document-upload {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.lease-document-upload label {
+  width: 100%;
+}
+
+.lease-document-upload .upload-area {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.lease-document-upload .upload-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.lease-note {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.lease-note textarea {
+  flex: 1;
+  min-height: 100px;
+}
+
+.phone-country-code {
+  width: 100%;
+}
+
+.phone-number {
+  width: 100%;
+}
+
+/* Address Section */
+.address-section {
+  margin-top: 20px;
+}
+
+.previous-address-section {
+  margin-top: 10px;
+}
+
+.address-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 20px;
+}
+
+.previous-address-row {
+  display: grid;
+  grid-template-columns: 4fr 6fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.previous-address-country {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.previous-address-country label {
+  width: 100%;
+}
+
+.previous-address-country .address-autocomplete-container {
+  width: 100%;
+}
+
+.address-autocomplete-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.address-controls-row {
+  margin-top: 20px;
+}
+
+.address-autocomplete-row .address-controls-row {
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+/* Address Autocomplete Container */
+.address-autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+.address-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.address-dropdown-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+}
+
+.address-dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.address-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.address-loading {
+  padding: 12px;
+  text-align: center;
+  color: #666;
+  font-size: 0.85rem;
+  font-style: italic;
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+}
+
+/* Manual Address Fields */
+.manual-address-container {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.manual-address-container.validated {
+  background: #e8f5e9;
+  border-color: #4caf50;
+}
+
+.manual-address-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.row-grid-25-25-50 {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 2fr;
+  gap: 20px;
+  align-items: end;
+}
+
+.or-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 8px;
+}
+
+.or-text {
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.row-grid-50-50 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Company Buttons Container */
+.company-buttons-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.company-buttons-container button {
+  width: 36px;
+  height: 36px;
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.company-buttons-container button:hover {
+  background-color: var(--primary);
+  color: white;
+}
+
+/* Checkbox Styling */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 8px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+.checkbox-text {
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* Upload Area */
+.upload-area {
+  border: 2px dashed #4A90E2;
+  border-radius: 6px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(74, 144, 226, 0.1);
+  width: 100%;
+  min-height: 100px;
+  box-sizing: border-box;
+}
+
+.upload-area:hover {
+  border-color: #357ABD;
+  background: rgba(74, 144, 226, 0.15);
+}
+
+.upload-area.dragover {
+  border-color: #357ABD;
+  background: rgba(74, 144, 226, 0.2);
+}
+
+.upload-icon {
+  flex-shrink: 0;
+}
+
+.upload-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.upload-text {
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  color: #4A90E2;
+  margin: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.file-input {
+  display: none;
+}
+
+/* Fee Subsection */
+.fee-subsection {
+  margin-bottom: 40px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.fee-subsection:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* Multi Contact Items */
+.multi-contact-item {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.multi-contact-item .contact-email,
+.multi-contact-item .contact-tel {
+  flex: 1;
+}
+
+.remove-contact-btn {
+  padding: 8px 12px;
+  background: #e02424;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.remove-contact-btn:hover {
+  background: #c01e1e;
+}
+
+.add-contact-btn {
+  padding: 8px 16px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+  margin-top: 20px;
+}
+
+.add-contact-btn:hover {
+  background: #004080;
+}
+
+/* Additional Documents */
+.additional-document-item {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: 3fr 7fr;
+  gap: 20px;
+  position: relative;
+  align-items: start;
+}
+
+.remove-document-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #999;
+  transition: color 0.2s;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-document-btn:hover {
+  color: var(--error);
+}
+
+.document-upload-column {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.document-upload-column label {
+  margin-bottom: 8px;
+}
+
+.document-upload-column .upload-area {
+  width: 100%;
+  max-width: 100%;
+  min-height: 120px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.document-upload-column .upload-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.document-details-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.document-details-column > div {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.add-document-btn {
+  padding: 10px 20px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+  margin-top: 20px;
+}
+
+.add-document-btn:hover {
+  background: #004080;
+}
+
+/* Confirmation Card */
+.confirmation-checkboxes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Monitoring Card Style (Orange Dotted, Green When Selected) */
+.monitoring-card {
+  background: rgba(212, 165, 116, 0.15);
+  border: 2px dotted #D4A574;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.monitoring-card:hover {
+  background: rgba(212, 165, 116, 0.25);
+  border-color: #C49464;
+}
+
+.monitoring-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.monitoring-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  margin: 2px 0 0 0;
+  cursor: pointer;
+  accent-color: rgb(0, 60, 113);
+  flex-shrink: 0;
+}
+
+.monitoring-label input[type="checkbox"]:checked {
+  accent-color: #10a37f;
+}
+
+.monitoring-card:has(input:checked) {
+  background: rgba(16, 163, 127, 0.15);
+  border-color: #10a37f;
+}
+
+.monitoring-card:has(input:checked):hover {
+  background: rgba(16, 163, 127, 0.25);
+}
+
+.confirmation-checkbox-label {
+  display: grid;
+  grid-template-columns: 5% 95%;
+  align-items: center;
+  gap: 0;
+  cursor: pointer;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.confirmation-checkbox-label input[type="checkbox"] {
+  margin: 0;
+  justify-self: center;
+  align-self: center;
+  grid-column: 1;
+  width: 1.26rem;
+  height: 1.26rem;
+  min-width: 1.26rem;
+  min-height: 1.26rem;
+}
+
+.confirmation-text {
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #333;
+  margin: 0;
+  flex: 1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Form Submit Button */
+.form-actions {
+  margin: 40px 0;
+  width: 100%;
+}
+
+.submit-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 15px 40px;
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+  width: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: rgb(0, 45, 85);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Error Popup */
+.error-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--error);
+  color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-weight: 600;
+  max-width: 420px;
+  min-width: 300px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+}
+
+.error-popup-header {
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+  color: #fff;
+}
+
+.error-popup-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.error-popup-content span {
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  color: #fff;
+  flex: 1;
+  line-height: 1.6;
+}
+
+.error-popup-content button {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.error-popup-content button:hover {
+  opacity: 0.7;
+}
+
+/* Utility classes */
+.hidden {
+  display: none !important;
+}
+
+/* Dropdown Items for Autocomplete */
+.dropdown-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: #f8f8f8;
+}
+
+.jurisdiction-name,
+.phone-display {
+  font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.jurisdiction-code {
+  font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgb(0, 60, 113);
+  background: #e8f4f8;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.dropdown-item-empty {
+  padding: 12px;
+  text-align: center;
+  color: #999;
+  font-size: 0.85rem;
+  font-style: italic;
+  font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+  
+  .yes-no-buttons {
+    flex-direction: column;
+  }
+  
+  .radio-options {
+    flex-direction: column;
+  }
+}
+
