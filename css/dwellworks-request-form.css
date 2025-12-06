@@ -1002,7 +1002,7 @@ textarea {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .row {
     grid-template-columns: 1fr;
   }
