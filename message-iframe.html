@@ -1142,12 +1142,11 @@
             {
                 type: 'sdlt-message-viewer',
                 userEmail: 'user@example.com',
-                _id: 'item-database-id',  // Item/matter ID (not message ID)
                 notification: true/false,
                 white: 'Dwellworks' | 'THS',  // Determines which message type appears as "sent" (white)
                 data: [
                     {
-                        // Note: Messages in SDLT mode don't include _id
+                        _id: 'message-id',  // Message ID (included in SDLT mode)
                         message: 'Message text',
                         time: '07/11/2025, 12:10:24 PM',
                         type: 'Dwellworks' | 'THS',
@@ -1156,6 +1155,9 @@
                     ...
                 ]
             }
+            
+            Note: SDLT mode does NOT include item/matter _id at the top level,
+            but message objects in the data array DO include _id (message IDs).
             */
             else if (event.data.type === 'sdlt-message-viewer') {
                 const data = event.data;
@@ -1169,6 +1171,8 @@
                 
                 // Store critical data for later use in message sending
                 userEmail = data.userEmail || '';
+                // Note: SDLT mode doesn't use item/matter _id, but we keep itemId for dismiss-notification
+                // In SDLT mode, itemId may be empty or undefined
                 itemId = data._id || '';
                 hasNotification = data.notification || false;
                 sdltWhiteType = data.white || 'THS'; // Default to THS if not specified
@@ -2013,11 +2017,18 @@
         */
         function dismissNotification() {
             // Send dismissal request to parent
-            window.parent.postMessage({
+            // In SDLT mode, we don't send item/matter _id
+            const dismissPayload = {
                 type: "dismiss-notification",
-                _id: itemId,
                 userEmail: userEmail
-            }, '*');
+            };
+            
+            // Only include _id in ID mode (not SDLT mode)
+            if (!isSdltMode) {
+                dismissPayload._id = itemId;
+            }
+            
+            window.parent.postMessage(dismissPayload, '*');
             
             console.log('Dismiss notification sent to parent');
         }
@@ -2308,7 +2319,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '452c3b1';
+    window.__IFRAME_VERSION__ = '5c0ce89';
     console.log('[message-iframe] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

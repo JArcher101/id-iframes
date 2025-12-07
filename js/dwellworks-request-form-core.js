@@ -1613,11 +1613,11 @@ function populateFormFromSubmission(data) {
     const input = document.getElementById('legalFeeEmployerName');
     if (input) input.value = data.thsFeeEmployersAccountsContactName;
   }
-  if (data.thsFeesInvoiceSending !== undefined) {
+  if (data.thsFeeInvoiceSending !== undefined) {
     const yesBtn = document.querySelector('#legalFeeDirectSendContainer .yes-no-btn[data-value="yes"]');
     const noBtn = document.querySelector('#legalFeeDirectSendContainer .yes-no-btn[data-value="no"]');
-    if (data.thsFeesInvoiceSending === 'yes' && yesBtn) yesBtn.click();
-    else if (data.thsFeesInvoiceSending === 'no' && noBtn) noBtn.click();
+    if (data.thsFeeInvoiceSending === true && yesBtn) yesBtn.click();
+    else if (data.thsFeeInvoiceSending === undefined && noBtn) noBtn.click();
   }
   
   // SDLT Fee Payee
@@ -1664,11 +1664,11 @@ function populateFormFromSubmission(data) {
     if (data.sdltFeeEmployerMatch === true && yesBtn) yesBtn.click();
     else if (data.sdltFeeEmployerMatch === false && noBtn) noBtn.click();
   }
-  if (data.sdltFeesInvoiceSending !== undefined) {
+  if (data.sdltFeeInvoiceSending !== undefined) {
     const yesBtn = document.querySelector('#sdltFeeDirectSendContainer .yes-no-btn[data-value="yes"]');
     const noBtn = document.querySelector('#sdltFeeDirectSendContainer .yes-no-btn[data-value="no"]');
-    if (data.sdltFeesInvoiceSending === 'yes' && yesBtn) yesBtn.click();
-    else if (data.sdltFeesInvoiceSending === 'no' && noBtn) noBtn.click();
+    if (data.sdltFeeInvoiceSending === true && yesBtn) yesBtn.click();
+    else if (data.sdltFeeInvoiceSending === undefined && noBtn) noBtn.click();
   }
   
   // Additional Details
@@ -2290,7 +2290,7 @@ function collectFormData() {
     thsFeePayerPhoneNumber: legalFeePayee === 'other' ? (document.getElementById('legalFeeOtherTel').value || undefined) : undefined,
     thsFeePayerEmail: legalFeePayee === 'other' ? (document.getElementById('legalFeeOtherEmail').value || undefined) : undefined,
     thsFeePayerRelationToTenant: legalFeePayee === 'other' ? document.getElementById('legalFeeOtherRelation').value : undefined,
-    thsFeesInvoiceSending: legalFeePayee && legalFeePayee !== 'dwellworks' ? (formState.legalFeeDirectSend || undefined) : undefined,
+    thsFeeInvoiceSending: legalFeePayee && legalFeePayee !== 'dwellworks' ? (formState.legalFeeDirectSend === true ? true : undefined) : undefined,
     thsFeeEmployersAcocuntsEmail: legalFeePayee === 'tenant-employer' ? (document.getElementById('legalFeeEmployerContact').value || undefined) : undefined,
     thsFeeEmployersAccountsContactName: legalFeePayee === 'tenant-employer' ? document.getElementById('legalFeeEmployerName').value : undefined,
     
@@ -2301,7 +2301,7 @@ function collectFormData() {
     sdltFeePayerEmail: sdltFeePayee === 'other' ? (document.getElementById('sdltFeeOtherEmail').value || undefined) : undefined,
     sdltFeePayerPhone: sdltFeePayee === 'other' ? (document.getElementById('sdltFeeOtherTel').value || undefined) : undefined,
     sdltFeePayerRelationToTenant: sdltFeePayee === 'other' ? document.getElementById('sdltFeeOtherRelation').value : undefined,
-    sdltFeeInvoiceSending: sdltFeePayee && sdltFeePayee !== 'dwellworks' ? (formState.sdltFeeDirectSend || undefined) : undefined,
+    sdltFeeInvoiceSending: sdltFeePayee && sdltFeePayee !== 'dwellworks' ? (formState.sdltFeeDirectSend === true ? true : undefined) : undefined,
     sdltFeeEmployerDetailsMatchThsLlpFeePayer: (sdltFeePayee === 'tenant-employer' && legalFeePayee === 'tenant-employer') ? formState.sdltFeeEmployerMatch : undefined,
     sdltFeeEmployersAccountContactName: (sdltFeePayee === 'tenant-employer' && !formState.sdltFeeEmployerMatch) ? document.getElementById('sdltFeeEmployerName').value : undefined,
     sdltFeeEmployersAccountEmail: (sdltFeePayee === 'tenant-employer' && !formState.sdltFeeEmployerMatch) ? (document.getElementById('sdltFeeEmployerContact').value || undefined) : undefined,
