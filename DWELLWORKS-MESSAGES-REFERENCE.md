@@ -246,7 +246,7 @@ Quick reference guide for all messages between the iframe and parent.
     
     // Documents
     addSupportingDocuments: true || false,
-    sdltDocuments: [
+    supportingDocuments: [
       {
         name: 'doc1.pdf',
         size: 512000,
@@ -257,12 +257,74 @@ Quick reference guide for all messages between the iframe and parent.
         uploader: 'User',
         date: '15/12/2023, 14:30:45'
       }
-    ] || [],
+    ] || [], // Only additional documents (lease is in leaseAgreement field, not duplicated here)
     
     // Confirmations
     privacyPolicy: true,
     gdprIndividualsAgreement: true,
-    terms: true
+    terms: true,
+    
+    // ID Entries (for ID system integration)
+    idEntries: [
+      {
+        title: "BA", // Should come from parent/submitter data
+        clientNumber: 99999, // Should come from parent/submitter data
+        matterNumber: "999", // Should come from parent/submitter data
+        name: "A N Other", // Formatted as initials for tenants, full name for businesses
+        business: false, // true for employers and business entities
+        dateOfBirth: "01-01-1990" || undefined, // dd-mm-yyyy format, tenants and individuals only
+        currentAddressNEW: {
+          // Full Thirdfort address object (same as sdltAddress)
+          flat_number: '1' || undefined,
+          building_number: '123' || undefined,
+          building_name: undefined,
+          street: 'Baker Street',
+          sub_street: undefined,
+          town: 'London',
+          postcode: 'W1U 6SB',
+          country: 'GBR'
+        } || undefined, // Tenants only
+        previousAddressNEW: {
+          // Full Thirdfort address object (same as tenantsPreviousAddress)
+          flat_number: '2' || undefined,
+          building_number: '456' || undefined,
+          building_name: undefined,
+          street: 'Old Street',
+          sub_street: undefined,
+          town: 'London',
+          postcode: 'EC1V 9AB',
+          country: 'GBR'
+        } || undefined, // Tenants only
+        companyDetails: {
+          // Full Companies House API response object
+          title: 'ACME CORPORATION LIMITED',
+          company_number: '12345678',
+          // ... full Companies House data
+        } || undefined, // UK employers only
+        unassigned: true,
+        cashierLog: [{
+          _id: "a1b2c3d", // Random base62 7-character ID
+          user: "SDLT System",
+          message: "New Entry added to system from Dwellworks request",
+          time: "15/12/2023, 14:30:45" // dd/mm/yyyy, hh:mm:ss format
+        }],
+        matterDescription: "SDLT Submission",
+        relation: "Our client" || "Parent Company" || undefined, // For tenants: "Our client", for others: relation field value
+        idCheckReference: "Building Name, Street, Postcode" || undefined, // Built from currentAddressNEW (tenants only)
+        surname: "Other" || undefined, // Tenants and individuals only
+        firstName: "Alan" || undefined, // Tenants and individuals only
+        email: "alan@example.com" || undefined, // Tenants and individuals only, extracted from contact fields
+        mobileNumber: "+447500000000" || undefined, // Tenants and individuals only, extracted from contact fields
+        entityNumber: "12345678" || undefined, // Businesses only (from DOB/Entity field)
+        businessName: "ACME Corporation" || undefined // Employers and business entities only
+      }
+      // Additional entries for:
+      // - Second tenant (if added)
+      // - Employer (if selected in any radio button)
+      // - Other leasee (if "other" selected in lease)
+      // - Other legal fee payee (if "other" selected)
+      // - Other SDLT fee payee (if "other" selected)
+    ]
   }
 }
 ```
@@ -271,7 +333,12 @@ Quick reference guide for all messages between the iframe and parent.
 1. Save form data to Wix database
 2. Handle success/error response
 
-**Note:** All fields are always present in the object, even if their value is `undefined`. This ensures consistent data structure for database operations.
+**Note:** 
+- All fields are always present in the object, even if their value is `undefined`. This ensures consistent data structure for database operations.
+- The `idEntries` array contains one entry per tenant, employer (if selected), and "other" entities (if selected). Each entry is formatted for integration with the ID system.
+- `title`, `clientNumber`, and `matterNumber` in `idEntries` are placeholders and should be replaced with actual values from the parent/submitter data.
+- Names are formatted as "A N Other" (initials) for tenants/individuals, and full name for businesses.
+- Business vs personal is determined from "other" inputs by checking if the DOB/Entity field is a date or entity number.
 
 ---
 

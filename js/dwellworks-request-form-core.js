@@ -20,7 +20,10 @@ let formState = {
   documents: [],
   sdltFeeEmployerMatch: true, // Defaults to Yes (matches legal fee)
   submitterDataReceived: false, // Track if submitter data has been received
-  companyData: null // Full Companies House company data object
+  companyData: null, // Full Companies House company data object
+  uploadedDocuments: [], // Documents with s3Keys from put-links response (data.images)
+  isEditMode: false, // Track if we're editing an existing submission
+  originalSubmission: null // Store original submission data for comparison
 };
 
 // Upload state
@@ -704,11 +707,19 @@ function setupCompanyNumberAutocomplete(input, dropdown) {
 // ===== FILE UPLOAD HANDLING =====
 
 function triggerLeaseFileInput() {
+  if (formState.isEditMode) {
+    showError('Cannot upload new lease document in edit mode. Please use the documents viewer to add additional documents.');
+    return;
+  }
   const fileInput = document.getElementById('leaseFileInput');
   if (fileInput) fileInput.click();
 }
 
 function handleLeaseFileSelect(event) {
+  if (formState.isEditMode) {
+    showError('Cannot upload new lease document in edit mode. Please use the documents viewer to add additional documents.');
+    return;
+  }
   const file = event.target.files[0];
   if (file) {
     handleFileUpload(file, 'lease');
@@ -718,6 +729,10 @@ function handleLeaseFileSelect(event) {
 function handleLeaseDrop(event) {
   event.preventDefault();
   event.stopPropagation();
+  if (formState.isEditMode) {
+    showError('Cannot upload new lease document in edit mode. Please use the documents viewer to add additional documents.');
+    return;
+  }
   const uploadArea = document.getElementById('leaseUploadArea');
   if (uploadArea) uploadArea.classList.remove('dragover');
   
@@ -778,6 +793,10 @@ function updateLeaseUploadUI(fileName) {
 let additionalDocumentCounter = 0;
 
 function addAnotherDocument() {
+  if (formState.isEditMode) {
+    showError('Cannot add additional documents in edit mode. Please use the documents viewer to add additional documents.');
+    return;
+  }
   if (formState.additionalDocuments.length >= 10) {
     showError('Maximum 10 additional documents allowed');
     return;
@@ -1247,6 +1266,9 @@ function handleParentMessage(event) {
     case 'upload-error':
       handleUploadError(message);
       break;
+    case 'edit-request':
+      handleEditRequest(message);
+      break;
     default:
       console.log('Unknown message type:', message.type);
   }
@@ -1299,6 +1321,433 @@ function handleSubmitterData(message) {
   startSessionCountdown();
   
   validateForm();
+}
+
+/**
+ * Handle edit-request message - populate form with existing submission data
+ */
+function handleEditRequest(message) {
+  const submissionData = message.data || message;
+  
+  // Store original submission for comparison
+  formState.originalSubmission = JSON.parse(JSON.stringify(submissionData));
+  formState.isEditMode = true;
+  
+  // Populate form with submission data
+  populateFormFromSubmission(submissionData);
+  
+  // Mark submitter data as received and enable submit button
+  formState.submitterDataReceived = true;
+  if (elements.submitBtn) {
+    elements.submitBtn.disabled = false;
+    elements.submitBtn.textContent = 'Save Changes';
+  }
+  
+  // Start session countdown (same as submitter-data)
+  startSessionCountdown();
+  
+  // Update UI for edit mode
+  updateUIForEditMode(submissionData);
+  
+  validateForm();
+}
+
+/**
+ * Populate form fields from submission data
+ */
+function populateFormFromSubmission(data) {
+  // Your Details
+  if (data.submitterFirstName) {
+    const input = document.getElementById('submitterFirstName');
+    if (input) input.value = data.submitterFirstName;
+  }
+  if (data.submitterLastName) {
+    const input = document.getElementById('submitterLastName');
+    if (input) input.value = data.submitterLastName;
+  }
+  if (data.dwellworksReference) {
+    const input = document.getElementById('dwellworksReference');
+    if (input) input.value = data.dwellworksReference;
+  }
+  if (data.dwellworksContactNumber) {
+    // Parse phone number and country code
+    const phoneMatch = data.dwellworksContactNumber?.match(/^(\+\d+)(.+)$/);
+    if (phoneMatch) {
+      const countryCodeInput = document.getElementById('submitterPhoneCountryCode');
+      const phoneInput = document.getElementById('submitterPhone');
+      if (countryCodeInput) {
+        countryCodeInput.dataset.phoneCode = phoneMatch[1];
+        countryCodeInput.value = phoneMatch[1]; // You may want to format this better
+      }
+      if (phoneInput) phoneInput.value = phoneMatch[2];
+    } else if (data.dwellworksContactNumber) {
+      const phoneInput = document.getElementById('submitterPhone');
+      if (phoneInput) phoneInput.value = data.dwellworksContactNumber;
+    }
+  }
+  if (data.dwellworksEmail) {
+    const input = document.getElementById('submitterEmail');
+    if (input) input.value = data.dwellworksEmail;
+  }
+  if (data.sharedEmail) {
+    const input = document.getElementById('shareEmail');
+    if (input) input.value = data.sharedEmail;
+  }
+  
+  // SDLT Address and Move In Date
+  if (data.sdltAddressMoveInDate) {
+    const input = document.getElementById('moveInDate');
+    if (input) {
+      // Convert DD-MM-YYYY to YYYY-MM-DD for date input
+      const dateParts = data.sdltAddressMoveInDate.split('-');
+      if (dateParts.length === 3) {
+        input.value = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+      }
+    }
+  }
+  if (data.sdltAddress) {
+    sdltAddressObject = data.sdltAddress;
+    const input = document.getElementById('sdltAddress');
+    if (input) {
+      // Format address for display
+      const addrParts = [];
+      if (data.sdltAddress.building_number) addrParts.push(data.sdltAddress.building_number);
+      if (data.sdltAddress.building_name) addrParts.push(data.sdltAddress.building_name);
+      if (data.sdltAddress.street) addrParts.push(data.sdltAddress.street);
+      if (data.sdltAddress.town) addrParts.push(data.sdltAddress.town);
+      if (data.sdltAddress.postcode) addrParts.push(data.sdltAddress.postcode);
+      input.value = addrParts.join(', ');
+    }
+  }
+  
+  // Lease Note
+  if (data.leaseAgreementNote) {
+    const input = document.getElementById('leaseNote');
+    if (input) input.value = data.leaseAgreementNote;
+  }
+  
+  // Lease Under
+  if (data.lessee) {
+    const radio = document.querySelector(`input[name="leaseUnder"][value="${data.lessee}"]`);
+    if (radio) {
+      radio.checked = true;
+      // Trigger change to show/hide other fields
+      const event = new Event('change', { bubbles: true });
+      radio.dispatchEvent(event);
+    }
+  }
+  
+  // Lessee Other fields
+  if (data.lesseeOther) {
+    const input = document.getElementById('leaseOtherName');
+    if (input) input.value = data.lesseeOther;
+  }
+  if (data.lesseeRelationToTenant) {
+    const input = document.getElementById('leaseOtherRelation');
+    if (input) input.value = data.lesseeRelationToTenant;
+  }
+  if (data.lesseeDateOfBirthEntityNumber) {
+    const input = document.getElementById('leaseOtherDobEntity');
+    if (input) input.value = data.lesseeDateOfBirthEntityNumber;
+  }
+  if (data.lesseePhoneNumber) {
+    const input = document.getElementById('leaseOtherTel');
+    if (input) input.value = data.lesseePhoneNumber;
+  }
+  if (data.lesseeEmail) {
+    const input = document.getElementById('leaseOtherEmail');
+    if (input) input.value = data.lesseeEmail;
+  }
+  
+  // Tenant 1
+  if (data.tenantsFirstName) {
+    const input = document.getElementById('tenant1FirstName');
+    if (input) input.value = data.tenantsFirstName;
+  }
+  if (data.tenantLastName) {
+    const input = document.getElementById('tenant1LastName');
+    if (input) input.value = data.tenantLastName;
+  }
+  if (data.tenantDateOfBirth) {
+    // Parse DD-MM-YYYY and populate DOB inputs
+    const dobParts = data.tenantDateOfBirth.split(/[-\/]/);
+    if (dobParts.length === 3) {
+      const day = dobParts[0].padStart(2, '0');
+      const month = dobParts[1].padStart(2, '0');
+      const year = dobParts[2];
+      const dobStr = day + month + year;
+      for (let i = 0; i < 8 && i < dobStr.length; i++) {
+        const input = document.getElementById(`tenant1Dob${i + 1}`);
+        if (input) input.value = dobStr[i];
+      }
+    }
+  }
+  if (data.tenantsMobileNumber) {
+    const phoneMatch = data.tenantsMobileNumber?.match(/^(\+\d+)(.+)$/);
+    if (phoneMatch) {
+      const countryCodeInput = document.getElementById('tenant1MobileCountryCode');
+      const phoneInput = document.getElementById('tenant1Mobile');
+      if (countryCodeInput) countryCodeInput.dataset.phoneCode = phoneMatch[1];
+      if (phoneInput) phoneInput.value = phoneMatch[2];
+    } else if (data.tenantsMobileNumber) {
+      const phoneInput = document.getElementById('tenant1Mobile');
+      if (phoneInput) phoneInput.value = data.tenantsMobileNumber;
+    }
+  }
+  if (data.tenantsEmail) {
+    const input = document.getElementById('tenant1Email');
+    if (input) input.value = data.tenantsEmail;
+  }
+  
+  // Previous Address
+  if (data.previousAddress) {
+    previousAddressObject = data.previousAddress;
+    const input = document.getElementById('previousAddress');
+    if (input) {
+      const addrParts = [];
+      if (data.previousAddress.building_number) addrParts.push(data.previousAddress.building_number);
+      if (data.previousAddress.building_name) addrParts.push(data.previousAddress.building_name);
+      if (data.previousAddress.street) addrParts.push(data.previousAddress.street);
+      if (data.previousAddress.town) addrParts.push(data.previousAddress.town);
+      if (data.previousAddress.postcode) addrParts.push(data.previousAddress.postcode);
+      input.value = addrParts.join(', ');
+    }
+  }
+  if (data.previousAddressCountry) {
+    const input = document.getElementById('previousAddressCountry');
+    if (input) input.value = data.previousAddressCountry;
+  }
+  
+  // Employer
+  if (data.employerCountry) {
+    const input = document.getElementById('employerCountry');
+    if (input) input.value = data.employerCountry;
+  }
+  if (data.employerName) {
+    const input = document.getElementById('employerName');
+    if (input) input.value = data.employerName;
+  }
+  if (data.employerNumber) {
+    const input = document.getElementById('employerNumber');
+    if (input) input.value = data.employerNumber;
+  }
+  
+  // Second Tenant
+  if (data.secondTenantFirstName || data.secondTenantLastName) {
+    // Enable second tenant
+    const yesBtn = document.querySelector('.add-second-tenant-buttons .yes-no-btn[data-value="yes"]');
+    if (yesBtn) {
+      yesBtn.click();
+    }
+    if (data.secondTenantFirstName) {
+      const input = document.getElementById('tenant2FirstName');
+      if (input) input.value = data.secondTenantFirstName;
+    }
+    if (data.secondTenantLastName) {
+      const input = document.getElementById('tenant2LastName');
+      if (input) input.value = data.secondTenantLastName;
+    }
+    if (data.secondTenantDateOfBirth) {
+      const dobParts = data.secondTenantDateOfBirth.split(/[-\/]/);
+      if (dobParts.length === 3) {
+        const day = dobParts[0].padStart(2, '0');
+        const month = dobParts[1].padStart(2, '0');
+        const year = dobParts[2];
+        const dobStr = day + month + year;
+        for (let i = 0; i < 8 && i < dobStr.length; i++) {
+          const input = document.getElementById(`tenant2Dob${i + 1}`);
+          if (input) input.value = dobStr[i];
+        }
+      }
+    }
+    if (data.secondTenantMobileNumber) {
+      const phoneMatch = data.secondTenantMobileNumber?.match(/^(\+\d+)(.+)$/);
+      if (phoneMatch) {
+        const countryCodeInput = document.getElementById('tenant2MobileCountryCode');
+        const phoneInput = document.getElementById('tenant2Mobile');
+        if (countryCodeInput) countryCodeInput.dataset.phoneCode = phoneMatch[1];
+        if (phoneInput) phoneInput.value = phoneMatch[2];
+      }
+    }
+    if (data.secondTenantEmail) {
+      const input = document.getElementById('tenant2Email');
+      if (input) input.value = data.secondTenantEmail;
+    }
+  }
+  
+  // Legal Fee Payee
+  if (data.thsFeePayer) {
+    const radio = document.querySelector(`input[name="legalFeePayee"][value="${data.thsFeePayer}"]`);
+    if (radio) {
+      radio.checked = true;
+      const event = new Event('change', { bubbles: true });
+      radio.dispatchEvent(event);
+    }
+  }
+  // Legal Fee Other fields
+  if (data.thsFeePayerOther) {
+    const input = document.getElementById('legalFeeOtherName');
+    if (input) input.value = data.thsFeePayerOther;
+  }
+  if (data.thsFeePayerRelationToTenant) {
+    const input = document.getElementById('legalFeeOtherRelation');
+    if (input) input.value = data.thsFeePayerRelationToTenant;
+  }
+  if (data.thsFeePayerDateOfBirthEntityNumber) {
+    const input = document.getElementById('legalFeeOtherDobEntity');
+    if (input) input.value = data.thsFeePayerDateOfBirthEntityNumber;
+  }
+  if (data.thsFeePayerPhoneNumber) {
+    const input = document.getElementById('legalFeeOtherTel');
+    if (input) input.value = data.thsFeePayerPhoneNumber;
+  }
+  if (data.thsFeePayerEmail) {
+    const input = document.getElementById('legalFeeOtherEmail');
+    if (input) input.value = data.thsFeePayerEmail;
+  }
+  if (data.thsFeeEmployersAcocuntsEmail) {
+    const input = document.getElementById('legalFeeEmployerContact');
+    if (input) input.value = data.thsFeeEmployersAcocuntsEmail;
+  }
+  if (data.thsFeeEmployersAccountsContactName) {
+    const input = document.getElementById('legalFeeEmployerName');
+    if (input) input.value = data.thsFeeEmployersAccountsContactName;
+  }
+  if (data.thsFeesInvoiceSending !== undefined) {
+    const yesBtn = document.querySelector('#legalFeeDirectSendContainer .yes-no-btn[data-value="yes"]');
+    const noBtn = document.querySelector('#legalFeeDirectSendContainer .yes-no-btn[data-value="no"]');
+    if (data.thsFeesInvoiceSending === 'yes' && yesBtn) yesBtn.click();
+    else if (data.thsFeesInvoiceSending === 'no' && noBtn) noBtn.click();
+  }
+  
+  // SDLT Fee Payee
+  if (data.sdltFeePayer) {
+    const radio = document.querySelector(`input[name="sdltFeePayee"][value="${data.sdltFeePayer}"]`);
+    if (radio) {
+      radio.checked = true;
+      const event = new Event('change', { bubbles: true });
+      radio.dispatchEvent(event);
+    }
+  }
+  // SDLT Fee Other fields
+  if (data.sdltFeePayerOther) {
+    const input = document.getElementById('sdltFeeOtherName');
+    if (input) input.value = data.sdltFeePayerOther;
+  }
+  if (data.sdltFeePayerRelationToTenant) {
+    const input = document.getElementById('sdltFeeOtherRelation');
+    if (input) input.value = data.sdltFeePayerRelationToTenant;
+  }
+  if (data.sdltFeePayerDateOfBirthEntityNumber) {
+    const input = document.getElementById('sdltFeeOtherDobEntity');
+    if (input) input.value = data.sdltFeePayerDateOfBirthEntityNumber;
+  }
+  if (data.sdltFeePayerPhoneNumber) {
+    const input = document.getElementById('sdltFeeOtherTel');
+    if (input) input.value = data.sdltFeePayerPhoneNumber;
+  }
+  if (data.sdltFeePayerEmail) {
+    const input = document.getElementById('sdltFeeOtherEmail');
+    if (input) input.value = data.sdltFeePayerEmail;
+  }
+  if (data.sdltFeeEmployerAccountsEmail) {
+    const input = document.getElementById('sdltFeeEmployerContact');
+    if (input) input.value = data.sdltFeeEmployerAccountsEmail;
+  }
+  if (data.sdltFeeEmployerAccountsContactName) {
+    const input = document.getElementById('sdltFeeEmployerName');
+    if (input) input.value = data.sdltFeeEmployerAccountsContactName;
+  }
+  if (data.sdltFeeEmployerMatch !== undefined) {
+    const yesBtn = document.querySelector('#sdltFeeEmployerMatchContainer .yes-no-btn[data-value="yes"]');
+    const noBtn = document.querySelector('#sdltFeeEmployerMatchContainer .yes-no-btn[data-value="no"]');
+    if (data.sdltFeeEmployerMatch === true && yesBtn) yesBtn.click();
+    else if (data.sdltFeeEmployerMatch === false && noBtn) noBtn.click();
+  }
+  if (data.sdltFeesInvoiceSending !== undefined) {
+    const yesBtn = document.querySelector('#sdltFeeDirectSendContainer .yes-no-btn[data-value="yes"]');
+    const noBtn = document.querySelector('#sdltFeeDirectSendContainer .yes-no-btn[data-value="no"]');
+    if (data.sdltFeesInvoiceSending === 'yes' && yesBtn) yesBtn.click();
+    else if (data.sdltFeesInvoiceSending === 'no' && noBtn) noBtn.click();
+  }
+  
+  // Additional Details
+  if (data.note) {
+    const input = document.getElementById('additionalDetails');
+    if (input) input.value = data.note;
+  }
+  
+  // Additional Documents (will be displayed in updateUIForEditMode)
+  if (data.addSupportingDocuments) {
+    const yesBtn = document.querySelector('.add-second-tenant-buttons[data-field="addAdditionalDocuments"] .yes-no-btn[data-value="yes"]');
+    if (yesBtn) yesBtn.click();
+  }
+}
+
+/**
+ * Update UI for edit mode - disable uploads, show hints, display existing documents
+ */
+function updateUIForEditMode(data) {
+  // Hide lease upload area and show hint
+  const leaseUploadArea = document.getElementById('leaseUploadArea');
+  const leaseUploadText = document.getElementById('leaseUploadText');
+  if (leaseUploadArea) {
+    leaseUploadArea.style.display = 'none';
+    // Add hint after the label
+    const leaseLabel = document.querySelector('label[for="leaseDocument"]');
+    if (leaseLabel && !leaseLabel.nextElementSibling?.classList.contains('edit-mode-hint')) {
+      const hint = document.createElement('div');
+      hint.className = 'edit-mode-hint';
+      hint.style.cssText = 'padding: 12px; background: #f0f7ff; border: 1px solid #4A90E2; border-radius: 6px; margin-top: 8px; color: #003c71; font-size: 0.9rem;';
+      hint.textContent = 'Lease document already uploaded and cannot be changed. Please upload additional documents via the entry documents viewer.';
+      leaseLabel.parentElement.insertBefore(hint, leaseLabel.nextSibling);
+    }
+  }
+  
+  // Display existing lease document if present
+  if (data.leaseAgreement) {
+    const leaseSection = document.querySelector('.lease-document-upload');
+    if (leaseSection) {
+      const docCard = document.createElement('div');
+      docCard.className = 'existing-document-card';
+      docCard.style.cssText = 'padding: 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; margin-top: 8px;';
+      docCard.innerHTML = `
+        <div style="font-weight: 600; color: #003c71; margin-bottom: 4px;">${data.leaseAgreement.document || 'Lease Agreement'}</div>
+        <div style="font-size: 0.85rem; color: #6c757d;">${data.leaseAgreement.data?.name || data.leaseAgreement.name || 'Document'}</div>
+        ${data.leaseAgreement.description ? `<div style="font-size: 0.85rem; color: #6c757d; margin-top: 4px;">${data.leaseAgreement.description}</div>` : ''}
+      `;
+      leaseSection.appendChild(docCard);
+    }
+  }
+  
+  // Hide additional documents upload button and show hint
+  const addAnotherBtn = document.getElementById('addAnotherDocumentBtn');
+  if (addAnotherBtn) {
+    addAnotherBtn.style.display = 'none';
+    const hint = document.createElement('div');
+    hint.className = 'edit-mode-hint';
+    hint.style.cssText = 'padding: 12px; background: #f0f7ff; border: 1px solid #4A90E2; border-radius: 6px; margin-top: 8px; color: #003c71; font-size: 0.9rem;';
+    hint.textContent = 'Please upload additional documents via the view submission page documents viewer.';
+    addAnotherBtn.parentElement.appendChild(hint);
+  }
+  
+  // Display existing supporting documents
+  if (data.supportingDocuments && Array.isArray(data.supportingDocuments) && data.supportingDocuments.length > 0) {
+    const documentsList = document.getElementById('additionalDocumentsList');
+    if (documentsList) {
+      data.supportingDocuments.forEach((doc) => {
+        const docCard = document.createElement('div');
+        docCard.className = 'existing-document-card';
+        docCard.style.cssText = 'padding: 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 8px;';
+        docCard.innerHTML = `
+          <div style="font-weight: 600; color: #003c71; margin-bottom: 4px;">${doc.document || 'Supporting Document'}</div>
+          <div style="font-size: 0.85rem; color: #6c757d;">${doc.data?.name || doc.name || 'Document'}</div>
+          ${doc.description ? `<div style="font-size: 0.85rem; color: #6c757d; margin-top: 4px;">${doc.description}</div>` : ''}
+        `;
+        documentsList.appendChild(docCard);
+      });
+    }
+  }
 }
 
 function displayAddressSuggestions(suggestions, field) {
@@ -1900,35 +2349,42 @@ function getManualAddress(type) {
 
 
 function collectDocuments() {
-  // Lease document (single file object)
-  const leaseAgreement = formState.leaseDocument && formState.leaseDocument.s3Key ? {
-    name: formState.leaseDocument.name,
-    size: formState.leaseDocument.size,
-    type: formState.leaseDocument.type,
-    s3Key: formState.leaseDocument.s3Key
-  } : undefined;
+  // In edit mode, use documents from original submission
+  if (formState.isEditMode && formState.originalSubmission) {
+    return {
+      leaseAgreement: formState.originalSubmission.leaseAgreement,
+      supportingDocuments: formState.originalSubmission.supportingDocuments || []
+    };
+  }
   
-  // Supporting documents (array)
-  const sdltDocuments = [];
-  formState.additionalDocuments.forEach(doc => {
-    if (doc.s3Key) {
-      const titleEl = document.getElementById(`${doc.id}_title`);
-      const descEl = document.getElementById(`${doc.id}_description`);
-      
-      sdltDocuments.push({
-        name: doc.name,
-        size: doc.size,
-        type: doc.type,
-        s3Key: doc.s3Key,
-        document: titleEl?.value || 'Supporting Document',
-        description: descEl?.value || undefined,
-        uploader: 'User', // User upload, not staff
-        date: new Date().toLocaleString('en-GB')
-      });
+  // Use uploaded documents from put-links response (data.images array)
+  // This array contains all documents (lease + additional) with s3Keys already included
+  const uploadedDocs = formState.uploadedDocuments || [];
+  
+  if (uploadedDocs.length === 0) {
+    return { leaseAgreement: undefined, supportingDocuments: [] };
+  }
+  
+  // Split data.images directly - maintain full object structure
+  let leaseAgreement = undefined;
+  const supportingDocuments = [];
+  
+  uploadedDocs.forEach((doc) => {
+    // Check if this is the lease document (identified by isLease flag)
+    if (doc.isLease === true) {
+      // Lease document - set document to "Lease Agreement" and description to file name
+      leaseAgreement = {
+        ...doc,
+        document: "Lease Agreement",
+        description: doc.data?.name || doc.name || undefined
+      };
+    } else {
+      // Additional document - pass through full object structure
+      supportingDocuments.push(doc);
     }
   });
   
-  return { leaseAgreement, sdltDocuments };
+  return { leaseAgreement, supportingDocuments };
 }
 
 // ===== FILE UPLOAD FUNCTIONS =====
@@ -1938,19 +2394,48 @@ function collectDocuments() {
  * @returns {Array} Array of file objects with file, name, size, type, and metadata
  */
 function collectFilesForUpload() {
+  // In edit mode, no new files can be uploaded
+  if (formState.isEditMode) {
+    return [];
+  }
+  
   const files = [];
+  const submitterEmail = document.getElementById('submitterEmail').value;
+  
+  // Helper to format date like document-viewer
+  const formatDate = () => {
+    return new Date().toLocaleString('en-GB', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  };
   
   // Lease document (always required)
   if (formState.leaseDocument && formState.leaseDocument.file && !formState.leaseDocument.s3Key) {
     files.push({
+      type: 'user',
+      document: formState.leaseDocument.name, // Use file's actual name for lease
+      uploader: submitterEmail,
+      date: formatDate(),
+      data: {
+        type: formState.leaseDocument.type,
+        size: formState.leaseDocument.size,
+        name: formState.leaseDocument.name,
+        lastModified: formState.leaseDocument.file.lastModified
+      },
       file: formState.leaseDocument.file,
-      name: formState.leaseDocument.name,
-      size: formState.leaseDocument.size,
-      type: formState.leaseDocument.type,
-      document: 'Lease Agreement',
-      uploader: 'User',
-      date: new Date().toLocaleString('en-GB'),
-      isLease: true
+      isLease: true,
+      isAdditional: false,
+      isCalculation: false,
+      isLegalInvoice: false,
+      isSDLTInvoice: false,
+      isSDLTCertificate: false,
+      isCompletionStatement: false
     });
   }
   
@@ -1959,18 +2444,29 @@ function collectFilesForUpload() {
     if (doc.file && !doc.s3Key) {
       const titleEl = document.getElementById(`${doc.id}_title`);
       const descEl = document.getElementById(`${doc.id}_description`);
+      const documentTitle = titleEl?.value || doc.name; // Use title if given, otherwise file name
       
       files.push({
+        type: 'user',
+        document: documentTitle,
+        uploader: submitterEmail,
+        date: formatDate(),
+        data: {
+          type: doc.type,
+          size: doc.size,
+          name: doc.name,
+          lastModified: doc.file.lastModified
+        },
         file: doc.file,
-        name: doc.name,
-        size: doc.size,
-        type: doc.type,
-        document: titleEl?.value || 'Supporting Document',
-        description: descEl?.value || undefined,
-        uploader: 'User',
-        date: new Date().toLocaleString('en-GB'),
+        description: descEl?.value || undefined, // Add description if given
+        isLease: false,
+        isAdditional: true,
         docId: doc.id,
-        isAdditional: true
+        isCalculation: false,
+        isLegalInvoice: false,
+        isSDLTInvoice: false,
+        isSDLTCertificate: false,
+        isCompletionStatement: false
       });
     }
   });
@@ -1988,15 +2484,15 @@ function requestPutLinks(files) {
   // Show upload progress overlay
   showUploadProgress(files);
   
-  // Prepare file metadata (without File objects)
+  // Prepare file metadata (file object will be serialized to {} in postMessage, which is fine)
   const fileMetadata = files.map(f => ({
-    name: f.name,
-    size: f.size,
     type: f.type,
     document: f.document,
-    description: f.description,
     uploader: f.uploader,
     date: f.date,
+    data: f.data,
+    file: f.file, // Will be serialized to {} in postMessage
+    description: f.description || undefined,
     isLease: f.isLease || false,
     isAdditional: f.isAdditional || false,
     docId: f.docId || undefined
@@ -2018,21 +2514,24 @@ function handlePutLinks(message) {
   // Stop session countdown when we receive put-links
   stopSessionCountdown();
   
-  const links = message.links || [];
-  const s3Keys = message.s3Keys || [];
+  // Extract data from message.data (put-links returns data object with links, s3Keys, and images)
+  const data = message.data || message;
+  const links = data.links || [];
+  const s3Keys = data.s3Keys || [];
+  const images = data.images || []; // Array of updated documents with s3Keys added
   
-  if (links.length !== pendingFilesForUpload.length || s3Keys.length !== pendingFilesForUpload.length) {
+  if (links.length !== pendingFilesForUpload.length || s3Keys.length !== pendingFilesForUpload.length || images.length !== pendingFilesForUpload.length) {
     handlePutError({ message: 'Mismatch between files and upload links' });
     return;
   }
   
+  // Store the uploaded documents (with s3Keys) for use in formData
+  formState.uploadedDocuments = images;
+  
   // Upload files to S3
   uploadFilesToS3(pendingFilesForUpload, links, s3Keys)
-    .then((uploadedS3Keys) => {
+    .then(() => {
       console.log('✅ All files uploaded to S3');
-      
-      // Update document objects with s3Keys
-      updateDocumentsWithS3Keys(uploadedS3Keys);
       
       // Hide upload progress
       hideUploadProgress();
@@ -2041,7 +2540,7 @@ function handlePutLinks(message) {
       uploadInProgress = false;
       pendingFilesForUpload = [];
       
-      // Submit form data with updated documents
+      // Submit form data with uploaded documents (already have s3Keys from images array)
       submitFormData();
     })
     .catch((error) => {
@@ -2056,6 +2555,7 @@ function handlePutLinks(message) {
       // Reset upload state
       uploadInProgress = false;
       pendingFilesForUpload = [];
+      formState.uploadedDocuments = [];
       
       // Re-enable submit button
       if (elements.submitBtn) {
@@ -2091,24 +2591,6 @@ function handlePutError(message) {
   if (elements.submitBtn) {
     elements.submitBtn.disabled = false;
   }
-}
-
-/**
- * Update document objects with s3Keys from uploaded files
- */
-function updateDocumentsWithS3Keys(uploadedS3Keys) {
-  uploadedS3Keys.forEach((uploadedFile, index) => {
-    const originalFile = pendingFilesForUpload[index];
-    
-    if (originalFile.isLease && formState.leaseDocument) {
-      formState.leaseDocument.s3Key = uploadedFile.s3Key;
-    } else if (originalFile.isAdditional && originalFile.docId) {
-      const docItem = formState.additionalDocuments.find(doc => doc.id === originalFile.docId);
-      if (docItem) {
-        docItem.s3Key = uploadedFile.s3Key;
-      }
-    }
-  });
 }
 
 /**
@@ -2161,7 +2643,7 @@ function uploadFilesToS3(files, links, s3Keys) {
         }
       })
       .catch(error => {
-        console.error('S3 upload error for file:', fileData.name, error);
+        console.error('S3 upload error for file:', fileData.data?.name || 'unknown', error);
         
         if (fileItem && statusText) {
           fileItem.style.borderLeftColor = '#e02424';
@@ -2169,7 +2651,7 @@ function uploadFilesToS3(files, links, s3Keys) {
         }
         
         hasErrors = true;
-        uploadErrors.push({ file: fileData.name, error: error.message });
+        uploadErrors.push({ file: fileData.data?.name || 'unknown', error: error.message });
         completed++;
         updateUploadProgressUI(completed, total, hasErrors);
         
@@ -2209,8 +2691,8 @@ function showUploadProgress(files) {
   // Create file list HTML
   let fileListHTML = '';
   files.forEach((fileData, index) => {
-    const fileName = fileData.name;
-    const fileSize = ((fileData.size || 0) / 1024 / 1024).toFixed(2);
+    const fileName = fileData.data?.name || fileData.document || 'Unknown file';
+    const fileSize = ((fileData.data?.size || 0) / 1024 / 1024).toFixed(2);
     
     fileListHTML += `
       <div class="file-item" id="upload-file-${index}" style="
@@ -2343,16 +2825,64 @@ function showUploadError(message) {
  * Submit form data with uploaded documents
  */
 function submitFormData() {
+  // In edit mode, send update-submission with only changed fields
+  if (formState.isEditMode && formState.originalSubmission) {
+    const formData = collectFormData();
+    
+    // Use original documents (cannot be changed in edit mode)
+    const { leaseAgreement, supportingDocuments } = collectDocuments();
+    formData.leaseAgreement = leaseAgreement || formState.originalSubmission.leaseAgreement;
+    formData.supportingDocuments = supportingDocuments.length > 0 ? supportingDocuments : (formState.originalSubmission.supportingDocuments || []);
+    formData.addSupportingDocuments = formState.originalSubmission.addSupportingDocuments || false;
+    
+    // Build idEntries array
+    formData.idEntries = buildIdEntries();
+    
+    // Compare with original and find changed fields
+    const updates = {};
+    const updatedFields = [];
+    
+    // Compare all fields
+    Object.keys(formData).forEach(key => {
+      const originalValue = formState.originalSubmission[key];
+      const newValue = formData[key];
+      
+      // Deep comparison for objects/arrays
+      if (JSON.stringify(originalValue) !== JSON.stringify(newValue)) {
+        updates[key] = newValue;
+        updatedFields.push(key);
+      }
+    });
+    
+    // Disable submit button during submission
+    if (elements.submitBtn) {
+      elements.submitBtn.disabled = true;
+    }
+    
+    // Send update-submission message
+    window.parent.postMessage({
+      type: 'update-submission',
+      updatedFields: updatedFields,
+      updates: updates
+    }, '*');
+    
+    return;
+  }
+  
+  // New submission mode
   // Collect form data
   const formData = collectFormData();
   
   // Collect documents (now with s3Keys)
-  const { leaseAgreement, sdltDocuments } = collectDocuments();
+  const { leaseAgreement, supportingDocuments } = collectDocuments();
   
   // Add documents to form data
   formData.leaseAgreement = leaseAgreement;
-  formData.sdltDocuments = sdltDocuments;
+  formData.supportingDocuments = supportingDocuments;
   formData.addSupportingDocuments = formState.addAdditionalDocuments || false;
+  
+  // Build idEntries array
+  formData.idEntries = buildIdEntries();
   
   // Disable submit button during submission
   if (elements.submitBtn) {
@@ -2384,6 +2914,496 @@ function handleUploadError(message) {
   // Reset and restart session countdown
   stopSessionCountdown();
   startSessionCountdown();
+}
+
+// ===== ID ENTRIES BUILDING =====
+
+/**
+ * Generate random base62 ID (7 characters)
+ */
+function generateBase62Id() {
+  const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let result = '';
+  for (let i = 0; i < 7; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+/**
+ * Format name as "A N Other" style (first letter of each name part)
+ */
+function formatNameAsInitials(firstName, lastName) {
+  const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
+  const lastParts = lastName ? lastName.split(' ') : [];
+  const lastInitials = lastParts.map(part => part.charAt(0).toUpperCase()).join(' ');
+  return `${firstInitial} ${lastInitials}`.trim();
+}
+
+/**
+ * Check if a value is a date (various formats) or entity number
+ * Returns true if it looks like a date, false if entity number
+ */
+function isDateValue(value) {
+  if (!value || !value.trim()) return false;
+  
+  const trimmed = value.trim();
+  
+  // Check for date patterns: dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy, dd month yyyy
+  const datePatterns = [
+    /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/,  // dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy
+    /^\d{1,2}\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{2,4}$/i,  // dd month yyyy
+    /^\d{8}$/  // ddmmyyyy
+  ];
+  
+  return datePatterns.some(pattern => pattern.test(trimmed));
+}
+
+/**
+ * Convert DOB from various formats to dd-mm-yyyy
+ */
+function formatDOBToDDMMYYYY(dobValue) {
+  if (!dobValue) return undefined;
+  
+  // If already in dd/mm/yyyy format, convert to dd-mm-yyyy
+  if (dobValue.includes('/')) {
+    return dobValue.replace(/\//g, '-');
+  }
+  
+  // If in dd-mm-yyyy format, return as is
+  if (dobValue.includes('-') && dobValue.match(/^\d{1,2}-\d{1,2}-\d{2,4}$/)) {
+    // Normalize to 4-digit year
+    const parts = dobValue.split('-');
+    if (parts[2].length === 2) {
+      const year = parseInt(parts[2]);
+      parts[2] = year < 50 ? `20${parts[2]}` : `19${parts[2]}`;
+    }
+    return parts.join('-');
+  }
+  
+  // If ddmmyyyy format (8 digits)
+  if (dobValue.match(/^\d{8}$/)) {
+    return `${dobValue.substring(0, 2)}-${dobValue.substring(2, 4)}-${dobValue.substring(4, 8)}`;
+  }
+  
+  // Try to parse other formats
+  const date = new Date(dobValue);
+  if (!isNaN(date.getTime())) {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+  
+  return dobValue; // Return as-is if can't parse
+}
+
+/**
+ * Build ID check reference from address (building name/no street, postcode)
+ */
+function buildIdCheckReference(address) {
+  if (!address || typeof address !== 'object') return undefined;
+  
+  const parts = [];
+  if (address.building_name) {
+    parts.push(address.building_name);
+  } else if (address.building_number) {
+    parts.push(address.building_number);
+  }
+  if (address.street) {
+    parts.push(address.street);
+  }
+  if (address.postcode) {
+    parts.push(address.postcode);
+  }
+  
+  return parts.length > 0 ? parts.join(', ') : undefined;
+}
+
+/**
+ * Extract mobile number from contact field (checks if it's a mobile number)
+ * Handles various formats including international country codes (e.g., 353, +353, etc.)
+ * Uses known country codes from phone selectors to identify and format numbers
+ */
+function extractMobileNumber(contactValue) {
+  if (!contactValue) return undefined;
+  
+  const trimmed = contactValue.trim();
+  
+  // Check if it contains @ (email)
+  if (trimmed.includes('@')) return undefined;
+  
+  // Remove spaces and common separators
+  const cleaned = trimmed.replace(/[\s\-\(\)]/g, '');
+  
+  // If it already starts with +, it's likely a properly formatted international number
+  if (cleaned.startsWith('+')) {
+    // Validate it looks like a phone number (at least 7 digits after +)
+    if (cleaned.match(/^\+\d{7,}$/)) {
+      return cleaned;
+    }
+  }
+  
+  // Get known phone country codes (from jurisdiction-autocomplete.js)
+  // Create a lookup of country codes without the + prefix
+  const knownCountryCodes = [];
+  if (typeof PHONE_COUNTRY_CODES !== 'undefined') {
+    PHONE_COUNTRY_CODES.forEach(p => {
+      // Extract numeric code from phone string (e.g., "+44" -> "44", "+353" -> "353")
+      const codeWithoutPlus = p.phone.replace(/^\+/, '');
+      knownCountryCodes.push({
+        code: codeWithoutPlus,
+        fullCode: p.phone,
+        name: p.name
+      });
+    });
+  } else {
+    // Fallback: common country codes if PHONE_COUNTRY_CODES not available
+    knownCountryCodes.push(
+      { code: '44', fullCode: '+44', name: 'UK' },
+      { code: '353', fullCode: '+353', name: 'Ireland' },
+      { code: '1', fullCode: '+1', name: 'US/Canada' },
+      { code: '33', fullCode: '+33', name: 'France' },
+      { code: '49', fullCode: '+49', name: 'Germany' },
+      { code: '39', fullCode: '+39', name: 'Italy' },
+      { code: '34', fullCode: '+34', name: 'Spain' },
+      { code: '31', fullCode: '+31', name: 'Netherlands' },
+      { code: '32', fullCode: '+32', name: 'Belgium' },
+      { code: '41', fullCode: '+41', name: 'Switzerland' },
+      { code: '43', fullCode: '+43', name: 'Austria' },
+      { code: '45', fullCode: '+45', name: 'Denmark' },
+      { code: '46', fullCode: '+46', name: 'Sweden' },
+      { code: '47', fullCode: '+47', name: 'Norway' },
+      { code: '48', fullCode: '+48', name: 'Poland' },
+      { code: '351', fullCode: '+351', name: 'Portugal' },
+      { code: '352', fullCode: '+352', name: 'Luxembourg' },
+      { code: '354', fullCode: '+354', name: 'Iceland' },
+      { code: '356', fullCode: '+356', name: 'Malta' },
+      { code: '357', fullCode: '+357', name: 'Cyprus' },
+      { code: '358', fullCode: '+358', name: 'Finland' },
+      { code: '359', fullCode: '+359', name: 'Bulgaria' },
+      { code: '370', fullCode: '+370', name: 'Lithuania' },
+      { code: '371', fullCode: '+371', name: 'Latvia' },
+      { code: '372', fullCode: '+372', name: 'Estonia' },
+      { code: '385', fullCode: '+385', name: 'Croatia' },
+      { code: '386', fullCode: '+386', name: 'Slovenia' },
+      { code: '420', fullCode: '+420', name: 'Czech Republic' },
+      { code: '421', fullCode: '+421', name: 'Slovakia' }
+    );
+  }
+  
+  // Sort by code length (longest first) to match longer codes first (e.g., 353 before 35)
+  knownCountryCodes.sort((a, b) => b.code.length - a.code.length);
+  
+  // Check if it starts with a known country code (without +)
+  for (const country of knownCountryCodes) {
+    if (cleaned.startsWith(country.code)) {
+      // If it already has the +, return as-is
+      if (cleaned.startsWith('+')) {
+        return cleaned;
+      }
+      // Otherwise, add the + prefix using the matched country's full code
+      return country.fullCode + cleaned.substring(country.code.length);
+    }
+  }
+  
+  // Check if it's a UK mobile (starts with 07 or 447)
+  if (cleaned.match(/^(44)?7\d{9}$/)) {
+    if (cleaned.startsWith('44')) {
+      return `+${cleaned}`;
+    } else if (cleaned.startsWith('07')) {
+      return `+44${cleaned.substring(1)}`;
+    } else if (cleaned.startsWith('7')) {
+      return `+44${cleaned}`;
+    }
+  }
+  
+  // If it's all digits and looks like a phone number (7+ digits), assume it needs + prefix
+  if (cleaned.match(/^\d{7,}$/)) {
+    return `+${cleaned}`;
+  }
+  
+  return undefined;
+}
+
+/**
+ * Extract email from contact field
+ */
+function extractEmail(contactValue) {
+  if (!contactValue) return undefined;
+  const trimmed = contactValue.trim();
+  return trimmed.includes('@') ? trimmed : undefined;
+}
+
+/**
+ * Build idEntries array for form submission
+ */
+function buildIdEntries() {
+  const entries = [];
+  const leaseUnder = document.querySelector('input[name="leaseUnder"]:checked')?.value;
+  const legalFeePayee = document.querySelector('input[name="legalFeePayee"]:checked')?.value;
+  const sdltFeePayee = document.querySelector('input[name="sdltFeePayee"]:checked')?.value;
+  
+  // Helper to format phone
+  const formatPhone = (countryCodeEl, numberEl) => {
+    const code = countryCodeEl?.dataset.phoneCode || '';
+    const num = numberEl?.value || '';
+    return code && num ? `${code}${num}` : num || undefined;
+  };
+  
+  // Helper to get address object
+  const getAddressObject = (addressObj, fallbackFn) => {
+    if (addressObj) return addressObj;
+    const manualAddress = fallbackFn();
+    if (manualAddress && (manualAddress.street || manualAddress.town || manualAddress.postcode)) {
+      return manualAddress;
+    }
+    return undefined;
+  };
+  
+  // Helper to create cashier log entry
+  const createCashierLogEntry = () => ({
+    _id: generateBase62Id(),
+    user: 'SDLT System',
+    message: 'New Entry added to system from Dwellworks request',
+    time: new Date().toLocaleString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+  });
+  
+  // Tenant 1 Entry
+  const tenant1FirstName = document.getElementById('tenant1FirstName').value;
+  const tenant1LastName = document.getElementById('tenant1LastName').value;
+  const tenant1DOB = getDOBValue(1);
+  const tenant1Mobile = formatPhone(
+    document.getElementById('tenant1MobileCountryCode'),
+    document.getElementById('tenant1Mobile')
+  );
+  const tenant1Email = document.getElementById('tenant1Email').value || undefined;
+  const tenant1CurrentAddress = getAddressObject(sdltAddressObject, () => getManualAddress('sdlt'));
+  const tenant1PreviousAddress = getAddressObject(previousAddressObject, () => getManualAddress('previous'));
+  
+  if (tenant1FirstName && tenant1LastName) {
+    entries.push({
+      title: "BA", // This should come from parent/submitter data
+      clientNumber: 99999, // This should come from parent/submitter data
+      matterNumber: "999", // This should come from parent/submitter data
+      name: formatNameAsInitials(tenant1FirstName, tenant1LastName),
+      business: false,
+      dateOfBirth: tenant1DOB ? formatDOBToDDMMYYYY(tenant1DOB) : undefined,
+      currentAddressNEW: tenant1CurrentAddress,
+      previousAddressNEW: tenant1PreviousAddress,
+      companyDetails: undefined,
+      unassigned: true,
+      cashierLog: [createCashierLogEntry()],
+      matterDescription: "SDLT Submission",
+      relation: "Our client",
+      idCheckReference: tenant1CurrentAddress ? buildIdCheckReference(tenant1CurrentAddress) : undefined,
+      surname: tenant1LastName,
+      firstName: tenant1FirstName,
+      email: tenant1Email,
+      mobileNumber: tenant1Mobile,
+      entityNumber: undefined,
+      businessName: undefined
+    });
+  }
+  
+  // Tenant 2 Entry (if exists)
+  if (formState.addSecondTenant) {
+    const tenant2FirstName = document.getElementById('tenant2FirstName').value;
+    const tenant2LastName = document.getElementById('tenant2LastName').value;
+    const tenant2DOB = getDOBValue(2);
+    const tenant2Mobile = formatPhone(
+      document.getElementById('tenant2MobileCountryCode'),
+      document.getElementById('tenant2Mobile')
+    );
+    const tenant2Email = document.getElementById('tenant2Email').value || undefined;
+    
+    if (tenant2FirstName && tenant2LastName) {
+      entries.push({
+        title: "BA",
+        clientNumber: 99999,
+        matterNumber: "999",
+        name: formatNameAsInitials(tenant2FirstName, tenant2LastName),
+        business: false,
+        dateOfBirth: tenant2DOB ? formatDOBToDDMMYYYY(tenant2DOB) : undefined,
+        currentAddressNEW: tenant1CurrentAddress, // Same as tenant 1
+        previousAddressNEW: tenant1PreviousAddress, // Same as tenant 1
+        companyDetails: undefined,
+        unassigned: true,
+        cashierLog: [createCashierLogEntry()],
+        matterDescription: "SDLT Submission",
+        relation: "Our client",
+        idCheckReference: tenant1CurrentAddress ? buildIdCheckReference(tenant1CurrentAddress) : undefined,
+        surname: tenant2LastName,
+        firstName: tenant2FirstName,
+        email: tenant2Email,
+        mobileNumber: tenant2Mobile,
+        entityNumber: undefined,
+        businessName: undefined
+      });
+    }
+  }
+  
+  // Employer Entry (if selected in any radio button) - only add once
+  const employerName = document.getElementById('employerName').value;
+  const employerCountry = document.getElementById('employerCountry');
+  const employerNumber = document.getElementById('employerNumber').value;
+  const isUKEmployer = employerCountry?.dataset.jurisdictionCode === 'GB';
+  const employerCompanyData = isUKEmployer && formState.companyData ? formState.companyData : undefined;
+  const employerSelected = leaseUnder === 'tenants-employer' || legalFeePayee === 'tenant-employer' || sdltFeePayee === 'tenant-employer';
+  
+  if (employerName && employerSelected) {
+    entries.push({
+      title: "BA", // This should come from parent/submitter data
+      clientNumber: 99999, // This should come from parent/submitter data
+      matterNumber: "999", // This should come from parent/submitter data
+      name: employerName, // Full name for business
+      business: true,
+      dateOfBirth: undefined,
+      currentAddressNEW: undefined,
+      previousAddressNEW: undefined,
+      companyDetails: employerCompanyData,
+      unassigned: true,
+      cashierLog: [createCashierLogEntry()],
+      matterDescription: "SDLT Submission",
+      relation: "Our client",
+      idCheckReference: undefined,
+      surname: undefined,
+      firstName: undefined,
+      email: undefined,
+      mobileNumber: undefined,
+      entityNumber: employerNumber || undefined,
+      businessName: employerName
+    });
+  }
+  
+  // Other Leasee Entry (if "other" selected)
+  if (leaseUnder === 'other') {
+    const otherName = document.getElementById('leaseOtherName').value;
+    const otherDobEntity = document.getElementById('leaseOtherDobEntity').value;
+    const otherTel = document.getElementById('leaseOtherTel').value;
+    const otherEmail = document.getElementById('leaseOtherEmail').value;
+    const isBusiness = otherDobEntity && !isDateValue(otherDobEntity);
+    
+    if (otherName) {
+      // Parse name - assume first word is first name, rest is last name
+      const nameParts = otherName.trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      const entry = {
+        title: "BA", // This should come from parent/submitter data
+        clientNumber: 99999, // This should come from parent/submitter data
+        matterNumber: "999", // This should come from parent/submitter data
+        name: isBusiness ? otherName : formatNameAsInitials(firstName, lastName),
+        business: isBusiness,
+        dateOfBirth: isBusiness ? undefined : (otherDobEntity ? formatDOBToDDMMYYYY(otherDobEntity) : undefined),
+        currentAddressNEW: undefined,
+        previousAddressNEW: undefined,
+        companyDetails: undefined,
+        unassigned: true,
+        cashierLog: [createCashierLogEntry()],
+        matterDescription: "SDLT Submission",
+        relation: document.getElementById('leaseOtherRelation').value || undefined,
+        idCheckReference: undefined,
+        surname: isBusiness ? undefined : lastName,
+        firstName: isBusiness ? undefined : firstName,
+        email: extractEmail(otherEmail || otherTel),
+        mobileNumber: extractMobileNumber(otherTel || otherEmail),
+        entityNumber: isBusiness ? otherDobEntity : undefined,
+        businessName: isBusiness ? otherName : undefined
+      };
+      entries.push(entry);
+    }
+  }
+  
+  // Other Legal Fee Payee Entry (if "other" selected)
+  if (legalFeePayee === 'other') {
+    const otherName = document.getElementById('legalFeeOtherName').value;
+    const otherDobEntity = document.getElementById('legalFeeOtherDobEntity').value;
+    const otherTel = document.getElementById('legalFeeOtherTel').value;
+    const otherEmail = document.getElementById('legalFeeOtherEmail').value;
+    const isBusiness = otherDobEntity && !isDateValue(otherDobEntity);
+    
+    if (otherName) {
+      // Parse name - assume first word is first name, rest is last name
+      const nameParts = otherName.trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      const entry = {
+        title: "BA", // This should come from parent/submitter data
+        clientNumber: 99999, // This should come from parent/submitter data
+        matterNumber: "999", // This should come from parent/submitter data
+        name: isBusiness ? otherName : formatNameAsInitials(firstName, lastName),
+        business: isBusiness,
+        dateOfBirth: isBusiness ? undefined : (otherDobEntity ? formatDOBToDDMMYYYY(otherDobEntity) : undefined),
+        currentAddressNEW: undefined,
+        previousAddressNEW: undefined,
+        companyDetails: undefined,
+        unassigned: true,
+        cashierLog: [createCashierLogEntry()],
+        matterDescription: "SDLT Submission",
+        relation: document.getElementById('legalFeeOtherRelation').value || undefined,
+        idCheckReference: undefined,
+        surname: isBusiness ? undefined : lastName,
+        firstName: isBusiness ? undefined : firstName,
+        email: extractEmail(otherEmail || otherTel),
+        mobileNumber: extractMobileNumber(otherTel || otherEmail),
+        entityNumber: isBusiness ? otherDobEntity : undefined,
+        businessName: isBusiness ? otherName : undefined
+      };
+      entries.push(entry);
+    }
+  }
+  
+  // Other SDLT Fee Payee Entry (if "other" selected)
+  if (sdltFeePayee === 'other') {
+    const otherName = document.getElementById('sdltFeeOtherName').value;
+    const otherDobEntity = document.getElementById('sdltFeeOtherDobEntity').value;
+    const otherTel = document.getElementById('sdltFeeOtherTel').value;
+    const otherEmail = document.getElementById('sdltFeeOtherEmail').value;
+    const isBusiness = otherDobEntity && !isDateValue(otherDobEntity);
+    
+    if (otherName) {
+      // Parse name - assume first word is first name, rest is last name
+      const nameParts = otherName.trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      const entry = {
+        title: "BA", // This should come from parent/submitter data
+        clientNumber: 99999, // This should come from parent/submitter data
+        matterNumber: "999", // This should come from parent/submitter data
+        name: isBusiness ? otherName : formatNameAsInitials(firstName, lastName),
+        business: isBusiness,
+        dateOfBirth: isBusiness ? undefined : (otherDobEntity ? formatDOBToDDMMYYYY(otherDobEntity) : undefined),
+        currentAddressNEW: undefined,
+        previousAddressNEW: undefined,
+        companyDetails: undefined,
+        unassigned: true,
+        cashierLog: [createCashierLogEntry()],
+        matterDescription: "SDLT Submission",
+        relation: document.getElementById('sdltFeeOtherRelation').value || undefined,
+        idCheckReference: undefined,
+        surname: isBusiness ? undefined : lastName,
+        firstName: isBusiness ? undefined : firstName,
+        email: extractEmail(otherEmail || otherTel),
+        mobileNumber: extractMobileNumber(otherTel || otherEmail),
+        entityNumber: isBusiness ? otherDobEntity : undefined,
+        businessName: isBusiness ? otherName : undefined
+      };
+      entries.push(entry);
+    }
+  }
+  
+  return entries;
 }
 
 // ===== UTILITY FUNCTIONS =====

@@ -951,6 +951,10 @@
         let allMessages = [];      // Store all messages from parent
         let currentWhiteType = ''; // Store white type for message styling
         let showingAllMessages = false; // Track if showing full chat log
+        
+        // SDLT message viewer mode
+        let isSdltMode = false;    // Track if we're in sdlt-message-viewer mode
+        let sdltWhiteType = '';    // Store white type for SDLT mode (Dwellworks or THS)
 
         /*
         =====================================================================
@@ -1124,6 +1128,66 @@
                     sendBtn.disabled = true;
                     console.log('Send button disabled by parent');
                 }
+            }
+            /*
+            ----------------------------------------------------------------
+            CASE 6: 'sdlt-message-viewer' - SDLT message viewer mode
+            ----------------------------------------------------------------
+            Received when:
+            - Initial load of SDLT matter chat
+            - After parent saves a new message to database
+            - Any time parent wants to refresh the chat display
+            
+            Data structure:
+            {
+                type: 'sdlt-message-viewer',
+                userEmail: 'user@example.com',
+                _id: 'item-database-id',  // Item/matter ID (not message ID)
+                notification: true/false,
+                white: 'Dwellworks' | 'THS',  // Determines which message type appears as "sent" (white)
+                data: [
+                    {
+                        // Note: Messages in SDLT mode don't include _id
+                        message: 'Message text',
+                        time: '07/11/2025, 12:10:24 PM',
+                        type: 'Dwellworks' | 'THS',
+                        user: 'user@example.com'
+                    },
+                    ...
+                ]
+            }
+            */
+            else if (event.data.type === 'sdlt-message-viewer') {
+                const data = event.data;
+                
+                // Enable SDLT mode
+                isSdltMode = true;
+                
+                // Clear user input and reset upload area from previous interaction
+                document.getElementById('messageInput').value = '';
+                resetUploadArea(); // Clears file input and resets UI to default
+                
+                // Store critical data for later use in message sending
+                userEmail = data.userEmail || '';
+                itemId = data._id || '';
+                hasNotification = data.notification || false;
+                sdltWhiteType = data.white || 'THS'; // Default to THS if not specified
+                
+                // Update UI for SDLT mode
+                updateSdltModeUI();
+                
+                // Display all messages from data array (direct array, not wrapped in chat property)
+                displayMessages(data.data || [], sdltWhiteType);
+                
+                // Update notification UI (dot and dismiss button)
+                handleNotification(hasNotification);
+                
+                // Hide tags container for SDLT mode
+                const tagsContainer = document.querySelector('.tags-container');
+                if (tagsContainer) tagsContainer.style.display = 'none';
+                
+                // Always enable send button when receiving message data
+                document.getElementById('sendBtn').disabled = false;
             }
         });
 
@@ -1425,6 +1489,61 @@
 
         /*
         =====================================================================
+        UPDATE SDLT MODE UI - Updates UI elements for SDLT message viewer mode
+        =====================================================================
+        Changes:
+        - Header title to "Matter chat"
+        - Hides upload file area
+        - Hides tags container
+        - Shows dismiss button (handled by handleNotification)
+        =====================================================================
+        */
+        function updateSdltModeUI() {
+            // Update header title
+            const chatTitle = document.querySelector('.chat-title');
+            if (chatTitle) {
+                chatTitle.textContent = 'Matter chat';
+            }
+            
+            // Hide upload area
+            const uploadArea = document.getElementById('uploadArea');
+            if (uploadArea) {
+                uploadArea.style.display = 'none';
+            }
+            
+            // Hide tags container
+            const tagsContainer = document.querySelector('.tags-container');
+            if (tagsContainer) {
+                tagsContainer.style.display = 'none';
+            }
+        }
+
+        /*
+        =====================================================================
+        RESET TO NORMAL MODE - Resets UI elements back to normal cashiers chat mode
+        =====================================================================
+        Changes:
+        - Header title back to "Cashiers Chat"
+        - Shows upload file area
+        - Tags container visibility handled by handleTags()
+        =====================================================================
+        */
+        function resetToNormalMode() {
+            // Reset header title
+            const chatTitle = document.querySelector('.chat-title');
+            if (chatTitle) {
+                chatTitle.textContent = 'Cashiers Chat';
+            }
+            
+            // Show upload area
+            const uploadArea = document.getElementById('uploadArea');
+            if (uploadArea) {
+                uploadArea.style.display = 'flex';
+            }
+        }
+
+        /*
+        =====================================================================
         HANDLE TAGS - Shows/hides category tags in header
         =====================================================================
         Parameters:
@@ -1691,7 +1810,15 @@
                 return;
             }
             
-            // VALIDATION STEP 2: Check if file type is valid (documents only)
+            // VALIDATION STEP 2: Check if we're in SDLT mode (no file uploads allowed)
+            if (isSdltMode && file) {
+                showError('File uploads are not available in Matter chat', 'File Upload Disabled');
+                resetUploadArea(); // Clear the file and reset UI
+                sendBtn.disabled = false; // Re-enable for retry
+                return;
+            }
+            
+            // VALIDATION STEP 3: Check if file type is valid (documents only)
             // Note: This is a safety check - validation also happens in handleFileSelect()
             if (file && !isValidDocumentType(file)) {
                 showError('To add images please upload to the ID Photos section', 'Invalid File Type');
@@ -1702,6 +1829,7 @@
             
             // PATH 1: FILE UPLOAD FLOW
             // If file is present and valid, initiate S3 upload process
+            // Note: This path is disabled in SDLT mode (handled by validation above)
             if (file) {
                 // Store in global state for use in uploadFileToS3() later
                 currentFile = file;
@@ -1745,8 +1873,29 @@
             
             // PATH 2: TEXT-ONLY MESSAGE FLOW
             // No file attached, send message to parent immediately
-            const messageObject = {
-                time: new Date().toLocaleString('en-GB', { 
+            // Determine message type based on mode
+            let messageType = currentWhiteType || 'Staff';
+            if (isSdltMode) {
+                // In SDLT mode, use the white type (Dwellworks or THS)
+                messageType = sdltWhiteType || 'THS';
+            }
+            
+            // Format time - use en-GB for both SDLT and ID modes
+            let timeString;
+            if (isSdltMode) {
+                // SDLT format: "07/11/2025, 12:10:24 PM" (en-GB date format with 12-hour time)
+                timeString = new Date().toLocaleString('en-GB', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+            } else {
+                // ID system format: "07/11/2025, 12:10:24" (en-GB date format with 24-hour time)
+                timeString = new Date().toLocaleString('en-GB', { 
                     year: 'numeric', 
                     month: '2-digit', 
                     day: '2-digit',
@@ -1754,20 +1903,34 @@
                     minute: '2-digit',
                     second: '2-digit',
                     hour12: false
-                }),
+                });
+            }
+            
+            const messageObject = {
+                time: timeString,
                 user: userEmail,
                 message: message,
-                type: currentWhiteType || 'Staff' // Use viewer type (Staff/Cashier/Reception)
+                type: messageType
             };
+            
+            // In SDLT mode, messages don't include _id
+            // The message object structure matches SDLT format: { message, time, type, user }
             
             console.log('Sending text-only message to parent:', messageObject);
             
             // Post message to parent for database storage
-            window.parent.postMessage({
+            // In SDLT mode, we don't pass _id with the message
+            const messagePayload = {
                 type: 'message-sent',
-                message: messageObject,
-                _id: itemId
-            }, '*');
+                message: messageObject
+            };
+            
+            // Only include _id in ID mode (not SDLT mode)
+            if (!isSdltMode) {
+                messagePayload._id = itemId;
+            }
+            
+            window.parent.postMessage(messagePayload, '*');
             
             // Clear inputs immediately (before parent responds)
             messageInput.value = '';
@@ -1776,8 +1939,10 @@
             // Re-enable send button - ready for next message
             sendBtn.disabled = false;
             
-            // Now waiting for parent to save to DB and respond with fresh 'message-data'
-            // which will trigger displayMessages() to refresh the chat display
+            // Now waiting for parent to save to DB and respond with fresh message data
+            // In SDLT mode: parent sends 'sdlt-message-viewer' with updated data array
+            // In ID mode: parent sends 'message-data' with updated chat array
+            // Both will trigger displayMessages() to refresh the chat display
         }
 
         /*
@@ -1960,9 +2125,29 @@
                     
                     hideUploadingPopup();
                     
-                    // Build complete message object with file metadata
-                    const messageObject = {
-                        time: new Date().toLocaleString('en-GB', { 
+                    // Determine message type based on mode
+                    let messageType = currentWhiteType || 'Staff';
+                    if (isSdltMode) {
+                        // In SDLT mode, use the white type (Dwellworks or THS)
+                        messageType = sdltWhiteType || 'THS';
+                    }
+                    
+                    // Format time - use en-GB for both SDLT and ID modes
+                    let timeString;
+                    if (isSdltMode) {
+                        // SDLT format: "07/11/2025, 12:10:24 PM" (en-GB date format with 12-hour time)
+                        timeString = new Date().toLocaleString('en-GB', { 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                        });
+                    } else {
+                        // ID system format: "07/11/2025, 12:10:24" (en-GB date format with 24-hour time)
+                        timeString = new Date().toLocaleString('en-GB', { 
                             year: 'numeric', 
                             month: '2-digit', 
                             day: '2-digit',
@@ -1970,10 +2155,15 @@
                             minute: '2-digit',
                             second: '2-digit',
                             hour12: false
-                        }),
+                        });
+                    }
+                    
+                    // Build complete message object with file metadata
+                    const messageObject = {
+                        time: timeString,
                         user: userEmail,
                         message: currentMessage,
-                        type: currentWhiteType || 'Staff', // Use viewer type (Staff/Cashier/Reception)
+                        type: messageType,
                         file: {
                             name: currentFile.name,
                             size: currentFile.size,
@@ -1983,11 +2173,18 @@
                     };
                     
                     // Post complete message to parent for database storage
-                    window.parent.postMessage({
+                    // In SDLT mode, we don't pass _id with the message
+                    const fileMessagePayload = {
                         type: 'message-sent',
-                        message: messageObject,
-                        _id: itemId
-                    }, '*');
+                        message: messageObject
+                    };
+                    
+                    // Only include _id in ID mode (not SDLT mode)
+                    if (!isSdltMode) {
+                        fileMessagePayload._id = itemId;
+                    }
+                    
+                    window.parent.postMessage(fileMessagePayload, '*');
                     
                     // Clear inputs immediately (before parent responds)
                     document.getElementById('messageInput').value = '';
@@ -2111,7 +2308,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'adca3ee';
+    window.__IFRAME_VERSION__ = '452c3b1';
     console.log('[message-iframe] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

@@ -297,6 +297,33 @@
             flex: none;
         }
 
+        .sdlt-inputs-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .sdlt-title-input {
+            font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .sdlt-description-input {
+            font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 60px;
+        }
+
         .dropdowns-container .other-input {
             font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             width: 50%;
@@ -1412,6 +1439,28 @@
         Pushed to right via margin-left: auto
         Uses italic font for timestamp/metadata styling
         */
+        .document-card .document-description {
+            font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+            color: #555;
+            margin-top: 4px;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .document-card .uploader-tag {
+            display: inline-block;
+            background: #D4A574; /* Pantone 451C - Brand tan color (same as side tags) */
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+            font-family: 'RotisBold', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
         .document-card .uploader-info {
             font-family: 'RotisItalic', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 12px;
@@ -2145,8 +2194,9 @@
         1. 'display-documents' - Document data to display in list view
         2. 'display-images' / 'image-display' - Image data to display in carousel
         3. 'thirdfort-document' - Open Thirdfort check PDF by s3Key
-        4. 'put-links' - S3 pre-signed PUT URLs for file upload
-        5. 'put-error' - Error response when PUT link generation fails
+        4. 'open-sdlt-document' - Open SDLT document PDF by URL
+        5. 'put-links' - S3 pre-signed PUT URLs for file upload
+        6. 'put-error' - Error response when PUT link generation fails
         
         OUTGOING MESSAGES (to parent):
         1. 'file-data' - Request for S3 PUT links before file upload
@@ -2177,6 +2227,8 @@
         let itemId = null; // Store the item _id for later use
         let uploadedImages = null;
         let localFilesForUpload = []; // Store actual File objects locally (can't be sent via postMessage)
+        let documentSystemMode = 'id'; // 'id' or 'sdlt' - tracks which system is active
+        let uploadType = 'user'; // 'user' or 'staff' - for SDLT uploads
         let imageSlider, prevBtn, nextBtn, loadingState, awaitingState, imageDisplaySection, reelContainer, addMoreContainer, addMoreBtn, clientHeading;
         let idUploaderSection, uploaderSubheading, uploaderCardsContainer, uploadAllBtn, cancelHeaderBtn, errorPopup, errorMessage, errorPopupClose, dynamicHint;
 
@@ -2454,13 +2506,30 @@
             // Use friendly document type name for display (not the filename)
             const displayName = documentData.document || 'Unknown Document';
             
+            // For SDLT mode, show description below name and uploader tag
+            const descriptionHtml = (documentSystemMode === 'sdlt' && documentData.description) 
+                ? `<div class="document-description">${documentData.description}</div>` 
+                : '';
+            
+            // For SDLT mode, show uploader tag (Dwellworks for "user", THS for "staff")
+            const uploaderTagHtml = (documentSystemMode === 'sdlt' && documentData.type) 
+                ? `<span class="uploader-tag">${documentData.type === 'user' ? 'Dwellworks' : 'THS'}</span>` 
+                : '';
+            
+            // For ID mode, show category tag; for SDLT mode, don't show type as category
+            const categoryHtml = (documentSystemMode === 'id' && documentData.type) 
+                ? `<div class="category-wrapper"><span class="document-category">${documentData.type}</span></div>` 
+                : '';
+            
             card.innerHTML = `
                 <div class="document-details">
                     <div class="document-header">
                         <div class="document-type">
                             <span class="document-type-text">${displayName}</span>
+                            ${uploaderTagHtml}
                         </div>
-                        ${documentData.type ? `<div class="category-wrapper"><span class="document-category">${documentData.type}</span></div>` : ''}
+                        ${categoryHtml}
+                        ${descriptionHtml}
                         <div class="uploader-info">${uploaderInfo}</div>
                         <button class="view-btn" onclick="viewDocument(this)" title="Open document" data-document-index="${index}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2651,7 +2720,9 @@
 
         // Update client heading with client data
         function updateClientHeading() {
-            if (clientData.fe && clientData.clientNumber && clientData.matterNumber && clientData.name) {
+            if (documentSystemMode === 'sdlt') {
+                clientHeading.textContent = 'Supporting documents';
+            } else if (clientData.fe && clientData.clientNumber && clientData.matterNumber && clientData.name) {
                 clientHeading.textContent = `ID Documents for ${clientData.fe}/${clientData.clientNumber}/${clientData.matterNumber} - ${clientData.name}`;
             } else {
                 clientHeading.textContent = 'ID Documents';
@@ -2672,12 +2743,71 @@
             allowUploads = allowUploadsData || false;
             clientData = clientDataParam || {};
             userEmail = userEmailParam || '';
+            documentSystemMode = 'id'; // Set mode to ID system
             
             // Hide awaiting state and show image display section
             awaitingState.classList.add('hidden');
             imageDisplaySection.classList.remove('hidden');
             
             // Update client heading
+            updateClientHeading();
+            
+            // Show/hide add more button based on allowUploads
+            if (allowUploads) {
+                addMoreContainer.classList.remove('hidden');
+            } else {
+                addMoreContainer.classList.add('hidden');
+            }
+            
+            // Get documents grid container
+            const documentsGrid = document.getElementById('documentsGrid');
+            
+            if (images.length === 0) {
+                documentsGrid.innerHTML = `
+                    <div class="no-documents-card">
+                        <div class="document-name">No documents uploaded</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Clear loading state
+            documentsGrid.innerHTML = '';
+            
+            // Create document cards
+            images.forEach((documentData, index) => {
+                const card = createDocumentCard(documentData, index);
+                documentsGrid.appendChild(card);
+            });
+            
+            // Check if uploader info needs to wrap and apply consistent layout
+            // Use setTimeout to ensure DOM is fully rendered before measuring
+            setTimeout(() => {
+                checkUploaderInfoLayout();
+            }, 0);
+        }
+
+        /*
+        =====================================================================
+        DISPLAY SDLT DOCUMENTS
+        - Display function for SDLT document list view
+        - Shows description below document name
+        - Uses "Supporting documents" header (no client info)
+        =====================================================================
+        */
+        function displaySdltDocuments(documentData, allowUploadsData, userEmailParam, uploadTypeParam) {
+            images = documentData || []; // Use the same images array for documents
+            allowUploads = allowUploadsData || false;
+            clientData = {}; // No client data for SDLT
+            userEmail = userEmailParam || '';
+            uploadType = uploadTypeParam || 'user';
+            documentSystemMode = 'sdlt';
+            
+            // Hide awaiting state and show image display section
+            awaitingState.classList.add('hidden');
+            imageDisplaySection.classList.remove('hidden');
+            
+            // Update client heading (will show "Supporting documents")
             updateClientHeading();
             
             // Show/hide add more button based on allowUploads
@@ -2811,9 +2941,13 @@
             addMoreContainer.classList.add('hidden');
             idUploaderSection.classList.remove('hidden');
             updateUploaderSubheading();
-            createInitialCard();
+            if (documentSystemMode === 'sdlt') {
+                createInitialSdltCard();
+            } else {
+                createInitialCard();
+                updateLikenessToggleVisibility(); // Update toggle visibility (ID mode only)
+            }
             updateUploadButton(); // Ensure button is in correct state
-            updateLikenessToggleVisibility(); // Update toggle visibility
         }
 
         function hideUploader() {
@@ -2826,7 +2960,9 @@
         }
 
         function updateUploaderSubheading() {
-            if (clientData && clientData.fe && clientData.clientNumber && clientData.matterNumber && clientData.name) {
+            if (documentSystemMode === 'sdlt') {
+                uploaderSubheading.textContent = 'Add supporting documents';
+            } else if (clientData && clientData.fe && clientData.clientNumber && clientData.matterNumber && clientData.name) {
                 uploaderSubheading.textContent = `Add more ID images for ${clientData.fe}/${clientData.clientNumber}/${clientData.matterNumber} - ${clientData.name}`;
             } else {
                 uploaderSubheading.textContent = 'Add more ID images';
@@ -2853,9 +2989,15 @@
             }
 
             const cardNumber = uploaderCards.length + 1;
-            const card = createAdditionalCard(cardNumber, 'document');
-            uploaderCardsContainer.appendChild(card);
-            uploaderCards.push(card);
+            if (documentSystemMode === 'sdlt') {
+                const card = createSdltCard(cardNumber);
+                uploaderCardsContainer.appendChild(card);
+                uploaderCards.push(card);
+            } else {
+                const card = createAdditionalCard(cardNumber, 'document');
+                uploaderCardsContainer.appendChild(card);
+                uploaderCards.push(card);
+            }
             
             // Update remove button states
             updateRemoveButtonStates();
@@ -2919,6 +3061,59 @@
             `;
             
             return card;
+        }
+
+        /*
+        =====================================================================
+        CREATE SDLT UPLOADER CARD
+        - Creates uploader card for SDLT system
+        - Uses title and description text inputs instead of dropdowns
+        =====================================================================
+        */
+        function createSdltCard(cardNumber) {
+            const card = document.createElement('div');
+            card.className = 'uploader-card';
+            
+            card.innerHTML = `
+                <div class="card-header">
+                    <label class="required">Document ${cardNumber}</label>
+                    <button class="remove-card-text-btn" onclick="removeCard(this)">Remove</button>
+                </div>
+                <div class="sdlt-inputs-container">
+                    <input type="text" class="sdlt-title-input" placeholder="Enter document title..." oninput="updateSdltInputs(this)">
+                    <textarea class="sdlt-description-input" placeholder="Enter description (optional)..." oninput="updateSdltInputs(this)" rows="2"></textarea>
+                </div>
+                <div class="document-upload-wrapper hidden" id="documentUploads${cardNumber}">
+                    <div class="upload-area-slimline" onclick="triggerFileInput(this)" ondrop="handleDrop(event, this)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                        <div class="upload-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17,8 12,3 7,8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <div class="upload-text">Select document</div>
+                        <input type="file" accept=".pdf,.doc,.docx" onchange="handleFileSelect(this)" style="display: none;">
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function updateSdltInputs(input) {
+            const card = input.closest('.uploader-card');
+            const titleInput = card.querySelector('.sdlt-title-input');
+            const uploadWrapper = card.querySelector('.document-upload-wrapper');
+            
+            // Show upload area if title is filled
+            if (titleInput.value.trim()) {
+                uploadWrapper.classList.remove('hidden');
+            } else {
+                uploadWrapper.classList.add('hidden');
+            }
+            
+            updateUploadButton();
         }
 
         /*
@@ -2993,27 +3188,37 @@
         }
 
         function validateDocumentCard(card) {
-            const primaryDropdown = card.querySelector('.primary-dropdown');
-            const secondaryDropdown = card.querySelector('.secondary-dropdown');
-            const otherInput = card.querySelector('.other-input');
-            
-            // Check if primary dropdown is selected
-            if (!primaryDropdown.value) {
-                return { valid: false, message: 'Please select a document type' };
-            }
-            
-            // Check if secondary dropdown or other input is filled
-            if (primaryDropdown.value === 'Other') {
-                if (!otherInput.value.trim()) {
-                    return { valid: false, message: 'Please enter a document type' };
+            if (documentSystemMode === 'sdlt') {
+                // SDLT mode: validate title input
+                const titleInput = card.querySelector('.sdlt-title-input');
+                if (!titleInput || !titleInput.value.trim()) {
+                    return { valid: false, message: 'Please enter a document title' };
                 }
+                return { valid: true };
             } else {
-                if (!secondaryDropdown.value) {
-                    return { valid: false, message: 'Please select a document sub-type' };
+                // ID mode: validate dropdowns
+                const primaryDropdown = card.querySelector('.primary-dropdown');
+                const secondaryDropdown = card.querySelector('.secondary-dropdown');
+                const otherInput = card.querySelector('.other-input');
+                
+                // Check if primary dropdown is selected
+                if (!primaryDropdown || !primaryDropdown.value) {
+                    return { valid: false, message: 'Please select a document type' };
                 }
+                
+                // Check if secondary dropdown or other input is filled
+                if (primaryDropdown.value === 'Other') {
+                    if (!otherInput || !otherInput.value.trim()) {
+                        return { valid: false, message: 'Please enter a document type' };
+                    }
+                } else {
+                    if (!secondaryDropdown || !secondaryDropdown.value) {
+                        return { valid: false, message: 'Please select a document sub-type' };
+                    }
+                }
+                
+                return { valid: true };
             }
-            
-            return { valid: true };
         }
 
         function updateDocumentType(dropdown) {
@@ -3380,8 +3585,30 @@
         function handleUploadSuccess() {
             hideUploadingState();
             
-            // Use the s3Keys data directly as it already contains the properly formatted document data from parent
-            const documentsWithS3Keys = s3Keys || uploadedImages;
+            let documentsWithS3Keys;
+            
+            if (documentSystemMode === 'sdlt') {
+                // For SDLT mode, merge local file data with s3Keys from parent
+                // s3Keys should be an array matching the order of localFilesForUpload
+                const s3KeysArray = Array.isArray(s3Keys) ? s3Keys : [];
+                documentsWithS3Keys = localFilesForUpload.map((fileObj, index) => {
+                    const s3KeyData = s3KeysArray[index] || {};
+                    return {
+                        type: fileObj.type, // 'user' or 'staff'
+                        document: fileObj.document, // title
+                        description: fileObj.description || '',
+                        uploader: fileObj.uploader,
+                        date: fileObj.date,
+                        data: fileObj.data,
+                        s3Key: s3KeyData.s3Key || s3KeyData.key || '',
+                        isAdditional: true,
+                        // Parent will add url and liveUrl
+                    };
+                });
+            } else {
+                // For ID mode, use the s3Keys data directly as it already contains the properly formatted document data from parent
+                documentsWithS3Keys = s3Keys || uploadedImages;
+            }
             
             // Send success message to parent with properly formatted documents data
             window.parent.postMessage({
@@ -3394,7 +3621,7 @@
             // Clear local files after successful upload
             localFilesForUpload = [];
             
-            // Return to document list section (parent will send fresh display-documents data)
+            // Return to document list section (parent will send fresh display-documents or sdlt-documents-display data)
             hideUploader();
         }
 
@@ -3981,9 +4208,6 @@
             const uploaderCards = document.querySelectorAll('.uploader-card');
             
             uploaderCards.forEach(card => {
-                const primaryDropdown = card.querySelector('.primary-dropdown');
-                const secondaryDropdown = card.querySelector('.secondary-dropdown');
-                const otherInput = card.querySelector('.other-input');
                 const uploadArea = card.querySelector('.upload-area-slimline');
                 
                 if (uploadArea && uploadArea.fileData) {
@@ -3995,57 +4219,100 @@
                         return; // Skip this file (forEach uses return, not continue)
                     }
                     
-                    const documentType = primaryDropdown.value;
-                    let subType = '';
-                    
-                    if (documentType === 'Other') {
-                        subType = otherInput.value.trim();
-                    } else if (secondaryDropdown.value) {
-                        subType = secondaryDropdown.value;
+                    if (documentSystemMode === 'sdlt') {
+                        // SDLT mode: use title and description inputs
+                        const titleInput = card.querySelector('.sdlt-title-input');
+                        const descriptionInput = card.querySelector('.sdlt-description-input');
+                        
+                        const title = titleInput ? titleInput.value.trim() : '';
+                        const description = descriptionInput ? descriptionInput.value.trim() : '';
+                        
+                        if (!title) {
+                            console.error('Skipping file: title is required for SDLT documents');
+                            return;
+                        }
+                        
+                        const fileObject = {
+                            type: uploadType, // 'user' or 'staff'
+                            document: title,
+                            description: description,
+                            uploader: userEmail,
+                            date: new Date().toLocaleString('en-GB', { 
+                                year: 'numeric', 
+                                month: '2-digit', 
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: false
+                            }),
+                            data: {
+                                type: file.type,
+                                size: file.size,
+                                name: file.name, // Use original filename
+                                lastModified: file.lastModified
+                            },
+                            isAdditional: true,
+                            file: file
+                        };
+                        
+                        console.log('Pushing SDLT file object:', fileObject);
+                        allFiles.push(fileObject);
+                        console.log('Successfully pushed, allFiles.length now:', allFiles.length);
+                    } else {
+                        // ID mode: use dropdowns
+                        const primaryDropdown = card.querySelector('.primary-dropdown');
+                        const secondaryDropdown = card.querySelector('.secondary-dropdown');
+                        const otherInput = card.querySelector('.other-input');
+                        
+                        const documentType = primaryDropdown.value;
+                        let subType = '';
+                        
+                        if (documentType === 'Other') {
+                            subType = otherInput.value.trim();
+                        } else if (secondaryDropdown.value) {
+                            subType = secondaryDropdown.value;
+                        }
+                        
+                        console.log('Document type:', documentType);
+                        console.log('Sub type:', subType);
+                        console.log('Other input value:', otherInput.value);
+                        console.log('Secondary dropdown value:', secondaryDropdown.value);
+                        
+                        // Generate filename with fallback values if clientData is not available
+                        const fe = String(clientData?.fe || 'Unknown').replace(/\//g, '-');
+                        const clientNumber = String(clientData?.clientNumber || 'Unknown').replace(/\//g, '-');
+                        const matterNumber = String(clientData?.matterNumber || 'Unknown').replace(/\//g, '-');
+                        const clientName = String(clientData?.name || 'Unknown').replace(/\//g, '-');
+                        const fileName = `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${subType}`;
+                        console.log('Generated filename:', fileName);
+                        
+                        const fileObject = {
+                            type: documentType,
+                            document: subType,
+                            uploader: userEmail,
+                            date: new Date().toLocaleString('en-GB', { 
+                                year: 'numeric', 
+                                month: '2-digit', 
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: false
+                            }),
+                            data: {
+                                type: file.type,
+                                size: file.size,
+                                name: fileName,
+                                lastModified: file.lastModified
+                            },
+                            file: file
+                        };
+                        
+                        console.log('Pushing ID file object:', fileObject);
+                        allFiles.push(fileObject);
+                        console.log('Successfully pushed, allFiles.length now:', allFiles.length);
                     }
-                    
-                    console.log('Document type:', documentType);
-                    console.log('Sub type:', subType);
-                    console.log('Other input value:', otherInput.value);
-                    console.log('Secondary dropdown value:', secondaryDropdown.value);
-                    
-                    // Generate filename with fallback values if clientData is not available
-                    // console.log('clientData:', clientData); // Commented out to avoid logging client data
-                    // console.log('userEmail:', userEmail); // Commented out to avoid logging client data
-                    // console.log('file object:', file); // Commented out to avoid logging client data
-                    
-                    const fe = String(clientData?.fe || 'Unknown').replace(/\//g, '-');
-                    const clientNumber = String(clientData?.clientNumber || 'Unknown').replace(/\//g, '-');
-                    const matterNumber = String(clientData?.matterNumber || 'Unknown').replace(/\//g, '-');
-                    const clientName = String(clientData?.name || 'Unknown').replace(/\//g, '-');
-                    const fileName = `${fe}-${clientNumber}-${matterNumber} - ${clientName} - ${subType}`;
-                    console.log('Generated filename:', fileName);
-                    
-                    const fileObject = {
-                        type: documentType,
-                        document: subType,
-                        uploader: userEmail,
-                        date: new Date().toLocaleString('en-GB', { 
-                            year: 'numeric', 
-                            month: '2-digit', 
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                            hour12: false
-                        }),
-                        data: {
-                            type: file.type,
-                            size: file.size,
-                            name: fileName,
-                            lastModified: file.lastModified
-                        },
-                        file: file
-                    };
-                    
-                    console.log('Pushing file object:', fileObject);
-                    allFiles.push(fileObject);
-                    console.log('Successfully pushed, allFiles.length now:', allFiles.length);
                 }
             });
             
@@ -4144,15 +4411,22 @@
                 // Then check if file is uploaded
                 const uploadArea = card.querySelector('.upload-area-slimline');
                 if (!uploadArea || !uploadArea.fileData) {
-                    const primaryDropdown = card.querySelector('.primary-dropdown');
-                    const secondaryDropdown = card.querySelector('.secondary-dropdown');
-                    const otherInput = card.querySelector('.other-input');
-                    
                     let documentType = 'this document';
-                    if (primaryDropdown.value === 'Other' && otherInput.value.trim()) {
-                        documentType = otherInput.value.trim();
-                    } else if (secondaryDropdown.value) {
-                        documentType = secondaryDropdown.value;
+                    if (documentSystemMode === 'sdlt') {
+                        const titleInput = card.querySelector('.sdlt-title-input');
+                        if (titleInput && titleInput.value.trim()) {
+                            documentType = titleInput.value.trim();
+                        }
+                    } else {
+                        const primaryDropdown = card.querySelector('.primary-dropdown');
+                        const secondaryDropdown = card.querySelector('.secondary-dropdown');
+                        const otherInput = card.querySelector('.other-input');
+                        
+                        if (primaryDropdown && primaryDropdown.value === 'Other' && otherInput && otherInput.value.trim()) {
+                            documentType = otherInput.value.trim();
+                        } else if (secondaryDropdown && secondaryDropdown.value) {
+                            documentType = secondaryDropdown.value;
+                        }
                     }
                     
                     return { valid: false, message: `Please select a file for ${documentType}.` };
@@ -4276,16 +4550,21 @@
            - Opens document in popup window (like eye button)
            - Shows error popup if document not found
            
-        4. 'put-links' - S3 upload URLs received
+        4. 'open-sdlt-document' - Opens SDLT document PDF by URL
+           - Receives URL directly in message
+           - Opens document in popup window
+           - Shows error popup if URL not provided
+           
+        5. 'put-links' - S3 upload URLs received
            - Handled by handlePutResponse()
            
-        5. 'put-error' - Upload preparation failed
+        6. 'put-error' - Upload preparation failed
            - Handled by handlePutError()
         
-        6. 'button-enable' - Enable upload more button
+        7. 'button-enable' - Enable upload more button
            - Enables the "Upload more documents" button
         
-        7. 'button-disable' - Disable upload more button
+        8. 'button-disable' - Disable upload more button
            - Disables the "Upload more documents" button
         =====================================================================
         */
@@ -4297,6 +4576,9 @@
             } else if (event.data && event.data.type === 'thirdfort-document') {
                 // Handle Thirdfort check PDF viewing request
                 handleThirdfortDocument(event.data);
+            } else if (event.data && event.data.type === 'open-sdlt-document') {
+                // Handle SDLT document viewing request
+                handleOpenSdltDocument(event.data);
             } else if (event.data && event.data.type === 'display-documents') {
                 // console.log('Received document display data:', event.data); // Commented out to avoid logging client data
                 
@@ -4310,6 +4592,19 @@
                 
                 // Display the new documents
                 displayDocuments(event.data.documents, event.data.allowUploads, event.data.clientData, event.data.userEmail);
+            } else if (event.data && event.data.type === 'sdlt-documents-display') {
+                // console.log('Received SDLT document display data:', event.data); // Commented out to avoid logging client data
+                
+                // No item ID for SDLT system
+                itemId = null;
+                
+                // If we're currently in uploader mode, reset everything first
+                if (!idUploaderSection.classList.contains('hidden')) {
+                    resetUploaders();
+                }
+                
+                // Display the SDLT documents
+                displaySdltDocuments(event.data.documents, event.data.allowUploads, event.data.userEmail, event.data.uploadType);
             } else if (event.data && event.data.type === 'image-display') {
                 // console.log('Received image display data:', event.data); // Commented out to avoid logging client data
                 
@@ -4350,6 +4645,40 @@
             // Recalculate document card layout on resize
             checkUploaderInfoLayout();
         });
+
+        /*
+        =====================================================================
+        HANDLE OPEN SDLT DOCUMENT
+        - Receives URL from parent
+        - Opens document in popup window
+        - Shows error popup if URL not provided
+        =====================================================================
+        */
+        function handleOpenSdltDocument(data) {
+            // console.log('📄 SDLT document open request received:', data); // Commented out to avoid logging client data
+            
+            if (!data || !data.url) {
+                console.error('No URL provided in open-sdlt-document message');
+                showError('Cannot open document: No URL provided');
+                return;
+            }
+            
+            // Open document in centered popup window
+            const width = 1000;
+            const height = 800;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
+            const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
+            
+            const popup = window.open(data.url, 'sdltDocumentViewer', features);
+            if (popup) {
+                popup.focus(); // Focus the window to bring it to front (PWA/Chrome)
+                console.log('Opening SDLT document in popup window:', data.url);
+            } else {
+                console.error('Failed to open popup window - may be blocked by browser');
+                showError('Cannot open document: Popup window was blocked. Please allow popups for this site.');
+            }
+        }
 
         /*
         =====================================================================
@@ -4513,7 +4842,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'adca3ee';
+    window.__IFRAME_VERSION__ = '452c3b1';
     console.log('[document-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
