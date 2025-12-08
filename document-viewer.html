@@ -4661,7 +4661,11 @@
         function handleOpenSdltDocument(data) {
             // console.log('📄 SDLT document open request received:', data); // Commented out to avoid logging client data
             
-            if (!data || !data.url) {
+            // Extract URL from data.data (message structure: { type, data: { url } })
+            const messageData = data.data || data;
+            const url = messageData.url;
+            
+            if (!url) {
                 console.error('No URL provided in open-sdlt-document message');
                 showError('Cannot open document: No URL provided');
                 return;
@@ -4674,10 +4678,10 @@
             const top = (screen.height - height) / 2;
             const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
             
-            const popup = window.open(data.url, 'sdltDocumentViewer', features);
+            const popup = window.open(url, 'sdltDocumentViewer', features);
             if (popup) {
                 popup.focus(); // Focus the window to bring it to front (PWA/Chrome)
-                console.log('Opening SDLT document in popup window:', data.url);
+                console.log('Opening SDLT document in popup window:', url);
             } else {
                 console.error('Failed to open popup window - may be blocked by browser');
                 showError('Cannot open document: Popup window was blocked. Please allow popups for this site.');
@@ -4846,7 +4850,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '2b174f5';
+    window.__IFRAME_VERSION__ = '52ab2c4';
     console.log('[document-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
