@@ -1138,29 +1138,43 @@
             - After parent saves a new message to database
             - Any time parent wants to refresh the chat display
             
-            Data structure:
+            Data structure (supports both nested and flat structures):
+            
+            Nested structure (recommended):
+            {
+                type: 'sdlt-message-viewer',
+                data: {
+                    userEmail: 'user@example.com',
+                    notification: true/false,
+                    white: 'Dwellworks' | 'THS',  // Determines which message type appears as "sent" (white)
+                    data: [
+                        {
+                            _id: 'message-id',  // Message ID (included in SDLT mode)
+                            message: 'Message text',
+                            time: '07/11/2025, 12:10:24 PM',
+                            type: 'Dwellworks' | 'THS',
+                            user: 'user@example.com'
+                        },
+                        ...
+                    ]
+                }
+            }
+            
+            Flat structure (also supported):
             {
                 type: 'sdlt-message-viewer',
                 userEmail: 'user@example.com',
                 notification: true/false,
-                white: 'Dwellworks' | 'THS',  // Determines which message type appears as "sent" (white)
-                data: [
-                    {
-                        _id: 'message-id',  // Message ID (included in SDLT mode)
-                        message: 'Message text',
-                        time: '07/11/2025, 12:10:24 PM',
-                        type: 'Dwellworks' | 'THS',
-                        user: 'user@example.com'
-                    },
-                    ...
-                ]
+                white: 'Dwellworks' | 'THS',
+                data: [...]
             }
             
             Note: SDLT mode does NOT include item/matter _id at the top level,
             but message objects in the data array DO include _id (message IDs).
             */
             else if (event.data.type === 'sdlt-message-viewer') {
-                const data = event.data;
+                // Handle nested structure: properties may be in event.data.data or at top level
+                const messageData = event.data.data || event.data;
                 
                 // Enable SDLT mode
                 isSdltMode = true;
@@ -1170,18 +1184,20 @@
                 resetUploadArea(); // Clears file input and resets UI to default
                 
                 // Store critical data for later use in message sending
-                userEmail = data.userEmail || '';
+                userEmail = messageData.userEmail || '';
                 // Note: SDLT mode doesn't use item/matter _id, but we keep itemId for dismiss-notification
                 // In SDLT mode, itemId may be empty or undefined
-                itemId = data._id || '';
-                hasNotification = data.notification || false;
-                sdltWhiteType = data.white || 'THS'; // Default to THS if not specified
+                itemId = messageData._id || '';
+                hasNotification = messageData.notification || false;
+                sdltWhiteType = messageData.white || 'THS'; // Default to THS if not specified
                 
                 // Update UI for SDLT mode
                 updateSdltModeUI();
                 
-                // Display all messages from data array (direct array, not wrapped in chat property)
-                displayMessages(data.data || [], sdltWhiteType);
+                // Display all messages from data array
+                // Handle both nested (event.data.data.data) and flat (event.data.data) structures
+                const messagesArray = messageData.data || [];
+                displayMessages(messagesArray, sdltWhiteType);
                 
                 // Update notification UI (dot and dismiss button)
                 handleNotification(hasNotification);
@@ -2319,7 +2335,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '5c0ce89';
+    window.__IFRAME_VERSION__ = 'a1b3bca';
     console.log('[message-iframe] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

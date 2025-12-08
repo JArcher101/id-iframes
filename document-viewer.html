@@ -2570,7 +2570,30 @@
             const index = parseInt(button.getAttribute('data-document-index'));
             const documentData = images[index];
             
-            if (documentData && documentData.liveUrl) {
+
+            if (!documentData) {
+                console.error('No document data available');
+                return;
+            }
+            
+            // In SDLT mode, send message to parent to open document
+            if (documentSystemMode === 'sdlt') {
+                if (documentData.liveUrl) {
+                    window.parent.postMessage({
+                        type: 'open-sdlt-document',
+                        data: {
+                            url: documentData.liveUrl
+                        }
+                    }, '*');
+                    console.log('Sent open-sdlt-document message to parent:', documentData.liveUrl);
+                } else {
+                    console.error('No liveUrl available for SDLT document:', documentData);
+                }
+                return;
+            }
+            
+            // ID mode: open document directly
+            if (documentData.liveUrl) {
                 // Open document in centered popup window using signed URL directly
                 const width = 1000;
                 const height = 800;
@@ -4603,8 +4626,11 @@
                     resetUploaders();
                 }
                 
+                // Extract data from event.data.data (message structure: { type, data: { documents, allowUploads, ... } })
+                const messageData = event.data.data || event.data;
+                
                 // Display the SDLT documents
-                displaySdltDocuments(event.data.documents, event.data.allowUploads, event.data.userEmail, event.data.uploadType);
+                displaySdltDocuments(messageData.documents, messageData.allowUploads, messageData.userEmail, messageData.uploadType);
             } else if (event.data && event.data.type === 'image-display') {
                 // console.log('Received image display data:', event.data); // Commented out to avoid logging client data
                 
@@ -4842,7 +4868,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '5c0ce89';
+    window.__IFRAME_VERSION__ = 'a1b3bca';
     console.log('[document-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
