@@ -13,12 +13,14 @@ Core functionality for the dwellworks request form including:
 
 // Global state
 let formState = {
-  addSecondTenant: false,
-  addAdditionalDocuments: false,
+  addSecondTenant: undefined, // YES = true, NO = undefined
+  addAdditionalDocuments: undefined, // YES = true, NO = undefined
   additionalDocuments: [],
   leaseDocument: null,
   documents: [],
-  sdltFeeEmployerMatch: true, // Defaults to Yes (matches legal fee)
+  legalFeeDirectSend: undefined, // YES = true, NO = undefined
+  sdltFeeDirectSend: undefined, // YES = true, NO = undefined
+  sdltFeeEmployerMatch: true, // Defaults to Yes (matches legal fee) - YES = true, NO = undefined
   submitterDataReceived: false, // Track if submitter data has been received
   companyData: null, // Full Companies House company data object
   uploadedDocuments: [], // Documents with s3Keys from put-links response (data.images)
@@ -212,8 +214,8 @@ function handleYesNoButton(event) {
   buttons.forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   
-  // Update form state
-  formState[field] = value === 'yes';
+  // Update form state - YES = true, NO = undefined
+  formState[field] = value === 'yes' ? true : undefined;
   
   // Handle specific field logic
   if (field === 'addSecondTenant') {
@@ -335,7 +337,7 @@ function handleLegalFeePayeeChange(event) {
         if (sdltBtn) {
           document.querySelectorAll('[data-field="sdltFeeDirectSend"]').forEach(b => b.classList.remove('selected'));
           sdltBtn.classList.add('selected');
-          formState.sdltFeeDirectSend = legalValue === 'yes';
+          formState.sdltFeeDirectSend = legalValue === 'yes' ? true : undefined;
         }
       }
     }
@@ -1191,7 +1193,7 @@ function validateForm() {
     // If match is "no", employer details are required
     const sdltFeeEmployerMatchContainer = document.getElementById('sdltFeeEmployerMatchContainer');
     if (sdltFeeEmployerMatchContainer && !sdltFeeEmployerMatchContainer.classList.contains('hidden')) {
-      if (formState.sdltFeeEmployerMatch === false) {
+      if (formState.sdltFeeEmployerMatch !== true) {
         const sdltFeeEmployerName = document.getElementById('sdltFeeEmployerName');
         const sdltFeeEmployerContact = document.getElementById('sdltFeeEmployerContact');
         
@@ -1475,8 +1477,18 @@ function populateFormFromSubmission(data) {
   
   // Lease Under
   if (data.lessee) {
-    const radio = document.querySelector(`input[name="leaseUnder"][value="${data.lessee}"]`);
-    if (radio) {
+    const technicalValue = getRadioTechnicalValue(data.lessee);
+    const radio = document.querySelector(`input[name="leaseUnder"][value="${technicalValue}"]`);
+    if (!radio) {
+      // Try alternative value (tenants-employer vs tenant-employer)
+      const altValue = technicalValue === 'tenant-employer' ? 'tenants-employer' : (technicalValue === 'tenants-employer' ? 'tenant-employer' : technicalValue);
+      const altRadio = document.querySelector(`input[name="leaseUnder"][value="${altValue}"]`);
+      if (altRadio) {
+        altRadio.checked = true;
+        const event = new Event('change', { bubbles: true });
+        altRadio.dispatchEvent(event);
+      }
+    } else {
       radio.checked = true;
       // Trigger change to show/hide other fields
       const event = new Event('change', { bubbles: true });
@@ -1580,12 +1592,19 @@ function populateFormFromSubmission(data) {
   }
   
   // Second Tenant
-  if (data.secondTenantFirstName || data.secondTenantLastName) {
+  if (data.secondTenant === true) {
     // Enable second tenant
-    const yesBtn = document.querySelector('.add-second-tenant-buttons .yes-no-btn[data-value="yes"]');
+    const yesBtn = document.querySelector('[data-field="addSecondTenant"][data-value="yes"]');
     if (yesBtn) {
       yesBtn.click();
     }
+  } else if (data.secondTenant === undefined) {
+    const noBtn = document.querySelector('[data-field="addSecondTenant"][data-value="no"]');
+    if (noBtn) noBtn.click();
+  }
+  
+  // Populate second tenant fields if they exist
+  if (data.secondTenantFirstName || data.secondTenantLastName) {
     if (data.secondTenantFirstName) {
       const input = document.getElementById('tenant2FirstName');
       if (input) input.value = data.secondTenantFirstName;
@@ -1624,7 +1643,8 @@ function populateFormFromSubmission(data) {
   
   // Legal Fee Payee
   if (data.thsFeePayer) {
-    const radio = document.querySelector(`input[name="legalFeePayee"][value="${data.thsFeePayer}"]`);
+    const technicalValue = getRadioTechnicalValue(data.thsFeePayer);
+    const radio = document.querySelector(`input[name="legalFeePayee"][value="${technicalValue}"]`);
     if (radio) {
       radio.checked = true;
       const event = new Event('change', { bubbles: true });
@@ -1669,7 +1689,8 @@ function populateFormFromSubmission(data) {
   
   // SDLT Fee Payee
   if (data.sdltFeePayer) {
-    const radio = document.querySelector(`input[name="sdltFeePayee"][value="${data.sdltFeePayer}"]`);
+    const technicalValue = getRadioTechnicalValue(data.sdltFeePayer);
+    const radio = document.querySelector(`input[name="sdltFeePayee"][value="${technicalValue}"]`);
     if (radio) {
       radio.checked = true;
       const event = new Event('change', { bubbles: true });
@@ -1705,11 +1726,11 @@ function populateFormFromSubmission(data) {
     const input = document.getElementById('sdltFeeEmployerName');
     if (input) input.value = data.sdltFeeEmployerAccountsContactName;
   }
-  if (data.sdltFeeEmployerMatch !== undefined) {
+  if (data.sdltFeeEmployerDetailsMatchThsLlpFeePayer !== undefined) {
     const yesBtn = document.querySelector('#sdltFeeEmployerMatchContainer .yes-no-btn[data-value="yes"]');
     const noBtn = document.querySelector('#sdltFeeEmployerMatchContainer .yes-no-btn[data-value="no"]');
-    if (data.sdltFeeEmployerMatch === true && yesBtn) yesBtn.click();
-    else if (data.sdltFeeEmployerMatch === false && noBtn) noBtn.click();
+    if (data.sdltFeeEmployerDetailsMatchThsLlpFeePayer === true && yesBtn) yesBtn.click();
+    else if (data.sdltFeeEmployerDetailsMatchThsLlpFeePayer === undefined && noBtn) noBtn.click();
   }
   if (data.sdltFeeInvoiceSending !== undefined) {
     const yesBtn = document.querySelector('#sdltFeeDirectSendContainer .yes-no-btn[data-value="yes"]');
@@ -1725,9 +1746,12 @@ function populateFormFromSubmission(data) {
   }
   
   // Additional Documents (will be displayed in updateUIForEditMode)
-  if (data.addSupportingDocuments) {
-    const yesBtn = document.querySelector('.add-second-tenant-buttons[data-field="addAdditionalDocuments"] .yes-no-btn[data-value="yes"]');
+  if (data.addSupportingDocuments === true) {
+    const yesBtn = document.querySelector('[data-field="addAdditionalDocuments"][data-value="yes"]');
     if (yesBtn) yesBtn.click();
+  } else if (data.addSupportingDocuments === undefined) {
+    const noBtn = document.querySelector('[data-field="addAdditionalDocuments"][data-value="no"]');
+    if (noBtn) noBtn.click();
   }
 }
 
@@ -1857,11 +1881,157 @@ function selectAddressSuggestion(addressId, displayText, field) {
   }, '*');
 }
 
+/**
+ * Normalize country code/name to Thirdfort format (GBR, USA, CAN, etc.)
+ */
+function normalizeCountryCode(country) {
+  if (!country) return 'GBR';
+  
+  const countryStr = String(country).trim().toUpperCase();
+  
+  // Already in correct format
+  if (['GBR', 'USA', 'CAN'].includes(countryStr)) {
+    return countryStr;
+  }
+  
+  // Common mappings
+  const mappings = {
+    'GB': 'GBR',
+    'UK': 'GBR',
+    'UNITED KINGDOM': 'GBR',
+    'US': 'USA',
+    'UNITED STATES': 'USA',
+    'UNITED STATES OF AMERICA': 'USA',
+    'CA': 'CAN',
+    'CANADA': 'CAN'
+  };
+  
+  return mappings[countryStr] || countryStr;
+}
+
+/**
+ * Format getaddress.io address data to Thirdfort format
+ * - UK (GBR): Uses individual fields (building_name, building_number, flat_number, street, etc.)
+ * - USA/CAN: Uses address_1, address_2, state
+ * - Other: Uses address_1, address_2
+ * - Per Thirdfort API spec: UK addresses must NOT include address_1/address_2
+ */
+function formatToThirdfort(getAddressData, country = 'GBR') {
+  if (!getAddressData) return null;
+  
+  // Normalize country code to 3-letter ISO format
+  const normalizedCountry = normalizeCountryCode(country);
+  
+  // UK addresses: Individual fields only (no address_1, address_2)
+  if (normalizedCountry === 'GBR') {
+    let buildingNumber = getAddressData.building_number || getAddressData.sub_building_number || '';
+    let buildingNameFromLine1 = '';
+    let flatNumber = getAddressData.flat_number || '';
+    
+    // Parse line_1 intelligently using thoroughfare as the key
+    if (getAddressData.line_1 && (!buildingNumber || !getAddressData.building_name)) {
+      let addressPrefix = getAddressData.line_1.trim();
+      
+      // Remove thoroughfare/street from line_1 if present
+      if (getAddressData.thoroughfare && addressPrefix.includes(getAddressData.thoroughfare)) {
+        addressPrefix = addressPrefix.replace(getAddressData.thoroughfare, '').replace(/,\s*$/, '').trim();
+      }
+      
+      // Now parse the remaining prefix (which has street already removed)
+      if (addressPrefix) {
+        // Check for flat number (e.g., "Flat 1A", "Flat 1A, Building Name")
+        const flatMatch = addressPrefix.match(/^(?:Flat|flat|Apartment|apartment|Unit|unit|Apt|apt)\s+(\d+[a-zA-Z]?)/i);
+        if (flatMatch && !flatNumber) {
+          flatNumber = flatMatch[1];
+          addressPrefix = addressPrefix.substring(flatMatch[0].length).replace(/^[,\s]+/, '').trim();
+        }
+        
+        // Check if remaining starts with a number (building number like "94", "1A", etc.)
+        if (!buildingNumber) {
+          const numberMatch = addressPrefix.match(/^(\d+[a-zA-Z]?)\b/);
+          if (numberMatch) {
+            buildingNumber = numberMatch[1];
+            addressPrefix = addressPrefix.substring(numberMatch[0].length).replace(/^[,\s]+/, '').trim();
+          }
+        }
+        
+        // Whatever remains is the building name
+        if (addressPrefix) {
+          // Don't use purely numeric values as building names (they're building numbers)
+          if (!/^\d+$/.test(addressPrefix)) {
+            buildingNameFromLine1 = addressPrefix;
+          }
+        }
+      }
+    }
+    
+    // Building name: Combine all available building name data
+    const buildingNameParts = [
+      getAddressData.sub_building_name,
+      getAddressData.building_name && !/^\d+$/.test(getAddressData.building_name.trim()) ? getAddressData.building_name : buildingNameFromLine1,
+      getAddressData.line_2 && getAddressData.line_2 !== getAddressData.thoroughfare ? getAddressData.line_2 : ''
+    ].filter(p => p && p.trim());
+    
+    return {
+      building_name: buildingNameParts.join(', ') || '',
+      building_number: buildingNumber,
+      flat_number: flatNumber,
+      postcode: getAddressData.postcode || '',
+      street: getAddressData.thoroughfare || getAddressData.line_3 || getAddressData.street || '',
+      sub_street: getAddressData.sub_street || '',
+      town: getAddressData.town_or_city || getAddressData.town || '',
+      country: normalizedCountry
+    };
+  }
+  
+  // USA/Canada: address_1, address_2, state required
+  if (normalizedCountry === 'USA' || normalizedCountry === 'CAN') {
+    return {
+      address_1: getAddressData.line_1 || '',
+      address_2: getAddressData.line_2 || getAddressData.line_3 || getAddressData.line_4 || '',
+      postcode: getAddressData.postcode || '',
+      street: getAddressData.thoroughfare || getAddressData.street || '',
+      sub_street: getAddressData.sub_street || '',
+      town: getAddressData.town_or_city || getAddressData.town || '',
+      state: getAddressData.state || getAddressData.province || '',
+      country: normalizedCountry
+    };
+  }
+  
+  // Other countries: address_1, address_2 (no individual building fields)
+  return {
+    address_1: getAddressData.line_1 || '',
+    address_2: getAddressData.line_2 || getAddressData.line_3 || getAddressData.line_4 || '',
+    postcode: getAddressData.postcode || '',
+    street: getAddressData.thoroughfare || getAddressData.street || '',
+    sub_street: getAddressData.sub_street || '',
+    town: getAddressData.town_or_city || getAddressData.town || '',
+    state: '',
+    country: normalizedCountry
+  };
+}
+
 function handleAddressData(address, field) {
+  // Get country for the address
+  let country = 'GBR';
   if (field === 'sdlt') {
-    sdltAddressObject = address;
+    // SDLT address is always UK
+    country = 'GBR';
   } else {
-    previousAddressObject = address;
+    // Previous address - get country from dropdown
+    const previousCountryElement = document.getElementById('previousAddressCountry');
+    if (previousCountryElement) {
+      country = previousCountryElement.dataset.countryCode || previousCountryElement.value || 'GBR';
+    }
+  }
+  
+  // Format address to Thirdfort format
+  const formattedAddress = formatToThirdfort(address, country);
+  
+  if (field === 'sdlt') {
+    sdltAddressObject = formattedAddress;
+  } else {
+    previousAddressObject = formattedAddress;
   }
   
   validateForm();
@@ -2192,7 +2362,7 @@ function collectValidationErrors() {
   if (sdltFeePayee === 'tenant-employer') {
     const sdltFeeEmployerMatchContainer = document.getElementById('sdltFeeEmployerMatchContainer');
     if (sdltFeeEmployerMatchContainer && !sdltFeeEmployerMatchContainer.classList.contains('hidden')) {
-      if (formState.sdltFeeEmployerMatch === false) {
+      if (formState.sdltFeeEmployerMatch !== true) {
         const sdltFeeEmployerName = document.getElementById('sdltFeeEmployerName');
         const sdltFeeEmployerContact = document.getElementById('sdltFeeEmployerContact');
         
@@ -2268,6 +2438,43 @@ function collectValidationErrors() {
   return errors;
 }
 
+// ===== FORM DATA COLLECTION =====
+
+/**
+ * Convert radio button technical value to friendly label
+ */
+function getRadioFriendlyLabel(technicalValue) {
+  const mapping = {
+    'tenant': 'The Tenant',
+    'tenants-employer': "The Tenant's Employer",
+    'tenant-employer': "The Tenant's Employer",
+    'dwellworks': 'Dwellworks',
+    'other': 'Other'
+  };
+  return mapping[technicalValue] || technicalValue;
+}
+
+/**
+ * Convert friendly label back to technical value for radio buttons
+ */
+function getRadioTechnicalValue(friendlyLabel) {
+  const mapping = {
+    'The Tenant': 'tenant',
+    "The Tenant's Employer": 'tenant-employer',
+    'Dwellworks': 'dwellworks',
+    'Other': 'other'
+  };
+  // Also check if it's already a technical value
+  if (['tenant', 'tenants-employer', 'tenant-employer', 'dwellworks', 'other'].includes(friendlyLabel)) {
+    // Normalize tenants-employer to tenant-employer
+    return friendlyLabel === 'tenants-employer' ? 'tenant-employer' : friendlyLabel;
+  }
+  return mapping[friendlyLabel] || friendlyLabel;
+}
+
+/**
+ * Collect all form data and return as object
+ */
 function collectFormData() {
   // Helper to format phone number
   const formatPhone = (countryCodeEl, numberEl) => {
@@ -2323,7 +2530,7 @@ function collectFormData() {
     tenantsPreviousAddress: getAddressObject(previousAddressObject, () => getManualAddress('previous')),
     
     // Second Tenant
-    secondTenant: formState.addSecondTenant || false,
+    secondTenant: formState.addSecondTenant === true ? true : undefined,
     secondTenantFirstName: formState.addSecondTenant ? document.getElementById('tenant2FirstName').value : undefined,
     secondTenantLastName: formState.addSecondTenant ? document.getElementById('tenant2LastName').value : undefined,
     secondTenantDateOfBirth: formState.addSecondTenant ? (getDOBValue(2) || undefined) : undefined,
@@ -2345,7 +2552,7 @@ function collectFormData() {
     })(),
     
     // Lease
-    lessee: leaseUnder || undefined,
+    lessee: leaseUnder ? getRadioFriendlyLabel(leaseUnder) : undefined,
     lesseeOther: leaseUnder === 'other' ? document.getElementById('leaseOtherName').value : undefined,
     lesseeDateOfBirthEntityNumber: leaseUnder === 'other' ? (document.getElementById('leaseOtherDobEntity').value || undefined) : undefined,
     lesseePhoneNumber: leaseUnder === 'other' ? (document.getElementById('leaseOtherTel').value || undefined) : undefined,
@@ -2354,7 +2561,7 @@ function collectFormData() {
     leaseAgreementNote: document.getElementById('leaseNote').value || undefined,
     
     // Legal Fee (THS Fee)
-    thsFeePayer: legalFeePayee || undefined,
+    thsFeePayer: legalFeePayee ? getRadioFriendlyLabel(legalFeePayee) : undefined,
     thsFeePayerOther: legalFeePayee === 'other' ? document.getElementById('legalFeeOtherName').value : undefined,
     thsFeePayerDateOfBirthEntityNumber: legalFeePayee === 'other' ? (document.getElementById('legalFeeOtherDobEntity').value || undefined) : undefined,
     thsFeePayerPhoneNumber: legalFeePayee === 'other' ? (document.getElementById('legalFeeOtherTel').value || undefined) : undefined,
@@ -2365,14 +2572,14 @@ function collectFormData() {
     thsFeeEmployersAccountsContactName: legalFeePayee === 'tenant-employer' ? document.getElementById('legalFeeEmployerName').value : undefined,
     
     // SDLT Fee
-    sdltFeePayer: sdltFeePayee || undefined,
+    sdltFeePayer: sdltFeePayee ? getRadioFriendlyLabel(sdltFeePayee) : undefined,
     sdltFeePayerOther: sdltFeePayee === 'other' ? document.getElementById('sdltFeeOtherName').value : undefined,
     sdltFeePayerDateOfBirthEntityNumber: sdltFeePayee === 'other' ? (document.getElementById('sdltFeeOtherDobEntity').value || undefined) : undefined,
     sdltFeePayerEmail: sdltFeePayee === 'other' ? (document.getElementById('sdltFeeOtherEmail').value || undefined) : undefined,
     sdltFeePayerPhone: sdltFeePayee === 'other' ? (document.getElementById('sdltFeeOtherTel').value || undefined) : undefined,
     sdltFeePayerRelationToTenant: sdltFeePayee === 'other' ? document.getElementById('sdltFeeOtherRelation').value : undefined,
     sdltFeeInvoiceSending: sdltFeePayee && sdltFeePayee !== 'dwellworks' ? (formState.sdltFeeDirectSend === true ? true : undefined) : undefined,
-    sdltFeeEmployerDetailsMatchThsLlpFeePayer: (sdltFeePayee === 'tenant-employer' && legalFeePayee === 'tenant-employer') ? formState.sdltFeeEmployerMatch : undefined,
+    sdltFeeEmployerDetailsMatchThsLlpFeePayer: (sdltFeePayee === 'tenant-employer' && legalFeePayee === 'tenant-employer') ? (formState.sdltFeeEmployerMatch === true ? true : undefined) : undefined,
     sdltFeeEmployersAccountContactName: (sdltFeePayee === 'tenant-employer' && !formState.sdltFeeEmployerMatch) ? document.getElementById('sdltFeeEmployerName').value : undefined,
     sdltFeeEmployersAccountEmail: (sdltFeePayee === 'tenant-employer' && !formState.sdltFeeEmployerMatch) ? (document.getElementById('sdltFeeEmployerContact').value || undefined) : undefined,
     
@@ -2405,15 +2612,87 @@ function getDOBValue(tenantNum) {
 function getManualAddress(type) {
   const prefix = type === 'sdlt' ? 'sdlt' : 'prev';
   
+  // Get country and normalize it
+  let country = 'GBR';
+  if (type === 'sdlt') {
+    // SDLT address is always UK
+    country = 'GBR';
+  } else {
+    // Previous address - get country from dropdown
+    const previousCountryElement = document.getElementById('previousAddressCountry');
+    if (previousCountryElement) {
+      const countryRaw = previousCountryElement.dataset.countryCode || previousCountryElement.value || 'GBR';
+      country = normalizeCountryCode(countryRaw);
+    }
+  }
+  
+  // Read values from manual input fields
+  const flatNumber = document.getElementById(`${prefix}FlatNumber`)?.value?.trim() || '';
+  const buildingNumber = document.getElementById(`${prefix}BuildingNumber`)?.value?.trim() || '';
+  const buildingName = document.getElementById(`${prefix}BuildingName`)?.value?.trim() || '';
+  const street = document.getElementById(`${prefix}Street`)?.value?.trim() || '';
+  const subStreet = document.getElementById(`${prefix}SubStreet`)?.value?.trim() || '';
+  const town = document.getElementById(`${prefix}Town`)?.value?.trim() || '';
+  const postcode = document.getElementById(`${prefix}Postcode`)?.value?.trim() || '';
+  
+  const isUK = country === 'GBR';
+  const isUSAOrCAN = country === 'USA' || country === 'CAN';
+  
+  // UK addresses: Individual fields only (no address_1, address_2)
+  if (isUK) {
+    return {
+      building_name: buildingName,
+      building_number: buildingNumber,
+      flat_number: flatNumber,
+      postcode: postcode,
+      street: street,
+      sub_street: subStreet,
+      town: town,
+      country: country
+    };
+  }
+  
+  // USA/Canada: address_1, address_2, state required
+  if (isUSAOrCAN) {
+    // Build address_1 from available fields
+    const address1Parts = [
+      flatNumber,
+      buildingNumber,
+      buildingName,
+      street
+    ].filter(p => p && p.trim());
+    const address1 = address1Parts.join(', ') || street || '';
+    
+    return {
+      address_1: address1,
+      address_2: subStreet,
+      postcode: postcode,
+      street: street,
+      sub_street: subStreet,
+      town: town,
+      state: '', // State field not in manual inputs, leave empty
+      country: country
+    };
+  }
+  
+  // Other countries: address_1, address_2 (no individual building fields)
+  const address1Parts = [
+    flatNumber,
+    buildingNumber,
+    buildingName,
+    street
+  ].filter(p => p && p.trim());
+  const address1 = address1Parts.join(', ') || street || '';
+  
   return {
-    flat_number: document.getElementById(`${prefix}FlatNumber`)?.value || '',
-    building_number: document.getElementById(`${prefix}BuildingNumber`)?.value || '',
-    building_name: document.getElementById(`${prefix}BuildingName`)?.value || '',
-    street: document.getElementById(`${prefix}Street`)?.value || '',
-    sub_street: document.getElementById(`${prefix}SubStreet`)?.value || '',
-    town: document.getElementById(`${prefix}Town`)?.value || '',
-    postcode: document.getElementById(`${prefix}Postcode`)?.value || '',
-    country: type === 'sdlt' ? 'GBR' : (document.getElementById('previousAddressCountry')?.dataset.countryCode || 'GBR')
+    address_1: address1,
+    address_2: subStreet,
+    postcode: postcode,
+    street: street,
+    sub_street: subStreet,
+    town: town,
+    state: '',
+    country: country
   };
 }
 
@@ -3328,7 +3607,9 @@ function buildIdEntries() {
   const employerNumber = document.getElementById('employerNumber').value;
   const isUKEmployer = employerCountry?.dataset.jurisdictionCode === 'GB';
   const employerCompanyData = isUKEmployer && formState.companyData ? formState.companyData : undefined;
-  const employerSelected = leaseUnder === 'tenants-employer' || legalFeePayee === 'tenant-employer' || sdltFeePayee === 'tenant-employer';
+  // Normalize both variants to tenant-employer for comparison
+  const normalizedLeaseUnder = leaseUnder === 'tenants-employer' ? 'tenant-employer' : leaseUnder;
+  const employerSelected = normalizedLeaseUnder === 'tenant-employer' || legalFeePayee === 'tenant-employer' || sdltFeePayee === 'tenant-employer';
   
   if (employerName && employerSelected) {
     entries.push({
