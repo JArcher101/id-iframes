@@ -172,3 +172,4 @@ curl -I "https://sdlt-documents.thurstanhoskin.app/protected/[key]?Expires=...&K
 5. ✅ Update Wix Secrets if needed:
    - `CLOUDFRONT_SDLT_DOCUMENTS_DOMAIN` = `sdlt-documents.thurstanhoskin.app`
 
+

@@ -1243,16 +1243,20 @@ function handleParentMessage(event) {
       handleSubmitterData(message);
       break;
     case 'address-results':
-      displayAddressSuggestions(message.suggestions, message.field);
+      const addressResultsData = message.data || message;
+      displayAddressSuggestions(addressResultsData.suggestions, addressResultsData.field);
       break;
     case 'address-data':
-      handleAddressData(message.address, message.field);
+      const addressDataMsg = message.data || message;
+      handleAddressData(addressDataMsg.address, addressDataMsg.field);
       break;
     case 'company-results':
-      displayCompanySuggestions(message.companies, message.byNumber);
+      const companyResultsData = message.data || message;
+      displayCompanySuggestions(companyResultsData.companies, companyResultsData.byNumber);
       break;
     case 'company-data':
-      handleCompanyData(message.company);
+      const companyData = message.data || message;
+      handleCompanyData(companyData.company || companyData);
       break;
     case 'upload-url':
       handleUploadUrl(message);
@@ -1751,9 +1755,21 @@ function updateUIForEditMode(data) {
 }
 
 function displayAddressSuggestions(suggestions, field) {
-  const dropdown = field === 'sdlt' 
+  // Determine which dropdown to update based on field
+  const isSdlt = field === 'sdlt';
+  const dropdown = isSdlt 
     ? document.getElementById('sdltAddressDropdown')
     : document.getElementById('previousAddressDropdown');
+  
+  // Clear the other dropdown if it's showing "Searching addresses..."
+  const otherDropdown = isSdlt 
+    ? document.getElementById('previousAddressDropdown')
+    : document.getElementById('sdltAddressDropdown');
+  
+  if (otherDropdown && otherDropdown.innerHTML.includes('Searching addresses')) {
+    otherDropdown.classList.add('hidden');
+    otherDropdown.innerHTML = '';
+  }
   
   if (!dropdown) return;
   
@@ -1767,9 +1783,9 @@ function displayAddressSuggestions(suggestions, field) {
   suggestions.forEach((suggestion, index) => {
     const item = document.createElement('div');
     item.className = 'address-dropdown-item';
-    item.textContent = suggestion.formatted_address || suggestion.description;
+    item.textContent = suggestion.formatted_address || suggestion.description || suggestion.address;
     item.addEventListener('click', () => {
-      selectAddressSuggestion(suggestion.id || suggestion.place_id, suggestion.formatted_address || suggestion.description, field);
+      selectAddressSuggestion(suggestion.id || suggestion.place_id, suggestion.formatted_address || suggestion.description || suggestion.address, field);
     });
     dropdown.appendChild(item);
   });
@@ -1903,7 +1919,8 @@ function handleCompanyData(company) {
 }
 
 function handleUploadUrl(message) {
-  const { url, fileName, uploadType, docId } = message;
+  const data = message.data || message;
+  const { url, fileName, uploadType, docId } = data;
   
   let file;
   if (uploadType === 'lease') {
@@ -1927,7 +1944,7 @@ function handleUploadUrl(message) {
     if (!response.ok) throw new Error('Upload failed');
     
     // Extract S3 key from URL or use provided key
-    const s3Key = message.s3Key || extractS3KeyFromUrl(url);
+    const s3Key = data.s3Key || extractS3KeyFromUrl(url);
     
     if (uploadType === 'lease') {
       formState.leaseDocument.s3Key = s3Key;
@@ -2570,7 +2587,8 @@ function handlePutLinks(message) {
 function handlePutError(message) {
   if (!uploadInProgress) return;
   
-  console.error('❌ PUT error from parent:', message);
+  const data = message.data || message;
+  console.error('❌ PUT error from parent:', data);
   
   // Stop, reset, and restart session countdown at 10 minutes
   stopSessionCountdown();
@@ -2580,7 +2598,7 @@ function handlePutError(message) {
   hideUploadProgress();
   
   // Show error with retry option
-  const errorMsg = message.message || 'Failed to generate upload links';
+  const errorMsg = data.message || data.error || 'Failed to generate upload links';
   showUploadError(errorMsg);
   
   // Reset upload state
@@ -2900,10 +2918,11 @@ function submitFormData() {
  * Handle upload error from parent (when form submission fails)
  */
 function handleUploadError(message) {
-  console.error('❌ Upload error from parent:', message);
+  const data = message.data || message;
+  console.error('❌ Upload error from parent:', data);
   
   // Show error message
-  const errorMsg = message.message || message.error || 'Form submission failed. Please try again.';
+  const errorMsg = data.message || data.error || 'Form submission failed. Please try again.';
   showError(errorMsg);
   
   // Re-enable submit button so user can retry

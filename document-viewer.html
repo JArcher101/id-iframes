@@ -3415,16 +3415,19 @@
         =====================================================================
         */
         function handlePutResponse(event) {
-            if (event.data.type === 'put-links') {
+            // Normalize message data (handle both top-level and data object formats)
+            const messageData = normalizeMessageData(event.data);
+            
+            if (messageData.type === 'put-links') {
                 // Store the item ID from PUT links response
-                itemId = event.data._id;
-                const links = event.data.links;
-                s3Keys = event.data.s3Keys; // Store S3 keys globally
-                uploadedImages = event.data.images; // Store images data with s3Keys
+                itemId = messageData._id;
+                const links = messageData.links;
+                s3Keys = messageData.s3Keys; // Store S3 keys globally
+                uploadedImages = messageData.images; // Store images data with s3Keys
                 uploadFiles(links);
-            } else if (event.data.type === 'put-error') {
+            } else if (messageData.type === 'put-error') {
                 // Show specific error message and go back to uploader
-                const errorMessage = event.data.message || 'Failed to generate upload links';
+                const errorMessage = messageData.message || 'Failed to generate upload links';
                 showError(`There is an issue with the files: ${errorMessage}. Please go back to edit your selected files and try uploading again.`);
                 
                 // Hide uploading state and return to uploader
@@ -4575,16 +4578,23 @@
                 console.log('Received reset message - returning to awaiting state');
                 returnToAwaitingData();
             } else if (event.data && event.data.type === 'thirdfort-document') {
+                // Normalize message data (handle both top-level and data object formats)
+                const messageData = normalizeMessageData(event.data);
                 // Handle Thirdfort check PDF viewing request
-                handleThirdfortDocument(event.data);
+                handleThirdfortDocument(messageData);
             } else if (event.data && event.data.type === 'open-sdlt-document') {
+                // Normalize message data (handle both top-level and data object formats)
+                const messageData = normalizeMessageData(event.data);
                 // Handle SDLT document viewing request
-                handleOpenSdltDocument(event.data);
+                handleOpenSdltDocument(messageData);
             } else if (event.data && event.data.type === 'display-documents') {
                 // console.log('Received document display data:', event.data); // Commented out to avoid logging client data
                 
+                // Normalize message data (handle both top-level and data object formats)
+                const messageData = normalizeMessageData(event.data);
+                
                 // Store the item ID for later use
-                itemId = event.data._id ? event.data._id : null;
+                itemId = messageData._id ? messageData._id : null;
                 
                 // If we're currently in uploader mode, reset everything first
                 if (!idUploaderSection.classList.contains('hidden')) {
@@ -4592,9 +4602,12 @@
                 }
                 
                 // Display the new documents
-                displayDocuments(event.data.documents, event.data.allowUploads, event.data.clientData, event.data.userEmail);
+                displayDocuments(messageData.documents, messageData.allowUploads, messageData.clientData, messageData.userEmail);
             } else if (event.data && event.data.type === 'sdlt-documents-display') {
                 // console.log('Received SDLT document display data:', event.data); // Commented out to avoid logging client data
+                
+                // Normalize message data (handle both top-level and data object formats)
+                const messageData = normalizeMessageData(event.data);
                 
                 // No item ID for SDLT system
                 itemId = null;
@@ -4604,16 +4617,16 @@
                     resetUploaders();
                 }
                 
-                // Extract data from event.data.data (message structure: { type, data: { documents, allowUploads, ... } })
-                const messageData = event.data.data || event.data;
-                
                 // Display the SDLT documents
                 displaySdltDocuments(messageData.documents, messageData.allowUploads, messageData.userEmail, messageData.uploadType);
             } else if (event.data && event.data.type === 'image-display') {
                 // console.log('Received image display data:', event.data); // Commented out to avoid logging client data
                 
+                // Normalize message data (handle both top-level and data object formats)
+                const messageData = normalizeMessageData(event.data);
+                
                 // Store the item ID for later use
-                itemId = event.data._id ? event.data._id : null;
+                itemId = messageData._id ? messageData._id : null;
                 
                 // If we're currently in uploader mode, reset everything first
                 if (!idUploaderSection.classList.contains('hidden')) {
@@ -4621,13 +4634,19 @@
                 }
                 
                 // Display the new images
-                displayImages(event.data.data, event.data.allowUploads, event.data.clientData, event.data.userEmail);
+                displayImages(messageData.data || messageData.images || messageData.documents, messageData.allowUploads, messageData.clientData, messageData.userEmail);
             } else if (event.data && event.data.type === 'display-images') {
-                handleDisplayImages(event.data);
+                // Normalize message data (handle both top-level and data object formats)
+                const messageData = normalizeMessageData(event.data);
+                handleDisplayImages(messageData);
             } else if (event.data && event.data.type === 'put-links') {
-                handlePutLinks(event.data);
+                // Normalize message data (handle both top-level and data object formats)
+                const messageData = normalizeMessageData(event.data);
+                handlePutLinks(messageData);
             } else if (event.data && event.data.type === 'put-error') {
-                handlePutError(event.data);
+                // Normalize message data (handle both top-level and data object formats)
+                const messageData = normalizeMessageData(event.data);
+                handlePutError(messageData);
             } else if (event.data && event.data.type === 'button-enable') {
                 // Enable the "Upload more documents" button
                 if (addMoreBtn) {
@@ -4652,6 +4671,30 @@
 
         /*
         =====================================================================
+        NORMALIZE MESSAGE DATA
+        - Handles both message formats:
+          1. All fields at top level: { type: '...', documents: [...], ... }
+          2. Fields in data object: { type: '...', data: { documents: [...], ... } }
+        - Returns normalized object with all fields at top level
+        =====================================================================
+        */
+        function normalizeMessageData(message) {
+            if (!message) return {};
+            
+            // If data object exists, merge it with top-level fields (data takes precedence)
+            if (message.data && typeof message.data === 'object') {
+                return {
+                    ...message,
+                    ...message.data
+                };
+            }
+            
+            // Otherwise return message as-is
+            return message;
+        }
+
+        /*
+        =====================================================================
         HANDLE OPEN SDLT DOCUMENT
         - Receives URL from parent
         - Opens document in popup window
@@ -4660,12 +4703,9 @@
         */
         function handleOpenSdltDocument(data) {
             // console.log('📄 SDLT document open request received:', data); // Commented out to avoid logging client data
+            // Data is already normalized by caller
             
-            // Extract URL from data.data (message structure: { type, data: { url } })
-            const messageData = data.data || data;
-            const url = messageData.url;
-            
-            if (!url) {
+            if (!data || !data.url) {
                 console.error('No URL provided in open-sdlt-document message');
                 showError('Cannot open document: No URL provided');
                 return;
@@ -4678,10 +4718,10 @@
             const top = (screen.height - height) / 2;
             const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`;
             
-            const popup = window.open(url, 'sdltDocumentViewer', features);
+            const popup = window.open(data.url, 'sdltDocumentViewer', features);
             if (popup) {
                 popup.focus(); // Focus the window to bring it to front (PWA/Chrome)
-                console.log('Opening SDLT document in popup window:', url);
+                console.log('Opening SDLT document in popup window:', data.url);
             } else {
                 console.error('Failed to open popup window - may be blocked by browser');
                 showError('Cannot open document: Popup window was blocked. Please allow popups for this site.');
@@ -4799,6 +4839,7 @@
         // Handle display images data from parent
         function handleDisplayImages(data) {
             // console.log('Received display-images data from parent:', data); // Commented out to avoid logging client data
+            // Data is already normalized by caller
             
             // Store the item ID for later use
             itemId = data._id;
@@ -4807,9 +4848,10 @@
             clientData = data.clientData || {};
             userEmail = data.userEmail || '';
             
-            // Process and display images
-            if (data.images && Array.isArray(data.images)) {
-                displayImages(data.images, true, data.clientData, data.userEmail);
+            // Process and display images (check both images and data fields)
+            const imagesArray = data.images || data.data || [];
+            if (Array.isArray(imagesArray) && imagesArray.length > 0) {
+                displayImages(imagesArray, data.allowUploads !== false, data.clientData, data.userEmail);
             } else {
                 // No images to display, show awaiting state
                 showAwaitingState();
@@ -4850,7 +4892,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '52ab2c4';
+    window.__IFRAME_VERSION__ = 'e5eb75a';
     console.log('[document-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
