@@ -7,10 +7,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
   
   <!-- Core CSS -->
-  <link rel="stylesheet" href="styles.css?v=2e239bc" />
+  <link rel="stylesheet" href="styles.css?v=165ffcf" />
   
   <!-- Dwellworks Request Form Specific CSS -->
-  <link rel="stylesheet" href="css/dwellworks-request-form.css?v=2e239bc" />
+  <link rel="stylesheet" href="css/dwellworks-request-form.css?v=165ffcf" />
 </head>
 <body>
   <!-- Session Countdown Header -->
@@ -227,7 +227,17 @@
                 </div>
                 <div>
                   <label for="leaseOtherTel">Telephone</label>
-                  <input type="tel" id="leaseOtherTel" name="leaseOtherTel" />
+                  <div class="phone-row">
+                    <div class="phone-country-code">
+                      <div class="address-autocomplete-container">
+                        <input type="text" id="leaseOtherTelCountryCode" name="leaseOtherTelCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
+                        <div id="leaseOtherTelCountryCodeDropdown" class="address-dropdown hidden"></div>
+                      </div>
+                    </div>
+                    <div class="phone-number">
+                      <input type="tel" id="leaseOtherTel" name="leaseOtherTel" />
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="row">
@@ -530,7 +540,17 @@
                   </div>
                   <div>
                     <label for="legalFeeOtherTel">Telephone</label>
-                    <input type="tel" id="legalFeeOtherTel" name="legalFeeOtherTel" />
+                    <div class="phone-row">
+                      <div class="phone-country-code">
+                        <div class="address-autocomplete-container">
+                          <input type="text" id="legalFeeOtherTelCountryCode" name="legalFeeOtherTelCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
+                          <div id="legalFeeOtherTelCountryCodeDropdown" class="address-dropdown hidden"></div>
+                        </div>
+                      </div>
+                      <div class="phone-number">
+                        <input type="tel" id="legalFeeOtherTel" name="legalFeeOtherTel" />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div class="row">
@@ -553,9 +573,25 @@
                     <label for="legalFeeEmployerName" class="required">Employer Accounts Name</label>
                     <input type="text" id="legalFeeEmployerName" name="legalFeeEmployerName" />
                   </div>
+                </div>
+                <div class="row">
                   <div>
-                    <label for="legalFeeEmployerContact" class="required">Contact</label>
-                    <input type="text" id="legalFeeEmployerContact" name="legalFeeEmployerContact" placeholder="Email or telephone number" required />
+                    <label for="legalFeeEmployerEmail">Email</label>
+                    <input type="email" id="legalFeeEmployerEmail" name="legalFeeEmployerEmail" placeholder="name@example.com" />
+                  </div>
+                  <div>
+                    <label for="legalFeeEmployerTel">Telephone</label>
+                    <div class="phone-row">
+                      <div class="phone-country-code">
+                        <div class="address-autocomplete-container">
+                          <input type="text" id="legalFeeEmployerTelCountryCode" name="legalFeeEmployerTelCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
+                          <div id="legalFeeEmployerTelCountryCodeDropdown" class="address-dropdown hidden"></div>
+                        </div>
+                      </div>
+                      <div class="phone-number">
+                        <input type="tel" id="legalFeeEmployerTel" name="legalFeeEmployerTel" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -627,7 +663,17 @@
                   </div>
                   <div>
                     <label for="sdltFeeOtherTel">Telephone</label>
-                    <input type="tel" id="sdltFeeOtherTel" name="sdltFeeOtherTel" />
+                    <div class="phone-row">
+                      <div class="phone-country-code">
+                        <div class="address-autocomplete-container">
+                          <input type="text" id="sdltFeeOtherTelCountryCode" name="sdltFeeOtherTelCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
+                          <div id="sdltFeeOtherTelCountryCodeDropdown" class="address-dropdown hidden"></div>
+                        </div>
+                      </div>
+                      <div class="phone-number">
+                        <input type="tel" id="sdltFeeOtherTel" name="sdltFeeOtherTel" />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div class="row">
@@ -663,9 +709,25 @@
                     <label for="sdltFeeEmployerName" class="required">Employer Accounts Name</label>
                     <input type="text" id="sdltFeeEmployerName" name="sdltFeeEmployerName" />
                   </div>
+                </div>
+                <div class="row">
                   <div>
-                    <label for="sdltFeeEmployerContact" class="required">Contact</label>
-                    <input type="text" id="sdltFeeEmployerContact" name="sdltFeeEmployerContact" placeholder="Email or telephone number" required />
+                    <label for="sdltFeeEmployerEmail">Email</label>
+                    <input type="email" id="sdltFeeEmployerEmail" name="sdltFeeEmployerEmail" placeholder="name@example.com" />
+                  </div>
+                  <div>
+                    <label for="sdltFeeEmployerTel">Telephone</label>
+                    <div class="phone-row">
+                      <div class="phone-country-code">
+                        <div class="address-autocomplete-container">
+                          <input type="text" id="sdltFeeEmployerTelCountryCode" name="sdltFeeEmployerTelCountryCode" autocomplete="off" placeholder="Search country code..." value="🇬🇧 +44 UK" data-phone-code="+44" data-country-code="GB" />
+                          <div id="sdltFeeEmployerTelCountryCodeDropdown" class="address-dropdown hidden"></div>
+                        </div>
+                      </div>
+                      <div class="phone-number">
+                        <input type="tel" id="sdltFeeEmployerTel" name="sdltFeeEmployerTel" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -755,13 +817,13 @@
   </div>
 
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=2e239bc"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=165ffcf"></script>
   
   <!-- Google libphonenumber for phone validation (must load before core script) -->
   <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
   <!-- Core JavaScript -->
-  <script src="js/dwellworks-request-form-core.js?v=2e239bc"></script>
+  <script src="js/dwellworks-request-form-core.js?v=165ffcf"></script>
   
   <!-- Initialize Autocomplete Fields -->
   <script>
@@ -771,13 +833,18 @@
     initializePhoneCodeAutocomplete('submitterPhoneCountryCode', 'submitterPhoneCountryCodeDropdown');
     initializePhoneCodeAutocomplete('tenant1MobileCountryCode', 'tenant1MobileCountryCodeDropdown');
     initializePhoneCodeAutocomplete('tenant2MobileCountryCode', 'tenant2MobileCountryCodeDropdown');
+    initializePhoneCodeAutocomplete('leaseOtherTelCountryCode', 'leaseOtherTelCountryCodeDropdown');
+    initializePhoneCodeAutocomplete('legalFeeOtherTelCountryCode', 'legalFeeOtherTelCountryCodeDropdown');
+    initializePhoneCodeAutocomplete('sdltFeeOtherTelCountryCode', 'sdltFeeOtherTelCountryCodeDropdown');
+    initializePhoneCodeAutocomplete('legalFeeEmployerTelCountryCode', 'legalFeeEmployerTelCountryCodeDropdown');
+    initializePhoneCodeAutocomplete('sdltFeeEmployerTelCountryCode', 'sdltFeeEmployerTelCountryCodeDropdown');
     initializeJurisdictionAutocomplete('employerCountry', 'employerCountryDropdown');
     console.log('✅ Autocomplete initialization complete');
   </script>
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '2e239bc';
+    window.__IFRAME_VERSION__ = '165ffcf';
     console.log('[dwellworks-request-form] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

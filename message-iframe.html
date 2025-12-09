@@ -1155,6 +1155,13 @@
                             type: 'Dwellworks' | 'THS',
                             user: 'user@example.com'
                         },
+                        {
+                            // System messages (optional, like ID message viewer)
+                            message: 'System notification text',
+                            time: '07/11/2025, 12:10:24 PM',
+                            type: 'system'  // System messages have type 'system'
+                            // System messages don't require _id, user, or other fields
+                        },
                         ...
                     ]
                 }
@@ -1171,6 +1178,8 @@
             
             Note: SDLT mode does NOT include item/matter _id at the top level,
             but message objects in the data array DO include _id (message IDs).
+            System messages (type: 'system') are supported and displayed as full-width
+            inline text, similar to ID message viewer.
             */
             else if (event.data.type === 'sdlt-message-viewer') {
                 // Handle nested structure: properties may be in event.data.data or at top level
@@ -2335,7 +2344,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '2e239bc';
+    window.__IFRAME_VERSION__ = '165ffcf';
     console.log('[message-iframe] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

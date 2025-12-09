@@ -318,7 +318,7 @@ function handleLegalFeePayeeChange(event) {
     if (employerFields) employerFields.classList.remove('hidden');
     if (directSendContainer) directSendContainer.classList.remove('hidden');
     document.getElementById('legalFeeEmployerName').required = true;
-    document.getElementById('legalFeeEmployerContact').required = true;
+    // Email or phone is required (either/or) - no individual required attribute
   } else if (value === 'tenant' || value === 'dwellworks') {
     if (directSendContainer && value === 'tenant') {
       directSendContainer.classList.remove('hidden');
@@ -400,15 +400,21 @@ function handleSdltFeeEmployerMatchChange() {
       employerFields.classList.add('hidden');
       // Copy values from legal fee employer
       document.getElementById('sdltFeeEmployerName').value = document.getElementById('legalFeeEmployerName').value;
-      document.getElementById('sdltFeeEmployerContact').value = document.getElementById('legalFeeEmployerContact').value;
+      document.getElementById('sdltFeeEmployerEmail').value = document.getElementById('legalFeeEmployerEmail').value;
+      document.getElementById('sdltFeeEmployerTel').value = document.getElementById('legalFeeEmployerTel').value;
+      const legalTelCountryCode = document.getElementById('legalFeeEmployerTelCountryCode');
+      const sdltTelCountryCode = document.getElementById('sdltFeeEmployerTelCountryCode');
+      if (legalTelCountryCode && sdltTelCountryCode) {
+        sdltTelCountryCode.value = legalTelCountryCode.value;
+        sdltTelCountryCode.dataset.phoneCode = legalTelCountryCode.dataset.phoneCode || '';
+        sdltTelCountryCode.dataset.countryCode = legalTelCountryCode.dataset.countryCode || '';
+      }
       // Remove required when matching
       document.getElementById('sdltFeeEmployerName').required = false;
-      document.getElementById('sdltFeeEmployerContact').required = false;
     } else {
       employerFields.classList.remove('hidden');
-      // Both required when not matching
+      // Name required when not matching, email or phone required (either/or)
       document.getElementById('sdltFeeEmployerName').required = true;
-      document.getElementById('sdltFeeEmployerContact').required = true;
     }
   }
   
@@ -1165,9 +1171,14 @@ function validateForm() {
   
   if (legalFeePayee === 'tenant-employer') {
     const legalFeeEmployerName = document.getElementById('legalFeeEmployerName');
-    const legalFeeEmployerContact = document.getElementById('legalFeeEmployerContact');
+    const legalFeeEmployerEmail = document.getElementById('legalFeeEmployerEmail');
+    const legalFeeEmployerTel = document.getElementById('legalFeeEmployerTel');
     
-    if (!legalFeeEmployerName?.value.trim() || !legalFeeEmployerContact?.value.trim()) {
+    if (!legalFeeEmployerName?.value.trim()) {
+      isValid = false;
+    }
+    // Either email or phone is required
+    if (!legalFeeEmployerEmail?.value.trim() && !legalFeeEmployerTel?.value.trim()) {
       isValid = false;
     }
   }
@@ -1195,9 +1206,14 @@ function validateForm() {
     if (sdltFeeEmployerMatchContainer && !sdltFeeEmployerMatchContainer.classList.contains('hidden')) {
       if (formState.sdltFeeEmployerMatch !== true) {
         const sdltFeeEmployerName = document.getElementById('sdltFeeEmployerName');
-        const sdltFeeEmployerContact = document.getElementById('sdltFeeEmployerContact');
+        const sdltFeeEmployerEmail = document.getElementById('sdltFeeEmployerEmail');
+        const sdltFeeEmployerTel = document.getElementById('sdltFeeEmployerTel');
         
-        if (!sdltFeeEmployerName?.value.trim() || !sdltFeeEmployerContact?.value.trim()) {
+        if (!sdltFeeEmployerName?.value.trim()) {
+          isValid = false;
+        }
+        // Either email or phone is required
+        if (!sdltFeeEmployerEmail?.value.trim() && !sdltFeeEmployerTel?.value.trim()) {
           isValid = false;
         }
       }
@@ -1513,8 +1529,20 @@ function populateFormFromSubmission(data) {
     if (input) input.value = data.lesseeDateOfBirthEntityNumber;
   }
   if (data.lesseePhoneNumber) {
-    const input = document.getElementById('leaseOtherTel');
-    if (input) input.value = data.lesseePhoneNumber;
+    // Parse phone number and country code
+    const phoneMatch = data.lesseePhoneNumber?.match(/^(\+\d+)(.+)$/);
+    if (phoneMatch) {
+      const countryCodeInput = document.getElementById('leaseOtherTelCountryCode');
+      const phoneInput = document.getElementById('leaseOtherTel');
+      if (countryCodeInput) {
+        countryCodeInput.dataset.phoneCode = phoneMatch[1];
+        countryCodeInput.value = phoneMatch[1];
+      }
+      if (phoneInput) phoneInput.value = phoneMatch[2];
+    } else if (data.lesseePhoneNumber) {
+      const phoneInput = document.getElementById('leaseOtherTel');
+      if (phoneInput) phoneInput.value = data.lesseePhoneNumber;
+    }
   }
   if (data.lesseeEmail) {
     const input = document.getElementById('leaseOtherEmail');
@@ -1668,16 +1696,45 @@ function populateFormFromSubmission(data) {
     if (input) input.value = data.thsFeePayerDateOfBirthEntityNumber;
   }
   if (data.thsFeePayerPhoneNumber) {
-    const input = document.getElementById('legalFeeOtherTel');
-    if (input) input.value = data.thsFeePayerPhoneNumber;
+    // Parse phone number and country code
+    const phoneMatch = data.thsFeePayerPhoneNumber?.match(/^(\+\d+)(.+)$/);
+    if (phoneMatch) {
+      const countryCodeInput = document.getElementById('legalFeeOtherTelCountryCode');
+      const phoneInput = document.getElementById('legalFeeOtherTel');
+      if (countryCodeInput) {
+        countryCodeInput.dataset.phoneCode = phoneMatch[1];
+        countryCodeInput.value = phoneMatch[1];
+      }
+      if (phoneInput) phoneInput.value = phoneMatch[2];
+    } else if (data.thsFeePayerPhoneNumber) {
+      const phoneInput = document.getElementById('legalFeeOtherTel');
+      if (phoneInput) phoneInput.value = data.thsFeePayerPhoneNumber;
+    }
   }
   if (data.thsFeePayerEmail) {
     const input = document.getElementById('legalFeeOtherEmail');
     if (input) input.value = data.thsFeePayerEmail;
   }
   if (data.thsFeeEmployersAcocuntsEmail) {
-    const input = document.getElementById('legalFeeEmployerContact');
+    const input = document.getElementById('legalFeeEmployerEmail');
     if (input) input.value = data.thsFeeEmployersAcocuntsEmail;
+  }
+  if (data.thsFeeEmployersAccountsContactPhone) {
+    // Parse phone number and country code
+    const phoneMatch = data.thsFeeEmployersAccountsContactPhone?.match(/^(\+\d+)(.+)$/);
+    if (phoneMatch) {
+      const countryCodeInput = document.getElementById('legalFeeEmployerTelCountryCode');
+      const phoneInput = document.getElementById('legalFeeEmployerTel');
+      if (countryCodeInput) {
+        countryCodeInput.dataset.phoneCode = phoneMatch[1];
+        // You may want to format this better with the country name
+        countryCodeInput.value = phoneMatch[1];
+      }
+      if (phoneInput) phoneInput.value = phoneMatch[2];
+    } else if (data.thsFeeEmployersAccountsContactPhone) {
+      const phoneInput = document.getElementById('legalFeeEmployerTel');
+      if (phoneInput) phoneInput.value = data.thsFeeEmployersAccountsContactPhone;
+    }
   }
   if (data.thsFeeEmployersAccountsContactName) {
     const input = document.getElementById('legalFeeEmployerName');
@@ -1713,17 +1770,46 @@ function populateFormFromSubmission(data) {
     const input = document.getElementById('sdltFeeOtherDobEntity');
     if (input) input.value = data.sdltFeePayerDateOfBirthEntityNumber;
   }
-  if (data.sdltFeePayerPhoneNumber) {
-    const input = document.getElementById('sdltFeeOtherTel');
-    if (input) input.value = data.sdltFeePayerPhoneNumber;
+  if (data.sdltFeePayerPhone) {
+    // Parse phone number and country code
+    const phoneMatch = data.sdltFeePayerPhone?.match(/^(\+\d+)(.+)$/);
+    if (phoneMatch) {
+      const countryCodeInput = document.getElementById('sdltFeeOtherTelCountryCode');
+      const phoneInput = document.getElementById('sdltFeeOtherTel');
+      if (countryCodeInput) {
+        countryCodeInput.dataset.phoneCode = phoneMatch[1];
+        countryCodeInput.value = phoneMatch[1];
+      }
+      if (phoneInput) phoneInput.value = phoneMatch[2];
+    } else if (data.sdltFeePayerPhone) {
+      const phoneInput = document.getElementById('sdltFeeOtherTel');
+      if (phoneInput) phoneInput.value = data.sdltFeePayerPhone;
+    }
   }
   if (data.sdltFeePayerEmail) {
     const input = document.getElementById('sdltFeeOtherEmail');
     if (input) input.value = data.sdltFeePayerEmail;
   }
-  if (data.sdltFeeEmployerAccountsEmail) {
-    const input = document.getElementById('sdltFeeEmployerContact');
-    if (input) input.value = data.sdltFeeEmployerAccountsEmail;
+  if (data.sdltFeeEmployersAccountEmail) {
+    const input = document.getElementById('sdltFeeEmployerEmail');
+    if (input) input.value = data.sdltFeeEmployersAccountEmail;
+  }
+  if (data.sdltFeeEmployersAccountPhone) {
+    // Parse phone number and country code
+    const phoneMatch = data.sdltFeeEmployersAccountPhone?.match(/^(\+\d+)(.+)$/);
+    if (phoneMatch) {
+      const countryCodeInput = document.getElementById('sdltFeeEmployerTelCountryCode');
+      const phoneInput = document.getElementById('sdltFeeEmployerTel');
+      if (countryCodeInput) {
+        countryCodeInput.dataset.phoneCode = phoneMatch[1];
+        // You may want to format this better with the country name
+        countryCodeInput.value = phoneMatch[1];
+      }
+      if (phoneInput) phoneInput.value = phoneMatch[2];
+    } else if (data.sdltFeeEmployersAccountPhone) {
+      const phoneInput = document.getElementById('sdltFeeEmployerTel');
+      if (phoneInput) phoneInput.value = data.sdltFeeEmployersAccountPhone;
+    }
   }
   if (data.sdltFeeEmployerAccountsContactName) {
     const input = document.getElementById('sdltFeeEmployerName');
@@ -2340,10 +2426,13 @@ function collectValidationErrors() {
   
   if (legalFeePayee === 'tenant-employer') {
     const legalFeeEmployerName = document.getElementById('legalFeeEmployerName');
-    const legalFeeEmployerContact = document.getElementById('legalFeeEmployerContact');
+    const legalFeeEmployerEmail = document.getElementById('legalFeeEmployerEmail');
+    const legalFeeEmployerTel = document.getElementById('legalFeeEmployerTel');
     
     if (!legalFeeEmployerName?.value.trim()) errors.push('Legal fee employer name is required');
-    if (!legalFeeEmployerContact?.value.trim()) errors.push('Legal fee employer contact is required');
+    if (!legalFeeEmployerEmail?.value.trim() && !legalFeeEmployerTel?.value.trim()) {
+      errors.push('Legal fee employer email or telephone is required');
+    }
   }
   
   const sdltFeePayee = document.querySelector('input[name="sdltFeePayee"]:checked')?.value;
@@ -2558,7 +2647,10 @@ function collectFormData() {
     lessee: leaseUnder ? getRadioFriendlyLabel(leaseUnder) : undefined,
     lesseeOther: leaseUnder === 'other' ? document.getElementById('leaseOtherName').value : undefined,
     lesseeDateOfBirthEntityNumber: leaseUnder === 'other' ? (document.getElementById('leaseOtherDobEntity').value || undefined) : undefined,
-    lesseePhoneNumber: leaseUnder === 'other' ? (document.getElementById('leaseOtherTel').value || undefined) : undefined,
+    lesseePhoneNumber: leaseUnder === 'other' ? formatPhone(
+      document.getElementById('leaseOtherTelCountryCode'),
+      document.getElementById('leaseOtherTel')
+    ) : undefined,
     lesseeEmail: leaseUnder === 'other' ? (document.getElementById('leaseOtherEmail').value || undefined) : undefined,
     lesseeRelationToTenant: leaseUnder === 'other' ? document.getElementById('leaseOtherRelation').value : undefined,
     leaseAgreementNote: document.getElementById('leaseNote').value || undefined,
@@ -2567,11 +2659,18 @@ function collectFormData() {
     thsFeePayer: legalFeePayee ? getRadioFriendlyLabel(legalFeePayee) : undefined,
     thsFeePayerOther: legalFeePayee === 'other' ? document.getElementById('legalFeeOtherName').value : undefined,
     thsFeePayerDateOfBirthEntityNumber: legalFeePayee === 'other' ? (document.getElementById('legalFeeOtherDobEntity').value || undefined) : undefined,
-    thsFeePayerPhoneNumber: legalFeePayee === 'other' ? (document.getElementById('legalFeeOtherTel').value || undefined) : undefined,
+    thsFeePayerPhoneNumber: legalFeePayee === 'other' ? formatPhone(
+      document.getElementById('legalFeeOtherTelCountryCode'),
+      document.getElementById('legalFeeOtherTel')
+    ) : undefined,
     thsFeePayerEmail: legalFeePayee === 'other' ? (document.getElementById('legalFeeOtherEmail').value || undefined) : undefined,
     thsFeePayerRelationToTenant: legalFeePayee === 'other' ? document.getElementById('legalFeeOtherRelation').value : undefined,
     thsFeeInvoiceSending: legalFeePayee && legalFeePayee !== 'dwellworks' ? (formState.legalFeeDirectSend === true ? true : undefined) : undefined,
-    thsFeeEmployersAcocuntsEmail: legalFeePayee === 'tenant-employer' ? (document.getElementById('legalFeeEmployerContact').value || undefined) : undefined,
+    thsFeeEmployersAcocuntsEmail: legalFeePayee === 'tenant-employer' ? (document.getElementById('legalFeeEmployerEmail').value || undefined) : undefined,
+    thsFeeEmployersAccountsContactPhone: legalFeePayee === 'tenant-employer' ? formatPhone(
+      document.getElementById('legalFeeEmployerTelCountryCode'),
+      document.getElementById('legalFeeEmployerTel')
+    ) : undefined,
     thsFeeEmployersAccountsContactName: legalFeePayee === 'tenant-employer' ? document.getElementById('legalFeeEmployerName').value : undefined,
     
     // SDLT Fee
@@ -2579,12 +2678,19 @@ function collectFormData() {
     sdltFeePayerOther: sdltFeePayee === 'other' ? document.getElementById('sdltFeeOtherName').value : undefined,
     sdltFeePayerDateOfBirthEntityNumber: sdltFeePayee === 'other' ? (document.getElementById('sdltFeeOtherDobEntity').value || undefined) : undefined,
     sdltFeePayerEmail: sdltFeePayee === 'other' ? (document.getElementById('sdltFeeOtherEmail').value || undefined) : undefined,
-    sdltFeePayerPhone: sdltFeePayee === 'other' ? (document.getElementById('sdltFeeOtherTel').value || undefined) : undefined,
+    sdltFeePayerPhone: sdltFeePayee === 'other' ? formatPhone(
+      document.getElementById('sdltFeeOtherTelCountryCode'),
+      document.getElementById('sdltFeeOtherTel')
+    ) : undefined,
     sdltFeePayerRelationToTenant: sdltFeePayee === 'other' ? document.getElementById('sdltFeeOtherRelation').value : undefined,
     sdltFeeInvoiceSending: sdltFeePayee && sdltFeePayee !== 'dwellworks' ? (formState.sdltFeeDirectSend === true ? true : undefined) : undefined,
     sdltFeeEmployerDetailsMatchThsLlpFeePayer: (sdltFeePayee === 'tenant-employer' && legalFeePayee === 'tenant-employer') ? (formState.sdltFeeEmployerMatch === true ? true : undefined) : undefined,
     sdltFeeEmployersAccountContactName: (sdltFeePayee === 'tenant-employer' && !formState.sdltFeeEmployerMatch) ? document.getElementById('sdltFeeEmployerName').value : undefined,
-    sdltFeeEmployersAccountEmail: (sdltFeePayee === 'tenant-employer' && !formState.sdltFeeEmployerMatch) ? (document.getElementById('sdltFeeEmployerContact').value || undefined) : undefined,
+    sdltFeeEmployersAccountEmail: (sdltFeePayee === 'tenant-employer' && !formState.sdltFeeEmployerMatch) ? (document.getElementById('sdltFeeEmployerEmail').value || undefined) : undefined,
+    sdltFeeEmployersAccountPhone: (sdltFeePayee === 'tenant-employer' && !formState.sdltFeeEmployerMatch) ? formatPhone(
+      document.getElementById('sdltFeeEmployerTelCountryCode'),
+      document.getElementById('sdltFeeEmployerTel')
+    ) : undefined,
     
     // Additional Details
     note: document.getElementById('additionalDetails').value || undefined,
@@ -3505,9 +3611,20 @@ function buildIdEntries() {
     return code && num ? `${code}${num}` : num || undefined;
   };
   
-  // Helper to get address object
+  // Helper to get address object (ensures Thirdfort format)
   const getAddressObject = (addressObj, fallbackFn) => {
-    if (addressObj) return addressObj;
+    // If we have an address object, ensure it's in Thirdfort format
+    if (addressObj) {
+      // Address should already be in Thirdfort format from handleAddressData or getManualAddress
+      // But ensure country is normalized
+      if (addressObj.country) {
+        const normalized = { ...addressObj };
+        normalized.country = normalizeCountryCode(addressObj.country);
+        return normalized;
+      }
+      return addressObj;
+    }
+    // Fallback to manual address (already in Thirdfort format from getManualAddress)
     const manualAddress = fallbackFn();
     if (manualAddress && (manualAddress.street || manualAddress.town || manualAddress.postcode)) {
       return manualAddress;
@@ -3643,8 +3760,11 @@ function buildIdEntries() {
   if (leaseUnder === 'other') {
     const otherName = document.getElementById('leaseOtherName').value;
     const otherDobEntity = document.getElementById('leaseOtherDobEntity').value;
-    const otherTel = document.getElementById('leaseOtherTel').value;
-    const otherEmail = document.getElementById('leaseOtherEmail').value;
+    const otherTel = formatPhone(
+      document.getElementById('leaseOtherTelCountryCode'),
+      document.getElementById('leaseOtherTel')
+    );
+    const otherEmail = document.getElementById('leaseOtherEmail').value || undefined;
     const isBusiness = otherDobEntity && !isDateValue(otherDobEntity);
     
     if (otherName) {
@@ -3670,8 +3790,8 @@ function buildIdEntries() {
         idCheckReference: undefined,
         surname: isBusiness ? undefined : lastName,
         firstName: isBusiness ? undefined : firstName,
-        email: extractEmail(otherEmail || otherTel),
-        mobileNumber: extractMobileNumber(otherTel || otherEmail),
+        email: otherEmail,
+        mobileNumber: otherTel,
         entityNumber: isBusiness ? otherDobEntity : undefined,
         businessName: isBusiness ? otherName : undefined
       };
@@ -3683,8 +3803,11 @@ function buildIdEntries() {
   if (legalFeePayee === 'other') {
     const otherName = document.getElementById('legalFeeOtherName').value;
     const otherDobEntity = document.getElementById('legalFeeOtherDobEntity').value;
-    const otherTel = document.getElementById('legalFeeOtherTel').value;
-    const otherEmail = document.getElementById('legalFeeOtherEmail').value;
+    const otherTel = formatPhone(
+      document.getElementById('legalFeeOtherTelCountryCode'),
+      document.getElementById('legalFeeOtherTel')
+    );
+    const otherEmail = document.getElementById('legalFeeOtherEmail').value || undefined;
     const isBusiness = otherDobEntity && !isDateValue(otherDobEntity);
     
     if (otherName) {
@@ -3710,8 +3833,8 @@ function buildIdEntries() {
         idCheckReference: undefined,
         surname: isBusiness ? undefined : lastName,
         firstName: isBusiness ? undefined : firstName,
-        email: extractEmail(otherEmail || otherTel),
-        mobileNumber: extractMobileNumber(otherTel || otherEmail),
+        email: otherEmail,
+        mobileNumber: otherTel,
         entityNumber: isBusiness ? otherDobEntity : undefined,
         businessName: isBusiness ? otherName : undefined
       };
@@ -3723,8 +3846,11 @@ function buildIdEntries() {
   if (sdltFeePayee === 'other') {
     const otherName = document.getElementById('sdltFeeOtherName').value;
     const otherDobEntity = document.getElementById('sdltFeeOtherDobEntity').value;
-    const otherTel = document.getElementById('sdltFeeOtherTel').value;
-    const otherEmail = document.getElementById('sdltFeeOtherEmail').value;
+    const otherTel = formatPhone(
+      document.getElementById('sdltFeeOtherTelCountryCode'),
+      document.getElementById('sdltFeeOtherTel')
+    );
+    const otherEmail = document.getElementById('sdltFeeOtherEmail').value || undefined;
     const isBusiness = otherDobEntity && !isDateValue(otherDobEntity);
     
     if (otherName) {
@@ -3750,8 +3876,8 @@ function buildIdEntries() {
         idCheckReference: undefined,
         surname: isBusiness ? undefined : lastName,
         firstName: isBusiness ? undefined : firstName,
-        email: extractEmail(otherEmail || otherTel),
-        mobileNumber: extractMobileNumber(otherTel || otherEmail),
+        email: otherEmail,
+        mobileNumber: otherTel,
         entityNumber: isBusiness ? otherDobEntity : undefined,
         businessName: isBusiness ? otherName : undefined
       };
