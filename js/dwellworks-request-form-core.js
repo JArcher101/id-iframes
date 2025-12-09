@@ -1318,6 +1318,9 @@ function handleParentMessage(event) {
     case 'edit-request':
       handleEditRequest(message);
       break;
+    case 'session-updated':
+      handleSessionUpdated(message);
+      break;
     default:
       console.log('Unknown message type:', message.type);
   }
@@ -4002,7 +4005,7 @@ function handleRenewSession() {
   // Wait for session-updated response (handled in handleSessionUpdated)
 }
 
-function handleSessionUpdated() {
+function handleSessionUpdated(message) {
   // Hide overlay
   hideSessionExpiryOverlay();
   
@@ -4017,6 +4020,8 @@ function handleSessionUpdated() {
   
   // Restart countdown with fresh 10 minutes
   startSessionCountdown();
+  
+  console.log('✅ Session renewed successfully');
 }
 
 function handleCancelSubmission() {
