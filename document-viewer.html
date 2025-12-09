@@ -1467,9 +1467,19 @@
             font-style: italic;
             font-weight: 400;
             color: #666;
+        }
+        
+        /* When uploader-info is in header (ID mode), keep right alignment */
+        .document-card .document-header .uploader-info {
             order: 3;
             text-align: right;
             margin-left: auto;
+        }
+        
+        /* When uploader-info is outside header (SDLT mode), left align with spacing */
+        .document-card .document-details > .uploader-info {
+            margin-top: 4px;
+            text-align: left;
         }
         
         /* 
@@ -2529,8 +2539,7 @@
                             ${uploaderTagHtml}
                         </div>
                         ${categoryHtml}
-                        ${descriptionHtml}
-                        <div class="uploader-info">${uploaderInfo}</div>
+                        ${documentSystemMode === 'id' ? `<div class="uploader-info">${uploaderInfo}</div>` : ''}
                         <button class="view-btn" onclick="viewDocument(this)" title="Open document" data-document-index="${index}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -2538,6 +2547,8 @@
                             </svg>
                         </button>
                     </div>
+                    ${descriptionHtml}
+                    ${documentSystemMode === 'sdlt' ? `<div class="uploader-info">${uploaderInfo}</div>` : ''}
                 </div>
             `;
             
@@ -4892,7 +4903,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '165ffcf';
+    window.__IFRAME_VERSION__ = 'eb0807a';
     console.log('[document-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
