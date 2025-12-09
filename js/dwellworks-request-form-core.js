@@ -495,7 +495,8 @@ function setupAddressAutocomplete() {
   const previousAddressNotListed = document.getElementById('previousAddressNotListed');
   
   if (previousAddressInput && previousAddressDropdown && previousAddressCountry) {
-    previousAddressCountry.addEventListener('change', function() {
+    // Function to handle country change and setup autocomplete
+    const handleCountryChange = function() {
       const countryCode = this.dataset.countryCode;
       const isUK = countryCode === 'GBR' || this.value.toLowerCase().includes('united kingdom');
       
@@ -518,7 +519,18 @@ function setupAddressAutocomplete() {
           document.getElementById('previousManualAddressFields').classList.remove('hidden');
         }
       }
-    });
+    };
+    
+    // Set up change event listener
+    previousAddressCountry.addEventListener('change', handleCountryChange);
+    
+    // Also check initial state and set up autocomplete if country is already UK
+    const countryCode = previousAddressCountry.dataset.countryCode;
+    const isUK = countryCode === 'GBR' || previousAddressCountry.value.toLowerCase().includes('united kingdom');
+    if (isUK) {
+      // Trigger the handler to set up autocomplete for initial UK state
+      handleCountryChange.call(previousAddressCountry);
+    }
   }
   
   if (previousAddressNotListed) {
@@ -614,7 +626,8 @@ function setupCompaniesHouseIntegration() {
   
   if (!employerNameInput || !employerCountry) return;
   
-  employerCountry.addEventListener('change', function() {
+  // Function to handle country change and setup autocomplete
+  const handleCountryChange = function() {
     const countryCode = this.dataset.jurisdictionCode;
     const isUK = countryCode === 'GB';
     
@@ -627,7 +640,17 @@ function setupCompaniesHouseIntegration() {
       if (employerNameDropdown) employerNameDropdown.classList.add('hidden');
       if (employerNumberDropdown) employerNumberDropdown.classList.add('hidden');
     }
-  });
+  };
+  
+  // Set up change event listener
+  employerCountry.addEventListener('change', handleCountryChange);
+  
+  // Also check initial state and set up autocomplete if country is already UK
+  const countryCode = employerCountry.dataset.jurisdictionCode;
+  const isUK = countryCode === 'GB';
+  if (isUK && employerNameInput && employerNameDropdown) {
+    setupCompanyNameAutocomplete(employerNameInput, employerNameDropdown);
+  }
   
   if (employerNumberInput && employerNumberDropdown) {
     setupCompanyNumberAutocomplete(employerNumberInput, employerNumberDropdown);
@@ -656,10 +679,23 @@ function setupCompaniesHouseIntegration() {
 }
 
 function setupCompanyNameAutocomplete(input, dropdown) {
+  // Check if already set up to avoid duplicate listeners
+  if (input.dataset.autocompleteSetup === 'true') {
+    return;
+  }
+  input.dataset.autocompleteSetup = 'true';
+  
   input.addEventListener('input', function(e) {
     const searchTerm = e.target.value.trim();
     
     if (companyNameDebounceTimer) clearTimeout(companyNameDebounceTimer);
+    
+    // Hide the number dropdown when searching by name
+    const numberDropdown = document.getElementById('employerNumberDropdown');
+    if (numberDropdown) {
+      numberDropdown.classList.add('hidden');
+      numberDropdown.innerHTML = '';
+    }
     
     if (searchTerm.length < 3) {
       dropdown.classList.add('hidden');
@@ -684,6 +720,13 @@ function setupCompanyNumberAutocomplete(input, dropdown) {
     const searchTerm = e.target.value.trim();
     
     if (companyNumberDebounceTimer) clearTimeout(companyNumberDebounceTimer);
+    
+    // Hide the name dropdown when searching by number
+    const nameDropdown = document.getElementById('employerNameDropdown');
+    if (nameDropdown) {
+      nameDropdown.classList.add('hidden');
+      nameDropdown.innerHTML = '';
+    }
     
     if (searchTerm.length < 2) {
       dropdown.classList.add('hidden');
@@ -1828,6 +1871,16 @@ function displayCompanySuggestions(companies, byNumber) {
   const dropdown = byNumber 
     ? document.getElementById('employerNumberDropdown')
     : document.getElementById('employerNameDropdown');
+  
+  // Hide the other dropdown when showing results
+  const otherDropdown = byNumber 
+    ? document.getElementById('employerNameDropdown')
+    : document.getElementById('employerNumberDropdown');
+  
+  if (otherDropdown) {
+    otherDropdown.classList.add('hidden');
+    otherDropdown.innerHTML = '';
+  }
   
   if (!dropdown) return;
   
