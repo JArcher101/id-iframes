@@ -1470,13 +1470,20 @@ function populateFormFromSubmission(data) {
   }
   
   // SDLT Address and Move In Date
-  if (data.sdltAddressMoveInDate) {
+  // Check both ukMoveInDate and sdltAddressMoveInDate
+  const moveInDate = data.ukMoveInDate || data.sdltAddressMoveInDate;
+  if (moveInDate) {
     const input = document.getElementById('moveInDate');
     if (input) {
-      // Convert DD-MM-YYYY to YYYY-MM-DD for date input
-      const dateParts = data.sdltAddressMoveInDate.split('-');
-      if (dateParts.length === 3) {
-        input.value = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+      // If already in YYYY-MM-DD format, use directly
+      if (moveInDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        input.value = moveInDate;
+      } else {
+        // Convert DD-MM-YYYY to YYYY-MM-DD for date input
+        const dateParts = moveInDate.split('-');
+        if (dateParts.length === 3) {
+          input.value = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+        }
       }
     }
   }
@@ -1628,36 +1635,91 @@ function populateFormFromSubmission(data) {
   }
   
   // Previous Address
-  if (data.previousAddress) {
-    previousAddressObject = data.previousAddress;
+  // Check both tenantsPreviousAddress and previousAddress
+  const previousAddress = data.tenantsPreviousAddress || data.previousAddress;
+  if (previousAddress) {
+    previousAddressObject = previousAddress;
     const input = document.getElementById('previousAddress');
     if (input) {
       const addrParts = [];
-      if (data.previousAddress.building_number) addrParts.push(data.previousAddress.building_number);
-      if (data.previousAddress.building_name) addrParts.push(data.previousAddress.building_name);
-      if (data.previousAddress.street) addrParts.push(data.previousAddress.street);
-      if (data.previousAddress.town) addrParts.push(data.previousAddress.town);
-      if (data.previousAddress.postcode) addrParts.push(data.previousAddress.postcode);
+      if (previousAddress.building_number) addrParts.push(previousAddress.building_number);
+      if (previousAddress.building_name) addrParts.push(previousAddress.building_name);
+      if (previousAddress.street) addrParts.push(previousAddress.street);
+      if (previousAddress.town) addrParts.push(previousAddress.town);
+      if (previousAddress.postcode) addrParts.push(previousAddress.postcode);
       input.value = addrParts.join(', ');
     }
+    // Set country if available in address object
+    if (previousAddress.country) {
+      const countryInput = document.getElementById('previousAddressCountry');
+      if (countryInput && typeof setCountry === 'function') {
+        setCountry('previousAddressCountry', previousAddress.country);
+      } else if (countryInput) {
+        // Fallback: try to find country name from code
+        countryInput.value = previousAddress.country;
+      }
+    }
   }
+  // Also check for separate previousAddressCountry field
   if (data.previousAddressCountry) {
     const input = document.getElementById('previousAddressCountry');
-    if (input) input.value = data.previousAddressCountry;
+    if (input && typeof setCountry === 'function') {
+      // Try to find country code from name
+      const countryCode = data.previousAddressCountry === 'United Kingdom' ? 'GBR' : null;
+      if (countryCode) {
+        setCountry('previousAddressCountry', countryCode);
+      } else {
+        input.value = data.previousAddressCountry;
+      }
+    } else if (input) {
+      input.value = data.previousAddressCountry;
+    }
   }
   
   // Employer
-  if (data.employerCountry) {
+  // Check both employersCountryOfRegistration and employerCountry
+  const employerCountry = data.employersCountryOfRegistration || data.employerCountry;
+  if (employerCountry) {
     const input = document.getElementById('employerCountry');
-    if (input) input.value = data.employerCountry;
+    if (input && typeof setJurisdiction === 'function') {
+      // Try to find jurisdiction code from country name
+      if (employerCountry === 'United Kingdom') {
+        setJurisdiction('employerCountry', 'GB');
+      } else {
+        // Try to set by name
+        input.value = employerCountry;
+      }
+    } else if (input) {
+      input.value = employerCountry;
+    }
   }
-  if (data.employerName) {
+  // Check both tenantsEmployer and employerName
+  const employerName = data.tenantsEmployer || data.employerName;
+  if (employerName) {
     const input = document.getElementById('employerName');
-    if (input) input.value = data.employerName;
+    if (input) input.value = employerName;
   }
-  if (data.employerNumber) {
+  // Check both employersRegistrationNumber and employerNumber
+  const employerNumber = data.employersRegistrationNumber || data.employerNumber;
+  if (employerNumber) {
     const input = document.getElementById('employerNumber');
-    if (input) input.value = data.employerNumber;
+    if (input) {
+      input.value = employerNumber;
+      // Set organisation number if available
+      if (data.companyData?.companyData?.organisation_number) {
+        input.dataset.organisationNumber = data.companyData.companyData.organisation_number;
+      }
+    }
+  }
+  // Store and handle company data if available (for pre-linked data)
+  if (data.companyData) {
+    formState.companyData = data.companyData;
+    // If we have company data, call handleCompanyData to set up buttons and linked data
+    // Extract the actual company object (may be nested as companyData.companyData)
+    const company = data.companyData.companyData || data.companyData;
+    if (company && typeof handleCompanyData === 'function') {
+      handleCompanyData(company);
+    }
   }
   
   // Second Tenant
@@ -1692,9 +1754,11 @@ function populateFormFromSubmission(data) {
         }
       }
     }
-    if (data.secondTenantMobileNumber) {
+    // Check both secondTenantMobile and secondTenantMobileNumber
+    const secondTenantMobile = data.secondTenantMobile || data.secondTenantMobileNumber;
+    if (secondTenantMobile) {
       // Parse phone number using libphonenumber
-      const parsed = parsePhoneNumber(data.secondTenantMobileNumber);
+      const parsed = parsePhoneNumber(secondTenantMobile);
       const countryCodeInput = document.getElementById('tenant2MobileCountryCode');
       const phoneInput = document.getElementById('tenant2Mobile');
       
@@ -1710,7 +1774,7 @@ function populateFormFromSubmission(data) {
         phoneInput.value = parsed.nationalNumber;
       } else if (phoneInput) {
         // Fallback if parsing fails
-        phoneInput.value = data.secondTenantMobileNumber;
+        phoneInput.value = secondTenantMobile;
       }
     }
     if (data.secondTenantEmail) {
@@ -1816,11 +1880,18 @@ function populateFormFromSubmission(data) {
     const input = document.getElementById('legalFeeEmployerName');
     if (input) input.value = data.thsFeeEmployersAccountsContactName;
   }
-  if (data.thsFeeInvoiceSending !== undefined) {
-    const yesBtn = document.querySelector('#legalFeeDirectSendContainer .yes-no-btn[data-value="yes"]');
-    const noBtn = document.querySelector('#legalFeeDirectSendContainer .yes-no-btn[data-value="no"]');
-    if (data.thsFeeInvoiceSending === true && yesBtn) yesBtn.click();
-    else if (data.thsFeeInvoiceSending === undefined && noBtn) noBtn.click();
+  // Legal Fee Direct Send (undefined or missing = no, true = yes)
+  // Only set if the container is visible (payee is not 'dwellworks')
+  const legalFeeDirectSendContainer = document.getElementById('legalFeeDirectSendContainer');
+  if (legalFeeDirectSendContainer && !legalFeeDirectSendContainer.classList.contains('hidden')) {
+    if (data.thsFeeInvoiceSending === true) {
+      const yesBtn = document.querySelector('#legalFeeDirectSendContainer .yes-no-btn[data-value="yes"]');
+      if (yesBtn) yesBtn.click();
+    } else {
+      // undefined or missing means "no"
+      const noBtn = document.querySelector('#legalFeeDirectSendContainer .yes-no-btn[data-value="no"]');
+      if (noBtn) noBtn.click();
+    }
   }
   
   // SDLT Fee Payee
@@ -1926,11 +1997,18 @@ function populateFormFromSubmission(data) {
     if (data.sdltFeeEmployerDetailsMatchThsLlpFeePayer === true && yesBtn) yesBtn.click();
     else if (data.sdltFeeEmployerDetailsMatchThsLlpFeePayer === undefined && noBtn) noBtn.click();
   }
-  if (data.sdltFeeInvoiceSending !== undefined) {
-    const yesBtn = document.querySelector('#sdltFeeDirectSendContainer .yes-no-btn[data-value="yes"]');
-    const noBtn = document.querySelector('#sdltFeeDirectSendContainer .yes-no-btn[data-value="no"]');
-    if (data.sdltFeeInvoiceSending === true && yesBtn) yesBtn.click();
-    else if (data.sdltFeeInvoiceSending === undefined && noBtn) noBtn.click();
+  // SDLT Fee Direct Send (undefined or missing = no, true = yes)
+  // Only set if the container is visible (payee is not 'dwellworks')
+  const sdltFeeDirectSendContainer = document.getElementById('sdltFeeDirectSendContainer');
+  if (sdltFeeDirectSendContainer && !sdltFeeDirectSendContainer.classList.contains('hidden')) {
+    if (data.sdltFeeInvoiceSending === true) {
+      const yesBtn = document.querySelector('#sdltFeeDirectSendContainer .yes-no-btn[data-value="yes"]');
+      if (yesBtn) yesBtn.click();
+    } else {
+      // undefined or missing means "no"
+      const noBtn = document.querySelector('#sdltFeeDirectSendContainer .yes-no-btn[data-value="no"]');
+      if (noBtn) noBtn.click();
+    }
   }
   
   // Additional Details
