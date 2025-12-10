@@ -7,10 +7,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
   
   <!-- Core CSS -->
-  <link rel="stylesheet" href="styles.css?v=7975723" />
+  <link rel="stylesheet" href="styles.css?v=c7f2b0b" />
   
   <!-- Dwellworks Request Form Specific CSS -->
-  <link rel="stylesheet" href="css/dwellworks-request-form.css?v=7975723" />
+  <link rel="stylesheet" href="css/dwellworks-request-form.css?v=c7f2b0b" />
 </head>
 <body>
   <!-- Session Countdown Header -->
@@ -38,7 +38,15 @@
     </div>
   </div>
 
-  <div class="container">
+  <!-- Loading State -->
+  <div id="loadingState" class="loading-state">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading form...</div>
+    </div>
+  </div>
+
+  <div class="container hidden" id="formContainer">
     <!-- Your Details Section -->
     <div class="section" id="yourDetailsSection">
       <h3>Your details</h3>
@@ -817,13 +825,13 @@
   </div>
 
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=7975723"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=c7f2b0b"></script>
   
   <!-- Google libphonenumber for phone validation (must load before core script) -->
   <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
   <!-- Core JavaScript -->
-  <script src="js/dwellworks-request-form-core.js?v=7975723"></script>
+  <script src="js/dwellworks-request-form-core.js?v=c7f2b0b"></script>
   
   <!-- Initialize Autocomplete Fields -->
   <script>
@@ -844,7 +852,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '7975723';
+    window.__IFRAME_VERSION__ = 'c7f2b0b';
     console.log('[dwellworks-request-form] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

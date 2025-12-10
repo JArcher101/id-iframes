@@ -1381,6 +1381,9 @@ function handleSubmitterData(message) {
     if (input) input.value = data.dwellworksReference;
   }
   
+  // Hide loading state and show form
+  showForm();
+  
   // Mark submitter data as received and enable submit button
   formState.submitterDataReceived = true;
   if (elements.submitBtn) {
@@ -1391,6 +1394,22 @@ function handleSubmitterData(message) {
   startSessionCountdown();
   
   validateForm();
+}
+
+/**
+ * Show the form and hide the loading state
+ */
+function showForm() {
+  const loadingState = document.getElementById('loadingState');
+  const formContainer = document.getElementById('formContainer');
+  
+  if (loadingState) {
+    loadingState.classList.add('hidden');
+  }
+  
+  if (formContainer) {
+    formContainer.classList.remove('hidden');
+  }
 }
 
 /**
@@ -1405,6 +1424,9 @@ function handleEditRequest(message) {
   
   // Populate form with submission data
   populateFormFromSubmission(submissionData);
+  
+  // Hide loading state and show form
+  showForm();
   
   // Mark submitter data as received and enable submit button
   formState.submitterDataReceived = true;
