@@ -2217,91 +2217,92 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
   // Normalize country code to 3-letter ISO format
   const normalizedCountry = normalizeCountryCode(country);
   
-  // UK addresses: Individual fields only (no address_1, address_2)
-  if (normalizedCountry === 'GBR') {
-    let buildingNumber = getAddressData.building_number || getAddressData.sub_building_number || '';
-    let buildingNameFromLine1 = '';
-    let flatNumber = getAddressData.flat_number || '';
+  // Extract data from raw object if available, otherwise use top-level
+  const raw = getAddressData.raw || {};
+  let buildingNumber = raw.building_number || getAddressData.building_number || getAddressData.sub_building_number || '';
+  let thoroughfare = raw.thoroughfare || getAddressData.thoroughfare || getAddressData.street || '';
+  const town = getAddressData.city || raw.town || getAddressData.town_or_city || getAddressData.town || '';
+  const postcode = getAddressData.postcode || raw.postcode || '';
+  const flatNumber = raw.flat_number || getAddressData.flat_number || '';
+  let buildingName = raw.building_name || getAddressData.building_name || '';
+  const subStreet = raw.sub_street || getAddressData.sub_street || '';
+  
+  // Handle addressLine1 or address_1 (both formats)
+  const addressLine1 = getAddressData.addressLine1 || getAddressData.address_1 || '';
+  const addressLine2 = getAddressData.addressLine2 || getAddressData.address_2 || '';
+  
+  // Parse addressLine1/address_1 if available
+  if (addressLine1) {
+    let addressLine1Value = addressLine1.trim();
     
-    // Parse line_1 intelligently using thoroughfare as the key
-    if (getAddressData.line_1 && (!buildingNumber || !getAddressData.building_name)) {
-      let addressPrefix = getAddressData.line_1.trim();
-      
-      // Remove thoroughfare/street from line_1 if present
-      if (getAddressData.thoroughfare && addressPrefix.includes(getAddressData.thoroughfare)) {
-        addressPrefix = addressPrefix.replace(getAddressData.thoroughfare, '').replace(/,\s*$/, '').trim();
-      }
-      
-      // Now parse the remaining prefix (which has street already removed)
-      if (addressPrefix) {
-        // Check for flat number (e.g., "Flat 1A", "Flat 1A, Building Name")
-        const flatMatch = addressPrefix.match(/^(?:Flat|flat|Apartment|apartment|Unit|unit|Apt|apt)\s+(\d+[a-zA-Z]?)/i);
-        if (flatMatch && !flatNumber) {
-          flatNumber = flatMatch[1];
-          addressPrefix = addressPrefix.substring(flatMatch[0].length).replace(/^[,\s]+/, '').trim();
-        }
-        
-        // Check if remaining starts with a number (building number like "94", "1A", etc.)
-        if (!buildingNumber) {
-          const numberMatch = addressPrefix.match(/^(\d+[a-zA-Z]?)\b/);
-          if (numberMatch) {
+    // If we have thoroughfare/street, try to extract building/flat number from addressLine1
+    if (thoroughfare && addressLine1Value.includes(thoroughfare)) {
+      // Remove street name from addressLine1 to get building/flat number/name
+      const prefix = addressLine1Value.replace(thoroughfare, '').replace(/,\s*$/, '').trim();
+      if (prefix && !buildingNumber && !flatNumber) {
+        // Check if it starts with a number (could be building or flat number)
+        const numberMatch = prefix.match(/^(\d+[a-zA-Z]?)\b/);
+        if (numberMatch) {
+          // For non-UK addresses, single digit at start is more likely a flat number
+          // For UK addresses, prefer building number unless it's clearly a flat
+          if (normalizedCountry === 'GBR' && numberMatch[1].length > 1) {
             buildingNumber = numberMatch[1];
-            addressPrefix = addressPrefix.substring(numberMatch[0].length).replace(/^[,\s]+/, '').trim();
+          } else if (normalizedCountry !== 'GBR' && numberMatch[1].length === 1) {
+            flatNumber = numberMatch[1];
+          } else {
+            buildingNumber = numberMatch[1];
           }
+          const remaining = prefix.substring(numberMatch[0].length).replace(/^[,\s]+/, '').trim();
+          if (remaining && !/^\d+$/.test(remaining)) {
+            buildingName = remaining;
+          }
+        } else if (!/^\d+$/.test(prefix)) {
+          buildingName = prefix;
+        }
+      }
+    } else if (!buildingNumber && !flatNumber) {
+      // No thoroughfare yet, try to parse number from start (e.g., "1, Richardalle" or "94 Southgate Street")
+      const numberMatch = addressLine1Value.match(/^(\d+[a-zA-Z]?)\s*[,]?\s*(.+)$/);
+      if (numberMatch) {
+        const number = numberMatch[1];
+        const remaining = numberMatch[2].trim();
+        
+        // For non-UK addresses, single digit with comma is likely a flat number
+        // For UK addresses or longer numbers, it's likely a building number
+        if (normalizedCountry !== 'GBR' && number.length === 1 && addressLine1Value.includes(',')) {
+          flatNumber = number;
+        } else {
+          buildingNumber = number;
         }
         
-        // Whatever remains is the building name
-        if (addressPrefix) {
-          // Don't use purely numeric values as building names (they're building numbers)
-          if (!/^\d+$/.test(addressPrefix)) {
-            buildingNameFromLine1 = addressPrefix;
-          }
+        if (remaining && !thoroughfare) {
+          // Use remaining as street if we don't have one
+          thoroughfare = remaining;
         }
+      } else if (!thoroughfare) {
+        // No number pattern, use entire addressLine1 as street
+        thoroughfare = addressLine1Value;
       }
     }
-    
-    // Building name: Combine all available building name data
-    const buildingNameParts = [
-      getAddressData.sub_building_name,
-      getAddressData.building_name && !/^\d+$/.test(getAddressData.building_name.trim()) ? getAddressData.building_name : buildingNameFromLine1,
-      getAddressData.line_2 && getAddressData.line_2 !== getAddressData.thoroughfare ? getAddressData.line_2 : ''
-    ].filter(p => p && p.trim());
-    
-    return {
-      building_name: buildingNameParts.join(', ') || '',
-      building_number: buildingNumber,
-      flat_number: flatNumber,
-      postcode: getAddressData.postcode || '',
-      street: getAddressData.thoroughfare || getAddressData.line_3 || getAddressData.street || '',
-      sub_street: getAddressData.sub_street || '',
-      town: getAddressData.town_or_city || getAddressData.town || '',
-      country: normalizedCountry
-    };
   }
   
-  // USA/Canada: address_1, address_2, state required
-  if (normalizedCountry === 'USA' || normalizedCountry === 'CAN') {
-    return {
-      address_1: getAddressData.line_1 || '',
-      address_2: getAddressData.line_2 || getAddressData.line_3 || getAddressData.line_4 || '',
-      postcode: getAddressData.postcode || '',
-      street: getAddressData.thoroughfare || getAddressData.street || '',
-      sub_street: getAddressData.sub_street || '',
-      town: getAddressData.town_or_city || getAddressData.town || '',
-      state: getAddressData.state || getAddressData.province || '',
-      country: normalizedCountry
-    };
+  // Use addressLine1/address_1 as street if we still don't have one
+  if (!thoroughfare && addressLine1) {
+    thoroughfare = addressLine1.trim();
   }
   
-  // Other countries: address_1, address_2 (no individual building fields)
+  // Use addressLine2/address_2 as sub_street if available
+  const parsedSubStreet = addressLine2 || subStreet;
+  
+  // All countries use the same format (building_number, street, town)
   return {
-    address_1: getAddressData.line_1 || '',
-    address_2: getAddressData.line_2 || getAddressData.line_3 || getAddressData.line_4 || '',
-    postcode: getAddressData.postcode || '',
-    street: getAddressData.thoroughfare || getAddressData.street || '',
-    sub_street: getAddressData.sub_street || '',
-    town: getAddressData.town_or_city || getAddressData.town || '',
-    state: '',
+    building_name: buildingName || '',
+    building_number: buildingNumber || '',
+    flat_number: flatNumber || '',
+    postcode: postcode || '',
+    street: thoroughfare || '',
+    sub_street: parsedSubStreet || '',
+    town: town || '',
     country: normalizedCountry
   };
 }
