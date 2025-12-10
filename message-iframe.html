@@ -1965,12 +1965,19 @@
             
             window.parent.postMessage(messagePayload, '*');
             
-            // Clear inputs immediately (before parent responds)
-            messageInput.value = '';
-            resetUploadArea(); // Clears file input and resets UI to default
-            
-            // Re-enable send button - ready for next message
-            sendBtn.disabled = false;
+            // Handle input clearing and button state based on mode
+            if (isSdltMode) {
+                // SDLT mode: Keep message in input, keep button disabled
+                // Input will be cleared and button re-enabled when new messages arrive
+                // This prevents the "message disappeared then magically reappeared" UX issue
+            } else {
+                // ID mode: Clear inputs immediately (before parent responds)
+                messageInput.value = '';
+                resetUploadArea(); // Clears file input and resets UI to default
+                
+                // Re-enable send button - ready for next message
+                sendBtn.disabled = false;
+            }
             
             // Now waiting for parent to save to DB and respond with fresh message data
             // In SDLT mode: parent sends 'sdlt-message-viewer' with updated data array
@@ -2348,7 +2355,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '63c4016';
+    window.__IFRAME_VERSION__ = 'ab74d21';
     console.log('[message-iframe] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

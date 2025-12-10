@@ -3846,70 +3846,127 @@
         }
 
         function addFilesToCard(card, files, side = null) {
-            const primaryDropdown = card.querySelector('.primary-dropdown');
-            const secondaryDropdown = card.querySelector('.secondary-dropdown');
-            const otherInput = card.querySelector('.other-input');
-            
-            if (!primaryDropdown.value) {
-                showError('Please select a document type first.');
-                return;
-            }
-            
-            // Check if secondary dropdown or other input is filled
-            if (primaryDropdown.value === 'Other') {
-                if (!otherInput.value.trim()) {
-                    showError('Please enter a document type.');
+            if (documentSystemMode === 'sdlt') {
+                // SDLT mode: check for title input
+                const titleInput = card.querySelector('.sdlt-title-input');
+                
+                if (!titleInput || !titleInput.value.trim()) {
+                    showError('Please enter a document title first.');
                     return;
                 }
+                
+                files.forEach(file => {
+                    // Debug logging
+                    console.log('File type:', file.type);
+                    console.log('File name:', file.name);
+                    
+                    // Simple validation for PDF and Word documents
+                    const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                    const isWord = file.type === 'application/msword' || 
+                                  file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                                  file.name.toLowerCase().endsWith('.doc') ||
+                                  file.name.toLowerCase().endsWith('.docx');
+                    
+                    console.log('Is PDF:', isPDF);
+                    console.log('Is Word:', isWord);
+                    
+                    if (!isPDF && !isWord) {
+                        console.log('File validation failed - not PDF or Word');
+                        showError('Only PDF and Word documents are allowed.');
+                        return;
+                    }
+                    
+                    console.log('File validation passed');
+                    
+                    if (file.size === 0) {
+                        showError('File is empty or corrupted. Please select a valid file.');
+                        return;
+                    }
+                    
+                    if (file.size > 15 * 1024 * 1024) {
+                        showError('File size must be less than 15MB.');
+                        return;
+                    }
+                    
+                    // Find the document upload area
+                    const uploadArea = card.querySelector('.upload-area-slimline');
+                    
+                    if (uploadArea) {
+                        const title = titleInput.value.trim();
+                        const descriptionInput = card.querySelector('.sdlt-description-input');
+                        const description = descriptionInput ? descriptionInput.value.trim() : '';
+                        displayDocumentPreview(uploadArea, file, title, description);
+                    } else {
+                        console.error('Document upload area not found');
+                    }
+                });
             } else {
-                if (!secondaryDropdown.value) {
-                    showError('Please select a document sub-type.');
-                    return;
-                }
-            }
-            
-            files.forEach(file => {
-                // Debug logging
-                console.log('File type:', file.type);
-                console.log('File name:', file.name);
+                // ID mode: check for dropdowns
+                const primaryDropdown = card.querySelector('.primary-dropdown');
+                const secondaryDropdown = card.querySelector('.secondary-dropdown');
+                const otherInput = card.querySelector('.other-input');
                 
-                // Simple validation for PDF and Word documents
-                const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-                const isWord = file.type === 'application/msword' || 
-                              file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                              file.name.toLowerCase().endsWith('.doc') ||
-                              file.name.toLowerCase().endsWith('.docx');
-                
-                console.log('Is PDF:', isPDF);
-                console.log('Is Word:', isWord);
-                
-                if (!isPDF && !isWord) {
-                    console.log('File validation failed - not PDF or Word');
-                    showError('Only PDF and Word documents are allowed.');
+                if (!primaryDropdown || !primaryDropdown.value) {
+                    showError('Please select a document type first.');
                     return;
                 }
                 
-                console.log('File validation passed');
-                
-                if (file.size === 0) {
-                    showError('File is empty or corrupted. Please select a valid file.');
-                    return;
-                }
-                
-                if (file.size > 15 * 1024 * 1024) {
-                    showError('File size must be less than 15MB.');
-                    return;
-                }
-                
-                // Find the document upload area
-                const uploadArea = card.querySelector('.upload-area-slimline');
-                
-                if (uploadArea) {
-                    displayDocumentPreview(uploadArea, file, primaryDropdown.value, secondaryDropdown.value || otherInput.value.trim());
+                // Check if secondary dropdown or other input is filled
+                if (primaryDropdown.value === 'Other') {
+                    if (!otherInput || !otherInput.value.trim()) {
+                        showError('Please enter a document type.');
+                        return;
+                    }
                 } else {
-                    console.error('Document upload area not found');
+                    if (!secondaryDropdown || !secondaryDropdown.value) {
+                        showError('Please select a document sub-type.');
+                        return;
+                    }
                 }
-            });
+                
+                files.forEach(file => {
+                    // Debug logging
+                    console.log('File type:', file.type);
+                    console.log('File name:', file.name);
+                    
+                    // Simple validation for PDF and Word documents
+                    const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                    const isWord = file.type === 'application/msword' || 
+                                  file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                                  file.name.toLowerCase().endsWith('.doc') ||
+                                  file.name.toLowerCase().endsWith('.docx');
+                    
+                    console.log('Is PDF:', isPDF);
+                    console.log('Is Word:', isWord);
+                    
+                    if (!isPDF && !isWord) {
+                        console.log('File validation failed - not PDF or Word');
+                        showError('Only PDF and Word documents are allowed.');
+                        return;
+                    }
+                    
+                    console.log('File validation passed');
+                    
+                    if (file.size === 0) {
+                        showError('File is empty or corrupted. Please select a valid file.');
+                        return;
+                    }
+                    
+                    if (file.size > 15 * 1024 * 1024) {
+                        showError('File size must be less than 15MB.');
+                        return;
+                    }
+                    
+                    // Find the document upload area
+                    const uploadArea = card.querySelector('.upload-area-slimline');
+                    
+                    if (uploadArea) {
+                        displayDocumentPreview(uploadArea, file, primaryDropdown.value, secondaryDropdown.value || otherInput.value.trim());
+                    } else {
+                        console.error('Document upload area not found');
+                    }
+                });
+            }
             
             updateUploadButton();
         }
@@ -4903,7 +4960,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '63c4016';
+    window.__IFRAME_VERSION__ = 'ab74d21';
     console.log('[document-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
