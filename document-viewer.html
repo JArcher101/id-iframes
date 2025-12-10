@@ -3426,8 +3426,29 @@
             `;
             loadingDiv.id = 'uploadingContainer';
             
-            // Insert as sibling to image display container (inside responsive-container)
-            document.querySelector('.responsive-container').appendChild(loadingDiv);
+            // Hide uploader section and show uploading container
+            if (idUploaderSection) {
+                idUploaderSection.classList.add('hidden');
+            }
+            if (imageDisplaySection) {
+                imageDisplaySection.classList.add('hidden');
+            }
+            if (addMoreContainer) {
+                addMoreContainer.classList.add('hidden');
+            }
+            
+            // Insert into responsive container (will be shown instead of other sections)
+            const responsiveContainer = document.querySelector('.responsive-container');
+            if (responsiveContainer) {
+                // Remove existing uploading container if present
+                const existingContainer = document.getElementById('uploadingContainer');
+                if (existingContainer) {
+                    existingContainer.remove();
+                }
+                responsiveContainer.appendChild(loadingDiv);
+                // Scroll to top to ensure visibility
+                loadingDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
         /*
@@ -3443,11 +3464,19 @@
             const messageData = normalizeMessageData(event.data);
             
             if (messageData.type === 'put-links') {
-                // Store the item ID from PUT links response
+                // Store the item ID from PUT links response (may be undefined for SDLT mode)
                 itemId = messageData._id;
                 const links = messageData.links;
                 s3Keys = messageData.s3Keys; // Store S3 keys globally
                 uploadedImages = messageData.images; // Store images data with s3Keys
+                
+                console.log('Received put-links:');
+                console.log('itemId:', itemId);
+                console.log('s3Keys:', s3Keys);
+                console.log('uploadedImages:', uploadedImages);
+                console.log('links length:', links ? links.length : 0);
+                console.log('localFilesForUpload length:', localFilesForUpload ? localFilesForUpload.length : 0);
+                
                 uploadFiles(links);
             } else if (messageData.type === 'put-error') {
                 // Show specific error message and go back to uploader
@@ -3615,28 +3644,32 @@
             
             let documentsWithS3Keys;
             
+            console.log('handleUploadSuccess called');
+            console.log('documentSystemMode:', documentSystemMode);
+            console.log('uploadedImages:', uploadedImages);
+            console.log('s3Keys:', s3Keys);
+            console.log('itemId:', itemId);
+            
             if (documentSystemMode === 'sdlt') {
-                // For SDLT mode, merge local file data with s3Keys from parent
-                // s3Keys should be an array matching the order of localFilesForUpload
-                const s3KeysArray = Array.isArray(s3Keys) ? s3Keys : [];
-                documentsWithS3Keys = localFilesForUpload.map((fileObj, index) => {
-                    const s3KeyData = s3KeysArray[index] || {};
-                    return {
-                        type: fileObj.type, // 'user' or 'staff'
-                        document: fileObj.document, // title
-                        description: fileObj.description || '',
-                        uploader: fileObj.uploader,
-                        date: fileObj.date,
-                        data: fileObj.data,
-                        s3Key: s3KeyData.s3Key || s3KeyData.key || '',
-                        isAdditional: true,
-                        // Parent will add url and liveUrl
-                    };
-                });
+                // For SDLT mode, use uploadedImages which contains the full document objects with s3Keys
+                // uploadedImages is set from messageData.images in handlePutResponse
+                // In SDLT mode: s3Keys is array of key strings, links is array of PUT URLs, images is array of full document objects
+                documentsWithS3Keys = uploadedImages || [];
+                
+                console.log('SDLT mode - using uploadedImages:', documentsWithS3Keys);
+                
+                if (!documentsWithS3Keys || documentsWithS3Keys.length === 0) {
+                    console.error('uploadedImages is empty in SDLT mode!');
+                    showError('Upload completed but no document data was found. Please try again.');
+                    return;
+                }
             } else {
                 // For ID mode, use the s3Keys data directly as it already contains the properly formatted document data from parent
                 documentsWithS3Keys = s3Keys || uploadedImages;
             }
+            
+            console.log('documentsWithS3Keys:', documentsWithS3Keys);
+            console.log('Sending upload-success with', documentsWithS3Keys.length, 'files');
             
             // Send success message to parent with properly formatted documents data
             window.parent.postMessage({
@@ -3764,8 +3797,10 @@
             }
             
             // Re-enable upload button
-            uploadAllBtn.disabled = false;
-            uploadAllBtn.textContent = 'Upload All Documents';
+            if (uploadAllBtn) {
+                uploadAllBtn.disabled = false;
+                uploadAllBtn.textContent = 'Upload All Documents';
+            }
         }
 
         // Show success message
@@ -4973,7 +5008,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '914a5b0';
+    window.__IFRAME_VERSION__ = '0c2979a';
     console.log('[document-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
