@@ -1244,8 +1244,8 @@ function validateForm() {
   // legalFeeDirectSend - required when visible (when legalFeePayee is not 'dwellworks')
   const legalFeeDirectSendContainer = document.getElementById('legalFeeDirectSendContainer');
   if (legalFeeDirectSendContainer && !legalFeeDirectSendContainer.classList.contains('hidden')) {
-    const hasSelection = formState.legalFeeDirectSend !== null && formState.legalFeeDirectSend !== undefined;
-    if (!hasSelection) {
+    const hasSelected = Array.from(legalFeeDirectSendContainer.querySelectorAll('.yes-no-btn')).some(btn => btn.classList.contains('selected'));
+    if (!hasSelected) {
       isValid = false;
     }
   }
@@ -1253,8 +1253,8 @@ function validateForm() {
   // sdltFeeDirectSend - required when visible (when sdltFeePayee is not 'dwellworks')
   const sdltFeeDirectSendContainer = document.getElementById('sdltFeeDirectSendContainer');
   if (sdltFeeDirectSendContainer && !sdltFeeDirectSendContainer.classList.contains('hidden')) {
-    const hasSelection = formState.sdltFeeDirectSend !== null && formState.sdltFeeDirectSend !== undefined;
-    if (!hasSelection) {
+    const hasSelected = Array.from(sdltFeeDirectSendContainer.querySelectorAll('.yes-no-btn')).some(btn => btn.classList.contains('selected'));
+    if (!hasSelected) {
       isValid = false;
     }
   }
@@ -1751,7 +1751,8 @@ function populateFormFromSubmission(data) {
     if (yesBtn) {
       yesBtn.click();
     }
-  } else if (data.secondTenant === undefined) {
+  } else {
+    // If not true, set to no (handles undefined, false, null, or missing)
     const noBtn = document.querySelector('[data-field="addSecondTenant"][data-value="no"]');
     if (noBtn) noBtn.click();
   }
@@ -2688,16 +2689,16 @@ function collectValidationErrors() {
   
   const legalFeeDirectSendContainer = document.getElementById('legalFeeDirectSendContainer');
   if (legalFeeDirectSendContainer && !legalFeeDirectSendContainer.classList.contains('hidden')) {
-    const hasSelection = formState.legalFeeDirectSend !== null && formState.legalFeeDirectSend !== undefined;
-    if (!hasSelection) {
+    const hasSelected = Array.from(legalFeeDirectSendContainer.querySelectorAll('.yes-no-btn')).some(btn => btn.classList.contains('selected'));
+    if (!hasSelected) {
       errors.push('Please select whether to send legal fee invoice directly');
     }
   }
   
   const sdltFeeDirectSendContainer = document.getElementById('sdltFeeDirectSendContainer');
   if (sdltFeeDirectSendContainer && !sdltFeeDirectSendContainer.classList.contains('hidden')) {
-    const hasSelection = formState.sdltFeeDirectSend !== null && formState.sdltFeeDirectSend !== undefined;
-    if (!hasSelection) {
+    const hasSelected = Array.from(sdltFeeDirectSendContainer.querySelectorAll('.yes-no-btn')).some(btn => btn.classList.contains('selected'));
+    if (!hasSelected) {
       errors.push('Please select whether to send SDLT fee invoice directly');
     }
   }
