@@ -1440,19 +1440,24 @@ function populateFormFromSubmission(data) {
     if (input) input.value = data.dwellworksReference;
   }
   if (data.dwellworksContactNumber) {
-    // Parse phone number and country code
-    const phoneMatch = data.dwellworksContactNumber?.match(/^(\+\d+)(.+)$/);
-    if (phoneMatch) {
-      const countryCodeInput = document.getElementById('submitterPhoneCountryCode');
-      const phoneInput = document.getElementById('submitterPhone');
-      if (countryCodeInput) {
-        countryCodeInput.dataset.phoneCode = phoneMatch[1];
-        countryCodeInput.value = phoneMatch[1]; // You may want to format this better
+    // Parse phone number using libphonenumber
+    const parsed = parsePhoneNumber(data.dwellworksContactNumber);
+    const countryCodeInput = document.getElementById('submitterPhoneCountryCode');
+    const phoneInput = document.getElementById('submitterPhone');
+    
+    if (parsed && countryCodeInput && phoneInput) {
+      // Use setPhoneCode if available to format with flag and country name
+      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
+        setPhoneCode('submitterPhoneCountryCode', parsed.isoCode);
+      } else {
+        // Fallback: set phone code directly
+        countryCodeInput.dataset.phoneCode = parsed.countryCode;
+        countryCodeInput.value = parsed.countryCode;
       }
-      if (phoneInput) phoneInput.value = phoneMatch[2];
-    } else if (data.dwellworksContactNumber) {
-      const phoneInput = document.getElementById('submitterPhone');
-      if (phoneInput) phoneInput.value = data.dwellworksContactNumber;
+      phoneInput.value = parsed.nationalNumber;
+    } else if (phoneInput) {
+      // Fallback if parsing fails
+      phoneInput.value = data.dwellworksContactNumber;
     }
   }
   if (data.dwellworksEmail) {
@@ -1552,18 +1557,24 @@ function populateFormFromSubmission(data) {
   }
   if (data.lesseePhoneNumber) {
     // Parse phone number and country code
-    const phoneMatch = data.lesseePhoneNumber?.match(/^(\+\d+)(.+)$/);
-    if (phoneMatch) {
-      const countryCodeInput = document.getElementById('leaseOtherTelCountryCode');
-      const phoneInput = document.getElementById('leaseOtherTel');
-      if (countryCodeInput) {
-        countryCodeInput.dataset.phoneCode = phoneMatch[1];
-        countryCodeInput.value = phoneMatch[1];
+    // Parse phone number using libphonenumber
+    const parsed = parsePhoneNumber(data.lesseePhoneNumber);
+    const countryCodeInput = document.getElementById('leaseOtherTelCountryCode');
+    const phoneInput = document.getElementById('leaseOtherTel');
+    
+    if (parsed && countryCodeInput && phoneInput) {
+      // Use setPhoneCode if available to format with flag and country name
+      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
+        setPhoneCode('leaseOtherTelCountryCode', parsed.isoCode);
+      } else {
+        // Fallback: set phone code directly
+        countryCodeInput.dataset.phoneCode = parsed.countryCode;
+        countryCodeInput.value = parsed.countryCode;
       }
-      if (phoneInput) phoneInput.value = phoneMatch[2];
-    } else if (data.lesseePhoneNumber) {
-      const phoneInput = document.getElementById('leaseOtherTel');
-      if (phoneInput) phoneInput.value = data.lesseePhoneNumber;
+      phoneInput.value = parsed.nationalNumber;
+    } else if (data.lesseePhoneNumber && phoneInput) {
+      // Fallback if parsing fails
+      phoneInput.value = data.lesseePhoneNumber;
     }
   }
   if (data.lesseeEmail) {
@@ -1591,15 +1602,24 @@ function populateFormFromSubmission(data) {
     }
   }
   if (data.tenantsMobileNumber) {
-    const phoneMatch = data.tenantsMobileNumber?.match(/^(\+\d+)(.+)$/);
-    if (phoneMatch) {
-      const countryCodeInput = document.getElementById('tenant1MobileCountryCode');
-      const phoneInput = document.getElementById('tenant1Mobile');
-      if (countryCodeInput) countryCodeInput.dataset.phoneCode = phoneMatch[1];
-      if (phoneInput) phoneInput.value = phoneMatch[2];
-    } else if (data.tenantsMobileNumber) {
-      const phoneInput = document.getElementById('tenant1Mobile');
-      if (phoneInput) phoneInput.value = data.tenantsMobileNumber;
+    // Parse phone number using libphonenumber
+    const parsed = parsePhoneNumber(data.tenantsMobileNumber);
+    const countryCodeInput = document.getElementById('tenant1MobileCountryCode');
+    const phoneInput = document.getElementById('tenant1Mobile');
+    
+    if (parsed && countryCodeInput && phoneInput) {
+      // Use setPhoneCode if available to format with flag and country name
+      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
+        setPhoneCode('tenant1MobileCountryCode', parsed.isoCode);
+      } else {
+        // Fallback: set phone code directly
+        countryCodeInput.dataset.phoneCode = parsed.countryCode;
+        countryCodeInput.value = parsed.countryCode;
+      }
+      phoneInput.value = parsed.nationalNumber;
+    } else if (phoneInput) {
+      // Fallback if parsing fails
+      phoneInput.value = data.tenantsMobileNumber;
     }
   }
   if (data.tenantsEmail) {
@@ -1673,12 +1693,24 @@ function populateFormFromSubmission(data) {
       }
     }
     if (data.secondTenantMobileNumber) {
-      const phoneMatch = data.secondTenantMobileNumber?.match(/^(\+\d+)(.+)$/);
-      if (phoneMatch) {
-        const countryCodeInput = document.getElementById('tenant2MobileCountryCode');
-        const phoneInput = document.getElementById('tenant2Mobile');
-        if (countryCodeInput) countryCodeInput.dataset.phoneCode = phoneMatch[1];
-        if (phoneInput) phoneInput.value = phoneMatch[2];
+      // Parse phone number using libphonenumber
+      const parsed = parsePhoneNumber(data.secondTenantMobileNumber);
+      const countryCodeInput = document.getElementById('tenant2MobileCountryCode');
+      const phoneInput = document.getElementById('tenant2Mobile');
+      
+      if (parsed && countryCodeInput && phoneInput) {
+        // Use setPhoneCode if available to format with flag and country name
+        if (typeof setPhoneCode === 'function' && parsed.isoCode) {
+          setPhoneCode('tenant2MobileCountryCode', parsed.isoCode);
+        } else {
+          // Fallback: set phone code directly
+          countryCodeInput.dataset.phoneCode = parsed.countryCode;
+          countryCodeInput.value = parsed.countryCode;
+        }
+        phoneInput.value = parsed.nationalNumber;
+      } else if (phoneInput) {
+        // Fallback if parsing fails
+        phoneInput.value = data.secondTenantMobileNumber;
       }
     }
     if (data.secondTenantEmail) {
@@ -1731,19 +1763,24 @@ function populateFormFromSubmission(data) {
     }
   }
   if (data.thsFeePayerPhoneNumber) {
-    // Parse phone number and country code
-    const phoneMatch = data.thsFeePayerPhoneNumber?.match(/^(\+\d+)(.+)$/);
-    if (phoneMatch) {
-      const countryCodeInput = document.getElementById('legalFeeOtherTelCountryCode');
-      const phoneInput = document.getElementById('legalFeeOtherTel');
-      if (countryCodeInput) {
-        countryCodeInput.dataset.phoneCode = phoneMatch[1];
-        countryCodeInput.value = phoneMatch[1];
+    // Parse phone number using libphonenumber
+    const parsed = parsePhoneNumber(data.thsFeePayerPhoneNumber);
+    const countryCodeInput = document.getElementById('legalFeeOtherTelCountryCode');
+    const phoneInput = document.getElementById('legalFeeOtherTel');
+    
+    if (parsed && countryCodeInput && phoneInput) {
+      // Use setPhoneCode if available to format with flag and country name
+      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
+        setPhoneCode('legalFeeOtherTelCountryCode', parsed.isoCode);
+      } else {
+        // Fallback: set phone code directly
+        countryCodeInput.dataset.phoneCode = parsed.countryCode;
+        countryCodeInput.value = parsed.countryCode;
       }
-      if (phoneInput) phoneInput.value = phoneMatch[2];
-    } else if (data.thsFeePayerPhoneNumber) {
-      const phoneInput = document.getElementById('legalFeeOtherTel');
-      if (phoneInput) phoneInput.value = data.thsFeePayerPhoneNumber;
+      phoneInput.value = parsed.nationalNumber;
+    } else if (phoneInput) {
+      // Fallback if parsing fails
+      phoneInput.value = data.thsFeePayerPhoneNumber;
     }
   }
   if (data.thsFeePayerEmail) {
@@ -1755,20 +1792,24 @@ function populateFormFromSubmission(data) {
     if (input) input.value = data.thsFeeEmployersAcocuntsEmail;
   }
   if (data.thsFeeEmployersAccountsContactPhone) {
-    // Parse phone number and country code
-    const phoneMatch = data.thsFeeEmployersAccountsContactPhone?.match(/^(\+\d+)(.+)$/);
-    if (phoneMatch) {
-      const countryCodeInput = document.getElementById('legalFeeEmployerTelCountryCode');
-      const phoneInput = document.getElementById('legalFeeEmployerTel');
-      if (countryCodeInput) {
-        countryCodeInput.dataset.phoneCode = phoneMatch[1];
-        // You may want to format this better with the country name
-        countryCodeInput.value = phoneMatch[1];
+    // Parse phone number using libphonenumber
+    const parsed = parsePhoneNumber(data.thsFeeEmployersAccountsContactPhone);
+    const countryCodeInput = document.getElementById('legalFeeEmployerTelCountryCode');
+    const phoneInput = document.getElementById('legalFeeEmployerTel');
+    
+    if (parsed && countryCodeInput && phoneInput) {
+      // Use setPhoneCode if available to format with flag and country name
+      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
+        setPhoneCode('legalFeeEmployerTelCountryCode', parsed.isoCode);
+      } else {
+        // Fallback: set phone code directly
+        countryCodeInput.dataset.phoneCode = parsed.countryCode;
+        countryCodeInput.value = parsed.countryCode;
       }
-      if (phoneInput) phoneInput.value = phoneMatch[2];
-    } else if (data.thsFeeEmployersAccountsContactPhone) {
-      const phoneInput = document.getElementById('legalFeeEmployerTel');
-      if (phoneInput) phoneInput.value = data.thsFeeEmployersAccountsContactPhone;
+      phoneInput.value = parsed.nationalNumber;
+    } else if (phoneInput) {
+      // Fallback if parsing fails
+      phoneInput.value = data.thsFeeEmployersAccountsContactPhone;
     }
   }
   if (data.thsFeeEmployersAccountsContactName) {
@@ -1826,19 +1867,24 @@ function populateFormFromSubmission(data) {
     }
   }
   if (data.sdltFeePayerPhone) {
-    // Parse phone number and country code
-    const phoneMatch = data.sdltFeePayerPhone?.match(/^(\+\d+)(.+)$/);
-    if (phoneMatch) {
-      const countryCodeInput = document.getElementById('sdltFeeOtherTelCountryCode');
-      const phoneInput = document.getElementById('sdltFeeOtherTel');
-      if (countryCodeInput) {
-        countryCodeInput.dataset.phoneCode = phoneMatch[1];
-        countryCodeInput.value = phoneMatch[1];
+    // Parse phone number using libphonenumber
+    const parsed = parsePhoneNumber(data.sdltFeePayerPhone);
+    const countryCodeInput = document.getElementById('sdltFeeOtherTelCountryCode');
+    const phoneInput = document.getElementById('sdltFeeOtherTel');
+    
+    if (parsed && countryCodeInput && phoneInput) {
+      // Use setPhoneCode if available to format with flag and country name
+      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
+        setPhoneCode('sdltFeeOtherTelCountryCode', parsed.isoCode);
+      } else {
+        // Fallback: set phone code directly
+        countryCodeInput.dataset.phoneCode = parsed.countryCode;
+        countryCodeInput.value = parsed.countryCode;
       }
-      if (phoneInput) phoneInput.value = phoneMatch[2];
-    } else if (data.sdltFeePayerPhone) {
-      const phoneInput = document.getElementById('sdltFeeOtherTel');
-      if (phoneInput) phoneInput.value = data.sdltFeePayerPhone;
+      phoneInput.value = parsed.nationalNumber;
+    } else if (phoneInput) {
+      // Fallback if parsing fails
+      phoneInput.value = data.sdltFeePayerPhone;
     }
   }
   if (data.sdltFeePayerEmail) {
@@ -1850,20 +1896,24 @@ function populateFormFromSubmission(data) {
     if (input) input.value = data.sdltFeeEmployersAccountEmail;
   }
   if (data.sdltFeeEmployersAccountPhone) {
-    // Parse phone number and country code
-    const phoneMatch = data.sdltFeeEmployersAccountPhone?.match(/^(\+\d+)(.+)$/);
-    if (phoneMatch) {
-      const countryCodeInput = document.getElementById('sdltFeeEmployerTelCountryCode');
-      const phoneInput = document.getElementById('sdltFeeEmployerTel');
-      if (countryCodeInput) {
-        countryCodeInput.dataset.phoneCode = phoneMatch[1];
-        // You may want to format this better with the country name
-        countryCodeInput.value = phoneMatch[1];
+    // Parse phone number using libphonenumber
+    const parsed = parsePhoneNumber(data.sdltFeeEmployersAccountPhone);
+    const countryCodeInput = document.getElementById('sdltFeeEmployerTelCountryCode');
+    const phoneInput = document.getElementById('sdltFeeEmployerTel');
+    
+    if (parsed && countryCodeInput && phoneInput) {
+      // Use setPhoneCode if available to format with flag and country name
+      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
+        setPhoneCode('sdltFeeEmployerTelCountryCode', parsed.isoCode);
+      } else {
+        // Fallback: set phone code directly
+        countryCodeInput.dataset.phoneCode = parsed.countryCode;
+        countryCodeInput.value = parsed.countryCode;
       }
-      if (phoneInput) phoneInput.value = phoneMatch[2];
-    } else if (data.sdltFeeEmployersAccountPhone) {
-      const phoneInput = document.getElementById('sdltFeeEmployerTel');
-      if (phoneInput) phoneInput.value = data.sdltFeeEmployersAccountPhone;
+      phoneInput.value = parsed.nationalNumber;
+    } else if (phoneInput) {
+      // Fallback if parsing fails
+      phoneInput.value = data.sdltFeeEmployersAccountPhone;
     }
   }
   if (data.sdltFeeEmployerAccountsContactName) {
@@ -4115,6 +4165,66 @@ function buildIdEntries() {
 }
 
 // ===== UTILITY FUNCTIONS =====
+
+/**
+ * Parse phone number using google-libphonenumber and extract country code and national number
+ * @param {string} phoneNumber - Full phone number with country code (e.g., "+441209203211")
+ * @returns {Object|null} - { countryCode: "+44", nationalNumber: "1209203211", isoCode: "GB" } or null if parsing fails
+ */
+function parsePhoneNumber(phoneNumber) {
+  if (!phoneNumber || !phoneNumber.trim()) {
+    return null;
+  }
+  
+  // Check if libphonenumber is loaded
+  if (typeof libphonenumber === 'undefined') {
+    console.warn('⚠️ libphonenumber not loaded, cannot parse phone number');
+    return null;
+  }
+  
+  try {
+    const phoneUtil = libphonenumber.PhoneNumberUtil.getInstance();
+    const cleanPhone = phoneNumber.trim();
+    
+    // Parse the number
+    let parsedNumber = null;
+    
+    if (cleanPhone.startsWith('+')) {
+      try {
+        parsedNumber = phoneUtil.parseAndKeepRawInput(cleanPhone, null);
+      } catch (e) {
+        console.warn('Failed to parse international number:', e.message);
+        return null;
+      }
+    } else {
+      // Try common regions
+      const commonRegions = ['GB', 'US', 'CA', 'AU', 'IE', 'FR', 'DE'];
+      for (const region of commonRegions) {
+        try {
+          parsedNumber = phoneUtil.parseAndKeepRawInput(cleanPhone, region);
+          if (phoneUtil.isValidNumber(parsedNumber)) {
+            break;
+          }
+          parsedNumber = null;
+        } catch (e) {
+          continue;
+        }
+      }
+    }
+    
+    if (parsedNumber) {
+      const countryCode = '+' + parsedNumber.getCountryCode();
+      const nationalNumber = parsedNumber.getNationalNumber().toString();
+      // Get ISO country code
+      const regionCode = phoneUtil.getRegionCodeForNumber(parsedNumber);
+      return { countryCode, nationalNumber, isoCode: regionCode || null };
+    }
+  } catch (error) {
+    console.warn('Error parsing phone number:', error);
+  }
+  
+  return null;
+}
 
 /**
  * Validate phone number using google-libphonenumber
