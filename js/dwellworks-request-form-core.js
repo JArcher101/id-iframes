@@ -3889,7 +3889,8 @@ function buildIdEntries() {
       email: tenant1Email,
       mobileNumber: tenant1Mobile,
       entityNumber: undefined,
-      businessName: undefined
+      businessName: undefined,
+      status: ["Pending"]
     });
   }
   
@@ -3919,6 +3920,7 @@ function buildIdEntries() {
         cashierLog: [createCashierLogEntry()],
         matterDescription: "SDLT Submission",
         relation: "Our client",
+        status: ["Pending"],
         idCheckReference: tenant1CurrentAddress ? buildIdCheckReference(tenant1CurrentAddress) : undefined,
         surname: tenant2LastName,
         firstName: tenant2FirstName,
@@ -3969,7 +3971,8 @@ function buildIdEntries() {
       email: undefined,
       mobileNumber: undefined,
       entityNumber: employerNumber || undefined,
-      businessName: employerName
+      businessName: employerName,
+      status: ["Pending"]
     });
   }
   
@@ -4010,7 +4013,8 @@ function buildIdEntries() {
         email: otherEmail,
         mobileNumber: otherTel,
         entityNumber: isBusiness ? otherDobEntity : undefined,
-        businessName: isBusiness ? otherName : undefined
+        businessName: isBusiness ? otherName : undefined,
+        status: ["Pending"]
       };
       entries.push(entry);
     }
@@ -4053,7 +4057,8 @@ function buildIdEntries() {
         email: otherEmail,
         mobileNumber: otherTel,
         entityNumber: isBusiness ? otherDobEntity : undefined,
-        businessName: isBusiness ? otherName : undefined
+        businessName: isBusiness ? otherName : undefined,
+        status: ["Pending"]
       };
       entries.push(entry);
     }
@@ -4096,7 +4101,8 @@ function buildIdEntries() {
         email: otherEmail,
         mobileNumber: otherTel,
         entityNumber: isBusiness ? otherDobEntity : undefined,
-        businessName: isBusiness ? otherName : undefined
+        businessName: isBusiness ? otherName : undefined,
+        status: ["Pending"]
       };
       entries.push(entry);
     }

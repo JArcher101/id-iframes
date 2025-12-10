@@ -1334,7 +1334,8 @@
             let lastBlueMessageIndex = -1;
             for (let i = allMessages.length - 1; i >= 0; i--) {
                 const t = (allMessages[i].type || '').toLowerCase();
-                if (t !== (whiteType || '').toLowerCase() && t !== 'system') {
+                const u = (allMessages[i].user || '').toLowerCase();
+                if (t !== (whiteType || '').toLowerCase() && t !== 'system' && u !== 'system') {
                     lastBlueMessageIndex = i;
                     break;
                 }
@@ -1342,7 +1343,8 @@
             
             const messageDiv = document.createElement('div');
             const msgTypeLower = (message.type || '').toLowerCase();
-            const isSystem = msgTypeLower === 'system';
+            const userLower = (message.user || '').toLowerCase();
+            const isSystem = msgTypeLower === 'system' || userLower === 'system';
             const isWhiteCard = message.type === whiteType;
             if (isSystem) {
                 messageDiv.className = 'message system';
@@ -1396,7 +1398,8 @@
             let lastBlueMessageIndex = -1;
             for (let i = allMessages.length - 1; i >= 0; i--) {
                 const t = (allMessages[i].type || '').toLowerCase();
-                if (t !== (whiteType || '').toLowerCase() && t !== 'system') {
+                const u = (allMessages[i].user || '').toLowerCase();
+                if (t !== (whiteType || '').toLowerCase() && t !== 'system' && u !== 'system') {
                     lastBlueMessageIndex = i;
                     break;
                 }
@@ -1404,7 +1407,8 @@
             
             const messageDiv = document.createElement('div');
             const msgTypeLower = (message.type || '').toLowerCase();
-            const isSystem = msgTypeLower === 'system';
+            const userLower = (message.user || '').toLowerCase();
+            const isSystem = msgTypeLower === 'system' || userLower === 'system';
             const isWhiteCard = message.type === whiteType;
             if (isSystem) {
                 messageDiv.className = 'message system';
@@ -2344,7 +2348,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '3cc29f7';
+    window.__IFRAME_VERSION__ = '63c4016';
     console.log('[message-iframe] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
