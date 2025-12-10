@@ -844,9 +844,11 @@ function updateLeaseUploadUI(fileName) {
 let additionalDocumentCounter = 0;
 
 function addAnotherDocument() {
+  // In edit mode, this function should never be called (button is hidden)
+  // But add safety check just in case - silently return without error
   if (formState.isEditMode) {
-    showError('Cannot add additional documents in edit mode. Please use the documents viewer to add additional documents.');
-    return;
+    console.warn('addAnotherDocument called in edit mode - this should not happen');
+    return; // Silently return, don't show error as user didn't intentionally trigger this
   }
   if (formState.additionalDocuments.length >= 10) {
     showError('Maximum 10 additional documents allowed');
@@ -1924,10 +1926,10 @@ function updateUIForEditMode(data) {
       const docCard = document.createElement('div');
       docCard.className = 'existing-document-card';
       docCard.style.cssText = 'padding: 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; margin-top: 8px;';
+      // Don't show description for lease document - the note is held separately in leaseNote field
       docCard.innerHTML = `
         <div style="font-weight: 600; color: #003c71; margin-bottom: 4px;">${data.leaseAgreement.document || 'Lease Agreement'}</div>
         <div style="font-size: 0.85rem; color: #6c757d;">${data.leaseAgreement.data?.name || data.leaseAgreement.name || 'Document'}</div>
-        ${data.leaseAgreement.description ? `<div style="font-size: 0.85rem; color: #6c757d; margin-top: 4px;">${data.leaseAgreement.description}</div>` : ''}
       `;
       leaseSection.appendChild(docCard);
     }
@@ -2895,11 +2897,12 @@ function collectDocuments() {
   uploadedDocs.forEach((doc) => {
     // Check if this is the lease document (identified by isLease flag)
     if (doc.isLease === true) {
-      // Lease document - set document to "Lease Agreement" and description to file name
+      // Lease document - set document to "Lease Agreement"
+      // Don't set description - the lease note is held separately in leaseAgreementNote field
       leaseAgreement = {
         ...doc,
         document: "Lease Agreement",
-        description: doc.data?.name || doc.name || undefined
+        description: undefined // Lease note is separate, don't duplicate filename as description
       };
     } else {
       // Additional document - pass through full object structure
