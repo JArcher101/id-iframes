@@ -1526,7 +1526,27 @@ function populateFormFromSubmission(data) {
   }
   if (data.lesseeDateOfBirthEntityNumber) {
     const input = document.getElementById('leaseOtherDobEntity');
-    if (input) input.value = data.lesseeDateOfBirthEntityNumber;
+    if (input) {
+      // If it's an ISO date string, convert to DD-MM-YYYY format for display
+      // Otherwise keep as-is (entity number)
+      if (data.lesseeDateOfBirthEntityNumber.includes('T') || data.lesseeDateOfBirthEntityNumber.match(/^\d{4}-\d{2}-\d{2}/)) {
+        try {
+          const date = new Date(data.lesseeDateOfBirthEntityNumber);
+          if (!isNaN(date.getTime())) {
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const year = String(date.getUTCFullYear());
+            input.value = `${day}-${month}-${year}`;
+          } else {
+            input.value = data.lesseeDateOfBirthEntityNumber;
+          }
+        } catch (e) {
+          input.value = data.lesseeDateOfBirthEntityNumber;
+        }
+      } else {
+        input.value = data.lesseeDateOfBirthEntityNumber;
+      }
+    }
   }
   if (data.lesseePhoneNumber) {
     // Parse phone number and country code
@@ -1559,14 +1579,10 @@ function populateFormFromSubmission(data) {
     if (input) input.value = data.tenantLastName;
   }
   if (data.tenantDateOfBirth) {
-    // Parse DD-MM-YYYY and populate DOB inputs
-    const dobParts = data.tenantDateOfBirth.split(/[-\/]/);
-    if (dobParts.length === 3) {
-      const day = dobParts[0].padStart(2, '0');
-      const month = dobParts[1].padStart(2, '0');
-      const year = dobParts[2];
-      const dobStr = day + month + year;
-      for (let i = 0; i < 8 && i < dobStr.length; i++) {
+    // Parse Wix date (ISO) or other formats and populate DOB inputs
+    const dobStr = parseDateForForm(data.tenantDateOfBirth);
+    if (dobStr && dobStr.length === 8) {
+      for (let i = 0; i < 8; i++) {
         const input = document.getElementById(`tenant1Dob${i + 1}`);
         if (input) input.value = dobStr[i];
       }
@@ -1645,13 +1661,10 @@ function populateFormFromSubmission(data) {
       if (input) input.value = data.secondTenantLastName;
     }
     if (data.secondTenantDateOfBirth) {
-      const dobParts = data.secondTenantDateOfBirth.split(/[-\/]/);
-      if (dobParts.length === 3) {
-        const day = dobParts[0].padStart(2, '0');
-        const month = dobParts[1].padStart(2, '0');
-        const year = dobParts[2];
-        const dobStr = day + month + year;
-        for (let i = 0; i < 8 && i < dobStr.length; i++) {
+      // Parse Wix date (ISO) or other formats and populate DOB inputs
+      const dobStr = parseDateForForm(data.secondTenantDateOfBirth);
+      if (dobStr && dobStr.length === 8) {
+        for (let i = 0; i < 8; i++) {
           const input = document.getElementById(`tenant2Dob${i + 1}`);
           if (input) input.value = dobStr[i];
         }
@@ -1693,7 +1706,27 @@ function populateFormFromSubmission(data) {
   }
   if (data.thsFeePayerDateOfBirthEntityNumber) {
     const input = document.getElementById('legalFeeOtherDobEntity');
-    if (input) input.value = data.thsFeePayerDateOfBirthEntityNumber;
+    if (input) {
+      // If it's an ISO date string, convert to DD-MM-YYYY format for display
+      // Otherwise keep as-is (entity number)
+      if (data.thsFeePayerDateOfBirthEntityNumber.includes('T') || data.thsFeePayerDateOfBirthEntityNumber.match(/^\d{4}-\d{2}-\d{2}/)) {
+        try {
+          const date = new Date(data.thsFeePayerDateOfBirthEntityNumber);
+          if (!isNaN(date.getTime())) {
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const year = String(date.getUTCFullYear());
+            input.value = `${day}-${month}-${year}`;
+          } else {
+            input.value = data.thsFeePayerDateOfBirthEntityNumber;
+          }
+        } catch (e) {
+          input.value = data.thsFeePayerDateOfBirthEntityNumber;
+        }
+      } else {
+        input.value = data.thsFeePayerDateOfBirthEntityNumber;
+      }
+    }
   }
   if (data.thsFeePayerPhoneNumber) {
     // Parse phone number and country code
@@ -1768,7 +1801,27 @@ function populateFormFromSubmission(data) {
   }
   if (data.sdltFeePayerDateOfBirthEntityNumber) {
     const input = document.getElementById('sdltFeeOtherDobEntity');
-    if (input) input.value = data.sdltFeePayerDateOfBirthEntityNumber;
+    if (input) {
+      // If it's an ISO date string, convert to DD-MM-YYYY format for display
+      // Otherwise keep as-is (entity number)
+      if (data.sdltFeePayerDateOfBirthEntityNumber.includes('T') || data.sdltFeePayerDateOfBirthEntityNumber.match(/^\d{4}-\d{2}-\d{2}/)) {
+        try {
+          const date = new Date(data.sdltFeePayerDateOfBirthEntityNumber);
+          if (!isNaN(date.getTime())) {
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const year = String(date.getUTCFullYear());
+            input.value = `${day}-${month}-${year}`;
+          } else {
+            input.value = data.sdltFeePayerDateOfBirthEntityNumber;
+          }
+        } catch (e) {
+          input.value = data.sdltFeePayerDateOfBirthEntityNumber;
+        }
+      } else {
+        input.value = data.sdltFeePayerDateOfBirthEntityNumber;
+      }
+    }
   }
   if (data.sdltFeePayerPhone) {
     // Parse phone number and country code
@@ -2609,7 +2662,7 @@ function collectFormData() {
     // Tenant Details
     tenantsFirstName: document.getElementById('tenant1FirstName').value,
     tenantLastName: document.getElementById('tenant1LastName').value,
-    tenantDateOfBirth: getDOBValue(1) || undefined,
+    tenantDateOfBirth: convertDOBToWixDate(getDOBValue(1)),
     tenantsMobileNumber: formatPhone(
       document.getElementById('tenant1MobileCountryCode'),
       document.getElementById('tenant1Mobile')
@@ -2625,7 +2678,7 @@ function collectFormData() {
     secondTenant: formState.addSecondTenant === true ? true : undefined,
     secondTenantFirstName: formState.addSecondTenant ? document.getElementById('tenant2FirstName').value : undefined,
     secondTenantLastName: formState.addSecondTenant ? document.getElementById('tenant2LastName').value : undefined,
-    secondTenantDateOfBirth: formState.addSecondTenant ? (getDOBValue(2) || undefined) : undefined,
+    secondTenantDateOfBirth: formState.addSecondTenant ? convertDOBToWixDate(getDOBValue(2)) : undefined,
     secondTenantMobile: formState.addSecondTenant ? formatPhone(
       document.getElementById('tenant2MobileCountryCode'),
       document.getElementById('tenant2Mobile')
@@ -2646,7 +2699,11 @@ function collectFormData() {
     // Lease
     lessee: leaseUnder ? getRadioFriendlyLabel(leaseUnder) : undefined,
     lesseeOther: leaseUnder === 'other' ? document.getElementById('leaseOtherName').value : undefined,
-    lesseeDateOfBirthEntityNumber: leaseUnder === 'other' ? (document.getElementById('leaseOtherDobEntity').value || undefined) : undefined,
+    lesseeDateOfBirthEntityNumber: leaseUnder === 'other' ? (() => {
+      const value = document.getElementById('leaseOtherDobEntity').value;
+      if (!value) return undefined;
+      return isDateValue(value) ? convertDOBToWixDate(value) : value;
+    })() : undefined,
     lesseePhoneNumber: leaseUnder === 'other' ? formatPhone(
       document.getElementById('leaseOtherTelCountryCode'),
       document.getElementById('leaseOtherTel')
@@ -2658,7 +2715,11 @@ function collectFormData() {
     // Legal Fee (THS Fee)
     thsFeePayer: legalFeePayee ? getRadioFriendlyLabel(legalFeePayee) : undefined,
     thsFeePayerOther: legalFeePayee === 'other' ? document.getElementById('legalFeeOtherName').value : undefined,
-    thsFeePayerDateOfBirthEntityNumber: legalFeePayee === 'other' ? (document.getElementById('legalFeeOtherDobEntity').value || undefined) : undefined,
+    thsFeePayerDateOfBirthEntityNumber: legalFeePayee === 'other' ? (() => {
+      const value = document.getElementById('legalFeeOtherDobEntity').value;
+      if (!value) return undefined;
+      return isDateValue(value) ? convertDOBToWixDate(value) : value;
+    })() : undefined,
     thsFeePayerPhoneNumber: legalFeePayee === 'other' ? formatPhone(
       document.getElementById('legalFeeOtherTelCountryCode'),
       document.getElementById('legalFeeOtherTel')
@@ -2676,7 +2737,11 @@ function collectFormData() {
     // SDLT Fee
     sdltFeePayer: sdltFeePayee ? getRadioFriendlyLabel(sdltFeePayee) : undefined,
     sdltFeePayerOther: sdltFeePayee === 'other' ? document.getElementById('sdltFeeOtherName').value : undefined,
-    sdltFeePayerDateOfBirthEntityNumber: sdltFeePayee === 'other' ? (document.getElementById('sdltFeeOtherDobEntity').value || undefined) : undefined,
+    sdltFeePayerDateOfBirthEntityNumber: sdltFeePayee === 'other' ? (() => {
+      const value = document.getElementById('sdltFeeOtherDobEntity').value;
+      if (!value) return undefined;
+      return isDateValue(value) ? convertDOBToWixDate(value) : value;
+    })() : undefined,
     sdltFeePayerEmail: sdltFeePayee === 'other' ? (document.getElementById('sdltFeeOtherEmail').value || undefined) : undefined,
     sdltFeePayerPhone: sdltFeePayee === 'other' ? formatPhone(
       document.getElementById('sdltFeeOtherTelCountryCode'),
@@ -3394,10 +3459,10 @@ function generateBase62Id() {
  * Format name as "A N Other" style (first letter of each name part)
  */
 function formatNameAsInitials(firstName, lastName) {
+  // Format as "FirstInitial FullSurname" (e.g., "S Stewart" from "Shay Stewart")
   const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
-  const lastParts = lastName ? lastName.split(' ') : [];
-  const lastInitials = lastParts.map(part => part.charAt(0).toUpperCase()).join(' ');
-  return `${firstInitial} ${lastInitials}`.trim();
+  const fullSurname = lastName || '';
+  return `${firstInitial} ${fullSurname}`.trim();
 }
 
 /**
@@ -3421,18 +3486,29 @@ function isDateValue(value) {
 
 /**
  * Convert DOB from various formats to dd-mm-yyyy
+ * Correctly handles DD/MM/YYYY format (not MM/DD/YYYY)
  */
 function formatDOBToDDMMYYYY(dobValue) {
   if (!dobValue) return undefined;
   
-  // If already in dd/mm/yyyy format, convert to dd-mm-yyyy
+  // If already in dd/mm/yyyy format, parse as DD/MM/YYYY and convert to dd-mm-yyyy
   if (dobValue.includes('/')) {
-    return dobValue.replace(/\//g, '-');
+    const parts = dobValue.split('/');
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      let year = parts[2];
+      // Normalize to 4-digit year
+      if (year.length === 2) {
+        const yearNum = parseInt(year);
+        year = yearNum < 50 ? `20${year}` : `19${year}`;
+      }
+      return `${day}-${month}-${year}`;
+    }
   }
   
-  // If in dd-mm-yyyy format, return as is
+  // If in dd-mm-yyyy format, return as is (but normalize year)
   if (dobValue.includes('-') && dobValue.match(/^\d{1,2}-\d{1,2}-\d{2,4}$/)) {
-    // Normalize to 4-digit year
     const parts = dobValue.split('-');
     if (parts[2].length === 2) {
       const year = parseInt(parts[2]);
@@ -3441,21 +3517,154 @@ function formatDOBToDDMMYYYY(dobValue) {
     return parts.join('-');
   }
   
-  // If ddmmyyyy format (8 digits)
+  // If ddmmyyyy format (8 digits) - parse as DDMMYYYY
   if (dobValue.match(/^\d{8}$/)) {
-    return `${dobValue.substring(0, 2)}-${dobValue.substring(2, 4)}-${dobValue.substring(4, 8)}`;
+    const day = dobValue.substring(0, 2);
+    const month = dobValue.substring(2, 4);
+    const year = dobValue.substring(4, 8);
+    return `${day}-${month}-${year}`;
   }
   
-  // Try to parse other formats
-  const date = new Date(dobValue);
-  if (!isNaN(date.getTime())) {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
+  // Try to parse as DD/MM/YYYY or DD-MM-YYYY explicitly
+  const ddmmMatch = dobValue.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (ddmmMatch) {
+    const day = ddmmMatch[1].padStart(2, '0');
+    const month = ddmmMatch[2].padStart(2, '0');
+    let year = ddmmMatch[3];
+    if (year.length === 2) {
+      const yearNum = parseInt(year);
+      year = yearNum < 50 ? `20${year}` : `19${year}`;
+    }
     return `${day}-${month}-${year}`;
   }
   
   return dobValue; // Return as-is if can't parse
+}
+
+/**
+ * Convert DOB to Wix date object format (ISO string with time)
+ * @param {string} dobValue - Date in DD/MM/YYYY, DD-MM-YYYY, or DDMMYYYY format
+ * @returns {string|undefined} - ISO date string with time (YYYY-MM-DDTHH:mm:ss.sssZ) or undefined
+ */
+function convertDOBToWixDate(dobValue) {
+  if (!dobValue) return undefined;
+  
+  // First normalize to DD-MM-YYYY format
+  const normalized = formatDOBToDDMMYYYY(dobValue);
+  if (!normalized) return undefined;
+  
+  // Parse DD-MM-YYYY format
+  const parts = normalized.split('-');
+  if (parts.length !== 3) return undefined;
+  
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1; // JavaScript months are 0-indexed
+  const year = parseInt(parts[2], 10);
+  
+  // Validate date
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return undefined;
+  if (day < 1 || day > 31 || month < 0 || month > 11 || year < 1900 || year > 2100) return undefined;
+  
+  // Create date object at midnight UTC
+  const date = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+  
+  // Validate the date is valid (catches invalid dates like 31/02/2000)
+  if (isNaN(date.getTime())) return undefined;
+  
+  // Return ISO string (Wix date format)
+  return date.toISOString();
+}
+
+/**
+ * Convert Wix date (ISO string) or other date formats back to DDMMYYYY for form population
+ * @param {string} dateValue - Date in ISO format, DD-MM-YYYY, DD/MM/YYYY, or DDMMYYYY format
+ * @returns {string|null} - 8-character string in DDMMYYYY format, or null if invalid
+ */
+function parseDateForForm(dateValue) {
+  if (!dateValue) return null;
+  
+  // If ISO format (YYYY-MM-DDTHH:mm:ss.sssZ)
+  if (dateValue.includes('T') || dateValue.match(/^\d{4}-\d{2}-\d{2}/)) {
+    try {
+      const date = new Date(dateValue);
+      if (!isNaN(date.getTime())) {
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const year = String(date.getUTCFullYear());
+        return day + month + year;
+      }
+    } catch (e) {
+      // Fall through to other parsing methods
+    }
+  }
+  
+  // If DD-MM-YYYY or DD/MM/YYYY format
+  const parts = dateValue.split(/[-\/]/);
+  if (parts.length === 3) {
+    const day = parts[0].padStart(2, '0');
+    const month = parts[1].padStart(2, '0');
+    let year = parts[2];
+    // Normalize to 4-digit year
+    if (year.length === 2) {
+      const yearNum = parseInt(year);
+      year = yearNum < 50 ? `20${year}` : `19${year}`;
+    }
+    return day + month + year;
+  }
+  
+  // If already DDMMYYYY format (8 digits)
+  if (dateValue.match(/^\d{8}$/)) {
+    return dateValue;
+  }
+  
+  return null;
+}
+
+/**
+ * Format Companies House registered_office_address to Thirdfort API format
+ * - Companies House uses: premises, address_line_1, address_line_2, locality, postal_code
+ * - Thirdfort uses: building_name, building_number, street, sub_street, town, postcode
+ */
+function formatCompaniesHouseToThirdfort(companiesHouseAddress) {
+  if (!companiesHouseAddress) return null;
+  
+  // Companies House format breakdown:
+  // premises: Building number (e.g., "94")
+  // address_line_1: Building name or street (e.g., "Chynoweth", "Southgate Street")
+  // address_line_2: Street or sub-street (e.g., "Chapel Street")
+  // locality: Town/City (e.g., "Redruth")
+  // postal_code: Postcode
+  
+  // Detect if address_line_1 is a street name or building name
+  // If it contains "Street", "Road", "Avenue", "Lane", etc., it's likely a street
+  const streetKeywords = /\b(street|road|avenue|lane|drive|close|way|place|terrace|crescent|square|court|grove|park|gardens?|mews|hill|row|walk|view|rise)\b/i;
+  const isLine1Street = streetKeywords.test(companiesHouseAddress.address_line_1 || '');
+  
+  let buildingNumber = companiesHouseAddress.premises || '';
+  let buildingName = '';
+  let street = '';
+  let subStreet = '';
+  
+  if (isLine1Street) {
+    // address_line_1 is the street, address_line_2 is sub-street or additional info
+    street = companiesHouseAddress.address_line_1 || '';
+    subStreet = companiesHouseAddress.address_line_2 || '';
+  } else {
+    // address_line_1 is building name, address_line_2 is the street
+    buildingName = companiesHouseAddress.address_line_1 || '';
+    street = companiesHouseAddress.address_line_2 || '';
+  }
+  
+  return {
+    building_name: buildingName,
+    building_number: buildingNumber,
+    flat_number: '',
+    postcode: companiesHouseAddress.postal_code || '',
+    street: street,
+    sub_street: subStreet,
+    town: companiesHouseAddress.locality || '',
+    country: 'GBR'
+  };
 }
 
 /**
@@ -3666,7 +3875,7 @@ function buildIdEntries() {
       matterNumber: "999", // This should come from parent/submitter data
       name: formatNameAsInitials(tenant1FirstName, tenant1LastName),
       business: false,
-      dateOfBirth: tenant1DOB ? formatDOBToDDMMYYYY(tenant1DOB) : undefined,
+      dateOfBirth: convertDOBToWixDate(tenant1DOB),
       currentAddressNEW: tenant1CurrentAddress,
       previousAddressNEW: tenant1PreviousAddress,
       companyDetails: undefined,
@@ -3702,7 +3911,7 @@ function buildIdEntries() {
         matterNumber: "999",
         name: formatNameAsInitials(tenant2FirstName, tenant2LastName),
         business: false,
-        dateOfBirth: tenant2DOB ? formatDOBToDDMMYYYY(tenant2DOB) : undefined,
+        dateOfBirth: convertDOBToWixDate(tenant2DOB),
         currentAddressNEW: tenant1CurrentAddress, // Same as tenant 1
         previousAddressNEW: tenant1PreviousAddress, // Same as tenant 1
         companyDetails: undefined,
@@ -3731,6 +3940,14 @@ function buildIdEntries() {
   const normalizedLeaseUnder = leaseUnder === 'tenants-employer' ? 'tenant-employer' : leaseUnder;
   const employerSelected = normalizedLeaseUnder === 'tenant-employer' || legalFeePayee === 'tenant-employer' || sdltFeePayee === 'tenant-employer';
   
+  // Get employer address from Companies House registered office address if available
+  const employerAddress = (() => {
+    if (employerCompanyData && employerCompanyData.registered_office_address) {
+      return formatCompaniesHouseToThirdfort(employerCompanyData.registered_office_address);
+    }
+    return undefined;
+  })();
+  
   if (employerName && employerSelected) {
     entries.push({
       title: "BA", // This should come from parent/submitter data
@@ -3739,7 +3956,7 @@ function buildIdEntries() {
       name: employerName, // Full name for business
       business: true,
       dateOfBirth: undefined,
-      currentAddressNEW: undefined,
+      currentAddressNEW: employerAddress,
       previousAddressNEW: undefined,
       companyDetails: employerCompanyData,
       unassigned: true,
@@ -3779,7 +3996,7 @@ function buildIdEntries() {
         matterNumber: "999", // This should come from parent/submitter data
         name: isBusiness ? otherName : formatNameAsInitials(firstName, lastName),
         business: isBusiness,
-        dateOfBirth: isBusiness ? undefined : (otherDobEntity ? formatDOBToDDMMYYYY(otherDobEntity) : undefined),
+        dateOfBirth: isBusiness ? undefined : convertDOBToWixDate(otherDobEntity),
         currentAddressNEW: undefined,
         previousAddressNEW: undefined,
         companyDetails: undefined,
@@ -3822,7 +4039,7 @@ function buildIdEntries() {
         matterNumber: "999", // This should come from parent/submitter data
         name: isBusiness ? otherName : formatNameAsInitials(firstName, lastName),
         business: isBusiness,
-        dateOfBirth: isBusiness ? undefined : (otherDobEntity ? formatDOBToDDMMYYYY(otherDobEntity) : undefined),
+        dateOfBirth: isBusiness ? undefined : convertDOBToWixDate(otherDobEntity),
         currentAddressNEW: undefined,
         previousAddressNEW: undefined,
         companyDetails: undefined,
@@ -3865,7 +4082,7 @@ function buildIdEntries() {
         matterNumber: "999", // This should come from parent/submitter data
         name: isBusiness ? otherName : formatNameAsInitials(firstName, lastName),
         business: isBusiness,
-        dateOfBirth: isBusiness ? undefined : (otherDobEntity ? formatDOBToDDMMYYYY(otherDobEntity) : undefined),
+        dateOfBirth: isBusiness ? undefined : convertDOBToWixDate(otherDobEntity),
         currentAddressNEW: undefined,
         previousAddressNEW: undefined,
         companyDetails: undefined,
