@@ -2994,6 +2994,19 @@
             updateUploadButton();
         }
 
+        function createInitialSdltCard() {
+            // Create the first SDLT uploader card by default
+            const cardNumber = 1;
+            const card = createSdltCard(cardNumber);
+            uploaderCardsContainer.appendChild(card);
+            uploaderCards.push(card);
+            
+            // Update remove button states (first card should have disabled remove button)
+            updateRemoveButtonStates();
+            
+            updateUploadButton();
+        }
+
         function addAnotherDocument() {
             if (uploaderCards.length >= 10) { // Maximum of 10 documents
                 showError('Maximum of 10 documents allowed.');
@@ -4960,7 +4973,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'ab74d21';
+    window.__IFRAME_VERSION__ = '914a5b0';
     console.log('[document-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
