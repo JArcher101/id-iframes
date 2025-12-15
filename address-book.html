@@ -257,19 +257,93 @@
             cursor: grabbing;
         }
 
-        .delete-btn {
-            background: #e02424;
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            padding: 4px 6px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+            border-radius: 4px;
+        }
+
+        .icon-btn:hover {
+            color: #666;
+            background: #f0f0f0;
+        }
+
+        .icon-btn.delete-icon:hover {
+            color: #e02424;
+            background: #ffe0e0;
+        }
+
+        .icon-btn.edit-icon:hover {
+            color: #003C71;
+            background: #e0e8f0;
+        }
+
+        /* Edit mode styles */
+        .entry-card.editing {
+            border-color: #003C71;
+            background: #f8f9fa;
+        }
+
+        .entry-card.editing .entry-info {
+            display: none;
+        }
+
+        .entry-edit-form {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .entry-card.editing .entry-edit-form {
+            display: flex;
+        }
+
+        .entry-edit-input {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .entry-edit-input:focus {
+            outline: none;
+            border-color: #003C71;
+        }
+
+        .entry-edit-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .confirm-btn {
+            background: #003C71;
             color: white;
             border: none;
-            border-radius: 6px;
-            padding: 6px 12px;
+            border-radius: 4px;
+            padding: 4px 12px;
             font-size: 0.85rem;
             cursor: pointer;
             transition: background 0.2s;
         }
 
-        .delete-btn:hover {
-            background: #c01e1e;
+        .confirm-btn:hover {
+            background: #002a52;
+        }
+
+        .confirm-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
 
         /* New card preview (shown when no matches) */
@@ -417,6 +491,7 @@
         let draggedElement = null;
         let dragOverElement = null;
         let dataLoaded = false;
+        let editingEntryId = null; // Track which entry is being edited
 
         // DOM elements
         const nameInput = document.getElementById('nameInput');
@@ -464,13 +539,23 @@
             });
         }
 
+        // Check if entry already exists
+        function entryExists(name, number) {
+            return entries.some(e => 
+                e.label.toLowerCase() === name.toLowerCase() && 
+                e.value === number
+            );
+        }
+
         // Handle input changes (filtering and add button state)
         function handleInputChange() {
             const name = nameInput.value.trim();
             const number = numberInput.value.trim();
 
-            // Enable add button if both inputs are filled
-            addBtn.disabled = !(name && number);
+            // Enable add button only if both inputs are filled AND entry doesn't already exist
+            const bothFilled = name && number;
+            const exists = bothFilled && entryExists(name, number);
+            addBtn.disabled = !bothFilled || exists;
 
             // Filter and render cards
             filterAndRender();
@@ -482,12 +567,15 @@
             const numberFilter = numberInput.value.trim().toLowerCase();
 
             if (!nameFilter && !numberFilter) {
+                // No filter - show all entries
                 filteredEntries = [...entries];
             } else {
+                // Filter entries based on what's typed
                 filteredEntries = entries.filter(entry => {
-                    const nameMatch = entry.label.toLowerCase().includes(nameFilter);
-                    const numberMatch = entry.value.toLowerCase().includes(numberFilter);
-                    return nameMatch || numberMatch;
+                    const nameMatch = !nameFilter || entry.label.toLowerCase().includes(nameFilter);
+                    const numberMatch = !numberFilter || entry.value.toLowerCase().includes(numberFilter);
+                    // Show entry if it matches all non-empty filters (AND logic)
+                    return nameMatch && numberMatch;
                 });
             }
 
@@ -503,29 +591,38 @@
             cardsList.innerHTML = '';
 
             if (filteredEntries.length === 0) {
-                // Show empty state or new card preview
+                // Show hint card to add new entry
                 const name = nameInput.value.trim();
                 const number = numberInput.value.trim();
+                const bothFilled = name && number;
+                const exists = bothFilled && entryExists(name, number);
 
-                if (name || number) {
-                    // Show new card preview
-                    const preview = document.createElement('div');
-                    preview.className = 'new-card-preview';
-                    preview.innerHTML = `
-                        <div class="new-card-preview-label">New Entry</div>
-                        <div class="new-card-preview-content">
-                            <div class="new-card-preview-name">${name || '(Enter name)'}</div>
-                            <div class="new-card-preview-number">${number || '(Enter number)'}</div>
-                        </div>
-                    `;
-                    cardsList.appendChild(preview);
-                    cardsList.style.display = 'block';
-                    emptyState.style.display = 'none';
-                } else {
-                    // Show empty state
-                    cardsList.style.display = 'none';
-                    emptyState.style.display = 'block';
+                const hintCard = document.createElement('div');
+                hintCard.className = 'new-card-preview';
+                if (exists) {
+                    // Entry already exists - show warning style
+                    hintCard.style.background = '#f8d7da';
+                    hintCard.style.borderColor = '#dc3545';
                 }
+                hintCard.innerHTML = `
+                    <div class="new-card-preview-label" style="${exists ? 'color: #721c24;' : ''}">
+                        ${exists ? 'Entry Already Exists' : bothFilled ? 'New Entry - Click Add to save' : 'No matches found'}
+                    </div>
+                    <div class="new-card-preview-content">
+                        ${bothFilled ? `
+                            <div class="new-card-preview-name">${escapeHtml(name)}</div>
+                            <div class="new-card-preview-number">${escapeHtml(number)}</div>
+                            ${exists ? '<div style="color: #721c24; font-size: 0.85rem; margin-top: 8px;">This entry already exists in the address book.</div>' : ''}
+                        ` : `
+                            <div style="color: #666; font-size: 0.9rem; line-height: 1.5;">
+                                Enter both <strong>name</strong> and <strong>number</strong> above to enable the Add button and create a new entry.
+                            </div>
+                        `}
+                    </div>
+                `;
+                cardsList.appendChild(hintCard);
+                cardsList.style.display = 'block';
+                emptyState.style.display = 'none';
             } else {
                 // Render filtered entries
                 filteredEntries.forEach((entry, index) => {
@@ -540,28 +637,93 @@
         // Create a card element
         function createCard(entry, index) {
             const card = document.createElement('div');
-            card.className = 'entry-card';
-            card.draggable = true;
+            const entryId = entry.label + entry.value;
+            const isEditing = editingEntryId === entryId;
+            
+            card.className = isEditing ? 'entry-card editing' : 'entry-card';
+            card.draggable = !isEditing; // Disable drag when editing
             card.dataset.index = index;
-            card.dataset.entryId = entry.label + entry.value; // Unique identifier
+            card.dataset.entryId = entryId;
+            card.dataset.entryLabel = entry.label;
+            card.dataset.entryValue = entry.value;
 
             card.innerHTML = `
                 <div class="entry-info">
                     <div class="entry-name">${escapeHtml(entry.label)}</div>
                     <div class="entry-number">${escapeHtml(entry.value)}</div>
                 </div>
+                <div class="entry-edit-form">
+                    <input type="text" class="entry-edit-input edit-name-input" value="${escapeHtml(entry.label)}" placeholder="Name">
+                    <input type="text" class="entry-edit-input edit-number-input" value="${escapeHtml(entry.value)}" placeholder="Number">
+                    <div class="entry-edit-actions">
+                        <button class="confirm-btn">Confirm</button>
+                        <button class="icon-btn cancel-edit-btn" style="padding: 4px 8px; font-size: 0.85rem;">Cancel</button>
+                    </div>
+                </div>
                 <div class="entry-actions">
                     <span class="drag-handle">☰</span>
-                    <button class="delete-btn" onclick="handleDelete('${escapeHtml(entry.label)}', '${escapeHtml(entry.value)}')">Delete</button>
+                    <button class="icon-btn edit-icon" title="Edit">✏️</button>
+                    <button class="icon-btn delete-icon" title="Delete">✕</button>
                 </div>
             `;
 
-            // Drag and drop handlers
-            card.addEventListener('dragstart', handleDragStart);
-            card.addEventListener('dragend', handleDragEnd);
-            card.addEventListener('dragover', handleDragOver);
-            card.addEventListener('drop', handleDrop);
-            card.addEventListener('dragleave', handleDragLeave);
+            // Drag and drop handlers (only if not editing)
+            if (!isEditing) {
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+                card.addEventListener('dragover', handleDragOver);
+                card.addEventListener('drop', handleDrop);
+                card.addEventListener('dragleave', handleDragLeave);
+            }
+
+            // Edit button
+            const editBtn = card.querySelector('.edit-icon');
+            editBtn.addEventListener('click', () => handleEdit(entryId));
+
+            // Delete button
+            const deleteBtn = card.querySelector('.delete-icon');
+            deleteBtn.addEventListener('click', () => {
+                handleDelete(entry.label, entry.value);
+            });
+
+            // Enter key to confirm edit and validation
+            if (isEditing) {
+                const nameInput = card.querySelector('.edit-name-input');
+                const numberInput = card.querySelector('.edit-number-input');
+                const confirmBtn = card.querySelector('.confirm-btn');
+                const cancelBtn = card.querySelector('.cancel-edit-btn');
+                
+                const checkCanConfirm = () => {
+                    const name = nameInput.value.trim();
+                    const number = numberInput.value.trim();
+                    // Check if entry exists, but exclude the current entry being edited
+                    const originalEntry = entries.find(e => (e.label + e.value) === entryId);
+                    const exists = entries.some(e => 
+                        e !== originalEntry &&
+                        e.label.toLowerCase() === name.toLowerCase() && 
+                        e.value === number
+                    );
+                    confirmBtn.disabled = !name || !number || exists;
+                };
+                
+                nameInput.addEventListener('input', checkCanConfirm);
+                numberInput.addEventListener('input', checkCanConfirm);
+                checkCanConfirm(); // Initial check
+                
+                nameInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !confirmBtn.disabled) {
+                        handleConfirmEdit(entryId);
+                    }
+                });
+                numberInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !confirmBtn.disabled) {
+                        handleConfirmEdit(entryId);
+                    }
+                });
+                
+                confirmBtn.addEventListener('click', () => handleConfirmEdit(entryId));
+                cancelBtn.addEventListener('click', handleCancelEdit);
+            }
 
             return card;
         }
@@ -655,14 +817,8 @@
                 return;
             }
 
-            // Check if entry already exists
-            const exists = entries.some(e => 
-                e.label.toLowerCase() === name.toLowerCase() && 
-                e.value === number
-            );
-
-            if (exists) {
-                alert('This entry already exists.');
+            // Check if entry already exists (shouldn't happen if button is disabled, but double-check)
+            if (entryExists(name, number)) {
                 return;
             }
 
@@ -688,6 +844,12 @@
             if (confirm(`Delete "${label}"?`)) {
                 entries = entries.filter(e => !(e.label === label && e.value === value));
                 
+                // Clear edit mode if deleting the entry being edited
+                const entryId = label + value;
+                if (editingEntryId === entryId) {
+                    editingEntryId = null;
+                }
+                
                 // Save to history and localStorage
                 saveToHistory();
                 saveToLocalStorage();
@@ -695,6 +857,62 @@
                 // Re-render
                 filterAndRender();
             }
+        }
+
+        function handleEdit(entryId) {
+            // Exit any other edit mode
+            editingEntryId = entryId;
+            filterAndRender();
+        }
+
+        function handleCancelEdit() {
+            editingEntryId = null;
+            filterAndRender();
+        }
+
+        function handleConfirmEdit(entryId) {
+            const card = document.querySelector(`[data-entry-id="${entryId}"]`);
+            if (!card) return;
+
+            const nameInput = card.querySelector('.edit-name-input');
+            const numberInput = card.querySelector('.edit-number-input');
+            
+            const newName = nameInput.value.trim();
+            const newNumber = numberInput.value.trim();
+
+            if (!newName || !newNumber) {
+                return;
+            }
+
+            // Find the original entry
+            const originalEntry = entries.find(e => (e.label + e.value) === entryId);
+            if (!originalEntry) return;
+
+            // Check if the new entry already exists (excluding the current entry)
+            const exists = entries.some(e => 
+                e !== originalEntry &&
+                e.label.toLowerCase() === newName.toLowerCase() && 
+                e.value === newNumber
+            );
+
+            if (exists) {
+                alert('This entry already exists.');
+                return;
+            }
+
+            // Update the entry
+            originalEntry.label = newName;
+            originalEntry.value = newNumber;
+
+            // Exit edit mode
+            editingEntryId = null;
+
+            // Save to history and localStorage
+            saveToHistory();
+            saveToLocalStorage();
+
+            // Re-render
+            filterAndRender();
         }
 
         // Handle save button click
@@ -820,7 +1038,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '570d0cf';
+    window.__IFRAME_VERSION__ = 'd631e54';
     console.log('[address-book] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
