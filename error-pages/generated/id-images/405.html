@@ -1,0 +1,415 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>405 Error - ID Images CDN - Thurstan Hoskin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Transport Heavy - for navigation buttons */
+    @font-face {
+      font-family: 'Transport Heavy';
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+            unicode-range: U+0000-003F, U+0041-FFFF; /* Exclude U+0040 (@ symbol) to fallback to Quicksand */
+            src: url(data:font/truetype;charset=utf-8;base64,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) format('truetype');
+        }
+    
+    /* Rotis Sans Serif Regular - for body text */
+    @font-face {
+      font-family: 'RotisRegular';
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
+      src: url(data:font/truetype;charset=utf-8;base64,PLACEHOLDER_ROTIS_REGULAR_BASE64_HERE) format('truetype');
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: #333;
+    }
+    .header {
+      background: #003c71;
+      padding: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      margin: 0;
+    }
+    .logo img {
+      height: 50px;
+      width: auto;
+      border-radius: 5px;
+      display: block;
+    }
+    .header-nav {
+      display: flex;
+      gap: 20px;
+      margin-right: 10px;
+    }
+    .header-nav a {
+      font-family: 'Transport Heavy', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+      transition: opacity 0.2s;
+      padding: 8px 16px;
+    }
+    .header-nav a:hover {
+      opacity: 0.8;
+    }
+    
+    .system-strip {
+      background: #9D925F; /* THS Gold - Pantone 451C */
+      height: 40px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .system-strip-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px;
+    }
+    
+    .system-icon {
+      flex-shrink: 0;
+      width: 38px;
+      height: 24px;
+    }
+    
+    .system-name {
+      font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: #003c71; /* THS Dark Blue */
+      line-height: 1;
+    }
+    
+    .error-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      background: white;
+    }
+    
+    .error-content {
+      background: white;
+      padding: 60px 40px;
+      max-width: 700px;
+      width: 100%;
+      text-align: center;
+    }
+    
+    .error-emoji {
+      width: 240px;
+      height: 240px;
+      margin: 0 auto 30px;
+      display: block;
+    }
+    
+    .error-emoji svg {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .error-title {
+      font-family: 'Transport Heavy', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 40px;
+      line-height: 1.4;
+    }
+    
+    .error-details {
+      text-align: left;
+      background: #f8f9fa;
+      padding: 30px;
+      margin-bottom: 40px;
+    }
+    
+    .error-code-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .error-code-label {
+      font-family: 'Transport Heavy', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #666;
+    }
+    
+    .error-code-value {
+      font-family: 'Transport Heavy', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #003c71; /* THS Dark Blue */
+      background: white;
+      padding: 8px 16px;
+      border: 2px solid #003c71;
+    }
+    
+    .error-causes {
+      margin-top: 24px;
+    }
+    
+    .causes-title {
+      font-family: 'Transport Heavy', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 16px;
+    }
+    
+    .causes-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .causes-list li {
+      font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      color: #555;
+      line-height: 1.8;
+      padding: 8px 0;
+      padding-left: 24px;
+      position: relative;
+    }
+    
+    .causes-list li:before {
+      content: "\2022";
+      color: #003c71; /* THS Dark Blue */
+      font-weight: bold;
+      font-size: 20px;
+      position: absolute;
+      left: 0;
+    }
+    
+    .footer {
+      background: #003c71; /* THS Dark Blue */
+      padding: 40px 20px;
+      margin-top: auto;
+      text-align: center;
+    }
+    
+    .footer-content {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+    }
+    
+    .footer-logo {
+      margin-bottom: 10px;
+    }
+    
+    .logo-image {
+      width: 80px;
+      height: 80px;
+      display: block;
+      margin: 0 auto;
+    }
+    
+    .footer-text {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+    }
+    
+    .footer-paragraph {
+      color: white;
+      font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0;
+    }
+    
+    .footer-link {
+      color: white;
+      text-decoration: underline;
+      text-decoration-color: white;
+      transition: opacity 0.2s;
+    }
+    
+    .footer-link:hover {
+      opacity: 0.8;
+    }
+    
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    
+    .footer-link-item {
+      color: white;
+      text-decoration: underline;
+      text-decoration-color: white;
+      font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      transition: opacity 0.2s;
+    }
+    
+    .footer-link-item:hover {
+      opacity: 0.8;
+    }
+    
+    @media (max-width: 768px) {
+      .error-content {
+        padding: 40px 24px;
+      }
+      
+      .error-emoji {
+        width: 160px;
+        height: 160px;
+      }
+      
+      .error-title {
+        font-size: 22px;
+      }
+      
+      .error-details {
+        padding: 20px;
+      }
+      
+      .footer {
+        padding: 30px 15px;
+      }
+      
+      .footer-paragraph {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <img src="https://static.wixstatic.com/media/a86acc_e6233985b3d34dceb3c0d44d4c13186e~mv2.png" alt="Thurstan Hoskin" />
+      </div>
+      <nav class="header-nav">
+        <a href="https://www.thurstanhoskin.co.uk">Home</a>
+        <a href="https://www.thurstanhoskin.co.uk/contact-us">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- System Strip -->
+  <div class="system-strip">
+    <div class="system-strip-content">
+      <svg class="system-icon" width="38" height="24" viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Monitor top -->
+        <rect x="4" y="5" width="16" height="1" rx="0.5" fill="none" stroke="#003c71" stroke-width="1.5"/>
+        <!-- Monitor screen with rounded corners -->
+        <rect x="4" y="6" width="16" height="10" rx="1.5" fill="none" stroke="#003c71" stroke-width="1.5"/>
+        <!-- Monitor stand/base -->
+        <rect x="11" y="16" width="2" height="3" fill="none" stroke="#003c71" stroke-width="1.5"/>
+        <rect x="9" y="19" width="6" height="1" rx="0.5" fill="none" stroke="#003c71" stroke-width="1.5"/>
+        <!-- Arrow with rounded corners (10px spacing from monitor) -->
+        <path d="M 30 8 L 34 12 L 30 16" fill="none" stroke="#003c71" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="system-name">ID Images CDN</span>
+    </div>
+  </div>
+
+  <!-- Error Content -->
+  <div class="error-container">
+    <div class="error-content">
+      <!-- Large emoji for document or image -->
+      <div class="error-emoji"><svg width="240" height="240" viewBox="0 0 742.42 522.34" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Back rectangle (stacked image) -->
+  <rect x="11.21" y="137.42" width="523.2" height="373.71" rx="21.3" ry="21.3" fill="none" stroke="#003c71" stroke-linecap="round" stroke-linejoin="round" stroke-width="22.42"/>
+  <!-- Landscape scene -->
+  <path d="M528.01,505.04l-143.19-143.19c-6.11-6.11-16.03-6.11-22.14,0l-45.15,45.15-91.15-91.15c-6.11-6.11-16.03-6.11-22.14,0L16.38,503.71" fill="none" stroke="#003c71" stroke-linecap="round" stroke-linejoin="round" stroke-width="22.42"/>
+  <!-- Sun -->
+  <circle cx="401.39" cy="256.37" r="38.07" transform="translate(-68.35 177.72) rotate(-23.06)" fill="none" stroke="#003c71" stroke-linecap="round" stroke-linejoin="round" stroke-width="22.42"/>
+  <path d="M439.47,256.37c0,21.03-17.05,38.07-38.08,38.07s-38.07-17.04-38.07-38.07,17.05-38.07,38.07-38.07,38.08,17.04,38.08,38.07Z" fill="none" stroke="#003c71" stroke-linecap="round" stroke-linejoin="round" stroke-width="22.42"/>
+  <!-- Front document/page with folded corner -->
+  <path d="M730.7,141.14l-71.67,323.26c-2.54,11.49-13.92,18.73-25.4,16.19l-99.22-22V158.71c0-11.76-9.54-21.3-21.3-21.3H195.62l24.28-109.51c2.55-11.48,13.92-18.73,25.4-16.18l469.21,104.01c11.49,2.55,18.73,13.92,16.19,25.41Z" fill="none" stroke="#003c71" stroke-linecap="round" stroke-linejoin="round" stroke-width="22.42"/>
+</svg></div>
+      
+      <!-- Main title -->
+      <h1 class="error-title">We're sorry but an error occurred getting that image</h1>
+      
+      <!-- Error details section -->
+      <div class="error-details">
+        <div class="error-code-section">
+          <span class="error-code-label">Error Code:</span>
+          <span class="error-code-value">405</span>
+        </div>
+        
+        <div class="error-causes">
+          <h2 class="causes-title">Likely Causes:</h2>
+          <ul class="causes-list">
+                        <li>The HTTP method used is not allowed for this resource</li>
+            <li>Only GET requests are supported for file access</li>
+            <li>The request method is not permitted for this endpoint</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <!-- THS Logo -->
+      <div class="footer-logo">
+        <img src="https://static.wixstatic.com/shapes/a86acc_7592e6c3bcd44bf59c44fd938ab6f76a.svg" alt="Thurstan Hoskin Solicitors" class="logo-image" />
+      </div>
+      
+      <!-- Main text content -->
+      <div class="footer-text">
+        <p class="footer-paragraph">This page is managed and owned by <a href="https://www.thurstanhoskin.co.uk" class="footer-link">Thurstan Hoskin Solicitors</a>.</p>
+      </div>
+      
+      <!-- Footer links -->
+      <div class="footer-links">
+        <a href="https://thurstanhoskin.co.uk/privacy" class="footer-link-item">Privacy Policy</a>
+        <a href="https://thurstanhoskin.statuspage.io/" class="footer-link-item">Status Page</a>
+        <a href="https://thurstanhoskin.co.uk/report-website-issue" class="footer-link-item">Report an Issue</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
+
+

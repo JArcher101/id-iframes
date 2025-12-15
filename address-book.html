@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Address Book</title>
+    
+    <!-- Google Fonts - Quicksand as fallback -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        /*
+        =====================================================================
+        ADDRESS BOOK IFRAME - STYLE SECTION
+        =====================================================================
+        Manages fax address book entries with drag-and-drop reordering,
+        filtering, add/delete, and undo/redo functionality.
+        
+        COMMUNICATION ARCHITECTURE:
+        - Uses window.postMessage() API for parent-child communication
+        - Parent sends: 'address-book' (initial data), 'save-data' (request to save)
+        - Child sends: 'new-data' (updated entries array)
+        =====================================================================
+        */
+        
+        /* Global reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: white;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 970px;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Input section at top */
+        .input-section {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"] {
+            font-family: 'RotisRegular', 'Quicksand', sans-serif;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 300;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #003C71;
+            box-shadow: 0 0 0 2px rgba(0,60,113,0.2);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn {
+            font-family: 'Transport', 'Quicksand', sans-serif;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #003C71;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #002b43;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e5e5e5;
+        }
+
+        .btn-secondary:disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        /* Action buttons (undo/redo) */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        /* Cards list section */
+        .cards-section {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .cards-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .entry-card {
+            background: #f9f9f9;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .entry-card:hover {
+            background: #f0f0f0;
+            border-color: #003C71;
+            box-shadow: 0 2px 4px rgba(0,60,113,0.1);
+        }
+
+        .entry-card.dragging {
+            opacity: 0.5;
+            transform: scale(0.98);
+        }
+
+        .entry-card.drag-over {
+            border-top: 3px solid #003C71;
+        }
+
+        .entry-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .entry-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .entry-number {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .entry-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .drag-handle {
+            color: #999;
+            cursor: grab;
+            font-size: 1.2rem;
+            padding: 5px;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .delete-btn {
+            background: #e02424;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #c01e1e;
+        }
+
+        /* New card preview (shown when no matches) */
+        .new-card-preview {
+            background: #fff3cd;
+            border: 2px dashed #D4A574;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .new-card-preview-label {
+            font-size: 0.8rem;
+            color: #856404;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .new-card-preview-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .new-card-preview-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .new-card-preview-number {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        /* Loading state */
+        .loading-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            color: #666;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #003C71;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Input Section -->
+        <div class="input-section">
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="nameInput">Name</label>
+                    <input type="text" id="nameInput" placeholder="Enter name">
+                </div>
+                <div class="input-group">
+                    <label for="numberInput">Fax Number</label>
+                    <input type="text" id="numberInput" placeholder="Enter fax number">
+                </div>
+            </div>
+            <div class="button-row">
+                <button class="btn btn-primary" id="addBtn" disabled>Add</button>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="undoBtn" disabled>Undo</button>
+                    <button class="btn btn-secondary" id="redoBtn" disabled>Redo</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards Section -->
+        <div class="cards-section">
+            <div id="loadingState" class="loading-state">
+                <div>
+                    <div class="spinner"></div>
+                    <div>Loading address book...</div>
+                </div>
+            </div>
+            <div id="cardsList" class="cards-list" style="display: none;">
+                <!-- Cards will be added here dynamically -->
+            </div>
+            <div id="emptyState" class="empty-state" style="display: none;">
+                No entries found. Add a new entry above.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /*
+        =====================================================================
+        ADDRESS BOOK IFRAME - JAVASCRIPT SECTION
+        =====================================================================
+        
+        GLOBAL STATE VARIABLES:
+        - entries: Complete array of address book entries
+        - filteredEntries: Currently displayed entries (after filtering)
+        - history: Array of state snapshots for undo/redo
+        - historyIndex: Current position in history
+        - draggedElement: Currently dragged card element
+        - dragOverElement: Element being dragged over
+        
+        PARENT-CHILD COMMUNICATION:
+        This iframe uses window.postMessage() to communicate with parent window.
+        
+        INCOMING MESSAGES (from parent):
+        1. 'address-book' - Initial address book data with entries array
+        2. 'save-data' - Request to save current state (returns 'new-data')
+        
+        OUTGOING MESSAGES (to parent):
+        1. 'new-data' - Updated entries array (sent in response to 'save-data')
+        =====================================================================
+        */
+
+        // Global state
+        let entries = [];
+        let filteredEntries = [];
+        let history = [];
+        let historyIndex = -1;
+        let draggedElement = null;
+        let dragOverElement = null;
+
+        // DOM elements
+        const nameInput = document.getElementById('nameInput');
+        const numberInput = document.getElementById('numberInput');
+        const addBtn = document.getElementById('addBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+        const cardsList = document.getElementById('cardsList');
+        const loadingState = document.getElementById('loadingState');
+        const emptyState = document.getElementById('emptyState');
+
+        // Initialize
+        function init() {
+            // Load from localStorage if available
+            const saved = localStorage.getItem('addressBookEntries');
+            if (saved) {
+                try {
+                    entries = JSON.parse(saved);
+                    saveToHistory();
+                    renderCards();
+                } catch (e) {
+                    console.error('Error loading from localStorage:', e);
+                }
+            }
+
+            // Event listeners
+            nameInput.addEventListener('input', handleInputChange);
+            numberInput.addEventListener('input', handleInputChange);
+            addBtn.addEventListener('click', handleAdd);
+            undoBtn.addEventListener('click', handleUndo);
+            redoBtn.addEventListener('click', handleRedo);
+
+            // Enter key to add
+            nameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !addBtn.disabled) {
+                    handleAdd();
+                }
+            });
+            numberInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !addBtn.disabled) {
+                    handleAdd();
+                }
+            });
+        }
+
+        // Handle input changes (filtering and add button state)
+        function handleInputChange() {
+            const name = nameInput.value.trim();
+            const number = numberInput.value.trim();
+
+            // Enable add button if both inputs are filled
+            addBtn.disabled = !(name && number);
+
+            // Filter and render cards
+            filterAndRender();
+        }
+
+        // Filter entries based on input and render
+        function filterAndRender() {
+            const nameFilter = nameInput.value.trim().toLowerCase();
+            const numberFilter = numberInput.value.trim().toLowerCase();
+
+            if (!nameFilter && !numberFilter) {
+                filteredEntries = [...entries];
+            } else {
+                filteredEntries = entries.filter(entry => {
+                    const nameMatch = entry.label.toLowerCase().includes(nameFilter);
+                    const numberMatch = entry.value.toLowerCase().includes(numberFilter);
+                    return nameMatch || numberMatch;
+                });
+            }
+
+            renderCards();
+        }
+
+        // Render cards
+        function renderCards() {
+            // Hide loading state
+            loadingState.style.display = 'none';
+
+            // Clear existing cards
+            cardsList.innerHTML = '';
+
+            if (filteredEntries.length === 0) {
+                // Show empty state or new card preview
+                const name = nameInput.value.trim();
+                const number = numberInput.value.trim();
+
+                if (name || number) {
+                    // Show new card preview
+                    const preview = document.createElement('div');
+                    preview.className = 'new-card-preview';
+                    preview.innerHTML = `
+                        <div class="new-card-preview-label">New Entry</div>
+                        <div class="new-card-preview-content">
+                            <div class="new-card-preview-name">${name || '(Enter name)'}</div>
+                            <div class="new-card-preview-number">${number || '(Enter number)'}</div>
+                        </div>
+                    `;
+                    cardsList.appendChild(preview);
+                    cardsList.style.display = 'block';
+                    emptyState.style.display = 'none';
+                } else {
+                    // Show empty state
+                    cardsList.style.display = 'none';
+                    emptyState.style.display = 'block';
+                }
+            } else {
+                // Render filtered entries
+                filteredEntries.forEach((entry, index) => {
+                    const card = createCard(entry, index);
+                    cardsList.appendChild(card);
+                });
+                cardsList.style.display = 'block';
+                emptyState.style.display = 'none';
+            }
+        }
+
+        // Create a card element
+        function createCard(entry, index) {
+            const card = document.createElement('div');
+            card.className = 'entry-card';
+            card.draggable = true;
+            card.dataset.index = index;
+            card.dataset.entryId = entry.label + entry.value; // Unique identifier
+
+            card.innerHTML = `
+                <div class="entry-info">
+                    <div class="entry-name">${escapeHtml(entry.label)}</div>
+                    <div class="entry-number">${escapeHtml(entry.value)}</div>
+                </div>
+                <div class="entry-actions">
+                    <span class="drag-handle">☰</span>
+                    <button class="delete-btn" onclick="handleDelete('${escapeHtml(entry.label)}', '${escapeHtml(entry.value)}')">Delete</button>
+                </div>
+            `;
+
+            // Drag and drop handlers
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragend', handleDragEnd);
+            card.addEventListener('dragover', handleDragOver);
+            card.addEventListener('drop', handleDrop);
+            card.addEventListener('dragleave', handleDragLeave);
+
+            return card;
+        }
+
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            // Remove drag-over class from all cards
+            document.querySelectorAll('.entry-card').forEach(card => {
+                card.classList.remove('drag-over');
+            });
+            draggedElement = null;
+            dragOverElement = null;
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+
+            if (this !== draggedElement) {
+                this.classList.add('drag-over');
+                dragOverElement = this;
+            }
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            if (draggedElement !== this) {
+                const draggedIndex = parseInt(draggedElement.dataset.index);
+                const dropIndex = parseInt(this.dataset.index);
+
+                // Get the dragged entry
+                const draggedEntry = filteredEntries[draggedIndex];
+
+                // Find indices in original entries array
+                const draggedOriginalIndex = entries.findIndex(e => 
+                    e.label === draggedEntry.label && e.value === draggedEntry.value
+                );
+
+                // Get the entry at drop position in filtered list
+                const dropEntry = filteredEntries[dropIndex];
+                const dropOriginalIndex = entries.findIndex(e => 
+                    e.label === dropEntry.label && e.value === dropEntry.value
+                );
+
+                // Reorder in original entries array
+                if (draggedOriginalIndex !== -1 && dropOriginalIndex !== -1) {
+                    const [movedEntry] = entries.splice(draggedOriginalIndex, 1);
+                    entries.splice(dropOriginalIndex, 0, movedEntry);
+                }
+
+                // Reorder in filtered entries array
+                filteredEntries.splice(draggedIndex, 1);
+                filteredEntries.splice(dropIndex, 0, draggedEntry);
+
+                // Save to history and localStorage
+                saveToHistory();
+                saveToLocalStorage();
+
+                // Re-render
+                renderCards();
+            }
+
+            this.classList.remove('drag-over');
+            return false;
+        }
+
+        // Handle add button click
+        function handleAdd() {
+            const name = nameInput.value.trim();
+            const number = numberInput.value.trim();
+
+            if (!name || !number) {
+                return;
+            }
+
+            // Check if entry already exists
+            const exists = entries.some(e => 
+                e.label.toLowerCase() === name.toLowerCase() && 
+                e.value === number
+            );
+
+            if (exists) {
+                alert('This entry already exists.');
+                return;
+            }
+
+            // Add new entry
+            const newEntry = { label: name, value: number };
+            entries.push(newEntry);
+
+            // Save to history and localStorage
+            saveToHistory();
+            saveToLocalStorage();
+
+            // Clear inputs
+            nameInput.value = '';
+            numberInput.value = '';
+            addBtn.disabled = true;
+
+            // Re-render
+            filterAndRender();
+        }
+
+        // Handle delete
+        function handleDelete(label, value) {
+            if (confirm(`Delete "${label}"?`)) {
+                entries = entries.filter(e => !(e.label === label && e.value === value));
+                
+                // Save to history and localStorage
+                saveToHistory();
+                saveToLocalStorage();
+
+                // Re-render
+                filterAndRender();
+            }
+        }
+
+        // Undo/Redo functionality
+        function saveToHistory() {
+            // Remove any history after current index
+            history = history.slice(0, historyIndex + 1);
+            
+            // Add current state
+            history.push(JSON.parse(JSON.stringify(entries)));
+            historyIndex++;
+
+            // Limit history size (keep last 50 states)
+            if (history.length > 50) {
+                history.shift();
+                historyIndex--;
+            }
+
+            updateUndoRedoButtons();
+        }
+
+        function handleUndo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                entries = JSON.parse(JSON.stringify(history[historyIndex]));
+                saveToLocalStorage();
+                filterAndRender();
+                updateUndoRedoButtons();
+            }
+        }
+
+        function handleRedo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                entries = JSON.parse(JSON.stringify(history[historyIndex]));
+                saveToLocalStorage();
+                filterAndRender();
+                updateUndoRedoButtons();
+            }
+        }
+
+        function updateUndoRedoButtons() {
+            undoBtn.disabled = historyIndex <= 0;
+            redoBtn.disabled = historyIndex >= history.length - 1;
+        }
+
+        // Local storage
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('addressBookEntries', JSON.stringify(entries));
+            } catch (e) {
+                console.error('Error saving to localStorage:', e);
+            }
+        }
+
+        // Utility function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // PostMessage listener
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'address-book') {
+                // Hide loading state
+                loadingState.style.display = 'none';
+
+                // Load entries from parent
+                if (event.data.data && Array.isArray(event.data.data.entries)) {
+                    entries = event.data.data.entries.map(e => ({
+                        label: e.label || '',
+                        value: e.value || ''
+                    }));
+                    
+                    // Save to history and localStorage
+                    saveToHistory();
+                    saveToLocalStorage();
+                    
+                    // Render
+                    filterAndRender();
+                }
+            } else if (event.data && event.data.type === 'save-data') {
+                // Send updated entries back to parent
+                window.parent.postMessage({
+                    type: 'new-data',
+                    data: {
+                        entries: entries
+                    }
+                }, '*');
+            }
+        });
+
+        // Initialize on load
+        init();
+    </script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = '6dc645a';
+    console.log('[address-book] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
+</body>
+</html>
+

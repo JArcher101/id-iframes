@@ -470,6 +470,75 @@
         let translateY = 0;
         let imageWrapper = null;
 
+        /*
+        Determines error type from image URL
+        Returns: 'id-images', 'id-documents', 'sdlt-documents', or 'id-images' as default
+        */
+        function determineErrorType(imageUrl) {
+            const url = imageUrl.toLowerCase();
+            if (url.includes('id-documents') || url.includes('id-docs')) {
+                return 'id-documents';
+            } else if (url.includes('sdlt') || url.includes('sdlt-documents')) {
+                return 'sdlt-documents';
+            }
+            // Default to id-images
+            return 'id-images';
+        }
+
+        /*
+        Embeds CloudFront error page in an iframe for single image viewer
+        Parameters:
+        - errorCode: HTTP error code (403, 404, etc.)
+        - errorType: Error type ('id-images', 'id-documents', 'sdlt-documents')
+        */
+        function embedErrorPageInSingleViewer(errorCode, errorType) {
+            try {
+                const container = document.getElementById('imageViewerContainer');
+                const imageUrl = document.querySelector('img')?.src || '';
+                let errorPageUrl;
+                
+                if (imageUrl) {
+                    // Extract CloudFront domain from image URL
+                    try {
+                        const urlObj = new URL(imageUrl);
+                        const cloudfrontDomain = urlObj.origin;
+                        errorPageUrl = `${cloudfrontDomain}/error.html?code=${errorCode}&type=${errorType}`;
+                    } catch (e) {
+                        // Fallback: use current origin
+                        const baseUrl = window.location.origin + window.location.pathname.split('/').slice(0, -1).join('/');
+                        errorPageUrl = `${baseUrl}/error.html?code=${errorCode}&type=${errorType}`;
+                    }
+                } else {
+                    const baseUrl = window.location.origin + window.location.pathname.split('/').slice(0, -1).join('/');
+                    errorPageUrl = `${baseUrl}/error.html?code=${errorCode}&type=${errorType}`;
+                }
+                
+                // Create iframe to embed error page
+                const iframe = document.createElement('iframe');
+                iframe.src = errorPageUrl;
+                iframe.style.width = '100%';
+                iframe.style.height = '100vh';
+                iframe.style.border = 'none';
+                iframe.style.minHeight = '500px';
+                iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts');
+                
+                // Clear container and add iframe
+                container.innerHTML = '';
+                container.appendChild(iframe);
+                
+                // Hide zoom controls and banner
+                const zoomControls = document.getElementById('zoomControls');
+                const banner = document.getElementById('imageDetailsBanner');
+                if (zoomControls) zoomControls.style.display = 'none';
+                if (banner) banner.style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error embedding error page:', error);
+                // Fallback to simple error message
+                showError('Failed to load image', `Error ${errorCode}: The image could not be loaded. The link may have expired.`);
+            }
+        }
+
         // Parse image data from URL hash
         function getImageDataFromHash() {
             // Get the hash (everything after #)
@@ -539,7 +608,30 @@
             };
             
             img.onerror = () => {
-                showError('Failed to load image', 'The image could not be loaded. The link may have expired.');
+                // Try to embed error page instead of simple error message
+                try {
+                    const imageUrl = img.src;
+                    const errorType = determineErrorType(imageUrl);
+                    let errorCode = 403; // Default to 403 for expired/invalid signed URLs
+                    
+                    // Try to get actual status code (may be blocked by CORS)
+                    fetch(imageUrl, { method: 'HEAD', mode: 'no-cors' })
+                        .catch(() => fetch(imageUrl, { method: 'GET', mode: 'no-cors' }))
+                        .then(response => {
+                            if (response && response.status) {
+                                errorCode = response.status;
+                            }
+                            // Embed error page
+                            embedErrorPageInSingleViewer(errorCode, errorType);
+                        })
+                        .catch(() => {
+                            // If fetch fails, use default 403 and embed error page
+                            embedErrorPageInSingleViewer(403, errorType);
+                        });
+                } catch (error) {
+                    console.error('Error loading error page:', error);
+                    showError('Failed to load image', 'The image could not be loaded. The link may have expired.');
+                }
             };
         }
 
@@ -848,7 +940,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '5987e21';
+    window.__IFRAME_VERSION__ = '6dc645a';
     console.log('[single-image-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

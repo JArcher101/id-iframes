@@ -1,0 +1,112 @@
+  <footer class="footer">
+    <div class="footer-content">
+      <!-- THS Logo -->
+      <div class="footer-logo">
+        <img src="https://static.wixstatic.com/shapes/a86acc_7592e6c3bcd44bf59c44fd938ab6f76a.svg" alt="Thurstan Hoskin Solicitors" class="logo-image" />
+      </div>
+      
+      <!-- Main text content -->
+      <div class="footer-text">
+        <!-- FOOTER_TEXT_CONTENT -->
+        <!-- This will be replaced by build script:
+             - For SDLT: Full text with "on behalf of Dwellworks" and terms paragraphs
+             - For ID Documents/Images: Just "This page is managed and owned by..." -->
+      </div>
+      
+      <!-- Footer links -->
+      <div class="footer-links">
+        <!-- TERMS_OF_USE_LINK - Only for SDLT Documents -->
+        <!-- <a href="https://thurstanhoskin.co.uk/file-upload/log-in/?system=Dwellworks&terms=true" class="footer-link-item">Terms of Use</a> -->
+        <a href="https://thurstanhoskin.co.uk/privacy" class="footer-link-item">Privacy Policy</a>
+        <a href="https://thurstanhoskin.statuspage.io/" class="footer-link-item">Status Page</a>
+        <a href="https://thurstanhoskin.co.uk/report-website-issue" class="footer-link-item">Report an Issue</a>
+      </div>
+    </div>
+  </footer>
+  
+  <style>
+    .footer {
+      background: #003c71; /* THS Dark Blue */
+      padding: 40px 20px;
+      margin-top: auto;
+      text-align: center;
+    }
+    
+    .footer-content {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+    }
+    
+    .footer-logo {
+      margin-bottom: 10px;
+    }
+    
+    .logo-image {
+      width: 80px;
+      height: 80px;
+      display: block;
+      margin: 0 auto;
+    }
+    
+    .footer-text {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+    }
+    
+    .footer-paragraph {
+      color: white;
+      font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0;
+    }
+    
+    .footer-link {
+      color: white;
+      text-decoration: underline;
+      text-decoration-color: white;
+      transition: opacity 0.2s;
+    }
+    
+    .footer-link:hover {
+      opacity: 0.8;
+    }
+    
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    
+    .footer-link-item {
+      color: white;
+      text-decoration: underline;
+      text-decoration-color: white;
+      font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      transition: opacity 0.2s;
+    }
+    
+    .footer-link-item:hover {
+      opacity: 0.8;
+    }
+    
+    @media (max-width: 768px) {
+      .footer {
+        padding: 30px 15px;
+      }
+      
+      
+      .footer-paragraph {
+        font-size: 13px;
+      }
+    }
+  </style>

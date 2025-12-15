@@ -1907,7 +1907,7 @@ function populateFormFromSubmission(data) {
   // Only set if the container is visible (payee is not 'dwellworks')
   const legalFeeDirectSendContainer = document.getElementById('legalFeeDirectSendContainer');
   if (legalFeeDirectSendContainer && !legalFeeDirectSendContainer.classList.contains('hidden')) {
-    if (data.thsFeeInvoiceSending === true) {
+    if (data.thsFeesInvoiceSending === true) {
       const yesBtn = document.querySelector('#legalFeeDirectSendContainer .yes-no-btn[data-value="yes"]');
       if (yesBtn) yesBtn.click();
     } else {
@@ -2880,7 +2880,7 @@ function collectFormData() {
     ) : undefined,
     thsFeePayerEmail: legalFeePayee === 'other' ? (document.getElementById('legalFeeOtherEmail').value || undefined) : undefined,
     thsFeePayerRelationToTenant: legalFeePayee === 'other' ? document.getElementById('legalFeeOtherRelation').value : undefined,
-    thsFeeInvoiceSending: legalFeePayee && legalFeePayee !== 'dwellworks' ? (formState.legalFeeDirectSend === true ? true : undefined) : undefined,
+    thsFeesInvoiceSending: legalFeePayee && legalFeePayee !== 'dwellworks' ? (formState.legalFeeDirectSend === true ? true : undefined) : undefined,
     thsFeeEmployersAcocuntsEmail: legalFeePayee === 'tenant-employer' ? (document.getElementById('legalFeeEmployerEmail').value || undefined) : undefined,
     thsFeeEmployersAccountsContactPhone: legalFeePayee === 'tenant-employer' ? formatPhone(
       document.getElementById('legalFeeEmployerTelCountryCode'),

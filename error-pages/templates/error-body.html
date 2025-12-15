@@ -1,0 +1,148 @@
+  <!-- Error Content -->
+  <div class="error-container">
+    <div class="error-content">
+      <!-- Large emoji for document or image -->
+      <div class="error-emoji">{{ERROR_EMOJI}}</div>
+      
+      <!-- Main title -->
+      <h1 class="error-title">{{ERROR_TITLE}}</h1>
+      
+      <!-- Error details section -->
+      <div class="error-details">
+        <div class="error-code-section">
+          <span class="error-code-label">Error Code:</span>
+          <span class="error-code-value">{{ERROR_CODE}}</span>
+        </div>
+        
+        <div class="error-causes">
+          <h2 class="causes-title">Likely Causes:</h2>
+          <ul class="causes-list">
+            {{ERROR_CAUSES}}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <style>
+    .error-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      background: white;
+    }
+    
+    .error-content {
+      background: white;
+      padding: 60px 40px;
+      max-width: 700px;
+      width: 100%;
+      text-align: center;
+    }
+    
+    .error-emoji {
+      font-size: 120px;
+      line-height: 1;
+      margin-bottom: 30px;
+      display: block;
+    }
+    
+    .error-title {
+      font-family: 'Transport Heavy', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 40px;
+      line-height: 1.4;
+    }
+    
+    .error-details {
+      text-align: left;
+      background: #f8f9fa;
+      padding: 30px;
+      margin-bottom: 40px;
+    }
+    
+    .error-code-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .error-code-label {
+      font-family: 'Transport Heavy', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #666;
+    }
+    
+    .error-code-value {
+      font-family: 'Transport Heavy', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #003c71; /* THS Dark Blue */
+      background: white;
+      padding: 8px 16px;
+      border: 2px solid #003c71;
+    }
+    
+    .error-causes {
+      margin-top: 24px;
+    }
+    
+    .causes-title {
+      font-family: 'Transport Heavy', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 16px;
+    }
+    
+    .causes-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .causes-list li {
+      font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      color: #555;
+      line-height: 1.8;
+      padding: 8px 0;
+      padding-left: 24px;
+      position: relative;
+    }
+    
+    .causes-list li:before {
+      content: "•";
+      color: #003c71; /* THS Dark Blue */
+      font-weight: bold;
+      font-size: 20px;
+      position: absolute;
+      left: 0;
+    }
+    
+    @media (max-width: 768px) {
+      .error-content {
+        padding: 40px 24px;
+      }
+      
+      .error-emoji {
+        font-size: 80px;
+      }
+      
+      .error-title {
+        font-size: 22px;
+      }
+      
+      .error-details {
+        padding: 20px;
+      }
+    }
+  </style>

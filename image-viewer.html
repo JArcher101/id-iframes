@@ -2166,55 +2166,123 @@
         */
         
         /*
-        Handles image load errors with retry button
+        Determines error type from image URL
+        Returns: 'id-images', 'id-documents', 'sdlt-documents', or 'id-images' as default
+        */
+        function determineErrorType(imageUrl) {
+            const url = imageUrl.toLowerCase();
+            if (url.includes('id-documents') || url.includes('id-docs')) {
+                return 'id-documents';
+            } else if (url.includes('sdlt') || url.includes('sdlt-documents')) {
+                return 'sdlt-documents';
+            }
+            // Default to id-images (this viewer is primarily for ID images)
+            return 'id-images';
+        }
+
+        /*
+        Embeds CloudFront error page in an iframe
+        Parameters:
+        - container: Container element to embed error page
+        - errorCode: HTTP error code (403, 404, etc.)
+        - errorType: Error type ('id-images', 'id-documents', 'sdlt-documents')
+        */
+        function embedErrorPage(container, errorCode, errorType) {
+            try {
+                // Get the CloudFront domain from the image URL if available
+                const imageUrl = container.querySelector('img')?.src || '';
+                let errorPageUrl;
+                
+                if (imageUrl) {
+                    // Extract CloudFront domain from image URL
+                    try {
+                        const urlObj = new URL(imageUrl);
+                        const cloudfrontDomain = urlObj.origin;
+                        errorPageUrl = `${cloudfrontDomain}/error.html?code=${errorCode}&type=${errorType}`;
+                    } catch (e) {
+                        // Fallback: use current origin
+                        const baseUrl = window.location.origin + window.location.pathname.split('/').slice(0, -1).join('/');
+                        errorPageUrl = `${baseUrl}/error.html?code=${errorCode}&type=${errorType}`;
+                    }
+                } else {
+                    const baseUrl = window.location.origin + window.location.pathname.split('/').slice(0, -1).join('/');
+                    errorPageUrl = `${baseUrl}/error.html?code=${errorCode}&type=${errorType}`;
+                }
+                
+                // Create iframe to embed error page
+                const iframe = document.createElement('iframe');
+                iframe.src = errorPageUrl;
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                iframe.style.minHeight = '400px';
+                iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts');
+                
+                // Clear container and add iframe
+                container.innerHTML = '';
+                container.appendChild(iframe);
+                
+            } catch (error) {
+                console.error('Error embedding error page:', error);
+                // Fallback to simple error message
+                container.innerHTML = `
+                    <div class="image-error">
+                        <div class="image-error-icon">📄</div>
+                        <div class="image-error-text">
+                            <strong>Image unavailable</strong><br>
+                            Error ${errorCode}: Could not load image
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        /*
+        Handles image load errors with CloudFront error page embedding
         Parameters:
         - img: Image element that failed to load
         - documentType: Type of document for error message
         - retryCount: Current retry attempt (max 2 retries)
         
         Logic:
-        1. Replaces failed image with error placeholder
-        2. Shows retry button if retries remain
-        3. Shows "Max retries reached" if limit exceeded
+        1. Uses fetch() to check HTTP status code
+        2. Determines error type from URL
+        3. Fetches and embeds CloudFront error page HTML
         */
-        function handleImageError(img, documentType, retryCount = 0) {
-            // Get the image card to find its index
-            const card = img.closest('.image-card');
-            const cards = document.querySelectorAll('.image-card');
-            const index = Array.from(cards).indexOf(card);
-            
-            // Store the original source for retry
-            const originalSrc = img.src;
-            const maxRetries = 2; // Limit retries to prevent infinite loops
-            
-            // Replace the image with error placeholder
+        async function handleImageError(img, documentType, retryCount = 0) {
             const container = img.parentElement;
-            const retryButton = retryCount < maxRetries ? 
-                `<button class="image-retry-btn" onclick="retryImageLoad('${originalSrc}', '${documentType}', this, ${retryCount + 1})">
-                    Retry (${maxRetries - retryCount} left)
-                </button>` : 
-                `<div class="image-error-text" style="margin-top: 15px; font-size: 0.8rem; color: #999;">
-                    Max retries reached
-                </div>`;
+            const imageUrl = img.src;
             
-            container.innerHTML = `
-                <div class="image-error">
-                    <div class="image-error-icon">📄</div>
-                    <div class="image-error-text">
-                        <strong>Image unavailable</strong><br>
-                        ${documentType || 'Document image'} could not be loaded
-                    </div>
-                    ${retryButton}
-                </div>
-            `;
+            // Determine error type from URL
+            const errorType = determineErrorType(imageUrl);
+            
+            // Try to get actual HTTP status code, but default to 403 for expired/invalid signed URLs
+            let errorCode = 403;
+            try {
+                // Use fetch to check HTTP status (may be blocked by CORS)
+                const response = await fetch(imageUrl, { method: 'HEAD', mode: 'no-cors' })
+                    .catch(() => fetch(imageUrl, { method: 'GET', mode: 'no-cors' }));
+                
+                if (response && response.status) {
+                    errorCode = response.status;
+                }
+            } catch (error) {
+                // If we can't get status (CORS), assume 403 (expired/invalid signed URL)
+                console.log('Could not determine HTTP status, defaulting to 403');
+            }
+            
+            // Embed error page
+            embedErrorPage(container, errorCode, errorType);
         }
 
         // Retry loading an image
         function retryImageLoad(imageSrc, documentType, button, retryCount = 0) {
             console.log('Retrying image load:', imageSrc, 'attempt:', retryCount + 1);
             
+            const maxRetries = 2;
+            
             // Show loading state
-            const container = button.closest('.image-error').parentElement;
+            const container = button.closest('.image-error')?.parentElement || button.parentElement;
             container.innerHTML = `
                 <div class="image-loading">
                     <div class="image-error-icon">⏳</div>
@@ -2226,7 +2294,16 @@
             const img = document.createElement('img');
             img.src = imageSrc;
             img.alt = documentType || 'ID Document';
-            img.onerror = () => handleImageError(img, documentType, retryCount);
+            img.onerror = () => {
+                // Only retry if we haven't exceeded max retries
+                if (retryCount < maxRetries) {
+                    handleImageError(img, documentType, retryCount + 1);
+                } else {
+                    // Max retries reached, show error page
+                    const errorType = determineErrorType(imageSrc);
+                    embedErrorPage(container, 403, errorType);
+                }
+            };
             img.onload = () => handleImageLoad(img);
             
             // Replace loading state with image
@@ -3971,7 +4048,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '5987e21';
+    window.__IFRAME_VERSION__ = '6dc645a';
     console.log('[image-viewer] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

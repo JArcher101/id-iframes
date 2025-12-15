@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="240" height="240" viewBox="0 0 742.42 522.34" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Back rectangle (stacked image) -->
+  <rect x="11.21" y="137.42" width="523.2" height="373.71" rx="21.3" ry="21.3" fill="none" stroke="#003c71" stroke-linecap="round" stroke-linejoin="round" stroke-width="22.42"/>
+  <!-- Landscape scene -->
+  <path d="M528.01,505.04l-143.19-143.19c-6.11-6.11-16.03-6.11-22.14,0l-45.15,45.15-91.15-91.15c-6.11-6.11-16.03-6.11-22.14,0L16.38,503.71" fill="none" stroke="#003c71" stroke-linecap="round" stroke-linejoin="round" stroke-width="22.42"/>
+  <!-- Sun -->
+  <circle cx="401.39" cy="256.37" r="38.07" transform="translate(-68.35 177.72) rotate(-23.06)" fill="none" stroke="#003c71" stroke-linecap="round" stroke-linejoin="round" stroke-width="22.42"/>
+  <path d="M439.47,256.37c0,21.03-17.05,38.07-38.08,38.07s-38.07-17.04-38.07-38.07,17.05-38.07,38.07-38.07,38.08,17.04,38.08,38.07Z" fill="none" stroke="#003c71" stroke-linecap="round" stroke-linejoin="round" stroke-width="22.42"/>
+  <!-- Front document/page with folded corner -->
+  <path d="M730.7,141.14l-71.67,323.26c-2.54,11.49-13.92,18.73-25.4,16.19l-99.22-22V158.71c0-11.76-9.54-21.3-21.3-21.3H195.62l24.28-109.51c2.55-11.48,13.92-18.73,25.4-16.18l469.21,104.01c11.49,2.55,18.73,13.92,16.19,25.41Z" fill="none" stroke="#003c71" stroke-linecap="round" stroke-linejoin="round" stroke-width="22.42"/>
+</svg>
