@@ -13,6 +13,35 @@
     <style>
         /*
         =====================================================================
+        CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
+        =====================================================================
+        Transport Medium → for buttons and headings
+        Rotis Regular → for body text
+        All fonts fallback to Quicksand
+        =====================================================================
+        */
+        
+        /* Transport Medium - for buttons and headings */
+        @font-face {
+            font-family: 'Transport';
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,PLACEHOLDER_TRANSPORT_BASE64) format('truetype');
+            unicode-range: U+0020-003F, U+0041-10FFFF; /* Exclude @ symbol (U+0040) - fallback to Quicksand */
+        }
+        
+        /* Rotis Sans Serif Regular - for body text */
+        @font-face {
+            font-family: 'RotisRegular';
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,PLACEHOLDER_ROTIS_REGULAR_BASE64) format('truetype');
+        }
+        
+        /*
+        =====================================================================
         ADDRESS BOOK IFRAME - STYLE SECTION
         =====================================================================
         Manages fax address book entries with drag-and-drop reordering,
@@ -329,6 +358,7 @@
             </div>
             <div class="button-row">
                 <button class="btn btn-primary" id="addBtn" disabled>Add</button>
+                <button class="btn btn-primary" id="saveBtn" disabled>Save</button>
                 <div class="action-buttons">
                     <button class="btn btn-secondary" id="undoBtn" disabled>Undo</button>
                     <button class="btn btn-secondary" id="redoBtn" disabled>Redo</button>
@@ -386,11 +416,13 @@
         let historyIndex = -1;
         let draggedElement = null;
         let dragOverElement = null;
+        let dataLoaded = false;
 
         // DOM elements
         const nameInput = document.getElementById('nameInput');
         const numberInput = document.getElementById('numberInput');
         const addBtn = document.getElementById('addBtn');
+        const saveBtn = document.getElementById('saveBtn');
         const undoBtn = document.getElementById('undoBtn');
         const redoBtn = document.getElementById('redoBtn');
         const cardsList = document.getElementById('cardsList');
@@ -415,6 +447,7 @@
             nameInput.addEventListener('input', handleInputChange);
             numberInput.addEventListener('input', handleInputChange);
             addBtn.addEventListener('click', handleAdd);
+            saveBtn.addEventListener('click', handleSave);
             undoBtn.addEventListener('click', handleUndo);
             redoBtn.addEventListener('click', handleRedo);
 
@@ -664,6 +697,22 @@
             }
         }
 
+        // Handle save button click
+        function handleSave() {
+            sendDataToParent();
+        }
+
+        // Send data to parent
+        function sendDataToParent() {
+            // Disable save button while sending
+            saveBtn.disabled = true;
+            
+            window.parent.postMessage({
+                type: 'new-data',
+                entries: entries
+            }, '*');
+        }
+
         // Undo/Redo functionality
         function saveToHistory() {
             // Remove any history after current index
@@ -736,21 +785,32 @@
                         value: e.value || ''
                     }));
                     
+                    // Mark data as loaded
+                    dataLoaded = true;
+                    
                     // Save to history and localStorage
                     saveToHistory();
                     saveToLocalStorage();
+                    
+                    // Enable save button
+                    saveBtn.disabled = false;
                     
                     // Render
                     filterAndRender();
                 }
             } else if (event.data && event.data.type === 'save-data') {
-                // Send updated entries back to parent
-                window.parent.postMessage({
-                    type: 'new-data',
-                    data: {
-                        entries: entries
-                    }
-                }, '*');
+                // Send updated entries back to parent (legacy support)
+                sendDataToParent();
+            } else if (event.data && event.data.type === 'upload-success') {
+                // Re-enable save button after successful upload
+                if (entries.length > 0 && dataLoaded) {
+                    saveBtn.disabled = false;
+                }
+            } else if (event.data && event.data.type === 'upload-error') {
+                // Re-enable save button after upload error
+                if (entries.length > 0 && dataLoaded) {
+                    saveBtn.disabled = false;
+                }
             }
         });
 
@@ -760,7 +820,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '6dc645a';
+    window.__IFRAME_VERSION__ = '570d0cf';
     console.log('[address-book] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
