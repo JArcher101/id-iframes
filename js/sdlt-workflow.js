@@ -330,9 +330,12 @@ function handleParentMessage(event) {
 function handleEntryData(message) {
     // Store entry data (used only for stage determination and action mapping)
     // We do NOT display all entry fields - only workflow-relevant actions
-    entryData = message.data || {};
+    // Message structure: { type: 'entry-data', data: { user: 'email', data: entryData } }
+    const messageData = message.data || {};
+    entryData = messageData.data || {};  // Actual entry data from collection
     originalEntryData = JSON.parse(JSON.stringify(entryData)); // Deep copy for change tracking
-    currentUser = message.user || null;
+    // Get user from messageData.user (for file uploads) - fallback to 'system' if not available
+    currentUser = messageData.user || 'system';
     
     // Check if this is first-time opening (New Submission + thsNotification = true)
     const statusArray = entryData.status || [];

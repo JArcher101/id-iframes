@@ -38,10 +38,11 @@ Full entry data from the SDLTProcessing collection. Initializes the workflow sta
 ```javascript
 {
   type: 'entry-data',
-  user: 'staff.email@example.com',  // Current user email
   data: {
-    _id: 'entry-id-123',
-    _createdDate: '2025-12-09T16:54:23.281Z',
+    user: 'staff.email@example.com',  // Current user email (for file uploads)
+    data: {  // Full entry data from SDLTProcessing collection
+      _id: 'entry-id-123',
+      _createdDate: '2025-12-09T16:54:23.281Z',
     _updatedDate: '2025-12-27T19:48:44.432Z',
     
     // Status array (contains one status at a time)
@@ -156,6 +157,7 @@ Full entry data from the SDLTProcessing collection. Initializes the workflow sta
     note: 'Staff notes',
     supportingDocuments: [],
     chatLog: []
+    }
   }
 }
 ```
@@ -589,8 +591,10 @@ $w.onReady(function () {
 function sendEntryData() {
   $w('#sdltWorkflowIframe').postMessage({
     type: 'entry-data',
-    user: wixUsers.currentUser.email,
-    data: entryData  // Full entry from SDLTProcessing collection
+    data: {
+      user: wixUsers.currentUser.email,  // Current user email (for file uploads)
+      data: entryData  // Full entry from SDLTProcessing collection
+    }
   });
 }
 
