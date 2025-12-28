@@ -14,6 +14,7 @@ velo-backend-updates/
 *-PLAN.md
 *-TODO.md
 *-NOTES.md
+sdlt-calculator.md
 
 # IDE and editor files
 .vscode/
@@ -50,6 +51,11 @@ scripts/backup-html.ps1
 QUICK-START.md
 WIX-CODE-*.md
 .gitignore-updates-needed.md
+
+# Infrastructure documentation (contains bucket names, domains, AWS setup details)
+CLOUDFRONT-DNS-TROUBLESHOOTING.md
+DWELLWORKS-*.md
+error-pages/CLOUDFRONT-ERROR-PAGES-SETUP.md
 
 # Backend/Integration code
 backend/

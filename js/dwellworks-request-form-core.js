@@ -2774,7 +2774,7 @@ function getRadioTechnicalValue(friendlyLabel) {
 /**
  * Collect all form data and return as object
  */
-function collectFormData() {
+function collectFormData(isEditMode = false) {
   // Helper to format phone number
   const formatPhone = (countryCodeEl, numberEl) => {
     const code = countryCodeEl?.dataset.phoneCode || '';
@@ -2800,7 +2800,9 @@ function collectFormData() {
   const sdltFeePayee = document.querySelector('input[name="sdltFeePayee"]:checked')?.value;
   
   const data = {
-    status: ["New Submission"],
+    // Only set status for new submissions, preserve original in edit mode
+    ...(isEditMode ? {} : { status: ["New Submission"] }),
+    thsNotification: true,
     
     // Your Details
     submitterFirstName: document.getElementById('submitterFirstName').value,
@@ -3506,7 +3508,7 @@ function showUploadError(message) {
 function submitFormData() {
   // In edit mode, send update-submission with only changed fields
   if (formState.isEditMode && formState.originalSubmission) {
-    const formData = collectFormData();
+    const formData = collectFormData(true); // Pass isEditMode = true
     
     // Use original documents (cannot be changed in edit mode)
     const { leaseAgreement, supportingDocuments } = collectDocuments();
@@ -3517,12 +3519,23 @@ function submitFormData() {
     // Build idEntries array
     formData.idEntries = buildIdEntries();
     
+    // Preserve original status - don't overwrite it in edit mode
+    // Status should remain unchanged when editing
+    if (formState.originalSubmission.status) {
+      formData.status = formState.originalSubmission.status;
+    }
+    
     // Compare with original and find changed fields
     const updates = {};
     const updatedFields = [];
     
-    // Compare all fields
+    // Compare all fields, but exclude status from comparison (preserve original)
     Object.keys(formData).forEach(key => {
+      // Skip status field - preserve original status in edit mode
+      if (key === 'status') {
+        return;
+      }
+      
       const originalValue = formState.originalSubmission[key];
       const newValue = formData[key];
       
@@ -3532,6 +3545,12 @@ function submitFormData() {
         updatedFields.push(key);
       }
     });
+    
+    // Always include thsNotification: true in updates (regardless of whether it changed)
+    updates.thsNotification = true;
+    if (!updatedFields.includes('thsNotification')) {
+      updatedFields.push('thsNotification');
+    }
     
     // Disable submit button during submission
     if (elements.submitBtn) {
@@ -3550,7 +3569,7 @@ function submitFormData() {
   
   // New submission mode
   // Collect form data
-  const formData = collectFormData();
+  const formData = collectFormData(false); // Pass isEditMode = false for new submissions
   
   // Collect documents (now with s3Keys)
   const { leaseAgreement, supportingDocuments } = collectDocuments();

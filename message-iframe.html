@@ -1131,7 +1131,29 @@
             }
             /*
             ----------------------------------------------------------------
-            CASE 6: 'sdlt-message-viewer' - SDLT message viewer mode
+            CASE 6: 'message-value' - Parent requesting current message input value (SDLT mode only)
+            ----------------------------------------------------------------
+            Received when parent needs to get the current message text input value.
+            Only responds when in SDLT mode (dwellworks mode).
+            
+            Response:
+            {
+                type: 'message-value',
+                newMessage: 'string of message text input'
+            }
+            */
+            else if (event.data.type === 'message-value' && isSdltMode) {
+                const messageInput = document.getElementById('messageInput');
+                const currentMessage = messageInput ? messageInput.value : '';
+                
+                window.parent.postMessage({
+                    type: 'message-value',
+                    newMessage: currentMessage
+                }, '*');
+            }
+            /*
+            ----------------------------------------------------------------
+            CASE 7: 'sdlt-message-viewer' - SDLT message viewer mode
             ----------------------------------------------------------------
             Received when:
             - Initial load of SDLT matter chat
@@ -2355,7 +2377,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'd631e54';
+    window.__IFRAME_VERSION__ = 'c551fc3';
     console.log('[message-iframe] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

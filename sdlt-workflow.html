@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=605, initial-scale=1.0">
+    <title>SDLT Workflow</title>
+    
+    <!-- Google Fonts - Quicksand -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- SDLT Workflow Specific CSS -->
+    <link rel="stylesheet" href="css/sdlt-workflow.css?v=c551fc3">
+    
+    <style>
+        /*
+        =====================================================================
+        CUSTOM FONTS - Base64 Embedded with Google Fonts Fallback
+        =====================================================================
+        Transport Medium → for buttons and headings
+        Rotis Regular → for body text
+        All fonts fallback to Quicksand
+        =====================================================================
+        */
+        
+        /* Transport Medium - for buttons and headings */
+        @font-face {
+            font-family: 'Transport';
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,PLACEHOLDER_TRANSPORT_BASE64) format('truetype');
+            unicode-range: U+0020-003F, U+0041-10FFFF; /* Exclude @ symbol (U+0040) - fallback to Quicksand */
+        }
+        
+        /* Rotis Sans Serif Regular - for body text */
+        @font-face {
+            font-family: 'RotisRegular';
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,PLACEHOLDER_ROTIS_REGULAR_BASE64) format('truetype');
+        }
+        
+        /* Font 3 - placeholder */
+        @font-face {
+            font-family: 'Font3';
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,PLACEHOLDER_FONT3_BASE64) format('truetype');
+        }
+        
+        /* Font 4 - placeholder */
+        @font-face {
+            font-family: 'Font4';
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+            src: url(data:font/truetype;charset=utf-8;base64,PLACEHOLDER_FONT4_BASE64) format('truetype');
+        }
+    </style>
+</head>
+<body>
+    <!-- Load Mock Data Button (for testing) -->
+    <button id="loadMockDataBtn" class="mock-data-btn">Load Mock Data</button>
+    
+    <div class="container">
+        <!-- Our Details: Fee Earner, Client Number, Matter Number -->
+        <div class="info-inputs-row">
+            <div class="info-inputs-label">Our details</div>
+            <select id="feeEarner" class="info-input">
+                <option value="">Fee earner</option>
+                <option value="Stephen Morrison">Stephen Morrison</option>
+                <option value="Emma Lockie">Emma Lockie</option>
+                <option value="Mollie Pellowe">Mollie Pellowe</option>
+            </select>
+            <input type="number" id="clientNumber" class="info-input" placeholder="Client number">
+            <input type="text" id="matterNumber" class="info-input" placeholder="Matter number">
+        </div>
+
+        <!-- Current Stage Card -->
+        <div id="currentStageCard" class="stage-card current-stage">
+            <div class="stage-header">
+                <span class="stage-badge">Current Stage</span>
+                <h3 id="currentStageTitle" class="stage-title">Initial Review</h3>
+            </div>
+            <div class="stage-content-row">
+                <div id="currentStageDescription" class="stage-description">
+                    Waiting for initial review and document verification
+                </div>
+                <button id="markCalculatingSdltBtn" class="stage-action-btn hidden">Mark as calculating SDLT</button>
+            </div>
+        </div>
+
+        <!-- Calculating SDLT Workflow Card -->
+        <div id="calculatingSdltCard" class="stage-card calculating-sdlt-card hidden">
+            <div class="stage-header">
+                <span class="stage-badge">Workflow Task</span>
+                <button id="openSdltCalculatorBtn" class="stage-action-btn">
+                    Open SDLT Calculator
+                </button>
+            </div>
+            <div id="sdltCalculationResult" class="sdlt-calculation-result hidden">
+                <!-- Calculation result will be displayed here -->
+            </div>
+            <div id="sdltCalculationGeneratedHint" class="calculation-generated-hint hidden">
+                ✓ Calculation generated
+            </div>
+            <button id="requestIdChecksBtn" class="stage-action-btn hidden" style="margin-top: 12px;">
+                Request ID Checks
+            </button>
+            <div id="idChecksRequestedHint" class="calculation-generated-hint hidden" style="margin-top: 12px;">
+                ✓ ID Checks requested on Val'ID'ate
+            </div>
+            <button id="markIdChecksInProgressBtn" class="stage-action-btn hidden" style="margin-top: 12px;">
+                Mark ID Checks as in Progress
+            </button>
+            <div id="saveToContinueHint" class="save-to-continue-hint hidden" style="margin-top: 12px;">
+                Please save the entry to continue
+            </div>
+        </div>
+
+        <!-- ID Checks Completion Card -->
+        <div id="idChecksCompletionCard" class="stage-card hidden">
+            <div class="stage-header">
+                <span class="stage-badge">Workflow Task</span>
+            </div>
+            <div class="stage-content">
+                <label class="checkbox-label" style="margin-top: 8px;">
+                    <input type="checkbox" id="confirmIdChecksCompleteCheckbox">
+                    <span>I confirm all ID checks are present and complete</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Accounting Information Task Card -->
+        <div id="accountingInfoCard" class="stage-card hidden">
+            <div class="stage-header">
+                <span class="stage-badge">Workflow Task</span>
+                <h3 class="stage-title">Accounting Information</h3>
+            </div>
+            
+            <div class="stage-content">
+                <!-- Global Invoice Date -->
+                <div class="accounting-field-row">
+                    <label for="invoiceDate" class="accounting-label">Invoice Date</label>
+                    <input type="date" id="invoiceDate" class="accounting-input" />
+                </div>
+                
+                <!-- Send Invoice Directly Hint -->
+                <div id="sendInvoiceDirectlyHint" class="calculation-generated-hint hidden" style="margin-top: 8px; margin-bottom: 12px; background: rgba(217, 119, 6, 0.1); border-color: rgba(217, 119, 6, 0.3); color: #d97706;">
+                    ⚠️ Don't forget to also send the invoice directly to the payer
+                </div>
+                
+                <!-- THS Fee Payer Section -->
+                <div class="payer-section">
+                    <h4 class="payer-title">THS Legal Fee Payer</h4>
+                    <div id="thsPayerInfo" class="payer-info">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                    
+                    <!-- THS Invoice Document Card (shown if already uploaded) -->
+                    <div id="thsInvoiceDocumentCard" class="document-card hidden" style="margin-bottom: 12px;">
+                        <!-- Will be populated when document exists -->
+                    </div>
+                    <!-- THS Invoice Upload -->
+                    <div class="file-upload-section">
+                        <label class="file-upload-label">THS Invoice (PDF)</label>
+                        <div class="file-upload-area" id="thsInvoiceUpload">
+                            <input type="file" id="thsInvoiceFileInput" accept="application/pdf" style="display: none;" />
+                            <div class="file-upload-placeholder">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                <span>Select PDF or drag & drop</span>
+                            </div>
+                            <div class="file-upload-selected hidden">
+                                <span class="file-name"></span>
+                                <button type="button" class="remove-file-btn">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SDLT Fee Payer Section (shown if different from THS payer) -->
+                <div id="sdltPayerSection" class="payer-section hidden">
+                    <h4 class="payer-title">SDLT Fee Payer</h4>
+                    <div id="sdltPayerInfo" class="payer-info">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                    
+                    <!-- SDLT Invoice Document Card (shown if already uploaded) -->
+                    <div id="sdltInvoiceDocumentCard" class="document-card hidden" style="margin-bottom: 12px;">
+                        <!-- Will be populated when document exists -->
+                    </div>
+                    <!-- SDLT Invoice Upload -->
+                    <div class="file-upload-section">
+                        <label class="file-upload-label">SDLT Invoice (PDF)</label>
+                        <div class="file-upload-area" id="sdltInvoiceUpload">
+                            <input type="file" id="sdltInvoiceFileInput" accept="application/pdf" style="display: none;" />
+                            <div class="file-upload-placeholder">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                <span>Select PDF or drag & drop</span>
+                            </div>
+                            <div class="file-upload-selected hidden">
+                                <span class="file-name"></span>
+                                <button type="button" class="remove-file-btn">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Completion Statement Upload (always shown if SDLT fee payer exists) -->
+                <div id="completionStatementSection" class="payer-section">
+                    <h4 class="payer-title">Completion Statement</h4>
+                    <div id="completionStatementDocumentCard" class="document-card hidden">
+                        <!-- Will be populated when document exists -->
+                    </div>
+                    <div class="file-upload-section">
+                        <label class="file-upload-label">Completion Statement (PDF)</label>
+                        <div class="file-upload-area" id="completionStatementUpload">
+                            <input type="file" id="completionStatementFileInput" accept="application/pdf" style="display: none;" />
+                            <div class="file-upload-placeholder">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                <span>Select PDF or drag & drop</span>
+                            </div>
+                            <div class="file-upload-selected hidden">
+                                <span class="file-name"></span>
+                                <button type="button" class="remove-file-btn">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SDLT Payment Task Card -->
+        <div id="sdltPaymentCard" class="stage-card hidden">
+            <div class="stage-header">
+                <span class="stage-badge">Workflow Task</span>
+                <h3 class="stage-title">SDLT Payment</h3>
+            </div>
+            <div class="stage-content">
+                <div class="accounting-field-row">
+                    <label for="sdltPaidDate" class="accounting-label">SDLT Fee Paid Date</label>
+                    <input type="date" id="sdltPaidDate" class="accounting-input" />
+                </div>
+                <div id="sdltPaymentSaveHint" class="save-to-continue-hint hidden" style="margin-top: 12px;">
+                    Please save the entry to continue
+                </div>
+            </div>
+        </div>
+
+        <!-- SDLT Certificate Upload Task Card -->
+        <div id="sdltCertificateCard" class="stage-card hidden">
+            <div class="stage-header">
+                <span class="stage-badge">Workflow Task</span>
+                <h3 class="stage-title">SDLT5 Certificate</h3>
+            </div>
+            <div class="stage-content">
+                <div class="file-upload-section">
+                    <label class="file-upload-label">SDLT5 Certificate (PDF)</label>
+                    <div class="file-upload-area" id="sdlt5CertificateUpload">
+                        <input type="file" id="sdlt5CertificateFileInput" accept="application/pdf" style="display: none;" />
+                        <div class="file-upload-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span>Select PDF or drag & drop</span>
+                        </div>
+                        <div class="file-upload-selected hidden">
+                            <span class="file-name"></span>
+                            <button type="button" class="remove-file-btn">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matter Completed Task Card -->
+        <div id="matterCompletedCard" class="stage-card hidden">
+            <div class="stage-header">
+                <span class="stage-badge">Complete</span>
+                <h3 class="stage-title">Matter Completed</h3>
+            </div>
+            <div class="stage-content">
+                <p style="font-family: 'RotisRegular', 'Quicksand', sans-serif; font-size: 0.9rem; color: #333; margin: 0;">
+                    All required documents have been uploaded and the matter is complete.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SDLT Calculator Overlay -->
+    <div id="sdltCalculatorOverlay" class="calculator-overlay hidden">
+        <div class="calculator-modal">
+            <div class="calculator-header">
+                <h3>SDLT Calculator</h3>
+                <button id="closeCalculatorBtn" class="close-calculator-btn" title="Close">&times;</button>
+            </div>
+            <div class="calculator-body">
+                <!-- Basic Information Section -->
+                <div class="calculator-section">
+                    <h4>Basic Information</h4>
+                    <div class="calculator-form-grid">
+                        <div class="calculator-form-row">
+                            <div>
+                                <label for="calcCaseReference">Case Reference (optional)</label>
+                                <input type="text" id="calcCaseReference" class="calculator-input" />
+                            </div>
+                            <div>
+                                <label for="calcPropertyAddress">Property Address (optional)</label>
+                                <input type="text" id="calcPropertyAddress" class="calculator-input" />
+                            </div>
+                        </div>
+                        <div class="calculator-form-row">
+                            <div>
+                                <label for="calcTenantType">Tenant Type</label>
+                                <select id="calcTenantType" class="calculator-input">
+                                    <option value="The Tenant">The Tenant</option>
+                                    <option value="The Tenant's Employer">The Tenant's Employer</option>
+                                    <option value="Dwellworks">Dwellworks</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lease Details Section -->
+                <div class="calculator-section">
+                    <h4>Lease Details</h4>
+                    <div class="calculator-form-grid">
+                        <div class="calculator-form-row">
+                            <div>
+                                <label for="calcLeaseStartDate" class="required">Lease Start Date</label>
+                                <input type="date" id="calcLeaseStartDate" class="calculator-input" required />
+                            </div>
+                        </div>
+                        <div class="calculator-form-row">
+                            <div>
+                                <label for="calcLeaseTerm" class="required">Lease Term (years)</label>
+                                <input type="number" id="calcLeaseTerm" class="calculator-input" min="1" step="0.1" required />
+                            </div>
+                            <div>
+                                <label for="calcAnnualRent" class="required">Annual Rent (£)</label>
+                                <input type="number" id="calcAnnualRent" class="calculator-input" min="0" step="0.01" required />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Options Section -->
+                <div class="calculator-section">
+                    <h4>Advanced Options</h4>
+                    <div class="calculator-form-grid">
+                        <div class="calculator-form-row">
+                            <div>
+                                <label for="calcEffectiveDate">Effective Date (Date of variation/transaction)</label>
+                                <input type="date" id="calcEffectiveDate" class="calculator-input">
+                            </div>
+                        </div>
+                        <div class="calculator-form-row">
+                            <div>
+                                <label>
+                                    <input type="checkbox" id="calcIsVariation" />
+                                    Is this a Lease Variation?
+                                </label>
+                            </div>
+                        </div>
+                        <div id="calcVariationFields" class="hidden">
+                            <div class="calculator-form-row">
+                                <div>
+                                    <label for="calcPreviousNPV">Previous Assessed NPV (£)</label>
+                                    <input type="number" id="calcPreviousNPV" class="calculator-input" min="0" value="0" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="calculator-form-row">
+                            <div>
+                                <label for="calcRentFreePeriod">Rent-Free Period (months)</label>
+                                <input type="number" id="calcRentFreePeriod" class="calculator-input" min="0" step="0.5" value="0" />
+                            </div>
+                        </div>
+                        <div class="calculator-form-row">
+                            <div>
+                                <label>
+                                    <input type="checkbox" id="calcUseSteppedRent" />
+                                    Use stepped rent schedule
+                                </label>
+                            </div>
+                        </div>
+                        <div id="calcSteppedRentSection" class="hidden">
+                            <div class="stepped-rent-table">
+                                <div class="stepped-rent-header">
+                                    <span>Year Start</span>
+                                    <span>Year End</span>
+                                    <span>Annual Rent (£)</span>
+                                    <span></span>
+                                </div>
+                                <div id="calcSteppedRentRows"></div>
+                                <button type="button" id="addSteppedRentRow" class="calculator-btn-secondary">Add Year</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div class="calculator-section calculator-results">
+                    <h4>Calculation Results</h4>
+                    <div id="calculatorResults" class="calculator-results-content">
+                        <p class="results-placeholder">Enter lease details above to see calculation results.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="calculator-footer">
+                <button type="button" id="cancelCalculatorBtn" class="calculator-btn-secondary">Cancel</button>
+                <button type="button" id="generatePdfBtn" class="calculator-btn-primary">Close & Generate PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- html2pdf library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Print.js library for print dialog -->
+    <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
+
+    <!-- SDLT Workflow JavaScript -->
+    <script src="js/sdlt-workflow.js?v=c551fc3"></script>
+<!-- IFRAME_VERSION START -->
+<script>
+  (function() {
+    window.__IFRAME_VERSION__ = 'c551fc3';
+    console.log('[sdlt-workflow] version ' + window.__IFRAME_VERSION__);
+  })();
+</script>
+<!-- IFRAME_VERSION END -->
+</body>
+</html>
+

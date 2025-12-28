@@ -14016,46 +14016,79 @@ class ThirdfortChecksManager {
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
                 
-                // Check if Print.js is available
-                if (typeof printJS !== 'undefined') {
-                    console.log('📄 Opening print dialog with Print.js...');
-                const pdfUrl = URL.createObjectURL(pdfBlob);
-                    
-                    // Use Print.js to open print dialog with PDF
-                    printJS({
-                        printable: pdfUrl,
-                        type: 'pdf',
-                        onPrintDialogClose: () => {
-                            // Clean up blob URL after print dialog closes
-                            URL.revokeObjectURL(pdfUrl);
-                        }
-                    });
-                } else {
-                    // Fallback to new tab if Print.js not loaded
-                    console.warn('⚠️ Print.js not loaded, opening in new tab');
-                    const pdfUrl = URL.createObjectURL(pdfBlob);
-                const printWindow = window.open(pdfUrl, '_blank');
-                if (!printWindow) {
-                    console.error('❌ Popup blocked by browser');
-                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
-                } else {
-                    // Trigger print dialogue when PDF loads
-                    printWindow.addEventListener('load', () => {
-                        setTimeout(() => {
-                            printWindow.print();
-                        }, 100);
-                    });
-                    }
-                }
-                
-                // Notify parent that PDF is generated and opened (only if auto-save)
+                // If auto-save, force direct download with friendly filename
                 if (autoSave) {
+                    console.log('📥 Auto-saving consider annotations PDF - forcing direct download...');
+                    const safeCheckName = checkName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_');
+                    const safeCheckRef = (checkRef || 'unknown').replace(/[^a-zA-Z0-9-]/g, '_');
+                    const filename = `Consider_Annotations_${safeCheckName}_${safeCheckRef}.pdf`;
+                    
+                    // Create download link and trigger download (use separate blob URL)
+                    const downloadUrl = URL.createObjectURL(pdfBlob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Clean up download blob URL after a short delay
+                    setTimeout(() => {
+                        URL.revokeObjectURL(downloadUrl);
+                    }, 100);
+                    
+                    // Also open with printJS for viewing (use separate blob URL)
+                    if (typeof printJS !== 'undefined') {
+                        console.log('📄 Opening consider annotations PDF with Print.js for viewing...');
+                        const printUrl = URL.createObjectURL(pdfBlob);
+                        printJS({
+                            printable: printUrl,
+                            type: 'pdf',
+                            onPrintDialogClose: () => {
+                                // Clean up print blob URL after print dialog closes
+                                URL.revokeObjectURL(printUrl);
+                            }
+                        });
+                    }
+                    
+                    // Notify parent that PDF is generated and downloaded
                     console.log('📤 Sending pdf-generated message to parent');
                     this.sendMessage('pdf-generated', { 
                         type: 'consider',
                         checkId: check.checkId || check.transactionId 
                     });
                 } else {
+                    // Manual export - use printJS as before
+                    if (typeof printJS !== 'undefined') {
+                        console.log('📄 Opening print dialog with Print.js...');
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+                        
+                        // Use Print.js to open print dialog with PDF
+                        printJS({
+                            printable: pdfUrl,
+                            type: 'pdf',
+                            onPrintDialogClose: () => {
+                                // Clean up blob URL after print dialog closes
+                                URL.revokeObjectURL(pdfUrl);
+                            }
+                        });
+                    } else {
+                        // Fallback to new tab if Print.js not loaded
+                        console.warn('⚠️ Print.js not loaded, opening in new tab');
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+                        const printWindow = window.open(pdfUrl, '_blank');
+                        if (!printWindow) {
+                            console.error('❌ Popup blocked by browser');
+                            alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                        } else {
+                            // Trigger print dialogue when PDF loads
+                            printWindow.addEventListener('load', () => {
+                                setTimeout(() => {
+                                    printWindow.print();
+                                }, 100);
+                            });
+                        }
+                    }
                     console.log('ℹ️ Manual export - not sending pdf-generated message');
                 }
             }).catch(err => {
@@ -16226,46 +16259,79 @@ class ThirdfortChecksManager {
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ SoF PDF generated:', pdfBlob.size, 'bytes');
                 
-                // Check if Print.js is available
-                if (typeof printJS !== 'undefined') {
-                    console.log('📄 Opening SoF print dialog with Print.js...');
-                const pdfUrl = URL.createObjectURL(pdfBlob);
-                    
-                    // Use Print.js to open print dialog with PDF
-                    printJS({
-                        printable: pdfUrl,
-                        type: 'pdf',
-                        onPrintDialogClose: () => {
-                            // Clean up blob URL after print dialog closes
-                            URL.revokeObjectURL(pdfUrl);
-                        }
-                    });
-                } else {
-                    // Fallback to new tab if Print.js not loaded
-                    console.warn('⚠️ Print.js not loaded, opening in new tab');
-                    const pdfUrl = URL.createObjectURL(pdfBlob);
-                const printWindow = window.open(pdfUrl, '_blank');
-                if (!printWindow) {
-                    console.error('❌ Popup blocked by browser');
-                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
-                } else {
-                    // Trigger print dialogue when PDF loads
-                    printWindow.addEventListener('load', () => {
-                        setTimeout(() => {
-                            printWindow.print();
-                        }, 100);
-                    });
-                    }
-                }
-                
-                // Notify parent that PDF is generated and opened (only if auto-save)
+                // If auto-save, force direct download with friendly filename
                 if (autoSave) {
+                    console.log('📥 Auto-saving SoF PDF - forcing direct download...');
+                    const safeCheckName = checkName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_');
+                    const safeCheckRef = (checkRef || 'unknown').replace(/[^a-zA-Z0-9-]/g, '_');
+                    const filename = `Source_of_Funds_Investigation_${safeCheckName}_${safeCheckRef}.pdf`;
+                    
+                    // Create download link and trigger download (use separate blob URL)
+                    const downloadUrl = URL.createObjectURL(pdfBlob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Clean up download blob URL after a short delay
+                    setTimeout(() => {
+                        URL.revokeObjectURL(downloadUrl);
+                    }, 100);
+                    
+                    // Also open with printJS for viewing (use separate blob URL)
+                    if (typeof printJS !== 'undefined') {
+                        console.log('📄 Opening SoF PDF with Print.js for viewing...');
+                        const printUrl = URL.createObjectURL(pdfBlob);
+                        printJS({
+                            printable: printUrl,
+                            type: 'pdf',
+                            onPrintDialogClose: () => {
+                                // Clean up print blob URL after print dialog closes
+                                URL.revokeObjectURL(printUrl);
+                            }
+                        });
+                    }
+                    
+                    // Notify parent that PDF is generated and downloaded
                     console.log('📤 Sending pdf-generated message to parent');
                     this.sendMessage('pdf-generated', { 
                         type: 'sof', 
                         checkId: check.checkId || check.transactionId 
                     });
                 } else {
+                    // Manual export - use printJS as before
+                    if (typeof printJS !== 'undefined') {
+                        console.log('📄 Opening SoF print dialog with Print.js...');
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+                        
+                        // Use Print.js to open print dialog with PDF
+                        printJS({
+                            printable: pdfUrl,
+                            type: 'pdf',
+                            onPrintDialogClose: () => {
+                                // Clean up blob URL after print dialog closes
+                                URL.revokeObjectURL(pdfUrl);
+                            }
+                        });
+                    } else {
+                        // Fallback to new tab if Print.js not loaded
+                        console.warn('⚠️ Print.js not loaded, opening in new tab');
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+                        const printWindow = window.open(pdfUrl, '_blank');
+                        if (!printWindow) {
+                            console.error('❌ Popup blocked by browser');
+                            alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                        } else {
+                            // Trigger print dialogue when PDF loads
+                            printWindow.addEventListener('load', () => {
+                                setTimeout(() => {
+                                    printWindow.print();
+                                }, 100);
+                            });
+                        }
+                    }
                     console.log('ℹ️ Manual export - not sending pdf-generated message');
                 }
             }).catch(err => {
@@ -16602,46 +16668,79 @@ class ThirdfortChecksManager {
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ PEP dismissals PDF generated:', pdfBlob.size, 'bytes');
                 
-                // Check if Print.js is available
-                if (typeof printJS !== 'undefined') {
-                    console.log('📄 Opening PEP print dialog with Print.js...');
-                const pdfUrl = URL.createObjectURL(pdfBlob);
-                    
-                    // Use Print.js to open print dialog with PDF
-                    printJS({
-                        printable: pdfUrl,
-                        type: 'pdf',
-                        onPrintDialogClose: () => {
-                            // Clean up blob URL after print dialog closes
-                            URL.revokeObjectURL(pdfUrl);
-                        }
-                    });
-                } else {
-                    // Fallback to new tab if Print.js not loaded
-                    console.warn('⚠️ Print.js not loaded, opening in new tab');
-                    const pdfUrl = URL.createObjectURL(pdfBlob);
-                const printWindow = window.open(pdfUrl, '_blank');
-                if (!printWindow) {
-                    console.error('❌ Popup blocked by browser');
-                    alert('PDF generated but popup was blocked. Please allow popups for this site.');
-                } else {
-                    // Trigger print dialogue when PDF loads
-                    printWindow.addEventListener('load', () => {
-                        setTimeout(() => {
-                            printWindow.print();
-                        }, 100);
-                    });
-                    }
-                }
-                
-                // Notify parent that PDF is generated and opened (only if auto-save)
+                // If auto-save, force direct download with friendly filename
                 if (autoSave) {
+                    console.log('📥 Auto-saving PEP dismissals PDF - forcing direct download...');
+                    const safeCheckName = checkName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_');
+                    const safeCheckRef = (checkRef || 'unknown').replace(/[^a-zA-Z0-9-]/g, '_');
+                    const filename = `PEP_Sanctions_Dismissals_${safeCheckName}_${safeCheckRef}.pdf`;
+                    
+                    // Create download link and trigger download (use separate blob URL)
+                    const downloadUrl = URL.createObjectURL(pdfBlob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Clean up download blob URL after a short delay
+                    setTimeout(() => {
+                        URL.revokeObjectURL(downloadUrl);
+                    }, 100);
+                    
+                    // Also open with printJS for viewing (use separate blob URL)
+                    if (typeof printJS !== 'undefined') {
+                        console.log('📄 Opening PEP dismissals PDF with Print.js for viewing...');
+                        const printUrl = URL.createObjectURL(pdfBlob);
+                        printJS({
+                            printable: printUrl,
+                            type: 'pdf',
+                            onPrintDialogClose: () => {
+                                // Clean up print blob URL after print dialog closes
+                                URL.revokeObjectURL(printUrl);
+                            }
+                        });
+                    }
+                    
+                    // Notify parent that PDF is generated and downloaded
                     console.log('📤 Sending pdf-generated message to parent');
                     this.sendMessage('pdf-generated', { 
                         type: 'pep-dismissal',
                         checkId: check.checkId || check.transactionId 
                     });
                 } else {
+                    // Manual export - use printJS as before
+                    if (typeof printJS !== 'undefined') {
+                        console.log('📄 Opening PEP print dialog with Print.js...');
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+                        
+                        // Use Print.js to open print dialog with PDF
+                        printJS({
+                            printable: pdfUrl,
+                            type: 'pdf',
+                            onPrintDialogClose: () => {
+                                // Clean up blob URL after print dialog closes
+                                URL.revokeObjectURL(pdfUrl);
+                            }
+                        });
+                    } else {
+                        // Fallback to new tab if Print.js not loaded
+                        console.warn('⚠️ Print.js not loaded, opening in new tab');
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+                        const printWindow = window.open(pdfUrl, '_blank');
+                        if (!printWindow) {
+                            console.error('❌ Popup blocked by browser');
+                            alert('PDF generated but popup was blocked. Please allow popups for this site.');
+                        } else {
+                            // Trigger print dialogue when PDF loads
+                            printWindow.addEventListener('load', () => {
+                                setTimeout(() => {
+                                    printWindow.print();
+                                }, 100);
+                            });
+                        }
+                    }
                     console.log('ℹ️ Manual export - not sending pdf-generated message');
                 }
             }).catch(err => {
