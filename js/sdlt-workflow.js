@@ -42,7 +42,8 @@ OUTGOING MESSAGES (to parent):
 - request-checks: Sent when "Request ID Checks" button is clicked (no data)
 - file-data: Request for S3 upload URLs (contains file metadata)
 - save-data-response: Response to parent's save-data request (contains form data to save)
-  Format: { type: 'save-data-response', success: true, updates: {...}, newMessage: '...' }
+  Format: { type: 'save-data-response', updatedFields: [...], updates: {...}, status: [...], newMessage: '...' }
+  Matches dwellworks-request-form.html pattern: updatedFields array, updates object (excludes status), status separate
 - validation-error: Validation error before saving
   Format: { type: 'validation-error', message: 'Error message string' }
 - upload-error: Error during file upload to S3
@@ -383,7 +384,7 @@ function notifyFormChanged() {
 /**
  * Handle save-data message from parent
  * Parent requests current form data to save
- * Always returns unified format: { type: 'save-data-response', updates: {...}, newMessage: '...' }
+ * Format matches dwellworks-request-form.html: { updatedFields: [...], updates: {...}, status: [...] }
  */
 function handleSaveData(message) {
     if (!entryData) {
@@ -588,62 +589,18 @@ function handleSaveData(message) {
         return;
     }
     
-    // Build unified updates object
-    const updates = {};
-    
-    // Include info fields (fee earner, client number, matter number, note) if they exist in entryData
-    if (entryData.fe !== undefined) updates.fe = entryData.fe;
-    if (entryData.clientNumber !== undefined) updates.clientNumber = entryData.clientNumber;
-    if (entryData.matterNumber !== undefined) updates.matterNumber = entryData.matterNumber;
-    if (entryData.note !== undefined) updates.note = entryData.note || '';
-    
-    // Include pending updates if present
-    if (pendingUpdates) {
-        Object.assign(updates, pendingUpdates);
+    // If no pending updates, send empty response (should not happen, but handle gracefully)
+    if (!pendingUpdates) {
+        const response = {
+            type: 'save-data-response',
+            success: true
+        };
+        window.parent.postMessage(response, '*');
+        return;
     }
     
-    // Include workflow fields that exist in entryData
-    const workflowFields = [
-        'sdltCalculated', 'sdltCalculation', 'sdltRequired', 'sdltDue',
-        'idCheckSent', 'feeInvoiceSent', 'thsInvoice', 'invoiceDate',
-        'completionStatementSent', 'completionStatement',
-        'sdltInvoiceSent', 'sdltInvoice',
-        'sdltPaid', 'sdltPaid1',
-        'sdlt5Uploaded', 'sdlt5Certificate',
-        'status'
-    ];
-    
-    workflowFields.forEach(field => {
-        if (entryData.hasOwnProperty(field)) {
-            updates[field] = entryData[field];
-        }
-    });
-    
-    // Build response message (always same format)
-    const response = {
-        type: 'save-data-response',
-        success: true,
-        updates: updates
-    };
-    
-    // Include chat message if present
-    if (pendingChatMessage) {
-        response.newMessage = pendingChatMessage;
-    }
-    
-    window.parent.postMessage(response, '*');
-    
-    // Update entryData with pending updates for local state
-    if (pendingUpdates) {
-        Object.assign(entryData, pendingUpdates);
-    }
-    
-    // Clear pending updates after successful save
-    pendingUpdates = null;
-    pendingChatMessage = null;
-    
-    // Update original entry data after successful save
-    originalEntryData = JSON.parse(JSON.stringify(entryData));
+    // Call sendSaveDataResponse to handle the response in unified format
+    sendSaveDataResponse();
 }
 
 function updateInfoInputs() {
@@ -874,59 +831,46 @@ function handlePutError(message) {
 /**
  * Send save-data-response with all current updates
  * Called after file upload completes
+ * Format matches dwellworks-request-form.html: { updatedFields: [...], updates: {...}, status: [...] }
  */
 function sendSaveDataResponse() {
-    if (!entryData) return;
-    
-    // Build unified updates object
-    const updates = {};
-    
-    // Include info fields (fee earner, client number, matter number, note) if they exist in entryData
-    if (entryData.fe !== undefined) updates.fe = entryData.fe;
-    if (entryData.clientNumber !== undefined) updates.clientNumber = entryData.clientNumber;
-    if (entryData.matterNumber !== undefined) updates.matterNumber = entryData.matterNumber;
-    if (entryData.note !== undefined) updates.note = entryData.note || '';
-    
-    // Include pending updates if present (this includes sdltCalculation with s3Key)
-    if (pendingUpdates) {
-        Object.assign(updates, pendingUpdates);
+    if (!entryData || !pendingUpdates) {
+        console.error('Cannot send save-data-response: missing entryData or pendingUpdates');
+        return;
     }
     
-    // Include workflow fields that exist in entryData
-    const workflowFields = [
-        'sdltCalculated', 'sdltCalculation', 'sdltRequired', 'sdltDue',
-        'idCheckSent', 'feeInvoiceSent', 'thsInvoice', 'invoiceDate',
-        'completionStatementSent', 'completionStatement',
-        'sdltInvoiceSent', 'sdltInvoice',
-        'sdltPaid', 'sdltPaid1',
-        'sdlt5Uploaded', 'sdlt5Certificate',
-        'status'
-    ];
+    // Build updatedFields array (field names that changed, excluding status)
+    const updatedFields = Object.keys(pendingUpdates).filter(key => key !== 'status');
     
-    workflowFields.forEach(field => {
-        if (entryData.hasOwnProperty(field)) {
-            updates[field] = entryData[field];
+    // Build updates object (excludes status)
+    const updates = {};
+    Object.keys(pendingUpdates).forEach(key => {
+        if (key !== 'status') {
+            updates[key] = pendingUpdates[key];
         }
     });
     
-    // Build response message (always same format)
+    // Build response message
     const response = {
         type: 'save-data-response',
         success: true,
-        updates: updates
+        updatedFields: updatedFields.length > 0 ? updatedFields : undefined,
+        updates: Object.keys(updates).length > 0 ? updates : undefined,
+        status: pendingUpdates.status || undefined,
+        newMessage: pendingChatMessage || undefined
     };
     
-    // Include chat message if present
-    if (pendingChatMessage) {
-        response.newMessage = pendingChatMessage;
-    }
+    // Remove undefined fields
+    if (!response.updatedFields) delete response.updatedFields;
+    if (!response.updates) delete response.updates;
+    if (!response.status) delete response.status;
+    if (!response.newMessage) delete response.newMessage;
     
+    console.log('📤 Sending save-data-response:', response);
     window.parent.postMessage(response, '*');
     
     // Update entryData with pending updates for local state
-    if (pendingUpdates) {
-        Object.assign(entryData, pendingUpdates);
-    }
+    Object.assign(entryData, pendingUpdates);
     
     // Clear pending updates after successful save
     pendingUpdates = null;
