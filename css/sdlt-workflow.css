@@ -32,7 +32,7 @@ html, body {
 }
 
 body {
-    background: #e5e5e5;
+    background: transparent;
     font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color: #333;
     padding: 10px;
@@ -65,7 +65,7 @@ body {
 .container {
     width: 100%;
     height: 100%;
-    background: #e5e5e5;
+    background: transparent;
     box-sizing: border-box;
     overflow-y: auto;
     overflow-x: hidden;
@@ -79,7 +79,7 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 8px;
-    background: white;
+    background: #F0F2F4;
     border-radius: 8px;
     padding: 12px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -138,7 +138,7 @@ body {
 
 /* Stage Cards */
 .stage-card {
-    background: white;
+    background: #F0F2F4;
     border-radius: 8px;
     padding: 12px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
