@@ -35,7 +35,7 @@ body {
     background: transparent;
     font-family: 'RotisRegular', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color: #333;
-    padding: 10px;
+    padding: 0;
     position: relative;
 }
 
@@ -63,8 +63,8 @@ body {
 }
 
 .container {
-    width: 100%;
-    height: 100%;
+    width: 605px;
+    height: 510px;
     background: transparent;
     box-sizing: border-box;
     overflow-y: auto;
@@ -72,6 +72,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding: 0;
 }
 
 /* Info Inputs Row */
@@ -82,7 +83,8 @@ body {
     background: #F0F2F4;
     border-radius: 8px;
     padding: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    width: 605px;
+    box-sizing: border-box;
     position: relative;
 }
 
@@ -141,7 +143,8 @@ body {
     background: #F0F2F4;
     border-radius: 8px;
     padding: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    width: 605px;
+    box-sizing: border-box;
 }
 
 .current-stage {
