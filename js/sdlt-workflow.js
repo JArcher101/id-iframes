@@ -1152,13 +1152,24 @@ function renderWorkflowStage(stageKey) {
             idChecksCompletionCard.classList.add('hidden');
         }
         
-        // Check if status is SDLT_PAID and SDLT5 cert is uploaded - show completed card
+        // Check if status is SDLT_PAID
+        const isSdltPaid = statusArray.includes(STATUS.SDLT_PAID);
         const hasSdlt5Cert = !!(entryData?.sdlt5Certificate && entryData.sdlt5Certificate.s3Key);
-        if (statusArray.includes(STATUS.SDLT_PAID) && hasSdlt5Cert) {
+        
+        if (isSdltPaid && hasSdlt5Cert) {
             // Matter completed - show completion card
             if (accountingInfoCard) accountingInfoCard.classList.add('hidden');
             if (sdltPaymentCard) sdltPaymentCard.classList.add('hidden');
             if (matterCompletedCard) matterCompletedCard.classList.remove('hidden');
+        } else if (isSdltPaid) {
+            // SDLT paid but no cert yet - show payment card with uploader
+            if (accountingInfoCard) accountingInfoCard.classList.add('hidden');
+            if (matterCompletedCard) matterCompletedCard.classList.add('hidden');
+            if (sdltPaymentCard) {
+                sdltPaymentCard.classList.remove('hidden');
+                setupSdltPaymentDate();
+                setupSdlt5CertificateUpload();
+            }
         } else {
             // Check if all expected accounting documents are present
             const expectedDocsCheck = checkAllExpectedAccountingDocs();
