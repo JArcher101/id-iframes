@@ -496,6 +496,23 @@ Error during file upload to S3.
 
 ---
 
+### `archive-id`
+
+Request to archive the entry (silently sent, no user notification).
+
+```javascript
+{
+  type: 'archive-id'
+  // No additional data
+}
+```
+
+**When Sent:**
+- After SDLT calculation PDF is generated and there is no SDLT due (`sdltDue === 0`)
+- Sent silently in the background, after the PDF blob is stored
+
+---
+
 ## Status Values
 
 The `status` field is always an array containing one status string:

@@ -635,19 +635,44 @@ function handleInfoInputChange() {
     const clientNumber = document.getElementById('clientNumber');
     const matterNumber = document.getElementById('matterNumber');
     
-    // Update entryData with new values
-    if (feeEarner) {
-        entryData.fe = feeEarner.value || '';
-    }
-    if (clientNumber) {
-        entryData.clientNumber = clientNumber.value ? parseInt(clientNumber.value, 10) : null;
-    }
-    if (matterNumber) {
-        entryData.matterNumber = matterNumber.value || '';
+    // Initialize pendingUpdates if it doesn't exist (preserve anything already in it)
+    if (!pendingUpdates) {
+        pendingUpdates = {};
     }
     
-    // Notify parent that form has changed (disable close button)
-    notifyFormChanged();
+    // Update entryData with new values
+    let hasChanges = false;
+    if (feeEarner) {
+        const newFe = feeEarner.value || '';
+        if (entryData.fe !== newFe) {
+            entryData.fe = newFe;
+            pendingUpdates.fe = newFe;
+            hasChanges = true;
+        }
+    }
+    if (clientNumber) {
+        const newClientNumber = clientNumber.value ? parseInt(clientNumber.value, 10) : null;
+        if (entryData.clientNumber !== newClientNumber) {
+            entryData.clientNumber = newClientNumber;
+            pendingUpdates.clientNumber = newClientNumber;
+            hasChanges = true;
+        }
+    }
+    if (matterNumber) {
+        const newMatterNumber = matterNumber.value || '';
+        if (entryData.matterNumber !== newMatterNumber) {
+            entryData.matterNumber = newMatterNumber;
+            pendingUpdates.matterNumber = newMatterNumber;
+            hasChanges = true;
+        }
+    }
+    
+    // If changes were made, update the calculation result display (to show/hide Request ID Checks button)
+    if (hasChanges) {
+        updateCalculationResultDisplay();
+        // Notify parent that form has changed (disable close button)
+        notifyFormChanged();
+    }
 }
 
 function handlePutLinks(message) {
@@ -1787,6 +1812,13 @@ async function closeSdltCalculator(generatePDF) {
             // Store PDF blob for upload
             pendingPdfBlob = pdfBlob;
             
+            // If no SDLT due, silently send archive-id message to parent (after PDF is generated and stored)
+            if (sdltResult.sdltDue === 0) {
+                window.parent.postMessage({
+                    type: 'archive-id'
+                }, '*');
+            }
+            
             // Send do-notify message to parent (silently in background)
             window.parent.postMessage({
                 type: 'do-notify'
@@ -2067,6 +2099,30 @@ function downloadPDFBlob(blob, filename) {
 }
 
 /**
+ * Check if matter details are complete (fee earner, client number, matter number)
+ * Checks both entryData and pendingUpdates
+ */
+/**
+ * Check if matter details are complete (fee earner, client number, matter number)
+ * Checks form inputs first (real-time), then pendingUpdates, then entryData
+ */
+function hasMatterDetails() {
+    // Check form inputs first (for real-time validation as user types)
+    const feeEarnerInput = document.getElementById('feeEarner');
+    const clientNumberInput = document.getElementById('clientNumber');
+    const matterNumberInput = document.getElementById('matterNumber');
+    
+    // Get values from form inputs, or fall back to pendingUpdates, or entryData
+    const feValue = feeEarnerInput?.value || pendingUpdates?.fe || entryData?.fe;
+    const clientNumberRaw = clientNumberInput?.value || (pendingUpdates?.clientNumber !== undefined ? pendingUpdates.clientNumber : entryData?.clientNumber);
+    const clientNumberValue = clientNumberRaw ? (typeof clientNumberRaw === 'number' ? clientNumberRaw : parseInt(clientNumberRaw, 10)) : null;
+    const matterNumberValue = matterNumberInput?.value || pendingUpdates?.matterNumber || entryData?.matterNumber;
+    
+    // All three must be present and non-empty/non-null
+    return !!(feValue && clientNumberValue && matterNumberValue);
+}
+
+/**
  * Update calculation result display in workflow card
  */
 function updateCalculationResultDisplay() {
@@ -2076,6 +2132,7 @@ function updateCalculationResultDisplay() {
     const requestIdChecksBtn = document.getElementById('requestIdChecksBtn');
     const idChecksRequestedHint = document.getElementById('idChecksRequestedHint');
     const markIdChecksInProgressBtn = document.getElementById('markIdChecksInProgressBtn');
+    const matterDetailsRequiredHint = document.getElementById('matterDetailsRequiredHint');
     
     if (!openBtn || !resultDiv || !generatedHint) return;
     
@@ -2087,12 +2144,16 @@ function updateCalculationResultDisplay() {
     const hasSdltCalculation = !!(pendingUpdates?.sdltCalculation?.s3Key || entryData?.sdltCalculation?.s3Key);
     
     // Check current status to determine if we should show hint for "No SDLT Due" statuses
-    const statusArray = entryData?.status || [];
+    // Use pendingUpdates.status if available (latest), otherwise entryData.status
+    const statusArray = pendingUpdates?.status || entryData?.status || [];
     const isNoSdltDue = statusArray.includes(STATUS.NO_SDLT_DUE) || statusArray.includes(STATUS.NO_SDLT_DUE_ALT);
     const isCalculatingSdlt = statusArray.includes(STATUS.CALCULATING_SDLT);
     
     // Check if ID checks have been requested
     const idCheckSent = pendingUpdates?.idCheckSent ?? entryData?.idCheckSent ?? false;
+    
+    // Check if matter details are complete
+    const matterDetailsComplete = hasMatterDetails();
     
     // Show hint and result if calculation has been done (either sdltCalculated flag OR document exists)
     // Also show hint for "No SDLT Due" status even if calculation flags aren't set
@@ -2114,14 +2175,18 @@ function updateCalculationResultDisplay() {
             resultDiv.textContent = `SDLT Calculated - £${formattedAmount}`;
         }
         
-        // Handle ID checks button and hint visibility based on idCheckSent and sdltDue
-        // Only show ID checks elements when status is "Calculating SDLT" and SDLT is due
-        if (sdltDue > 0 && isCalculatingSdlt) {
+        // Handle ID checks button and hint visibility based on idCheckSent and sdltRequired
+        // Show ID checks elements when SDLT has been calculated AND is required (sdltDue > 0)
+        // Both sdltCalculated and sdltRequired should be true at this point
+        if (sdltCalculated && sdltRequired) {
             // SDLT is due and we're in the calculating SDLT stage
             if (idCheckSent) {
                 // ID checks have been requested - hide "Request ID Checks" button, show hint and "Mark as in Progress" button
                 if (requestIdChecksBtn) {
                     requestIdChecksBtn.classList.add('hidden');
+                }
+                if (matterDetailsRequiredHint) {
+                    matterDetailsRequiredHint.classList.add('hidden');
                 }
                 if (idChecksRequestedHint) {
                     idChecksRequestedHint.classList.remove('hidden');
@@ -2130,23 +2195,42 @@ function updateCalculationResultDisplay() {
                     markIdChecksInProgressBtn.classList.remove('hidden');
                 }
             } else {
-                // ID checks not yet requested - show "Request ID Checks" button, hide hint and "Mark as in Progress" button
-                if (requestIdChecksBtn) {
-                    requestIdChecksBtn.classList.remove('hidden');
+                // ID checks not yet requested - check if matter details are complete
+                if (matterDetailsComplete) {
+                    // Matter details complete - show "Request ID Checks" button
+                    if (requestIdChecksBtn) {
+                        requestIdChecksBtn.classList.remove('hidden');
+                    }
+                    if (matterDetailsRequiredHint) {
+                        matterDetailsRequiredHint.classList.add('hidden');
+                    }
+                } else {
+                    // Matter details incomplete - show hint, hide button
+                    if (requestIdChecksBtn) {
+                        requestIdChecksBtn.classList.add('hidden');
+                    }
+                    if (matterDetailsRequiredHint) {
+                        matterDetailsRequiredHint.classList.remove('hidden');
+                    }
                 }
                 if (idChecksRequestedHint) {
                     idChecksRequestedHint.classList.add('hidden');
                 }
-        if (markIdChecksInProgressBtn) {
-            markIdChecksInProgressBtn.classList.add('hidden');
-        }
-        const saveToContinueHint = document.getElementById('saveToContinueHint');
-        if (saveToContinueHint) {
-            saveToContinueHint.classList.add('hidden');
-        }
-    }
+                if (markIdChecksInProgressBtn) {
+                    markIdChecksInProgressBtn.classList.add('hidden');
+                }
+                const saveToContinueHint = document.getElementById('saveToContinueHint');
+                if (saveToContinueHint) {
+                    saveToContinueHint.classList.add('hidden');
+                }
+            }
+        } else {
+            // Not showing ID checks section - hide all related elements
             if (requestIdChecksBtn) {
                 requestIdChecksBtn.classList.add('hidden');
+            }
+            if (matterDetailsRequiredHint) {
+                matterDetailsRequiredHint.classList.add('hidden');
             }
             if (idChecksRequestedHint) {
                 idChecksRequestedHint.classList.add('hidden');
@@ -2346,12 +2430,29 @@ function checkAndShowNextWorkflowCard() {
 function handleRequestIdChecks() {
     if (!entryData) return;
     
-    // Initialize pendingUpdates if it doesn't exist
+    // Verify matter details are complete before allowing request
+    if (!hasMatterDetails()) {
+        console.warn('Cannot request ID checks: matter details incomplete');
+        return;
+    }
+    
+    // Initialize pendingUpdates if it doesn't exist (preserve anything already in it)
     if (!pendingUpdates) {
         pendingUpdates = {};
     }
     
-    // Add idCheckSent: true to pending updates
+    // Ensure matter details are in pendingUpdates (preserve existing values, add if missing)
+    if (!pendingUpdates.fe && entryData.fe) {
+        pendingUpdates.fe = entryData.fe;
+    }
+    if (pendingUpdates.clientNumber === undefined && entryData.clientNumber !== undefined) {
+        pendingUpdates.clientNumber = entryData.clientNumber;
+    }
+    if (!pendingUpdates.matterNumber && entryData.matterNumber) {
+        pendingUpdates.matterNumber = entryData.matterNumber;
+    }
+    
+    // Add idCheckSent: true to pending updates (preserve all existing pending updates)
     pendingUpdates.idCheckSent = true;
     
     // Post dont-notify message to parent
