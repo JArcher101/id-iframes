@@ -306,6 +306,23 @@ body {
     margin-bottom: 16px;
 }
 
+/* SDLT Payment Row - 50/50 layout for date and certificate uploader */
+.sdlt-payment-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.sdlt-payment-row .accounting-field-row {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.sdlt-payment-row .file-upload-section {
+    flex: 1;
+    margin-top: 0;
+}
+
 .accounting-label {
     display: block;
     font-family: 'Transport', 'Quicksand', sans-serif;
@@ -331,6 +348,7 @@ body {
     border-color: rgb(0, 60, 113);
     box-shadow: 0 0 0 2px rgba(0, 60, 113, 0.2);
 }
+
 
 .payer-info-full-width {
     width: 100%;

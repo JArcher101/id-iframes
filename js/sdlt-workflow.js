@@ -1140,9 +1140,11 @@ function renderWorkflowStage(stageKey) {
         }
     }
     
-    // Check if status is "Generating Invoices" or "Invoices Sent" - show accounting card or payment card
+    // Check if status is "Generating Invoices", "Invoices Sent", or "SDLT Paid" - show accounting card or payment card
     const statusArray = entryData?.status || [];
-    if (statusArray.includes(STATUS.GENERATING_INVOICES) || statusArray.includes(STATUS.INVOICES_SENT)) {
+    const pendingStatusArray = pendingUpdates?.status || [];
+    const effectiveStatusArray = pendingStatusArray.length > 0 ? pendingStatusArray : statusArray;
+    if (effectiveStatusArray.includes(STATUS.GENERATING_INVOICES) || effectiveStatusArray.includes(STATUS.INVOICES_SENT) || effectiveStatusArray.includes(STATUS.SDLT_PAID)) {
         const accountingInfoCard = document.getElementById('accountingInfoCard');
         const sdltPaymentCard = document.getElementById('sdltPaymentCard');
         const matterCompletedCard = document.getElementById('matterCompletedCard');
@@ -1152,8 +1154,8 @@ function renderWorkflowStage(stageKey) {
             idChecksCompletionCard.classList.add('hidden');
         }
         
-        // Check if status is SDLT_PAID
-        const isSdltPaid = statusArray.includes(STATUS.SDLT_PAID);
+        // Check if status is SDLT_PAID (using effectiveStatusArray already calculated above)
+        const isSdltPaid = effectiveStatusArray.includes(STATUS.SDLT_PAID);
         const hasSdlt5Cert = !!(entryData?.sdlt5Certificate && entryData.sdlt5Certificate.s3Key);
         
         if (isSdltPaid && hasSdlt5Cert) {
@@ -2317,9 +2319,11 @@ function updateIdChecksCompletionDisplay() {
     
     if (!idChecksCompletionCard || !accountingInfoCard || !confirmIdChecksCompleteCheckbox) return;
     
-    // Check if status is "ID Checks in Progress"
+    // Check if status is "ID Checks in Progress" (check both entryData and pendingUpdates)
     const statusArray = entryData?.status || [];
-    const isIdChecksInProgress = statusArray.includes(STATUS.ID_CHECKS_IN_PROGRESS);
+    const pendingStatusArray = pendingUpdates?.status || [];
+    const effectiveStatusArray = pendingStatusArray.length > 0 ? pendingStatusArray : statusArray;
+    const isIdChecksInProgress = effectiveStatusArray.includes(STATUS.ID_CHECKS_IN_PROGRESS);
     
     if (!isIdChecksInProgress) {
         // Hide both cards if not in ID Checks in Progress stage
@@ -3037,12 +3041,18 @@ function renderAccountingInfoCard() {
     
     const thsPayer = entryData.thsFeePayer;
     const sdltPayer = entryData.sdltFeePayer;
+    const samePayer = thsPayer === sdltPayer;
     
-    // Set invoice date to today if not set
+    // Set invoice date from entryData if it exists, otherwise leave empty (no preselection of today)
     const invoiceDateInput = document.getElementById('invoiceDate');
-    if (invoiceDateInput && !invoiceDateInput.value) {
-        const today = new Date().toISOString().split('T')[0];
-        invoiceDateInput.value = today;
+    if (invoiceDateInput) {
+        if (entryData.invoiceDate) {
+            // Use existing invoice date from entryData
+            invoiceDateInput.value = entryData.invoiceDate;
+        } else {
+            // Clear any existing value (don't preselect today)
+            invoiceDateInput.value = '';
+        }
     }
     
     // Show/hide hint about sending invoice directly
@@ -3056,13 +3066,23 @@ function renderAccountingInfoCard() {
         }
     }
     
+    // Show/hide "THS Legal Fee Payer" title based on whether payers differ
+    const thsPayerTitle = document.querySelector('.payer-section .payer-title');
+    if (thsPayerTitle) {
+        if (samePayer) {
+            thsPayerTitle.classList.add('hidden');
+        } else {
+            thsPayerTitle.classList.remove('hidden');
+        }
+    }
+    
     // Render THS payer information
     renderPayerInfo('thsPayerInfo', thsPayer, 'ths');
     
     // Render SDLT payer information (if different from THS payer)
     const sdltPayerSection = document.getElementById('sdltPayerSection');
     if (sdltPayerSection) {
-        if (thsPayer !== sdltPayer) {
+        if (!samePayer) {
             sdltPayerSection.classList.remove('hidden');
             renderPayerInfo('sdltPayerInfo', sdltPayer, 'sdlt');
         } else {
@@ -3455,8 +3475,11 @@ function setupSdlt5CertificateUpload() {
     if (!input || !area) return;
     
     // Check if status is SDLT_PAID - only show SDLT5 cert section in this case
+    // Check both entryData and pendingUpdates to handle unsaved status changes
     const statusArray = entryData?.status || [];
-    const isSdltPaid = statusArray.includes(STATUS.SDLT_PAID);
+    const pendingStatusArray = pendingUpdates?.status || [];
+    const effectiveStatusArray = pendingStatusArray.length > 0 ? pendingStatusArray : statusArray;
+    const isSdltPaid = effectiveStatusArray.includes(STATUS.SDLT_PAID);
     
     if (!isSdltPaid) {
         // Hide SDLT5 cert section if status is not SDLT_PAID
@@ -3705,16 +3728,27 @@ function updateAccountingPendingUpdates() {
         pendingUpdates.invoiceDate = invoiceDateInput.value;
     }
     
+    // Check if any required documents are selected
+    const hasThsInvoice = !!accountingFiles.thsInvoice;
+    const hasSdltInvoice = !!accountingFiles.sdltInvoice;
+    const hasCompletionStatement = !!accountingFiles.completionStatement;
+    const hasAnyDocument = hasThsInvoice || hasSdltInvoice || hasCompletionStatement;
+    
+    // Add status "Invoices Sent" if any document is selected
+    if (hasAnyDocument) {
+        pendingUpdates.status = [STATUS.INVOICES_SENT];
+    }
+    
     // Add flags based on which files are selected
-    if (accountingFiles.thsInvoice) {
+    if (hasThsInvoice) {
         pendingUpdates.feeInvoiceSent = true;
     }
     
-    if (accountingFiles.sdltInvoice) {
+    if (hasSdltInvoice) {
         pendingUpdates.sdltInvoiceSent = true;
     }
     
-    if (accountingFiles.completionStatement) {
+    if (hasCompletionStatement) {
         pendingUpdates.completionStatementSent = true;
     }
     
@@ -3774,37 +3808,341 @@ function generateAccountingChatMessage() {
 function loadMockData() {
     const mockEntryData = {
         type: 'entry-data',
-        user: 'test.user@example.com',
         data: {
-            _id: 'mock-entry-id-123',
-            _createdDate: '2025-12-09T16:54:23.281Z',
-            _updatedDate: '2025-12-27T19:48:44.432Z',
-            status: ['New Submission'],
-            thsNotification: true, // Required for first-open detection
-            tenantsFirstName: 'Se',
-            tenantLastName: 'Stewart',
-            sdltAddress: {
-                postcode: 'TR15 2ND',
-                country: 'GBR',
-                building_name: '',
-                flat_number: '',
-                street: 'Southgate Street',
-                building_number: '94',
-                sub_street: '',
-                town: 'Redruth'
+            user: 'test.user@example.com',
+            data: {
+            "tenantsEmployer": "LADYWELL ARIZONA LTD",
+            "thsFeePayer": "The Tenant",
+            "idEntries": [
+              {
+                "_id": "d33c4041-99c0-4a41-bb8b-b00f607732e3",
+                "name": "S Stewart",
+                "status": "Not sent",
+                "updated": "[object Promise]"
+              }
+            ],
+            "sdltFeePayer": "The Tenant",
+            "fe": "Emma Lockie",
+            "tenantsPreviousAddress": {
+              "postcode": "22087",
+              "country": "DEU",
+              "building_name": "",
+              "flat_number": "1",
+              "street": "Richardalle",
+              "building_number": "",
+              "sub_street": "",
+              "town": "Hamburg"
             },
-            idCheckSent: false,
-            sdltCalculated: false,
-            sdlt5Uploaded: false,
-            feeInvoiceSent: false,
-            sdltInvoiceSent: false,
-            sdltPaid: false,
-            completionStatementSent: false,
-            ukMoveInDate: '2025-12-09',
-            invoiceDate: null,
-            sdltPaid1: null,
-            note: '',
-            supportingDocuments: []
+            "leaseAgreement": {
+              "document": "Lease Agreement",
+              "data": {
+                "type": "application/pdf",
+                "size": 135226,
+                "name": "traffic-sign-drawing-schedule-17-part-02-th3.pdf",
+                "lastModified": 1765219438967
+              },
+              "isLease": true,
+              "date": "10/12/2025, 14:01:29",
+              "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
+              "file": {},
+              "isAdditional": false,
+              "type": "user",
+              "s3Key": "protected/sWFnU7p",
+              "url": "https://sdlt-documents.thurstanhoskin.app/protected/sWFnU7p?Expires=1767019278&Key-Pair-Id=KBX1HDLBRBVLP&Signature=w5hPamThbyZGcIK-zzKCj0esRvS-njNPP4-dN5lYnqCgB0ARF7edhf8W3sz9MLmVhzVVtGoHGlrVFzzxJ-RI34Naggml~MkQR4kbTDqL4lI4CXKV6nA0Xeuo1ov6LaysvV7gJ-OVa6ysa9B6HlXe4qv2PsR3bgwM9syymXYBSGRkOKMdkWGxzIimw4XZWepJaVWx7RbSHI3qfZwrCSygKWX2Bk8~DmwXyNUCy~e0j6CB9oNtJpCZWrRg1S5AubtpgV6aA2ZsbIF1EJ5~sCyCt4pKe7U3GSL7FgL0Hp8EBYf7C6khO8h4moxhLI2yPxv4tcSyA5DCpK4S~c0cp4XaEA__",
+              "liveUrl": "https://sdlt-documents.thurstanhoskin.app/protected/sWFnU7p?Expires=1767019278&Key-Pair-Id=KBX1HDLBRBVLP&Signature=w5hPamThbyZGcIK-zzKCj0esRvS-njNPP4-dN5lYnqCgB0ARF7edhf8W3sz9MLmVhzVVtGoHGlrVFzzxJ-RI34Naggml~MkQR4kbTDqL4lI4CXKV6nA0Xeuo1ov6LaysvV7gJ-OVa6ysa9B6HlXe4qv2PsR3bgwM9syymXYBSGRkOKMdkWGxzIimw4XZWepJaVWx7RbSHI3qfZwrCSygKWX2Bk8~DmwXyNUCy~e0j6CB9oNtJpCZWrRg1S5AubtpgV6aA2ZsbIF1EJ5~sCyCt4pKe7U3GSL7FgL0Hp8EBYf7C6khO8h4moxhLI2yPxv4tcSyA5DCpK4S~c0cp4XaEA__"
+            },
+            "lessee": "The Tenant",
+            "_id": "b7fd94ef-0907-465d-8b91-06df016e663d",
+            "invoiceDate": null,
+            "_owner": "99ae0581-f7d7-459e-ab45-1df5859624e7",
+            "gdprIndividualsAgreement": true,
+            "_createdDate": "2025-12-10T14:01:45.954Z",
+            "ukMoveInDate": "2025-12-10",
+            "thsInvoice": null,
+            "chatLog": [
+              {
+                "message": "Submission sent by jacob.archer-moran@thurstanhoskin.co.uk",
+                "time": "10/12/2025, 02:01:45 pm",
+                "type": "system"
+              },
+              {
+                "_id": "rI7B8hE",
+                "message": "I have calculated the SDLT due on this matter to be £1,068.84. We will now proceed to opening a matter and completing the relevant checks.",
+                "time": "12/29/2025, 12:36:30 AM",
+                "type": "THS",
+                "user": "jacob.archer-moran@thurstanhoskin.co.uk"
+              },
+              {
+                "_id": "o08eFql",
+                "message": "I have initiated the required ID checks on this submission and we are awaiting a response from the client via the Thirdfort App.",
+                "time": "12/29/2025, 12:57:54 AM",
+                "type": "THS",
+                "user": "jacob.archer-moran@thurstanhoskin.co.uk"
+              },
+              {
+                "_id": "O9Q8pYk",
+                "message": "the invoice and completion statement have been generated based on my SDLT Calculation. These are now available to view in the portal. Please ensure these are dealt with promptly to avoid HMRC SDLT penalties.",
+                "time": "12/29/2025, 12:58:53 AM",
+                "type": "THS",
+                "user": "jacob.archer-moran@thurstanhoskin.co.uk"
+              },
+              {
+                "_id": "YN5leLi",
+                "message": "We have paid the SDLT on this submission, once we receive the SDLT5 Certificate we will upload it here and close the matter. No further action is required. Please let me know if you need any further support.",
+                "time": "12/29/2025, 1:25:44 AM",
+                "type": "THS",
+                "user": "jacob.archer-moran@thurstanhoskin.co.uk"
+              }
+            ],
+            "dwellworksReference": "test02",
+            "idCheckSent": true,
+            "dwellworksNotification": true,
+            "tenantsFirstName": "Se",
+            "dwellworksContactNumber": "+441209203211",
+            "clientNumber": 52,
+            "sdltDue": 1068.84,
+            "employersRegistrationNumber": "16083505",
+            "_updatedDate": "2025-12-29T01:25:44.234Z",
+            "sdltPaid": null,
+            "sdltRequired": true,
+            "submitterFirstName": "Jacob",
+            "employersCountryOfRegistration": "United Kingdom",
+            "leaseAgreementNote": "lease 25/26",
+            "matterNumber": "52",
+            "supportingDocuments": [
+              {
+                "src": {
+                  "document": "Lease Agreement",
+                  "data": {
+                    "type": "application/pdf",
+                    "size": 135226,
+                    "name": "traffic-sign-drawing-schedule-17-part-02-th3.pdf",
+                    "lastModified": 1765219438967
+                  },
+                  "isLease": true,
+                  "date": "10/12/2025, 14:01:29",
+                  "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
+                  "file": {},
+                  "isAdditional": false,
+                  "type": "user",
+                  "s3Key": "protected/sWFnU7p"
+                },
+                "title": "Current Lease",
+                "_id": "Dp9oxEn"
+              }
+            ],
+            "thsNotification": false,
+            "privacyPolicy": true,
+            "completionStatementSent": null,
+            "tenantDateOfBirth": "2000-01-05",
+            "status": [
+              "ID Checks in Progress"
+            ],
+            "sdltAddress": {
+              "postcode": "TR15 2ND",
+              "country": "GBR",
+              "building_name": "",
+              "flat_number": "",
+              "street": "Southgate Street",
+              "building_number": "94",
+              "sub_street": "",
+              "town": "Redruth"
+            },
+            "tenantsMobileNumber": "+447493580033",
+            "addSupportingDocuments": false,
+            "submitterLastName": "Archer-Moran",
+            "sdltPaid1": "2025-12-31",
+            "feeInvoiceSent": null,
+            "companyData": {
+              "companyData": {
+                "company_type": "ltd",
+                "officers": [
+                  {
+                    "etag": "869cb2b84f7a0c4ec86b12f7a0e8796cac5949c4",
+                    "name": "HIGGINS, Bernadette",
+                    "appointed_on": "2024-11-15",
+                    "identity_verification_details": {
+                      "appointment_verification_statement_due_on": "2026-11-28"
+                    },
+                    "links": {
+                      "self": "/company/16083505/appointments/9424vQeUmqJ1gdmutjhZVCBbWM4",
+                      "officer": {
+                        "appointments": "/officers/4hOEOgUlQnQzm3fpsDM73Cim2DQ/appointments"
+                      }
+                    },
+                    "date_of_birth": {
+                      "month": 2,
+                      "year": 1978
+                    },
+                    "is_pre_1992_appointment": false,
+                    "nationality": "British",
+                    "country_of_residence": "England",
+                    "address": {
+                      "premises": "124",
+                      "country": "England",
+                      "postal_code": "NW3 5JS",
+                      "locality": "London",
+                      "address_line_1": "Finchley Road"
+                    },
+                    "person_number": "298143830001",
+                    "officer_role": "director"
+                  },
+                  {
+                    "etag": "38f6303918834b7d14afe08b5caee607ee065c7a",
+                    "name": "MICHAELS, Steven Scott",
+                    "appointed_on": "2024-11-15",
+                    "identity_verification_details": {
+                      "appointment_verification_statement_due_on": "2026-11-28"
+                    },
+                    "links": {
+                      "self": "/company/16083505/appointments/h0GAWLBJVNtxbT5Ta_IrsOz2d0A",
+                      "officer": {
+                        "appointments": "/officers/ZQ4_mbp91IGNcTIcaIYoHCA2EjY/appointments"
+                      }
+                    },
+                    "date_of_birth": {
+                      "month": 2,
+                      "year": 1970
+                    },
+                    "is_pre_1992_appointment": false,
+                    "nationality": "American",
+                    "country_of_residence": "United States",
+                    "address": {
+                      "premises": "124",
+                      "country": "England",
+                      "postal_code": "NW3 5JS",
+                      "locality": "London",
+                      "address_line_1": "Finchley Road"
+                    },
+                    "person_number": "319365680001",
+                    "officer_role": "director"
+                  },
+                  {
+                    "etag": "3f923547c66f32e35bbf6c74c7d8423d9ede7b87",
+                    "name": "MORRIS, Felicity",
+                    "appointed_on": "2024-11-15",
+                    "identity_verification_details": {
+                      "appointment_verification_statement_due_on": "2026-11-28"
+                    },
+                    "links": {
+                      "self": "/company/16083505/appointments/-BxRZ16wuxMK6tLkf-u0t9oBePY",
+                      "officer": {
+                        "appointments": "/officers/qYGJqpJiU_t2uKWFOf9rDw8dkEs/appointments"
+                      }
+                    },
+                    "date_of_birth": {
+                      "month": 7,
+                      "year": 1986
+                    },
+                    "is_pre_1992_appointment": false,
+                    "nationality": "British",
+                    "country_of_residence": "England",
+                    "address": {
+                      "premises": "124",
+                      "country": "England",
+                      "postal_code": "NW3 5JS",
+                      "locality": "London",
+                      "address_line_1": "Finchley Road"
+                    },
+                    "person_number": "329410590001",
+                    "officer_role": "director"
+                  }
+                ],
+                "confirmation_statement": {
+                  "last_made_up_to": "2025-11-14",
+                  "next_due": "2026-11-28",
+                  "next_made_up_to": "2026-11-14",
+                  "overdue": false
+                },
+                "company_name": "LADYWELL ARIZONA LTD",
+                "company_status": "active",
+                "registered_office_address": {
+                  "address_line_1": "124 Finchley Road",
+                  "country": "England",
+                  "locality": "London",
+                  "postal_code": "NW3 5JS"
+                },
+                "date_of_creation": "2024-11-15",
+                "sic_codes": [
+                  "59111"
+                ],
+                "has_been_liquidated": false,
+                "has_insolvency_history": false,
+                "company_number": "16083505",
+                "accounts": {
+                  "overdue": false,
+                  "next_made_up_to": "2025-11-30",
+                  "next_accounts": {
+                    "due_on": "2026-08-15",
+                    "overdue": false,
+                    "period_end_on": "2025-11-30",
+                    "period_start_on": "2024-11-15"
+                  },
+                  "accounting_reference_date": {
+                    "day": "30",
+                    "month": "11"
+                  },
+                  "next_due": "2026-08-15"
+                },
+                "pscs": [
+                  {
+                    "etag": "0303f325b303b983ce89d57ba8ff2ac3e9f3769e",
+                    "name": "Ladywell Films Ltd",
+                    "ceased": false,
+                    "identification": {
+                      "legal_form": "Company Limited By Shares",
+                      "legal_authority": "Companies House",
+                      "country_registered": "England",
+                      "registration_number": "14242693",
+                      "place_registered": "Register Of Companies"
+                    },
+                    "notified_on": "2024-11-15",
+                    "links": {
+                      "self": "/company/16083505/persons-with-significant-control/corporate-entity/QVgfNePRiiFk_9IiHsGOwpVci-g"
+                    },
+                    "natures_of_control": [
+                      "ownership-of-shares-75-to-100-percent-as-firm",
+                      "voting-rights-75-to-100-percent-as-firm"
+                    ],
+                    "address": {
+                      "premises": "124",
+                      "country": "England",
+                      "postal_code": "NW3 5JS",
+                      "locality": "London",
+                      "address_line_1": "Finchley Road"
+                    },
+                    "kind": "corporate-entity-person-with-significant-control"
+                  }
+                ]
+              }
+            },
+            "sharedEmail": "contact@ja-es.uk",
+            "tenantLastName": "Stewart",
+            "terms": true,
+            "sdltCalculation": {
+              "document": "SDLT Calculation",
+              "data": {
+                "type": "application/pdf",
+                "size": 481523,
+                "name": "SDLT Calculation.pdf",
+                "lastModified": 1766968588572
+              },
+              "fieldKey": "sdltCalculation",
+              "date": "29/12/2025, 00:36:28",
+              "uploader": "jacob.archer-moran@thurstanhoskin.co.uk",
+              "file": {},
+              "isCalculation": true,
+              "type": "user",
+              "s3Key": "protected/74rwgnW",
+              "url": "https://sdlt-documents.thurstanhoskin.app/protected/74rwgnW?Expires=1767019278&Key-Pair-Id=KBX1HDLBRBVLP&Signature=q7ZKoS4ZZZ5SoU1w0bFKjtZtgZ0svB40c7UEv8Y6VR80Mm91zuujGE62U~8A1~y5-HQhgOunjP5F7KY3gccwUByEaqoqrWOImm6T3IQolvba9AiV5kg6fw6lf2o8g2alLtQjmFqwwSASsVkivb3aZKdjfUSHdRwwJM1UkRh-ufyh0po1JZ4TtyJBxsbQ4DS5VtMKjGCm1cxbysy69xh4CpOvc7ulp1XgQsjwWciAnBXchsam4wDVNzmR2tD7T0fhEJun1reptTrV4QEedr7GWYhmjiNDzpW7xAJ7qHdmd6zOZa5OZ2CGarZ0vT8H62A-OMBbeXgW8BC8NUKu6TvibA__",
+              "liveUrl": "https://sdlt-documents.thurstanhoskin.app/protected/74rwgnW?Expires=1767019278&Key-Pair-Id=KBX1HDLBRBVLP&Signature=q7ZKoS4ZZZ5SoU1w0bFKjtZtgZ0svB40c7UEv8Y6VR80Mm91zuujGE62U~8A1~y5-HQhgOunjP5F7KY3gccwUByEaqoqrWOImm6T3IQolvba9AiV5kg6fw6lf2o8g2alLtQjmFqwwSASsVkivb3aZKdjfUSHdRwwJM1UkRh-ufyh0po1JZ4TtyJBxsbQ4DS5VtMKjGCm1cxbysy69xh4CpOvc7ulp1XgQsjwWciAnBXchsam4wDVNzmR2tD7T0fhEJun1reptTrV4QEedr7GWYhmjiNDzpW7xAJ7qHdmd6zOZa5OZ2CGarZ0vT8H62A-OMBbeXgW8BC8NUKu6TvibA__"
+            },
+            "sdltCalculated": true,
+            "completionStatement": null,
+            "dwellworksEmail": "jacob.archer-moran@thurstanhoskin.co.uk",
+            "sdltInvoice": null,
+            "sdlt5Certificate": null
+          }
         }
     };
     

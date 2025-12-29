@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     
     <!-- SDLT Workflow Specific CSS -->
-    <link rel="stylesheet" href="css/sdlt-workflow.css?v=9648ba4">
+    <link rel="stylesheet" href="css/sdlt-workflow.css?v=9563528">
     
     <style>
         /*
@@ -146,12 +146,6 @@
             </div>
             
             <div class="stage-content">
-                <!-- Global Invoice Date -->
-                <div class="accounting-field-row">
-                    <label for="invoiceDate" class="accounting-label">Invoice Date</label>
-                    <input type="date" id="invoiceDate" class="accounting-input" />
-                </div>
-                
                 <!-- Send Invoice Directly Hint -->
                 <div id="sendInvoiceDirectlyHint" class="calculation-generated-hint hidden" style="margin-top: 8px; margin-bottom: 12px; background: rgba(217, 119, 6, 0.1); border-color: rgba(217, 119, 6, 0.3); color: #d97706;">
                     ⚠️ Don't forget to also send the invoice directly to the payer
@@ -253,6 +247,11 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Invoice Date (below uploaders) -->
+                <div class="accounting-field-row" style="margin-top: 12px;">
+                    <input type="date" id="invoiceDate" class="accounting-input" />
+                </div>
             </div>
         </div>
 
@@ -263,30 +262,33 @@
                 <h3 class="stage-title">SDLT Payment</h3>
             </div>
             <div class="stage-content">
-                <div class="accounting-field-row">
-                    <label for="sdltPaidDate" class="accounting-label">SDLT Fee Paid Date</label>
-                    <input type="date" id="sdltPaidDate" class="accounting-input" />
-                </div>
-                
                 <!-- SDLT5 Certificate Document Card -->
                 <div id="sdlt5CertificateDocumentCard" class="document-card hidden" style="margin-top: 12px; margin-bottom: 12px;">
                     <!-- Will be populated when document exists -->
                 </div>
                 
-                <!-- SDLT5 Certificate Upload -->
-                <div class="file-upload-section" style="margin-top: 12px;">
-                    <label class="file-upload-label">SDLT5 Certificate (PDF)</label>
-                    <div class="file-upload-area" id="sdlt5CertificateUpload">
-                        <input type="file" id="sdlt5CertificateFileInput" accept="application/pdf" style="display: none;" />
-                        <div class="file-upload-placeholder">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                            </svg>
-                            <span>Select PDF or drag & drop</span>
-                        </div>
-                        <div class="file-upload-selected hidden">
-                            <span class="file-name"></span>
-                            <button type="button" class="remove-file-btn">Remove</button>
+                <!-- Payment Date and Certificate Upload Row -->
+                <div class="sdlt-payment-row">
+                    <div class="accounting-field-row">
+                        <label for="sdltPaidDate" class="accounting-label">SDLT Fee Paid Date</label>
+                        <input type="date" id="sdltPaidDate" class="accounting-input" />
+                    </div>
+                    
+                    <!-- SDLT5 Certificate Upload -->
+                    <div class="file-upload-section">
+                        <label class="file-upload-label">SDLT5 Certificate (PDF)</label>
+                        <div class="file-upload-area" id="sdlt5CertificateUpload">
+                            <input type="file" id="sdlt5CertificateFileInput" accept="application/pdf" style="display: none;" />
+                            <div class="file-upload-placeholder">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                <span>Select PDF or drag & drop</span>
+                            </div>
+                            <div class="file-upload-selected hidden">
+                                <span class="file-name"></span>
+                                <button type="button" class="remove-file-btn">Remove</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -448,11 +450,11 @@
     <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
 
     <!-- SDLT Workflow JavaScript -->
-    <script src="js/sdlt-workflow.js?v=9648ba4"></script>
+    <script src="js/sdlt-workflow.js?v=9563528"></script>
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '9648ba4';
+    window.__IFRAME_VERSION__ = '9563528';
     console.log('[sdlt-workflow] version ' + window.__IFRAME_VERSION__);
   })();
 </script>
