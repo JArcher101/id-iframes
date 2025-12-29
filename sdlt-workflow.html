@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     
     <!-- SDLT Workflow Specific CSS -->
-    <link rel="stylesheet" href="css/sdlt-workflow.css?v=f71f96a">
+    <link rel="stylesheet" href="css/sdlt-workflow.css?v=4a083f4">
     
     <style>
         /*
@@ -131,7 +131,7 @@
                 <span class="stage-badge">Workflow Task</span>
             </div>
             <div class="stage-content">
-                <label class="checkbox-label" style="margin-top: 8px;">
+                <label class="checkbox-label">
                     <input type="checkbox" id="confirmIdChecksCompleteCheckbox">
                     <span>I confirm all ID checks are present and complete</span>
                 </label>
@@ -157,85 +157,98 @@
                     ⚠️ Don't forget to also send the invoice directly to the payer
                 </div>
                 
-                <!-- THS Fee Payer Section -->
-                <div class="payer-section">
-                    <h4 class="payer-title">THS Legal Fee Payer</h4>
-                    <div id="thsPayerInfo" class="payer-info">
-                        <!-- Will be populated dynamically -->
+                <!-- Payer Information (Full Width) -->
+                <div class="payer-info-full-width">
+                    <!-- THS Fee Payer Section -->
+                    <div class="payer-section">
+                        <h4 class="payer-title">THS Legal Fee Payer</h4>
+                        <div id="thsPayerInfo" class="payer-info">
+                            <!-- Will be populated dynamically -->
+                        </div>
                     </div>
                     
-                    <!-- THS Invoice Document Card (shown if already uploaded) -->
-                    <div id="thsInvoiceDocumentCard" class="document-card hidden" style="margin-bottom: 12px;">
-                        <!-- Will be populated when document exists -->
-                    </div>
-                    <!-- THS Invoice Upload -->
-                    <div class="file-upload-section">
-                        <label class="file-upload-label">THS Invoice (PDF)</label>
-                        <div class="file-upload-area" id="thsInvoiceUpload">
-                            <input type="file" id="thsInvoiceFileInput" accept="application/pdf" style="display: none;" />
-                            <div class="file-upload-placeholder">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                                </svg>
-                                <span>Select PDF or drag & drop</span>
-                            </div>
-                            <div class="file-upload-selected hidden">
-                                <span class="file-name"></span>
-                                <button type="button" class="remove-file-btn">Remove</button>
-                            </div>
+                    <!-- SDLT Fee Payer Section (shown if different from THS payer) -->
+                    <div id="sdltPayerSection" class="payer-section hidden">
+                        <h4 class="payer-title">SDLT Fee Payer</h4>
+                        <div id="sdltPayerInfo" class="payer-info">
+                            <!-- Will be populated dynamically -->
                         </div>
                     </div>
                 </div>
                 
-                <!-- SDLT Fee Payer Section (shown if different from THS payer) -->
-                <div id="sdltPayerSection" class="payer-section hidden">
-                    <h4 class="payer-title">SDLT Fee Payer</h4>
-                    <div id="sdltPayerInfo" class="payer-info">
-                        <!-- Will be populated dynamically -->
-                    </div>
-                    
-                    <!-- SDLT Invoice Document Card (shown if already uploaded) -->
-                    <div id="sdltInvoiceDocumentCard" class="document-card hidden" style="margin-bottom: 12px;">
-                        <!-- Will be populated when document exists -->
-                    </div>
-                    <!-- SDLT Invoice Upload -->
-                    <div class="file-upload-section">
-                        <label class="file-upload-label">SDLT Invoice (PDF)</label>
-                        <div class="file-upload-area" id="sdltInvoiceUpload">
-                            <input type="file" id="sdltInvoiceFileInput" accept="application/pdf" style="display: none;" />
-                            <div class="file-upload-placeholder">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                                </svg>
-                                <span>Select PDF or drag & drop</span>
-                            </div>
-                            <div class="file-upload-selected hidden">
-                                <span class="file-name"></span>
-                                <button type="button" class="remove-file-btn">Remove</button>
+                <!-- Uploaders Container (50/50 layout when 2 uploaders visible) -->
+                <div id="accountingUploadersContainer" class="accounting-uploaders-container">
+                    <!-- THS Invoice Section -->
+                    <div id="thsInvoiceUploadWrapper" class="accounting-uploader-wrapper">
+                        <!-- THS Invoice Document Card (shown if already uploaded) -->
+                        <div id="thsInvoiceDocumentCard" class="document-card hidden" style="margin-bottom: 12px;">
+                            <!-- Will be populated when document exists -->
+                        </div>
+                        <!-- THS Invoice Upload -->
+                        <div class="file-upload-section">
+                            <label class="file-upload-label">THS Invoice (PDF)</label>
+                            <div class="file-upload-area" id="thsInvoiceUpload">
+                                <input type="file" id="thsInvoiceFileInput" accept="application/pdf" style="display: none;" />
+                                <div class="file-upload-placeholder">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                    <span>Select PDF or drag & drop</span>
+                                </div>
+                                <div class="file-upload-selected hidden">
+                                    <span class="file-name"></span>
+                                    <button type="button" class="remove-file-btn">Remove</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Completion Statement Upload (always shown if SDLT fee payer exists) -->
-                <div id="completionStatementSection" class="payer-section">
-                    <h4 class="payer-title">Completion Statement</h4>
-                    <div id="completionStatementDocumentCard" class="document-card hidden">
-                        <!-- Will be populated when document exists -->
-                    </div>
-                    <div class="file-upload-section">
-                        <label class="file-upload-label">Completion Statement (PDF)</label>
-                        <div class="file-upload-area" id="completionStatementUpload">
-                            <input type="file" id="completionStatementFileInput" accept="application/pdf" style="display: none;" />
-                            <div class="file-upload-placeholder">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                                </svg>
-                                <span>Select PDF or drag & drop</span>
+                    
+                    <!-- SDLT Invoice Section (shown if different payer) -->
+                    <div id="sdltInvoiceUploadWrapper" class="accounting-uploader-wrapper hidden">
+                        <!-- SDLT Invoice Document Card (shown if already uploaded) -->
+                        <div id="sdltInvoiceDocumentCard" class="document-card hidden" style="margin-bottom: 12px;">
+                            <!-- Will be populated when document exists -->
+                        </div>
+                        <!-- SDLT Invoice Upload -->
+                        <div class="file-upload-section">
+                            <label class="file-upload-label">SDLT Invoice (PDF)</label>
+                            <div class="file-upload-area" id="sdltInvoiceUpload">
+                                <input type="file" id="sdltInvoiceFileInput" accept="application/pdf" style="display: none;" />
+                                <div class="file-upload-placeholder">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                    <span>Select PDF or drag & drop</span>
+                                </div>
+                                <div class="file-upload-selected hidden">
+                                    <span class="file-name"></span>
+                                    <button type="button" class="remove-file-btn">Remove</button>
+                                </div>
                             </div>
-                            <div class="file-upload-selected hidden">
-                                <span class="file-name"></span>
-                                <button type="button" class="remove-file-btn">Remove</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Completion Statement Section -->
+                    <div id="completionStatementUploadWrapper" class="accounting-uploader-wrapper">
+                        <!-- Completion Statement Document Card -->
+                        <div id="completionStatementDocumentCard" class="document-card hidden" style="margin-bottom: 12px;">
+                            <!-- Will be populated when document exists -->
+                        </div>
+                        <!-- Completion Statement Upload -->
+                        <div class="file-upload-section">
+                            <label class="file-upload-label">Completion Statement (PDF)</label>
+                            <div class="file-upload-area" id="completionStatementUpload">
+                                <input type="file" id="completionStatementFileInput" accept="application/pdf" style="display: none;" />
+                                <div class="file-upload-placeholder">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                    <span>Select PDF or drag & drop</span>
+                                </div>
+                                <div class="file-upload-selected hidden">
+                                    <span class="file-name"></span>
+                                    <button type="button" class="remove-file-btn">Remove</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -254,20 +267,14 @@
                     <label for="sdltPaidDate" class="accounting-label">SDLT Fee Paid Date</label>
                     <input type="date" id="sdltPaidDate" class="accounting-input" />
                 </div>
-                <div id="sdltPaymentSaveHint" class="save-to-continue-hint hidden" style="margin-top: 12px;">
-                    Please save the entry to continue
+                
+                <!-- SDLT5 Certificate Document Card -->
+                <div id="sdlt5CertificateDocumentCard" class="document-card hidden" style="margin-top: 12px; margin-bottom: 12px;">
+                    <!-- Will be populated when document exists -->
                 </div>
-            </div>
-        </div>
-
-        <!-- SDLT Certificate Upload Task Card -->
-        <div id="sdltCertificateCard" class="stage-card hidden">
-            <div class="stage-header">
-                <span class="stage-badge">Workflow Task</span>
-                <h3 class="stage-title">SDLT5 Certificate</h3>
-            </div>
-            <div class="stage-content">
-                <div class="file-upload-section">
+                
+                <!-- SDLT5 Certificate Upload -->
+                <div class="file-upload-section" style="margin-top: 12px;">
                     <label class="file-upload-label">SDLT5 Certificate (PDF)</label>
                     <div class="file-upload-area" id="sdlt5CertificateUpload">
                         <input type="file" id="sdlt5CertificateFileInput" accept="application/pdf" style="display: none;" />
@@ -282,6 +289,10 @@
                             <button type="button" class="remove-file-btn">Remove</button>
                         </div>
                     </div>
+                </div>
+                
+                <div id="sdltPaymentSaveHint" class="save-to-continue-hint hidden" style="margin-top: 12px;">
+                    Please save the entry to continue
                 </div>
             </div>
         </div>
@@ -437,11 +448,11 @@
     <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
 
     <!-- SDLT Workflow JavaScript -->
-    <script src="js/sdlt-workflow.js?v=f71f96a"></script>
+    <script src="js/sdlt-workflow.js?v=4a083f4"></script>
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = 'f71f96a';
+    window.__IFRAME_VERSION__ = '4a083f4';
     console.log('[sdlt-workflow] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

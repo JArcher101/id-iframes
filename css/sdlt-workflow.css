@@ -272,12 +272,23 @@ body {
     font-family: 'RotisRegular', 'Quicksand', sans-serif;
     font-size: 0.9rem;
     color: #333;
-    gap: 8px;
+    gap: 12px;
+    padding: 14px 16px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    margin: 0;
+}
+
+.checkbox-label:hover {
+    background: #f8f9fa;
+    border-color: rgb(0, 60, 113);
 }
 
 .checkbox-label input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     margin-top: 2px;
     flex-shrink: 0;
     cursor: pointer;
@@ -286,6 +297,8 @@ body {
 
 .checkbox-label span {
     line-height: 1.5;
+    flex: 1;
+    padding-top: 1px;
 }
 
 /* Accounting Information Card Styles */
@@ -319,16 +332,42 @@ body {
     box-shadow: 0 0 0 2px rgba(0, 60, 113, 0.2);
 }
 
+.payer-info-full-width {
+    width: 100%;
+    margin-bottom: 12px;
+}
+
 .payer-section {
     margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid #e0e0e0;
 }
 
-.payer-section:first-of-type {
+.payer-info-full-width .payer-section:first-of-type {
     border-top: none;
     margin-top: 0;
     padding-top: 0;
+}
+
+/* Accounting Uploaders Container - 50/50 layout when 2 uploaders visible */
+.accounting-uploaders-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.accounting-uploaders-container.two-columns {
+    flex-direction: row;
+    gap: 12px;
+}
+
+.accounting-uploaders-container.two-columns .accounting-uploader-wrapper {
+    flex: 1;
+    min-width: 0;
+}
+
+.accounting-uploader-wrapper {
+    width: 100%;
 }
 
 .payer-title {

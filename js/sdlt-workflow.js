@@ -1140,17 +1140,46 @@ function renderWorkflowStage(stageKey) {
         }
     }
     
-    // Check if status is "Generating Invoices" or "Invoices Sent" - show accounting card directly
+    // Check if status is "Generating Invoices" or "Invoices Sent" - show accounting card or payment card
     const statusArray = entryData?.status || [];
     if (statusArray.includes(STATUS.GENERATING_INVOICES) || statusArray.includes(STATUS.INVOICES_SENT)) {
         const accountingInfoCard = document.getElementById('accountingInfoCard');
+        const sdltPaymentCard = document.getElementById('sdltPaymentCard');
+        const matterCompletedCard = document.getElementById('matterCompletedCard');
         const idChecksCompletionCard = document.getElementById('idChecksCompletionCard');
-        if (accountingInfoCard) {
-            accountingInfoCard.classList.remove('hidden');
-            renderAccountingInfoCard();
-        }
+        
         if (idChecksCompletionCard) {
             idChecksCompletionCard.classList.add('hidden');
+        }
+        
+        // Check if status is SDLT_PAID and SDLT5 cert is uploaded - show completed card
+        const hasSdlt5Cert = !!(entryData?.sdlt5Certificate && entryData.sdlt5Certificate.s3Key);
+        if (statusArray.includes(STATUS.SDLT_PAID) && hasSdlt5Cert) {
+            // Matter completed - show completion card
+            if (accountingInfoCard) accountingInfoCard.classList.add('hidden');
+            if (sdltPaymentCard) sdltPaymentCard.classList.add('hidden');
+            if (matterCompletedCard) matterCompletedCard.classList.remove('hidden');
+        } else {
+            // Check if all expected accounting documents are present
+            const expectedDocsCheck = checkAllExpectedAccountingDocs();
+            if (expectedDocsCheck.hasAll) {
+                // All accounting docs present - show payment card
+                if (accountingInfoCard) accountingInfoCard.classList.add('hidden');
+                if (matterCompletedCard) matterCompletedCard.classList.add('hidden');
+                if (sdltPaymentCard) {
+                    sdltPaymentCard.classList.remove('hidden');
+                    setupSdltPaymentDate();
+                    setupSdlt5CertificateUpload();
+                }
+            } else {
+                // Not all accounting docs present - show accounting card
+                if (accountingInfoCard) {
+                    accountingInfoCard.classList.remove('hidden');
+                    renderAccountingInfoCard();
+                }
+                if (sdltPaymentCard) sdltPaymentCard.classList.add('hidden');
+                if (matterCompletedCard) matterCompletedCard.classList.add('hidden');
+            }
         }
     } else {
         // Show/hide ID Checks Completion card and Accounting Information card
@@ -2489,7 +2518,7 @@ function handleMarkIdChecksInProgress() {
     pendingUpdates.status = [STATUS.ID_CHECKS_IN_PROGRESS];
     
     // Set pending chat message
-    pendingChatMessage = "I have initiated the required ID checks on this submission and we are awaiting a response from the client via the Thirdfort App.";
+    pendingChatMessage = "I have initiated the required ID checks on this submission and we are awaiting a response from the client via the Thirdfort App. Please remind your clients to complete them in a timely manner to avoid HMRC penalties for late SDLT submission. Click the button at the top of the page for a link to provide your client with information on completing their checks, which is publicly accessible on the website.";
     
     // Hide the "Mark ID Checks as in Progress" button
     const markIdChecksInProgressBtn = document.getElementById('markIdChecksInProgressBtn');
@@ -3030,15 +3059,8 @@ function renderAccountingInfoCard() {
         }
     }
     
-    // Completion statement section is always shown if SDLT payer exists
-    const completionStatementSection = document.getElementById('completionStatementSection');
-    if (completionStatementSection && sdltPayer) {
-        completionStatementSection.classList.remove('hidden');
-    } else if (completionStatementSection) {
-        completionStatementSection.classList.add('hidden');
-    }
-    
     // Render document cards for already-uploaded documents and show/hide uploaders accordingly
+    // This will also check if all expected docs are present and auto-advance to SDLT payment card
     renderAccountingDocumentCards();
 }
 
@@ -3046,6 +3068,36 @@ function renderAccountingInfoCard() {
  * Render document cards for already-uploaded accounting documents
  * Shows document cards for existing files, uploaders for missing/overwrites
  */
+/**
+ * Check if all expected accounting documents are present (in entryData or pendingFiles)
+ * Returns: { hasAll: boolean, expectsThsInvoice: boolean, expectsSdltInvoice: boolean, expectsCompletionStatement: boolean }
+ */
+function checkAllExpectedAccountingDocs() {
+    if (!entryData) return { hasAll: false, expectsThsInvoice: false, expectsSdltInvoice: false, expectsCompletionStatement: false };
+    
+    const thsPayer = entryData.thsFeePayer;
+    const sdltPayer = entryData.sdltFeePayer;
+    const samePayer = thsPayer === sdltPayer;
+    
+    // Determine which documents are expected
+    const expectsThsInvoice = !!thsPayer;
+    const expectsSdltInvoice = !!sdltPayer && !samePayer;
+    const expectsCompletionStatement = !!sdltPayer;
+    
+    // Check which documents exist (in entryData or pendingFiles/accountingFiles)
+    const hasThsInvoice = !!(entryData.thsInvoice && entryData.thsInvoice.s3Key) || !!accountingFiles.thsInvoice;
+    const hasSdltInvoice = !!(entryData.sdltInvoice && entryData.sdltInvoice.s3Key) || !!accountingFiles.sdltInvoice;
+    const hasCompletionStatement = !!(entryData.completionStatement && entryData.completionStatement.s3Key) || !!accountingFiles.completionStatement;
+    
+    // Check if we have all expected documents
+    const hasAll = 
+        (!expectsThsInvoice || hasThsInvoice) &&
+        (!expectsSdltInvoice || hasSdltInvoice) &&
+        (!expectsCompletionStatement || hasCompletionStatement);
+    
+    return { hasAll, expectsThsInvoice, expectsSdltInvoice, expectsCompletionStatement, samePayer };
+}
+
 function renderAccountingDocumentCards() {
     if (!entryData) return;
     
@@ -3058,14 +3110,44 @@ function renderAccountingDocumentCards() {
     const expectsSdltInvoice = !!sdltPayer && !samePayer;
     const expectsCompletionStatement = !!sdltPayer;
     
-    // Check which documents exist
+    // Check which documents exist (in entryData only for rendering purposes)
     const hasThsInvoice = !!(entryData.thsInvoice && entryData.thsInvoice.s3Key);
     const hasSdltInvoice = !!(entryData.sdltInvoice && entryData.sdltInvoice.s3Key);
     const hasCompletionStatement = !!(entryData.completionStatement && entryData.completionStatement.s3Key);
     
+    // Get uploader containers
+    const uploadersContainer = document.getElementById('accountingUploadersContainer');
+    const thsInvoiceWrapper = document.getElementById('thsInvoiceUploadWrapper');
+    const sdltInvoiceWrapper = document.getElementById('sdltInvoiceUploadWrapper');
+    const completionStatementWrapper = document.getElementById('completionStatementUploadWrapper');
+    
+    // Determine how many uploaders will be visible
+    let visibleUploadersCount = 0;
+    if (expectsThsInvoice && !hasThsInvoice && !accountingFiles.thsInvoice) visibleUploadersCount++;
+    if (expectsSdltInvoice && !hasSdltInvoice && !accountingFiles.sdltInvoice) visibleUploadersCount++;
+    if (expectsCompletionStatement && !hasCompletionStatement && !accountingFiles.completionStatement) visibleUploadersCount++;
+    
+    // Apply 50/50 layout if exactly 2 uploaders visible
+    if (uploadersContainer) {
+        if (visibleUploadersCount === 2) {
+            uploadersContainer.classList.add('two-columns');
+        } else {
+            uploadersContainer.classList.remove('two-columns');
+        }
+    }
+    
+    // Show/hide SDLT Invoice wrapper based on payer setup
+    if (sdltInvoiceWrapper) {
+        if (expectsSdltInvoice) {
+            sdltInvoiceWrapper.classList.remove('hidden');
+        } else {
+            sdltInvoiceWrapper.classList.add('hidden');
+        }
+    }
+    
     // THS Invoice
     const thsInvoiceDocumentCard = document.getElementById('thsInvoiceDocumentCard');
-    const thsInvoiceUploadSection = document.querySelector('#thsInvoiceUpload')?.closest('.file-upload-section');
+    const thsInvoiceUploadSection = thsInvoiceWrapper ? thsInvoiceWrapper.querySelector('.file-upload-section') : null;
     
     if (expectsThsInvoice) {
         if (hasThsInvoice) {
@@ -3107,12 +3189,15 @@ function renderAccountingDocumentCards() {
             if (thsInvoiceDocumentCard) thsInvoiceDocumentCard.classList.add('hidden');
             if (thsInvoiceUploadSection) thsInvoiceUploadSection.style.display = 'block';
         }
+    } else {
+        // Hide THS invoice wrapper if not expected
+        if (thsInvoiceWrapper) thsInvoiceWrapper.classList.add('hidden');
     }
     
     // SDLT Invoice (only if different payer)
     if (expectsSdltInvoice) {
         const sdltInvoiceDocumentCard = document.getElementById('sdltInvoiceDocumentCard');
-        const sdltInvoiceUploadSection = document.querySelector('#sdltInvoiceUpload')?.closest('.file-upload-section');
+        const sdltInvoiceUploadSection = sdltInvoiceWrapper ? sdltInvoiceWrapper.querySelector('.file-upload-section') : null;
         
         if (hasSdltInvoice) {
             if (sdltInvoiceDocumentCard) {
@@ -3154,7 +3239,7 @@ function renderAccountingDocumentCards() {
     // Completion Statement
     if (expectsCompletionStatement) {
         const completionStatementDocumentCard = document.getElementById('completionStatementDocumentCard');
-        const completionStatementUploadSection = document.querySelector('#completionStatementUpload')?.closest('.file-upload-section');
+        const completionStatementUploadSection = completionStatementWrapper ? completionStatementWrapper.querySelector('.file-upload-section') : null;
         
         if (hasCompletionStatement) {
             if (completionStatementDocumentCard) {
@@ -3191,7 +3276,13 @@ function renderAccountingDocumentCards() {
             if (completionStatementDocumentCard) completionStatementDocumentCard.classList.add('hidden');
             if (completionStatementUploadSection) completionStatementUploadSection.style.display = 'block';
         }
+    } else {
+        // Hide completion statement wrapper if not expected
+        if (completionStatementWrapper) completionStatementWrapper.classList.add('hidden');
     }
+    
+    // Don't auto-advance here - that's handled in renderWorkflowStage
+    // This function just renders the document cards and uploaders
 }
 
 /**
@@ -3288,24 +3379,32 @@ function setupSdltPaymentDate() {
     newInput.addEventListener('change', function() {
         if (!entryData) return;
         
-        // Initialize pendingUpdates if it doesn't exist
-        if (!pendingUpdates) {
-            pendingUpdates = {};
-        }
-        
         const paidDate = newInput.value;
         
         if (paidDate) {
+            // Initialize pendingUpdates if it doesn't exist
+            if (!pendingUpdates) {
+                pendingUpdates = {};
+            }
+            
             // Add to pending updates
             pendingUpdates.sdltPaid = true;
             pendingUpdates.sdltPaid1 = paidDate; // Store as date string (YYYY-MM-DD)
             pendingUpdates.status = [STATUS.SDLT_PAID];
+            
+            // Set the newMessage for chat
+            pendingChatMessage = "We have paid the SDLT on this submission, once we receive the SDLT5 Certificate we will upload it here and close the matter. No further action is required. Please let me know if you need any further support.";
             
             // Show save hint
             const saveHint = document.getElementById('sdltPaymentSaveHint');
             if (saveHint) {
                 saveHint.classList.remove('hidden');
             }
+            
+            // Send disable-close message first
+            window.parent.postMessage({
+                type: 'disable-close'
+            }, '*');
             
             // Send do-notify message
             window.parent.postMessage({
@@ -3319,7 +3418,9 @@ function setupSdltPaymentDate() {
             if (pendingUpdates) {
                 delete pendingUpdates.sdltPaid;
                 delete pendingUpdates.sdltPaid1;
+                delete pendingUpdates.status;
             }
+            pendingChatMessage = null;
             
             // Hide save hint
             const saveHint = document.getElementById('sdltPaymentSaveHint');
@@ -3332,24 +3433,69 @@ function setupSdltPaymentDate() {
 
 /**
  * Setup SDLT5 Certificate file upload handler
+ * Only shows when status is SDLT_PAID
  */
 function setupSdlt5CertificateUpload() {
     const input = document.getElementById('sdlt5CertificateFileInput');
     const area = document.getElementById('sdlt5CertificateUpload');
+    const documentCard = document.getElementById('sdlt5CertificateDocumentCard');
+    const uploadSection = area ? area.closest('.file-upload-section') : null;
     
     if (!input || !area) return;
+    
+    // Check if status is SDLT_PAID - only show SDLT5 cert section in this case
+    const statusArray = entryData?.status || [];
+    const isSdltPaid = statusArray.includes(STATUS.SDLT_PAID);
+    
+    if (!isSdltPaid) {
+        // Hide SDLT5 cert section if status is not SDLT_PAID
+        if (documentCard) documentCard.classList.add('hidden');
+        if (uploadSection) uploadSection.style.display = 'none';
+        return;
+    }
     
     const placeholder = area.querySelector('.file-upload-placeholder');
     const selected = area.querySelector('.file-upload-selected');
     const fileNameSpan = selected ? selected.querySelector('.file-name') : null;
     const removeBtn = selected ? selected.querySelector('.remove-file-btn') : null;
     
-    // Check if document already exists and show it
+    // Check if document already exists and show document card
     if (entryData?.sdlt5Certificate?.s3Key) {
-        if (placeholder) placeholder.classList.add('hidden');
-        if (selected) selected.classList.remove('hidden');
-        if (fileNameSpan) fileNameSpan.textContent = entryData.sdlt5Certificate.description || 'SDLT5 Certificate.pdf';
-        if (area) area.classList.add('has-file');
+        if (documentCard) {
+            documentCard.classList.remove('hidden');
+            documentCard.innerHTML = `
+                <div class="document-card-header">
+                    <span class="document-card-title">SDLT5 Certificate (Uploaded)</span>
+                    <div class="document-card-actions">
+                        <a href="${entryData.sdlt5Certificate.liveUrl || entryData.sdlt5Certificate.url}" target="_blank" class="document-card-link">View</a>
+                        <button type="button" class="document-card-btn overwrite-btn" data-field="sdlt5Certificate">Overwrite</button>
+                    </div>
+                </div>
+                <div style="font-size: 0.8rem; color: #666;">
+                    ${entryData.sdlt5Certificate.description || 'SDLT5 Certificate'}
+                </div>
+            `;
+            
+            // Add click handler for overwrite button
+            const overwriteBtn = documentCard.querySelector('.overwrite-btn');
+            if (overwriteBtn) {
+                overwriteBtn.addEventListener('click', function() {
+                    documentCard.classList.add('hidden');
+                    if (uploadSection) {
+                        uploadSection.style.display = 'block';
+                    }
+                    input.click();
+                });
+            }
+        }
+        // Hide uploader (can be shown via overwrite button)
+        if (uploadSection && !accountingFiles.sdlt5Certificate) {
+            uploadSection.style.display = 'none';
+        }
+    } else {
+        // Hide document card, show uploader
+        if (documentCard) documentCard.classList.add('hidden');
+        if (uploadSection) uploadSection.style.display = 'block';
     }
     
     // Remove existing listeners by cloning
@@ -3396,6 +3542,9 @@ function setupSdlt5CertificateUpload() {
             // Add pending update
             pendingUpdates.sdlt5Uploaded = true;
             
+            // Set the newMessage for chat
+            pendingChatMessage = "I have uploaded the SDLT5 Certificate for this submission. The matter is now complete and closed. No further action is required. Please let me know if you need any further support.";
+            
             // Send disable-close message
             window.parent.postMessage({
                 type: 'disable-close'
@@ -3427,6 +3576,7 @@ function setupSdlt5CertificateUpload() {
             if (pendingUpdates) {
                 delete pendingUpdates.sdlt5Uploaded;
             }
+            pendingChatMessage = null;
             
             // Notify form changed
             notifyFormChanged();
