@@ -409,7 +409,7 @@ function handleSaveData(message) {
     // }
     
     // Check for accounting files
-    const hasAccountingFiles = accountingFiles.thsInvoice || accountingFiles.sdltInvoice || accountingFiles.completionStatement;
+    const hasAccountingFiles = accountingFiles.thsInvoice || accountingFiles.sdltInvoice || accountingFiles.completionStatement || accountingFiles.sdlt5Certificate;
     
     // Check if there are any files to upload (PDF blob, regular files, or accounting files)
     const hasPendingFiles = pendingPdfBlob || (pendingFiles && pendingFiles.length > 0) || hasAccountingFiles;
@@ -728,6 +728,16 @@ function handlePutLinks(message) {
             type: accountingFiles.completionStatement.type,
             size: accountingFiles.completionStatement.size,
             fieldKey: 'completionStatement'
+        });
+    }
+    
+    if (accountingFiles.sdlt5Certificate) {
+        filesToUpload.push({
+            file: accountingFiles.sdlt5Certificate,
+            name: accountingFiles.sdlt5Certificate.name,
+            type: accountingFiles.sdlt5Certificate.type,
+            size: accountingFiles.sdlt5Certificate.size,
+            fieldKey: 'sdlt5Certificate'
         });
     }
     
