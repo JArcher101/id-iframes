@@ -2095,8 +2095,16 @@
     </div>
   </div>
 
+  <!-- Print.js library for print dialog (works on PC and mobile) -->
+  <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
+  
+  <!-- html2canvas and jsPDF libraries (required for PDF generation) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=7184f62"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=3eedc1c"></script>
   
   <script>
     /*
@@ -4495,25 +4503,676 @@
 
     /*
     =====================================================================
+    GENERATE CHAT MESSAGE
+    - Analyzes all images (existing + newly uploaded) to generate detailed chat message
+    - Counts Photo ID and Address ID images by type
+    - Checks Form J requirements:
+      - At least one Photo ID (if front/back type, need both sides)
+      - Two types of Address ID (unless Photo ID is Driving Licence, then only 1)
+      - Likeness must be confirmed
+    - Returns formatted chat message object
+    =====================================================================
+    */
+    function generateChatMessage() {
+      // Combine existing images with newly uploaded images
+      const existingImages = (formData.idImages && Array.isArray(formData.idImages)) ? formData.idImages : [];
+      const newImages = (s3Keys && Array.isArray(s3Keys)) ? s3Keys : [];
+      const allImages = [...existingImages, ...newImages];
+      
+      // Separate Photo IDs and Address IDs
+      const photoIds = allImages.filter(img => 
+        img.type === 'PhotoID' || img.type === 'Photo ID'
+      );
+      const addressIds = allImages.filter(img => 
+        img.type === 'Address ID' || img.type === 'AddressID'
+      );
+      
+      // Count Photo IDs by document type
+      const photoIdCounts = {};
+      const photoIdTypes = new Set();
+      photoIds.forEach(img => {
+        const docType = img.document || 'Unknown';
+        photoIdTypes.add(docType);
+        if (!photoIdCounts[docType]) {
+          photoIdCounts[docType] = { total: 0, front: 0, back: 0, single: 0 };
+        }
+        photoIdCounts[docType].total++;
+        if (img.side === 'Front') photoIdCounts[docType].front++;
+        else if (img.side === 'Back') photoIdCounts[docType].back++;
+        else photoIdCounts[docType].single++;
+      });
+      
+      // Count Address IDs by document type
+      const addressIdCounts = {};
+      const addressIdTypes = new Set();
+      addressIds.forEach(img => {
+        const docType = img.document || 'Unknown';
+        addressIdTypes.add(docType);
+        addressIdCounts[docType] = (addressIdCounts[docType] || 0) + 1;
+      });
+      
+      // Check if Driving Licence is present (reduces Address ID requirement)
+      const hasDrivingLicence = photoIdTypes.has('Driving Licence');
+      
+      // Check if Photo IDs have complete front/back pairs where required
+      // Photo IDs that typically need both sides: Passport, Driving Licence, Passport Card
+      // Single-sided: Entry Visa, PASS card, Blue badge, Firearms Certificate, Other Photo ID Card
+      const needsBothSides = ['Passport', 'Driving Licence', 'Passport Card'];
+      let hasValidPhotoId = false;
+      let photoIdDetails = [];
+      
+      photoIdTypes.forEach(docType => {
+        const counts = photoIdCounts[docType];
+        if (needsBothSides.includes(docType)) {
+          // Need both front and back for this type
+          if (counts.front > 0 && counts.back > 0) {
+            hasValidPhotoId = true; // At least one valid Photo ID exists
+            photoIdDetails.push(`${counts.total} ${docType} (Front & Back)`);
+          } else {
+            // Incomplete - missing a side
+            const missingSide = counts.front === 0 ? 'Front' : 'Back';
+            photoIdDetails.push(`${counts.total} ${docType} (incomplete - missing ${missingSide})`);
+          }
+        } else {
+          // Single-sided types - just need at least one image
+          if (counts.total > 0) {
+            hasValidPhotoId = true; // At least one valid Photo ID exists
+            photoIdDetails.push(`${counts.total} ${docType}`);
+          }
+        }
+      });
+      
+      // Check Address ID requirements
+      const requiredAddressIdCount = hasDrivingLicence ? 1 : 2;
+      const uniqueAddressIdTypes = addressIdTypes.size;
+      const hasValidAddressId = uniqueAddressIdTypes >= requiredAddressIdCount;
+      
+      // Build Address ID details
+      const addressIdDetails = [];
+      addressIdTypes.forEach(docType => {
+        const count = addressIdCounts[docType];
+        addressIdDetails.push(`${count} ${docType}`);
+      });
+      
+      // Check likeness confirmation
+      const likenessConfirmed = !formData.likenessNOTConfirmed;
+      
+      // Determine if Form J requirements are met
+      const meetsFormJRequirements = hasValidPhotoId && hasValidAddressId && likenessConfirmed;
+      
+      // Build the message
+      const clientName = `${formData.titlePrefix || ''} ${formData.firstName || ''} ${formData.surname || ''}`.trim();
+      
+      let message = `I have conducted in-person ID verification with ${clientName}`;
+      
+      // Add Photo ID details
+      if (photoIds.length > 0) {
+        message += ` and obtained ${photoIds.length} Photo ID image${photoIds.length > 1 ? 's' : ''} (${photoIdDetails.join(', ')})`;
+      }
+      
+      // Add Address ID details
+      if (addressIds.length > 0) {
+        if (photoIds.length > 0) {
+          message += ' and';
+        } else {
+          message += ' and obtained';
+        }
+        message += ` ${addressIds.length} Address ID image${addressIds.length > 1 ? 's' : ''} (${addressIdDetails.join(', ')})`;
+      }
+      
+      if (photoIds.length === 0 && addressIds.length === 0) {
+        message += '. No ID images were uploaded.';
+      } else {
+        message += '.';
+      }
+      
+      message += ' ';
+      
+      // Add Form J status
+      if (meetsFormJRequirements) {
+        message += 'This entry now meets the requirements for a Form J submission. Please review the images and submit a request as appropriate.';
+      } else {
+        message += 'This entry does not meet the requirements for a Form J submission. ';
+        const missingRequirements = [];
+        if (!hasValidPhotoId) {
+          missingRequirements.push('valid Photo ID');
+        }
+        if (!hasValidAddressId) {
+          missingRequirements.push(`${requiredAddressIdCount} type${requiredAddressIdCount > 1 ? 's' : ''} of Address ID`);
+        }
+        if (!likenessConfirmed) {
+          missingRequirements.push('likeness confirmation');
+        }
+        if (missingRequirements.length > 0) {
+          message += `Missing: ${missingRequirements.join(', ')}. `;
+        }
+        message += 'Please review the images and submit a request as appropriate.';
+      }
+      
+      return {
+        user: formData.uploader || 'Unknown',
+        time: new Date().toLocaleString('en-GB', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }),
+        type: 'Reception',
+        message: message
+      };
+    }
+
+    /*
+    =====================================================================
     SEND UPLOAD SUCCESS MESSAGE TO PARENT
     - Compiles final form data and sends upload-success message to parent
-    - Includes form data and S3 keys for uploaded images
+    - Includes form data, S3 keys for uploaded images, and generated chat message
     =====================================================================
     */
     function sendUploadSuccessMessage() {
       const finalFormData = compileFormData();
       // Overwrite idImages with new S3 keys data (backend appends to existing)
       finalFormData.idImages = s3Keys;
+      
+      // Generate chat message based on all images (existing + new)
+      const chatMessage = generateChatMessage();
+      
+      // Add cashier tag
+      finalFormData.cashierTag = ['Cashier Note'];
+      finalFormData.chat = chatMessage;
+      
       window.parent.postMessage({
         type: 'upload-success',
         data: finalFormData,
         idImages: s3Keys
       }, '*');
       
+      // Generate and print confirmation PDF
+      generateConfirmationPDF(finalFormData, chatMessage);
+      
       // Reset form to loading state after successful upload (ready for next client)
       setTimeout(() => {
         resetForm();
       }, 1500); // 1.5 second delay to show "Upload Complete!" message
+    }
+
+    /*
+    =====================================================================
+    GENERATE CONFIRMATION PDF
+    - Creates a PDF confirmation slip for in-person ID verification
+    - Includes client details, image thumbnails, uploader info, chat message
+    - Uses print.js to open print dialog (works on PC and mobile)
+    =====================================================================
+    */
+    async function generateConfirmationPDF(formData, chatMessage) {
+      console.log('📄 Generating ID verification confirmation PDF...');
+      
+      // Check for required libraries
+      if (typeof html2canvas === 'undefined') {
+        console.error('❌ html2canvas library not loaded');
+        return;
+      }
+      
+      const JSPDF = typeof jsPDF !== 'undefined' ? jsPDF : (typeof jspdf !== 'undefined' && jspdf.jsPDF ? jspdf.jsPDF : null);
+      if (!JSPDF) {
+        console.error('❌ jsPDF library not loaded');
+        return;
+      }
+      
+      try {
+        // Build HTML for confirmation PDF
+        const pdfHTML = buildConfirmationPDFHTML(formData, chatMessage);
+        
+        // Parse HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(pdfHTML, 'text/html');
+        
+        // Extract styles and body
+        const headStyles = doc.head.querySelector('style');
+        const styleContent = headStyles ? headStyles.textContent : '';
+        const bodyHTML = doc.body.innerHTML;
+        
+        // Create temporary element for rendering
+        const element = document.createElement('div');
+        element.style.position = 'absolute';
+        element.style.left = '-9999px';
+        element.style.top = '-9999px';
+        element.style.width = '190mm'; // A4 width minus margins
+        element.style.padding = '0';
+        element.style.margin = '0';
+        element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
+        
+        // Apply styles
+        if (styleContent) {
+          const styleEl = document.createElement('style');
+          styleEl.textContent = styleContent;
+          element.appendChild(styleEl);
+        }
+        element.innerHTML = bodyHTML;
+        document.body.appendChild(element);
+        
+        // Wait for images to load
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Generate PDF using html2canvas and jsPDF
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          width: element.scrollWidth,
+          height: element.scrollHeight
+        });
+        
+        // Remove temporary element
+        document.body.removeChild(element);
+        
+        // Create PDF
+        const pdfWidth = 210; // A4 width in mm
+        const pdfHeight = 297; // A4 height in mm
+        const margin = 10;
+        const contentWidth = pdfWidth - (margin * 2);
+        const contentHeight = pdfHeight - (margin * 2);
+        
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        const pdf = new JSPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        
+        // Handle multi-page content
+        if (imgHeight <= contentHeight) {
+          pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
+        } else {
+          let heightLeft = imgHeight;
+          let yPosition = margin;
+          pdf.addImage(imgData, 'JPEG', margin, yPosition, imgWidth, imgHeight);
+          heightLeft -= contentHeight;
+          
+          while (heightLeft > 0) {
+            yPosition = margin - (imgHeight - heightLeft);
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', margin, yPosition, imgWidth, imgHeight);
+            heightLeft -= contentHeight;
+          }
+        }
+        
+        // Generate PDF blob
+        const pdfBlob = pdf.output('blob');
+        
+        // Use print.js to open print dialog (works on PC and mobile)
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        printJS({
+          printable: pdfUrl,
+          type: 'pdf',
+          onPrintDialogClose: () => {
+            // Clean up blob URL after print dialog closes
+            URL.revokeObjectURL(pdfUrl);
+          }
+        });
+        
+        console.log('✅ Confirmation PDF generated and print dialog opened');
+        
+      } catch (error) {
+        console.error('❌ Error generating confirmation PDF:', error);
+      }
+    }
+
+    /*
+    =====================================================================
+    BUILD CONFIRMATION PDF HTML
+    - Creates HTML structure for the confirmation PDF
+    - Includes client details, image thumbnails, uploader info, chat message
+    =====================================================================
+    */
+    function buildConfirmationPDFHTML(formData, chatMessage) {
+      // Combine existing and new images for display
+      const existingImages = (formData.idImages && Array.isArray(formData.idImages)) ? formData.idImages : [];
+      const newImages = (s3Keys && Array.isArray(s3Keys)) ? s3Keys : [];
+      const allImages = [...existingImages, ...newImages];
+      
+      // Separate Photo IDs and Address IDs
+      const photoIds = allImages.filter(img => 
+        img.type === 'PhotoID' || img.type === 'Photo ID'
+      );
+      const addressIds = allImages.filter(img => 
+        img.type === 'Address ID' || img.type === 'AddressID'
+      );
+      
+      // Format address for display
+      function formatAddress(address) {
+        if (!address) return 'Not provided';
+        if (typeof address === 'string') return address;
+        
+        const parts = [];
+        if (address.flat_number) parts.push(`Flat ${address.flat_number}`);
+        if (address.building_number) parts.push(address.building_number);
+        if (address.building_name) parts.push(address.building_name);
+        if (address.street) parts.push(address.street);
+        if (address.sub_street) parts.push(address.sub_street);
+        if (address.town) parts.push(address.town);
+        if (address.postcode) parts.push(address.postcode);
+        if (address.country && address.country !== 'GBR') {
+          // Add country name if not UK
+          const countryNames = { 'USA': 'United States', 'CAN': 'Canada', 'AUS': 'Australia' };
+          parts.push(countryNames[address.country] || address.country);
+        }
+        return parts.length > 0 ? parts.join(', ') : 'Not provided';
+      }
+      
+      // Build image thumbnails HTML with likeness icons for Photo IDs
+      let imageThumbnailsHTML = '';
+      
+      if (photoIds.length > 0) {
+        imageThumbnailsHTML += '<div class="image-section"><h3>Photo ID Images</h3><div class="image-grid">';
+        photoIds.forEach((img) => {
+          const imgUrl = img.liveUrl || img.url || '';
+          const docType = img.document || 'Unknown';
+          const side = img.side && img.side !== 'Single' ? ` (${img.side})` : '';
+          const likenessConfirmed = !formData.likenessNOTConfirmed;
+          const likenessIcon = likenessConfirmed ? '✓' : '⚠';
+          const likenessClass = likenessConfirmed ? 'clear' : 'consider';
+          imageThumbnailsHTML += `
+            <div class="image-thumbnail">
+              <div class="thumbnail-header">
+                <div class="thumbnail-label">${docType}${side}</div>
+                <div class="likeness-icon ${likenessClass}" title="${likenessConfirmed ? 'Likeness Confirmed' : 'Likeness NOT Confirmed'}">${likenessIcon}</div>
+              </div>
+              ${imgUrl ? `<img src="${imgUrl}" alt="${docType}" onerror="this.style.display='none'" />` : '<div class="no-image">Image not available</div>'}
+            </div>
+          `;
+        });
+        imageThumbnailsHTML += '</div></div>';
+      }
+      
+      if (addressIds.length > 0) {
+        imageThumbnailsHTML += '<div class="image-section"><h3>Address ID Images</h3><div class="image-grid">';
+        addressIds.forEach((img) => {
+          const imgUrl = img.liveUrl || img.url || '';
+          const docType = img.document || 'Unknown';
+          imageThumbnailsHTML += `
+            <div class="image-thumbnail">
+              <div class="thumbnail-label">${docType}</div>
+              ${imgUrl ? `<img src="${imgUrl}" alt="${docType}" onerror="this.style.display='none'" />` : '<div class="no-image">Image not available</div>'}
+            </div>
+          `;
+        });
+        imageThumbnailsHTML += '</div></div>';
+      }
+      
+      // Format date and time
+      const verificationDate = new Date();
+      const dateStr = verificationDate.toLocaleDateString('en-GB', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      const timeStr = verificationDate.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      // Client name
+      const clientName = `${formData.titlePrefix || ''} ${formData.firstName || ''} ${formData.surname || ''}`.trim();
+      
+      // Form J requirements status (from chat message)
+      const meetsFormJ = chatMessage.message.includes('now meets the requirements');
+      const formJIcon = meetsFormJ ? '✓' : '⚠';
+      const formJClass = meetsFormJ ? 'clear' : 'consider';
+      const formJText = meetsFormJ ? 'CLEAR' : 'CONSIDER';
+      
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.6;
+      color: #333;
+      padding: 15px;
+      background: #fff;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 3px solid #003c71;
+      padding-bottom: 12px;
+      margin-bottom: 15px;
+    }
+    .header h1 {
+      color: #003c71;
+      font-size: 22pt;
+      margin-bottom: 3px;
+      font-weight: bold;
+    }
+    .message-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 15px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      background: ${meetsFormJ ? 'rgba(57, 181, 73, 0.1)' : 'rgba(247, 147, 30, 0.1)'};
+      border-left: 4px solid ${meetsFormJ ? 'rgba(57, 181, 73, 0.55)' : 'rgba(247, 147, 30, 0.55)'};
+    }
+    .message-text {
+      flex: 1;
+      font-size: 11pt;
+      color: #333;
+      line-height: 1.6;
+    }
+    .outcome-tag {
+      font-family: 'Transport', sans-serif;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 500;
+      color: #ffffff;
+      white-space: nowrap;
+      margin-left: 15px;
+    }
+    .outcome-tag.clear {
+      background: rgba(57, 181, 73, 0.55);
+    }
+    .outcome-tag.consider {
+      background: rgba(247, 147, 30, 0.55);
+    }
+    .uploader-info {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 15px;
+      background: #f5f5f5;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      font-size: 10pt;
+    }
+    .uploader-info-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .uploader-info-label {
+      font-weight: bold;
+      color: #666;
+      font-size: 9pt;
+      margin-bottom: 3px;
+    }
+    .uploader-info-value {
+      color: #333;
+    }
+    .info-section {
+      margin-bottom: 15px;
+      padding: 12px 15px;
+      background: #f9f9f9;
+      border-radius: 5px;
+      border: 1px solid #e0e0e0;
+    }
+    .info-section h2 {
+      color: #003c71;
+      font-size: 14pt;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #003c71;
+      padding-bottom: 5px;
+      font-weight: bold;
+    }
+    .info-row {
+      display: flex;
+      margin-bottom: 6px;
+      font-size: 10pt;
+    }
+    .info-label {
+      font-weight: bold;
+      width: 160px;
+      color: #555;
+      flex-shrink: 0;
+    }
+    .info-value {
+      flex: 1;
+      color: #333;
+    }
+    .image-section {
+      margin-top: 15px;
+      margin-bottom: 15px;
+    }
+    .image-section h3 {
+      color: #003c71;
+      font-size: 13pt;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .image-thumbnail {
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      padding: 8px;
+      background: #fff;
+      text-align: center;
+    }
+    .thumbnail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .thumbnail-label {
+      font-size: 9pt;
+      font-weight: bold;
+      color: #555;
+      flex: 1;
+      text-align: left;
+    }
+    .likeness-icon {
+      font-size: 16px;
+      font-weight: bold;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .likeness-icon.clear {
+      background: rgba(57, 181, 73, 0.55);
+      color: #ffffff;
+    }
+    .likeness-icon.consider {
+      background: rgba(247, 147, 30, 0.55);
+      color: #ffffff;
+    }
+    .image-thumbnail img {
+      max-width: 100%;
+      max-height: 100px;
+      object-fit: contain;
+      border-radius: 3px;
+    }
+    .no-image {
+      padding: 15px;
+      color: #999;
+      font-style: italic;
+      font-size: 9pt;
+    }
+    @media print {
+      body { padding: 10px; }
+      .image-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>In-Person ID Verification</h1>
+  </div>
+  
+  <div class="message-strip">
+    <div class="message-text">${chatMessage.message || 'No notes provided'}</div>
+    <div class="outcome-tag ${formJClass}">${formJIcon} ${formJText}</div>
+  </div>
+  
+  <div class="uploader-info">
+    <div class="uploader-info-item">
+      <div class="uploader-info-label">Date</div>
+      <div class="uploader-info-value">${dateStr}</div>
+    </div>
+    <div class="uploader-info-item">
+      <div class="uploader-info-label">Time</div>
+      <div class="uploader-info-value">${timeStr}</div>
+    </div>
+    <div class="uploader-info-item">
+      <div class="uploader-info-label">Uploader</div>
+      <div class="uploader-info-value">${formData.uploader || 'Unknown'}</div>
+    </div>
+  </div>
+  
+  <div class="info-section">
+    <h2>Client Details</h2>
+    <div class="info-row">
+      <div class="info-label">Name:</div>
+      <div class="info-value">${clientName || 'Not provided'}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Date of Birth:</div>
+      <div class="info-value">${formData.birthdate || 'Not provided'}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Current Address:</div>
+      <div class="info-value">${formatAddress(formData.address)}</div>
+    </div>
+    ${formData.clientRecentNameChange ? `
+    <div class="info-row">
+      <div class="info-label">Previous Name:</div>
+      <div class="info-value">${formData.previousName || 'Not provided'}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Reason for Change:</div>
+      <div class="info-value">${formData.reasonForNameChange || 'Not provided'}</div>
+    </div>
+    ` : ''}
+    ${formData.clientRecentHomeMove ? `
+    <div class="info-row">
+      <div class="info-label">Previous Address:</div>
+      <div class="info-value">${formatAddress(formData.previousAddress)}</div>
+    </div>
+    ` : ''}
+  </div>
+  
+  ${imageThumbnailsHTML}
+</body>
+</html>`;
+      
+      return html;
     }
 
     /*
@@ -5393,7 +6052,7 @@
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {
-    window.__IFRAME_VERSION__ = '7184f62';
+    window.__IFRAME_VERSION__ = '3eedc1c';
     console.log('[image-uploader] version ' + window.__IFRAME_VERSION__);
   })();
 </script>

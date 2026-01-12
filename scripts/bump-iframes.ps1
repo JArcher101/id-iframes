@@ -213,3 +213,4 @@ if ($Push) {
 }
 
 Write-Host "Done. Commit created with version $uuid."
+
