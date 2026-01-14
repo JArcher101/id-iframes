@@ -4672,7 +4672,7 @@
     - Includes form data, S3 keys for uploaded images, and generated chat message
     =====================================================================
     */
-    function sendUploadSuccessMessage() {
+    async function sendUploadSuccessMessage() {
       const finalFormData = compileFormData();
       // Overwrite idImages with new S3 keys data (backend appends to existing)
       finalFormData.idImages = s3Keys;
@@ -4690,13 +4690,16 @@
         idImages: s3Keys
       }, '*');
       
-      // Generate and print confirmation PDF
-      generateConfirmationPDF(finalFormData, chatMessage);
+      // Generate and print confirmation PDF (wait for completion)
+      console.log('⏳ Generating PDF before form reset...');
+      await generateConfirmationPDF(finalFormData, chatMessage);
+      console.log('✅ PDF generation complete, waiting before reset...');
       
-      // Reset form to loading state after successful upload (ready for next client)
+      // Reset form to loading state after PDF is ready (ready for next client)
       setTimeout(() => {
+        console.log('🔄 Resetting form to loading state...');
         resetForm();
-      }, 1500); // 1.5 second delay to show "Upload Complete!" message
+      }, 1500); // 1.5 second delay after PDF completes
     }
 
     /*
@@ -5434,7 +5437,7 @@
       } else {
         uploadStatus.textContent = 'Upload Complete!';
         // Send success message to parent with form data and S3 keys
-        sendUploadSuccessMessage();
+        await sendUploadSuccessMessage();
       }
     }
 
@@ -5456,7 +5459,7 @@
         } else {
           uploadStatus.textContent = 'Upload Complete!';
           // Send success message to parent with form data and S3 keys
-          sendUploadSuccessMessage();
+          await sendUploadSuccessMessage();
           // Note: sendUploadSuccessMessage() now handles the reset to loading state
         }
       }
