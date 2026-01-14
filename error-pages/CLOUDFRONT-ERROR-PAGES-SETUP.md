@@ -1,41 +1,65 @@
 # CloudFront Custom Error Pages Setup
 
-## Single Dynamic Error Page (Recommended)
+## ⚠️ Single Dynamic Error Page (Not Recommended - Query Params Don't Work)
 
-**Best Approach**: Use a single `error.html` file that reads URL parameters to dynamically display error information.
+**This approach does NOT work** because CloudFront Custom Error Responses strip query parameters.
 
-### How It Works
+### Why This Doesn't Work
 
-1. **Single HTML file** (`error.html`) with embedded JavaScript
-2. **URL parameters** passed by CloudFront Custom Error Responses:
-   - `?code=403&type=id-documents`
-   - `?code=404&type=id-images`
-   - `?code=500&type=sdlt-documents`
-3. **JavaScript reads parameters** and dynamically renders:
-   - Error code
-   - Error title (document vs image)
-   - Error causes
-   - System name and icon
-   - Footer content
+1. **CloudFront strips query parameters** from Custom Error Response paths
+2. When you configure `/error.html?code=403&type=id-documents`:
+   - CloudFront fetches `/error.html` (parameters removed)
+   - JavaScript never receives the `code` or `type` parameters
+   - Error page shows "Unknown" for all errors
+3. **This is a CloudFront limitation**, not a configuration issue
 
-### Benefits
-
-- ✅ **One file instead of 30** - Much easier to maintain
-- ✅ **No build script needed** - Just upload one file
-- ✅ **Works with CloudFront query strings** - CloudFront passes query parameters correctly
-- ✅ **Easy to update** - Change error messages in one place
-
-### CloudFront Configuration
-
-Configure Custom Error Responses to use query parameters:
+### The Problem
 
 ```
 Error Code: 403
-Response Page Path: /error.html?code=403&type=id-documents
+Response Page Path: /error.html?code=403&type=id-documents  ❌
 HTTP Response Code: 403
+
+CloudFront actually fetches: /error.html (params stripped!)
 ```
 
-**Note**: According to [AWS CloudFront documentation](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/GeneratingCustomErrorResponses.html), CloudFront passes query strings to the origin, so JavaScript can read them. CloudFront does NOT try to serve files with query strings in the filename - it correctly serves `error.html` and passes the query parameters.
+**See `aws-setup/CLOUDFRONT-ERROR-PARAMS-ISSUE.md` for detailed explanation and solutions.**
+
+## ✅ Static Error Pages (Recommended - This Works!)
+
+**Best Approach**: Use pre-generated static error pages with all content embedded.
+
+### How It Works
+
+1. **Build script generates static pages** in `error-pages/generated/`
+2. **Each CDN has its own folder:**
+   - `id-images/403.html`
+   - `id-documents/403.html`
+   - `sdlt-documents/403.html`
+3. **CloudFront serves the correct static page:**
+   - Error Code: 403 → `/id-images/403.html`
+   - No query parameters needed!
+
+### Benefits
+
+- ✅ **Actually works** - No CloudFront query string issues
+- ✅ **Pre-rendered** - All content is already in the HTML
+- ✅ **No JavaScript parsing** - Faster page load
+- ✅ **Better SEO** - Each error has a unique URL
+- ✅ **Easy to maintain** - Update templates and rebuild
+
+### CloudFront Configuration
+
+Configure Custom Error Responses to use static paths:
+
+```
+Error Code: 403
+Response Page Path: /id-images/403.html
+HTTP Response Code: 403
+Error Caching Minimum TTL: 300
+```
+
+**Important**: CloudFront Custom Error Responses do NOT preserve query strings. When you configure a response path like `/error.html?code=403&type=id-documents`, CloudFront strips the query parameters before fetching the error page. This is why we recommend using static error pages (e.g., `/id-images/403.html`) instead of dynamic parameters. See [AWS CloudFront documentation](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/custom-error-pages.html) for details.
 
 ### Setup Steps
 
@@ -128,35 +152,43 @@ This way:
 
 ### Step 3: Configure Custom Error Responses
 
-#### Option A: Single Dynamic Error Page (Recommended)
+#### ✅ Option A: Static Error Pages per CDN (Recommended - This Works!)
 
 1. **CloudFront Console → Your Distribution → Error Pages tab**
 2. **Click "Create Custom Error Response"**
-3. **Configure for each error code with query parameters:**
+3. **Configure for each error code with static paths:**
 
    **For ID Documents CDN:**
    - **HTTP Error Code**: `403`
    - **Customize Error Response**: `Yes`
-   - **Response Page Path**: `/error.html?code=403&type=id-documents`
+   - **Response Page Path**: `/id-documents/403.html`
    - **HTTP Response Code**: `403`
    - **Error Caching Minimum TTL**: `300`
 
-   Repeat for all error codes (400, 404, 405, 414, 416, 500, 501, 502, 504) with `type=id-documents`
+   Repeat for all error codes (400, 404, 405, 414, 416, 500, 501, 502, 504)
 
    **For ID Images CDN:**
-   - Same as above but use `type=id-images` in the query string
-   - Example: `/error.html?code=403&type=id-images`
+   - **Response Page Path**: `/id-images/403.html`
+   - Example paths:
+     - `/id-images/403.html`
+     - `/id-images/404.html`
+     - `/id-images/500.html`
 
    **For SDLT Documents CDN:**
-   - Same as above but use `type=sdlt-documents` in the query string
-   - Example: `/error.html?code=403&type=sdlt-documents`
+   - **Response Page Path**: `/sdlt-documents/403.html`
+   - Example paths:
+     - `/sdlt-documents/403.html`
+     - `/sdlt-documents/404.html`
+     - `/sdlt-documents/500.html`
 
 4. **Benefits:**
-   - Only one file to upload and maintain (`error.html`)
-   - JavaScript dynamically renders the correct content based on URL parameters
-   - CloudFront correctly passes query strings to the origin
+   - ✅ **Actually works** - No CloudFront query string issues
+   - ✅ Pre-generated pages already exist in `error-pages/generated/`
+   - ✅ All content (branding, icons, messages) is embedded
+   - ✅ Faster than dynamic JavaScript rendering
+   - ✅ Better caching - CloudFront can cache each error separately
 
-#### Option B: Multiple Static Error Pages (Alternative)
+#### ❌ Option B: Dynamic Error Page (Doesn't Work with CloudFront)
 
 If you prefer separate files for each error code:
 
