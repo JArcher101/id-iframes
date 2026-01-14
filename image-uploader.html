@@ -4693,13 +4693,10 @@
       // Generate and print confirmation PDF (wait for completion)
       console.log('⏳ Generating PDF before form reset...');
       await generateConfirmationPDF(finalFormData, chatMessage);
-      console.log('✅ PDF generation complete, waiting before reset...');
+      console.log('✅ PDF generation complete, resetting form...');
       
-      // Reset form to loading state after PDF is ready (ready for next client)
-      setTimeout(() => {
-        console.log('🔄 Resetting form to loading state...');
-        resetForm();
-      }, 1500); // 1.5 second delay after PDF completes
+      // Reset form to loading state immediately after PDF completes
+      resetForm();
     }
 
     /*
