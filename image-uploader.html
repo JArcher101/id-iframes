@@ -4908,8 +4908,18 @@
       // Process all images and add data URLs for new ones
       const processedImages = allImages.map(img => {
         const imgCopy = { ...img };
-        const side = img.side && img.side !== 'Single' ? img.side : 'Single';
-        const key = `${img.type === 'PhotoID' || img.type === 'Photo ID' ? 'PhotoID' : 'AddressID'}-${img.document}-${side}`;
+        const isPhotoID = img.type === 'PhotoID' || img.type === 'Photo ID';
+        
+        // Build key to match how it was created in imageDataMap
+        let key;
+        if (isPhotoID) {
+          // Photo IDs include side (Front/Back/Single)
+          const side = img.side && img.side !== 'Single' ? img.side : 'Single';
+          key = `PhotoID-${img.document}-${side}`;
+        } else {
+          // Address IDs don't include side (they're always single images)
+          key = `AddressID-${img.document}`;
+        }
         
         // Check if this is a newly uploaded image
         if (newImageKeys.has(img.s3Key) && imageDataMap.has(key)) {
