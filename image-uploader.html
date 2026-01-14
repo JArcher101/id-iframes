@@ -4938,10 +4938,19 @@
       console.log('📸 Building PDF with images:', {
         existingCount: existingImages.length,
         newCount: newImages.length,
+        allImagesCount: allImages.length,
         photoIdCount: photoIds.length,
         addressIdCount: addressIds.length,
-        groupedPhotoIds: Object.keys(groupedPhotoIds).map(k => `${k}: ${groupedPhotoIds[k].length}`),
-        imageDataMapSize: imageDataMap.size
+        imageDataMapSize: imageDataMap.size,
+        imageDataMapKeys: Array.from(imageDataMap.keys()),
+        photoIdDetails: photoIds.map(img => ({
+          doc: img.document,
+          side: img.side,
+          isNew: img.isNew,
+          hasDataUrl: !!img.dataUrl,
+          hasLiveUrl: !!img.liveUrl,
+          hasUrl: !!img.url
+        }))
       });
       
       // Build image thumbnails HTML for Photo IDs
@@ -5239,8 +5248,8 @@
     }
     .image-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
       margin-top: 16px;
     }
     .image-card {
