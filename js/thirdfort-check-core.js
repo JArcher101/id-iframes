@@ -193,7 +193,7 @@ function initializeEventListeners() {
     setupLiteAddressAutocomplete(liteAddress, liteAddressDropdown);
   }
   
-  // Lite Screen Manual Address Validation and Change Detection
+  // Lite Screen Manual Address Validation
   const liteManualAddressInputs = [
     'liteFlatNumber', 'liteBuildingNumber', 'liteBuildingName',
     'liteStreet', 'liteSubStreet', 'liteTown', 'litePostcode'
@@ -203,11 +203,9 @@ function initializeEventListeners() {
     if (input) {
       input.addEventListener('input', () => {
         validateLiteManualAddress();
-        detectLiteAddressChange();
       });
       input.addEventListener('change', () => {
         validateLiteManualAddress();
-        detectLiteAddressChange();
       });
     }
   });
@@ -1047,26 +1045,10 @@ function handleAddressData(addressData, field) {
   const country = normalizeCountryCode(countryRaw);
   const thirdfortAddress = formatToThirdfort(addressData, country);
   
-  // Store the Thirdfort-formatted address in the appropriate variable
+  // Populate manual fields from autocomplete selection (do NOT update address cards)
   if (field === 'lite' || field === 'current') {
-    liteCurrentAddressObject = thirdfortAddress;
-    // console.log('✅ Lite Screen address stored:', liteCurrentAddressObject); // Commented out to avoid logging client data
-    
-    // Update address card display text
-    const currentAddressText = document.getElementById('liteCurrentAddressText');
-    if (currentAddressText) {
-      currentAddressText.textContent = formatAddressForCard(liteCurrentAddressObject);
-    }
-    
-    // Show current address card if hidden
-    const currentAddressCard = document.getElementById('liteCurrentAddressCard');
-    if (currentAddressCard) {
-      currentAddressCard.classList.remove('hidden');
-    }
-    
-    // Load address into manual fields
-    liteActiveAddressType = 'current';
-    loadAddressIntoManualFields(liteCurrentAddressObject, 'lite');
+    // Load address into manual fields only
+    loadAddressIntoManualFields(thirdfortAddress, 'lite');
     
     // Show manual address fields if hidden
     const liteManualAddressFields = document.getElementById('liteManualAddressFields');
@@ -1079,8 +1061,7 @@ function handleAddressData(addressData, field) {
       }, 100);
     }
     
-    // Update card selection states
-    updateLiteAddressCardStates();
+    // Note: Address cards remain unchanged - they only reflect initial client data
   }
   
   // If it's a previous address (in case we add that later)
@@ -1113,9 +1094,6 @@ function setupLiteAddressAutocomplete(inputElement, dropdownElement) {
     
     // Clear timer
     if (addressDebounceTimer) clearTimeout(addressDebounceTimer);
-    
-    // Clear stored object when user types
-    liteCurrentAddressObject = null;
     
     // Hide dropdown if too short
     if (searchTerm.length < 7) {
@@ -3845,57 +3823,9 @@ function formatAddressForCard(addressObject) {
   return parts.join(', ') || '—';
 }
 
-/**
- * Detect if manual address fields have been changed from stored addresses
- * If address doesn't match current or previous, deselect both cards
- */
-function detectLiteAddressChange() {
-  // Get current values from manual fields
-  const currentValues = {
-    flat_number: document.getElementById('liteFlatNumber')?.value?.trim() || '',
-    building_number: document.getElementById('liteBuildingNumber')?.value?.trim() || '',
-    building_name: document.getElementById('liteBuildingName')?.value?.trim() || '',
-    street: document.getElementById('liteStreet')?.value?.trim() || '',
-    sub_street: document.getElementById('liteSubStreet')?.value?.trim() || '',
-    town: document.getElementById('liteTown')?.value?.trim() || '',
-    postcode: document.getElementById('litePostcode')?.value?.trim() || ''
-  };
-  
-  // Check if current values match the current address object
-  const matchesCurrent = liteCurrentAddressObject && addressObjectsMatch(currentValues, liteCurrentAddressObject);
-  
-  // Check if current values match the previous address object
-  const matchesPrevious = litePreviousAddressObject && addressObjectsMatch(currentValues, litePreviousAddressObject);
-  
-  if (matchesCurrent) {
-    // Manual fields match current address
-    liteActiveAddressType = 'current';
-    updateLiteAddressCardStates();
-  } else if (matchesPrevious) {
-    // Manual fields match previous address
-    liteActiveAddressType = 'previous';
-    updateLiteAddressCardStates();
-  } else {
-    // Manual fields don't match either stored address - deselect both
-    liteActiveAddressType = null;
-    updateLiteAddressCardStates();
-  }
-}
-
-/**
- * Compare two address objects for equality (ignoring empty/undefined fields)
- */
-function addressObjectsMatch(addr1, addr2) {
-  if (!addr1 || !addr2) return false;
-  
-  const fields = ['flat_number', 'building_number', 'building_name', 'street', 'sub_street', 'town', 'postcode'];
-  
-  return fields.every(field => {
-    const val1 = (addr1[field] || '').trim().toLowerCase();
-    const val2 = (addr2[field] || '').trim().toLowerCase();
-    return val1 === val2;
-  });
-}
+// detectLiteAddressChange() and addressObjectsMatch() removed:
+// Address cards now remain independent from manual input changes.
+// They only reflect initial client data and are not synced with manual fields.
 
 /**
  * Valid countries for International Address Verification (excluding UK as that's standard)
@@ -5090,8 +5020,8 @@ function validateLiteScreen() {
     document.getElementById('liteDob8')?.value || ''
   ].join('');
   
-  // Get address from stored object
-  const address = liteCurrentAddressObject || litePreviousAddressObject;
+  // Get address from manual input fields (source of truth for validation)
+  const address = buildAddressFromManualInputs('lite');
   
   // Validate name
   if (!validateTextField(firstName)) {
