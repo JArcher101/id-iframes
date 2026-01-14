@@ -2095,13 +2095,12 @@
     </div>
   </div>
 
-  <!-- Print.js library for print dialog (works on PC and mobile) -->
+  <!-- html2pdf library for PDF generation (includes html2canvas and jsPDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
+  <!-- Print.js library (kept for compatibility but not used for confirmation PDF) -->
   <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
   <link rel="stylesheet" type="text/css" href="https://printjs-4de6.kxcdn.com/print.min.css">
-  
-  <!-- html2canvas and jsPDF libraries (required for PDF generation) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
   <script src="js/jurisdiction-autocomplete.js?v=3eedc1c"></script>
@@ -4708,17 +4707,11 @@
     =====================================================================
     */
     async function generateConfirmationPDF(formData, chatMessage) {
-      console.log('📄 Generating ID verification confirmation PDF...');
+      console.log('📄 Generating ID verification confirmation PDF using html2pdf...');
       
-      // Check for required libraries
-      if (typeof html2canvas === 'undefined') {
-        console.error('❌ html2canvas library not loaded');
-        return;
-      }
-      
-      const JSPDF = typeof jsPDF !== 'undefined' ? jsPDF : (typeof jspdf !== 'undefined' && jspdf.jsPDF ? jspdf.jsPDF : null);
-      if (!JSPDF) {
-        console.error('❌ jsPDF library not loaded');
+      // Check for html2pdf library
+      if (typeof html2pdf === 'undefined') {
+        console.error('❌ html2pdf library not loaded');
         return;
       }
       
@@ -4726,88 +4719,13 @@
         // Build HTML for confirmation PDF
         const pdfHTML = await buildConfirmationPDFHTML(formData, chatMessage);
         
-        // Parse HTML
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(pdfHTML, 'text/html');
-        
-        // Extract styles and body
-        const headStyles = doc.head.querySelector('style');
-        const styleContent = headStyles ? headStyles.textContent : '';
-        const bodyHTML = doc.body.innerHTML;
-        
-        // Create temporary element for rendering
+        // Create element for html2pdf (same as uk-sanctions-checker)
+        // CRITICAL: Do NOT add to document.body to avoid custom font inheritance
         const element = document.createElement('div');
-        element.style.position = 'absolute';
-        element.style.left = '-9999px';
-        element.style.top = '-9999px';
-        element.style.width = '190mm'; // A4 width minus margins
-        element.style.padding = '0';
-        element.style.margin = '0';
-        element.style.fontFamily = "'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif";
+        element.innerHTML = pdfHTML;
         
-        // Apply styles
-        if (styleContent) {
-          const styleEl = document.createElement('style');
-          styleEl.textContent = styleContent;
-          element.appendChild(styleEl);
-        }
-        element.innerHTML = bodyHTML;
-        document.body.appendChild(element);
-        
-        // Wait for images to load
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Generate PDF using html2canvas and jsPDF
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          width: element.scrollWidth,
-          height: element.scrollHeight
-        });
-        
-        // Remove temporary element
-        document.body.removeChild(element);
-        
-        // Create PDF
-        const pdfWidth = 210; // A4 width in mm
-        const pdfHeight = 297; // A4 height in mm
-        const margin = 10;
-        const contentWidth = pdfWidth - (margin * 2);
-        const contentHeight = pdfHeight - (margin * 2);
-        
-        const imgWidth = contentWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        const pdf = new JSPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
-        });
-        
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
-        
-        // Handle multi-page content
-        if (imgHeight <= contentHeight) {
-          pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
-        } else {
-          let heightLeft = imgHeight;
-          let yPosition = margin;
-          pdf.addImage(imgData, 'JPEG', margin, yPosition, imgWidth, imgHeight);
-          heightLeft -= contentHeight;
-          
-          while (heightLeft > 0) {
-            yPosition = margin - (imgHeight - heightLeft);
-            pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', margin, yPosition, imgWidth, imgHeight);
-            heightLeft -= contentHeight;
-          }
-        }
-        
-        // Generate PDF blob
-        const pdfBlob = pdf.output('blob');
-        
-        console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
+        console.log('📄 HTML content length:', pdfHTML.length);
+        console.log('📄 Element created with', element.children.length, 'children');
         
         // Generate filename
         const now = new Date();
@@ -4815,7 +4733,28 @@
         const clientName = `${formData.firstName || ''}_${formData.surname || ''}`.trim().replace(/\s+/g, '_');
         const filename = `ID_Verification_${clientName}_${dateStr}.pdf`;
         
-        // Download PDF directly (opens in new tab where user can print)
+        // Configure html2pdf options (same as uk-sanctions-checker)
+        const options = {
+          margin: [10, 10, 10, 10],
+          filename: filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            logging: false
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: 'css', avoid: '.doc-group, .info-section' }
+        };
+        
+        console.log('📄 Starting PDF generation with html2pdf...');
+        
+        // Generate PDF blob using html2pdf (exactly like uk-sanctions-checker)
+        const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+        
+        console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
+        
+        // Download PDF directly (no print dialog)
         console.log('📥 Downloading PDF:', filename);
         const downloadUrl = URL.createObjectURL(pdfBlob);
         const downloadLink = document.createElement('a');
