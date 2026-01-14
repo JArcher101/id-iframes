@@ -4689,6 +4689,25 @@
       const existingImages = (formData.idImages && Array.isArray(formData.idImages)) ? formData.idImages : [];
       const allImages = [...existingImages, ...s3Keys];
       
+      // Debug: Log image merging
+      console.log('🔄 Merging images for PDF:', {
+        existingCount: existingImages.length,
+        newCount: s3Keys.length,
+        totalCount: allImages.length,
+        existingDetails: existingImages.map(img => ({
+          type: img.type,
+          doc: img.document,
+          side: img.side,
+          s3Key: img.s3Key ? img.s3Key.substring(0, 30) + '...' : 'none'
+        })),
+        newDetails: s3Keys.map(img => ({
+          type: img.type,
+          doc: img.document,
+          side: img.side,
+          s3Key: img.s3Key ? img.s3Key.substring(0, 30) + '...' : 'none'
+        }))
+      });
+      
       // For the parent message, send only new images (backend appends them)
       // But for PDF generation, use all images (existing + new)
       finalFormData.idImages = allImages;
@@ -6091,6 +6110,20 @@
       currentClientNumber = formData.clientNumber ? String(formData.clientNumber) : '';
       currentMatterNumber = formData.matterNumber ? String(formData.matterNumber) : '';
       currentClientName = formData.name || '';
+      
+      // Debug: Log existing images from parent
+      console.log('📥 Loaded data from parent:', {
+        hasIdImages: !!formData.idImages,
+        idImagesCount: formData.idImages ? formData.idImages.length : 0,
+        idImagesDetails: formData.idImages ? formData.idImages.map(img => ({
+          type: img.type,
+          document: img.document,
+          side: img.side,
+          s3Key: img.s3Key,
+          hasUrl: !!img.url,
+          hasLiveUrl: !!img.liveUrl
+        })) : []
+      });
       
       showSection1();
       document.getElementById('titlePrefix').value = formData.titlePrefix || '';
