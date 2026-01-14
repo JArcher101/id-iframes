@@ -4942,67 +4942,72 @@
         imageDataMapSize: imageDataMap.size
       });
       
-      // Build image thumbnails HTML with likeness icons for Photo IDs
+      // Build image thumbnails HTML for Photo IDs
       let imageThumbnailsHTML = '';
       
-      if (Object.keys(groupedPhotoIds).length > 0) {
+      if (photoIds.length > 0) {
         const likenessConfirmed = !formData.likenessNOTConfirmed;
         const likenessText = likenessConfirmed ? 'Likeness Confirmed' : 'Likeness NOT Confirmed';
+        const likenessIcon = likenessConfirmed ? '✓' : '⚠';
         const likenessClass = likenessConfirmed ? 'clear' : 'consider';
         
         imageThumbnailsHTML += `
           <div class="image-section">
             <h3>Photo ID Images</h3>
-            <div class="likeness-status ${likenessClass}">${likenessText}</div>
-        `;
+            <div class="likeness-strip ${likenessClass}">
+              <span class="likeness-text">${likenessText}</span>
+              <div class="likeness-icon-small ${likenessClass}">${likenessIcon}</div>
+            </div>
+            <div class="image-grid">`;
         
-        Object.keys(groupedPhotoIds).forEach(docType => {
-          const images = groupedPhotoIds[docType];
-          const likenessIcon = likenessConfirmed ? '✓' : '⚠';
-          
-          // Count how many images we have for this document type
-          const imageCount = images.length;
-          const label = imageCount > 1 ? `${docType} (${imageCount} images)` : docType;
-          
-          imageThumbnailsHTML += `
-            <div class="doc-group">
-              <div class="doc-group-header">
-                <span class="doc-group-title">${label}</span>
-                <div class="likeness-icon ${likenessClass}" title="${likenessConfirmed ? 'Likeness Confirmed' : 'Likeness NOT Confirmed'}">${likenessIcon}</div>
-              </div>
-              <div class="image-grid">`;
-          
-          images.forEach((img) => {
-            const imgUrl = img.isNew ? img.dataUrl : (img.liveUrl || img.url || '');
-            const side = img.side && img.side !== 'Single' ? img.side : '';
-            const sideLabel = side ? `<div class="side-label">${side}</div>` : '';
-            
-            imageThumbnailsHTML += `
-              <div class="image-thumbnail">
-                ${sideLabel}
-                ${imgUrl ? `<img src="${imgUrl}" alt="${docType}" onerror="this.parentElement.innerHTML='<div class=\\'no-image\\'>Image not available</div>'" />` : '<div class="no-image">Image not available</div>'}
-              </div>
-            `;
-          });
-          
-          imageThumbnailsHTML += '</div></div>';
-        });
-        
-        imageThumbnailsHTML += '</div>';
-      }
-      
-      if (addressIds.length > 0) {
-        imageThumbnailsHTML += '<div class="image-section"><h3>Address ID Images</h3><div class="image-grid">';
-        addressIds.forEach((img) => {
+        // Show all Photo ID images in a flat grid
+        photoIds.forEach((img) => {
           const imgUrl = img.isNew ? img.dataUrl : (img.liveUrl || img.url || '');
           const docType = img.document || 'Unknown';
+          const side = img.side && img.side !== 'Single' ? img.side : '';
+          const sideLabel = side ? `<div class="side-label">${side}</div>` : '';
+          
           imageThumbnailsHTML += `
-            <div class="image-thumbnail">
-              <div class="thumbnail-label">${docType}</div>
-              ${imgUrl ? `<img src="${imgUrl}" alt="${docType}" onerror="this.parentElement.innerHTML='<div class=\\'no-image\\'>Image not available</div>'" />` : '<div class="no-image">Image not available</div>'}
+            <div class="image-card">
+              <div class="image-preview">
+                ${sideLabel}
+                ${imgUrl ? 
+                  `<img src="${imgUrl}" alt="${docType}" onerror="this.parentElement.innerHTML='<div class=\\'already-uploaded\\'>Already uploaded</div>'" />` : 
+                  '<div class="already-uploaded">Already uploaded</div>'
+                }
+              </div>
+              <div class="image-label">${docType}</div>
             </div>
           `;
         });
+        
+        imageThumbnailsHTML += '</div></div>';
+      }
+      
+      if (addressIds.length > 0) {
+        imageThumbnailsHTML += `
+          <div class="image-section">
+            <h3>Address ID Images</h3>
+            <div class="image-grid">`;
+        
+        // Show all Address ID images in a flat grid
+        addressIds.forEach((img) => {
+          const imgUrl = img.isNew ? img.dataUrl : (img.liveUrl || img.url || '');
+          const docType = img.document || 'Unknown';
+          
+          imageThumbnailsHTML += `
+            <div class="image-card">
+              <div class="image-preview">
+                ${imgUrl ? 
+                  `<img src="${imgUrl}" alt="${docType}" onerror="this.parentElement.innerHTML='<div class=\\'already-uploaded\\'>Already uploaded</div>'" />` : 
+                  '<div class="already-uploaded">Already uploaded</div>'
+                }
+              </div>
+              <div class="image-label">${docType}</div>
+            </div>
+          `;
+        });
+        
         imageThumbnailsHTML += '</div></div>';
       }
       
@@ -5189,56 +5194,72 @@
       font-weight: 600;
       color: #111;
     }
-    .likeness-status {
-      padding: 8px 12px;
-      margin-bottom: 16px;
+    .likeness-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      margin-bottom: 20px;
       border-radius: 6px;
+      border-left: 4px solid;
+    }
+    .likeness-strip.clear {
+      background: rgba(57, 181, 73, 0.1);
+      border-left-color: #39b549;
+    }
+    .likeness-strip.consider {
+      background: rgba(247, 147, 30, 0.1);
+      border-left-color: #f7931e;
+    }
+    .likeness-text {
       font-size: 14px;
       font-weight: 600;
-      display: inline-block;
+      color: #111;
     }
-    .likeness-status.clear {
-      background: rgba(57, 181, 73, 0.15);
-      color: #39b549;
-      border: 1px solid #39b549;
-    }
-    .likeness-status.consider {
-      background: rgba(247, 147, 30, 0.15);
-      color: #f7931e;
-      border: 1px solid #f7931e;
-    }
-    .likeness-icon {
+    .likeness-icon-small {
       font-size: 16px;
       font-weight: bold;
-      min-width: 32px;
-      height: 32px;
+      min-width: 28px;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 6px;
+      border-radius: 4px;
       flex-shrink: 0;
     }
-    .likeness-icon.clear {
+    .likeness-icon-small.clear {
       background: #39b549;
       color: #ffffff;
     }
-    .likeness-icon.consider {
+    .likeness-icon-small.consider {
       background: #f7931e;
       color: #ffffff;
     }
     .image-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 16px;
-      margin-top: 12px;
+      margin-top: 16px;
     }
-    .image-thumbnail {
+    .image-card {
       border: 2px solid #dee2e6;
       border-radius: 6px;
-      padding: 12px;
       background: #fff;
-      text-align: center;
+      overflow: hidden;
+    }
+    .image-preview {
       position: relative;
+      min-height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8f9fa;
+      padding: 8px;
+    }
+    .image-preview img {
+      max-width: 100%;
+      max-height: 130px;
+      object-fit: contain;
     }
     .side-label {
       position: absolute;
@@ -5252,25 +5273,23 @@
       border-radius: 4px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      z-index: 1;
     }
-    .thumbnail-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: #6c757d;
-      margin-bottom: 8px;
-      text-align: left;
-    }
-    .image-thumbnail img {
-      max-width: 100%;
-      max-height: 120px;
-      object-fit: contain;
-      border-radius: 4px;
-    }
-    .no-image {
+    .already-uploaded {
       padding: 20px;
       color: #6c757d;
       font-style: italic;
       font-size: 12px;
+      text-align: center;
+    }
+    .image-label {
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #111;
+      text-align: center;
+      background: white;
+      border-top: 1px solid #dee2e6;
     }
     @media print {
       body { padding: 20px; }
