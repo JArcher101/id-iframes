@@ -4554,15 +4554,17 @@
       const hasDrivingLicence = photoIdTypes.has('Driving Licence');
       
       // Check if Photo IDs have complete front/back pairs where required
-      // Photo IDs that need both sides: Driving Licence, Passport Card
-      // Single-sided: Passport, Entry Visa, PASS card, Blue badge, Firearms Certificate, Other Photo ID Card
-      const needsBothSides = ['Driving Licence', 'Passport Card'];
+      // Use needsFrontBack function to determine which types need both sides
+      // Single-sided: Passport, Firearms Certificate
+      // Front/Back needed: Everything else (Driving Licence, Blue badge, Passport Card, etc.)
       let hasValidPhotoId = false;
       let photoIdDetails = [];
       
       photoIdTypes.forEach(docType => {
         const counts = photoIdCounts[docType];
-        if (needsBothSides.includes(docType)) {
+        const requiresBothSides = needsFrontBack(docType);
+        
+        if (requiresBothSides) {
           // Need both front and back for this type
           // Count complete pairs (front+back = 1 document)
           const completePairs = Math.min(counts.front, counts.back);
