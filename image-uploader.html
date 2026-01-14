@@ -4704,7 +4704,7 @@
     GENERATE CONFIRMATION PDF
     - Creates a PDF confirmation slip for in-person ID verification
     - Includes client details, image thumbnails, uploader info, chat message
-    - Uses print.js to open print dialog (works on PC and mobile)
+    - Downloads PDF directly (user can then print from browser)
     =====================================================================
     */
     async function generateConfirmationPDF(formData, chatMessage) {
@@ -4724,7 +4724,7 @@
       
       try {
         // Build HTML for confirmation PDF
-        const pdfHTML = buildConfirmationPDFHTML(formData, chatMessage);
+        const pdfHTML = await buildConfirmationPDFHTML(formData, chatMessage);
         
         // Parse HTML
         const parser = new DOMParser();
@@ -4807,18 +4807,31 @@
         // Generate PDF blob
         const pdfBlob = pdf.output('blob');
         
-        // Use print.js to open print dialog (works on PC and mobile)
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        printJS({
-          printable: pdfUrl,
-          type: 'pdf',
-          onPrintDialogClose: () => {
-            // Clean up blob URL after print dialog closes
-            URL.revokeObjectURL(pdfUrl);
-          }
-        });
+        console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
         
-        console.log('✅ Confirmation PDF generated and print dialog opened');
+        // Generate filename
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+        const clientName = `${formData.firstName || ''}_${formData.surname || ''}`.trim().replace(/\s+/g, '_');
+        const filename = `ID_Verification_${clientName}_${dateStr}.pdf`;
+        
+        // Download PDF directly (opens in new tab where user can print)
+        console.log('📥 Downloading PDF:', filename);
+        const downloadUrl = URL.createObjectURL(pdfBlob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = downloadUrl;
+        downloadLink.download = filename;
+        downloadLink.style.display = 'none';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Clean up blob URL after download
+        setTimeout(() => {
+          URL.revokeObjectURL(downloadUrl);
+        }, 100);
+        
+        console.log('✅ Confirmation PDF downloaded successfully');
         
       } catch (error) {
         console.error('❌ Error generating confirmation PDF:', error);
@@ -4830,13 +4843,95 @@
     BUILD CONFIRMATION PDF HTML
     - Creates HTML structure for the confirmation PDF
     - Includes client details, image thumbnails, uploader info, chat message
+    - Uses FileReader data URLs for newly uploaded images
+    - Groups front/back images properly
     =====================================================================
     */
-    function buildConfirmationPDFHTML(formData, chatMessage) {
+    async function buildConfirmationPDFHTML(formData, chatMessage) {
       // Combine existing and new images for display
       const existingImages = (formData.idImages && Array.isArray(formData.idImages)) ? formData.idImages : [];
       const newImages = (s3Keys && Array.isArray(s3Keys)) ? s3Keys : [];
-      const allImages = [...existingImages, ...newImages];
+      
+      // Create a map to track newly uploaded images by their S3 key
+      const newImageKeys = new Set(newImages.map(img => img.s3Key));
+      
+      // For newly uploaded images, we need to get their data URLs from the file inputs
+      const imageDataMap = new Map();
+      
+      // Collect all file inputs and create data URLs
+      const photoTypes = [photoIdType1.value, photoIdType2.value];
+      const photoUploads = [photoUploads1, photoUploads2];
+      const photoCards = [photoIdCard1, photoIdCard2];
+      
+      // Process Photo ID files
+      for (let i = 0; i < photoCards.length; i++) {
+        const card = photoCards[i];
+        if (!card.classList.contains('hidden') && photoTypes[i]) {
+          const uploads = photoUploads[i];
+          const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
+          
+          for (let j = 0; j < inputs.length; j++) {
+            const input = inputs[j];
+            if (input.files && input.files[0]) {
+              const file = input.files[0];
+              const side = inputs.length === 2 ? (j === 0 ? 'Front' : 'Back') : 'Single';
+              const key = `PhotoID-${photoTypes[i]}-${side}`;
+              
+              // Read file as data URL
+              const dataUrl = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => resolve('');
+                reader.readAsDataURL(file);
+              });
+              
+              imageDataMap.set(key, dataUrl);
+            }
+          }
+        }
+      }
+      
+      // Process Address ID files
+      if (wantsAddressId) {
+        const addressTypes = [addressIdType1.value, addressIdType2.value, addressIdType3.value];
+        const addressInputs = [addressUpload1, addressUpload2, addressUpload3];
+        const addressCards = [addressIdCard1, addressIdCard2, addressIdCard3];
+        
+        for (let i = 0; i < addressCards.length; i++) {
+          const card = addressCards[i];
+          if (!card.classList.contains('hidden') && addressTypes[i]) {
+            const input = addressInputs[i];
+            if (input.files && input.files[0]) {
+              const file = input.files[0];
+              const key = `AddressID-${addressTypes[i]}`;
+              
+              // Read file as data URL
+              const dataUrl = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => resolve('');
+                reader.readAsDataURL(file);
+              });
+              
+              imageDataMap.set(key, dataUrl);
+            }
+          }
+        }
+      }
+      
+      // Merge all images and add data URLs for new ones
+      const allImages = [...existingImages];
+      newImages.forEach(img => {
+        const imgCopy = { ...img };
+        const side = img.side && img.side !== 'Single' ? img.side : 'Single';
+        const key = `${img.type === 'PhotoID' || img.type === 'Photo ID' ? 'PhotoID' : 'AddressID'}-${img.document}-${side}`;
+        
+        if (imageDataMap.has(key)) {
+          imgCopy.dataUrl = imageDataMap.get(key);
+          imgCopy.isNew = true;
+        }
+        allImages.push(imgCopy);
+      });
       
       // Separate Photo IDs and Address IDs
       const photoIds = allImages.filter(img => 
@@ -4867,40 +4962,68 @@
         return parts.length > 0 ? parts.join(', ') : 'Not provided';
       }
       
+      // Group Photo IDs by document type
+      const groupedPhotoIds = {};
+      photoIds.forEach(img => {
+        const docType = img.document || 'Unknown';
+        if (!groupedPhotoIds[docType]) {
+          groupedPhotoIds[docType] = [];
+        }
+        groupedPhotoIds[docType].push(img);
+      });
+      
       // Build image thumbnails HTML with likeness icons for Photo IDs
       let imageThumbnailsHTML = '';
       
-      if (photoIds.length > 0) {
-        imageThumbnailsHTML += '<div class="image-section"><h3>Photo ID Images</h3><div class="image-grid">';
-        photoIds.forEach((img) => {
-          const imgUrl = img.liveUrl || img.url || '';
-          const docType = img.document || 'Unknown';
-          const side = img.side && img.side !== 'Single' ? ` (${img.side})` : '';
+      if (Object.keys(groupedPhotoIds).length > 0) {
+        imageThumbnailsHTML += '<div class="image-section"><h3>Photo ID Images</h3>';
+        
+        Object.keys(groupedPhotoIds).forEach(docType => {
+          const images = groupedPhotoIds[docType];
           const likenessConfirmed = !formData.likenessNOTConfirmed;
           const likenessIcon = likenessConfirmed ? '✓' : '⚠';
           const likenessClass = likenessConfirmed ? 'clear' : 'consider';
+          
+          // Count how many images we have for this document type
+          const imageCount = images.length;
+          const label = imageCount > 1 ? `${docType} (${imageCount} images)` : docType;
+          
           imageThumbnailsHTML += `
-            <div class="image-thumbnail">
-              <div class="thumbnail-header">
-                <div class="thumbnail-label">${docType}${side}</div>
+            <div class="doc-group">
+              <div class="doc-group-header">
+                <span class="doc-group-title">${label}</span>
                 <div class="likeness-icon ${likenessClass}" title="${likenessConfirmed ? 'Likeness Confirmed' : 'Likeness NOT Confirmed'}">${likenessIcon}</div>
               </div>
-              ${imgUrl ? `<img src="${imgUrl}" alt="${docType}" onerror="this.style.display='none'" />` : '<div class="no-image">Image not available</div>'}
-            </div>
-          `;
+              <div class="image-grid">`;
+          
+          images.forEach((img) => {
+            const imgUrl = img.isNew ? img.dataUrl : (img.liveUrl || img.url || '');
+            const side = img.side && img.side !== 'Single' ? img.side : '';
+            const sideLabel = side ? `<div class="side-label">${side}</div>` : '';
+            
+            imageThumbnailsHTML += `
+              <div class="image-thumbnail">
+                ${sideLabel}
+                ${imgUrl ? `<img src="${imgUrl}" alt="${docType}" onerror="this.parentElement.innerHTML='<div class=\\'no-image\\'>Image not available</div>'" />` : '<div class="no-image">Image not available</div>'}
+              </div>
+            `;
+          });
+          
+          imageThumbnailsHTML += '</div></div>';
         });
-        imageThumbnailsHTML += '</div></div>';
+        
+        imageThumbnailsHTML += '</div>';
       }
       
       if (addressIds.length > 0) {
         imageThumbnailsHTML += '<div class="image-section"><h3>Address ID Images</h3><div class="image-grid">';
         addressIds.forEach((img) => {
-          const imgUrl = img.liveUrl || img.url || '';
+          const imgUrl = img.isNew ? img.dataUrl : (img.liveUrl || img.url || '');
           const docType = img.document || 'Unknown';
           imageThumbnailsHTML += `
             <div class="image-thumbnail">
               <div class="thumbnail-label">${docType}</div>
-              ${imgUrl ? `<img src="${imgUrl}" alt="${docType}" onerror="this.style.display='none'" />` : '<div class="no-image">Image not available</div>'}
+              ${imgUrl ? `<img src="${imgUrl}" alt="${docType}" onerror="this.parentElement.innerHTML='<div class=\\'no-image\\'>Image not available</div>'" />` : '<div class="no-image">Image not available</div>'}
             </div>
           `;
         });
@@ -4934,179 +5057,229 @@
   <meta charset="UTF-8">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary-blue: #003c71;
+      --secondary-blue: #1d71b8;
+      --green: #39b549;
+      --orange: #f7931e;
+      --red: #d32f2f;
+      --grey: #6c757d;
+      --light-grey: #f8f9fa;
+      --border-grey: #dee2e6;
+    }
     body {
-      font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif;
-      font-size: 11pt;
+      font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
+      font-size: 14px;
       line-height: 1.6;
-      color: #333;
-      padding: 15px;
-      background: #fff;
+      color: #111;
+      padding: 12mm;
+      margin: 0;
+      background: white;
+    }
+    * {
+      font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
     }
     .header {
-      text-align: center;
-      border-bottom: 3px solid #003c71;
-      padding-bottom: 12px;
-      margin-bottom: 15px;
+      border-bottom: 3px solid var(--primary-blue);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+      page-break-after: avoid;
     }
     .header h1 {
-      color: #003c71;
-      font-size: 22pt;
-      margin-bottom: 3px;
+      color: var(--primary-blue);
+      font-size: 28px;
       font-weight: bold;
+      margin-bottom: 8px;
     }
     .message-strip {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 15px;
-      margin-bottom: 15px;
-      border-radius: 5px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      border-radius: 8px;
       background: ${meetsFormJ ? 'rgba(57, 181, 73, 0.1)' : 'rgba(247, 147, 30, 0.1)'};
-      border-left: 4px solid ${meetsFormJ ? 'rgba(57, 181, 73, 0.55)' : 'rgba(247, 147, 30, 0.55)'};
+      border-left: 4px solid ${meetsFormJ ? '#39b549' : '#f7931e'};
+      page-break-inside: avoid;
     }
     .message-text {
       flex: 1;
-      font-size: 11pt;
-      color: #333;
+      font-size: 14px;
+      color: #111;
       line-height: 1.6;
     }
     .outcome-tag {
-      font-family: 'Transport', sans-serif;
-      font-size: 12px;
-      padding: 4px 10px;
+      font-size: 14px;
+      padding: 6px 16px;
       border-radius: 4px;
-      font-weight: 500;
+      font-weight: 600;
       color: #ffffff;
       white-space: nowrap;
-      margin-left: 15px;
+      margin-left: 20px;
     }
     .outcome-tag.clear {
-      background: rgba(57, 181, 73, 0.55);
+      background: #39b549;
     }
     .outcome-tag.consider {
-      background: rgba(247, 147, 30, 0.55);
+      background: #f7931e;
     }
     .uploader-info {
       display: flex;
       justify-content: space-between;
-      padding: 10px 15px;
-      background: #f5f5f5;
-      border-radius: 5px;
-      margin-bottom: 15px;
-      font-size: 10pt;
+      padding: 16px 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      page-break-inside: avoid;
     }
     .uploader-info-item {
       display: flex;
       flex-direction: column;
     }
     .uploader-info-label {
-      font-weight: bold;
-      color: #666;
-      font-size: 9pt;
-      margin-bottom: 3px;
+      font-weight: 600;
+      color: #6c757d;
+      font-size: 12px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .uploader-info-value {
-      color: #333;
+      color: #111;
+      font-size: 14px;
     }
     .info-section {
-      margin-bottom: 15px;
-      padding: 12px 15px;
-      background: #f9f9f9;
-      border-radius: 5px;
-      border: 1px solid #e0e0e0;
+      margin-bottom: 24px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      page-break-inside: avoid;
     }
     .info-section h2 {
-      color: #003c71;
-      font-size: 14pt;
-      margin-bottom: 10px;
-      border-bottom: 2px solid #003c71;
-      padding-bottom: 5px;
+      color: var(--primary-blue);
+      font-size: 18px;
       font-weight: bold;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #dee2e6;
+      padding-bottom: 10px;
     }
     .info-row {
       display: flex;
-      margin-bottom: 6px;
-      font-size: 10pt;
+      margin-bottom: 10px;
+      font-size: 14px;
     }
     .info-label {
-      font-weight: bold;
-      width: 160px;
-      color: #555;
+      font-weight: 600;
+      min-width: 180px;
+      color: #6c757d;
       flex-shrink: 0;
     }
     .info-value {
       flex: 1;
-      color: #333;
+      color: #111;
     }
     .image-section {
-      margin-top: 15px;
-      margin-bottom: 15px;
+      margin-bottom: 32px;
+      page-break-before: avoid;
     }
     .image-section h3 {
-      color: #003c71;
-      font-size: 13pt;
-      margin-bottom: 10px;
+      color: var(--primary-blue);
+      font-size: 18px;
       font-weight: bold;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #dee2e6;
+      padding-bottom: 10px;
     }
-    .image-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 12px;
-      margin-top: 10px;
+    .doc-group {
+      margin-bottom: 24px;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      page-break-inside: avoid;
     }
-    .image-thumbnail {
-      border: 2px solid #ddd;
-      border-radius: 5px;
-      padding: 8px;
-      background: #fff;
-      text-align: center;
-    }
-    .thumbnail-header {
+    .doc-group-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #dee2e6;
     }
-    .thumbnail-label {
-      font-size: 9pt;
-      font-weight: bold;
-      color: #555;
-      flex: 1;
-      text-align: left;
+    .doc-group-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111;
     }
     .likeness-icon {
       font-size: 16px;
       font-weight: bold;
-      width: 24px;
-      height: 24px;
+      min-width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 4px;
+      border-radius: 6px;
       flex-shrink: 0;
     }
     .likeness-icon.clear {
-      background: rgba(57, 181, 73, 0.55);
+      background: #39b549;
       color: #ffffff;
     }
     .likeness-icon.consider {
-      background: rgba(247, 147, 30, 0.55);
+      background: #f7931e;
       color: #ffffff;
+    }
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: 12px;
+    }
+    .image-thumbnail {
+      border: 2px solid #dee2e6;
+      border-radius: 6px;
+      padding: 12px;
+      background: #fff;
+      text-align: center;
+      position: relative;
+    }
+    .side-label {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--primary-blue);
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .thumbnail-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6c757d;
+      margin-bottom: 8px;
+      text-align: left;
     }
     .image-thumbnail img {
       max-width: 100%;
-      max-height: 100px;
+      max-height: 120px;
       object-fit: contain;
-      border-radius: 3px;
+      border-radius: 4px;
     }
     .no-image {
-      padding: 15px;
-      color: #999;
+      padding: 20px;
+      color: #6c757d;
       font-style: italic;
-      font-size: 9pt;
+      font-size: 12px;
     }
     @media print {
-      body { padding: 10px; }
+      body { padding: 20px; }
       .image-grid { grid-template-columns: repeat(3, 1fr); }
     }
   </style>
