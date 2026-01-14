@@ -5010,18 +5010,27 @@
           const side = img.side && img.side !== 'Single' ? img.side : '';
           const sideLabel = side ? `<div class="side-label">${side}</div>` : '';
           
-          imageThumbnailsHTML += `
-            <div class="image-card">
-              <div class="image-preview">
-                ${sideLabel}
-                ${imgUrl ? 
-                  `<img src="${imgUrl}" alt="${docType}" onerror="this.parentElement.innerHTML='<div class=\\'already-uploaded\\'>Already uploaded</div>'" />` : 
-                  '<div class="already-uploaded">Already uploaded</div>'
-                }
+          // Different structure for images with/without thumbnails
+          if (imgUrl) {
+            // Has thumbnail: image preview on top, label below
+            imageThumbnailsHTML += `
+              <div class="image-card">
+                <div class="image-preview">
+                  ${sideLabel}
+                  <img src="${imgUrl}" alt="${docType}" onerror="this.parentElement.innerHTML='<div class=\\'already-uploaded\\'>Already uploaded</div>'" />
+                </div>
+                <div class="image-label">${docType}</div>
               </div>
-              <div class="image-label">${docType}</div>
-            </div>
-          `;
+            `;
+          } else {
+            // No thumbnail: label on top, "Already uploaded" below
+            imageThumbnailsHTML += `
+              <div class="image-card no-thumbnail">
+                <div class="image-label-top">${docType}</div>
+                <div class="already-uploaded">Already uploaded</div>
+              </div>
+            `;
+          }
         });
         
         imageThumbnailsHTML += '</div></div>';
@@ -5038,17 +5047,26 @@
           const imgUrl = img.isNew ? img.dataUrl : (img.liveUrl || img.url || '');
           const docType = img.document || 'Unknown';
           
-          imageThumbnailsHTML += `
-            <div class="image-card">
-              <div class="image-preview">
-                ${imgUrl ? 
-                  `<img src="${imgUrl}" alt="${docType}" onerror="this.parentElement.innerHTML='<div class=\\'already-uploaded\\'>Already uploaded</div>'" />` : 
-                  '<div class="already-uploaded">Already uploaded</div>'
-                }
+          // Different structure for images with/without thumbnails
+          if (imgUrl) {
+            // Has thumbnail: image preview on top, label below
+            imageThumbnailsHTML += `
+              <div class="image-card">
+                <div class="image-preview">
+                  <img src="${imgUrl}" alt="${docType}" onerror="this.parentElement.innerHTML='<div class=\\'already-uploaded\\'>Already uploaded</div>'" />
+                </div>
+                <div class="image-label">${docType}</div>
               </div>
-              <div class="image-label">${docType}</div>
-            </div>
-          `;
+            `;
+          } else {
+            // No thumbnail: label on top, "Already uploaded" below
+            imageThumbnailsHTML += `
+              <div class="image-card no-thumbnail">
+                <div class="image-label-top">${docType}</div>
+                <div class="already-uploaded">Already uploaded</div>
+              </div>
+            `;
+          }
         });
         
         imageThumbnailsHTML += '</div></div>';
@@ -5289,6 +5307,8 @@
       border-radius: 6px;
       background: #fff;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
     .image-preview {
       position: relative;
@@ -5324,6 +5344,10 @@
       font-style: italic;
       font-size: 12px;
       text-align: center;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .image-label {
       padding: 10px;
@@ -5333,6 +5357,18 @@
       text-align: center;
       background: white;
       border-top: 1px solid #dee2e6;
+    }
+    .image-label-top {
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #111;
+      text-align: center;
+      background: white;
+      border-bottom: 1px solid #dee2e6;
+    }
+    .image-card.no-thumbnail {
+      min-height: 120px;
     }
     @media print {
       body { padding: 20px; }
