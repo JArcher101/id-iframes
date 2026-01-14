@@ -4708,8 +4708,11 @@
         }))
       });
       
+      // Update global formData with all images (existing + new) for chat message generation
+      formData.idImages = allImages;
+      
       // For the parent message, send only new images (backend appends them)
-      // But for PDF generation, use all images (existing + new)
+      // But for PDF generation and chat message, use all images (existing + new)
       finalFormData.idImages = allImages;
       
       // Generate chat message based on all images (existing + new)
