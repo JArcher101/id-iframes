@@ -190,34 +190,28 @@ This way:
 
 #### ❌ Option B: Dynamic Error Page (Doesn't Work with CloudFront)
 
-If you prefer separate files for each error code:
+**This approach doesn't work** because CloudFront strips query parameters.
 
-1. **CloudFront Console → Your Distribution → Error Pages tab**
-2. **Click "Create Custom Error Response"**
-3. **Configure for 403 error:**
-   - **HTTP Error Code**: `403`
-   - **Customize Error Response**: `Yes`
-   - **Response Page Path**: `/403.html` (or `/id-images/403.html` if organized)
-   - **HTTP Response Code**: `403` (or `200` if you want error page with 200 status)
-   - **Error Caching Minimum TTL**: `300` (5 minutes - error pages don't change often)
+If you try to use `/error.html?code=403&type=id-images`:
+- CloudFront fetches `/error.html` (removes parameters)
+- JavaScript never receives `code` or `type`
+- Error page shows "Unknown error"
 
-4. **Repeat for all error codes:**
-   - 400 → `/400.html`
-   - 403 → `/403.html`
-   - 404 → `/404.html`
-   - 405 → `/405.html`
-   - 414 → `/414.html`
-   - 416 → `/416.html`
-   - 500 → `/500.html`
-   - 501 → `/501.html`
-   - 502 → `/502.html`
-   - 504 → `/504.html`
+**Why this limitation exists:**
+- CloudFront Custom Error Responses fetch the error page from origin
+- Query parameters are **always stripped** before the fetch
+- This is CloudFront's design, not a bug
+- No workaround exists using query parameters
 
-5. **For each error response:**
-   - CloudFront will fetch `error.html` from your origin buckets using existing IAM permissions
-   - It will pass the query parameters (`?code=XXX&type=YYY`) to the error page
-   - The JavaScript in `error.html` will dynamically render the appropriate error content
-   - CloudFront will NOT try to serve actual files when using Custom Error Responses
+**What works instead:**
+- ✅ Use static error pages (Option A above)
+- ✅ Use separate HTML files for each system/code combination
+- ✅ Pre-generate all error pages with your build script
+
+**If you need dynamic parameters:**
+- Use Lambda@Edge (complex, expensive)
+- Or encode parameters in the path: `/error-id-images-403.html`
+- See `aws-setup/CLOUDFRONT-ERROR-PARAMS-ISSUE.md` for details
 
 ## How It Works
 
