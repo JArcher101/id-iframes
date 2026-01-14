@@ -5439,7 +5439,7 @@
     }
 
     // Update progress bar and handle completion
-    function updateProgress(completed, total, hasErrors = false) {
+    async function updateProgress(completed, total, hasErrors = false) {
       const percentage = Math.round((completed / total) * 100);
       console.log('Progress update:', { completed, total, percentage });
       progressFill.style.width = `${percentage}%`;
