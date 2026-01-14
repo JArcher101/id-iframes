@@ -4564,11 +4564,20 @@
         const counts = photoIdCounts[docType];
         if (needsBothSides.includes(docType)) {
           // Need both front and back for this type
-          if (counts.front > 0 && counts.back > 0) {
+          // Count complete pairs (front+back = 1 document)
+          const completePairs = Math.min(counts.front, counts.back);
+          const incompleteSingles = Math.abs(counts.front - counts.back);
+          
+          if (completePairs > 0) {
             hasValidPhotoId = true; // At least one valid Photo ID exists
-            photoIdDetails.push(`${counts.total} ${docType} (Front & Back)`);
+            if (incompleteSingles > 0) {
+              const missingSide = counts.front > counts.back ? 'Back' : 'Front';
+              photoIdDetails.push(`${completePairs} ${docType}, ${incompleteSingles} ${docType} (incomplete - missing ${missingSide})`);
+            } else {
+              photoIdDetails.push(`${completePairs} ${docType}`);
+            }
           } else {
-            // Incomplete - missing a side
+            // All incomplete - missing a side
             const missingSide = counts.front === 0 ? 'Front' : 'Back';
             photoIdDetails.push(`${counts.total} ${docType} (incomplete - missing ${missingSide})`);
           }
@@ -4923,17 +4932,33 @@
         groupedPhotoIds[docType].push(img);
       });
       
+      // Debug logging
+      console.log('📸 Building PDF with images:', {
+        existingCount: existingImages.length,
+        newCount: newImages.length,
+        photoIdCount: photoIds.length,
+        addressIdCount: addressIds.length,
+        groupedPhotoIds: Object.keys(groupedPhotoIds).map(k => `${k}: ${groupedPhotoIds[k].length}`),
+        imageDataMapSize: imageDataMap.size
+      });
+      
       // Build image thumbnails HTML with likeness icons for Photo IDs
       let imageThumbnailsHTML = '';
       
       if (Object.keys(groupedPhotoIds).length > 0) {
-        imageThumbnailsHTML += '<div class="image-section"><h3>Photo ID Images</h3>';
+        const likenessConfirmed = !formData.likenessNOTConfirmed;
+        const likenessText = likenessConfirmed ? 'Likeness Confirmed' : 'Likeness NOT Confirmed';
+        const likenessClass = likenessConfirmed ? 'clear' : 'consider';
+        
+        imageThumbnailsHTML += `
+          <div class="image-section">
+            <h3>Photo ID Images</h3>
+            <div class="likeness-status ${likenessClass}">${likenessText}</div>
+        `;
         
         Object.keys(groupedPhotoIds).forEach(docType => {
           const images = groupedPhotoIds[docType];
-          const likenessConfirmed = !formData.likenessNOTConfirmed;
           const likenessIcon = likenessConfirmed ? '✓' : '⚠';
-          const likenessClass = likenessConfirmed ? 'clear' : 'consider';
           
           // Count how many images we have for this document type
           const imageCount = images.length;
@@ -5163,6 +5188,24 @@
       font-size: 16px;
       font-weight: 600;
       color: #111;
+    }
+    .likeness-status {
+      padding: 8px 12px;
+      margin-bottom: 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .likeness-status.clear {
+      background: rgba(57, 181, 73, 0.15);
+      color: #39b549;
+      border: 1px solid #39b549;
+    }
+    .likeness-status.consider {
+      background: rgba(247, 147, 30, 0.15);
+      color: #f7931e;
+      border: 1px solid #f7931e;
     }
     .likeness-icon {
       font-size: 16px;
