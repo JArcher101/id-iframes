@@ -4354,7 +4354,11 @@
         }
       }
       
-      console.log('📸 Captured', uploadedFileDataUrls.length, 'data URLs for PDF thumbnails');
+      console.log('📸 Captured data URLs for PDF thumbnails:', {
+        fileCount: files.length,
+        dataUrlCount: uploadedFileDataUrls.length,
+        dataUrlLengths: uploadedFileDataUrls.map(url => url ? url.length : 0)
+      });
       return files;
     }
 
@@ -4525,7 +4529,12 @@
           dataUrl: uploadedFileDataUrls[index] || null
         }));
         
-        console.log('📎 Attached data URLs to s3Keys:', s3Keys.length, 'images with', uploadedFileDataUrls.length, 'thumbnails');
+        console.log('📎 Attached data URLs to s3Keys:', {
+          s3KeysCount: s3Keys.length,
+          uploadedDataUrlsCount: uploadedFileDataUrls.length,
+          dataUrlLengths: uploadedFileDataUrls.map(url => url ? url.length : 0),
+          s3KeysWithDataUrl: s3Keys.filter(k => !!k.dataUrl).length
+        });
         
         uploadFiles(links);
       } else if (event.data.type === 'put-error') {
@@ -4957,13 +4966,22 @@
         photoIdDetails: photoIds.map(img => ({
           doc: img.document,
           side: img.side,
-          hasDataUrl: !!img.dataUrl
+          hasDataUrl: !!img.dataUrl,
+          dataUrlLength: img.dataUrl ? img.dataUrl.length : 0
         })),
         addressIdDetails: addressIds.map(img => ({
           doc: img.document,
-          hasDataUrl: !!img.dataUrl
+          hasDataUrl: !!img.dataUrl,
+          dataUrlLength: img.dataUrl ? img.dataUrl.length : 0
         }))
       });
+      
+      // Extra debug: log first image's dataUrl prefix if exists
+      if (allImages.length > 0 && allImages[0].dataUrl) {
+        console.log('📷 First image dataUrl prefix:', allImages[0].dataUrl.substring(0, 50));
+      } else if (allImages.length > 0) {
+        console.log('⚠️ First image has NO dataUrl:', allImages[0]);
+      }
       
       // Build image thumbnails HTML for Photo IDs
       let imageThumbnailsHTML = '';
