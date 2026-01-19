@@ -2322,6 +2322,10 @@
     */
     let errorTimeout; let currentTitleText = ''; let currentTitle = ''; let currentClientNumber = ''; let currentMatterNumber = ''; let currentClientName = ''; let formData = {}; let wantsPhotoId = null; let wantsAddressId = null; let s3Keys = null; let imageData = []; let currentAddressObject = null; let previousAddressObject = null; let addressDebounceTimer = null; let previousAddressDebounceTimer = null;
     
+    // Store file data URLs at upload time (in order matching upload sequence)
+    // These are attached to s3Keys when put-links response received for PDF thumbnails
+    let uploadedFileDataUrls = [];
+    
     // Initialize finish button as disabled
     finishBtn.disabled = true;
 
@@ -4260,9 +4264,22 @@
       return compiledFormData;
     }
 
-    // Collect all uploaded files with metadata
-    function collectFiles() {
+    // Helper function to read file as data URL
+    function readFileAsDataURL(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => resolve(''); // Return empty string on error
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Collect all uploaded files with metadata and capture data URLs for PDF thumbnails
+    async function collectFiles() {
       const files = [];
+      
+      // Clear previous data URLs (fresh collection for this upload)
+      uploadedFileDataUrls = [];
       
       // Photo ID files
       if (wantsPhotoId) {
@@ -4270,22 +4287,28 @@
         const photoUploads = [photoUploads1, photoUploads2];
         const photoCards = [photoIdCard1, photoIdCard2];
         
-        photoCards.forEach((card, index) => {
-          if (!card.classList.contains('hidden') && photoTypes[index]) {
-            const uploads = photoUploads[index];
+        for (let cardIndex = 0; cardIndex < photoCards.length; cardIndex++) {
+          const card = photoCards[cardIndex];
+          if (!card.classList.contains('hidden') && photoTypes[cardIndex]) {
+            const uploads = photoUploads[cardIndex];
             const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
             
-            inputs.forEach((input, fileIndex) => {
+            for (let fileIndex = 0; fileIndex < inputs.length; fileIndex++) {
+              const input = inputs[fileIndex];
               if (input.files && input.files[0]) {
                 const file = input.files[0];
-                let fileName = `${currentClientNumber}-${currentMatterNumber} - ${currentClientName} - ${photoTypes[index]}`;
+                let fileName = `${currentClientNumber}-${currentMatterNumber} - ${currentClientName} - ${photoTypes[cardIndex]}`;
                 
                 // Add front/back tag if applicable
-                const requiresFrontBack = needsFrontBack(photoTypes[index]);
+                const requiresFrontBack = needsFrontBack(photoTypes[cardIndex]);
                 if (requiresFrontBack) {
                   const isBack = fileIndex === 1;
                   fileName += ` ${isBack ? 'Back' : 'Front'}`;
                 }
+                
+                // Capture data URL for PDF thumbnail
+                const dataUrl = await readFileAsDataURL(file);
+                uploadedFileDataUrls.push(dataUrl);
                 
                 files.push({
                   fileName: fileName,
@@ -4293,9 +4316,9 @@
                   type: 'photoId'
                 });
               }
-            });
+            }
           }
-        });
+        }
       }
       
       // Address ID files
@@ -4304,15 +4327,21 @@
         const addressIdUploads = [addressIdUploads1, addressIdUploads2, addressIdUploads3, addressIdUploads4, addressIdUploads5, addressIdUploads6, addressIdUploads7, addressIdUploads8, addressIdUploads9, addressIdUploads10];
         const addressIdCards = [addressIdCard1, addressIdCard2, addressIdCard3, addressIdCard4, addressIdCard5, addressIdCard6, addressIdCard7, addressIdCard8, addressIdCard9, addressIdCard10];
         
-        addressIdCards.forEach((card, index) => {
-          if (!card.classList.contains('hidden') && addressIdTypes[index].value) {
-            const uploads = addressIdUploads[index];
+        for (let cardIndex = 0; cardIndex < addressIdCards.length; cardIndex++) {
+          const card = addressIdCards[cardIndex];
+          if (!card.classList.contains('hidden') && addressIdTypes[cardIndex].value) {
+            const uploads = addressIdUploads[cardIndex];
             const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
             
-            inputs.forEach((input) => {
+            for (let i = 0; i < inputs.length; i++) {
+              const input = inputs[i];
               if (input.files && input.files[0]) {
                 const file = input.files[0];
-                const fileName = `${currentClientNumber}-${currentMatterNumber} - ${currentClientName} - Address ID ${index + 1} - ${addressIdTypes[index].value}`;
+                const fileName = `${currentClientNumber}-${currentMatterNumber} - ${currentClientName} - Address ID ${cardIndex + 1} - ${addressIdTypes[cardIndex].value}`;
+                
+                // Capture data URL for PDF thumbnail
+                const dataUrl = await readFileAsDataURL(file);
+                uploadedFileDataUrls.push(dataUrl);
                 
                 files.push({
                   fileName: fileName,
@@ -4320,17 +4349,18 @@
                   type: 'addressId'
                 });
               }
-            });
+            }
           }
-        });
+        }
       }
       
+      console.log('📸 Captured', uploadedFileDataUrls.length, 'data URLs for PDF thumbnails');
       return files;
     }
 
     // ===== SECTION 5: UPLOAD PROGRESS =====
     // Show upload section with progress tracking
-    function showUploadSection() {
+    async function showUploadSection() {
       loadingContainer.classList.add('hidden'); // Hide loading spinner
       cardTitle.textContent = 'Uploading Files';
       form.classList.add('hidden'); 
@@ -4345,8 +4375,8 @@
       fileList.innerHTML = '';
       uploadStatus.textContent = '';
       
-      // Collect and display files
-      const files = collectFiles();
+      // Collect files and capture data URLs for PDF thumbnails
+      const files = await collectFiles();
       displayFileList(files);
       
       // Start upload process
@@ -4487,8 +4517,16 @@
     function handlePutResponse(event) {
       if (event.data.type === 'put-links') {
         const links = event.data.links;
-        s3Keys = event.data.s3Keys; // Store S3 keys
-        // console.log('Received links:', { linksCount: links.length, links: links }); // Commented out to avoid logging client data
+        
+        // Attach stored data URLs to s3Keys for PDF thumbnails
+        // s3Keys come back in same order as files were sent (matching uploadedFileDataUrls order)
+        s3Keys = event.data.s3Keys.map((key, index) => ({
+          ...key,
+          dataUrl: uploadedFileDataUrls[index] || null
+        }));
+        
+        console.log('📎 Attached data URLs to s3Keys:', s3Keys.length, 'images with', uploadedFileDataUrls.length, 'thumbnails');
+        
         uploadFiles(links);
       } else if (event.data.type === 'put-error') {
         // Show specific error message and go back to address ID section
@@ -4864,105 +4902,16 @@
     */
     async function buildConfirmationPDFHTML(formData, chatMessage) {
       // Get ALL images (formData.idImages now contains existing + new)
+      // New images (uploaded this session) have dataUrl attached from collectFiles()
+      // Existing images (loaded with client data) don't have dataUrl - show "Already uploaded"
       const allImages = (formData.idImages && Array.isArray(formData.idImages)) ? formData.idImages : [];
       
-      // Create a set of new image S3 keys to identify which images are newly uploaded
-      const newImageKeys = new Set((s3Keys && Array.isArray(s3Keys)) ? s3Keys.map(img => img.s3Key) : []);
-      
-      // For newly uploaded images, we need to get their data URLs from the file inputs
-      const imageDataMap = new Map();
-      
-      // Collect all file inputs and create data URLs
-      const photoTypes = [photoIdType1.value, photoIdType2.value];
-      const photoUploads = [photoUploads1, photoUploads2];
-      const photoCards = [photoIdCard1, photoIdCard2];
-      
-      // Process Photo ID files
-      for (let i = 0; i < photoCards.length; i++) {
-        const card = photoCards[i];
-        if (!card.classList.contains('hidden') && photoTypes[i]) {
-          const uploads = photoUploads[i];
-          const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
-          
-          for (let j = 0; j < inputs.length; j++) {
-            const input = inputs[j];
-            if (input.files && input.files[0]) {
-              const file = input.files[0];
-              const side = inputs.length === 2 ? (j === 0 ? 'Front' : 'Back') : 'Single';
-              const key = `PhotoID-${photoTypes[i]}-${side}`;
-              
-              // Read file as data URL
-              const dataUrl = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = () => resolve('');
-                reader.readAsDataURL(file);
-              });
-              
-              imageDataMap.set(key, dataUrl);
-            }
-          }
-        }
-      }
-      
-      // Process Address ID files
-      if (wantsAddressId) {
-        const addressTypes = [addressIdType1.value, addressIdType2.value, addressIdType3.value];
-        const addressInputs = [addressUpload1, addressUpload2, addressUpload3];
-        const addressCards = [addressIdCard1, addressIdCard2, addressIdCard3];
-        
-        for (let i = 0; i < addressCards.length; i++) {
-          const card = addressCards[i];
-          if (!card.classList.contains('hidden') && addressTypes[i]) {
-            const input = addressInputs[i];
-            if (input.files && input.files[0]) {
-              const file = input.files[0];
-              const key = `AddressID-${addressTypes[i]}`;
-              
-              // Read file as data URL
-              const dataUrl = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = () => resolve('');
-                reader.readAsDataURL(file);
-              });
-              
-              imageDataMap.set(key, dataUrl);
-            }
-          }
-        }
-      }
-      
-      // Process all images and add data URLs for new ones
-      const processedImages = allImages.map(img => {
-        const imgCopy = { ...img };
-        const isPhotoID = img.type === 'PhotoID' || img.type === 'Photo ID';
-        
-        // Build key to match how it was created in imageDataMap
-        let key;
-        if (isPhotoID) {
-          // Photo IDs include side (Front/Back/Single)
-          const side = img.side && img.side !== 'Single' ? img.side : 'Single';
-          key = `PhotoID-${img.document}-${side}`;
-        } else {
-          // Address IDs don't include side (they're always single images)
-          key = `AddressID-${img.document}`;
-        }
-        
-        // Check if this is a newly uploaded image
-        if (newImageKeys.has(img.s3Key) && imageDataMap.has(key)) {
-          imgCopy.dataUrl = imageDataMap.get(key);
-          imgCopy.isNew = true;
-        }
-        
-        return imgCopy;
-      });
-      
       // Separate Photo IDs and Address IDs
-      const photoIds = processedImages.filter(img => 
+      // Images with dataUrl show thumbnails; without dataUrl show "Already uploaded"
+      const photoIds = allImages.filter(img => 
         img.type === 'PhotoID' || img.type === 'Photo ID'
       );
-      const addressIds = processedImages.filter(img => 
+      const addressIds = allImages.filter(img => 
         img.type === 'Address ID' || img.type === 'AddressID'
       );
       
@@ -4998,28 +4947,21 @@
       });
       
       // Debug logging
+      // Images with dataUrl were uploaded this session; without dataUrl are existing (already uploaded)
       console.log('📸 Building PDF with images:', {
         totalImagesCount: allImages.length,
-        newImagesCount: newImageKeys.size,
-        processedImagesCount: processedImages.length,
         photoIdCount: photoIds.length,
         addressIdCount: addressIds.length,
-        imageDataMapSize: imageDataMap.size,
-        imageDataMapKeys: Array.from(imageDataMap.keys()),
+        newThisSession: allImages.filter(img => !!img.dataUrl).length,
+        alreadyUploaded: allImages.filter(img => !img.dataUrl).length,
         photoIdDetails: photoIds.map(img => ({
           doc: img.document,
           side: img.side,
-          isNew: img.isNew,
-          hasDataUrl: !!img.dataUrl,
-          hasLiveUrl: !!img.liveUrl,
-          hasUrl: !!img.url
+          hasDataUrl: !!img.dataUrl
         })),
         addressIdDetails: addressIds.map(img => ({
           doc: img.document,
-          isNew: img.isNew,
-          hasDataUrl: !!img.dataUrl,
-          hasLiveUrl: !!img.liveUrl,
-          hasUrl: !!img.url
+          hasDataUrl: !!img.dataUrl
         }))
       });
       
@@ -5042,8 +4984,10 @@
             <div class="image-grid">`;
         
         // Show all Photo ID images in a flat grid
+        // Images with dataUrl were uploaded this session (show thumbnail)
+        // Images without dataUrl are existing/already uploaded (show "Already uploaded")
         photoIds.forEach((img) => {
-          const imgUrl = img.isNew ? img.dataUrl : (img.liveUrl || img.url || '');
+          const imgUrl = img.dataUrl || ''; // Only use dataUrl - existing images don't have thumbnails
           const docType = img.document || 'Unknown';
           const side = img.side && img.side !== 'Single' ? img.side : '';
           const sideLabel = side ? `<div class="side-label">${side}</div>` : '';
@@ -5081,8 +5025,10 @@
             <div class="image-grid">`;
         
         // Show all Address ID images in a flat grid
+        // Images with dataUrl were uploaded this session (show thumbnail)
+        // Images without dataUrl are existing/already uploaded (show "Already uploaded")
         addressIds.forEach((img) => {
-          const imgUrl = img.isNew ? img.dataUrl : (img.liveUrl || img.url || '');
+          const imgUrl = img.dataUrl || ''; // Only use dataUrl - existing images don't have thumbnails
           const docType = img.document || 'Unknown';
           
           // Different structure for images with/without thumbnails
@@ -5491,7 +5437,7 @@
     =====================================================================
     */
     async function uploadFiles(links) {
-      const files = collectFiles();
+      const files = await collectFiles();
       const total = files.length;
       
       let completed = 0; // Track completions for progress bar
@@ -5648,6 +5594,7 @@
       wantsAddressId = null;
       s3Keys = null;
       imageData = [];
+      uploadedFileDataUrls = []; // Clear data URLs from previous upload
       currentTitleText = '';
       currentTitle = '';
       currentClientNumber = '';
