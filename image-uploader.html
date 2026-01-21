@@ -5026,7 +5026,6 @@
         
         console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
         
-<<<<<<< HEAD
         // Download/open PDF (mobile-compatible)
         console.log('📥 Downloading/opening PDF:', filename);
         const downloadUrl = URL.createObjectURL(pdfBlob);
@@ -5152,13 +5151,11 @@
       // Combine all images
       const processedImages = [...processedExistingImages, ...processedNewImages];
       
->>>>>>> f1519b3 (Fix PDF thumbnail generation and upload success message timing)
       // Separate Photo IDs and Address IDs
-      // Images with dataUrl show thumbnails; without dataUrl show "Already uploaded"
-      const photoIds = allImages.filter(img => 
+      const photoIds = processedImages.filter(img => 
         img.type === 'PhotoID' || img.type === 'Photo ID'
       );
-      const addressIds = allImages.filter(img => 
+      const addressIds = processedImages.filter(img => 
         img.type === 'Address ID' || img.type === 'AddressID'
       );
       
