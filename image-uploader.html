@@ -2322,9 +2322,12 @@
     */
     let errorTimeout; let currentTitleText = ''; let currentTitle = ''; let currentClientNumber = ''; let currentMatterNumber = ''; let currentClientName = ''; let formData = {}; let wantsPhotoId = null; let wantsAddressId = null; let s3Keys = null; let imageData = []; let currentAddressObject = null; let previousAddressObject = null; let addressDebounceTimer = null; let previousAddressDebounceTimer = null;
     
-    // Store file data URLs at upload time (in order matching upload sequence)
-    // These are attached to s3Keys when put-links response received for PDF thumbnails
-    let uploadedFileDataUrls = [];
+    // PDF Image Snapshots - captured at upload click, used for PDF generation
+    // Resets on new client data load
+    let pdfImageSnapshots = {
+      newImages: [],      // Array of {file, dataUrl, type, document, side, ...}
+      existingImages: []  // Array from formData.idImages at snapshot time
+    };
     
     // Initialize finish button as disabled
     finishBtn.disabled = true;
@@ -4121,14 +4124,19 @@
     }
 
     // Start the upload process
-    function startUploadProcess() {
+    async function startUploadProcess() {
       // Check if we have any images to upload
       if(imageData.length === 0){
         showError('No images to upload. Please add at least one form of Photo ID or Address ID.');
         return;
       }
       
+      // IMPORTANT: Snapshot images BEFORE sending to parent (files may be cleared)
+      // This snapshot is ONLY for PDF generation and does NOT interfere with upload process
+      await snapshotImagesForPDF();
+      
       // Send image data to parent for S3 link generation
+      // This uses imageData array (independent from snapshot)
       window.parent.postMessage({
         type: 'image-data',
         images: imageData
@@ -4137,7 +4145,8 @@
       // Listen for PUT links or PUT error response
       window.addEventListener('message', handlePutResponse);
       
-      // Show upload section
+      // Show upload section - this will also call snapshotImagesForPDF() again
+      // but that's fine - it will just update the snapshot (idempotent)
       showUploadSection();
     }
 
@@ -4362,6 +4371,153 @@
       return files;
     }
 
+    /*
+    =====================================================================
+    SNAPSHOT IMAGES FOR PDF GENERATION
+    - Captures all file inputs and existing images at upload click
+    - Creates data URLs (thumbnails) for new images
+    - Stores snapshots in pdfImageSnapshots for later PDF generation
+    - Called BEFORE files are cleared/uploaded
+    
+    IMPORTANT: This snapshot is COMPLETELY INDEPENDENT from the upload process:
+    - Does NOT interfere with collectFiles(), startUpload(), or uploadFiles()
+    - Creates deep copies of existing images (formData.idImages changes won't affect snapshot)
+    - Stores data URLs (not file references) so snapshots persist after file inputs are cleared
+    - Used ONLY for PDF generation, not for upload functionality
+    =====================================================================
+    */
+    async function snapshotImagesForPDF() {
+      console.log('📸 Snapshotting images for PDF generation (independent from upload process)...');
+      
+      // Reset snapshots - create fresh independent copy
+      pdfImageSnapshots.newImages = [];
+      pdfImageSnapshots.existingImages = [];
+      
+      // Snapshot existing images from formData - create deep copy to isolate from changes
+      // This ensures formData.idImages can be modified during upload without affecting PDF
+      if (formData.idImages && Array.isArray(formData.idImages)) {
+        pdfImageSnapshots.existingImages = formData.idImages.map(img => {
+          // Deep copy to ensure complete isolation
+          return {
+            ...img,
+            // Copy nested objects/arrays if they exist
+            data: img.data ? { ...img.data } : undefined,
+            // Preserve all properties but create new object reference
+          };
+        });
+        console.log(`📸 Snapshot ${pdfImageSnapshots.existingImages.length} existing images (isolated copy)`);
+      }
+      
+      // Snapshot new images from upload containers
+      const newImagePromises = [];
+      
+      // Photo ID files
+      if (wantsPhotoId) {
+        const photoTypes = [photoIdType1.value, photoIdType2.value];
+        const photoUploads = [photoUploads1, photoUploads2];
+        const photoCards = [photoIdCard1, photoIdCard2];
+        
+        photoCards.forEach((card, index) => {
+          if (!card.classList.contains('hidden') && photoTypes[index]) {
+            const uploads = photoUploads[index];
+            const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
+            
+            inputs.forEach((input, fileIndex) => {
+              if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const requiresFrontBack = needsFrontBack(photoTypes[index]);
+                const side = requiresFrontBack ? (fileIndex === 0 ? 'Front' : 'Back') : 'Single';
+                
+                // Create promise to read file as data URL
+                // IMPORTANT: We store dataUrl (not file reference) so snapshot persists
+                // even after file input is cleared during upload process
+                const promise = new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    resolve({
+                      type: 'PhotoID',
+                      document: photoTypes[index], // Store value, not reference
+                      side: side,
+                      // Note: We keep file reference temporarily, but dataUrl is what matters
+                      // The file reference will become invalid after upload, but dataUrl persists
+                      file: file,
+                      dataUrl: e.target.result, // This is what PDF generation will use
+                      fileName: `${currentClientNumber}-${currentMatterNumber} - ${currentClientName} - ${photoTypes[index]}${side !== 'Single' ? ` ${side}` : ''}`
+                    });
+                  };
+                  reader.onerror = () => resolve(null);
+                  reader.readAsDataURL(file);
+                });
+                
+                newImagePromises.push(promise);
+              }
+            });
+          }
+        });
+      }
+      
+      // Address ID files
+      if (wantsAddressId) {
+        const addressIdTypes = [addressIdType1, addressIdType2, addressIdType3, addressIdType4, addressIdType5, addressIdType6, addressIdType7, addressIdType8, addressIdType9, addressIdType10];
+        const addressIdUploads = [addressIdUploads1, addressIdUploads2, addressIdUploads3, addressIdUploads4, addressIdUploads5, addressIdUploads6, addressIdUploads7, addressIdUploads8, addressIdUploads9, addressIdUploads10];
+        const addressIdCards = [addressIdCard1, addressIdCard2, addressIdCard3, addressIdCard4, addressIdCard5, addressIdCard6, addressIdCard7, addressIdCard8, addressIdCard9, addressIdCard10];
+        
+        addressIdCards.forEach((card, index) => {
+          if (!card.classList.contains('hidden') && addressIdTypes[index].value) {
+            const uploads = addressIdUploads[index];
+            const inputs = Array.from(uploads.querySelectorAll('input[type="file"]'));
+            
+            inputs.forEach((input) => {
+              if (input.files && input.files[0]) {
+                const file = input.files[0];
+                
+                // Create promise to read file as data URL
+                // IMPORTANT: We store dataUrl (not file reference) so snapshot persists
+                // even after file input is cleared during upload process
+                const promise = new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    resolve({
+                      type: 'Address ID',
+                      document: addressIdTypes[index].value, // Store value, not reference
+                      side: 'Single',
+                      // Note: We keep file reference temporarily, but dataUrl is what matters
+                      // The file reference will become invalid after upload, but dataUrl persists
+                      file: file,
+                      dataUrl: e.target.result, // This is what PDF generation will use
+                      fileName: `${currentClientNumber}-${currentMatterNumber} - ${currentClientName} - Address ID ${index + 1} - ${addressIdTypes[index].value}`
+                    });
+                  };
+                  reader.onerror = () => resolve(null);
+                  reader.readAsDataURL(file);
+                });
+                
+                newImagePromises.push(promise);
+              }
+            });
+          }
+        });
+      }
+      
+      // Wait for all file reads to complete
+      const newImages = await Promise.all(newImagePromises);
+      // Filter out any failed reads and store only successful snapshots
+      pdfImageSnapshots.newImages = newImages.filter(img => img !== null);
+      
+      console.log(`📸 Snapshot complete: ${pdfImageSnapshots.newImages.length} new images, ${pdfImageSnapshots.existingImages.length} existing images`);
+      console.log('📸 New images:', pdfImageSnapshots.newImages.map(img => ({
+        type: img.type,
+        document: img.document,
+        side: img.side,
+        hasDataUrl: !!img.dataUrl
+      })));
+      
+      // IMPORTANT: At this point, pdfImageSnapshots is completely independent:
+      // - Contains deep copies of existing images (formData.idImages changes won't affect it)
+      // - Contains data URLs for new images (file input clearing won't affect it)
+      // - Can be safely used later for PDF generation regardless of upload process state
+    }
+
     // ===== SECTION 5: UPLOAD PROGRESS =====
     // Show upload section with progress tracking
     async function showUploadSection() {
@@ -4379,11 +4535,17 @@
       fileList.innerHTML = '';
       uploadStatus.textContent = '';
       
-      // Collect files and capture data URLs for PDF thumbnails
-      const files = await collectFiles();
+      // IMPORTANT: Snapshot images BEFORE collecting files (files may be cleared)
+      // This snapshot is ONLY for PDF generation and does NOT interfere with upload process
+      await snapshotImagesForPDF();
+      
+      // Collect and display files - this is independent from the snapshot above
+      // The upload process uses collectFiles() and startUpload() which work normally
+      const files = collectFiles();
       displayFileList(files);
       
-      // Start upload process
+      // Start upload process - this sends image-data to parent and handles uploads
+      // The snapshot is NOT used here - it's only for PDF generation later
       startUpload(files);
     }
 
@@ -4769,18 +4931,32 @@
       finalFormData.cashierTag = ['Cashier Note'];
       finalFormData.chat = chatMessage;
       
+      // Generate and print confirmation PDF FIRST (wait for completion)
+      // IMPORTANT: PDF generation is wrapped in try-catch to ensure upload-success
+      // message is ALWAYS sent, even if PDF generation fails
+      console.log('⏳ Generating PDF before sending success message...');
+      let pdfGenerated = false;
+      try {
+        await generateConfirmationPDF(finalFormData, chatMessage);
+        pdfGenerated = true;
+        console.log('✅ PDF generation complete, sending success message...');
+      } catch (error) {
+        console.error('❌ PDF generation failed, but continuing with upload-success message:', error);
+        // Continue to send upload-success even if PDF generation fails
+      }
+      
+      // Send success message to parent AFTER PDF generation completes (or fails)
+      // This ensures the parent receives the message regardless of PDF status
+      console.log('📤 Sending upload-success message to parent...');
       window.parent.postMessage({
         type: 'upload-success',
         data: finalFormData,
         idImages: s3Keys  // Send only new images to parent
       }, '*');
+      console.log('✅ Upload-success message sent to parent');
       
-      // Generate and print confirmation PDF (wait for completion)
-      console.log('⏳ Generating PDF before form reset...');
-      await generateConfirmationPDF(finalFormData, chatMessage);
-      console.log('✅ PDF generation complete, resetting form...');
-      
-      // Reset form to loading state immediately after PDF completes
+      // Reset form to loading state immediately after sending message
+      console.log('🔄 Resetting form to loading state...');
       resetForm();
     }
 
@@ -4850,6 +5026,7 @@
         
         console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
         
+<<<<<<< HEAD
         // Download/open PDF (mobile-compatible)
         console.log('📥 Downloading/opening PDF:', filename);
         const downloadUrl = URL.createObjectURL(pdfBlob);
@@ -4895,6 +5072,9 @@
         
       } catch (error) {
         console.error('❌ Error generating confirmation PDF:', error);
+        // Re-throw error so outer try-catch in sendUploadSuccessMessage can handle it
+        // This ensures upload-success message is still sent even if PDF fails
+        throw error;
       } finally {
         pdfGenerating = false; // Reset guard after PDF generation completes
       }
@@ -4910,11 +5090,69 @@
     =====================================================================
     */
     async function buildConfirmationPDFHTML(formData, chatMessage) {
-      // Get ALL images (formData.idImages now contains existing + new)
-      // New images (uploaded this session) have dataUrl attached from collectFiles()
-      // Existing images (loaded with client data) don't have dataUrl - show "Already uploaded"
-      const allImages = (formData.idImages && Array.isArray(formData.idImages)) ? formData.idImages : [];
+      // IMPORTANT: Use snapshots captured at upload click for reliable image tracking
+      // These snapshots are COMPLETELY INDEPENDENT from the upload process:
+      // - Captured BEFORE files are cleared/uploaded
+      // - Contain deep copies of existing images (formData.idImages changes don't affect them)
+      // - Contain data URLs for new images (file input clearing doesn't affect them)
+      // - Used ONLY for PDF generation, NOT for upload functionality
+      // - Upload process (collectFiles, startUpload, uploadFiles) works independently
+      const existingImages = pdfImageSnapshots.existingImages || [];
+      const newImageSnapshots = pdfImageSnapshots.newImages || [];
       
+      // Create a map of s3Keys to their thumbnail URLs for newly uploaded images
+      // This allows us to use liveUrl from parent response if available
+      const s3KeyToThumbnailMap = new Map();
+      if (s3Keys && Array.isArray(s3Keys)) {
+        s3Keys.forEach(img => {
+          if (img.s3Key) {
+            // Prioritize liveUrl (thumbnail) over url
+            const thumbnailUrl = img.liveUrl || img.url || '';
+            if (thumbnailUrl) {
+              s3KeyToThumbnailMap.set(img.s3Key, thumbnailUrl);
+            }
+          }
+        });
+      }
+      
+      // Create a map to match snapshots to s3Keys by document type and side
+      const snapshotToS3KeyMap = new Map();
+      if (s3Keys && Array.isArray(s3Keys)) {
+        s3Keys.forEach(img => {
+          const key = `${img.type}-${img.document}-${img.side || 'Single'}`;
+          snapshotToS3KeyMap.set(key, img.s3Key);
+        });
+      }
+      
+      // Process new images: use thumbnail from s3Keys if available, otherwise use snapshot dataUrl
+      const processedNewImages = newImageSnapshots.map(snapshot => {
+        const key = `${snapshot.type}-${snapshot.document}-${snapshot.side || 'Single'}`;
+        const s3Key = snapshotToS3KeyMap.get(key);
+        
+        return {
+          type: snapshot.type,
+          document: snapshot.document,
+          side: snapshot.side,
+          isNew: true,
+          // Priority: liveUrl from s3Keys > dataUrl from snapshot
+          thumbnailUrl: s3Key && s3KeyToThumbnailMap.has(s3Key) 
+            ? s3KeyToThumbnailMap.get(s3Key) 
+            : snapshot.dataUrl || '',
+          s3Key: s3Key || null
+        };
+      });
+      
+      // Process existing images: use their existing URLs
+      const processedExistingImages = existingImages.map(img => ({
+        ...img,
+        isNew: false,
+        thumbnailUrl: img.liveUrl || img.url || ''
+      }));
+      
+      // Combine all images
+      const processedImages = [...processedExistingImages, ...processedNewImages];
+      
+>>>>>>> f1519b3 (Fix PDF thumbnail generation and upload success message timing)
       // Separate Photo IDs and Address IDs
       // Images with dataUrl show thumbnails; without dataUrl show "Already uploaded"
       const photoIds = allImages.filter(img => 
@@ -4956,32 +5194,27 @@
       });
       
       // Debug logging
-      // Images with dataUrl were uploaded this session; without dataUrl are existing (already uploaded)
-      console.log('📸 Building PDF with images:', {
-        totalImagesCount: allImages.length,
+      console.log('📸 Building PDF with snapshots:', {
+        snapshotNewCount: newImageSnapshots.length,
+        snapshotExistingCount: existingImages.length,
+        processedImagesCount: processedImages.length,
         photoIdCount: photoIds.length,
         addressIdCount: addressIds.length,
-        newThisSession: allImages.filter(img => !!img.dataUrl).length,
-        alreadyUploaded: allImages.filter(img => !img.dataUrl).length,
+        s3KeyThumbnailMapSize: s3KeyToThumbnailMap.size,
         photoIdDetails: photoIds.map(img => ({
           doc: img.document,
           side: img.side,
-          hasDataUrl: !!img.dataUrl,
-          dataUrlLength: img.dataUrl ? img.dataUrl.length : 0
+          s3Key: img.s3Key ? img.s3Key.substring(0, 30) + '...' : 'none',
+          isNew: img.isNew,
+          hasThumbnailUrl: !!img.thumbnailUrl
         })),
         addressIdDetails: addressIds.map(img => ({
           doc: img.document,
-          hasDataUrl: !!img.dataUrl,
-          dataUrlLength: img.dataUrl ? img.dataUrl.length : 0
+          s3Key: img.s3Key ? img.s3Key.substring(0, 30) + '...' : 'none',
+          isNew: img.isNew,
+          hasThumbnailUrl: !!img.thumbnailUrl
         }))
       });
-      
-      // Extra debug: log first image's dataUrl prefix if exists
-      if (allImages.length > 0 && allImages[0].dataUrl) {
-        console.log('📷 First image dataUrl prefix:', allImages[0].dataUrl.substring(0, 50));
-      } else if (allImages.length > 0) {
-        console.log('⚠️ First image has NO dataUrl:', allImages[0]);
-      }
       
       // Build image thumbnails HTML for Photo IDs
       let imageThumbnailsHTML = '';
@@ -5005,7 +5238,8 @@
         // Images with dataUrl were uploaded this session (show thumbnail)
         // Images without dataUrl are existing/already uploaded (show "Already uploaded")
         photoIds.forEach((img) => {
-          const imgUrl = img.dataUrl || ''; // Only use dataUrl - existing images don't have thumbnails
+          // Use thumbnailUrl from processed images (from snapshots or s3Keys)
+          const imgUrl = img.thumbnailUrl || '';
           const docType = img.document || 'Unknown';
           const side = img.side && img.side !== 'Single' ? img.side : '';
           const sideLabel = side ? `<div class="side-label">${side}</div>` : '';
@@ -5046,7 +5280,8 @@
         // Images with dataUrl were uploaded this session (show thumbnail)
         // Images without dataUrl are existing/already uploaded (show "Already uploaded")
         addressIds.forEach((img) => {
-          const imgUrl = img.dataUrl || ''; // Only use dataUrl - existing images don't have thumbnails
+          // Use thumbnailUrl from processed images (from snapshots or s3Keys)
+          const imgUrl = img.thumbnailUrl || '';
           const docType = img.document || 'Unknown';
           
           // Different structure for images with/without thumbnails
@@ -5621,6 +5856,12 @@
       formData = {};
       currentAddressObject = null;
       previousAddressObject = null;
+      
+      // Reset PDF image snapshots for new client
+      pdfImageSnapshots = {
+        newImages: [],
+        existingImages: []
+      };
       
       // Clear debounce timers
       if (addressDebounceTimer) clearTimeout(addressDebounceTimer);
