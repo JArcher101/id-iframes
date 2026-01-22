@@ -5191,18 +5191,64 @@
         if (isMobile) {
           // On mobile: Open PDF in new tab (allows viewing and manual download)
           // Mobile browsers often block programmatic downloads, so opening in new tab is more reliable
+          // This is triggered from user action (upload success), so popup blockers should allow it
           console.log('📱 Mobile device detected - opening PDF in new tab');
           const newWindow = window.open(downloadUrl, '_blank');
+          
+          // Check if popup was blocked (newWindow will be null or have restricted access)
           if (!newWindow) {
-            // If popup blocked, fall back to download link
-            console.warn('⚠️ Popup blocked, falling back to download link');
-            const downloadLink = document.createElement('a');
-            downloadLink.href = downloadUrl;
-            downloadLink.download = filename;
-            downloadLink.target = '_blank';
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
+            console.warn('⚠️ Popup blocked, trying alternative approaches');
+            
+            // Try iframe approach (some browsers allow this even when popups are blocked)
+            try {
+              const iframe = document.createElement('iframe');
+              iframe.style.position = 'fixed';
+              iframe.style.top = '0';
+              iframe.style.left = '0';
+              iframe.style.width = '100%';
+              iframe.style.height = '100%';
+              iframe.style.zIndex = '9999';
+              iframe.style.border = 'none';
+              iframe.src = downloadUrl;
+              document.body.appendChild(iframe);
+              
+              // Add close button
+              const closeBtn = document.createElement('button');
+              closeBtn.textContent = 'Close';
+              closeBtn.style.position = 'fixed';
+              closeBtn.style.top = '10px';
+              closeBtn.style.right = '10px';
+              closeBtn.style.zIndex = '10000';
+              closeBtn.style.padding = '10px 20px';
+              closeBtn.style.backgroundColor = '#003B5C';
+              closeBtn.style.color = 'white';
+              closeBtn.style.border = 'none';
+              closeBtn.style.borderRadius = '5px';
+              closeBtn.style.cursor = 'pointer';
+              closeBtn.onclick = () => {
+                document.body.removeChild(iframe);
+                document.body.removeChild(closeBtn);
+              };
+              document.body.appendChild(closeBtn);
+              
+              console.log('✅ PDF opened in iframe (popup was blocked)');
+            } catch (iframeError) {
+              console.error('❌ Iframe approach failed:', iframeError);
+              // Final fallback: download link (may still be blocked, but worth trying)
+              const downloadLink = document.createElement('a');
+              downloadLink.href = downloadUrl;
+              downloadLink.download = filename;
+              downloadLink.target = '_blank';
+              downloadLink.style.display = 'none';
+              document.body.appendChild(downloadLink);
+              downloadLink.click();
+              setTimeout(() => {
+                document.body.removeChild(downloadLink);
+              }, 100);
+              console.log('⚠️ Using download link fallback (may be blocked on mobile)');
+            }
+          } else {
+            console.log('✅ PDF opened successfully in new tab');
           }
         } else {
           // On desktop: Download directly
