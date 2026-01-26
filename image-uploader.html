@@ -2573,17 +2573,17 @@
         const scannerIdentifier = getTargetScannerIdentifier(scannerType);
         
         // Call Scanner.js API
-        // Parameters: callback, scanRequest, showUI, selectSource
-        // showUI: true (show scanner UI)
-        // selectSource: true (show device selection dialog if needed)
-        if (typeof asprise_scanner_js_scan !== 'undefined') {
-          asprise_scanner_js_scan(
+        // Parameters: callback, scanRequest, useAspriseDialog, showScannerUI
+        // useAspriseDialog: true (use Asprise scan dialog)
+        // showScannerUI: true (show native scanner UI)
+        if (typeof scanner !== 'undefined' && typeof scanner.scan === 'function') {
+          scanner.scan(
             function(successful, mesg, response) {
               handleScannerResult(successful, mesg, response, targetInput, filePath);
             },
             scanRequest,
-            true,  // showUI
-            true   // selectSource (show device selection dialog)
+            true,  // useAspriseDialog
+            true   // showScannerUI (show native scanner UI)
           );
         } else {
           showError('Scanner.js library not loaded. Please refresh the page.');
