@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Client Details Form</title>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.asprise.com/scannerjs/scanner.js"></script>
   
   <style>
     /*
@@ -767,6 +768,36 @@
     }
     .photo-upload-wrapper { display:flex; flex-direction:column; gap:12px; }
     .upload-block { display:flex; flex-direction:column; gap:6px; }
+    
+    /* Scanner integration styles */
+    .scanner-divider {
+      text-align: center;
+      color: #666;
+      font-size: 0.85rem;
+      margin: 8px 0;
+      font-style: italic;
+    }
+    .scan-document-btn {
+      font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      font-weight: 500;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 4px;
+    }
+    .scan-document-btn:hover {
+      background: #002b43;
+    }
+    .scan-document-btn:disabled {
+      background: #ccc;
+      color: #666;
+      cursor: not-allowed;
+    }
     .upload-block.side-by-side { 
       display:flex; 
       flex-direction:row; 
@@ -2353,6 +2384,12 @@
     */
     let errorTimeout; let currentTitleText = ''; let currentTitle = ''; let currentClientNumber = ''; let currentMatterNumber = ''; let currentClientName = ''; let formData = {}; let wantsPhotoId = null; let wantsAddressId = null; let s3Keys = null; let imageData = []; let currentAddressObject = null; let previousAddressObject = null; let addressDebounceTimer = null; let previousAddressDebounceTimer = null;
     
+    // Scanner configuration
+    // Network scanner IP address - should be configured per environment
+    const SCANNER_CONFIG = {
+      networkScannerIP: null // Set this to the IMC 3010 IP address if known, or leave null for device selection dialog
+    };
+    
     // PDF Snapshots - captured at upload click, used for PDF generation
     // Resets on new client data load
     // IMPORTANT: Captured BEFORE awaiting put-links, includes:
@@ -2394,6 +2431,236 @@
         headerInfo.classList.remove('hidden');
       } else {
         headerInfo.classList.add('hidden');
+      }
+    }
+    
+    // ===== SCANNER INTEGRATION FUNCTIONS =====
+    /*
+    =====================================================================
+    SCANNER INTEGRATION - Ricoh FI-70F (USB) and IMC 3010 (Network)
+    - Photo ID: Uses FI-70F USB scanner (1200 DPI, A6, color)
+    - Address ID: Uses IMC 3010 Network scanner (300 DPI, A4, color)
+    - Saves scanned images to I:\{clientNumber}-{matterNumber}\{clientName}\
+    =====================================================================
+    */
+    
+    // Get target scanner identifier for device selection
+    function getTargetScannerIdentifier(scannerType) {
+      if (scannerType === 'photoId') {
+        return { patterns: ['FI-70F', 'FI70F'], type: 'USB' };
+      } else if (scannerType === 'addressId') {
+        return { 
+          patterns: SCANNER_CONFIG.networkScannerIP ? [SCANNER_CONFIG.networkScannerIP, 'IMC 3010', 'IMC3010'] : ['IMC 3010', 'IMC3010'],
+          type: 'Network',
+          ip: SCANNER_CONFIG.networkScannerIP
+        };
+      }
+      return null;
+    }
+    
+    // Sanitize filename for Windows paths
+    function sanitizeFilename(filename) {
+      // Remove invalid Windows path characters: < > : " | ? * \
+      return filename.replace(/[<>:"|?*\\]/g, '_');
+    }
+    
+    // Generate scan file path
+    function generateScanFilePath(idType, side, scannerType) {
+      // Get client data
+      const clientNumber = formData.clientNumber || currentClientNumber || '';
+      const matterNumber = formData.matterNumber || currentMatterNumber || '';
+      const clientName = formData.name || currentClientName || '';
+      
+      if (!clientNumber || !matterNumber || !clientName) {
+        throw new Error('Client information not available. Please complete Section 1 first.');
+      }
+      
+      // Construct folder path
+      const folderPath = `I:\\${clientNumber}-${matterNumber}\\${sanitizeFilename(clientName)}\\`;
+      
+      // Generate filename
+      const now = new Date();
+      const timestamp = `${String(now.getDate()).padStart(2, '0')}_${String(now.getMonth() + 1).padStart(2, '0')}_${now.getFullYear()}_${String(now.getHours()).padStart(2, '0')}_${String(now.getMinutes()).padStart(2, '0')}_${String(now.getSeconds()).padStart(2, '0')}`;
+      
+      let filename;
+      if (scannerType === 'photoId') {
+        // Photo ID: Include side if applicable
+        if (side && side !== 'Single') {
+          filename = `${sanitizeFilename(idType)} ${side} - ${timestamp}.jpg`;
+        } else {
+          filename = `${sanitizeFilename(idType)} - ${timestamp}.jpg`;
+        }
+      } else {
+        // Address ID: Always single-sided, no side in filename
+        filename = `${sanitizeFilename(idType)} - ${timestamp}.jpg`;
+      }
+      
+      return folderPath + filename;
+    }
+    
+    // Ensure directory exists (create if needed)
+    function ensureDirectoryExists(folderPath) {
+      // Note: Scanner.js will handle directory creation when saving
+      // This function is a placeholder for future enhancements if needed
+      return true;
+    }
+    
+    // Build scan request with TWAIN settings
+    function buildScanRequest(scannerType, idType, side, filePath) {
+      const baseRequest = {
+        output_settings: [
+          {
+            type: 'save',
+            format: 'jpeg',
+            save_path: filePath
+          },
+          {
+            type: 'return-base64',
+            format: 'jpg'
+          }
+        ]
+      };
+      
+      if (scannerType === 'photoId') {
+        // Photo ID: 1200 DPI, A6, color, auto-deskew
+        baseRequest.twain_cap_setting = {
+          ICAP_PIXELTYPE: 'TWPT_RGB',
+          ICAP_XRESOLUTION: '1200',
+          ICAP_YRESOLUTION: '1200',
+          ICAP_AUTOMATICDESKEW: 'TWON',
+          ICAP_SUPPORTEDSIZES: 'TWSS_A6'
+        };
+      } else if (scannerType === 'addressId') {
+        // Address ID: 300 DPI, A4, color, auto-deskew, single-sided
+        baseRequest.twain_cap_setting = {
+          ICAP_PIXELTYPE: 'TWPT_RGB',
+          ICAP_XRESOLUTION: '300',
+          ICAP_YRESOLUTION: '300',
+          ICAP_AUTOMATICDESKEW: 'TWON',
+          ICAP_SUPPORTEDSIZES: 'TWSS_A4'
+        };
+      }
+      
+      return baseRequest;
+    }
+    
+    // Main scanner trigger function
+    function triggerScanner(idType, side, targetInput, scannerType) {
+      try {
+        // Validate client data is available
+        const clientNumber = formData.clientNumber || currentClientNumber;
+        const matterNumber = formData.matterNumber || currentMatterNumber;
+        const clientName = formData.name || currentClientName;
+        
+        if (!clientNumber || !matterNumber || !clientName) {
+          showError('Please complete Section 1 (Client Details) before scanning.');
+          return;
+        }
+        
+        // For Address ID, ignore side parameter (always single)
+        const effectiveSide = scannerType === 'addressId' ? 'Single' : side;
+        
+        // Generate file path
+        const filePath = generateScanFilePath(idType, effectiveSide, scannerType);
+        
+        // Ensure directory exists
+        ensureDirectoryExists(filePath.substring(0, filePath.lastIndexOf('\\')));
+        
+        // Build scan request
+        const scanRequest = buildScanRequest(scannerType, idType, effectiveSide, filePath);
+        
+        // Get target scanner identifier
+        const scannerIdentifier = getTargetScannerIdentifier(scannerType);
+        
+        // Call Scanner.js API
+        // Parameters: callback, scanRequest, showUI, selectSource
+        // showUI: true (show scanner UI)
+        // selectSource: true (show device selection dialog if needed)
+        if (typeof asprise_scanner_js_scan !== 'undefined') {
+          asprise_scanner_js_scan(
+            function(successful, mesg, response) {
+              handleScannerResult(successful, mesg, response, targetInput, filePath);
+            },
+            scanRequest,
+            true,  // showUI
+            true   // selectSource (show device selection dialog)
+          );
+        } else {
+          showError('Scanner.js library not loaded. Please refresh the page.');
+        }
+      } catch (error) {
+        console.error('Scanner error:', error);
+        showError('Failed to initiate scan: ' + error.message);
+      }
+    }
+    
+    // Handle scanner result
+    function handleScannerResult(successful, mesg, response, targetInput, filePath) {
+      try {
+        // Check if user cancelled
+        if (mesg && mesg.toLowerCase().includes('user cancel')) {
+          // User cancelled - no error needed
+          return;
+        }
+        
+        if (!successful) {
+          showError('Scan failed: ' + (mesg || 'Unknown error'));
+          return;
+        }
+        
+        // Get scanned images using Scanner.js API
+        if (typeof scanner === 'undefined' || typeof scanner.getScannedImages === 'undefined') {
+          showError('Scanner.js API not available. Please refresh the page.');
+          return;
+        }
+        
+        const scannedImages = scanner.getScannedImages(response, true, false);
+        
+        if (!scannedImages || scannedImages.length === 0) {
+          showError('No images received from scanner. Please try again or use file upload.');
+          return;
+        }
+        
+        // Get the first scanned image
+        const scannedImage = scannedImages[0];
+        
+        // Convert to File object
+        // Scanner.js returns image data - convert to blob then file
+        let imageBlob;
+        if (scannedImage.dataUrl) {
+          // Convert data URL to blob
+          const base64Data = scannedImage.dataUrl.split(',')[1];
+          const binaryData = atob(base64Data);
+          const bytes = new Uint8Array(binaryData.length);
+          for (let i = 0; i < binaryData.length; i++) {
+            bytes[i] = binaryData.charCodeAt(i);
+          }
+          imageBlob = new Blob([bytes], { type: 'image/jpeg' });
+        } else if (scannedImage.blob) {
+          imageBlob = scannedImage.blob;
+        } else {
+          throw new Error('No image data received from scanner');
+        }
+        
+        // Create File object from blob
+        const fileName = filePath.substring(filePath.lastIndexOf('\\') + 1);
+        const file = new File([imageBlob], fileName, { type: 'image/jpeg' });
+        
+        // Create FileList and assign to input
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        targetInput.files = dataTransfer.files;
+        
+        // Trigger change event to update UI (this will call the existing handleFile function)
+        const changeEvent = new Event('change', { bubbles: true });
+        targetInput.dispatchEvent(changeEvent);
+        
+        // Log success
+        console.log('Scan successful. File saved to:', filePath);
+        
+      } catch (error) {
+        console.error('Error processing scan result:', error);
+        showError('Failed to process scanned image: ' + error.message);
       }
     }
 
@@ -3537,6 +3804,13 @@
         const upB = makeUploader('back');
         frontBlock.append(frontTag, upF.wrap, upF.input);
         backBlock.append(backTag, upB.wrap, upB.input);
+        
+        // Add scanner buttons for front and back
+        const frontScannerDiv = createScannerButton(type, 'Front', upF.input, 'photoId');
+        const backScannerDiv = createScannerButton(type, 'Back', upB.input, 'photoId');
+        frontBlock.append(frontScannerDiv);
+        backBlock.append(backScannerDiv);
+        
         mainBlock.append(frontBlock, backBlock);
         container.append(mainBlock);
       } else {
@@ -3544,9 +3818,35 @@
         const block = document.createElement('div'); 
         block.className='upload-block';
         block.append(only.wrap, only.input);
+        
+        // Add scanner button for single
+        const scannerDiv = createScannerButton(type, 'Single', only.input, 'photoId');
+        block.append(scannerDiv);
+        
         container.append(block);
       }
       updatePhotoHint();
+    }
+    
+    // Create scanner button with "or" divider
+    function createScannerButton(idType, side, targetInput, scannerType) {
+      const wrapper = document.createElement('div');
+      wrapper.style.marginTop = '8px';
+      
+      const divider = document.createElement('div');
+      divider.className = 'scanner-divider';
+      divider.textContent = 'or';
+      
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'scan-document-btn';
+      button.textContent = 'Scan document';
+      button.addEventListener('click', () => {
+        triggerScanner(idType, side, targetInput, scannerType);
+      });
+      
+      wrapper.append(divider, button);
+      return wrapper;
     }
 
     // Update photo hint based on selected ID types
@@ -6424,6 +6724,10 @@
             const uploader = makeUploader(`addressId${index + 1}`);
             uploads.appendChild(uploader.wrap);
             uploads.appendChild(uploader.input);
+            
+            // Add scanner button for Address ID (single-sided, always)
+            const scannerDiv = createScannerButton(select.value, 'Single', uploader.input, 'addressId');
+            uploads.appendChild(scannerDiv);
           } else {
             uploads.innerHTML = '';
           }
