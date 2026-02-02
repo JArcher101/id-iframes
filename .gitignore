@@ -41,6 +41,9 @@ backup-before-bump-*/
 test-*.html
 test-*.ps1
 
+# Local utility tools
+spreadsheet-merger.html
+
 # PDF mockups
 *-mockup*.html
 
