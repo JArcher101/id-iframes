@@ -10,6 +10,9 @@
   <!-- Google libphonenumber library for phone validation -->
   <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
+  <!-- html2canvas library for PDF generation (required for html2canvas + jsPDF approach) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
   <!-- jsPDF library for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -2477,134 +2480,63 @@
     }
     
     /*
-    Generate and download company/charity summary as PDF
+    =====================================================================
+    COMPANY/CHARITY SUMMARY PDF GENERATION
+    =====================================================================
+    Uses html2canvas + jsPDF (like request-form and uk-sanctions-checker)
+    for consistent PDF styling across the repository
+    =====================================================================
     */
-    function downloadCompanySummary() {
-      if (!businessData || !window.jspdf) {
-        console.error('Cannot generate PDF: missing data or jsPDF library');
-        return;
+    
+    /**
+     * Escape HTML special characters for safe display in PDF
+     */
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    /**
+     * Build HTML template for company/charity summary PDF
+     * Matches styling from request-form.html and uk-sanctions-checker.html
+     */
+    function buildCompanySummaryPDFHTML() {
+      if (!businessData) {
+        console.error('Cannot build PDF HTML: missing businessData');
+        return '';
       }
-      
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'pt', 'a4');
       
       // Get current user email from parent (or use placeholder)
       const userEmail = 'user@thurstanhoskin.co.uk'; // Will be populated from parent
       const generatedDate = new Date().toLocaleString('en-GB', {
+        day: 'numeric',
+        month: 'short',
         year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
         hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
+        minute: '2-digit'
       });
       
-      // A4 dimensions: 595pt wide, 842pt tall
-      const pageWidth = 595;
-      const pageHeight = 842;
-      const margin = 40;
-      let yPosition = margin;
-      
-      // Set font
-      doc.setFont('helvetica');
-      
-      // Header - Add logos (Note: SVGs need to be converted or we use text)
-      // For now, we'll use text headers - you can add logo images later
-      doc.setFontSize(24);
-      doc.setTextColor(0, 60, 113);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Thurstan Hoskin', margin, yPosition);
-      
-      doc.setFontSize(18);
-      doc.text("Val'ID'ate", pageWidth - margin - 120, yPosition);
-      
-      yPosition += 10;
-      
-      // Header border
-      doc.setDrawColor(0, 60, 113);
-      doc.setLineWidth(3);
-      doc.line(margin, yPosition, pageWidth - margin, yPosition);
-      
-      yPosition += 25;
-      
-      // Document title
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
       const title = entityType === 'charity' ? 'Charity Summary' : 'Company Summary';
-      const titleWidth = doc.getTextWidth(title);
-      doc.text(title, (pageWidth - titleWidth) / 2, yPosition);
-      
-      yPosition += 20;
-      
-      // Company/Charity name subtitle
-      doc.setFontSize(14);
-      doc.setTextColor(102, 102, 102);
-      doc.setFont('helvetica', 'normal');
       const companyName = businessData.company_name || businessName?.value || 'Unknown';
-      const subtitleWidth = doc.getTextWidth(companyName);
-      doc.text(companyName, (pageWidth - subtitleWidth) / 2, yPosition);
+      const companyNumber = businessData.company_number || entityNumber?.value || 'N/A';
+      const registrationCountryValue = registrationCountry?.value === 'GB' ? 'United Kingdom' : registrationCountry?.value || 'N/A';
       
-      yPosition += 30;
+      // Helper function to format date
+      function formatDate(dateString) {
+        if (!dateString) return '—';
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        } catch {
+          return dateString;
+        }
+      }
       
-      // Registration Details Section
-      doc.setFontSize(14);
-      doc.setTextColor(0, 60, 113);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Registration Details', margin, yPosition);
-      
-      yPosition += 5;
-      doc.setDrawColor(221, 221, 221);
-      doc.setLineWidth(1);
-      doc.line(margin, yPosition, pageWidth - margin, yPosition);
-      
-      yPosition += 15;
-      
-      // Company info
-      doc.setFontSize(11);
-      doc.setTextColor(51, 51, 51);
-      const labelX = margin;
-      const valueX = margin + 200;
-      
-      const companyInfo = [
-        ['Company Name:', companyName],
-        ['Company Number:', businessData.company_number || entityNumber?.value || 'N/A'],
-        ['Registration Country:', registrationCountry?.value === 'GB' ? 'United Kingdom' : registrationCountry?.value || 'N/A'],
-        ['Company Status:', businessData.company_status || 'N/A'],
-        ['Date of Incorporation:', businessData.date_of_creation || 'N/A'],
-        ['Company Type:', businessData.type || 'N/A']
-      ];
-      
-      companyInfo.forEach(([label, value]) => {
-        doc.setFont('helvetica', 'bold');
-        doc.text(label, labelX, yPosition);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(85, 85, 85);
-        doc.text(String(value), valueX, yPosition);
-        doc.setTextColor(51, 51, 51);
-        yPosition += 18;
-      });
-      
-      yPosition += 10;
-      
-      // Registered Office Address
-      doc.setFontSize(14);
-      doc.setTextColor(0, 60, 113);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Registered Office Address', margin, yPosition);
-      
-      yPosition += 5;
-      doc.setDrawColor(221, 221, 221);
-      doc.line(margin, yPosition, pageWidth - margin, yPosition);
-      
-      yPosition += 15;
-      
-      doc.setFontSize(11);
-      doc.setTextColor(85, 85, 85);
-      doc.setFont('helvetica', 'normal');
-      
-      if (businessData.registered_office_address) {
-        const address = businessData.registered_office_address;
+      // Helper function to format address
+      function formatAddress(address) {
+        if (!address) return 'Address not available';
         const addressLines = [
           address.premises,
           address.address_line_1,
@@ -2613,101 +2545,25 @@
           address.postal_code,
           'United Kingdom'
         ].filter(line => line && line.trim());
-        
-        addressLines.forEach(line => {
-          doc.text(line, margin, yPosition);
-          yPosition += 16;
-        });
-      } else {
-        doc.text('Address not available', margin, yPosition);
-        yPosition += 16;
+        return addressLines.length > 0 ? addressLines.join(', ') : 'Address not available';
       }
-      
-      yPosition += 15;
-      
-      // Accounts/Financial Information
-      if (entityType === 'business' && businessData.accounts) {
-        doc.setFontSize(14);
-        doc.setTextColor(0, 60, 113);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Accounts Information', margin, yPosition);
-        
-        yPosition += 5;
-        doc.setDrawColor(221, 221, 221);
-        doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        
-        yPosition += 15;
-        
-        doc.setFontSize(11);
-        doc.setTextColor(51, 51, 51);
-        
-        const accountsInfo = [
-          ['Last Accounts Date:', businessData.accounts?.last_accounts?.made_up_to || 'N/A'],
-          ['Next Accounts Due:', businessData.accounts?.next_due || businessData.accounts?.next_made_up_to || 'N/A'],
-          ['Filing Status:', businessData.accounts?.overdue ? 'Overdue' : 'Up to date']
-        ];
-        
-        accountsInfo.forEach(([label, value]) => {
-          doc.setFont('helvetica', 'bold');
-          doc.text(label, labelX, yPosition);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(85, 85, 85);
-          doc.text(String(value), valueX, yPosition);
-          doc.setTextColor(51, 51, 51);
-          yPosition += 18;
-        });
-        
-        yPosition += 10;
-      } else if (entityType === 'charity') {
-        doc.setFontSize(14);
-        doc.setTextColor(0, 60, 113);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Financial Information', margin, yPosition);
-        
-        yPosition += 5;
-        doc.setDrawColor(221, 221, 221);
-        doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        
-        yPosition += 15;
-        
-        doc.setFontSize(11);
-        doc.setTextColor(51, 51, 51);
-        
-        const financialInfo = [
-          ['Latest Income:', businessData.charity_income ? `£${businessData.charity_income.toLocaleString()}` : 'N/A'],
-          ['Latest Expenditure:', businessData.charity_expenditure ? `£${businessData.charity_expenditure.toLocaleString()}` : 'N/A']
-        ];
-        
-        financialInfo.forEach(([label, value]) => {
-          doc.setFont('helvetica', 'bold');
-          doc.text(label, labelX, yPosition);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(85, 85, 85);
-          doc.text(String(value), valueX, yPosition);
-          doc.setTextColor(51, 51, 51);
-          yPosition += 18;
-        });
-        
-        yPosition += 10;
-      }
-      
-      // People Table (Officers, Directors, PSCs, Trustees)
-      doc.setFontSize(14);
-      doc.setTextColor(0, 60, 113);
-      doc.setFont('helvetica', 'bold');
-      const peopleTitle = entityType === 'charity' 
-        ? 'Trustees & Directors' 
-        : 'Officers, Directors & Persons with Significant Control';
-      doc.text(peopleTitle, margin, yPosition);
-      
-      yPosition += 5;
-      doc.setDrawColor(221, 221, 221);
-      doc.line(margin, yPosition, pageWidth - margin, yPosition);
-      
-      yPosition += 10;
       
       // Build people data for table
       const peopleMap = new Map();
+      
+      // Helper function for normalizeName
+      function normalizeName(name) {
+        if (!name) return '';
+        return name
+          .toLowerCase()
+          .replace(/^(mr|mrs|ms|miss|dr|rev|sir|lord|dame|prof|professor)\s+/i, '')
+          .replace(/[,\.]/g, '')
+          .split(/\s+/)
+          .filter(w => w)
+          .sort()
+          .join(' ')
+          .trim();
+      }
       
       // Extract Officers, Directors, and Trustees
       if (businessData.officers && businessData.officers.length > 0) {
@@ -2769,122 +2625,362 @@
       }
       
       const allPeople = Array.from(peopleMap.values());
+      const peopleTitle = entityType === 'charity' 
+        ? 'Trustees & Directors' 
+        : 'Officers, Directors & Persons with Significant Control';
       
-      // Helper function for normalizeName (same as populatePeopleCards)
-      function normalizeName(name) {
-        if (!name) return '';
-        return name
-          .toLowerCase()
-          .replace(/^(mr|mrs|ms|miss|dr|rev|sir|lord|dame|prof|professor)\s+/i, '')
-          .replace(/[,\.]/g, '')
-          .split(/\s+/)
-          .filter(w => w)
-          .sort()
-          .join(' ')
-          .trim();
+      // Format registered office address
+      const registeredOffice = businessData.registered_office_address 
+        ? formatAddress(businessData.registered_office_address)
+        : 'Address not available';
+      
+      // Build HTML with consistent styling
+      const html = `<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, .pdf-content {
+      font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #111;
+      padding: 12mm;
+      margin: 0;
+      background: white;
+    }
+    * {
+      font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
+    }
+    .header {
+      border-bottom: 3px solid #003c71;
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .header h1 {
+      color: #003c71;
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .header-subtitle {
+      font-size: 16px;
+      color: #666;
+      margin-top: 8px;
+    }
+    .info-section {
+      margin-bottom: 24px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      orphans: 3;
+      widows: 3;
+    }
+    .info-section h2 {
+      color: #003c71;
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #dee2e6;
+      padding-bottom: 10px;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .info-row {
+      display: flex;
+      margin-bottom: 10px;
+      font-size: 14px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .info-label {
+      font-weight: 600;
+      min-width: 180px;
+      color: #6c757d;
+      flex-shrink: 0;
+    }
+    .info-value {
+      flex: 1;
+      color: #111;
+    }
+    .people-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+    .people-table th {
+      background: #003c71;
+      color: white;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: bold;
+      border: 1px solid #003c71;
+    }
+    .people-table td {
+      padding: 10px 12px;
+      border: 1px solid #dee2e6;
+      color: #333;
+    }
+    .people-table tr:nth-child(even) {
+      background: #f8f9fa;
+    }
+    .warning-box {
+      margin-top: 24px;
+      padding: 16px 20px;
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-left: 4px solid #ffc107;
+      border-radius: 8px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .warning-box-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #856404;
+      margin-bottom: 8px;
+    }
+    .warning-box-text {
+      font-size: 13px;
+      color: #856404;
+      line-height: 1.6;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 2px solid #dee2e6;
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+      line-height: 1.8;
+    }
+    @media print {
+      body, .pdf-content { padding: 20px; }
+    }
+  </style>
+  <div class="pdf-content">
+    <div class="header">
+      <h1>${escapeHtml(title)}</h1>
+      <div class="header-subtitle">${escapeHtml(companyName)}</div>
+    </div>
+    
+    <div class="info-section">
+      <h2>Registration Details</h2>
+      <div class="info-row">
+        <div class="info-label">Company Name:</div>
+        <div class="info-value">${escapeHtml(companyName)}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Company Number:</div>
+        <div class="info-value">${escapeHtml(companyNumber)}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Registration Country:</div>
+        <div class="info-value">${escapeHtml(registrationCountryValue)}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Company Status:</div>
+        <div class="info-value">${escapeHtml(businessData.company_status || 'N/A')}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Date of Incorporation:</div>
+        <div class="info-value">${escapeHtml(businessData.date_of_creation || 'N/A')}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Company Type:</div>
+        <div class="info-value">${escapeHtml(businessData.type || 'N/A')}</div>
+      </div>
+    </div>
+    
+    <div class="info-section">
+      <h2>Registered Office Address</h2>
+      <div class="info-row">
+        <div class="info-value">${escapeHtml(registeredOffice)}</div>
+      </div>
+    </div>
+    
+    ${entityType === 'business' && businessData.accounts ? `
+    <div class="info-section">
+      <h2>Accounts Information</h2>
+      <div class="info-row">
+        <div class="info-label">Last Accounts Date:</div>
+        <div class="info-value">${escapeHtml(businessData.accounts?.last_accounts?.made_up_to || 'N/A')}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Next Accounts Due:</div>
+        <div class="info-value">${escapeHtml(businessData.accounts?.next_due || businessData.accounts?.next_made_up_to || 'N/A')}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Filing Status:</div>
+        <div class="info-value">${businessData.accounts?.overdue ? 'Overdue' : 'Up to date'}</div>
+      </div>
+    </div>
+    ` : ''}
+    
+    ${entityType === 'charity' ? `
+    <div class="info-section">
+      <h2>Financial Information</h2>
+      <div class="info-row">
+        <div class="info-label">Latest Income:</div>
+        <div class="info-value">${businessData.charity_income ? `£${businessData.charity_income.toLocaleString()}` : 'N/A'}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Latest Expenditure:</div>
+        <div class="info-value">${businessData.charity_expenditure ? `£${businessData.charity_expenditure.toLocaleString()}` : 'N/A'}</div>
+      </div>
+    </div>
+    ` : ''}
+    
+    ${allPeople.length > 0 ? `
+    <div class="info-section">
+      <h2>${escapeHtml(peopleTitle)}</h2>
+      <table class="people-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Role(s)</th>
+            <th>Share</th>
+            <th>Appointed</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${allPeople.map(person => `
+          <tr>
+            <td>${escapeHtml(person.name)}</td>
+            <td>${escapeHtml(person.roles.join(', '))}</td>
+            <td>${escapeHtml(person.share || '—')}</td>
+            <td>${escapeHtml(person.appointed)}</td>
+          </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    ` : ''}
+    
+    <div class="warning-box">
+      <div class="warning-box-title">⚠️ AML & ID Verification Required</div>
+      <div class="warning-box-text">
+        Ensure all directors and persons with significant control (> 25% share) have undergone appropriate Anti-Money Laundering checks and identity verification in accordance with MLR 2017.
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>Generated from Thurstan Hoskin's Thirdfort ID Management System</p>
+      <p>Downloaded by: ${escapeHtml(userEmail)}</p>
+      <p>Date: ${escapeHtml(generatedDate)}</p>
+      <p style="margin-top: 12px; font-size: 10px; color: #999;">
+        ${entityType === 'charity' 
+          ? 'Contains information from the Charity Commission which is made available under the Open Government Licence v3.0.'
+          : 'Contains information from Companies House which is made available under the Open Government Licence v3.0.'}
+      </p>
+      <p style="margin-top: 8px; font-size: 10px; color: #999; font-style: italic;">
+        This summary is sourced from ${entityType === 'charity' ? 'Charity Commission' : 'Companies House'} public records and should be verified independently.
+      </p>
+    </div>
+  </div>`;
+      
+      return html;
+    }
+    
+    /**
+     * Generate and download company/charity summary as PDF
+     * Uses html2canvas + jsPDF (like request-form and uk-sanctions-checker)
+     */
+    async function downloadCompanySummary() {
+      if (!businessData) {
+        console.error('Cannot generate PDF: missing businessData');
+        return;
       }
       
-      // Helper function to format date
-      function formatDate(dateString) {
-        if (!dateString) return '—';
-        try {
-          const date = new Date(dateString);
-          return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-        } catch {
-          return dateString;
+      if (typeof html2canvas === 'undefined' || (typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined')) {
+        console.error('❌ html2canvas or jsPDF library not loaded');
+        console.error('   html2canvas:', typeof html2canvas);
+        console.error('   window.jspdf:', typeof window.jspdf);
+        console.error('   jsPDF:', typeof jsPDF);
+        return;
+      }
+      
+      try {
+        // Build HTML template for PDF
+        const pdfHTML = buildCompanySummaryPDFHTML();
+        
+        if (!pdfHTML) {
+          console.error('❌ Failed to build PDF HTML');
+          return;
+        }
+        
+        // Create element and add to DOM temporarily (html2canvas needs this)
+        const element = document.createElement('div');
+        element.innerHTML = pdfHTML;
+        element.style.position = 'absolute';
+        element.style.left = '-9999px';
+        element.style.width = '210mm';
+        element.style.backgroundColor = '#ffffff';
+        document.body.appendChild(element);
+        
+        console.log('📄 HTML content length:', pdfHTML.length);
+        console.log('📄 Element created with', element.children.length, 'children');
+        
+        // Generate filename
+        const entityNum = entityNumber?.value?.trim() || 'Unknown';
+        const filename = `${entityType === 'charity' ? 'Charity' : 'Company'}_Summary_${entityNum}_${Date.now()}.pdf`;
+        
+        console.log('📄 Starting PDF generation with html2canvas + jsPDF...');
+        
+        // Use html2canvas directly
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+        
+        console.log('✅ Canvas created:', canvas.width, 'x', canvas.height);
+        
+        // Remove element from DOM
+        document.body.removeChild(element);
+        
+        // Create PDF with jsPDF
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait'
+        });
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        // Add first page
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        // Add additional pages if needed
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        
+        // Download PDF
+        pdf.save(filename);
+        console.log('✅ PDF downloaded:', filename);
+      } catch (error) {
+        console.error('❌ Error generating PDF:', error);
+        // Remove element if it still exists
+        const element = document.querySelector('div[style*="-9999px"]');
+        if (element) {
+          document.body.removeChild(element);
         }
       }
-      
-      // Create table data
-      const tableData = allPeople.map(person => [
-        person.name,
-        person.roles.join(', '),
-        person.share || '—',
-        person.appointed
-      ]);
-      
-      // Use autoTable plugin
-      doc.autoTable({
-        startY: yPosition,
-        head: [['Name', 'Role(s)', 'Share', 'Appointed']],
-        body: tableData,
-        theme: 'striped',
-        headStyles: {
-          fillColor: [0, 60, 113],
-          textColor: 255,
-          fontSize: 11,
-          fontStyle: 'bold'
-        },
-        bodyStyles: {
-          fontSize: 11,
-          textColor: [51, 51, 51]
-        },
-        alternateRowStyles: {
-          fillColor: [248, 249, 250]
-        },
-        margin: { left: margin, right: margin }
-      });
-      
-      yPosition = doc.lastAutoTable.finalY + 20;
-      
-      // Warning box
-      doc.setFillColor(255, 243, 205);
-      doc.setDrawColor(255, 193, 7);
-      doc.roundedRect(margin, yPosition, pageWidth - (margin * 2), 50, 4, 4, 'FD');
-      
-      doc.setFontSize(11);
-      doc.setTextColor(133, 100, 4);
-      doc.setFont('helvetica', 'bold');
-      doc.text('⚠️ AML & ID Verification Required', margin + 10, yPosition + 15);
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      const warningText = 'Ensure all directors and persons with significant control (> 25% share) have undergone';
-      const warningText2 = 'appropriate Anti-Money Laundering checks and identity verification in accordance with MLR 2017.';
-      doc.text(warningText, margin + 10, yPosition + 30);
-      doc.text(warningText2, margin + 10, yPosition + 42);
-      
-      yPosition += 70;
-      
-      // Footer
-      doc.setFontSize(10);
-      doc.setTextColor(102, 102, 102);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Generated:', margin, yPosition);
-      doc.setFont('helvetica', 'normal');
-      doc.text(generatedDate, margin + 70, yPosition);
-      
-      doc.setFont('helvetica', 'bold');
-      doc.text('Downloaded by:', pageWidth - margin - 200, yPosition);
-      doc.setFont('helvetica', 'normal');
-      doc.text(userEmail, pageWidth - margin - 120, yPosition);
-      
-      yPosition += 15;
-      
-      // Data attribution
-      doc.setFontSize(9);
-      doc.setTextColor(153, 153, 153);
-      doc.setFont('helvetica', 'italic');
-      const dataSource = entityType === 'charity' ? 'Charity Commission' : 'Companies House';
-      const disclaimer = `This summary is sourced from ${dataSource} public records and should be verified independently.`;
-      doc.text(disclaimer, margin, yPosition);
-      
-      yPosition += 12;
-      
-      const attribution = entityType === 'charity'
-        ? 'Contains information from the Charity Commission which is made available under the Open Government Licence v3.0.'
-        : 'Contains information from Companies House which is made available under the Open Government Licence v3.0.';
-      
-      const splitAttribution = doc.splitTextToSize(attribution, pageWidth - (margin * 2));
-      doc.text(splitAttribution, margin, yPosition);
-      
-      // Generate filename
-      const entityNum = entityNumber?.value?.trim() || 'Unknown';
-      const filename = `${entityType === 'charity' ? 'Charity' : 'Company'}_Summary_${entityNum}_${Date.now()}.pdf`;
-      
-      // Download
-      doc.save(filename);
-      console.log('📄 PDF downloaded:', filename);
     }
     
     // ===== FORM VALIDATION =====
