@@ -1858,7 +1858,7 @@
         element.innerHTML = pdfHTML;
         element.style.position = 'absolute';
         element.style.left = '-9999px';
-        element.style.width = '210mm';
+        element.style.width = '190mm'; // 210mm - (2 * 10mm margins) to account for PDF margins
         element.style.backgroundColor = '#ffffff';
         document.body.appendChild(element);
         
@@ -1893,22 +1893,24 @@
         });
         
         const imgData = canvas.toDataURL('image/jpeg', 0.98);
-        const imgWidth = 210; // A4 width in mm
+        const margin = 10; // 10mm margins on all sides (matching other iframes)
+        const imgWidth = 210 - (margin * 2); // A4 width minus left/right margins
         const pageHeight = 297; // A4 height in mm
+        const usableHeight = pageHeight - (margin * 2); // Page height minus top/bottom margins
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         let heightLeft = imgHeight;
-        let position = 0;
+        let position = margin; // Start at top margin
         
         // Add first page
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
+        heightLeft -= usableHeight;
         
         // Add additional pages if needed
         while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
+          position = heightLeft - imgHeight + margin; // Position to show next portion, accounting for margin
           pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
+          pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
+          heightLeft -= usableHeight;
         }
         
         // Generate blob
