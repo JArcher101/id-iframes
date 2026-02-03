@@ -1833,9 +1833,14 @@
     }
     
     async function generatePDF() {
-      console.log('📄 Generating PDF using html2pdf...');
+      console.log('📄 Generating PDF using html2canvas + jsPDF directly...');
       
-      if (typeof html2pdf === 'undefined') {
+      // Check for html2canvas and jsPDF (html2pdf includes them, but we'll use them directly)
+      if (typeof html2canvas === 'undefined' || (typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined')) {
+        console.error('❌ html2canvas or jsPDF library not loaded');
+        console.error('   html2canvas:', typeof html2canvas);
+        console.error('   window.jspdf:', typeof window.jspdf);
+        console.error('   jsPDF:', typeof jsPDF);
         showError('PDF library not loaded. Please refresh the page.');
         return;
       }
@@ -1844,34 +1849,66 @@
         // Build HTML template for PDF
         const pdfHTML = buildPDFHTML();
         
-        // Create element for html2pdf (like checks manager)
-        // CRITICAL: Do NOT add to document.body to avoid custom font inheritance!
+        // Create element and add to DOM temporarily (html2canvas needs this)
         const element = document.createElement('div');
         element.innerHTML = pdfHTML;
+        element.style.position = 'absolute';
+        element.style.left = '-9999px';
+        element.style.width = '210mm';
+        element.style.backgroundColor = '#ffffff';
+        document.body.appendChild(element);
         
         console.log('📄 HTML content length:', pdfHTML.length);
         console.log('📄 HTML preview:', pdfHTML.substring(0, 300));
         console.log('📄 Element created with', element.children.length, 'children');
         
-        // Configure html2pdf options (same as checks manager)
-        const options = {
-          margin: [10, 10, 10, 10],
-          filename: `UK_Sanctions_Search_${searchParams.searchName.replace(/\s+/g, '_')}_${Date.now()}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { 
-            scale: 2, 
-            useCORS: true, 
-            logging: false
-          },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: 'css', avoid: '.hit-card' }
-        };
+        // Get filename
+        const filename = getSanctionsPDFFilename();
         
-        console.log('📄 Starting PDF generation with html2pdf...');
+        console.log('📄 Starting PDF generation with html2canvas + jsPDF...');
         
-        // Generate PDF blob using html2pdf (exactly like checks manager)
-        const pdfBlob = await html2pdf().set(options).from(element).outputPdf('blob');
+        // Use html2canvas directly
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
         
+        console.log('✅ Canvas created:', canvas.width, 'x', canvas.height);
+        
+        // Remove element from DOM
+        document.body.removeChild(element);
+        
+        // Create PDF with jsPDF
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait'
+        });
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        // Add first page
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        // Add additional pages if needed
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        
+        // Generate blob
+        const pdfBlob = pdf.output('blob');
         console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
         
         // Generate friendly filename

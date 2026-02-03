@@ -4124,6 +4124,7 @@ function buildRequestPDFHTML(messageData) {
       padding-bottom: 24px;
       margin-bottom: 32px;
       page-break-after: avoid;
+      break-after: avoid;
     }
     .header h1 {
       color: #003c71;
@@ -4138,6 +4139,9 @@ function buildRequestPDFHTML(messageData) {
       border-radius: 8px;
       border: 1px solid #dee2e6;
       page-break-inside: avoid;
+      break-inside: avoid;
+      orphans: 3;
+      widows: 3;
     }
     .info-section h2 {
       color: #003c71;
@@ -4146,11 +4150,15 @@ function buildRequestPDFHTML(messageData) {
       margin-bottom: 16px;
       border-bottom: 2px solid #dee2e6;
       padding-bottom: 10px;
+      page-break-after: avoid;
+      break-after: avoid;
     }
     .info-row {
       display: flex;
       margin-bottom: 10px;
       font-size: 14px;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .info-label {
       font-weight: 600;
@@ -4169,6 +4177,9 @@ function buildRequestPDFHTML(messageData) {
       border-left: 4px solid #1d71b8;
       border-radius: 8px;
       page-break-inside: avoid;
+      break-inside: avoid;
+      orphans: 3;
+      widows: 3;
     }
     .message-box-label {
       font-size: 11px;
@@ -4401,10 +4412,12 @@ function buildRequestPDFHTML(messageData) {
         <div class="info-label">Address ID:</div>
         <div class="info-value">${hasAddressID ? '<span style="color: #39b549; font-weight: 600;">✓ Provided</span>' : '<span style="color: #d32f2f; font-weight: 600;">✗ Not Provided</span>'}</div>
       </div>
+      ${hasPhotoID ? `
       <div class="info-row">
         <div class="info-label">Likeness Confirmed:</div>
         <div class="info-value">${likenessConfirmed ? '<span style="color: #39b549; font-weight: 600;">✓ Confirmed</span>' : '<span style="color: #d32f2f; font-weight: 600;">✗ Not Confirmed</span>'}</div>
       </div>
+      ` : ''}
     </div>
     
     <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #dee2e6; text-align: center; font-size: 11px; color: #999;">
