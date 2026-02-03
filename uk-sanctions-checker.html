@@ -1911,9 +1911,6 @@
         const pdfBlob = pdf.output('blob');
         console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
         
-        // Generate friendly filename
-        const filename = getSanctionsPDFFilename();
-        
         // Download PDF directly (no print dialog)
         console.log('📥 Downloading PDF:', filename);
         downloadPDFBlob(pdfBlob, filename);
