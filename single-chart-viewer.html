@@ -71,7 +71,7 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            min-height: 100%;
+            min-height: auto; /* Changed from 100% to auto to prevent infinite expansion */
             overflow: visible; /* Allow content to be visible but prevent scroll */
             box-sizing: border-box;
         }
@@ -239,7 +239,9 @@
         let lastHeight = 0; // Track last sent height to prevent unnecessary updates
         let heightNotificationTimeout = null; // Debounce timeout
         let lastNotificationTime = 0; // Track when last notification was sent
-        const MIN_NOTIFICATION_INTERVAL = 500; // Minimum ms between notifications (cooldown)
+        let isResizing = false; // Flag to prevent feedback loops during resize
+        const MIN_NOTIFICATION_INTERVAL = 1000; // Minimum ms between notifications (cooldown) - increased to prevent loops
+        const HEIGHT_CHANGE_THRESHOLD = 20; // Minimum px change to trigger notification (increased to prevent micro-adjustments)
         const canvas = document.getElementById('chartCanvas');
         const chartWrapper = document.getElementById('chartWrapper');
         const emptyState = document.getElementById('emptyState');
@@ -406,6 +408,10 @@
                 currentChart = null;
             }
 
+            // Reset height tracking when creating new chart to prevent stale values
+            lastHeight = 0;
+            isResizing = false;
+
             // Hide empty state and show chart wrapper
             emptyState.style.display = 'none';
             chartWrapper.classList.add('active');
@@ -527,19 +533,40 @@
                 return;
             }
             
-            // Get the container element height (most reliable - uses offsetHeight which doesn't include scroll)
-            const container = document.querySelector('.container');
+            // Don't notify if we're currently in a resize operation (prevents feedback loops)
+            if (isResizing) {
+                console.log('Height notification skipped - resize in progress');
+                return;
+            }
+            
+            // Calculate height using scrollHeight for accurate content measurement
+            // This measures the actual content height, not the container's offsetHeight
             let height = 0;
             
-            if (container) {
-                // Use offsetHeight which gives the actual rendered height without scroll areas
-                height = container.offsetHeight;
-            } else {
-                // Fallback to body/document if container not found
-                height = Math.max(
-                    document.body.offsetHeight || 0,
-                    document.documentElement.offsetHeight || 0
-                );
+            // Use document.body.scrollHeight as primary measurement (most accurate for content)
+            const bodyScrollHeight = document.body.scrollHeight;
+            const documentElementScrollHeight = document.documentElement.scrollHeight;
+            
+            // Use the maximum of body and documentElement scrollHeight
+            // This ensures we capture all content including any overflow
+            height = Math.max(bodyScrollHeight || 0, documentElementScrollHeight || 0);
+            
+            // Fallback: if scrollHeight is unreliable, use offsetHeight of container
+            if (!height || height <= 0) {
+                const container = document.querySelector('.container');
+                if (container) {
+                    // Get the actual rendered height of the container
+                    const containerRect = container.getBoundingClientRect();
+                    height = containerRect.height;
+                }
+                
+                // Final fallback
+                if (!height || height <= 0) {
+                    height = Math.max(
+                        document.body.offsetHeight || 0,
+                        document.documentElement.offsetHeight || 0
+                    );
+                }
             }
             
             // Ensure we have a valid height
@@ -549,14 +576,29 @@
             }
             
             // Only send if height has actually changed significantly (prevent feedback loops)
-            // Use a threshold (10px) to account for minor rendering differences and prevent micro-updates
             const heightDiff = Math.abs(height - lastHeight);
             const timeSinceLastNotification = Date.now() - lastNotificationTime;
             
-            if (heightDiff > 10 && timeSinceLastNotification >= MIN_NOTIFICATION_INTERVAL) {
-                // Set a reasonable maximum height (10,000px) to prevent runaway growth
-                const maxHeight = 10000;
+            // Check if height is increasing rapidly (potential infinite loop)
+            const isRapidGrowth = height > lastHeight && (height - lastHeight) > 100;
+            if (isRapidGrowth && lastHeight > 0) {
+                console.warn('Rapid height growth detected, preventing notification to avoid loop:', height, 'px (previous:', lastHeight, 'px)');
+                return;
+            }
+            
+            if (heightDiff >= HEIGHT_CHANGE_THRESHOLD && timeSinceLastNotification >= MIN_NOTIFICATION_INTERVAL) {
+                // Set a reasonable maximum height (5000px) to prevent runaway growth
+                const maxHeight = 5000;
                 const finalHeight = Math.min(height, maxHeight);
+                
+                // Additional safety: if height is decreasing significantly, it might be a resize operation
+                if (finalHeight < lastHeight && (lastHeight - finalHeight) > 200) {
+                    console.log('Significant height decrease detected, skipping to prevent resize feedback');
+                    return;
+                }
+                
+                // Set flag to prevent feedback during notification
+                isResizing = true;
                 
                 // Store before sending to track actual sent value
                 const previousHeight = lastHeight;
@@ -569,8 +611,13 @@
                 }, '*');
                 
                 console.log('Height notification sent:', finalHeight, 'px (previous:', previousHeight, 'px, change:', (finalHeight - previousHeight), 'px)');
-            } else if (heightDiff <= 10) {
-                console.log('Height notification skipped - no significant change:', height, 'px (last:', lastHeight, 'px, diff:', heightDiff, 'px)');
+                
+                // Clear resize flag after a delay
+                setTimeout(() => {
+                    isResizing = false;
+                }, 500);
+            } else if (heightDiff < HEIGHT_CHANGE_THRESHOLD) {
+                console.log('Height notification skipped - no significant change:', height, 'px (last:', lastHeight, 'px, diff:', heightDiff, 'px, threshold:', HEIGHT_CHANGE_THRESHOLD, 'px)');
             } else {
                 console.log('Height notification skipped - cooldown active:', Math.ceil((MIN_NOTIFICATION_INTERVAL - timeSinceLastNotification) / 1000), 's remaining');
             }
@@ -578,16 +625,22 @@
         
         // Debounced version to prevent rapid-fire notifications
         function debouncedNotifyParentOfHeight() {
+            // Don't schedule if already resizing
+            if (isResizing) {
+                return;
+            }
+            
             // Clear any pending notification
             if (heightNotificationTimeout) {
                 clearTimeout(heightNotificationTimeout);
             }
             
-            // Send notification after a short delay (allows DOM to settle)
+            // Send notification after a longer delay (allows DOM to fully settle)
+            // Increased delay to prevent rapid-fire updates that can cause loops
             heightNotificationTimeout = setTimeout(() => {
                 notifyParentOfHeight();
                 heightNotificationTimeout = null;
-            }, 150);
+            }, 300);
         }
 
         // Deep merge helper function

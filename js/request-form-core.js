@@ -3912,7 +3912,7 @@ function buildRequestPDFHTML(messageData) {
   const userEmail = requestPayload.user || '';
   
   // Determine if entity or individual
-  const isEntity = !!(data.cI?.bD && Object.keys(data.cI.bD).length > 0);
+  const isEntity = !!(data.b || data.c || (data.cI?.bD && Object.keys(data.cI.bD).length > 0));
   const entityType = data.cI?.eT || (data.b ? 'business' : data.c ? 'charity' : null);
   
   // Get comprehensive client/entity details
@@ -4404,14 +4404,20 @@ function buildRequestPDFHTML(messageData) {
           ${sanctionsDetails ? `<br><span style="font-size: 12px; color: #666; margin-top: 4px; display: block;">${escapeHtml(sanctionsDetails)}</span>` : ''}
         </div>
       </div>
+      ${!isEntity ? `
+      ${hasPhotoID ? `
       <div class="info-row">
         <div class="info-label">Photo ID:</div>
-        <div class="info-value">${hasPhotoID ? '<span style="color: #39b549; font-weight: 600;">✓ Provided</span>' : '<span style="color: #d32f2f; font-weight: 600;">✗ Not Provided</span>'}</div>
+        <div class="info-value"><span style="color: #39b549; font-weight: 600;">✓ Provided</span></div>
       </div>
+      ` : ''}
+      ${hasAddressID ? `
       <div class="info-row">
         <div class="info-label">Address ID:</div>
-        <div class="info-value">${hasAddressID ? '<span style="color: #39b549; font-weight: 600;">✓ Provided</span>' : '<span style="color: #d32f2f; font-weight: 600;">✗ Not Provided</span>'}</div>
+        <div class="info-value"><span style="color: #39b549; font-weight: 600;">✓ Provided</span></div>
       </div>
+      ` : ''}
+      ` : ''}
       ${hasPhotoID ? `
       <div class="info-row">
         <div class="info-label">Likeness Confirmed:</div>
