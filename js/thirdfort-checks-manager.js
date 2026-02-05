@@ -11029,9 +11029,7 @@ class ThirdfortChecksManager {
         overlayHTML += '<h2>Source of Funds Investigation</h2>';
         overlayHTML += '<div class="header-actions">';
         overlayHTML += '<button class="btn-secondary-small" onclick="manager.generateSofPDF()" style="margin-right: 8px;">EXPORT PDF</button>';
-        if (this.mode === 'edit') {
-            overlayHTML += '<button class="btn-primary-small" type="button" onclick="manager.saveSofInvestigation()">SAVE</button>';
-        }
+        overlayHTML += '<button class="btn-primary-small" type="button" onclick="manager.saveSofInvestigation()">SAVE</button>';
         overlayHTML += '<button class="overlay-close-btn" onclick="manager.closeSofOverlay()">✕</button>';
         overlayHTML += '</div></div>';
         
