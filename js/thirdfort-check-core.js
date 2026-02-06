@@ -4470,35 +4470,10 @@ function displayKYBSearchResults(companies) {
   companies.forEach(company => {
     const statusClass = company.status === 'active' ? 'active' : 'dissolved';
     
-    // Debug: Log company data structure to understand what we're getting
-    // console.log('Company data structure:', {
-    //   name: company.name,
-    //   numbers: company.numbers,
-    //   number: company.number,
-    //   tag: company.tag,
-    //   jurisdiction: company.jurisdiction
-    // }); // Commented out to avoid logging client data
-    
-    // Extract company number from numbers array (Thirdfort API uses plural)
-    // Handle cases where numbers array might be undefined (name searches)
-    let companyNumber = 'N/A';
-    let companyTag = 'Company';
-    
-    if (company.numbers && Array.isArray(company.numbers) && company.numbers.length > 0) {
-      companyNumber = company.numbers[0];
-      // If there's a second element, use it as company type
-      if (company.numbers.length > 1) {
-        companyTag = company.numbers[1];
-      }
-    } else if (company.number) {
-      // Fallback to single number field if numbers array doesn't exist
-      companyNumber = company.number;
-    }
-    
-    // Use company.tag if available, otherwise keep the extracted tag
-    if (company.tag) {
-      companyTag = company.tag;
-    }
+    // Extract company number from Thirdfort API response
+    // API returns: { id, jurisdiction, name, number } (number is singular, string)
+    let companyNumber = company.number || 'N/A';
+    let companyTag = 'Company'; // Default tag - Thirdfort API doesn't provide company type/tag
     
     html += `
       <div class="kyb-company-card" data-company-id="${company.id}" data-company-number="${companyNumber}" data-company-name="${company.name}" data-jurisdiction="${company.jurisdiction}">
