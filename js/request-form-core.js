@@ -4417,12 +4417,12 @@ function buildRequestPDFHTML(messageData) {
         <div class="info-value"><span style="color: #39b549; font-weight: 600;">✓ Provided</span></div>
       </div>
       ` : ''}
-      ` : ''}
       ${hasPhotoID ? `
       <div class="info-row">
         <div class="info-label">Likeness Confirmed:</div>
         <div class="info-value">${likenessConfirmed ? '<span style="color: #39b549; font-weight: 600;">✓ Confirmed</span>' : '<span style="color: #d32f2f; font-weight: 600;">✗ Not Confirmed</span>'}</div>
       </div>
+      ` : ''}
       ` : ''}
     </div>
     
