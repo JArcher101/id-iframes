@@ -152,7 +152,7 @@ window.frames[0].postMessage({
 ```
 
 #### `address-results`
-Autocomplete suggestions from getaddress.io (for Lite Screen/Electronic ID).
+Autocomplete suggestions from Ideal Postcodes (for Lite Screen/Electronic ID). All 240+ countries are supported.
 
 ```javascript
 window.frames[0].postMessage({
@@ -240,24 +240,26 @@ Submits complete check request with validation. Returns 1-3 request objects for 
 ```
 
 #### `address-search`
-Requests address autocomplete (Lite Screen or Electronic ID fields).
+Requests address autocomplete (Lite Screen or Electronic ID fields). All 240+ countries are supported by Ideal Postcodes.
 
 ```javascript
 {
   type: 'address-search',
   searchTerm: 'TR15 2ND',
-  field: 'lite'  // or 'electronic'
+  field: 'lite',  // or 'electronic'
+  countryCode: 'gbr'  // Optional: lowercase 3-letter ISO code (e.g., 'gbr', 'usa', 'can'). Defaults to 'gbr' if omitted.
 }
 ```
 
 #### `address-lookup`
-Requests full address by ID.
+Requests full address by ID. Address is returned in Thirdfort format (already formatted by parent).
 
 ```javascript
 {
   type: 'address-lookup',
   addressId: 'abc123xyz',
-  field: 'lite'  // or 'electronic'
+  field: 'lite',  // or 'electronic'
+  countryCode: 'gbr'  // Optional: lowercase 3-letter ISO code (e.g., 'gbr', 'usa', 'can'). Defaults to 'gbr' if omitted.
 }
 ```
 
@@ -377,7 +379,7 @@ window.addEventListener('message', (event) => {
   }
   
   if (event.data.type === 'address-search') {
-    // Fetch address results from getaddress.io
+    // Fetch address results from Ideal Postcodes
     fetchAddresses(event.data.searchTerm)
       .then(results => {
         thirdfortFrame.postMessage({
@@ -2148,24 +2150,26 @@ Sends complete request data after successful validation and file uploads. The da
 ```
 
 #### `address-search`
-Requests address autocomplete suggestions from getaddress.io.
+Requests address autocomplete suggestions from Ideal Postcodes. All 240+ countries are supported.
 
 ```javascript
 {
   type: 'address-search',
   searchTerm: 'TR15',
-  field: 'current'  // or 'previous'
+  field: 'current',  // or 'previous'
+  countryCode: 'gbr'  // Optional: lowercase 3-letter ISO code (e.g., 'gbr', 'usa', 'can'). Defaults to 'gbr' if omitted.
 }
 ```
 
 #### `address-lookup`
-Requests full address data by ID from getaddress.io.
+Requests full address data by ID from Ideal Postcodes. Address is returned in Thirdfort format (already formatted by parent).
 
 ```javascript
 {
   type: 'address-lookup',
   addressId: 'abc123xyz',
-  field: 'current'  // or 'previous'
+  field: 'current',  // or 'previous'
+  countryCode: 'gbr'  // Optional: lowercase 3-letter ISO code (e.g., 'gbr', 'usa', 'can'). Defaults to 'gbr' if omitted.
 }
 ```
 
@@ -2310,7 +2314,7 @@ Sections show/hide based on client type and selected request:
 - **ID Image Carousel** - Side tags (Front/Back) with document details
 - **Real-Time Validation** - Detailed error messages with specific field requirements
 - **Dynamic Section Visibility** - Based on client type and selected request
-- **Address Autocomplete** - getaddress.io integration with 30-day LRU cache
+- **Address Autocomplete** - Ideal Postcodes integration with 30-day LRU cache (supports 240+ countries)
 - **Google libphonenumber** - International phone validation and E.164 formatting
 - **CDF and OFSI Document Upload** - S3 integration with progress tracking plus automatic CDF waiver when all individual client data points are completed
 - **25/25/50 Manual Address Layout** - Flat number, building number, building name on one row
@@ -2579,26 +2583,26 @@ Sends complete form data (after validation). Phone numbers are validated using G
 ```
 
 #### `address-search`
-Requests address autocomplete suggestions.
+Requests address autocomplete suggestions from Ideal Postcodes. All 240+ countries are supported.
 
 ```javascript
 {
   type: 'address-search',
   searchTerm: 'Baker Street',
   field: 'current',  // or 'previous'
-  country: 'GBR'
+  countryCode: 'gbr'  // Optional: lowercase 3-letter ISO code (e.g., 'gbr', 'usa', 'can'). Defaults to 'gbr' if omitted.
 }
 ```
 
 #### `address-lookup`
-Requests full address by ID.
+Requests full address by ID from Ideal Postcodes. Address is returned in Thirdfort format (already formatted by parent).
 
 ```javascript
 {
   type: 'address-lookup',
   addressId: 'address-id-123',
   field: 'current',  // or 'previous'
-  country: 'GBR'
+  countryCode: 'gbr'  // Optional: lowercase 3-letter ISO code (e.g., 'gbr', 'usa', 'can'). Defaults to 'gbr' if omitted.
 }
 ```
 
@@ -2674,7 +2678,7 @@ Addresses are automatically converted to Thirdfort API format:
 
 - **Searchable Autocomplete Dropdowns** - Phone codes, countries, jurisdictions with blue code badges
 - **Entity Mode Support** - Toggle between individual and business/charity modes
-- **Address Autocomplete** - getaddress.io integration via parent proxy
+- **Address Autocomplete** - Ideal Postcodes integration via parent proxy (supports 240+ countries)
 - **Smart Caching** - LRU cache with 30-day expiry for addresses
 - **Thirdfort Formatting** - Automatic conversion to Thirdfort API spec
 - **Google libphonenumber** - International phone validation and E.164 formatting
@@ -3114,7 +3118,7 @@ Final submission with all form data and uploaded images.
 
 - **Searchable Country Autocomplete** - Current and previous address country selection with blue code badges
 - **Dataset Attribute Handling** - Proper country code management via `data-country-code` attributes
-- **Address Autocomplete** - getaddress.io integration for UK/international addresses
+- **Address Autocomplete** - Ideal Postcodes integration for all 240+ countries
 - **Helper Functions** - `setCountry()` for proper data loading and display
 
 ---

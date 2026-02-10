@@ -817,10 +817,8 @@ function validateAddressFields() {
   
   // Previous address validation - only if recent move toggle is on
   if (recentMove?.checked) {
-    const isPreviousUK = previousCountry?.value === 'GBR';
-    
-    // Previous address autocomplete only required if UK and "not listed" is NOT checked
-    if (isPreviousUK && !previousAddressNotListed?.checked) {
+    // Previous address autocomplete required for all countries when "not listed" is NOT checked
+    if (!previousAddressNotListed?.checked) {
       if (!previousAddress?.value?.trim()) {
         errors.push('You have indicated a recent move, please enter the previous address or check "Address not listed" to enter manually.');
       }
@@ -2557,10 +2555,15 @@ function setupAddressAutocomplete(field) {
     // Debounce 300ms
     const timer = setTimeout(() => {
       console.log('📡 API call for autocomplete:', searchTerm);
+      const countryElement = isCurrentAddress ? currentCountry : previousCountry;
+      const countryCode = normalizeCountryCodeForAPI(
+        countryElement?.dataset.countryCode || countryElement?.value || 'GBR'
+      );
       window.parent.postMessage({
         type: 'address-search',
         searchTerm: searchTerm,
-        field: field
+        field: field,
+        countryCode: countryCode
       }, '*');
     }, 300);
     
@@ -2769,21 +2772,20 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
 Handle full address data from parent (address-data message)
 */
 function handleAddressData(addressData, field) {
-  const currentCountry = document.getElementById('currentCountry');
-  const previousCountry = document.getElementById('previousCountry');
-  const country = field === 'current' ? (currentCountry?.dataset.countryCode || 'GBR') : (previousCountry?.dataset.countryCode || 'GBR');
-  const thirdfortAddress = formatToThirdfort(addressData, country);
-  
-  // Ensure country is set
-  if (thirdfortAddress) {
-    thirdfortAddress.country = country;
-  }
-  
+  // Address is already in Thirdfort format from parent - use directly
   if (field === 'current') {
-    currentAddressObject = thirdfortAddress;
+    currentAddressObject = addressData;
+    // Set country dropdown based on address.country
+    if (addressData.country) {
+      setCountry('currentCountry', addressData.country);
+    }
     console.log('✅ Stored current address object:', currentAddressObject);
   } else {
-    previousAddressObject = thirdfortAddress;
+    previousAddressObject = addressData;
+    // Set country dropdown based on address.country
+    if (addressData.country) {
+      setCountry('previousCountry', addressData.country);
+    }
     console.log('✅ Stored previous address object:', previousAddressObject);
   }
   
@@ -3307,10 +3309,15 @@ function selectAddressSuggestion(addressId, displayText, isCurrentAddress) {
   
   // Request full address from parent
   console.log('📡 API call for full address:', addressId);
+  const countryElement = isCurrentAddress ? currentCountry : previousCountry;
+  const countryCode = normalizeCountryCodeForAPI(
+    countryElement?.dataset.countryCode || countryElement?.value || 'GBR'
+  );
   window.parent.postMessage({
     type: 'address-lookup',
     addressId: addressId,
-    field: isCurrentAddress ? 'current' : 'previous'
+    field: isCurrentAddress ? 'current' : 'previous',
+    countryCode: countryCode
   }, '*');
   
   handleCDFProfileFieldChange();

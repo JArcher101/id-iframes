@@ -899,6 +899,21 @@ function setPhoneCode(inputId, code) {
 */
 
 /**
+ * Normalize country code for API messages (convert to lowercase)
+ * @param {string} countryCode - Country code in any format (GBR, gbr, GB, etc.)
+ * @returns {string} - Lowercase 3-letter ISO code (e.g., 'gbr', 'usa', 'can')
+ */
+function normalizeCountryCodeForAPI(countryCode) {
+  if (!countryCode) return 'gbr'; // Default to UK
+  
+  // Normalize to uppercase 3-letter first (using existing normalizeCountryCode)
+  const normalized = normalizeCountryCode(countryCode);
+  
+  // Convert to lowercase for API
+  return normalized.toLowerCase();
+}
+
+/**
  * Normalize country code to 3-letter ISO format (GBR, USA, CAN, etc.)
  * Uses comprehensive mapping from ADDRESS_COUNTRIES and THIRDFORT_JURISDICTIONS
  * @param {string} country - Country name or code in any format

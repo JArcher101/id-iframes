@@ -1798,10 +1798,15 @@
         // Debounce 300ms
         const timer = setTimeout(() => {
           console.log('📡 API call for autocomplete:', searchTerm);
+          const countryElement = isCurrentAddress ? currentCountry : previousCountry;
+          const countryCode = normalizeCountryCodeForAPI(
+            countryElement?.dataset.countryCode || countryElement?.value || 'GBR'
+          );
           window.parent.postMessage({
             type: 'address-search',
             searchTerm: searchTerm,
-            field: isCurrentAddress ? 'current' : 'previous'
+            field: isCurrentAddress ? 'current' : 'previous',
+            countryCode: countryCode
           }, '*');
         }, 300);
         
@@ -1902,25 +1907,38 @@
       
       // Request full address from parent
       console.log('📡 API call for full address:', addressId);
+      const countryElement = isCurrentAddress ? currentCountry : previousCountry;
+      const countryCode = normalizeCountryCodeForAPI(
+        countryElement?.dataset.countryCode || countryElement?.value || 'GBR'
+      );
       window.parent.postMessage({
         type: 'address-lookup',
         addressId: addressId,
-        field: isCurrentAddress ? 'current' : 'previous'
+        field: isCurrentAddress ? 'current' : 'previous',
+        countryCode: countryCode
       }, '*');
     }
     
     /*
     Handle full address data from parent
+    - Address is already in Thirdfort format from parent (no conversion needed)
+    - Stores directly in currentAddressObject or previousAddressObject
+    - Sets country dropdown based on address.country
     */
     function handleAddressData(addressData, field) {
-      const countryRaw = field === 'current' ? (currentCountry.dataset.countryCode || currentCountry.value || 'GBR') : (previousCountry.dataset.countryCode || previousCountry.value || 'GBR');
-      const country = normalizeCountryCode(countryRaw);
-      const thirdfortAddress = formatToThirdfort(addressData, country);
-      
+      // Address is already in Thirdfort format from parent - use directly
       if (field === 'current') {
-        currentAddressObject = thirdfortAddress;
+        currentAddressObject = addressData;
+        // Set country dropdown based on address.country
+        if (addressData.country) {
+          setCountry('currentCountry', addressData.country);
+        }
       } else {
-        previousAddressObject = thirdfortAddress;
+        previousAddressObject = addressData;
+        // Set country dropdown based on address.country
+        if (addressData.country) {
+          setCountry('previousCountry', addressData.country);
+        }
       }
     }
     
@@ -4047,7 +4065,7 @@
       }
       
       // Load current address (formData.a is the address object)
-      // Show/hide fields based on country in data
+      // Always show autocomplete for all countries (Ideal Postcodes supports 240+ countries)
       if (formData.a && typeof formData.a === 'object') {
         currentAddressObject = { ...formData.a };
         // Normalize country code
@@ -4056,32 +4074,21 @@
         }
         setCountry('currentCountry', currentAddressObject.country || 'GBR');
         
-        const isCurrentUK = currentCountry.dataset.countryCode === 'GBR';
+        // Always show autocomplete for all countries
+        currentAddressAutocompleteRow.classList.remove('hidden');
+        addressNotListedRow.classList.remove('hidden');
+        manualAddressFields.classList.add('hidden');
+        addressNotListed.checked = false;
         
-        if (!isCurrentUK) {
-          // Non-UK address - show manual fields, hide autocomplete and checkbox
-          currentAddressAutocompleteRow.classList.add('hidden');
-          addressNotListedRow.classList.add('hidden');
-          manualAddressFields.classList.remove('hidden');
-          addressNotListed.checked = false;
-          
-          // Populate manual fields
-          flatNumber.value = formData.a?.flat_number || '';
-          buildingNumber.value = formData.a?.building_number || '';
-          buildingName.value = formData.a?.building_name || '';
-          street.value = formData.a?.street || '';
-          subStreet.value = formData.a?.sub_street || '';
-          town.value = formData.a?.town || '';
-          postcode.value = formData.a?.postcode || '';
-          
-          // Clear autocomplete
-          currentAddress.value = '';
+        // Detect address format: UK has building fields, International/USA/Canada have address_1/address_2
+        const isUKFormat = currentAddressObject.building_name !== undefined || currentAddressObject.building_number !== undefined;
+        const isInternationalFormat = currentAddressObject.address_1 !== undefined;
+        
+        if (isUKFormat || isInternationalFormat) {
+          // UK or International format: populate autocomplete field
+          currentAddress.value = formatThirdfortForDisplay(formData.a);
         } else {
-          // UK address - show autocomplete and checkbox, hide manual fields
-          currentAddressAutocompleteRow.classList.remove('hidden');
-          addressNotListedRow.classList.remove('hidden');
-          manualAddressFields.classList.add('hidden');
-          addressNotListed.checked = false;
+          // Fallback: try to populate autocomplete field
           currentAddress.value = formatThirdfortForDisplay(formData.a);
         }
       } else {
@@ -4108,27 +4115,20 @@
           }
           setCountry('previousCountry', previousAddressObject.country || 'GBR');
           
-          const isPreviousUK = previousCountry.dataset.countryCode === 'GBR';
+          // Always show autocomplete for all countries (Ideal Postcodes supports 240+ countries)
+          previousAddressAutocompleteRow.classList.remove('hidden');
+          previousAddressNotListedRow.classList.remove('hidden');
+          manualPreviousAddressFields.classList.add('hidden');
           
-          if (!isPreviousUK) {
-            // Non-UK address - show manual fields, hide autocomplete
-            previousAddressAutocompleteRow.classList.add('hidden');
-            previousAddressNotListedRow.classList.add('hidden');
-            manualPreviousAddressFields.classList.remove('hidden');
-            
-            // Populate manual fields
-            prevFlatNumber.value = formData.pA?.flat_number || '';
-            prevBuildingNumber.value = formData.pA?.building_number || '';
-            prevBuildingName.value = formData.pA?.building_name || '';
-            prevStreet.value = formData.pA?.street || '';
-            prevSubStreet.value = formData.pA?.sub_street || '';
-            prevTown.value = formData.pA?.town || '';
-            prevPostcode.value = formData.pA?.postcode || '';
+          // Detect address format: UK has building fields, International/USA/Canada have address_1/address_2
+          const isPreviousUKFormat = previousAddressObject.building_name !== undefined || previousAddressObject.building_number !== undefined;
+          const isPreviousInternationalFormat = previousAddressObject.address_1 !== undefined;
+          
+          if (isPreviousUKFormat || isPreviousInternationalFormat) {
+            // UK or International format: populate autocomplete field
+            previousAddress.value = formatThirdfortForDisplay(formData.pA);
           } else {
-            // UK address - show autocomplete
-            previousAddressAutocompleteRow.classList.remove('hidden');
-            previousAddressNotListedRow.classList.remove('hidden');
-            manualPreviousAddressFields.classList.add('hidden');
+            // Fallback: try to populate autocomplete field
             previousAddress.value = formatThirdfortForDisplay(formData.pA);
           }
         } else {
@@ -4271,62 +4271,40 @@
     
     if (currentCountryInput) {
       currentCountryInput.addEventListener('change', () => {
-        const countryCode = currentCountryInput.dataset.countryCode || 'GBR';
-        const isUK = countryCode === 'GBR';
-        
         const currentAddressAutocompleteRow = document.getElementById('currentAddressAutocompleteRow');
         const addressNotListedRow = document.getElementById('addressNotListedRow');
         const manualAddressFields = document.getElementById('manualAddressFields');
         const addressNotListed = document.getElementById('addressNotListed');
         
-        if (isUK) {
-          // Show autocomplete and "address not listed" checkbox
-          if (currentAddressAutocompleteRow) currentAddressAutocompleteRow.classList.remove('hidden');
-          if (addressNotListedRow) addressNotListedRow.classList.remove('hidden');
-          
-          // Hide manual fields unless checkbox is checked
-          if (addressNotListed && !addressNotListed.checked && manualAddressFields) {
-            manualAddressFields.classList.add('hidden');
-          }
-        } else {
-          // Hide autocomplete and checkbox, show manual fields
-          if (currentAddressAutocompleteRow) currentAddressAutocompleteRow.classList.add('hidden');
-          if (addressNotListedRow) addressNotListedRow.classList.add('hidden');
-          if (manualAddressFields) manualAddressFields.classList.remove('hidden');
-          
-          // Uncheck "address not listed" since we're forcing manual
-          if (addressNotListed) addressNotListed.checked = false;
+        // Always show autocomplete for all countries (Ideal Postcodes supports 240+ countries)
+        if (currentAddressAutocompleteRow) currentAddressAutocompleteRow.classList.remove('hidden');
+        if (addressNotListedRow) addressNotListedRow.classList.remove('hidden');
+        
+        // Only show manual fields if "Address not listed" is checked
+        if (addressNotListed && !addressNotListed.checked && manualAddressFields) {
+          manualAddressFields.classList.add('hidden');
+        } else if (addressNotListed && addressNotListed.checked && manualAddressFields) {
+          manualAddressFields.classList.remove('hidden');
         }
       });
     }
     
     if (previousCountryInput) {
       previousCountryInput.addEventListener('change', () => {
-        const countryCode = previousCountryInput.dataset.countryCode || 'GBR';
-        const isUK = countryCode === 'GBR';
-        
         const previousAddressAutocompleteRow = document.getElementById('previousAddressAutocompleteRow');
         const previousAddressNotListedRow = document.getElementById('previousAddressNotListedRow');
         const manualPreviousAddressFields = document.getElementById('manualPreviousAddressFields');
         const previousAddressNotListed = document.getElementById('previousAddressNotListed');
         
-        if (isUK) {
-          // Show autocomplete and "address not listed" checkbox
-          if (previousAddressAutocompleteRow) previousAddressAutocompleteRow.classList.remove('hidden');
-          if (previousAddressNotListedRow) previousAddressNotListedRow.classList.remove('hidden');
-          
-          // Hide manual fields unless checkbox is checked
-          if (previousAddressNotListed && !previousAddressNotListed.checked && manualPreviousAddressFields) {
-            manualPreviousAddressFields.classList.add('hidden');
-          }
-        } else {
-          // Hide autocomplete and checkbox, show manual fields
-          if (previousAddressAutocompleteRow) previousAddressAutocompleteRow.classList.add('hidden');
-          if (previousAddressNotListedRow) previousAddressNotListedRow.classList.add('hidden');
-          if (manualPreviousAddressFields) manualPreviousAddressFields.classList.remove('hidden');
-          
-          // Uncheck "address not listed" since we're forcing manual
-          if (previousAddressNotListed) previousAddressNotListed.checked = false;
+        // Always show autocomplete for all countries (Ideal Postcodes supports 240+ countries)
+        if (previousAddressAutocompleteRow) previousAddressAutocompleteRow.classList.remove('hidden');
+        if (previousAddressNotListedRow) previousAddressNotListedRow.classList.remove('hidden');
+        
+        // Only show manual fields if "Address not listed" is checked
+        if (previousAddressNotListed && !previousAddressNotListed.checked && manualPreviousAddressFields) {
+          manualPreviousAddressFields.classList.add('hidden');
+        } else if (previousAddressNotListed && previousAddressNotListed.checked && manualPreviousAddressFields) {
+          manualPreviousAddressFields.classList.remove('hidden');
         }
       });
     }

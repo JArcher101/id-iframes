@@ -1029,26 +1029,33 @@ function selectAddressSuggestion(addressId, displayText) {
   
   // Request full address from parent
   console.log('📡 Requesting full address for ID:', addressId);
+  const countryCode = normalizeCountryCodeForAPI(
+    liteCountry?.dataset.countryCode || liteCountry?.value || 'GBR'
+  );
   window.parent.postMessage({
     type: 'address-lookup',
     addressId: addressId,
-    field: 'lite'
+    field: 'lite',
+    countryCode: countryCode
   }, '*');
 }
 
 /**
  * Handle full address data from parent
+ * - Address is already in Thirdfort format from parent (no conversion needed)
+ * - Sets country dropdown and loads address into manual fields
  */
 function handleAddressData(addressData, field) {
-  const liteCountry = document.getElementById('liteCountry');
-  const countryRaw = liteCountry?.dataset.countryCode || liteCountry?.value || 'GBR';
-  const country = normalizeCountryCode(countryRaw);
-  const thirdfortAddress = formatToThirdfort(addressData, country);
+  // Address is already in Thirdfort format from parent - use directly
+  // Set country dropdown based on address.country
+  if (addressData.country) {
+    setCountry('liteCountry', addressData.country);
+  }
   
   // Populate manual fields from autocomplete selection (do NOT update address cards)
   if (field === 'lite' || field === 'current') {
     // Load address into manual fields only
-    loadAddressIntoManualFields(thirdfortAddress, 'lite');
+    loadAddressIntoManualFields(addressData, 'lite');
     
     // Show manual address fields if hidden
     const liteManualAddressFields = document.getElementById('liteManualAddressFields');
@@ -1109,10 +1116,14 @@ function setupLiteAddressAutocomplete(inputElement, dropdownElement) {
     // Debounce 300ms
     addressDebounceTimer = setTimeout(() => {
       console.log('📡 API call for address autocomplete:', searchTerm);
+      const countryCode = normalizeCountryCodeForAPI(
+        liteCountry?.dataset.countryCode || liteCountry?.value || 'GBR'
+      );
       window.parent.postMessage({
         type: 'address-search',
         searchTerm: searchTerm,
-        field: 'lite'
+        field: 'lite',
+        countryCode: countryCode
       }, '*');
     }, 300);
   });
