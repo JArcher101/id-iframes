@@ -927,7 +927,9 @@ function validateCurrentForm() {
 function handleParentMessage(event) {
   try {
     const message = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-    
+    if (message && message.type) {
+      console.log('[request-form] Message received:', message.type, message);
+    }
     switch (message.type) {
       case 'init-data':
         handleInitData(message);
@@ -958,9 +960,10 @@ function handleParentMessage(event) {
         
       case 'company-results':
       case 'charity-results':
-        // Display company/charity search results in dropdown
-        // console.log('Received company/charity results:', message); // Commented out to avoid logging client data
-        displayCompanySuggestions(message.companies, message.searchBy);
+        // Display company/charity search results (parent may send .companies or .suggestions)
+        const companyList = message.companies || message.suggestions;
+        const searchBy = message.searchBy || message.byNumber;
+        displayCompanySuggestions(companyList, searchBy);
         break;
         
       case 'company-data':

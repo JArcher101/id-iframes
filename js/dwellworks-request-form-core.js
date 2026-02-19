@@ -1298,9 +1298,8 @@ function validateForm() {
 
 function handleParentMessage(event) {
   const message = event.data;
-  
   if (!message || !message.type) return;
-  
+  console.log('[dwellworks-request-form] Message received:', message.type, message);
   switch (message.type) {
     case 'submitter-data':
       handleSubmitterData(message);
@@ -1315,7 +1314,9 @@ function handleParentMessage(event) {
       break;
     case 'company-results':
       const companyResultsData = message.data || message;
-      displayCompanySuggestions(companyResultsData.companies, companyResultsData.byNumber);
+      const companyList = companyResultsData.companies || companyResultsData.suggestions;
+      const companySearchBy = companyResultsData.searchBy || companyResultsData.byNumber;
+      displayCompanySuggestions(companyList, companySearchBy);
       break;
     case 'company-data':
       const companyData = message.data || message;

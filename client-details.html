@@ -3633,6 +3633,9 @@
     // ===== MESSAGE LISTENER =====
     
     window.addEventListener('message', (event) => {
+      if (event.data && event.data.type) {
+        console.log('[client-details] Message received:', event.data.type, event.data);
+      }
       if (event.data && event.data.type === 'entity-true') {
         const type = event.data.entityType || 'business'; // 'business' or 'charity'
         switchToEntityMode(type);
@@ -3734,8 +3737,10 @@
         
         handleAddressData(event.data.address, event.data.field);
       } else if (event.data && (event.data.type === 'company-results' || event.data.type === 'charity-results')) {
-        // Display company/charity search results
-        displayCompanySuggestions(event.data.companies, event.data.searchBy);
+        // Display company/charity search results (parent may send .companies or .suggestions)
+        const companyList = event.data.companies || event.data.suggestions;
+        const searchBy = event.data.searchBy || event.data.byNumber;
+        displayCompanySuggestions(companyList, searchBy);
       } else if (event.data && (event.data.type === 'company-data' || event.data.type === 'charity-data')) {
         // Store full company/charity data (directors/trustees, officers, PSCs, etc.)
         handleCompanyData(event.data.companyData || event.data.charityData);

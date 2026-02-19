@@ -383,9 +383,10 @@ function setInitialState() {
 function handlePostMessage(event) {
   // TODO: Add origin validation in production
   // if (event.origin !== 'https://expected-domain.com') return;
-  
   const data = event.data;
-  
+  if (data && data.type) {
+    console.log('[thirdfort-check] Message received:', data.type, data);
+  }
   if (data.type === 'client-data') {
     // console.log('Received client data:', data.data); // Commented out to avoid logging client data
     checkState.clientData = data.data;
@@ -409,17 +410,17 @@ function handlePostMessage(event) {
   }
   
   if (data.type === 'company-results') {
-    // console.log('Received company search results:', data); // Commented out to avoid logging client data
-    // Handle different data structures: data.companies, data.data, or data itself
+    // Handle different data structures: .companies, .suggestions, .data, or array
     let companies = [];
     if (data.companies && Array.isArray(data.companies)) {
       companies = data.companies;
+    } else if (data.suggestions && Array.isArray(data.suggestions)) {
+      companies = data.suggestions;
     } else if (data.data && Array.isArray(data.data)) {
       companies = data.data;
     } else if (Array.isArray(data)) {
       companies = data;
     }
-    // console.log('Extracted companies array:', companies); // Commented out to avoid logging client data
     displayKYBSearchResults(companies);
   }
   
