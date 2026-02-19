@@ -2114,10 +2114,10 @@
     Display company suggestions in dropdown
     */
     function displayCompanySuggestions(suggestions, searchBy) {
-      // Only show results in the dropdown for the field being searched
+      const list = Array.isArray(suggestions) ? suggestions : [];
       const dropdownElement = searchBy === 'name' ? businessNameDropdown : entityNumberDropdown;
       
-      if (!suggestions || suggestions.length === 0) {
+      if (list.length === 0) {
         const noResultsText = entityType === 'charity' ? 'No charities found' : 'No companies found';
         dropdownElement.innerHTML = `<div class="address-no-results">${noResultsText}</div>`;
         dropdownElement.classList.remove('hidden');
@@ -2126,7 +2126,7 @@
       
       dropdownElement.innerHTML = '';
       
-      suggestions.forEach((company) => {
+      list.forEach((company) => {
         const item = document.createElement('div');
         item.className = 'address-dropdown-item';
         // Format: "Company Name (Number)"
@@ -3726,7 +3726,7 @@
         }
         handleAddressData(payload.address, payload.field);
       } else if (msgType === 'company-results' || msgType === 'charity-results') {
-        const companyList = payload.companies || payload.suggestions;
+        const companyList = Array.isArray(payload.companies) ? payload.companies : (Array.isArray(payload.suggestions) ? payload.suggestions : []);
         const searchBy = payload.searchBy || payload.byNumber;
         displayCompanySuggestions(companyList, searchBy);
       } else if (msgType === 'company-data' || msgType === 'charity-data') {
