@@ -6212,22 +6212,16 @@ function buildUpdatedClientData() {
     }
   }
   
-  // Phone number (m) - Format using libphonenumber
+  // Phone number (m) - Store as "CC:E164" (e.g. "US:+12025551234") so parent stores one field; strip on load
   const phoneCodeElement = document.getElementById('phoneCountryCode');
   const phoneCode = phoneCodeElement?.dataset.phoneCode || '+44';
   const phoneNumber = document.getElementById('phoneNumber')?.value || '';
   if (phoneNumber) {
-    // Combine country code and number
-    const fullPhoneNumber = phoneCode + phoneNumber.replace(/^0/, ''); // Remove leading 0 if present
-    
-    // Parse and format using libphonenumber
+    const fullPhoneNumber = phoneCode + phoneNumber.replace(/^0/, '');
     const parsedPhone = parseAndFormatPhoneNumber(fullPhoneNumber);
-    if (parsedPhone && parsedPhone.e164) {
-      cI.m = parsedPhone.e164; // Use E.164 format (e.g., "+447506430094")
-    } else {
-      // Fallback to basic format if parsing fails
-      cI.m = fullPhoneNumber;
-    }
+    const e164 = (parsedPhone && parsedPhone.e164) ? parsedPhone.e164 : fullPhoneNumber;
+    const iso = phoneCodeElement?.dataset?.countryCode || 'GB';
+    cI.m = typeof buildStoredPhoneWithIso === 'function' ? buildStoredPhoneWithIso(iso, e164) : e164;
   } else {
     cI.m = requestData.cI?.m || requestData.data?.cI?.m || '';
   }

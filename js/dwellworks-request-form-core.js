@@ -1362,17 +1362,40 @@ function handleSubmitterData(message) {
     if (input) input.value = data.email;
   }
   
-  if (data.phone) {
+  // Submitter phone: stored as "CC:E164" in dwellworksContactNumber – strip on load
+  const submitterStored = data.dwellworksContactNumber || data.phone;
+  if (submitterStored && typeof parseStoredPhoneWithIso === 'function') {
+    const parsed = parseStoredPhoneWithIso(submitterStored);
+    const phoneInput = document.getElementById('submitterPhone');
+    const codeInput = document.getElementById('submitterPhoneCountryCode');
+    if (parsed.iso && codeInput && typeof setPhoneCode === 'function') {
+      setPhoneCode('submitterPhoneCountryCode', parsed.iso);
+      if (phoneInput) {
+        try {
+          const p = parsePhoneNumber(parsed.e164);
+          if (p) phoneInput.value = p.nationalNumber; else phoneInput.value = parsed.e164.replace(/\D/g, '').slice(-10);
+        } catch (e) {
+          phoneInput.value = parsed.e164.replace(/\D/g, '').slice(-10);
+        }
+      }
+    } else if (phoneInput) {
+      phoneInput.value = parsed.e164 || submitterStored;
+      if (codeInput && (data.phoneCountryCode || data.phoneCode)) {
+        codeInput.value = data.phoneCountryCode || codeInput.value;
+        codeInput.dataset.phoneCode = data.phoneCode || '+44';
+        codeInput.dataset.countryCode = data.countryCode || 'GB';
+      }
+    }
+  } else if (data.phone) {
     const input = document.getElementById('submitterPhone');
     if (input) input.value = data.phone;
-  }
-  
-  if (data.phoneCountryCode) {
-    const input = document.getElementById('submitterPhoneCountryCode');
-    if (input) {
-      input.value = data.phoneCountryCode;
-      input.dataset.phoneCode = data.phoneCode || '+44';
-      input.dataset.countryCode = data.countryCode || 'GB';
+    if (data.phoneCountryCode) {
+      const codeInput = document.getElementById('submitterPhoneCountryCode');
+      if (codeInput) {
+        codeInput.value = data.phoneCountryCode;
+        codeInput.dataset.phoneCode = data.phoneCode || '+44';
+        codeInput.dataset.countryCode = data.countryCode || 'GB';
+      }
     }
   }
   
@@ -1585,25 +1608,22 @@ function populateFormFromSubmission(data) {
     }
   }
   if (data.lesseePhoneNumber) {
-    // Parse phone number and country code
-    // Parse phone number using libphonenumber
-    const parsed = parsePhoneNumber(data.lesseePhoneNumber);
+    const stored = typeof parseStoredPhoneWithIso === 'function' ? parseStoredPhoneWithIso(data.lesseePhoneNumber) : { iso: null, e164: data.lesseePhoneNumber };
     const countryCodeInput = document.getElementById('leaseOtherTelCountryCode');
     const phoneInput = document.getElementById('leaseOtherTel');
-    
-    if (parsed && countryCodeInput && phoneInput) {
-      // Use setPhoneCode if available to format with flag and country name
-      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
-        setPhoneCode('leaseOtherTelCountryCode', parsed.isoCode);
-      } else {
-        // Fallback: set phone code directly
-        countryCodeInput.dataset.phoneCode = parsed.countryCode;
-        countryCodeInput.value = parsed.countryCode;
+    if (stored.iso && countryCodeInput && typeof setPhoneCode === 'function') {
+      setPhoneCode('leaseOtherTelCountryCode', stored.iso);
+      if (phoneInput) {
+        const p = parsePhoneNumber(stored.e164);
+        if (p) phoneInput.value = p.nationalNumber; else phoneInput.value = stored.e164;
       }
-      phoneInput.value = parsed.nationalNumber;
-    } else if (data.lesseePhoneNumber && phoneInput) {
-      // Fallback if parsing fails
-      phoneInput.value = data.lesseePhoneNumber;
+    } else {
+      const parsed = parsePhoneNumber(stored.e164);
+      if (parsed && countryCodeInput && phoneInput) {
+        if (typeof setPhoneCode === 'function' && parsed.isoCode) setPhoneCode('leaseOtherTelCountryCode', parsed.isoCode);
+        else { countryCodeInput.dataset.phoneCode = parsed.countryCode; countryCodeInput.value = parsed.countryCode; }
+        phoneInput.value = parsed.nationalNumber;
+      } else if (phoneInput) phoneInput.value = stored.e164;
     }
   }
   if (data.lesseeEmail) {
@@ -1631,24 +1651,22 @@ function populateFormFromSubmission(data) {
     }
   }
   if (data.tenantsMobileNumber) {
-    // Parse phone number using libphonenumber
-    const parsed = parsePhoneNumber(data.tenantsMobileNumber);
+    const stored = typeof parseStoredPhoneWithIso === 'function' ? parseStoredPhoneWithIso(data.tenantsMobileNumber) : { iso: null, e164: data.tenantsMobileNumber };
     const countryCodeInput = document.getElementById('tenant1MobileCountryCode');
     const phoneInput = document.getElementById('tenant1Mobile');
-    
-    if (parsed && countryCodeInput && phoneInput) {
-      // Use setPhoneCode if available to format with flag and country name
-      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
-        setPhoneCode('tenant1MobileCountryCode', parsed.isoCode);
-      } else {
-        // Fallback: set phone code directly
-        countryCodeInput.dataset.phoneCode = parsed.countryCode;
-        countryCodeInput.value = parsed.countryCode;
+    if (stored.iso && countryCodeInput && typeof setPhoneCode === 'function') {
+      setPhoneCode('tenant1MobileCountryCode', stored.iso);
+      if (phoneInput) {
+        const p = parsePhoneNumber(stored.e164);
+        if (p) phoneInput.value = p.nationalNumber; else phoneInput.value = stored.e164;
       }
-      phoneInput.value = parsed.nationalNumber;
-    } else if (phoneInput) {
-      // Fallback if parsing fails
-      phoneInput.value = data.tenantsMobileNumber;
+    } else {
+      const parsed = parsePhoneNumber(stored.e164);
+      if (parsed && countryCodeInput && phoneInput) {
+        if (typeof setPhoneCode === 'function' && parsed.isoCode) setPhoneCode('tenant1MobileCountryCode', parsed.isoCode);
+        else { countryCodeInput.dataset.phoneCode = parsed.countryCode; countryCodeInput.value = parsed.countryCode; }
+        phoneInput.value = parsed.nationalNumber;
+      } else if (phoneInput) phoneInput.value = stored.e164;
     }
   }
   if (data.tenantsEmail) {
@@ -1777,27 +1795,24 @@ function populateFormFromSubmission(data) {
         }
       }
     }
-    // Check both secondTenantMobile and secondTenantMobileNumber
     const secondTenantMobile = data.secondTenantMobile || data.secondTenantMobileNumber;
     if (secondTenantMobile) {
-      // Parse phone number using libphonenumber
-      const parsed = parsePhoneNumber(secondTenantMobile);
+      const stored = typeof parseStoredPhoneWithIso === 'function' ? parseStoredPhoneWithIso(secondTenantMobile) : { iso: null, e164: secondTenantMobile };
       const countryCodeInput = document.getElementById('tenant2MobileCountryCode');
       const phoneInput = document.getElementById('tenant2Mobile');
-      
-      if (parsed && countryCodeInput && phoneInput) {
-        // Use setPhoneCode if available to format with flag and country name
-        if (typeof setPhoneCode === 'function' && parsed.isoCode) {
-          setPhoneCode('tenant2MobileCountryCode', parsed.isoCode);
-        } else {
-          // Fallback: set phone code directly
-          countryCodeInput.dataset.phoneCode = parsed.countryCode;
-          countryCodeInput.value = parsed.countryCode;
+      if (stored.iso && countryCodeInput && typeof setPhoneCode === 'function') {
+        setPhoneCode('tenant2MobileCountryCode', stored.iso);
+        if (phoneInput) {
+          const p = parsePhoneNumber(stored.e164);
+          if (p) phoneInput.value = p.nationalNumber; else phoneInput.value = stored.e164;
         }
-        phoneInput.value = parsed.nationalNumber;
-      } else if (phoneInput) {
-        // Fallback if parsing fails
-        phoneInput.value = secondTenantMobile;
+      } else {
+        const parsed = parsePhoneNumber(stored.e164);
+        if (parsed && countryCodeInput && phoneInput) {
+          if (typeof setPhoneCode === 'function' && parsed.isoCode) setPhoneCode('tenant2MobileCountryCode', parsed.isoCode);
+          else { countryCodeInput.dataset.phoneCode = parsed.countryCode; countryCodeInput.value = parsed.countryCode; }
+          phoneInput.value = parsed.nationalNumber;
+        } else if (phoneInput) phoneInput.value = stored.e164;
       }
     }
     if (data.secondTenantEmail) {
@@ -1850,24 +1865,19 @@ function populateFormFromSubmission(data) {
     }
   }
   if (data.thsFeePayerPhoneNumber) {
-    // Parse phone number using libphonenumber
-    const parsed = parsePhoneNumber(data.thsFeePayerPhoneNumber);
+    const stored = typeof parseStoredPhoneWithIso === 'function' ? parseStoredPhoneWithIso(data.thsFeePayerPhoneNumber) : { iso: null, e164: data.thsFeePayerPhoneNumber };
     const countryCodeInput = document.getElementById('legalFeeOtherTelCountryCode');
     const phoneInput = document.getElementById('legalFeeOtherTel');
-    
-    if (parsed && countryCodeInput && phoneInput) {
-      // Use setPhoneCode if available to format with flag and country name
-      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
-        setPhoneCode('legalFeeOtherTelCountryCode', parsed.isoCode);
-      } else {
-        // Fallback: set phone code directly
-        countryCodeInput.dataset.phoneCode = parsed.countryCode;
-        countryCodeInput.value = parsed.countryCode;
-      }
-      phoneInput.value = parsed.nationalNumber;
-    } else if (phoneInput) {
-      // Fallback if parsing fails
-      phoneInput.value = data.thsFeePayerPhoneNumber;
+    if (stored.iso && countryCodeInput && typeof setPhoneCode === 'function') {
+      setPhoneCode('legalFeeOtherTelCountryCode', stored.iso);
+      if (phoneInput) { const p = parsePhoneNumber(stored.e164); if (p) phoneInput.value = p.nationalNumber; else phoneInput.value = stored.e164; }
+    } else {
+      const parsed = parsePhoneNumber(stored.e164);
+      if (parsed && countryCodeInput && phoneInput) {
+        if (typeof setPhoneCode === 'function' && parsed.isoCode) setPhoneCode('legalFeeOtherTelCountryCode', parsed.isoCode);
+        else { countryCodeInput.dataset.phoneCode = parsed.countryCode; countryCodeInput.value = parsed.countryCode; }
+        phoneInput.value = parsed.nationalNumber;
+      } else if (phoneInput) phoneInput.value = stored.e164;
     }
   }
   if (data.thsFeePayerEmail) {
@@ -1879,24 +1889,19 @@ function populateFormFromSubmission(data) {
     if (input) input.value = data.thsFeeEmployersAcocuntsEmail;
   }
   if (data.thsFeeEmployersAccountsContactPhone) {
-    // Parse phone number using libphonenumber
-    const parsed = parsePhoneNumber(data.thsFeeEmployersAccountsContactPhone);
+    const stored = typeof parseStoredPhoneWithIso === 'function' ? parseStoredPhoneWithIso(data.thsFeeEmployersAccountsContactPhone) : { iso: null, e164: data.thsFeeEmployersAccountsContactPhone };
     const countryCodeInput = document.getElementById('legalFeeEmployerTelCountryCode');
     const phoneInput = document.getElementById('legalFeeEmployerTel');
-    
-    if (parsed && countryCodeInput && phoneInput) {
-      // Use setPhoneCode if available to format with flag and country name
-      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
-        setPhoneCode('legalFeeEmployerTelCountryCode', parsed.isoCode);
-      } else {
-        // Fallback: set phone code directly
-        countryCodeInput.dataset.phoneCode = parsed.countryCode;
-        countryCodeInput.value = parsed.countryCode;
-      }
-      phoneInput.value = parsed.nationalNumber;
-    } else if (phoneInput) {
-      // Fallback if parsing fails
-      phoneInput.value = data.thsFeeEmployersAccountsContactPhone;
+    if (stored.iso && countryCodeInput && typeof setPhoneCode === 'function') {
+      setPhoneCode('legalFeeEmployerTelCountryCode', stored.iso);
+      if (phoneInput) { const p = parsePhoneNumber(stored.e164); if (p) phoneInput.value = p.nationalNumber; else phoneInput.value = stored.e164; }
+    } else {
+      const parsed = parsePhoneNumber(stored.e164);
+      if (parsed && countryCodeInput && phoneInput) {
+        if (typeof setPhoneCode === 'function' && parsed.isoCode) setPhoneCode('legalFeeEmployerTelCountryCode', parsed.isoCode);
+        else { countryCodeInput.dataset.phoneCode = parsed.countryCode; countryCodeInput.value = parsed.countryCode; }
+        phoneInput.value = parsed.nationalNumber;
+      } else if (phoneInput) phoneInput.value = stored.e164;
     }
   }
   if (data.thsFeeEmployersAccountsContactName) {
@@ -1961,24 +1966,19 @@ function populateFormFromSubmission(data) {
     }
   }
   if (data.sdltFeePayerPhone) {
-    // Parse phone number using libphonenumber
-    const parsed = parsePhoneNumber(data.sdltFeePayerPhone);
+    const stored = typeof parseStoredPhoneWithIso === 'function' ? parseStoredPhoneWithIso(data.sdltFeePayerPhone) : { iso: null, e164: data.sdltFeePayerPhone };
     const countryCodeInput = document.getElementById('sdltFeeOtherTelCountryCode');
     const phoneInput = document.getElementById('sdltFeeOtherTel');
-    
-    if (parsed && countryCodeInput && phoneInput) {
-      // Use setPhoneCode if available to format with flag and country name
-      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
-        setPhoneCode('sdltFeeOtherTelCountryCode', parsed.isoCode);
-      } else {
-        // Fallback: set phone code directly
-        countryCodeInput.dataset.phoneCode = parsed.countryCode;
-        countryCodeInput.value = parsed.countryCode;
-      }
-      phoneInput.value = parsed.nationalNumber;
-    } else if (phoneInput) {
-      // Fallback if parsing fails
-      phoneInput.value = data.sdltFeePayerPhone;
+    if (stored.iso && countryCodeInput && typeof setPhoneCode === 'function') {
+      setPhoneCode('sdltFeeOtherTelCountryCode', stored.iso);
+      if (phoneInput) { const p = parsePhoneNumber(stored.e164); if (p) phoneInput.value = p.nationalNumber; else phoneInput.value = stored.e164; }
+    } else {
+      const parsed = parsePhoneNumber(stored.e164);
+      if (parsed && countryCodeInput && phoneInput) {
+        if (typeof setPhoneCode === 'function' && parsed.isoCode) setPhoneCode('sdltFeeOtherTelCountryCode', parsed.isoCode);
+        else { countryCodeInput.dataset.phoneCode = parsed.countryCode; countryCodeInput.value = parsed.countryCode; }
+        phoneInput.value = parsed.nationalNumber;
+      } else if (phoneInput) phoneInput.value = stored.e164;
     }
   }
   if (data.sdltFeePayerEmail) {
@@ -1990,24 +1990,19 @@ function populateFormFromSubmission(data) {
     if (input) input.value = data.sdltFeeEmployersAccountEmail;
   }
   if (data.sdltFeeEmployersAccountPhone) {
-    // Parse phone number using libphonenumber
-    const parsed = parsePhoneNumber(data.sdltFeeEmployersAccountPhone);
+    const stored = typeof parseStoredPhoneWithIso === 'function' ? parseStoredPhoneWithIso(data.sdltFeeEmployersAccountPhone) : { iso: null, e164: data.sdltFeeEmployersAccountPhone };
     const countryCodeInput = document.getElementById('sdltFeeEmployerTelCountryCode');
     const phoneInput = document.getElementById('sdltFeeEmployerTel');
-    
-    if (parsed && countryCodeInput && phoneInput) {
-      // Use setPhoneCode if available to format with flag and country name
-      if (typeof setPhoneCode === 'function' && parsed.isoCode) {
-        setPhoneCode('sdltFeeEmployerTelCountryCode', parsed.isoCode);
-      } else {
-        // Fallback: set phone code directly
-        countryCodeInput.dataset.phoneCode = parsed.countryCode;
-        countryCodeInput.value = parsed.countryCode;
-      }
-      phoneInput.value = parsed.nationalNumber;
-    } else if (phoneInput) {
-      // Fallback if parsing fails
-      phoneInput.value = data.sdltFeeEmployersAccountPhone;
+    if (stored.iso && countryCodeInput && typeof setPhoneCode === 'function') {
+      setPhoneCode('sdltFeeEmployerTelCountryCode', stored.iso);
+      if (phoneInput) { const p = parsePhoneNumber(stored.e164); if (p) phoneInput.value = p.nationalNumber; else phoneInput.value = stored.e164; }
+    } else {
+      const parsed = parsePhoneNumber(stored.e164);
+      if (parsed && countryCodeInput && phoneInput) {
+        if (typeof setPhoneCode === 'function' && parsed.isoCode) setPhoneCode('sdltFeeEmployerTelCountryCode', parsed.isoCode);
+        else { countryCodeInput.dataset.phoneCode = parsed.countryCode; countryCodeInput.value = parsed.countryCode; }
+        phoneInput.value = parsed.nationalNumber;
+      } else if (phoneInput) phoneInput.value = stored.e164;
     }
   }
   if (data.sdltFeeEmployerAccountsContactName) {
@@ -2775,11 +2770,14 @@ function getRadioTechnicalValue(friendlyLabel) {
  * Collect all form data and return as object
  */
 function collectFormData(isEditMode = false) {
-  // Helper to format phone number
+  // Helper to format phone for storage: "CC:E164" (e.g. "US:+12025551234") so parent stores one field; strip on load
   const formatPhone = (countryCodeEl, numberEl) => {
-    const code = countryCodeEl?.dataset.phoneCode || '';
+    const iso = countryCodeEl?.dataset?.countryCode || 'GB';
+    const code = countryCodeEl?.dataset?.phoneCode || '';
     const num = numberEl?.value || '';
-    return code && num ? `${code}${num}` : num || undefined;
+    const full = code && num ? `${code}${num.replace(/^0/, '')}` : '';
+    if (!full) return num || undefined;
+    return typeof buildStoredPhoneWithIso === 'function' ? buildStoredPhoneWithIso(iso, full) : full;
   };
   
   // Helper to get address object (returns full Thirdfort object, not formatted string)

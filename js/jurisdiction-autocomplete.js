@@ -866,6 +866,33 @@ function initializePhoneCodeAutocomplete(inputId, dropdownId) {
 }
 
 /**
+ * Parse a stored phone string that may include a 2-letter ISO prefix for shared dial codes.
+ * Stored format: "CC:E164" (e.g. "US:+12025551234") so parent can store one field; legacy = plain E.164.
+ * @param {string} stored - Value from parent (e.g. "US:+12025551234" or "+12025551234")
+ * @returns {{ iso: string|null, e164: string }}
+ */
+function parseStoredPhoneWithIso(stored) {
+  if (!stored || typeof stored !== 'string') return { iso: null, e164: stored || '' };
+  const trimmed = stored.trim();
+  if (/^[A-Za-z]{2}:/.test(trimmed)) {
+    return { iso: trimmed.slice(0, 2).toUpperCase(), e164: trimmed.slice(3).trim() };
+  }
+  return { iso: null, e164: trimmed };
+}
+
+/**
+ * Build stored phone string with ISO prefix for single-field persistence (e.g. "US:+12025551234").
+ * @param {string} iso - 2-letter country code (e.g. US, CA, GB)
+ * @param {string} e164 - E.164 number (e.g. "+12025551234")
+ * @returns {string}
+ */
+function buildStoredPhoneWithIso(iso, e164) {
+  const code = (iso && iso.trim().toUpperCase().slice(0, 2)) || 'GB';
+  const num = (e164 && e164.trim()) || '';
+  return num ? `${code}:${num}` : '';
+}
+
+/**
  * Get selected phone code from autocomplete input
  */
 function getSelectedPhoneCode(inputId) {

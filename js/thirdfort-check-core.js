@@ -2844,31 +2844,37 @@ function populateElectronicIdFields(data) {
   }
   
   // ===== Mobile Number =====
+  // Stored as "CC:E164" (e.g. "US:+12025551234") – strip prefix on load; API request uses form fields only (E.164)
   if (data.cI.m && typeof data.cI.m === 'string') {
-    const cleanPhone = data.cI.m.trim();
+    const parsed = typeof parseStoredPhoneWithIso === 'function' ? parseStoredPhoneWithIso(data.cI.m) : { iso: null, e164: data.cI.m.trim() };
+    const e164 = parsed.e164;
     const electronicIdCountryCodeInput = document.getElementById('electronicIdCountryCode');
     const electronicIdMobileInput = document.getElementById('electronicIdMobile');
-    
-    // Parse international format phone number
-    if (cleanPhone.startsWith('+')) {
-      // Extract country code (try known codes, longest first)
+    if (parsed.iso && electronicIdCountryCodeInput && typeof setPhoneCode === 'function') {
+      setPhoneCode('electronicIdCountryCode', parsed.iso);
+      try {
+        const phoneUtil = libphonenumber.PhoneNumberUtil.getInstance();
+        const number = phoneUtil.parseAndKeepRawInput(e164, null);
+        const nationalNumberString = number.getNationalNumber().toString();
+        if (electronicIdMobileInput) electronicIdMobileInput.value = nationalNumberString.replace(/^0+/, '');
+        console.log('✅ Populated mobile (stripped prefix):', parsed.iso);
+      } catch (e) {
+        const dialCode = electronicIdCountryCodeInput.dataset.phoneCode || '+44';
+        if (electronicIdMobileInput) {
+          electronicIdMobileInput.value = e164.startsWith('+') ? e164.substring(dialCode.length).replace(/\D/g, '') : e164.replace(/\D/g, '');
+        }
+      }
+    } else if (e164.startsWith('+')) {
       const knownCodes = ['+993', '+992', '+971', '+967', '+966', '+960', '+886', '+880', '+856', '+853', '+852', '+973', '+998', '+996', '+995', '+977', '+968', '+964', '+963', '+962', '+961', '+974', '+594', '+593', '+598', '+595', '+591', '+590', '+507', '+506', '+505', '+504', '+503', '+502', '+501', '+389', '+387', '+386', '+385', '+381', '+380', '+376', '+375', '+374', '+373', '+372', '+371', '+370', '+359', '+358', '+357', '+356', '+355', '+354', '+353', '+352', '+351', '+421', '+420', '+264', '+263', '+262', '+261', '+260', '+258', '+257', '+256', '+255', '+254', '+253', '+252', '+251', '+250', '+249', '+248', '+244', '+243', '+242', '+241', '+240', '+239', '+238', '+237', '+236', '+235', '+234', '+233', '+232', '+231', '+230', '+229', '+228', '+227', '+226', '+225', '+224', '+223', '+222', '+221', '+220', '+218', '+216', '+213', '+212', '+98', '+95', '+94', '+93', '+92', '+91', '+90', '+86', '+84', '+82', '+81', '+66', '+65', '+64', '+63', '+62', '+61', '+60', '+58', '+57', '+56', '+55', '+54', '+52', '+51', '+49', '+48', '+47', '+46', '+45', '+44', '+43', '+41', '+40', '+39', '+36', '+34', '+33', '+32', '+31', '+30', '+27', '+20', '+7', '+1'];
-      
       for (const code of knownCodes) {
-        if (cleanPhone.startsWith(code)) {
-          if (electronicIdCountryCodeInput && typeof setPhoneCode === 'function') {
-            setPhoneCode('electronicIdCountryCode', code);
-          }
-          if (electronicIdMobileInput) {
-            electronicIdMobileInput.value = cleanPhone.substring(code.length);
-          }
-          console.log('✅ Populated mobile:', code, '+', cleanPhone.substring(code.length));
+        if (e164.startsWith(code)) {
+          if (electronicIdCountryCodeInput && typeof setPhoneCode === 'function') setPhoneCode('electronicIdCountryCode', code);
+          if (electronicIdMobileInput) electronicIdMobileInput.value = e164.substring(code.length);
           break;
         }
       }
     } else if (electronicIdMobileInput) {
-      // No country code, just set the number
-      electronicIdMobileInput.value = cleanPhone;
+      electronicIdMobileInput.value = e164;
     }
   }
   
