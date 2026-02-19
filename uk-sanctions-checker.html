@@ -2076,35 +2076,40 @@
     
     /*
     =====================================================================
-    POST MESSAGE HANDLERS
+    POST MESSAGE HANDLERS (v1 flat / v2 nested)
     =====================================================================
     */
+    function normalizeParentMessage(raw) {
+      if (!raw || typeof raw !== 'object') return { type: '', data: {} };
+      var hasNested = raw.data !== undefined && raw.type !== undefined;
+      return { type: raw.type || '', data: hasNested ? raw.data : raw };
+    }
     
     window.addEventListener('message', (event) => {
-      if (!event.data || !event.data.type) return;
+      var raw = event.data;
+      if (!raw || typeof raw !== 'object') return;
+      var _n = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw.type || '', data: raw };
+      var type = _n.type, data = _n.data;
+      if (!type) return;
       
-      console.log('📨 Received message:', event.data.type, event.data);
+      console.log('📨 Received message:', type, data);
       
-      switch (event.data.type) {
+      switch (type) {
         case 'init-sanctions-search':
           console.log('🎯 Processing init-sanctions-search message...');
-          handleInitMessage(event.data);
+          handleInitMessage(data);
           break;
-          
         case 'sanctions-xml':
-          handleSanctionsXML(event.data);
+          handleSanctionsXML(data);
           break;
-          
         case 'put-links':
-          handlePutLinks(event.data);
+          handlePutLinks(data);
           break;
-          
         case 'put-error':
-          handlePutError(event.data);
+          handlePutError(data);
           break;
-          
         case 'upload-error':
-          handleUploadError(event.data);
+          handleUploadError(data);
           break;
       }
     });

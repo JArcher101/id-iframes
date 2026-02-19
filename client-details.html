@@ -3633,45 +3633,38 @@
     // ===== MESSAGE LISTENER =====
     
     window.addEventListener('message', (event) => {
-      if (event.data && event.data.type) {
-        console.log('[client-details] Message received:', event.data.type, event.data);
+      const { type: msgType, data: payload } = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(event.data) : { type: event.data?.type || '', data: event.data || {} };
+      if (msgType) {
+        console.log('[client-details] Message received:', msgType, payload);
       }
-      if (event.data && event.data.type === 'entity-true') {
-        const type = event.data.entityType || 'business'; // 'business' or 'charity'
-        switchToEntityMode(type);
-      } else if (event.data && event.data.type === 'entity-false') {
+      if (msgType === 'entity-true') {
+        const entityTypeVal = payload.entityType || 'business';
+        switchToEntityMode(entityTypeVal);
+      } else if (msgType === 'entity-false') {
         switchToIndividualMode();
-      } else if (event.data && event.data.type === 'allowEdits-true') {
+      } else if (msgType === 'allowEdits-true') {
         setEditMode(true);
-      } else if (event.data && event.data.type === 'allowEdits-false') {
+      } else if (msgType === 'allowEdits-false') {
         setEditMode(false);
-      } else if (event.data && event.data.type === 'client-data') {
-        console.log('📥 Received client-data:', event.data);
-        
-        // Handle entity flag from message
-        if (event.data.entity === true) {
-          const type = event.data.entityType || 'business'; // 'business' or 'charity'
-          switchToEntityMode(type);
+      } else if (msgType === 'client-data') {
+        if (payload.entity === true) {
+          switchToEntityMode(payload.entityType || 'business');
         } else {
           switchToIndividualMode();
         }
-        
-        // Handle allowEdits flag from message
-        if (event.data.allowEdits === false) {
+        if (payload.allowEdits === false) {
           setEditMode(false);
         } else {
           setEditMode(true);
         }
-        
-        // Load client data (ensure it's an object)
-        const clientData = event.data.clientData;
+        const clientData = payload.clientData;
         if (clientData && typeof clientData === 'object') {
           loadData(clientData);
         } else {
           console.warn('No valid clientData provided, loading empty form');
           loadData({});
         }
-      } else if (event.data && event.data.type === 'request-data') {
+      } else if (msgType === 'request-data') {
         // Parent is requesting the form data (triggered by Wix save button)
         hideError();
         
@@ -3718,33 +3711,27 @@
         
         // Reset unsaved changes flag after successful save
         hasUnsavedChanges = false;
-      } else if (event.data && event.data.type === 'address-results') {
-        // Cache the autocomplete results
-        if (event.data.searchTerm && event.data.suggestions) {
-          const cacheKey = 'auto_' + event.data.searchTerm.toLowerCase();
-          setCachedItem(cacheKey, event.data.suggestions, 'autocomplete');
-          console.log('💾 Cached autocomplete results for:', event.data.searchTerm);
+      } else if (msgType === 'address-results') {
+        if (payload.searchTerm && payload.suggestions) {
+          const cacheKey = 'auto_' + payload.searchTerm.toLowerCase();
+          setCachedItem(cacheKey, payload.suggestions, 'autocomplete');
+          console.log('💾 Cached autocomplete results for:', payload.searchTerm);
         }
-        
-        displayAddressSuggestions(event.data.suggestions, event.data.field);
-      } else if (event.data && event.data.type === 'address-data') {
-        // Cache the full address object
-        if (event.data.addressId && event.data.address) {
-          const cacheKey = 'addr_' + event.data.addressId;
-          setCachedItem(cacheKey, event.data.address, 'address');
-          console.log('💾 Cached full address for ID:', event.data.addressId);
+        displayAddressSuggestions(payload.suggestions || [], payload.field);
+      } else if (msgType === 'address-data') {
+        if (payload.addressId && payload.address) {
+          const cacheKey = 'addr_' + payload.addressId;
+          setCachedItem(cacheKey, payload.address, 'address');
+          console.log('💾 Cached full address for ID:', payload.addressId);
         }
-        
-        handleAddressData(event.data.address, event.data.field);
-      } else if (event.data && (event.data.type === 'company-results' || event.data.type === 'charity-results')) {
-        // Display company/charity search results (parent may send .companies or .suggestions)
-        const companyList = event.data.companies || event.data.suggestions;
-        const searchBy = event.data.searchBy || event.data.byNumber;
+        handleAddressData(payload.address, payload.field);
+      } else if (msgType === 'company-results' || msgType === 'charity-results') {
+        const companyList = payload.companies || payload.suggestions;
+        const searchBy = payload.searchBy || payload.byNumber;
         displayCompanySuggestions(companyList, searchBy);
-      } else if (event.data && (event.data.type === 'company-data' || event.data.type === 'charity-data')) {
-        // Store full company/charity data (directors/trustees, officers, PSCs, etc.)
-        handleCompanyData(event.data.companyData || event.data.charityData);
-      } else if (event.data && event.data.type === 'sanctions-check') {
+      } else if (msgType === 'company-data' || msgType === 'charity-data') {
+        handleCompanyData(payload.companyData || payload.charityData);
+      } else if (msgType === 'sanctions-check') {
         // Format client data and send back to parent for sanctions lightbox
         console.log('📋 Formatting client data for sanctions check...');
         
@@ -3788,9 +3775,8 @@
         
         console.log('📤 Sending sanctions data to parent:', sanctionsData);
         window.parent.postMessage(sanctionsData, '*');
-      } else if (event.data && event.data.type === 'osprey-link') {
-        // Handle osprey link - open in new tab or navigate existing tab
-        const link = event.data.link;
+      } else if (msgType === 'osprey-link') {
+        const link = payload.link;
         if (!link) {
           console.warn('⚠️ No link provided in osprey-link message');
           return;

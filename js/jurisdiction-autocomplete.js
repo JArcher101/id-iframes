@@ -10,6 +10,29 @@
    ===================================
 */
 
+/* ===================================
+   PARENT MESSAGE NORMALIZER (v1 / v2)
+   ===================================
+   Parent may send flat (v1) or nested (v2: { type, data }) messages.
+   Normalize once so iframe code always uses a single payload shape.
+   ===================================
+*/
+
+/**
+ * Normalize parent message so both v1 (flat) and v2 (nested) formats work.
+ * Use the returned object for all message handling; ignore raw event.data after this.
+ * @param {Object} raw - event.data from message event
+ * @returns {{ type: string, data: Object }} - type and a single payload object
+ */
+function normalizeParentMessage(raw) {
+  if (!raw || typeof raw !== 'object') return { type: '', data: {} };
+  const hasNestedData = raw.data !== undefined && raw.type !== undefined;
+  return {
+    type: String(raw.type || ''),
+    data: hasNestedData ? (raw.data && typeof raw.data === 'object' ? raw.data : {}) : raw
+  };
+}
+
 // Thirdfort-supported KYB jurisdictions (250+ worldwide)
 const THIRDFORT_JURISDICTIONS = [
   // UK & Crown Dependencies

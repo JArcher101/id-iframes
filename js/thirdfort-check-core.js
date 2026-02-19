@@ -378,39 +378,34 @@ function setInitialState() {
 }
 
 /**
- * Handle postMessage from parent window
+ * Handle postMessage from parent window (v1 flat / v2 nested)
  */
 function handlePostMessage(event) {
-  // TODO: Add origin validation in production
-  // if (event.origin !== 'https://expected-domain.com') return;
-  const data = event.data;
-  if (data && data.type) {
-    console.log('[thirdfort-check] Message received:', data.type, data);
+  const raw = event.data;
+  if (!raw || typeof raw !== 'object') return;
+  const { type, data } = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw.type || '', data: raw };
+  if (type) {
+    console.log('[thirdfort-check] Message received:', type, data);
   }
-  if (data.type === 'client-data') {
-    // console.log('Received client data:', data.data); // Commented out to avoid logging client data
-    checkState.clientData = data.data;
-    populateClientData(data.data);
-    
-    // If data includes address object, auto-populate lite screen address fields
-    // and show manual fields without needing autocomplete API calls
-    if (data.data.address) {
-      populateLiteScreenAddress(data.data.address);
+  if (type === 'client-data') {
+    const clientPayload = data.data != null ? data.data : data;
+    checkState.clientData = clientPayload;
+    populateClientData(clientPayload);
+    if (clientPayload && clientPayload.address) {
+      populateLiteScreenAddress(clientPayload.address);
     }
   }
   
-  if (data.type === 'general-error') {
+  if (type === 'general-error') {
     console.error('General error from parent:', data.message);
     showError(data.message || 'An error occurred. Please try again.');
   }
   
-  if (data.type === 'check-response') {
-    // console.log('Received check response from parent:', data.data); // Commented out to avoid logging client data
-    handleCheckResponse(data.data);
+  if (type === 'check-response') {
+    handleCheckResponse(data.data != null ? data.data : data);
   }
   
-  if (data.type === 'company-results') {
-    // Handle different data structures: .companies, .suggestions, .data, or array
+  if (type === 'company-results') {
     let companies = [];
     if (data.companies && Array.isArray(data.companies)) {
       companies = data.companies;
@@ -424,7 +419,7 @@ function handlePostMessage(event) {
     displayKYBSearchResults(companies);
   }
   
-  if (data.type === 'company-error') {
+  if (type === 'company-error') {
     console.error('Company search error:', data.error);
     const resultsContainer = document.getElementById('kybResultsContainer');
     if (resultsContainer) {
@@ -441,13 +436,11 @@ function handlePostMessage(event) {
     }
   }
   
-  if (data.type === 'address-results') {
-    // console.log('Received address autocomplete results:', data.suggestions); // Commented out to avoid logging client data
-    displayAddressSuggestions(data.suggestions, data.field);
+  if (type === 'address-results') {
+    displayAddressSuggestions(data.suggestions || [], data.field);
   }
   
-  if (data.type === 'address-data') {
-    // console.log('Received full address data:', data.address); // Commented out to avoid logging client data
+  if (type === 'address-data') {
     handleAddressData(data.address, data.field);
   }
 }

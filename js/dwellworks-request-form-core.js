@@ -1294,54 +1294,55 @@ function validateForm() {
   return isValid;
 }
 
-// ===== PARENT MESSAGE HANDLING =====
+// ===== PARENT MESSAGE HANDLING (v1 flat / v2 nested) =====
 
 function handleParentMessage(event) {
-  const message = event.data;
-  if (!message || !message.type) return;
-  console.log('[dwellworks-request-form] Message received:', message.type, message);
-  switch (message.type) {
+  const raw = event.data;
+  if (!raw || typeof raw !== 'object') return;
+  const { type, data } = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw.type || '', data: raw };
+  if (!type) return;
+  console.log('[dwellworks-request-form] Message received:', type, data);
+  switch (type) {
     case 'submitter-data':
-      handleSubmitterData(message);
+      handleSubmitterData(data);
       break;
     case 'address-results':
-      const addressResultsData = message.data || message;
-      displayAddressSuggestions(addressResultsData.suggestions, addressResultsData.field);
+      displayAddressSuggestions(data.suggestions || [], data.field);
       break;
     case 'address-data':
-      const addressDataMsg = message.data || message;
-      handleAddressData(addressDataMsg.address, addressDataMsg.field);
+      handleAddressData(data.address, data.field);
       break;
     case 'company-results':
-      const companyResultsData = message.data || message;
-      const companyList = companyResultsData.companies || companyResultsData.suggestions;
-      const companySearchBy = companyResultsData.searchBy || companyResultsData.byNumber;
+      const companyList = data.companies || data.suggestions;
+      const companySearchBy = data.searchBy || data.byNumber;
       displayCompanySuggestions(companyList, companySearchBy);
       break;
     case 'company-data':
-      const companyData = message.data || message;
-      handleCompanyData(companyData.company || companyData);
+      handleCompanyData(data.companyData || data.company || data);
       break;
     case 'upload-url':
-      handleUploadUrl(message);
+      handleUploadUrl(data);
       break;
     case 'put-links':
-      handlePutLinks(message);
+      handlePutLinks(data);
       break;
     case 'put-error':
-      handlePutError(message);
+      handlePutError(data);
       break;
     case 'upload-error':
-      handleUploadError(message);
+      handleUploadError(data);
       break;
     case 'edit-request':
-      handleEditRequest(message);
+      handleEditRequest(data);
       break;
     case 'session-updated':
-      handleSessionUpdated(message);
+      handleSessionUpdated(data);
+      break;
+    case 'submission-success':
+      if (typeof handleSubmissionSuccess === 'function') handleSubmissionSuccess(data);
       break;
     default:
-      console.log('Unknown message type:', message.type);
+      console.log('Unknown message type:', type);
   }
 }
 

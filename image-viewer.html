@@ -3033,23 +3033,26 @@
         2. Hides uploading state
         3. Returns user to uploader form to retry
         */
+        function normalizeParentMessage(raw) {
+            if (!raw || typeof raw !== 'object') return { type: '', data: {} };
+            var hasNested = raw.data !== undefined && raw.type !== undefined;
+            return { type: raw.type || '', data: hasNested ? raw.data : raw };
+        }
         function handlePutResponse(event) {
-            if (event.data.type === 'put-links') {
-                const links = event.data.links;
-                s3Keys = event.data.s3Keys; // Store S3 keys globally
-                uploadedImages = event.data.images; // Store images data with s3Keys
+            var raw = event.data;
+            if (!raw || typeof raw !== 'object') return;
+            var _n = normalizeParentMessage(raw);
+            var type = _n.type, data = _n.data;
+            if (type === 'put-links') {
+                const links = data.links || [];
+                s3Keys = data.s3Keys;
+                uploadedImages = data.images;
                 uploadFiles(links);
-            } else if (event.data.type === 'put-error') {
-                // Show specific error message and go back to uploader
-                const errorMessage = event.data.message || 'Failed to generate upload links';
-                showError(`There is an issue with the files: ${errorMessage}. Please go back to edit your selected files and try uploading again.`);
-                
-                // Hide uploading state and return to uploader
+            } else if (type === 'put-error') {
+                var errorMessage = data.message || 'Failed to generate upload links';
+                showError('There is an issue with the files: ' + errorMessage + '. Please go back to edit your selected files and try uploading again.');
                 hideUploadingState();
-                
-                setTimeout(() => {
-                    showUploader();
-                }, 2000);
+                setTimeout(function() { showUploader(); }, 2000);
             }
         }
 
@@ -3952,46 +3955,35 @@
            Action: Disables the "Add more ID images" button
         */
         window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'reset') {
-                // Reset iframe to initial loading state (called when switching entries)
+            var raw = event.data;
+            if (!raw || typeof raw !== 'object') return;
+            var _n = normalizeParentMessage(raw);
+            var type = _n.type, data = _n.data;
+            if (type === 'reset') {
                 console.log('Received reset message - returning to awaiting state');
                 returnToAwaitingData();
-            } else if (event.data && event.data.type === 'image-display') {
-                // console.log('Received image display data:', event.data); // Commented out to avoid logging client data
-                
-                // If we're currently in uploader mode, reset everything first
+            } else if (type === 'image-display') {
                 if (!idUploaderSection.classList.contains('hidden')) {
                     resetUploaders();
                 }
-                
-                // Display the new images
-                displayImages(event.data.data, event.data.allowUploads, event.data.clientData, event.data.userEmail);
-            } else if (event.data && event.data.type === 'display-images') {
-                handleDisplayImages(event.data);
-            } else if (event.data && event.data.type === 'put-links') {
-                handlePutLinks(event.data);
-            } else if (event.data && event.data.type === 'put-error') {
-                handlePutError(event.data);
-            } else if (event.data && event.data.type === 'button-enable') {
-                // Enable the "Add more ID images" button (both in awaiting state and main display)
+                var imgData = data.data != null ? data.data : data.images || data.documents;
+                displayImages(imgData, data.allowUploads, data.clientData, data.userEmail);
+            } else if (type === 'display-images') {
+                handleDisplayImages(data);
+            } else if (type === 'put-links') {
+                handlePutLinks(data);
+            } else if (type === 'put-error') {
+                handlePutError(data);
+            } else if (type === 'button-enable') {
                 allowUploads = true;
-                if (addMoreBtn) {
-                    addMoreBtn.disabled = false;
-                }
-                const awaitingAddMoreBtn = awaitingState.querySelector('.add-more-btn');
-                if (awaitingAddMoreBtn) {
-                    awaitingAddMoreBtn.disabled = false;
-                }
-            } else if (event.data && event.data.type === 'button-disable') {
-                // Disable the "Add more ID images" button (both in awaiting state and main display)
+                if (addMoreBtn) addMoreBtn.disabled = false;
+                var awaitingAddMoreBtn = awaitingState.querySelector('.add-more-btn');
+                if (awaitingAddMoreBtn) awaitingAddMoreBtn.disabled = false;
+            } else if (type === 'button-disable') {
                 allowUploads = false;
-                if (addMoreBtn) {
-                    addMoreBtn.disabled = true;
-                }
-                const awaitingAddMoreBtn = awaitingState.querySelector('.add-more-btn');
-                if (awaitingAddMoreBtn) {
-                    awaitingAddMoreBtn.disabled = true;
-                }
+                if (addMoreBtn) addMoreBtn.disabled = true;
+                var awaitingAddMoreBtn2 = awaitingState.querySelector('.add-more-btn');
+                if (awaitingAddMoreBtn2) awaitingAddMoreBtn2.disabled = true;
             }
         });
 

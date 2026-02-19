@@ -990,42 +990,32 @@
             return div.innerHTML;
         }
 
+        // Normalize v1 (flat) vs v2 (nested) parent messages
+        function normalizeParentMessage(raw) {
+            if (!raw || typeof raw !== 'object') return { type: '', data: {} };
+            var hasNested = raw.data !== undefined && raw.type !== undefined;
+            return { type: raw.type || '', data: hasNested ? raw.data : raw };
+        }
         // PostMessage listener
         window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'address-book') {
-                // Hide loading state
+            var raw = event.data;
+            if (!raw || typeof raw !== 'object') return;
+            var _n = normalizeParentMessage(raw);
+            var type = _n.type, data = _n.data;
+            if (type === 'address-book') {
                 loadingState.style.display = 'none';
-
-                // Load entries from parent
-                if (event.data.data && Array.isArray(event.data.data.entries)) {
-                    entries = event.data.data.entries.map(e => ({
-                        label: e.label || '',
-                        value: e.value || ''
-                    }));
-                    
-                    // Mark data as loaded
+                var entriesList = (data.data && data.data.entries) ? data.data.entries : (data.entries || []);
+                if (Array.isArray(entriesList)) {
+                    entries = entriesList.map(function(e) { return { label: e.label || '', value: e.value || '' }; });
                     dataLoaded = true;
-                    
-                    // Save to history and localStorage
                     saveToHistory();
                     saveToLocalStorage();
-                    
-                    // Enable save button
                     saveBtn.disabled = false;
-                    
-                    // Render
                     filterAndRender();
                 }
-            } else if (event.data && event.data.type === 'save-data') {
-                // Send updated entries back to parent (legacy support)
+            } else if (type === 'save-data') {
                 sendDataToParent();
-            } else if (event.data && event.data.type === 'upload-success') {
-                // Re-enable save button after successful upload
-                if (entries.length > 0 && dataLoaded) {
-                    saveBtn.disabled = false;
-                }
-            } else if (event.data && event.data.type === 'upload-error') {
-                // Re-enable save button after upload error
+            } else if (type === 'upload-success' || type === 'upload-error') {
                 if (entries.length > 0 && dataLoaded) {
                     saveBtn.disabled = false;
                 }

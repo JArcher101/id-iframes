@@ -4770,30 +4770,21 @@
     =====================================================================
     */
     function handlePutResponse(event) {
-      // Validate message structure
-      if (!event.data || typeof event.data !== 'object') {
-        return; // Ignore invalid messages
-      }
-      
-      // Filter out Grammarly and other extension messages
-      if (event.data.__grammarly || event.data.type === '__grammarly') {
-        return;
-      }
-      
-      if (event.data.type === 'put-links') {
-        const links = event.data.links;
-        s3Keys = event.data.s3Keys; // Store S3 keys
-        
+      const raw = event.data;
+      if (!raw || typeof raw !== 'object') return;
+      if (raw.__grammarly || raw.type === '__grammarly') return;
+      const { type, data } = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw.type || '', data: raw };
+      if (type === 'put-links') {
+        const links = data.links || [];
+        s3Keys = data.s3Keys || [];
         uploadFiles(links);
-      } else if (event.data.type === 'put-error') {
-        // Show specific error message and go back to address ID section
-        const errorMessage = event.data.message || 'Failed to generate upload links';
+      } else if (type === 'put-error') {
+        const errorMessage = data.message || 'Failed to generate upload links';
         showError(`There is an issue with the files: ${errorMessage}. Please go back to the Address ID section to edit your selected files and try uploading again.`);
         setTimeout(() => {
           showSection4();
         }, 2000);
       }
-      // Note: Other message types are handled by the main message listener
     }
 
     /*
@@ -6641,110 +6632,51 @@
     console.log('Image uploader iframe loaded and ready');
     
     window.addEventListener('message', (event)=>{
-      // Log ALL messages for debugging
-      console.log('📨 MESSAGE RECEIVED:', {
-        type: event.data?.type,
-        hasData: !!event.data,
-        dataType: typeof event.data,
-        isObject: typeof event.data === 'object',
-        keys: event.data && typeof event.data === 'object' ? Object.keys(event.data) : [],
-        origin: event.origin
-      });
-      
-      // Detailed logging for address-results messages
-      if (event.data && event.data.type === 'address-results') {
-        console.log('📍 ADDRESS-RESULTS MESSAGE DETAILS:', {
-          type: event.data.type,
-          field: event.data.field,
-          searchTerm: event.data.searchTerm,
-          hasSuggestions: !!event.data.suggestions,
-          suggestionsType: Array.isArray(event.data.suggestions) ? 'array' : typeof event.data.suggestions,
-          suggestionsLength: event.data.suggestions?.length || 0,
-          suggestions: event.data.suggestions, // Log actual suggestions
-          hasError: !!event.data.error,
-          error: event.data.error,
-          fullMessage: event.data
-        });
+      const raw = event.data;
+      if (!raw || typeof raw !== 'object') return;
+      const { type, data } = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw.type || '', data: raw };
+      if (raw.__grammarly || type === '__grammarly') return;
+
+      console.log('📨 MESSAGE RECEIVED:', { type, hasData: !!data, keys: Object.keys(data || {}), origin: event.origin });
+      if (type === 'address-results') {
+        console.log('📍 ADDRESS-RESULTS MESSAGE DETAILS:', { type, field: data.field, searchTerm: data.searchTerm, hasSuggestions: !!data.suggestions, suggestionsLength: (data.suggestions || []).length, hasError: !!data.error });
       }
-      
-      if(event.data && event.data.type === 'initiation-data'){
+
+      if (type === 'initiation-data') {
         console.log('… Processing initiation-data...');
-        // Clear form and reset all data before loading new data
         resetForm();
-        loadData(event.data.data || {});
+        loadData(data.data != null ? data.data : data);
         console.log('… Data loaded, form should be visible');
-      } else if (event.data && event.data.type === 'address-results') {
+      } else if (type === 'address-results') {
         console.log('… Processing address-results...');
-        console.log('📦 FULL ADDRESS-RESULTS MESSAGE:', JSON.stringify(event.data, null, 2));
-        console.log('📦 Address results data:', {
-          hasSuggestions: !!event.data.suggestions,
-          suggestionsCount: event.data.suggestions?.length || 0,
-          suggestionsType: Array.isArray(event.data.suggestions) ? 'array' : typeof event.data.suggestions,
-          field: event.data.field,
-          searchTerm: event.data.searchTerm,
-          hasError: !!event.data.error,
-          suggestions: event.data.suggestions // Log the actual suggestions array
-        });
-        
-        // Check for error in response
-        if (event.data.error) {
-          console.error('❌ Address search error from parent:', event.data.error);
-          const dropdownElement = event.data.field === 'current' ? currentAddressDropdown : previousAddressDropdown;
+        if (data.error) {
+          console.error('❌ Address search error from parent:', data.error);
+          const dropdownElement = data.field === 'current' ? currentAddressDropdown : previousAddressDropdown;
           if (dropdownElement) {
-            dropdownElement.innerHTML = `<div class="address-no-results">Error: ${event.data.error}</div>`;
+            dropdownElement.innerHTML = `<div class="address-no-results">Error: ${data.error}</div>`;
             dropdownElement.classList.remove('hidden');
           }
           return;
         }
-        
-        // Cache the autocomplete results
-        if (event.data.searchTerm && event.data.suggestions) {
-          const cacheKey = 'auto_' + event.data.searchTerm.toLowerCase();
-          setCachedItem(cacheKey, event.data.suggestions, 'autocomplete');
-          console.log('💾 Cached autocomplete results for:', event.data.searchTerm);
+        if (data.searchTerm && data.suggestions) {
+          const cacheKey = 'auto_' + data.searchTerm.toLowerCase();
+          setCachedItem(cacheKey, data.suggestions, 'autocomplete');
+          console.log('💾 Cached autocomplete results for:', data.searchTerm);
         }
-        
-        // Display autocomplete suggestions
-        displayAddressSuggestions(event.data.suggestions, event.data.field);
-      } else if (event.data && event.data.type === 'address-data') {
+        displayAddressSuggestions(data.suggestions || [], data.field);
+      } else if (type === 'address-data') {
         console.log('… Processing address-data...');
-        
-        // Cache the full address object
-        if (event.data.addressId && event.data.address) {
-          const cacheKey = 'addr_' + event.data.addressId;
-          setCachedItem(cacheKey, event.data.address, 'address');
-          console.log('💾 Cached full address for ID:', event.data.addressId);
+        if (data.addressId && data.address) {
+          const cacheKey = 'addr_' + data.addressId;
+          setCachedItem(cacheKey, data.address, 'address');
+          console.log('💾 Cached full address for ID:', data.addressId);
         }
-        
-        // Store full address object
-        handleAddressData(event.data.address, event.data.field);
-      } else if (event.data && (event.data.type === 'put-links' || event.data.type === 'put-error')) {
-        // These messages are handled by handlePutResponse listener
-        // Just acknowledge receipt to avoid "unknown message" warning
-        // The handlePutResponse function will process them
+        handleAddressData(data.address, data.field);
+      } else if (type === 'put-links' || type === 'put-error') {
         return;
       } else {
-        // Log unknown messages for debugging (but filter out noise)
-        if (event.data && typeof event.data === 'object') {
-          // Ignore Grammarly and other extension messages
-          if (event.data.__grammarly || event.data.type === '__grammarly') {
-            return;
-          }
-          // Log the actual message for debugging
-          console.warn('⚠️ Unknown message type:', {
-            type: event.data.type,
-            hasType: !!event.data.type,
-            keys: Object.keys(event.data),
-            isObject: typeof event.data === 'object'
-          });
-        } else {
-          // Message is not an object or is null/undefined
-          console.warn('⚠️ Invalid message format:', {
-            data: event.data,
-            dataType: typeof event.data,
-            isNull: event.data === null,
-            isUndefined: event.data === undefined
-          });
+        if (type) {
+          console.warn('⚠️ Unknown message type:', { type, keys: Object.keys(data || {}) });
         }
       }
     });

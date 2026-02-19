@@ -292,32 +292,34 @@ function setupEventListeners() {
     setupCalculatorEventListeners();
 }
 
+function normalizeParentMessage(raw) {
+    if (!raw || typeof raw !== 'object') return { type: '', data: {} };
+    var hasNested = raw.data !== undefined && raw.type !== undefined;
+    return { type: raw.type || '', data: hasNested ? raw.data : raw };
+}
+
 function handleParentMessage(event) {
-    // TODO: Add origin validation in production
-    // if (event.origin !== 'https://expected-domain.com') return;
-    
-    if (event.data && event.data.type) {
-        switch (event.data.type) {
-            case 'entry-data':
-                handleEntryData(event.data);
-                break;
-                
-            case 'save-data':
-                handleSaveData(event.data);
-                break;
-                
-            case 'put-links':
-                handlePutLinks(event.data);
-                break;
-                
-            case 'put-error':
-                handlePutError(event.data);
-                break;
-                
-            default:
-                console.log('Received message:', event.data);
-                break;
-        }
+    var raw = event.data;
+    if (!raw || typeof raw !== 'object') return;
+    var _n = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw.type || '', data: raw };
+    var type = _n.type, data = _n.data;
+    if (!type) return;
+    switch (type) {
+        case 'entry-data':
+            handleEntryData(data);
+            break;
+        case 'save-data':
+            handleSaveData(data);
+            break;
+        case 'put-links':
+            handlePutLinks(data);
+            break;
+        case 'put-error':
+            handlePutError(data);
+            break;
+        default:
+            console.log('Received message:', type, data);
+            break;
     }
 }
 

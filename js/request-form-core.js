@@ -923,21 +923,21 @@ function validateCurrentForm() {
   return { valid: errors.length === 0, errors: errors };
 }
 
-// Handle messages from parent
+// Handle messages from parent (v1 flat or v2 nested)
 function handleParentMessage(event) {
   try {
-    const message = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-    if (message && message.type) {
-      console.log('[request-form] Message received:', message.type, message);
+    const raw = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+    const { type, data } = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw?.type || '', data: raw || {} };
+    if (type) {
+      console.log('[request-form] Message received:', type, data);
     }
-    switch (message.type) {
+    switch (type) {
       case 'init-data':
-        handleInitData(message);
+        handleInitData(data);
         break;
         
       case 'client-data':
-        // Handle client data sent from parent
-        handleClientData(message);
+        handleClientData(data);
         break;
         
       case 'request-data':
@@ -949,44 +949,37 @@ function handleParentMessage(event) {
         break;
         
       case 'address-results':
-        // Handle address autocomplete results from getaddress.io
-        displayAddressSuggestions(message.suggestions, message.field);
+        displayAddressSuggestions(data.suggestions || [], data.field);
         break;
         
       case 'address-data':
-        // Handle full address data from getaddress.io
-        handleAddressData(message.address, message.field);
+        handleAddressData(data.address, data.field);
         break;
         
       case 'company-results':
       case 'charity-results':
-        // Display company/charity search results (parent may send .companies or .suggestions)
-        const companyList = message.companies || message.suggestions;
-        const searchBy = message.searchBy || message.byNumber;
+        const companyList = data.companies || data.suggestions;
+        const searchBy = data.searchBy || data.byNumber;
         displayCompanySuggestions(companyList, searchBy);
         break;
         
       case 'company-data':
       case 'charity-data':
-        // Handle full company/charity data
-        handleCompanyData(message.companyData || message.charityData);
+        handleCompanyData(data.companyData || data.charityData);
         break;
         
       case 'sanctions-file-uploaded':
-        // Handle sanctions PDF uploaded from sanctions checker
-        handleSanctionsFileUploaded(message);
+        handleSanctionsFileUploaded(data);
         break;
         
       case 'save-success':
-        // Backend save succeeded - generate PDF for Note/Update requests
         console.log('✅ Save successful - generating request PDF...');
-        generateRequestPDF(message);
+        generateRequestPDF(data);
         break;
         
       default:
-        // Forward to current module if it has a message handler
         if (currentRequestType && requestTypeModules[currentRequestType]?.handleMessage) {
-          requestTypeModules[currentRequestType].handleMessage(message);
+          requestTypeModules[currentRequestType].handleMessage(data);
         }
         break;
     }
