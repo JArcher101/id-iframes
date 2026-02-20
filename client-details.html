@@ -3726,8 +3726,19 @@
         }
         handleAddressData(payload.address, payload.field);
       } else if (msgType === 'company-results' || msgType === 'charity-results') {
-        const companyList = Array.isArray(payload.companies) ? payload.companies : (Array.isArray(payload.suggestions) ? payload.suggestions : []);
-        const searchBy = payload.searchBy || payload.byNumber;
+        // Use inner payload when v2 raw: { type, data: { companies, searchBy } } (e.g. if normalizer not used)
+        const p = payload && payload.data !== undefined && typeof payload.data === 'object' ? payload.data : payload;
+        let companyList = [];
+        if (Array.isArray(p.companies)) {
+          companyList = p.companies;
+        } else if (p.companies && Array.isArray(p.companies.companies)) {
+          companyList = p.companies.companies;
+        } else if (Array.isArray(p.suggestions)) {
+          companyList = p.suggestions;
+        } else if (p.suggestions && Array.isArray(p.suggestions.suggestions)) {
+          companyList = p.suggestions.suggestions;
+        }
+        const searchBy = p.searchBy || p.byNumber;
         displayCompanySuggestions(companyList, searchBy);
       } else if (msgType === 'company-data' || msgType === 'charity-data') {
         handleCompanyData(payload.companyData || payload.charityData);
