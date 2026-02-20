@@ -4796,17 +4796,18 @@
         */
         function normalizeMessageData(message) {
             if (!message) return {};
-            
-            // If data object exists, merge it with top-level fields (data takes precedence)
-            if (message.data && typeof message.data === 'object') {
-                return {
-                    ...message,
-                    ...message.data
-                };
+            var out = {};
+            if (message.data !== undefined && message.type !== undefined && message.data && typeof message.data === 'object') {
+                for (var k in message) { if (Object.prototype.hasOwnProperty.call(message, k)) out[k] = message[k]; }
+                for (var k in message.data) { if (Object.prototype.hasOwnProperty.call(message.data, k)) out[k] = message.data[k]; }
+            } else {
+                for (var k in message) { if (Object.prototype.hasOwnProperty.call(message, k)) out[k] = message[k]; }
             }
-            
-            // Otherwise return message as-is
-            return message;
+            if (out.companies && typeof out.companies === 'object' && Array.isArray(out.companies.companies)) out.companies = out.companies.companies;
+            if (out.companyData && typeof out.companyData === 'object' && out.companyData.companyData !== undefined) out.companyData = out.companyData.companyData;
+            if (out.charityData && typeof out.charityData === 'object' && out.charityData.charityData !== undefined) out.charityData = out.charityData.charityData;
+            if (out.suggestions && typeof out.suggestions === 'object' && Array.isArray(out.suggestions.suggestions)) out.suggestions = out.suggestions.suggestions;
+            return out;
         }
 
         /*

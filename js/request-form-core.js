@@ -923,11 +923,24 @@ function validateCurrentForm() {
   return { valid: errors.length === 0, errors: errors };
 }
 
-// Handle messages from parent (v1 flat or v2 nested)
+// v1/v2 + response unwrap: use shared normalizer or inline fallback so all iframes get same payload shape
+function normalizeParentMessageFallback(raw) {
+  if (!raw || typeof raw !== 'object') return { type: '', data: {} };
+  var type = String(raw.type || '');
+  var payload = (raw.data !== undefined && raw.type !== undefined && raw.data && typeof raw.data === 'object') ? raw.data : raw;
+  var out = {};
+  for (var k in payload) { if (Object.prototype.hasOwnProperty.call(payload, k)) out[k] = payload[k]; }
+  if (out.companies && typeof out.companies === 'object' && Array.isArray(out.companies.companies)) out.companies = out.companies.companies;
+  if (out.companyData && typeof out.companyData === 'object' && out.companyData.companyData !== undefined) out.companyData = out.companyData.companyData;
+  if (out.charityData && typeof out.charityData === 'object' && out.charityData.charityData !== undefined) out.charityData = out.charityData.charityData;
+  if (out.suggestions && typeof out.suggestions === 'object' && Array.isArray(out.suggestions.suggestions)) out.suggestions = out.suggestions.suggestions;
+  return { type: type, data: out };
+}
 function handleParentMessage(event) {
   try {
     const raw = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-    const { type, data } = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw?.type || '', data: raw || {} };
+    const normalizer = typeof normalizeParentMessage === 'function' ? normalizeParentMessage : normalizeParentMessageFallback;
+    const { type, data } = normalizer(raw);
     if (type) {
       console.log('[request-form] Message received:', type, data);
     }
@@ -958,14 +971,14 @@ function handleParentMessage(event) {
         
       case 'company-results':
       case 'charity-results':
-        const companyList = data.companies || data.suggestions;
+        const companyList = Array.isArray(data.companies) ? data.companies : (Array.isArray(data.suggestions) ? data.suggestions : []);
         const searchBy = data.searchBy || data.byNumber;
         displayCompanySuggestions(companyList, searchBy);
         break;
         
       case 'company-data':
       case 'charity-data':
-        handleCompanyData(data.companyData || data.charityData);
+        handleCompanyData(data.companyData || data.charityData || {});
         break;
         
       case 'sanctions-file-uploaded':
@@ -5795,16 +5808,17 @@ function separateUploadedFiles(s3Keys) {
 }
 
 /**
- * Handles file upload responses from parent
+ * Handles file upload responses from parent (v1/v2 + unwrap)
  */
 function handleFileUploadResponse(event) {
   if (!uploadInProgress) return;
-  
-  const message = event.data;
-  
-  if (message.type === 'put-links') {
-    // console.log('📥 Received PUT links from parent:', message); // Commented out to avoid logging client data
-    
+  const raw = event.data;
+  if (!raw || typeof raw !== 'object') return;
+  const normalizer = typeof normalizeParentMessage === 'function' ? normalizeParentMessage : normalizeParentMessageFallback;
+  const { type, data: message } = normalizer(raw);
+  if (type !== 'put-links' && type !== 'put-error') return;
+
+  if (type === 'put-links') {
     const links = message.links;
     const s3Keys = message.s3Keys;
     
@@ -5851,13 +5865,9 @@ function handleFileUploadResponse(event) {
         }
       });
       
-  } else if (message.type === 'put-error') {
+  } else if (type === 'put-error') {
     console.error('❌ PUT error from parent:', message);
-    
-    // Hide upload progress
     hideUploadProgress();
-    
-    // Show error
     const errorMsg = message.message || 'Failed to generate upload links';
     showError(`Upload preparation failed: ${errorMsg}`);
     

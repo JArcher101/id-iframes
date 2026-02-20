@@ -17,6 +17,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   
+  <!-- v1/v2 parent message normalizer – must load before any message listener -->
+  <script src="js/jurisdiction-autocomplete.js?v=5c2bfd8"></script>
+  
   <style>
     /*
     =====================================================================
@@ -3630,10 +3633,24 @@
       });
     }
     
-    // ===== MESSAGE LISTENER =====
+    // ===== MESSAGE LISTENER (v1/v2 + response unwrap) =====
+    // Use shared normalizer from jurisdiction-autocomplete.js, or inline fallback so we always unwrap
+    function normalizeParentMessageFallback(raw) {
+      if (!raw || typeof raw !== 'object') return { type: '', data: {} };
+      var type = String(raw.type || '');
+      var payload = (raw.data !== undefined && raw.type !== undefined && raw.data && typeof raw.data === 'object') ? raw.data : raw;
+      var out = {};
+      for (var k in payload) { if (Object.prototype.hasOwnProperty.call(payload, k)) out[k] = payload[k]; }
+      if (out.companies && typeof out.companies === 'object' && Array.isArray(out.companies.companies)) out.companies = out.companies.companies;
+      if (out.companyData && typeof out.companyData === 'object' && out.companyData.companyData !== undefined) out.companyData = out.companyData.companyData;
+      if (out.charityData && typeof out.charityData === 'object' && out.charityData.charityData !== undefined) out.charityData = out.charityData.charityData;
+      if (out.suggestions && typeof out.suggestions === 'object' && Array.isArray(out.suggestions.suggestions)) out.suggestions = out.suggestions.suggestions;
+      return { type: type, data: out };
+    }
+    var getNormalizedMessage = (typeof normalizeParentMessage === 'function') ? normalizeParentMessage : normalizeParentMessageFallback;
     
     window.addEventListener('message', (event) => {
-      const { type: msgType, data: payload } = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(event.data) : { type: event.data?.type || '', data: event.data || {} };
+      const { type: msgType, data: payload } = getNormalizedMessage(event.data);
       if (msgType) {
         console.log('[client-details] Message received:', msgType, payload);
       }
@@ -3717,7 +3734,7 @@
           setCachedItem(cacheKey, payload.suggestions, 'autocomplete');
           console.log('💾 Cached autocomplete results for:', payload.searchTerm);
         }
-        displayAddressSuggestions(payload.suggestions || [], payload.field);
+        displayAddressSuggestions(Array.isArray(payload.suggestions) ? payload.suggestions : [], payload.field);
       } else if (msgType === 'address-data') {
         if (payload.addressId && payload.address) {
           const cacheKey = 'addr_' + payload.addressId;
@@ -3726,22 +3743,12 @@
         }
         handleAddressData(payload.address, payload.field);
       } else if (msgType === 'company-results' || msgType === 'charity-results') {
-        // Use inner payload when v2 raw: { type, data: { companies, searchBy } } (e.g. if normalizer not used)
-        const p = payload && payload.data !== undefined && typeof payload.data === 'object' ? payload.data : payload;
-        let companyList = [];
-        if (Array.isArray(p.companies)) {
-          companyList = p.companies;
-        } else if (p.companies && Array.isArray(p.companies.companies)) {
-          companyList = p.companies.companies;
-        } else if (Array.isArray(p.suggestions)) {
-          companyList = p.suggestions;
-        } else if (p.suggestions && Array.isArray(p.suggestions.suggestions)) {
-          companyList = p.suggestions.suggestions;
-        }
-        const searchBy = p.searchBy || p.byNumber;
+        const companyList = Array.isArray(payload.companies) ? payload.companies : (Array.isArray(payload.suggestions) ? payload.suggestions : []);
+        const searchBy = payload.searchBy || payload.byNumber;
         displayCompanySuggestions(companyList, searchBy);
       } else if (msgType === 'company-data' || msgType === 'charity-data') {
-        handleCompanyData(payload.companyData || payload.charityData);
+        const data = payload.companyData || payload.charityData;
+        handleCompanyData(data && typeof data === 'object' ? data : {});
       } else if (msgType === 'sanctions-check') {
         // Format client data and send back to parent for sanctions lightbox
         console.log('📋 Formatting client data for sanctions check...');
@@ -4233,8 +4240,7 @@
     setupCompanyNumberAutocomplete();
   </script>
   
-  <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
-  <script src="js/jurisdiction-autocomplete.js?v=5c2bfd8"></script>
+  <!-- Jurisdiction/Country Autocomplete (loaded in head for normalizer; init below) -->
   <script>
     // Initialize all autocomplete fields immediately (DOM already loaded since scripts are at bottom)
     console.log('🔧 Initializing autocomplete fields...');

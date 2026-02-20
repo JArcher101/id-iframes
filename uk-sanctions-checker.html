@@ -2081,14 +2081,21 @@
     */
     function normalizeParentMessage(raw) {
       if (!raw || typeof raw !== 'object') return { type: '', data: {} };
-      var hasNested = raw.data !== undefined && raw.type !== undefined;
-      return { type: raw.type || '', data: hasNested ? raw.data : raw };
+      var type = String(raw.type || '');
+      var payload = (raw.data !== undefined && raw.type !== undefined && raw.data && typeof raw.data === 'object') ? raw.data : raw;
+      var out = {};
+      for (var k in payload) { if (Object.prototype.hasOwnProperty.call(payload, k)) out[k] = payload[k]; }
+      if (out.companies && typeof out.companies === 'object' && Array.isArray(out.companies.companies)) out.companies = out.companies.companies;
+      if (out.companyData && typeof out.companyData === 'object' && out.companyData.companyData !== undefined) out.companyData = out.companyData.companyData;
+      if (out.charityData && typeof out.charityData === 'object' && out.charityData.charityData !== undefined) out.charityData = out.charityData.charityData;
+      if (out.suggestions && typeof out.suggestions === 'object' && Array.isArray(out.suggestions.suggestions)) out.suggestions = out.suggestions.suggestions;
+      return { type: type, data: out };
     }
     
     window.addEventListener('message', (event) => {
       var raw = event.data;
       if (!raw || typeof raw !== 'object') return;
-      var _n = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw.type || '', data: raw };
+      var _n = normalizeParentMessage(raw);
       var type = _n.type, data = _n.data;
       if (!type) return;
       

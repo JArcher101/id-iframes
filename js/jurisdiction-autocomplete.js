@@ -20,17 +20,37 @@
 
 /**
  * Normalize parent message so both v1 (flat) and v2 (nested) formats work.
- * Use the returned object for all message handling; ignore raw event.data after this.
+ * Also unwraps common response wrappers (companies.companies, companyData.companyData, etc.)
+ * so iframe code can always read payload.companies (array), payload.companyData (object), etc.
  * @param {Object} raw - event.data from message event
- * @returns {{ type: string, data: Object }} - type and a single payload object
+ * @returns {{ type: string, data: Object }} - type and a single, unwrapped payload object
  */
 function normalizeParentMessage(raw) {
   if (!raw || typeof raw !== 'object') return { type: '', data: {} };
-  const hasNestedData = raw.data !== undefined && raw.type !== undefined;
-  return {
-    type: String(raw.type || ''),
-    data: hasNestedData ? (raw.data && typeof raw.data === 'object' ? raw.data : {}) : raw
-  };
+  var type = String(raw.type || '');
+  // v2: { type, data: payload }; v1: flat payload is raw itself
+  var payload = (raw.data !== undefined && raw.type !== undefined && raw.data && typeof raw.data === 'object')
+    ? raw.data
+    : raw;
+  // Shallow copy so we don't mutate the original
+  var out = {};
+  for (var k in payload) {
+    if (Object.prototype.hasOwnProperty.call(payload, k)) out[k] = payload[k];
+  }
+  // Unwrap parent response wrappers so .companies / .companyData / .suggestions / .charityData are direct
+  if (out.companies && typeof out.companies === 'object' && Array.isArray(out.companies.companies)) {
+    out.companies = out.companies.companies;
+  }
+  if (out.companyData && typeof out.companyData === 'object' && out.companyData.companyData !== undefined) {
+    out.companyData = out.companyData.companyData;
+  }
+  if (out.charityData && typeof out.charityData === 'object' && out.charityData.charityData !== undefined) {
+    out.charityData = out.charityData.charityData;
+  }
+  if (out.suggestions && typeof out.suggestions === 'object' && Array.isArray(out.suggestions.suggestions)) {
+    out.suggestions = out.suggestions.suggestions;
+  }
+  return { type: type, data: out };
 }
 
 // Thirdfort-supported KYB jurisdictions (250+ worldwide)

@@ -1294,12 +1294,25 @@ function validateForm() {
   return isValid;
 }
 
-// ===== PARENT MESSAGE HANDLING (v1 flat / v2 nested) =====
+// ===== PARENT MESSAGE HANDLING (v1/v2 + response unwrap) =====
+function normalizeParentMessageFallback(raw) {
+  if (!raw || typeof raw !== 'object') return { type: '', data: {} };
+  var type = String(raw.type || '');
+  var payload = (raw.data !== undefined && raw.type !== undefined && raw.data && typeof raw.data === 'object') ? raw.data : raw;
+  var out = {};
+  for (var k in payload) { if (Object.prototype.hasOwnProperty.call(payload, k)) out[k] = payload[k]; }
+  if (out.companies && typeof out.companies === 'object' && Array.isArray(out.companies.companies)) out.companies = out.companies.companies;
+  if (out.companyData && typeof out.companyData === 'object' && out.companyData.companyData !== undefined) out.companyData = out.companyData.companyData;
+  if (out.charityData && typeof out.charityData === 'object' && out.charityData.charityData !== undefined) out.charityData = out.charityData.charityData;
+  if (out.suggestions && typeof out.suggestions === 'object' && Array.isArray(out.suggestions.suggestions)) out.suggestions = out.suggestions.suggestions;
+  return { type: type, data: out };
+}
 
 function handleParentMessage(event) {
   const raw = event.data;
   if (!raw || typeof raw !== 'object') return;
-  const { type, data } = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw.type || '', data: raw };
+  const normalizer = typeof normalizeParentMessage === 'function' ? normalizeParentMessage : normalizeParentMessageFallback;
+  const { type, data } = normalizer(raw);
   if (!type) return;
   console.log('[dwellworks-request-form] Message received:', type, data);
   switch (type) {
@@ -1313,12 +1326,12 @@ function handleParentMessage(event) {
       handleAddressData(data.address, data.field);
       break;
     case 'company-results':
-      const companyList = data.companies || data.suggestions;
+      const companyList = Array.isArray(data.companies) ? data.companies : (Array.isArray(data.suggestions) ? data.suggestions : []);
       const companySearchBy = data.searchBy || data.byNumber;
       displayCompanySuggestions(companyList, companySearchBy);
       break;
     case 'company-data':
-      handleCompanyData(data.companyData || data.company || data);
+      handleCompanyData(data.companyData || data.company || data || {});
       break;
     case 'upload-url':
       handleUploadUrl(data);

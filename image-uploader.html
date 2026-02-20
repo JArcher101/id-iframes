@@ -4769,11 +4769,24 @@
     - Note: s3Keys contains full file objects from imageData with s3Key added
     =====================================================================
     */
+    function normalizeParentMessageFallback(raw) {
+      if (!raw || typeof raw !== 'object') return { type: '', data: {} };
+      var type = String(raw.type || '');
+      var payload = (raw.data !== undefined && raw.type !== undefined && raw.data && typeof raw.data === 'object') ? raw.data : raw;
+      var out = {};
+      for (var k in payload) { if (Object.prototype.hasOwnProperty.call(payload, k)) out[k] = payload[k]; }
+      if (out.companies && typeof out.companies === 'object' && Array.isArray(out.companies.companies)) out.companies = out.companies.companies;
+      if (out.companyData && typeof out.companyData === 'object' && out.companyData.companyData !== undefined) out.companyData = out.companyData.companyData;
+      if (out.charityData && typeof out.charityData === 'object' && out.charityData.charityData !== undefined) out.charityData = out.charityData.charityData;
+      if (out.suggestions && typeof out.suggestions === 'object' && Array.isArray(out.suggestions.suggestions)) out.suggestions = out.suggestions.suggestions;
+      return { type: type, data: out };
+    }
+    function getNormalizedMessage(raw) { return (typeof normalizeParentMessage === 'function' ? normalizeParentMessage : normalizeParentMessageFallback)(raw); }
     function handlePutResponse(event) {
       const raw = event.data;
       if (!raw || typeof raw !== 'object') return;
       if (raw.__grammarly || raw.type === '__grammarly') return;
-      const { type, data } = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw.type || '', data: raw };
+      const { type, data } = getNormalizedMessage(raw);
       if (type === 'put-links') {
         const links = data.links || [];
         s3Keys = data.s3Keys || [];
@@ -6634,7 +6647,7 @@
     window.addEventListener('message', (event)=>{
       const raw = event.data;
       if (!raw || typeof raw !== 'object') return;
-      const { type, data } = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : { type: raw.type || '', data: raw };
+      const { type, data } = getNormalizedMessage(raw);
       if (raw.__grammarly || type === '__grammarly') return;
 
       console.log('📨 MESSAGE RECEIVED:', { type, hasData: !!data, keys: Object.keys(data || {}), origin: event.origin });
