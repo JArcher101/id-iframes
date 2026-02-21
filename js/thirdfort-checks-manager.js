@@ -15,6 +15,7 @@ class ThirdfortChecksManager {
         
         // DOM elements
         this.loadingState = document.getElementById('loading-state');
+        this.emptyState = document.getElementById('empty-state');
         this.listView = document.getElementById('list-view');
         this.detailView = document.getElementById('detail-view');
         this.checksList = document.getElementById('checks-list');
@@ -381,20 +382,21 @@ class ThirdfortChecksManager {
     switchView(view) {
         console.log('🔄 Switching view to:', view);
         
-        // Step 1: Hide ALL views
-        this.loadingState.classList.add('hidden');
-        this.listView.classList.add('hidden');
-        this.detailView.classList.add('hidden');
+        // Step 1: Hide ALL views (guard against missing DOM elements)
+        this.loadingState?.classList.add('hidden');
+        this.emptyState?.classList.add('hidden');
+        this.listView?.classList.add('hidden');
+        this.detailView?.classList.add('hidden');
         
         // Step 2: Show requested view
         if (view === 'loading') {
-            this.loadingState.classList.remove('hidden');
+            this.loadingState?.classList.remove('hidden');
         } else if (view === 'empty') {
-            this.emptyState.classList.remove('hidden');
+            this.emptyState?.classList.remove('hidden');
         } else if (view === 'list') {
-            this.listView.classList.remove('hidden');
+            this.listView?.classList.remove('hidden');
         } else if (view === 'detail') {
-            this.detailView.classList.remove('hidden');
+            this.detailView?.classList.remove('hidden');
         }
     }
     
