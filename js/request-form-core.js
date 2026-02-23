@@ -4839,6 +4839,15 @@ function updateFormJFlags(images, iconData) {
         hasValidPhotoIDs = true;
         break;
       }
+      // Single-sided document with duplicates (e.g. Passport uploaded twice)
+      const allSingle = images.every(img => {
+        const s = img.side?.toLowerCase();
+        return !s || s === 'single' || s === '';
+      });
+      if (allSingle) {
+        hasValidPhotoIDs = true;
+        break;
+      }
     }
   }
   

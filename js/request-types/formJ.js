@@ -87,9 +87,9 @@ Sends request-data message to parent with:
       const idImages = window.RequestFormCore.idImages();
       let missingItems = [];
       
-      // Count Address IDs and Photo IDs
-      const addressIDs = idImages.filter(img => img.type === 'AddressID');
-      const photoIDs = idImages.filter(img => img.type === 'PhotoID');
+      // Count Address IDs and Photo IDs (match core: accept both "Address ID"/"AddressID" and "Photo ID"/"PhotoID")
+      const addressIDs = idImages.filter(img => img.type === 'Address ID' || img.type === 'AddressID');
+      const photoIDs = idImages.filter(img => img.type === 'PhotoID' || img.type === 'Photo ID');
       
       // Check what's missing
       if (addressIDs.length < 2) {
