@@ -670,7 +670,7 @@ Sends request-data message to parent with:
         // ============================================
         
         const hasCDF = idDocuments.some(doc => doc.type === 'Details form');
-        const profileComplete = window.RequestFormCore.hasCompleteIndividualProfile();
+        const profileComplete = window.RequestFormCore.hasCompleteIndividualProfile({ requireContact: false });
         
         if (!hasCDF && !profileComplete) {
           errors.push('You must upload a CDF (Client Details Form) or complete all client data in the form');

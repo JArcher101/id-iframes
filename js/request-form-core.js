@@ -3489,20 +3489,23 @@ function getFormDataObjects() {
 }
 
 // Determine if the form already contains all data normally captured by the CDF
-function hasCompleteIndividualProfile() {
-  return computeIndividualProfileCompleteness();
+// options.requireContact: when false (Form J), either mobile OR email satisfies; when true (Form E etc), at least one required
+function hasCompleteIndividualProfile(options) {
+  return computeIndividualProfileCompleteness(options);
 }
 
 // Guard to prevent infinite loops during validation
 let isComputingProfileCompleteness = false;
 
-function computeIndividualProfileCompleteness() {
+function computeIndividualProfileCompleteness(options) {
   // Prevent infinite loops
   if (isComputingProfileCompleteness) {
     return false;
   }
   
   isComputingProfileCompleteness = true;
+  
+  const requireContact = options?.requireContact !== false;
   
   try {
     const businessCheckbox = document.getElementById('businessCheckbox');
@@ -3540,12 +3543,14 @@ function computeIndividualProfileCompleteness() {
       return false;
     }
     
-    const email = getValue('email', clientData.e || '');
-    const phoneInput = getValue('phoneNumber', '');
-    const storedPhone = clientData.m || '';
-    
-    if (!email && !phoneInput && !storedPhone) {
-      return false;
+    // Form J: either mobile OR email satisfies (requireContact: false). Form E etc: at least one required.
+    if (requireContact) {
+      const email = getValue('email', clientData.e || '');
+      const phoneInput = getValue('phoneNumber', '');
+      const storedPhone = clientData.m || '';
+      if (!email && !phoneInput && !storedPhone) {
+        return false;
+      }
     }
     
     // Ensure manual address objects are up to date (only if not already building)
