@@ -2097,6 +2097,11 @@
         <button type="button" class="btn-secondary add-btn" id="addSecondAddressIdBtn">Add Another</button>
       </div>
 
+      <div class="custom-note-wrap" style="margin-top: 1rem; margin-bottom: 1rem;">
+        <label for="addressIdCustomNote" class="info-label" style="display:block; margin-bottom: 0.35rem;">Custom note (optional)</label>
+        <textarea id="addressIdCustomNote" class="custom-note-input" rows="3" placeholder="Add any additional note to be appended to the auto-generated message and included on the PDF and upload details." style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; font-family: inherit; font-size: 14px; resize: vertical; box-sizing: border-box;"></textarea>
+      </div>
+
       <div class="button-row">
         <button type="button" class="btn-secondary" id="backToSection3">Back</button>
         <button type="button" class="btn-primary" id="finishBtn">Upload</button>
@@ -2325,6 +2330,7 @@
     const removeEighthAddressIdBtn = document.getElementById('removeEighthAddressIdBtn');
     const removeNinthAddressIdBtn = document.getElementById('removeNinthAddressIdBtn');
     const removeTenthAddressIdBtn = document.getElementById('removeTenthAddressIdBtn');
+    const addressIdCustomNote = document.getElementById('addressIdCustomNote');
 
     // Section 5: Upload progress elements
     const section5 = document.getElementById('section5');
@@ -4989,10 +4995,24 @@
       // Overwrite idImages with new S3 keys data (backend appends to existing)
       finalFormData.idImages = s3Keys;
       
+      // Build chat message (auto-generated + custom note) for PDF, parent payload, and new message with upload details
+      const baseChat = generateChatMessage();
+      const customNote = (addressIdCustomNote && addressIdCustomNote.value) ? addressIdCustomNote.value.trim() : '';
+      const fullMessage = customNote ? (baseChat.message + '\n\n' + customNote) : baseChat.message;
+      const chatMessage = {
+        user: baseChat.user,
+        time: baseChat.time,
+        type: baseChat.type,
+        message: fullMessage
+      };
+      finalFormData.chat = chatMessage;
+      
       // CRITICAL: Capture all data needed for PDF generation BEFORE resetForm() clears it
       // Deep copy all data so PDF generation is completely independent from form reset
       // IMPORTANT: Use snapshot's formData (captured at upload click) for PDF generation
       const pdfData = {
+        // Pre-built chat message (includes custom note) so PDF uses it after form reset
+        chatMessage: chatMessage,
         // Capture formData (especially idImages for existing images)
         existingImages: formData.idImages && Array.isArray(formData.idImages) 
           ? JSON.parse(JSON.stringify(formData.idImages)) // Deep copy
@@ -5081,16 +5101,15 @@
           : JSON.parse(JSON.stringify(pdfData.finalFormData)); // Fallback to current
         finalFormDataForPDF.idImages = allImages;
         
-        // Temporarily set formData.idImages for chat message generation
-        // (generateChatMessage() reads from global formData)
-        const originalIdImages = formData.idImages;
-        formData.idImages = allImages;
-        
-        // Generate chat message based on all images (existing + new)
-        const chatMessage = generateChatMessage();
-        
-        // Restore original formData.idImages immediately
-        formData.idImages = originalIdImages;
+        // Use pre-built chat message from sendUploadSuccessMessage (includes custom note)
+        // so we don't rely on form state which may already be reset
+        const chatMessage = pdfData.chatMessage || (() => {
+          const originalIdImages = formData.idImages;
+          formData.idImages = allImages;
+          const base = generateChatMessage();
+          formData.idImages = originalIdImages;
+          return base;
+        })();
         
         // Add cashier tag and chat message
         finalFormDataForPDF.cashierTag = ['Cashier Note'];
@@ -6246,6 +6265,7 @@
       // Reset Section 4 specific elements
       addressIdCards.classList.add('hidden');
       resetAddressIdCards();
+      if (addressIdCustomNote) addressIdCustomNote.value = '';
       
       // Reset upload progress elements
       progressFill.style.width = '0%';
