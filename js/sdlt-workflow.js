@@ -308,6 +308,8 @@ function normalizeParentMessage(raw) {
 function handleParentMessage(event) {
     var raw = event.data;
     if (!raw || typeof raw !== 'object') return;
+    // Log all incoming messages on load for debugging section/stage issues
+    console.log('[sdlt-workflow] message received', { type: raw.type, rawKeys: raw && typeof raw === 'object' ? Object.keys(raw) : [], raw: raw });
     var _n = typeof normalizeParentMessage === 'function' ? normalizeParentMessage(raw) : normalizeParentMessage(raw);
     var type = _n.type, data = _n.data;
     if (!type) return;
@@ -334,12 +336,29 @@ function handleEntryData(message) {
     // Store entry data (used only for stage determination and action mapping)
     // We do NOT display all entry fields - only workflow-relevant actions
     // Message structure: { type: 'entry-data', data: { user: 'email', data: entryData } }
-    const messageData = message.data || {};
-    entryData = messageData.data || {};  // Actual entry data from collection
+    console.log('[sdlt-workflow] handleEntryData received', { message, messageKeys: message && typeof message === 'object' ? Object.keys(message) : [] });
+    const messageData = message.data !== undefined ? message.data : message; // support both { data: { user, data } } and flat { user, data }
+    const rawEntry = (messageData && messageData.data !== undefined) ? messageData.data : messageData;
+    entryData = rawEntry && typeof rawEntry === 'object' ? rawEntry : {};
+    console.log('[sdlt-workflow] entry-data on load', {
+        messageDataKeys: messageData && typeof messageData === 'object' ? Object.keys(messageData) : [],
+        entryDataKeys: entryData && typeof entryData === 'object' ? Object.keys(entryData) : [],
+        status: entryData.status,
+        statusType: Array.isArray(entryData.status) ? 'array' : typeof entryData.status,
+        thsNotification: entryData.thsNotification,
+        sdltPaid: entryData.sdltPaid,
+        sdltCalculated: entryData.sdltCalculated,
+        idCheckSent: entryData.idCheckSent,
+        feeInvoiceSent: entryData.feeInvoiceSent,
+        sdltInvoiceSent: entryData.sdltInvoiceSent,
+        completionStatementSent: entryData.completionStatementSent,
+        sdlt5Uploaded: entryData.sdlt5Uploaded,
+        entryData: entryData
+    });
     originalEntryData = JSON.parse(JSON.stringify(entryData)); // Deep copy for change tracking
     // Get user from messageData.user (for file uploads) - fallback to 'system' if not available
-    currentUser = messageData.user || 'system';
-    
+    currentUser = (messageData && messageData.user) || 'system';
+
     // Check if this is first-time opening (New Submission + thsNotification = true)
     const statusArray = entryData.status || [];
     const isNewSubmission = statusArray.includes(STATUS.NEW_SUBMISSION);
@@ -371,7 +390,8 @@ function handleEntryData(message) {
     
     // Determine current stage based on entry status/completion flags
     const currentStage = determineCurrentStage(entryData);
-    
+    console.log('[sdlt-workflow] determined stage (section)', { currentStage, statusArray: entryData.status });
+
     // Render only the workflow actions relevant to this stage
     renderWorkflowStage(currentStage);
 }
