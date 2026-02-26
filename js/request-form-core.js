@@ -2424,7 +2424,8 @@ function refreshCDFHintsForProfileChange() {
   toggleCDFHintsState({
     hasCDFDocument,
     isEntity,
-    hasLinkedData
+    hasLinkedData,
+    currentRequestType
   });
 }
 
@@ -5066,19 +5067,22 @@ function updateIDDocumentsUI(data) {
   toggleCDFHintsState({
     hasCDFDocument: hasValidCDFDocument,
     isEntity,
-    hasLinkedData
+    hasLinkedData,
+    currentRequestType
   });
   
   console.log('✅ ID Documents UI updated');
 }
 
-function toggleCDFHintsState({ hasCDFDocument, isEntity, hasLinkedData }) {
+function toggleCDFHintsState({ hasCDFDocument, isEntity, hasLinkedData, currentRequestType }) {
   const cdfPeopleHint = document.getElementById('cdfPeopleHint');
   const cdfEntityHint = document.getElementById('cdfEntityHint');
   const entityLinkedHint = document.getElementById('entityLinkedHint');
   const cdfProfileHint = document.getElementById('cdfProfileCompleteHint');
   
-  const profileComplete = hasCompleteIndividualProfile();
+  // Form J and K don't require mobile/email for profile completeness
+  const requireContact = currentRequestType !== 'formJ' && currentRequestType !== 'formK';
+  const profileComplete = hasCompleteIndividualProfile({ requireContact });
   if (profileComplete !== lastProfileCompleteState) {
     lastProfileCompleteState = profileComplete;
     document.dispatchEvent(new CustomEvent('cdfProfileCompleteChanged', {
