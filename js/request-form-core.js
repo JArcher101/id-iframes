@@ -466,6 +466,11 @@ function loadRequestTypeContent(type) {
   
   // Check if OFSI is required for this type (after module initialization)
   checkOFSIRequirement(type);
+  
+  // Refresh CDF hints when switching to ID-requiring types (hints use request-type-specific requireContact)
+  if (['formJ', 'formK', 'formE', 'esof'].includes(type)) {
+    refreshCDFHintsForProfileChange();
+  }
 }
 
 /**
@@ -518,28 +523,11 @@ function hideOFSIRequiredPopup() {
 }
 
 /**
- * Handle OFSI popup cancel - deselect the form type
+ * Handle OFSI popup cancel - just close the popup, keep request type selected.
+ * User may upload OFSI document in the form; final submit will validate it's there.
  */
 function handleOFSIPopupCancel() {
-  const popup = document.getElementById('ofsiRequiredPopup');
-  const requestType = popup?.dataset?.requestType;
-  
-  if (requestType) {
-    console.log('❌ User cancelled OFSI requirement - deselecting', requestType);
-    
-    // Deselect the tag
-    const tag = document.querySelector(`[data-type="${requestType}"]`);
-    if (tag) {
-      tag.classList.remove('selected');
-    }
-    
-    // Reset state
-    previousRequestType = currentRequestType;
-    currentRequestType = null;
-    elements.dynamicContentContainer.innerHTML = '';
-    resetFormUI(previousRequestType, null);
-  }
-  
+  console.log('ℹ️ User dismissed OFSI prompt - can upload OFSI in form or search later');
   hideOFSIRequiredPopup();
 }
 
@@ -1369,6 +1357,16 @@ function handleClientData(message) {
   
   console.log('✅ Client data loaded and form populated');
   console.log('📊 Form J Flags - Sufficient Photos:', formJSufficientPhotos, '| Conditions Met:', formJConditionsMet);
+  
+  // Restore draft from session storage if returning from sanctions checker (matching _id)
+  const entryId = data._id;
+  const draft = getRequestFormDraftForEntry(entryId);
+  if (draft) {
+    restoreRequestFormDraft(draft);
+    clearRequestFormDraft(entryId);
+  } else {
+    clearRequestFormDraft(); // Clear any stale draft (different entry or none)
+  }
 }
 
 function handleDataRequest() {
@@ -2410,7 +2408,7 @@ function handleCDFProfileFieldChange() {
   }
   cdfProfileChangeDebounceTimer = setTimeout(() => {
     refreshCDFHintsForProfileChange();
-  }, 300); // Wait 300ms after last input before validating
+  }, 150); // Wait 150ms after last input before validating
 }
 
 function refreshCDFHintsForProfileChange() {
@@ -3668,10 +3666,192 @@ if (ofsiOpenBtn) {
 window.openDocument = openDocument;
 
 /*
+Session storage key for request form draft (when user switches to sanctions checker)
+Stored as { entryId, draft } - restored when returning if _id matches
+*/
+const REQUEST_FORM_DRAFT_KEY = 'request-form-draft';
+
+function saveRequestFormDraft(entryId) {
+  if (!entryId) return;
+  try {
+    const draft = serializeRequestFormDraft();
+    sessionStorage.setItem(REQUEST_FORM_DRAFT_KEY, JSON.stringify({ entryId, draft }));
+    console.log('💾 Saved request form draft for entry', entryId);
+  } catch (e) {
+    console.warn('Could not save request form draft:', e);
+  }
+}
+
+function clearRequestFormDraft(entryId) {
+  try {
+    const raw = sessionStorage.getItem(REQUEST_FORM_DRAFT_KEY);
+    if (!raw) return;
+    const stored = JSON.parse(raw);
+    // Clear if: no entryId (unconditional), or stored entryId matches
+    if (entryId === undefined || entryId === null || stored.entryId === entryId) {
+      sessionStorage.removeItem(REQUEST_FORM_DRAFT_KEY);
+      console.log('🗑️ Cleared request form draft');
+    }
+  } catch (e) {
+    sessionStorage.removeItem(REQUEST_FORM_DRAFT_KEY);
+  }
+}
+
+function getRequestFormDraftForEntry(entryId) {
+  if (!entryId) return null;
+  try {
+    const raw = sessionStorage.getItem(REQUEST_FORM_DRAFT_KEY);
+    if (!raw) return null;
+    const { entryId: storedId, draft } = JSON.parse(raw);
+    if (storedId !== entryId) {
+      clearRequestFormDraft(); // Clear stale draft
+      return null;
+    }
+    return draft;
+  } catch (e) {
+    sessionStorage.removeItem(REQUEST_FORM_DRAFT_KEY);
+    return null;
+  }
+}
+
+function serializeRequestFormDraft() {
+  const getVal = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return undefined;
+    if (el.type === 'checkbox') return el.checked;
+    return el.value ?? '';
+  };
+  const getDataset = (id, key) => {
+    const el = document.getElementById(id);
+    return el?.dataset?.[key];
+  };
+  const draft = {
+    worktype: getVal('worktype'),
+    worktypeDropdown: getVal('worktypeDropdown'),
+    relation: getVal('relation'),
+    relationDropdown: getVal('relationDropdown'),
+    matterDescription: getVal('matterDescription'),
+    businessCheckbox: getVal('businessCheckbox'),
+    charityCheckbox: getVal('charityCheckbox'),
+    titlePrefix: getVal('titlePrefix'),
+    firstName: getVal('firstName'),
+    middleName: getVal('middleName'),
+    lastName: getVal('lastName'),
+    dob1: getVal('dob1'), dob2: getVal('dob2'), dob3: getVal('dob3'), dob4: getVal('dob4'),
+    dob5: getVal('dob5'), dob6: getVal('dob6'), dob7: getVal('dob7'), dob8: getVal('dob8'),
+    recentNameChange: getVal('recentNameChange'),
+    previousName: getVal('previousName'),
+    reasonForNameChange: getVal('reasonForNameChange'),
+    businessName: getVal('businessName'),
+    entityNumber: getVal('entityNumber'),
+    phoneCountryCode: getDataset('phoneCountryCode', 'phoneCode'),
+    phoneCountryCodeValue: getVal('phoneCountryCode'),
+    phoneNumber: getVal('phoneNumber'),
+    email: getVal('email'),
+    currentAddress: getVal('currentAddress'),
+    addressNotListed: getVal('addressNotListed'),
+    recentMove: getVal('recentMove'),
+    previousAddress: getVal('previousAddress'),
+    previousAddressNotListed: getVal('previousAddressNotListed'),
+    messageInput: getVal('messageInput'),
+    currentRequestType,
+    currentAddressObject: currentAddressObject && Object.keys(currentAddressObject).length > 0 ? { ...currentAddressObject } : null,
+    previousAddressObject: previousAddressObject && Object.keys(previousAddressObject).length > 0 ? { ...previousAddressObject } : null,
+    // Manual address fields
+    flatNumber: getVal('flatNumber'), buildingNumber: getVal('buildingNumber'), buildingName: getVal('buildingName'),
+    street: getVal('street'), subStreet: getVal('subStreet'), town: getVal('town'), postcode: getVal('postcode'),
+    previousCountry: getVal('previousCountry'),
+    prevFlatNumber: getVal('prevFlatNumber'), prevBuildingNumber: getVal('prevBuildingNumber'), prevBuildingName: getVal('prevBuildingName'),
+    prevStreet: getVal('prevStreet'), prevSubStreet: getVal('prevSubStreet'), prevTown: getVal('prevTown'), prevPostcode: getVal('prevPostcode')
+  };
+  return draft;
+}
+
+function restoreRequestFormDraft(draft) {
+  if (!draft) return;
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (!el || val === undefined) return;
+    if (el.type === 'checkbox') el.checked = !!val;
+    else el.value = val ?? '';
+  };
+  setVal('worktype', draft.worktype);
+  setVal('worktypeDropdown', draft.worktypeDropdown);
+  setVal('relation', draft.relation);
+  setVal('relationDropdown', draft.relationDropdown);
+  setVal('matterDescription', draft.matterDescription);
+  setVal('businessCheckbox', draft.businessCheckbox);
+  setVal('charityCheckbox', draft.charityCheckbox);
+  setVal('titlePrefix', draft.titlePrefix);
+  setVal('firstName', draft.firstName);
+  setVal('middleName', draft.middleName);
+  setVal('lastName', draft.lastName);
+  for (let i = 1; i <= 8; i++) setVal(`dob${i}`, draft[`dob${i}`]);
+  setVal('recentNameChange', draft.recentNameChange);
+  const nameChangeFields = document.getElementById('nameChangeFields');
+  if (nameChangeFields) nameChangeFields.classList.toggle('hidden', !draft.recentNameChange);
+  setVal('previousName', draft.previousName);
+  setVal('reasonForNameChange', draft.reasonForNameChange);
+  setVal('businessName', draft.businessName);
+  setVal('entityNumber', draft.entityNumber);
+  setVal('phoneNumber', draft.phoneNumber);
+  setVal('email', draft.email);
+  setVal('currentAddress', draft.currentAddress);
+  setVal('addressNotListed', draft.addressNotListed);
+  const manualAddressFields = document.getElementById('manualAddressFields');
+  if (manualAddressFields) manualAddressFields.classList.toggle('hidden', !draft.addressNotListed);
+  setVal('recentMove', draft.recentMove);
+  const previousAddressFields = document.getElementById('previousAddressFields');
+  if (previousAddressFields) previousAddressFields.classList.toggle('hidden', !draft.recentMove);
+  setVal('previousAddress', draft.previousAddress);
+  setVal('previousAddressNotListed', draft.previousAddressNotListed);
+  setVal('messageInput', draft.messageInput);
+  setVal('flatNumber', draft.flatNumber);
+  setVal('buildingNumber', draft.buildingNumber);
+  setVal('buildingName', draft.buildingName);
+  setVal('street', draft.street);
+  setVal('subStreet', draft.subStreet);
+  setVal('town', draft.town);
+  setVal('postcode', draft.postcode);
+  setVal('prevFlatNumber', draft.prevFlatNumber);
+  setVal('prevBuildingNumber', draft.prevBuildingNumber);
+  setVal('prevBuildingName', draft.prevBuildingName);
+  setVal('prevStreet', draft.prevStreet);
+  setVal('prevSubStreet', draft.prevSubStreet);
+  setVal('prevTown', draft.prevTown);
+  setVal('prevPostcode', draft.prevPostcode);
+  if (draft.currentAddressObject) {
+    currentAddressObject = draft.currentAddressObject;
+    if (currentAddressObject.country && typeof setCountry === 'function') setCountry('currentCountry', currentAddressObject.country);
+  }
+  if (draft.previousAddressObject) {
+    previousAddressObject = draft.previousAddressObject;
+    if (previousAddressObject.country && typeof setCountry === 'function') setCountry('previousCountry', previousAddressObject.country);
+  }
+  if (draft.phoneCountryCodeValue && typeof setCountry === 'function') {
+    const phoneCodeEl = document.getElementById('phoneCountryCode');
+    if (phoneCodeEl) phoneCodeEl.value = draft.phoneCountryCodeValue;
+  }
+  if (draft.currentRequestType) {
+    currentRequestType = draft.currentRequestType;
+    elements.requestTags.forEach(tag => tag.classList.remove('selected'));
+    const tag = document.querySelector(`[data-type="${draft.currentRequestType}"]`);
+    if (tag) tag.classList.add('selected');
+    loadRequestTypeContent(draft.currentRequestType);
+  }
+  updateClientOrBusinessSection();
+  refreshCDFHintsForProfileChange();
+  console.log('📂 Restored request form draft');
+}
+
+/*
 Request sanctions check from parent - switches lightbox to sanctions state
 */
 function openOFSISearch() {
   console.log('Requesting sanctions check from parent...');
+  
+  const entryId = requestData._id || requestData.data?._id;
+  if (entryId) saveRequestFormDraft(entryId);
   
   // Extract client name
   let clientName = '';
@@ -5122,6 +5302,12 @@ function toggleCDFHintsState({ hasCDFDocument, isEntity, hasLinkedData, currentR
   if (profileComplete) {
     showHint(cdfProfileHint);
   } else {
+    // Form J/K: no contact required; Form E/eSoF: contact required
+    if (cdfPeopleHint) {
+      cdfPeopleHint.textContent = requireContact
+        ? '⚠️ Please upload the Client Details Form (CDF) or complete all required personal details (title, full name, contact method, DOB, current address)'
+        : '⚠️ Please upload the Client Details Form (CDF) or complete all required personal details (title, full name, DOB, current address)';
+    }
     showHint(cdfPeopleHint);
   }
 }
@@ -6107,6 +6293,9 @@ function buildAndSendRequestData(requestType, messageObj, messageFile, documentF
     sendMessageToParent(requestDataMessage);
   }
   
+  // Clear session storage draft on submit (data saved)
+  clearRequestFormDraft(requestData._id || requestData.data?._id);
+  
   // Re-enable submit button
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) submitBtn.disabled = false;
@@ -6300,6 +6489,7 @@ window.RequestFormCore = {
   prepareAndSubmitRequest,
   buildUpdatedClientData,
   // Individual profile completeness helper
-  hasCompleteIndividualProfile
+  hasCompleteIndividualProfile,
+  refreshCDFHintsForProfileChange
 };
 

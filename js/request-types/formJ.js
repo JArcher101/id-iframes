@@ -53,6 +53,11 @@ Sends request-data message to parent with:
         window.RequestFormCore.updateIDDocumentsUI(window.RequestFormCore.requestData());
       }
       
+      // Initial CDF/profile check - refresh hints based on current form data (Form J doesn't require mobile/email)
+      if (window.RequestFormCore && window.RequestFormCore.refreshCDFHintsForProfileChange) {
+        window.RequestFormCore.refreshCDFHintsForProfileChange();
+      }
+      
       // Show nameVerificationHint and check for purchase worktype
       this.showHints();
       

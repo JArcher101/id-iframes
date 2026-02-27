@@ -644,6 +644,17 @@
               <div class="upload-text" id="ofsiUploadText">Upload Document</div>
               <input type="file" class="file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/rtf" id="ofsiFileInput" onchange="handleOFSIFileSelect(event)">
             </div>
+            <div class="ofsi-uploader-actions">
+              <span class="ofsi-actions-divider">or</span>
+              <button type="button" class="ofsi-search-inline-btn" onclick="openOFSISearch()" title="Open OFSI Consolidated Sanctions Search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                Search UK Sanctions List
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -677,7 +688,7 @@
           <p style="margin-top: 10px; font-size: 13px; color: #666;">This will open the OFSI search tool with your client's details pre-filled. After completing the search and uploading the PDF, you'll return to this form with your data intact.</p>
         </div>
         <div class="modal-footer">
-          <button type="button" id="ofsiRequiredCancel" class="modal-btn modal-btn-secondary">Cancel</button>
+          <button type="button" id="ofsiRequiredCancel" class="modal-btn modal-btn-secondary">I'll upload one</button>
           <button type="button" id="ofsiRequiredSearch" class="modal-btn modal-btn-primary">Search UK Sanctions List</button>
         </div>
       </div>
