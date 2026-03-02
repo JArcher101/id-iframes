@@ -5638,6 +5638,9 @@
       // Client name
       const clientName = `${formData.titlePrefix || ''} ${formData.firstName || ''} ${formData.surname || ''}`.trim();
       
+      // Client / Matter number (e.g., "50-52")
+      const clientMatterDisplay = [formData.clientNumber, formData.matterNumber].filter(Boolean).join('-') || null;
+      
       // Form J requirements status (from chat message)
       const meetsFormJ = chatMessage.message.includes('now meets the requirements');
       const formJIcon = meetsFormJ ? '✓' : '⚠';
@@ -5938,6 +5941,14 @@
   </div>
   
   <div class="uploader-info">
+    <div class="uploader-info-item">
+      <div class="uploader-info-label">Client / Matter</div>
+      <div class="uploader-info-value">${clientMatterDisplay || 'Not provided'}</div>
+    </div>
+    <div class="uploader-info-item">
+      <div class="uploader-info-label">Fee Earner</div>
+      <div class="uploader-info-value">${formData.fe || 'Not provided'}</div>
+    </div>
     <div class="uploader-info-item">
       <div class="uploader-info-label">Date</div>
       <div class="uploader-info-value">${dateStr}</div>
