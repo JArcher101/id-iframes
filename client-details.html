@@ -2907,6 +2907,139 @@
     }
     
     /**
+     * Build HTML template for front-slip PDF (client details + green status stamp + checks).
+     * Used when parent sends 'front-slip' message with client data.
+     */
+    function buildFrontSlipPDFHTML(clientData) {
+      if (!clientData || typeof clientData !== 'object') {
+        console.error('Cannot build front-slip PDF HTML: missing or invalid clientData');
+        return '';
+      }
+      const status = (clientData.status || 'PASS').toUpperCase();
+      const validTo = clientData.validTo || '—';
+      const name = clientData.name || [clientData.title, clientData.firstName, clientData.middleNames, clientData.surname].filter(Boolean).join(' ') || '—';
+      const checks = Array.isArray(clientData.thirdfortChecks) ? clientData.thirdfortChecks : [];
+      
+      const html = `<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, .pdf-content {
+      font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', Arial, sans-serif !important;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #111;
+      padding: 12mm;
+      margin: 0;
+      background: white;
+    }
+    .front-slip-outer {
+      border: 8px solid #198754;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 0;
+      page-break-inside: avoid;
+    }
+    .status-stamp {
+      display: inline-block;
+      border: 4px solid #198754;
+      border-radius: 12px;
+      padding: 16px 28px;
+      margin: 16px 0 24px 0;
+      text-align: center;
+      background: rgba(25, 135, 84, 0.08);
+    }
+    .status-stamp .status-line {
+      font-size: 32px;
+      font-weight: bold;
+      color: #198754;
+      letter-spacing: 0.05em;
+      line-height: 1.2;
+    }
+    .status-stamp .valid-line {
+      font-size: 13px;
+      color: #0f5132;
+      margin-top: 8px;
+    }
+    .status-stamp .valid-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #198754;
+    }
+    .info-section { margin-bottom: 20px; padding: 14px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
+    .info-section h2 { color: #003c71; font-size: 16px; font-weight: bold; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #dee2e6; }
+    .info-row { display: flex; margin-bottom: 8px; font-size: 13px; }
+    .info-label { font-weight: 600; min-width: 160px; color: #6c757d; flex-shrink: 0; }
+    .info-value { flex: 1; color: #111; }
+    .checks-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+    .checks-table th { background: #003c71; color: white; padding: 8px 10px; text-align: left; font-weight: bold; border: 1px solid #003c71; }
+    .checks-table td { padding: 8px 10px; border: 1px solid #dee2e6; color: #333; }
+    .checks-table tr:nth-child(even) { background: #f8f9fa; }
+    .footer { margin-top: 24px; padding-top: 16px; border-top: 2px solid #dee2e6; text-align: center; font-size: 11px; color: #999; }
+  </style>
+  <div class="pdf-content">
+    <div class="front-slip-outer">
+      <h1 style="color: #003c71; font-size: 22px; margin-bottom: 8px;">Client Details – Front Slip</h1>
+      <p style="color: #666; font-size: 14px;">${escapeHtml(name)}${clientData.matterDescription ? ' · ' + escapeHtml(clientData.matterDescription) : ''}</p>
+      
+      <div class="status-stamp">
+        <div class="status-line">${escapeHtml(status)}</div>
+        <div class="valid-line">Valid to</div>
+        <div class="valid-value">${escapeHtml(validTo)}</div>
+      </div>
+      
+      <div class="info-section">
+        <h2>Client details</h2>
+        <div class="info-row"><div class="info-label">Name</div><div class="info-value">${escapeHtml(name)}</div></div>
+        <div class="info-row"><div class="info-label">Client number</div><div class="info-value">${escapeHtml(clientData.clientNumber || '—')}</div></div>
+        <div class="info-row"><div class="info-label">Matter number</div><div class="info-value">${escapeHtml(clientData.matterNumber || '—')}</div></div>
+        <div class="info-row"><div class="info-label">Fee earner</div><div class="info-value">${escapeHtml(clientData.feeEarner || '—')}</div></div>
+        <div class="info-row"><div class="info-label">Relation</div><div class="info-value">${escapeHtml(clientData.relation || '—')}</div></div>
+        <div class="info-row"><div class="info-label">Matter description</div><div class="info-value">${escapeHtml(clientData.matterDescription || '—')}</div></div>
+        <div class="info-row"><div class="info-label">Work type</div><div class="info-value">${escapeHtml(clientData.workType || '—')}</div></div>
+        <div class="info-row"><div class="info-label">Date of birth</div><div class="info-value">${escapeHtml(clientData.dateOfBirth || '—')}</div></div>
+        <div class="info-row"><div class="info-label">Business name</div><div class="info-value">${escapeHtml(clientData.businessName || '—')}</div></div>
+        <div class="info-row"><div class="info-label">Entity number</div><div class="info-value">${escapeHtml(clientData.entityNumber || '—')}</div></div>
+      </div>
+      
+      ${checks.length > 0 ? `
+      <div class="info-section">
+        <h2>Thirdfort check results</h2>
+        <table class="checks-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Initiated by</th>
+              <th>Initiated at</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${checks.map(function(c) {
+              return '<tr>' +
+                '<td>' + escapeHtml((c.type || '—').toUpperCase()) + '</td>' +
+                '<td>' + escapeHtml(c.name || '—') + '</td>' +
+                '<td>' + escapeHtml(String(c.status || '—')) + '</td>' +
+                '<td>' + escapeHtml(c.initiatedBy || '—') + '</td>' +
+                '<td>' + escapeHtml(c.initiatedAt || '—') + '</td>' +
+                '<td>' + escapeHtml(c.result || '—') + '</td>' +
+                '</tr>';
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      ` : ''}
+      
+      <div class="footer">
+        <p>Generated from Thurstan Hoskin's Thirdfort ID Management System</p>
+        <p>Date: ${escapeHtml(new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }))}</p>
+      </div>
+    </div>
+  </div>`;
+      return html;
+    }
+    
+    /**
      * Generate and download company/charity summary as PDF
      * Uses html2canvas + jsPDF (like request-form and uk-sanctions-checker)
      */
@@ -3001,6 +3134,66 @@
         if (element) {
           document.body.removeChild(element);
         }
+      }
+    }
+    
+    /**
+     * Generate and download front-slip PDF from client data (triggered by parent 'front-slip' message).
+     * Uses same html2canvas + jsPDF flow as company/charity summary.
+     */
+    async function downloadFrontSlipPDF(clientData) {
+      if (!clientData || typeof clientData !== 'object') {
+        console.error('Cannot generate front-slip PDF: missing or invalid clientData');
+        return;
+      }
+      if (typeof html2canvas === 'undefined' || (typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined')) {
+        console.error('❌ html2canvas or jsPDF library not loaded');
+        return;
+      }
+      try {
+        const pdfHTML = buildFrontSlipPDFHTML(clientData);
+        if (!pdfHTML) {
+          console.error('❌ Failed to build front-slip PDF HTML');
+          return;
+        }
+        const element = document.createElement('div');
+        element.innerHTML = pdfHTML;
+        element.style.position = 'absolute';
+        element.style.left = '-9999px';
+        element.style.width = '210mm';
+        element.style.backgroundColor = '#ffffff';
+        document.body.appendChild(element);
+        const safeName = (clientData.name || clientData.clientNumber || 'client').replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').slice(0, 40);
+        const filename = `Front_Slip_${safeName}_${Date.now()}.pdf`;
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+        document.body.removeChild(element);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        pdf.save(filename);
+        console.log('✅ Front-slip PDF downloaded:', filename);
+      } catch (error) {
+        console.error('❌ Error generating front-slip PDF:', error);
+        const el = document.querySelector('div[style*="-9999px"]');
+        if (el) document.body.removeChild(el);
       }
     }
     
@@ -3680,6 +3873,13 @@
         } else {
           console.warn('No valid clientData provided, loading empty form');
           loadData({});
+        }
+      } else if (msgType === 'front-slip') {
+        const slipData = payload.clientData || payload;
+        if (slipData && typeof slipData === 'object') {
+          downloadFrontSlipPDF(slipData);
+        } else {
+          console.warn('[client-details] front-slip message missing client data');
         }
       } else if (msgType === 'request-data') {
         // Parent is requesting the form data (triggered by Wix save button)
