@@ -3984,7 +3984,11 @@
           loadData({});
         }
       } else if (msgType === 'front-slip') {
-        const slipData = payload.clientData || payload.data || payload.client || payload;
+        let slipData = payload.clientData || payload.data || payload.client || payload;
+        if (slipData && typeof slipData === 'object' && payload && payload !== slipData && typeof payload === 'object') {
+          if (payload.status != null && payload.status !== '') slipData.status = payload.status;
+          if (payload.validTo != null && payload.validTo !== '') slipData.validTo = payload.validTo;
+        }
         const hasSlipData = slipData && typeof slipData === 'object' && (slipData.status != null || Array.isArray(slipData.thirdfortChecks));
         if (hasSlipData) {
           downloadFrontSlipPDF(slipData);
