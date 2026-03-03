@@ -18,7 +18,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   
   <!-- v1/v2 parent message normalizer – must load before any message listener -->
-  <script src="js/jurisdiction-autocomplete.js?v=4d0ebaa"></script>
+  <script src="js/jurisdiction-autocomplete.js?v=81d00c9"></script>
   
   <style>
     /*
@@ -2915,8 +2915,10 @@
         console.error('Cannot build front-slip PDF HTML: missing or invalid clientData');
         return '';
       }
-      const status = String(clientData.status || 'PASS').trim().toUpperCase() || 'PASS';
-      const validTo = (clientData.validTo != null && String(clientData.validTo).trim() !== '' && String(clientData.validTo).trim() !== '-') ? String(clientData.validTo).trim() : '—';
+      var statusVal = clientData.status ?? clientData.Status ?? clientData.statusText ?? '';
+      const status = (String(statusVal).trim().toUpperCase() || 'PASS');
+      var validToVal = clientData.validTo ?? clientData.ValidTo ?? clientData.valid_to ?? '';
+      const validTo = (validToVal != null && String(validToVal).trim() !== '' && String(validToVal).trim() !== '-') ? String(validToVal).trim() : '—';
       const name = clientData.name || [clientData.title, clientData.firstName, clientData.middleNames, clientData.surname].filter(Boolean).join(' ') || '—';
       const checks = Array.isArray(clientData.thirdfortChecks) ? clientData.thirdfortChecks : [];
       const pepStatus = (clientData.pepStatus || '').toUpperCase() || null;
@@ -3096,9 +3098,9 @@
       </div>
       
       <div class="status-block">
-        <div class="status-line">${escapeHtml(status)}</div>
+        <div class="status-line">${escapeHtml(status || 'PASS')}</div>
         <div class="valid-line">Valid to</div>
-        <div class="valid-value">${escapeHtml(validTo)}</div>
+        <div class="valid-value">${escapeHtml(validTo !== '' && validTo != null ? validTo : '—')}</div>
       </div>
       <div class="stamps-row">
         ${showPepBadge ? '<span class="pep-badge ' + pepBadgeClass + '">' + escapeHtml(pepLabel) + '</span>' : ''}
@@ -3985,9 +3987,13 @@
         }
       } else if (msgType === 'front-slip') {
         let slipData = payload.clientData || payload.data || payload.client || payload;
-        if (slipData && typeof slipData === 'object' && payload && payload !== slipData && typeof payload === 'object') {
-          if (payload.status != null && payload.status !== '') slipData.status = payload.status;
-          if (payload.validTo != null && payload.validTo !== '') slipData.validTo = payload.validTo;
+        if (slipData && typeof slipData === 'object' && payload && typeof payload === 'object') {
+          var pStatus = payload.status ?? payload.Status ?? payload.statusText;
+          var pValidTo = payload.validTo ?? payload.ValidTo ?? payload.valid_to;
+          var merge = {};
+          if (pStatus != null && String(pStatus).trim() !== '') merge.status = pStatus;
+          if (pValidTo != null && String(pValidTo).trim() !== '') merge.validTo = pValidTo;
+          if (Object.keys(merge).length) slipData = Object.assign({}, slipData, merge);
         }
         const hasSlipData = slipData && typeof slipData === 'object' && (slipData.status != null || Array.isArray(slipData.thirdfortChecks));
         if (hasSlipData) {
