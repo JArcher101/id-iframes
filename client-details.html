@@ -2915,12 +2915,19 @@
         console.error('Cannot build front-slip PDF HTML: missing or invalid clientData');
         return '';
       }
-      var statusVal = clientData.status ?? clientData.Status ?? clientData.statusText ?? '';
-      var statusStr = String(statusVal).trim().toUpperCase();
-      const status = (statusStr && statusStr !== '-') ? statusStr : 'PASS';
-      var validToVal = clientData.validTo ?? clientData.ValidTo ?? clientData.valid_to ?? '';
+      var statusVal = clientData.status ?? clientData.Status ?? clientData.statusText ?? clientData.s ?? '';
+      var statusStr = String(statusVal).trim();
+      var statusDisplay = 'PASS';
+      if (statusStr && statusStr !== '-') {
+        var n = statusStr.replace(/[\s_-]/g, '').toUpperCase();
+        if (n === 'PASS') statusDisplay = 'PASS';
+        else if (n === 'EPASS') statusDisplay = 'E-PASS';
+        else if (n === 'IDHELD') statusDisplay = 'ID Held';
+        else statusDisplay = statusStr.toUpperCase();
+      }
+      var validToVal = clientData.validTo ?? clientData.ValidTo ?? clientData.valid_to ?? clientData.vT ?? '';
       var validToStr = validToVal != null ? String(validToVal).trim() : '';
-      const validTo = (validToStr && validToStr !== '-') ? validToStr : '—';
+      var validToDisplay = (validToStr && validToStr !== '-') ? validToStr : '—';
       const name = clientData.name || [clientData.title, clientData.firstName, clientData.middleNames, clientData.surname].filter(Boolean).join(' ') || '—';
       const checks = Array.isArray(clientData.thirdfortChecks) ? clientData.thirdfortChecks : [];
       const pepStatus = (clientData.pepStatus || '').toUpperCase() || null;
@@ -3100,9 +3107,9 @@
       </div>
       
       <div class="status-block">
-        <div class="status-line">${escapeHtml(status || 'PASS')}</div>
+        <div class="status-line">${escapeHtml(statusDisplay)}</div>
         <div class="valid-line">Valid to</div>
-        <div class="valid-value">${escapeHtml(validTo !== '' && validTo != null ? validTo : '—')}</div>
+        <div class="valid-value">${escapeHtml(validToDisplay)}</div>
       </div>
       <div class="stamps-row">
         ${showPepBadge ? '<span class="pep-badge ' + pepBadgeClass + '">' + escapeHtml(pepLabel) + '</span>' : ''}
@@ -4001,6 +4008,7 @@
         }
         const hasSlipData = slipData && typeof slipData === 'object' && (slipData.status != null || Array.isArray(slipData.thirdfortChecks));
         if (hasSlipData) {
+          console.log('[client-details] front-slip slipData.status:', slipData.status, 'validTo:', slipData.validTo);
           downloadFrontSlipPDF(slipData);
         } else {
           console.warn('[client-details] front-slip message missing client data (expected status or thirdfortChecks)', payload);
