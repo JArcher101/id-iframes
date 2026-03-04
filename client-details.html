@@ -3110,15 +3110,17 @@
         </div>
       </div>
       
-      <div class="status-block">
-        <div class="status-line" style="color:#1a3d0d;font-size:18px;font-weight:600;">${escapeHtml(statusDisplay)}</div>
-        <div class="valid-line">Valid to</div>
-        <div class="valid-value" style="color:#2d5016;font-size:13px;font-weight:600;">${escapeHtml(validToDisplay)}</div>
-      </div>
-      <div class="stamps-row">
-        ${showPepBadge ? '<span class="pep-badge ' + pepBadgeClass + '">' + escapeHtml(pepLabel) + '</span>' : ''}
-        ${highRiskIndicator ? '<span class="high-risk-stamp">High Risk</span>' : ''}
-      </div>
+      ` +
+      '<div class="status-block">' +
+        '<div class="status-line" style="color:#1a3d0d;font-size:18px;font-weight:bold;">' + escapeHtml(statusDisplay) + '</div>' +
+        '<div class="valid-line" style="color:#555;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-top:6px;">Valid to</div>' +
+        '<div class="valid-value" style="color:#2d5016;font-size:13px;font-weight:bold;">' + escapeHtml(validToDisplay) + '</div>' +
+      '</div>' +
+      '<div class="stamps-row">' +
+        (showPepBadge ? '<span class="pep-badge ' + pepBadgeClass + '">' + escapeHtml(pepLabel) + '</span>' : '') +
+        (highRiskIndicator ? '<span class="high-risk-stamp">High Risk</span>' : '') +
+      '</div>' +
+      `
       
       ${detailRows.length > 0 ? '<div class="info-section"><h2>Client details</h2>' + detailRows.map(function(r) {
         return '<div class="info-row"><div class="info-label">' + escapeHtml(r.label) + '</div><div class="info-value">' + escapeHtml(String(r.value).trim()) + '</div></div>';
@@ -3280,18 +3282,17 @@
           console.error('❌ Failed to build front-slip PDF HTML');
           return;
         }
+        var statusMatch = pdfHTML.match(/class="status-line"[^>]*>([^<]*)</);
+        var validMatch = pdfHTML.match(/class="valid-value"[^>]*>([^<]*)/);
+        console.log('[front-slip PDF] status in HTML:', statusMatch && statusMatch[1], '| validTo in HTML:', validMatch && validMatch[1]);
         const element = document.createElement('div');
         element.className = 'pdf-temp-element';
         element.innerHTML = pdfHTML;
         element.style.position = 'absolute';
-        element.style.left = '0';
-        element.style.top = '0';
+        element.style.left = '-9999px';
         element.style.width = '210mm';
         element.style.backgroundColor = '#ffffff';
-        element.style.opacity = '0.01';
-        element.style.pointerEvents = 'none';
         document.body.appendChild(element);
-        await new Promise(function(r) { requestAnimationFrame(function() { requestAnimationFrame(r); }); });
         const safeName = (clientData.name || clientData.clientNumber || 'client').replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').slice(0, 40);
         const filename = `Front_Slip_${safeName}_${Date.now()}.pdf`;
         const canvas = await html2canvas(element, {
