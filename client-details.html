@@ -3004,6 +3004,8 @@
       font-weight: 600;
       color: #1a3d0d;
       letter-spacing: 0.02em;
+      font-family: Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
     .status-block .valid-line {
       font-size: 10px;
@@ -3011,11 +3013,13 @@
       letter-spacing: 0.08em;
       color: #555;
       margin-top: 6px;
+      font-family: Arial, sans-serif;
     }
     .status-block .valid-value {
       font-size: 13px;
       font-weight: 600;
       color: #2d5016;
+      font-family: Arial, sans-serif;
     }
     .pep-badge, .high-risk-stamp {
       display: inline-block;
@@ -3107,9 +3111,9 @@
       </div>
       
       <div class="status-block">
-        <div class="status-line">${escapeHtml(statusDisplay)}</div>
+        <div class="status-line" style="color:#1a3d0d;font-size:18px;font-weight:600;">${escapeHtml(statusDisplay)}</div>
         <div class="valid-line">Valid to</div>
-        <div class="valid-value">${escapeHtml(validToDisplay)}</div>
+        <div class="valid-value" style="color:#2d5016;font-size:13px;font-weight:600;">${escapeHtml(validToDisplay)}</div>
       </div>
       <div class="stamps-row">
         ${showPepBadge ? '<span class="pep-badge ' + pepBadgeClass + '">' + escapeHtml(pepLabel) + '</span>' : ''}
@@ -3277,12 +3281,17 @@
           return;
         }
         const element = document.createElement('div');
+        element.className = 'pdf-temp-element';
         element.innerHTML = pdfHTML;
         element.style.position = 'absolute';
-        element.style.left = '-9999px';
+        element.style.left = '0';
+        element.style.top = '0';
         element.style.width = '210mm';
         element.style.backgroundColor = '#ffffff';
+        element.style.opacity = '0.01';
+        element.style.pointerEvents = 'none';
         document.body.appendChild(element);
+        await new Promise(function(r) { requestAnimationFrame(function() { requestAnimationFrame(r); }); });
         const safeName = (clientData.name || clientData.clientNumber || 'client').replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').slice(0, 40);
         const filename = `Front_Slip_${safeName}_${Date.now()}.pdf`;
         const canvas = await html2canvas(element, {
@@ -3312,7 +3321,7 @@
         console.log('✅ Front-slip PDF downloaded:', filename);
       } catch (error) {
         console.error('❌ Error generating front-slip PDF:', error);
-        const el = document.querySelector('div[style*="-9999px"]');
+        const el = document.querySelector('.pdf-temp-element');
         if (el) document.body.removeChild(el);
       }
     }
@@ -3996,19 +4005,21 @@
         }
       } else if (msgType === 'front-slip') {
         var rawSlip = (event.data && event.data.data && typeof event.data.data === 'object') ? event.data.data : null;
+        if (!rawSlip && event.data && event.data.data && event.data.data.data && typeof event.data.data.data === 'object') {
+          rawSlip = event.data.data.data;
+        }
         let slipData = rawSlip || payload.clientData || payload.data || payload.client || payload;
-        if (slipData && typeof slipData === 'object' && (payload || rawSlip) && typeof (payload || rawSlip) === 'object') {
+        if (slipData && typeof slipData === 'object') {
           var src = rawSlip || payload;
-          var pStatus = src.status ?? src.Status ?? src.statusText ?? payload?.status ?? payload?.Status;
-          var pValidTo = src.validTo ?? src.ValidTo ?? src.valid_to ?? payload?.validTo ?? payload?.ValidTo;
-          var merge = {};
-          if (pStatus != null && String(pStatus).trim() !== '') merge.status = pStatus;
-          if (pValidTo != null && String(pValidTo).trim() !== '' && String(pValidTo).trim() !== '-') merge.validTo = pValidTo;
-          if (Object.keys(merge).length) slipData = Object.assign({}, slipData, merge);
+          var pStatus = (src && (src.status ?? src.Status ?? src.statusText ?? src.s));
+          var pValidTo = (src && (src.validTo ?? src.ValidTo ?? src.valid_to ?? src.vT));
+          slipData = Object.assign({}, slipData, {
+            status: (pStatus != null && String(pStatus).trim() !== '' && String(pStatus).trim() !== '-') ? String(pStatus).trim() : 'PASS',
+            validTo: (pValidTo != null && String(pValidTo).trim() !== '' && String(pValidTo).trim() !== '-') ? String(pValidTo).trim() : '—'
+          });
         }
         const hasSlipData = slipData && typeof slipData === 'object' && (slipData.status != null || Array.isArray(slipData.thirdfortChecks));
         if (hasSlipData) {
-          console.log('[client-details] front-slip slipData.status:', slipData.status, 'validTo:', slipData.validTo);
           downloadFrontSlipPDF(slipData);
         } else {
           console.warn('[client-details] front-slip message missing client data (expected status or thirdfortChecks)', payload);
