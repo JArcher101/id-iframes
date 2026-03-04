@@ -2993,33 +2993,11 @@
     .front-slip-outer.border-orange { border-color: #8b6914; }
     .front-slip-outer.border-red { border-color: #8b3a3a; }
     .status-block {
-      display: inline-block;
       border-left: 4px solid #2d5016;
-      padding: 12px 20px 12px 20px;
+      padding: 12px 20px;
       margin: 16px 0 20px 0;
       background: #f7f9f6;
-    }
-    .status-block .status-line {
-      font-size: 18px;
-      font-weight: 600;
-      color: #1a3d0d;
-      letter-spacing: 0.02em;
-      font-family: Arial, sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
-    .status-block .valid-line {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #555;
-      margin-top: 6px;
-      font-family: Arial, sans-serif;
-    }
-    .status-block .valid-value {
-      font-size: 13px;
-      font-weight: 600;
-      color: #2d5016;
-      font-family: Arial, sans-serif;
+      display: table;
     }
     .pep-badge, .high-risk-stamp {
       display: inline-block;
@@ -3112,9 +3090,9 @@
       
       ` +
       '<div class="status-block">' +
-        '<div class="status-line" style="color:#1a3d0d;font-size:18px;font-weight:bold;">' + escapeHtml(statusDisplay) + '</div>' +
-        '<div class="valid-line" style="color:#555;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-top:6px;">Valid to</div>' +
-        '<div class="valid-value" style="color:#2d5016;font-size:13px;font-weight:bold;">' + escapeHtml(validToDisplay) + '</div>' +
+        '<b style="font-size:18px;color:#1a3d0d;display:block;">' + escapeHtml(statusDisplay) + '</b>' +
+        '<span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-top:6px;">Valid to</span>' +
+        '<b style="font-size:13px;color:#2d5016;display:block;">' + escapeHtml(validToDisplay) + '</b>' +
       '</div>' +
       '<div class="stamps-row">' +
         (showPepBadge ? '<span class="pep-badge ' + pepBadgeClass + '">' + escapeHtml(pepLabel) + '</span>' : '') +
