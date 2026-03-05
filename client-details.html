@@ -2928,7 +2928,13 @@
       var validToVal = clientData.validTo ?? clientData.ValidTo ?? clientData.valid_to ?? clientData.vT ?? '';
       var validToStr = validToVal != null ? String(validToVal).trim() : '';
       var validToDisplay = (validToStr && validToStr !== '-') ? validToStr : '—';
-      const name = clientData.name || [clientData.title, clientData.firstName, clientData.middleNames, clientData.surname].filter(Boolean).join(' ') || '—';
+      var displayNameFormatted = clientData.name || [clientData.title, clientData.firstName, clientData.middleNames, clientData.surname].filter(Boolean).join(' ') || '—';
+      function nv(v) { if (v == null) return null; var s = String(v).trim(); return (s !== '' && s !== '-') ? s : null; }
+      var first = nv(clientData.firstName);
+      var middle = nv(clientData.middleNames);
+      var last = nv(clientData.surname);
+      var fullName = [first, middle, last].filter(Boolean).join(' ').trim();
+      var name = fullName || displayNameFormatted;
       const checks = Array.isArray(clientData.thirdfortChecks) ? clientData.thirdfortChecks : [];
       const pepStatus = (clientData.pepStatus || '').toUpperCase() || null;
       const highRiskIndicator = clientData.highRiskIndicator === true;
@@ -3077,9 +3083,9 @@
             var client = v(clientData.clientNumber);
             var matter = v(clientData.matterNumber);
             var clientMatter = client && matter ? client + ' / ' + matter : (client || matter);
-            var nameVal = v(name);
+            var nameVal = (name != null && String(name).trim() !== '' && String(name).trim() !== '-') ? String(name).trim() : null;
             var parts = [];
-            if (fe) parts.push('<span>FE ' + escapeHtml(fe) + '</span>');
+            if (fe) parts.push('<span>' + escapeHtml(fe) + '</span>');
             if (clientMatter) parts.push('<span>' + escapeHtml(clientMatter) + '</span>');
             if (nameVal) parts.push('<span>' + escapeHtml(nameVal) + '</span>');
             if (parts.length === 0) return '<span>Front Slip</span>';
