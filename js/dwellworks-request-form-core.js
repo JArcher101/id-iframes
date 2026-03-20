@@ -2317,6 +2317,24 @@ function formatToThirdfort(getAddressData, country = 'GBR') {
   };
 }
 
+function formatAddressForDisplay(addr) {
+  if (!addr) return '';
+  const parts = [];
+  if (addr.building_number) parts.push(addr.building_number);
+  if (addr.building_name) parts.push(addr.building_name);
+  if (addr.street) parts.push(addr.street);
+  if (addr.town) parts.push(addr.town);
+  if (addr.postcode) parts.push(addr.postcode);
+  if (parts.length === 0 && (addr.address_1 || addr.address_2)) {
+    if (addr.address_1) parts.push(addr.address_1);
+    if (addr.address_2) parts.push(addr.address_2);
+    if (addr.town) parts.push(addr.town);
+    if (addr.state) parts.push(addr.state);
+    if (addr.postcode) parts.push(addr.postcode);
+  }
+  return parts.join(', ');
+}
+
 function handleAddressData(address, field) {
   // Get country for the address
   let country = 'GBR';
@@ -2336,8 +2354,14 @@ function handleAddressData(address, field) {
   
   if (field === 'sdlt') {
     sdltAddressObject = formattedAddress;
+    // Update sdltAddress input with full formatted address (including full postcode)
+    const input = document.getElementById('sdltAddress');
+    if (input) input.value = formatAddressForDisplay(formattedAddress);
   } else {
     previousAddressObject = formattedAddress;
+    // Update previousAddress input with full formatted address (including full postcode)
+    const input = document.getElementById('previousAddress');
+    if (input) input.value = formatAddressForDisplay(formattedAddress);
   }
   
   validateForm();

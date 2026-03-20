@@ -617,6 +617,19 @@
         =====================================================================
         */
         
+        // Flatten v2 nested messages { type, data: {...} } back to v1 flat format
+        function normalizeMessage(raw) {
+            if (!raw || typeof raw !== 'object') return raw;
+            if (raw.type && raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
+                var flat = { type: raw.type };
+                for (var k in raw.data) {
+                    if (Object.prototype.hasOwnProperty.call(raw.data, k)) flat[k] = raw.data[k];
+                }
+                return flat;
+            }
+            return raw;
+        }
+
         // Global state
         let wallboardData = null;
         let feeEarnerOptions = [];
@@ -641,8 +654,9 @@
         =====================================================================
         */
         window.addEventListener('message', function(event) {
-            if (event.data.type === 'wallboard-data') {
-                const data = event.data;
+            var msg = normalizeMessage(event.data);
+            if (msg.type === 'wallboard-data') {
+                const data = msg;
                 
                 // Store data
                 wallboardData = data.wallboard || [];
@@ -665,9 +679,9 @@
                 
                 console.log('Wallboard data received and displayed');
             } 
-            else if (event.data.type === 'analytics-data') {
+            else if (msg.type === 'analytics-data') {
                 // Received detailed analytics for specific fee earner
-                const data = event.data;
+                const data = msg;
                 
                 // Store data (handle both 'data' and 'analyticsData' keys for compatibility)
                 feeEarnerAnalyticsData = data.analyticsData || data.data || null;
@@ -684,9 +698,9 @@
                 // Hide loading
                 hideLoading();
             }
-            else if (event.data.type === 'analytics-error') {
+            else if (msg.type === 'analytics-error') {
                 // Parent encountered error fetching analytics
-                console.error('Analytics error:', event.data.error);
+                console.error('Analytics error:', msg.error);
                 
                 // Hide loading
                 hideLoading();
@@ -706,7 +720,7 @@
                     <div style="text-align: center; padding: 40px; color: #dc3545;">
                         <h3 style="font-size: 18px; margin-bottom: 10px;">⚠️ Analytics Error</h3>
                         <p style="font-size: 14px; color: #666;">
-                            ${event.data.message || 'Unable to load analytics data. Please try again.'}
+                            ${msg.message || 'Unable to load analytics data. Please try again.'}
                         </p>
                     </div>
                 `;

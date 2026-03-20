@@ -44,10 +44,13 @@ class ThirdfortChecksList {
     setupMessageListener() {
         // Listen for postMessage from parent window
         window.addEventListener('message', (event) => {
-            // console.log('📨 Received message:', event.data); // Commented out to avoid logging client data
-            
-            if (event.data && event.data.type === 'client-checks') {
-                this.handleClientChecks(event.data.data);
+            const raw = event.data;
+            if (raw && raw.type === 'client-checks') {
+                // Support both v1 { type, data: [checks] } and v2 { type, data: { data: [checks] } }
+                const payload = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data))
+                    ? raw.data
+                    : raw;
+                this.handleClientChecks(payload.data);
             }
         });
     }

@@ -3008,6 +3008,7 @@
     - Address is already in Thirdfort format from parent (no conversion needed)
     - Stores directly in currentAddressObject or previousAddressObject
     - Sets country dropdown based on address.country
+    - Updates address input with full formatted address (including full postcode)
     */
     function handleAddressData(addressData, field) {
       // Address is already in Thirdfort format from parent - use directly
@@ -3017,11 +3018,21 @@
         if (addressData.country) {
           setCountry('currentCountry', addressData.country);
         }
+        // Update address input with full formatted address (including full postcode)
+        const currentAddressEl = document.getElementById('currentAddress');
+        if (currentAddressEl) {
+          currentAddressEl.value = formatThirdfortForDisplay(addressData);
+        }
       } else {
         previousAddressObject = addressData;
         // Set country dropdown based on address.country
         if (addressData.country) {
           setCountry('previousCountry', addressData.country);
+        }
+        // Update address input with full formatted address (including full postcode)
+        const previousAddressEl = document.getElementById('previousAddress');
+        if (previousAddressEl) {
+          previousAddressEl.value = formatThirdfortForDisplay(addressData);
         }
       }
     }

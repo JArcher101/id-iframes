@@ -85,7 +85,12 @@ class ThirdfortChecksManager {
     // ===================================================================
     
     handleMessage(event) {
-        const { type, data } = event.data;
+        const raw = event.data;
+        const type = raw.type;
+        // Support both v1 flat { type, checks, mode } and v2 nested { type, data: { checks, mode } }
+        const data = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data))
+            ? raw.data
+            : (function() { var d = {}; for (var k in raw) { if (k !== 'type' && Object.prototype.hasOwnProperty.call(raw, k)) d[k] = raw[k]; } return d; })();
         
         // console.log('📨 Message received:', type, data); // Commented out to avoid logging client data
         

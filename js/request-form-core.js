@@ -2787,12 +2787,22 @@ function handleAddressData(addressData, field) {
     if (addressData.country) {
       setCountry('currentCountry', addressData.country);
     }
+    // Update address input with full formatted address (including full postcode)
+    const currentAddress = document.getElementById('currentAddress');
+    if (currentAddress) {
+      currentAddress.value = formatAddressForDisplay(addressData);
+    }
     console.log('✅ Stored current address object:', currentAddressObject);
   } else {
     previousAddressObject = addressData;
     // Set country dropdown based on address.country
     if (addressData.country) {
       setCountry('previousCountry', addressData.country);
+    }
+    // Update address input with full formatted address (including full postcode)
+    const previousAddress = document.getElementById('previousAddress');
+    if (previousAddress) {
+      previousAddress.value = formatAddressForDisplay(addressData);
     }
     console.log('✅ Stored previous address object:', previousAddressObject);
   }

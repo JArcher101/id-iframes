@@ -939,6 +939,19 @@
         =====================================================================
         */
         
+        // Flatten v2 nested messages { type, data: {...} } back to v1 flat format
+        function normalizeMessage(raw) {
+            if (!raw || typeof raw !== 'object') return raw;
+            if (raw.type && raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
+                var flat = { type: raw.type };
+                for (var k in raw.data) {
+                    if (Object.prototype.hasOwnProperty.call(raw.data, k)) flat[k] = raw.data[k];
+                }
+                return flat;
+            }
+            return raw;
+        }
+
         // Global state variables
         let userEmail = '';        // User's email address
         let itemId = '';           // Database _id for this chat item
@@ -979,6 +992,7 @@
         =====================================================================
         */
         window.addEventListener('message', function(event) {
+            var msg = normalizeMessage(event.data);
             /*
             ----------------------------------------------------------------
             CASE 1: 'message-data' - Parent sends complete chat data
@@ -1020,8 +1034,8 @@
             with 'message-data'. The liveUrl is used by the File download button.
             The file.name property ensures downloads use the correct filename.
             */
-            if (event.data.type === 'message-data') {
-                const data = event.data;
+            if (msg.type === 'message-data') {
+                const data = msg;
                 
                 // Clear user input and reset upload area from previous interaction
                 document.getElementById('messageInput').value = '';
@@ -1071,9 +1085,9 @@
             
             Triggers uploadFileToS3() to perform actual upload to S3.
             */
-            else if (event.data.type === 'put-links') {
-                const links = event.data.links;
-                const s3Keys = event.data.s3Keys;
+            else if (msg.type === 'put-links') {
+                const links = msg.links;
+                const s3Keys = msg.s3Keys;
                 
                 // console.log('Received PUT links for file upload:', links); // Commented out to avoid logging client data
                 // console.log('File objects with S3 Keys:', s3Keys); // Commented out to avoid logging client data
@@ -1090,8 +1104,8 @@
             ----------------------------------------------------------------
             Error handling when S3 link generation fails
             */
-            else if (event.data.type === 'put-error') {
-                console.error('PUT link generation failed:', event.data.message);
+            else if (msg.type === 'put-error') {
+                console.error('PUT link generation failed:', msg.message);
                 hideUploadingPopup();
                 showError('Please try again.', 'Upload Failed');
                 
@@ -1110,7 +1124,7 @@
             CASE 4: 'button-enable' - Enable send button from parent
             ----------------------------------------------------------------
             */
-            else if (event.data.type === 'button-enable') {
+            else if (msg.type === 'button-enable') {
                 const sendBtn = document.getElementById('sendBtn');
                 if (sendBtn) {
                     sendBtn.disabled = false;
@@ -1122,7 +1136,7 @@
             CASE 5: 'button-disable' - Disable send button from parent
             ----------------------------------------------------------------
             */
-            else if (event.data.type === 'button-disable') {
+            else if (msg.type === 'button-disable') {
                 const sendBtn = document.getElementById('sendBtn');
                 if (sendBtn) {
                     sendBtn.disabled = true;
@@ -1142,7 +1156,7 @@
                 newMessage: 'string of message text input'
             }
             */
-            else if (event.data.type === 'message-value' && isSdltMode) {
+            else if (msg.type === 'message-value' && isSdltMode) {
                 const messageInput = document.getElementById('messageInput');
                 const currentMessage = messageInput ? messageInput.value : '';
                 
@@ -1203,9 +1217,9 @@
             System messages (type: 'system') are supported and displayed as full-width
             inline text, similar to ID message viewer.
             */
-            else if (event.data.type === 'sdlt-message-viewer') {
-                // Handle nested structure: properties may be in event.data.data or at top level
-                const messageData = event.data.data || event.data;
+            else if (msg.type === 'sdlt-message-viewer') {
+                // normalizeMessage already flattens nested structure to top level
+                const messageData = msg;
                 
                 // Enable SDLT mode
                 isSdltMode = true;
@@ -1225,8 +1239,6 @@
                 // Update UI for SDLT mode
                 updateSdltModeUI();
                 
-                // Display all messages from data array
-                // Handle both nested (event.data.data.data) and flat (event.data.data) structures
                 const messagesArray = messageData.data || [];
                 displayMessages(messagesArray, sdltWhiteType);
                 

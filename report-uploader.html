@@ -804,6 +804,19 @@
         =====================================================================
         */
         
+        // Flatten v2 nested messages { type, data: {...} } back to v1 flat format
+        function normalizeMessage(raw) {
+            if (!raw || typeof raw !== 'object') return raw;
+            if (raw.type && raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
+                var flat = { type: raw.type };
+                for (var k in raw.data) {
+                    if (Object.prototype.hasOwnProperty.call(raw.data, k)) flat[k] = raw.data[k];
+                }
+                return flat;
+            }
+            return raw;
+        }
+
         // Global variables
         let clientData = {};
         let userEmail = '';
@@ -1353,47 +1366,36 @@
         =====================================================================
         */
         window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'display-data') {
-                // console.log('Received display-data from parent:', event.data); // Commented out to avoid logging client data
+            var msg = normalizeMessage(event.data);
+            if (msg && msg.type === 'display-data') {
+                clientData = msg.clientData || {};
+                userEmail = msg.userEmail || '';
+                itemId = msg._id || null;
                 
-                // Store client data and enable button
-                clientData = event.data.clientData || {};
-                userEmail = event.data.userEmail || '';
-                itemId = event.data._id || null;
-                
-                // Enable the Add all reports button now that we have clientData
                 document.getElementById('addReportsBtn').disabled = false;
                 
                 console.log('Client data received, button enabled');
-            } else if (event.data && event.data.type === 'put-links') {
-                // console.log('Received PUT links:', event.data); // Commented out to avoid logging client data
+            } else if (msg && msg.type === 'put-links') {
+                itemId = msg._id;
+                s3Keys = msg.s3Keys;
+                uploadedImages = msg.images;
+                const links = msg.links;
                 
-                // Store s3Keys and upload files to S3
-                itemId = event.data._id;
-                s3Keys = event.data.s3Keys;
-                uploadedImages = event.data.images; // Store images data with s3Keys
-                const links = event.data.links;
-                
-                // Upload files to S3
                 uploadFilesToS3(links);
                 
-            } else if (event.data && event.data.type === 'put-error') {
-                console.error('PUT error from backend:', event.data);
+            } else if (msg && msg.type === 'put-error') {
+                console.error('PUT error from backend:', msg);
                 
-                if (event.data._id) {
-                    itemId = event.data._id;
+                if (msg._id) {
+                    itemId = msg._id;
                 }
                 
-                // Hide uploading section and restore uploaders
                 hideUploadingSection();
                 
-                // Show error popup
-                showError(event.data.message || 'Upload failed. Please try again.');
+                showError(msg.message || 'Upload failed. Please try again.');
                 
-                // Re-enable button so user can try again
                 document.getElementById('addReportsBtn').disabled = false;
                 
-                // Clear local files
                 localFilesForUpload = [];
             }
         });

@@ -1051,6 +1051,7 @@ function selectAddressSuggestion(addressId, displayText) {
  * Handle full address data from parent
  * - Address is already in Thirdfort format from parent (no conversion needed)
  * - Sets country dropdown and loads address into manual fields
+ * - Updates liteAddress input with full formatted address (including full postcode)
  */
 function handleAddressData(addressData, field) {
   // Address is already in Thirdfort format from parent - use directly
@@ -1063,6 +1064,12 @@ function handleAddressData(addressData, field) {
   if (field === 'lite' || field === 'current') {
     // Load address into manual fields only
     loadAddressIntoManualFields(addressData, 'lite');
+    
+    // Update liteAddress input with full formatted address (including full postcode)
+    const liteAddressEl = document.getElementById('liteAddress');
+    if (liteAddressEl) {
+      liteAddressEl.value = formatAddressForCard(addressData);
+    }
     
     // Show manual address fields if hidden
     const liteManualAddressFields = document.getElementById('liteManualAddressFields');
@@ -1211,19 +1218,31 @@ function checkAndPopulateIDVImages(data) {
   // Filter photo ID images from idI array
   const photoIdImages = (data.idI || []).filter(img => img.type === 'PhotoID');
   
-  // Check for suitable photo ID types
+  // Check for suitable photo ID types (valid identity documents for IDV).
+  // "Other Photo ID Card" is NOT included: backend often sends bus passes, travel passes, etc. as
+  // "Other", so we only accept explicit ID types to avoid treating those as valid for IDV.
   const suitableTypes = {
     'Passport': 'passport',
     'Driving Licence': 'driving_licence',
     'Passport Card': 'national_identity_card',
     'National Identity Card': 'national_identity_card',
-    'Residence Permit': 'residence_permit',
-    'Other Photo ID Card': 'other'
+    'Residence Permit': 'residence_permit'
   };
   
-  const availableImages = photoIdImages.filter(img => 
-    Object.keys(suitableTypes).includes(img.document)
-  );
+  // Document types that are NOT valid for IDV (e.g. travel/concession cards)
+  const idvExcludedDocumentTypes = [
+    'Bus Pass', 'Bus pass', 'bus pass',
+    'Travel Pass', 'Travel pass', 'travel pass',
+    'Concessionary Pass', 'Concessionary pass',
+    'Oyster', 'Freedom Pass', 'Senior Pass', 'Disabled Pass'
+  ];
+  const excludedLower = new Set(idvExcludedDocumentTypes.map(s => s.toLowerCase()));
+  
+  const availableImages = photoIdImages.filter(img => {
+    const doc = (img.document || '').trim();
+    if (!doc || excludedLower.has(doc.toLowerCase())) return false;
+    return Object.keys(suitableTypes).includes(img.document);
+  });
   
   // If NO photo IDs at all OR no suitable types, disable buttons and show error
   if (photoIdImages.length === 0) {
@@ -3829,7 +3848,8 @@ function updateLiteAddressCardStates() {
 }
 
 /**
- * Format address object for display in address card
+ * Format address object for display in address card or input field
+ * Handles both UK (building fields) and international (address_1, address_2) formats
  */
 function formatAddressForCard(addressObject) {
   if (!addressObject) return '—';
@@ -3844,7 +3864,16 @@ function formatAddressForCard(addressObject) {
     addressObject.postcode
   ].filter(p => p && p.trim());
   
-  return parts.join(', ') || '—';
+  // USA/International: address_1, address_2 when no UK-style fields
+  if (parts.length === 0 && (addressObject.address_1 || addressObject.address_2)) {
+    if (addressObject.address_1) parts.push(addressObject.address_1);
+    if (addressObject.address_2) parts.push(addressObject.address_2);
+    if (addressObject.town) parts.push(addressObject.town);
+    if (addressObject.state) parts.push(addressObject.state);
+    if (addressObject.postcode) parts.push(addressObject.postcode);
+  }
+  
+  return parts.length > 0 ? parts.join(', ') : '—';
 }
 
 // detectLiteAddressChange() and addressObjectsMatch() removed:
