@@ -503,16 +503,7 @@
             <div class="wallboard-view" id="wallboardView">
                 <table class="metrics-table" id="metricsTable">
                     <thead>
-                        <tr>
-                            <th>Metric</th>
-                            <th>SJM</th>
-                            <th>MB</th>
-                            <th>SKN</th>
-                            <th>EL</th>
-                            <th>EJL</th>
-                            <th>LJD</th>
-                            <th>MLP</th>
-                        </tr>
+                        <tr id="metricsHeadRow"></tr>
                     </thead>
                     <tbody id="metricsBody">
                         <!-- Rows will be populated by JavaScript -->
@@ -642,6 +633,39 @@
         let selectedFeeEarner = '';
         let feeEarnerAnalyticsData = null; // Detailed analytics for specific fee earner
 
+        const WALLBOARD_ROW_RESERVED_KEYS = new Set(['title', 'total']);
+
+        /** Fee earner columns for the table/charts: key matches row properties (lowercase), label is short header (value uppercase). */
+        function getFeeEarnerColumnsFromOptions() {
+            const list = [];
+            const seen = new Set();
+            (feeEarnerOptions || []).forEach(opt => {
+                if (!opt || opt.value == null || String(opt.value).trim() === '') return;
+                if (String(opt.value).toUpperCase() === 'ALL') return;
+                const key = String(opt.value).toLowerCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                list.push({ key, label: String(opt.value).toUpperCase() });
+            });
+            return list;
+        }
+
+        /** Same columns as the analytics dropdown; if options are missing, infer from first wallboard row. */
+        function getWallboardTableColumns(data) {
+            const fromOpts = getFeeEarnerColumnsFromOptions();
+            if (fromOpts.length > 0) return fromOpts;
+            if (!data || !data.length) return [];
+            const seen = new Set();
+            const list = [];
+            Object.keys(data[0]).forEach(k => {
+                const lk = k.toLowerCase();
+                if (WALLBOARD_ROW_RESERVED_KEYS.has(lk) || seen.has(lk)) return;
+                seen.add(lk);
+                list.push({ key: lk, label: lk.toUpperCase() });
+            });
+            return list;
+        }
+
         /*
         =====================================================================
         INITIALIZATION - Ready to receive data
@@ -740,40 +764,54 @@
         */
         function populateMetricsTable(data) {
             const tbody = document.getElementById('metricsBody');
-            tbody.innerHTML = ''; // Clear existing rows
-            
+            const theadRow = document.getElementById('metricsHeadRow');
+            tbody.innerHTML = '';
+
+            const columns = getWallboardTableColumns(data);
+            const colCount = columns.length;
+
+            theadRow.innerHTML = '';
+            const thMetric = document.createElement('th');
+            thMetric.textContent = 'Metric';
+            theadRow.appendChild(thMetric);
+            columns.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col.label;
+                theadRow.appendChild(th);
+            });
+
+            const emptyColspan = Math.max(1 + colCount, 2);
+
             if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #666;">No data available</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="${emptyColspan}" style="text-align: center; padding: 20px; color: #666;">No data available</td></tr>`;
                 return;
             }
-            
-            // Fee earner keys in order
-            const feeEarners = ['sjm', 'mb', 'skn', 'el', 'ejl', 'ljd', 'mlp'];
-            
-            // Create a row for each metric
+
+            if (colCount === 0) {
+                tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 20px; color: #666;">No fee earner columns (check feeEarnerOptions or wallboard row keys)</td></tr>`;
+                return;
+            }
+
             data.forEach((row, rowIndex) => {
                 const tr = document.createElement('tr');
                 tr.dataset.rowIndex = rowIndex;
-                
-                // Title cell (metric name)
+
                 const titleCell = document.createElement('td');
                 titleCell.textContent = row.title || 'Unknown Metric';
                 titleCell.dataset.isTitle = 'true';
                 tr.appendChild(titleCell);
-                
-                // Data cells for each fee earner
-                feeEarners.forEach((fe, colIndex) => {
+
+                columns.forEach((col, colIndex) => {
                     const dataCell = document.createElement('td');
-                    dataCell.textContent = row[fe] !== undefined ? row[fe] : '-';
+                    dataCell.textContent = row[col.key] !== undefined ? row[col.key] : '-';
                     dataCell.dataset.colIndex = colIndex;
                     dataCell.dataset.rowIndex = rowIndex;
                     tr.appendChild(dataCell);
                 });
-                
+
                 tbody.appendChild(tr);
             });
-            
-            // Add hover event listeners
+
             addTableHoverEffects();
         }
 
@@ -1009,7 +1047,11 @@
                 hour: '2-digit',
                 minute: '2-digit'
             });
-            
+            const pdfColumns = getWallboardTableColumns(wallboardData);
+            const feeEarnerSummary = pdfColumns.length
+                ? pdfColumns.map(c => escapeHtml(c.label)).join(', ')
+                : '—';
+
             // Build full HTML document (like uk-sanctions-checker)
             let html = `
                 <!DOCTYPE html>
@@ -1042,7 +1084,7 @@
                             </div>
                             <div style="display: flex; gap: 8px;">
                                 <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Fee Earners:</span>
-                                <span style="color: #333;">SJM, MB, SKN, EL, EJL, LJD, MLP</span>
+                                <span style="color: #333;">${feeEarnerSummary}</span>
                             </div>
                             <div style="display: flex; gap: 8px;">
                                 <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Metrics Count:</span>
@@ -1054,6 +1096,10 @@
             
             // Metrics Table
             if (wallboardData.length > 0) {
+                const thStyle = 'padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;';
+                const headerCells = pdfColumns.map(
+                    c => `<th style="${thStyle}">${escapeHtml(c.label)}</th>`
+                ).join('');
                 html += `
                     <div style="font-size: 18px; font-weight: bold; color: #003c71; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #dee2e6;">Metrics Overview</div>
                     
@@ -1061,13 +1107,7 @@
                         <thead>
                             <tr style="background: #003c71; color: white;">
                                 <th style="padding: 12px 16px; text-align: left; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; min-width: 200px;">Metric</th>
-                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">SJM</th>
-                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">MB</th>
-                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">SKN</th>
-                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">EL</th>
-                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">EJL</th>
-                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">LJD</th>
-                                <th style="padding: 12px 16px; text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">MLP</th>
+                                ${headerCells}
                             </tr>
                         </thead>
                         <tbody>
@@ -1075,16 +1115,15 @@
                 
                 wallboardData.forEach((row, index) => {
                     const rowStyle = index % 2 === 0 ? 'background: #f9f9f9;' : 'background: white;';
+                    const dataCells = pdfColumns.map(col => {
+                        const v = row[col.key];
+                        const display = v !== undefined && v !== null ? String(v) : '-';
+                        return `<td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${escapeHtml(display)}</td>`;
+                    }).join('');
                     html += `
                         <tr style="${rowStyle} border-bottom: 1px solid #eee;">
                             <td style="padding: 12px 16px; font-size: 14px; font-weight: 600; color: #003c71;">${escapeHtml(row.title || 'Unknown')}</td>
-                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.sjm !== undefined ? row.sjm : '-'}</td>
-                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.mb !== undefined ? row.mb : '-'}</td>
-                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.skn !== undefined ? row.skn : '-'}</td>
-                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.el !== undefined ? row.el : '-'}</td>
-                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.ejl !== undefined ? row.ejl : '-'}</td>
-                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.ljd !== undefined ? row.ljd : '-'}</td>
-                            <td style="padding: 12px 16px; font-size: 14px; text-align: center; color: #333;">${row.mlp !== undefined ? row.mlp : '-'}</td>
+                            ${dataCells}
                         </tr>
                     `;
                 });
@@ -1382,8 +1421,9 @@
         */
         function createAllModeChart(canvas, title, analyticsData) {
             const ctx = canvas.getContext('2d');
-            const feeEarners = ['SJM', 'MB', 'SKN', 'EL', 'EJL', 'LJD', 'MLP'];
-            const colors = [
+            const columnMeta = getWallboardTableColumns(wallboardData);
+            const feeEarners = columnMeta.map(c => c.label);
+            const baseColors = [
                 'rgba(0, 60, 113, 0.8)',    // Navy
                 'rgba(212, 165, 116, 0.8)', // Tan
                 'rgba(74, 144, 226, 0.8)',  // Blue
@@ -1392,6 +1432,12 @@
                 'rgba(155, 89, 182, 0.8)',  // Purple
                 'rgba(241, 196, 15, 0.8)'   // Yellow
             ];
+            const colors = feeEarners.map((_, i) => baseColors[i % baseColors.length]);
+
+            if (feeEarners.length === 0) {
+                console.warn('Wallboard ALL analytics: no fee earner columns (feeEarnerOptions vs wallboard row keys)');
+                return;
+            }
             
             switch(title) {
                 case 'Outstanding by Age (Per FE)':
