@@ -180,7 +180,16 @@ function determineCurrentStage(entry) {
 // Upload state
 let uploadInProgress = false;
 let pendingFiles = [];
-let pendingPdfBlob = null; // Store PDF blob for SDLT calculation upload
+let pendingPdfBlob = null; // Store PDF Blob/File for SDLT calculation upload (generated or user-selected)
+
+/** Filename sent in file-data metadata / upload queue (user PDF keeps original .name). */
+function getPendingCalculationPdfDisplayName() {
+    if (!pendingPdfBlob) return 'SDLT Calculation.pdf';
+    if (typeof File !== 'undefined' && pendingPdfBlob instanceof File && pendingPdfBlob.name) {
+        return pendingPdfBlob.name;
+    }
+    return 'SDLT Calculation.pdf';
+}
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', function() {
@@ -240,6 +249,13 @@ function setupEventListeners() {
     if (openSdltCalculatorBtn) {
         openSdltCalculatorBtn.addEventListener('click', handleOpenSdltCalculator);
     }
+
+    const toggleOwnCalculationUploadBtn = document.getElementById('toggleOwnCalculationUploadBtn');
+    if (toggleOwnCalculationUploadBtn) {
+        toggleOwnCalculationUploadBtn.addEventListener('click', handleToggleOwnCalculationUpload);
+    }
+
+    setupOwnCalculationPdfUpload();
     
     // Request ID Checks button
     const requestIdChecksBtn = document.getElementById('requestIdChecksBtn');
@@ -443,6 +459,10 @@ function handleSaveData(message) {
         
         // Add PDF blob if present
         if (pendingPdfBlob) {
+            const calcPdfName = getPendingCalculationPdfDisplayName();
+            const lastMod = (typeof File !== 'undefined' && pendingPdfBlob instanceof File && pendingPdfBlob.lastModified)
+                ? pendingPdfBlob.lastModified
+                : Date.now();
             fileMetadata.push({
                 type: 'user',
                 document: 'SDLT Calculation',
@@ -459,8 +479,8 @@ function handleSaveData(message) {
                 data: {
                     type: 'application/pdf',
                     size: pendingPdfBlob.size,
-                    name: 'SDLT Calculation.pdf',
-                    lastModified: Date.now()
+                    name: calcPdfName,
+                    lastModified: lastMod
                 },
                 file: {}, // File object will be serialized to {} in postMessage (we'll use the blob directly for upload)
                 isCalculation: true,
@@ -716,7 +736,7 @@ function handlePutLinks(message) {
     if (pendingPdfBlob) {
         filesToUpload.push({
             file: pendingPdfBlob,
-            name: 'SDLT Calculation.pdf',
+            name: getPendingCalculationPdfDisplayName(),
             type: 'application/pdf',
             size: pendingPdfBlob.size,
             fieldKey: 'sdltCalculation'
@@ -839,6 +859,8 @@ function handlePutLinks(message) {
             // Clear upload state
             uploadInProgress = false;
             pendingFiles = [];
+
+            clearOwnCalculationUploadUI();
             
             // Send save-data-response with all updates (including the files)
             sendSaveDataResponse();
@@ -859,6 +881,7 @@ function handlePutLinks(message) {
             uploadInProgress = false;
             pendingFiles = [];
             pendingPdfBlob = null; // Clear pending PDF blob on error
+            clearOwnCalculationUploadUI();
             
             // Clear accounting files on error
             accountingFiles.thsInvoice = null;
@@ -887,6 +910,7 @@ function handlePutError(message) {
     uploadInProgress = false;
     pendingFiles = [];
     pendingPdfBlob = null; // Clear pending PDF blob on error
+    clearOwnCalculationUploadUI();
 }
 
 /**
@@ -1310,7 +1334,10 @@ function setupCalculatorEventListeners() {
         'calcLeaseTerm',
         'calcAnnualRent',
         'calcRentFreePeriod',
-        'calcPreviousNPV'
+        'calcPreviousNPV',
+        'calcPropertyClass',
+        'calcPremium',
+        'calcLesseeType'
     ];
     
     calcInputs.forEach(id => {
@@ -1358,6 +1385,11 @@ function setupCalculatorEventListeners() {
     const addSteppedRentRowBtn = document.getElementById('addSteppedRentRow');
     if (addSteppedRentRowBtn) {
         addSteppedRentRowBtn.addEventListener('click', addSteppedRentRow);
+    }
+
+    const companyReliefCb = document.getElementById('calcCompanyReliefFrom17');
+    if (companyReliefCb) {
+        companyReliefCb.addEventListener('change', performCalculation);
     }
 }
 
@@ -1521,138 +1553,328 @@ function removeSteppedRentRow(button) {
 // Make function available globally for onclick handlers
 window.removeSteppedRentRow = removeSteppedRentRow;
 
+/** Statutory SDLT NPV discount rate (FA 2003 Sch 5) */
+const SDLT_NPV_DISCOUNT_RATE = 0.035;
+
 /**
- * Calculate NPV (Net Present Value) for the lease
+ * Annual rent for a given lease year (1-based), after rent-free whole-year treatment.
  */
-function calculateNPV(annualRent, leaseTerm, discountRate = 0.035, rentFreePeriod = 0, steppedRent = null) {
-    let npv = 0;
-    const rentFreeYears = rentFreePeriod / 12;
-    
+function rentPayableForYear(year, annualRent, steppedRent, rentFreeYears) {
+    if (year <= rentFreeYears) return 0;
     if (steppedRent && steppedRent.length > 0) {
-        // Use stepped rent schedule
-        steppedRent.forEach(step => {
-            const startYear = step.startYear;
-            const endYear = step.endYear;
-            const rent = step.rent;
-            
-            for (let year = startYear; year <= endYear; year++) {
-                if (year <= rentFreeYears) continue; // Skip rent-free period
-                npv += rent / Math.pow(1 + discountRate, year);
-            }
-        });
-    } else {
-        // Use constant annual rent
-        for (let year = 1; year <= leaseTerm; year++) {
-            if (year <= rentFreeYears) continue; // Skip rent-free period
-            npv += annualRent / Math.pow(1 + discountRate, year);
+        for (const step of steppedRent) {
+            if (year >= step.startYear && year <= step.endYear) return step.rent;
         }
+        return 0;
     }
-    
+    return annualRent;
+}
+
+/**
+ * Net present value of rent, aligned with HMRC SDLTM13075:
+ * use actual rent for each of the first five years (or whole term if shorter), then
+ * the highest rent payable in any of those years for all later years of the term.
+ */
+function calculateNPV(annualRent, leaseTerm, discountRate = SDLT_NPV_DISCOUNT_RATE, rentFreePeriod = 0, steppedRent = null) {
+    const rentFreeYears = rentFreePeriod / 12;
+    const maxYear = Math.max(0, Math.ceil(Number(leaseTerm) - 1e-9));
+    if (maxYear < 1) return 0;
+
+    const firstFiveCount = Math.min(5, maxYear);
+    const rentsFirstFive = [];
+    for (let y = 1; y <= firstFiveCount; y++) {
+        rentsFirstFive.push(rentPayableForYear(y, annualRent, steppedRent, rentFreeYears));
+    }
+    const highestForTail = rentsFirstFive.length ? Math.max(...rentsFirstFive) : 0;
+
+    let npv = 0;
+    for (let year = 1; year <= maxYear; year++) {
+        const rent = year <= 5
+            ? rentPayableForYear(year, annualRent, steppedRent, rentFreeYears)
+            : (year <= rentFreeYears ? 0 : highestForTail);
+        npv += rent / Math.pow(1 + discountRate, year);
+    }
     return npv;
 }
 
 /**
- * Generate lease extension notes for first-year leases
- * @param {number} leaseTerm - Lease term in years
- * @param {number} annualRent - Annual rent amount
- * @param {number} npv - Current Net Present Value
- * @param {number} threshold - SDLT threshold (default £125,000)
- * @param {number} sdltDue - SDLT due amount
- * @returns {string} HTML formatted notes
+ * Highest annual rent used for years after year 5 (HMRC “highest 12-month rent” proxy from yearly figures).
  */
-function calculateExtensionNote(leaseTerm, annualRent, npv, threshold, sdltDue) {
-    let notes = [];
-    
-    if (leaseTerm === 1) {
-        if (sdltDue > 0) {
-            // SDLT is payable - note that extensions will trigger additional SDLT
-            notes.push("Note: This is a first-year lease. Any extensions to the lease term will likely trigger additional SDLT payable.");
-        } else {
-            // No SDLT currently due - calculate how long extension would be needed before SDLT becomes payable
-            // Simplified calculation: estimate years needed to reach threshold
-            const discountRate = 0.035;
-            let extendedTerm = leaseTerm;
-            let tempNPV = npv;
-            
-            // Add years until NPV exceeds threshold
-            while (tempNPV <= threshold && extendedTerm < 100) {
-                extendedTerm += 1;
-                tempNPV += annualRent / Math.pow(1 + discountRate, extendedTerm);
-            }
-            
-            if (extendedTerm > leaseTerm && annualRent > 0) {
-                const yearsNeeded = extendedTerm - leaseTerm;
-                notes.push(`Note: This is a first-year lease with no SDLT currently due. An extension of approximately ${yearsNeeded} year(s) would be required before SDLT becomes payable, assuming current annual rent and discount rate.`);
-            } else if (annualRent > 0) {
-                notes.push("Note: This is a first-year lease with no SDLT currently due. Extensions may trigger SDLT payable depending on future rent and term.");
-            }
-        }
+function highestRentFirstFiveYears(annualRent, leaseTerm, rentFreePeriod = 0, steppedRent = null) {
+    const rentFreeYears = rentFreePeriod / 12;
+    const maxYear = Math.max(0, Math.ceil(Number(leaseTerm) - 1e-9));
+    const firstFiveCount = Math.min(5, maxYear);
+    if (firstFiveCount < 1) return 0;
+    let hi = 0;
+    for (let y = 1; y <= firstFiveCount; y++) {
+        const r = rentPayableForYear(y, annualRent, steppedRent, rentFreeYears);
+        if (r > hi) hi = r;
     }
-    
-    return notes.map(note => `<p style="margin-top: 10px; font-style: italic; color: #555;">${note}</p>`).join('');
+    return hi;
+}
+
+/** SDLT on residential lease rent NPV (gov.uk: 1% above £125,000). */
+function sdltResidentialRentTax(npv) {
+    if (npv <= 125000) return 0;
+    return Math.round((npv - 125000) * 0.01 * 100) / 100;
+}
+
+/** SDLT on non-residential lease rent NPV (marginal slices per gov.uk). */
+function sdltNonResidentialRentTax(npv) {
+    if (npv <= 150000) return 0;
+    let tax = 0;
+    const slice1End = Math.min(npv, 5000000);
+    tax += (slice1End - 150000) * 0.01;
+    if (npv > 5000000) {
+        tax += (npv - 5000000) * 0.02;
+    }
+    return Math.round(tax * 100) / 100;
+}
+
+function sdltRentNpvTax(npv, isResidential) {
+    return isResidential ? sdltResidentialRentTax(npv) : sdltNonResidentialRentTax(npv);
+}
+
+/** Residential / lease premium — same slices as gov.uk single-property rates. */
+function sdltResidentialPremiumTax(premium) {
+    if (!premium || premium <= 0) return 0;
+    let tax = 0;
+    let rem = premium;
+    const b0 = Math.min(rem, 125000);
+    rem -= b0;
+    const b1 = Math.min(rem, 125000);
+    tax += b1 * 0.02;
+    rem -= b1;
+    const b2 = Math.min(rem, 675000);
+    tax += b2 * 0.05;
+    rem -= b2;
+    const b3 = Math.min(rem, 575000);
+    tax += b3 * 0.10;
+    rem -= b3;
+    tax += rem * 0.12;
+    return Math.round(tax * 100) / 100;
+}
+
+/** Non-residential / mixed premium — gov.uk table. */
+function sdltNonResidentialPremiumTax(premium) {
+    if (!premium || premium <= 0) return 0;
+    let tax = 0;
+    let rem = premium;
+    const b0 = Math.min(rem, 150000);
+    rem -= b0;
+    const b1 = Math.min(rem, 100000);
+    tax += b1 * 0.02;
+    rem -= b1;
+    tax += rem * 0.05;
+    return Math.round(tax * 100) / 100;
+}
+
+/** From 1 April 2025 — higher rates when companies buy residential (gov.uk additional-property style table). */
+function sdltResidentialHigherRatesPremiumTax(premium) {
+    if (!premium || premium <= 0) return 0;
+    let tax = 0;
+    let rem = premium;
+    const b0 = Math.min(rem, 125000);
+    tax += b0 * 0.05;
+    rem -= b0;
+    const b1 = Math.min(rem, 125000);
+    tax += b1 * 0.07;
+    rem -= b1;
+    const b2 = Math.min(rem, 675000);
+    tax += b2 * 0.10;
+    rem -= b2;
+    const b3 = Math.min(rem, 575000);
+    tax += b3 * 0.15;
+    rem -= b3;
+    tax += rem * 0.17;
+    return Math.round(tax * 100) / 100;
+}
+
+const SDLT_COMPANY_HIGHER_RATES_MIN = 40000;
+const SDLT_COMPANY_17PC_THRESHOLD = 500000;
+
+/**
+ * Residential lease premium when the lessee is a company (non-natural person).
+ * Under £40,000: standard residential slices. £40,000–£500,000: higher rates.
+ * Above £500,000: 17% on the premium unless relief disapplies that rate (then higher rates).
+ * @see https://www.gov.uk/guidance/stamp-duty-land-tax-corporate-bodies
+ * @see https://www.gov.uk/guidance/stamp-duty-land-tax-buying-an-additional-residential-property (companies)
+ */
+function sdltCompanyResidentialPremiumTax(premium, reliefFrom17Percent) {
+    if (!premium || premium <= 0) return 0;
+    if (premium < SDLT_COMPANY_HIGHER_RATES_MIN) {
+        return sdltResidentialPremiumTax(premium);
+    }
+    if (premium > SDLT_COMPANY_17PC_THRESHOLD) {
+        if (!reliefFrom17Percent) {
+            return Math.round(premium * 0.17 * 100) / 100;
+        }
+        return sdltResidentialHigherRatesPremiumTax(premium);
+    }
+    return sdltResidentialHigherRatesPremiumTax(premium);
 }
 
 /**
- * Calculate SDLT due based on NPV
- * For variations: Only charges SDLT on the increase since last assessment
- * @param {number} npv - Current Net Present Value
- * @param {number} threshold - SDLT threshold (default £125,000)
- * @param {boolean} isVariation - Whether this is a lease variation
- * @param {number} previousNPV - Previously assessed NPV (only used if SDLT was already paid)
- * @returns {object} { sdltDue, explanation, threshold }
+ * @param {boolean} reliefFrom17Percent - Relief from 17% rate (e.g. employee occupation); only used for company + residential + premium &gt; £500k.
  */
-function calculateSDLT(npv, threshold = 125000, isVariation = false, previousNPV = 0) {
-    let sdltDue = 0;
-    let explanation = '';
-    
+function sdltPremiumTax(premium, isResidential, isCompany, reliefFrom17Percent) {
+    if (!premium || premium <= 0) return 0;
+    if (!isResidential) return sdltNonResidentialPremiumTax(premium);
+    if (!isCompany) return sdltResidentialPremiumTax(premium);
+    return sdltCompanyResidentialPremiumTax(premium, reliefFrom17Percent);
+}
+
+/**
+ * Full SDLT breakdown for a new grant or variation (rent NPV + premium).
+ * @param {boolean} isCompany - Lessee is a company / non-natural person (affects residential premium only).
+ * @param {boolean} reliefFrom17Percent - Company relief from 17% rate when premium &gt; £500k (residential).
+ */
+function computeLeaseSdltBreakdown(npv, premium, isResidential, isVariation, previousNPV, isCompany = false, reliefFrom17Percent = false) {
+    const premTax = sdltPremiumTax(premium, isResidential, isCompany, reliefFrom17Percent);
+    const fmt = (n) => n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const rentThresh = isResidential ? 125000 : 150000;
+    let rentTax = 0;
+    let explanationParts = [];
+
     if (isVariation && previousNPV > 0) {
-        // Variation case: SDLT already paid on previous NPV
-        // Only charge SDLT on the additional NPV (no threshold on additional amount)
-        const additionalNPV = npv - previousNPV;
-        if (additionalNPV > 0) {
-            sdltDue = additionalNPV * 0.01;
-            explanation = `Lease Variation: SDLT has previously been paid on this lease based on an NPV of £${previousNPV.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. This calculation assesses additional SDLT payable on the increase in NPV of £${additionalNPV.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`;
+        if (npv <= previousNPV) {
+            rentTax = 0;
+            explanationParts.push(`Lease variation: NPV has not increased from the previously assessed £${fmt(previousNPV)}. No additional SDLT on rent.`);
         } else {
-            explanation = `Lease Variation: No increase in NPV. No additional SDLT due.`;
+            rentTax = Math.max(0, sdltRentNpvTax(npv, isResidential) - sdltRentNpvTax(previousNPV, isResidential));
+            explanationParts.push(
+                `Lease variation: marginal SDLT on rent NPV — total rent tax on £${fmt(npv)} minus tax that would apply to previous NPV £${fmt(previousNPV)} = £${rentTax.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`
+            );
         }
     } else if (isVariation && previousNPV === 0) {
-        // Variation case: No SDLT previously paid (previous NPV was below threshold)
-        // Calculate SDLT on total NPV, but explain it's a variation
-        if (npv > threshold) {
-            sdltDue = (npv - threshold) * 0.01;
-            explanation = `Lease Variation: No SDLT had previously been payable in respect of this lease. This assessment represents the first occasion on which the Net Present Value exceeds the SDLT threshold. SDLT is payable on £${(npv - threshold).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`;
+        rentTax = sdltRentNpvTax(npv, isResidential);
+        if (rentTax > 0) {
+            explanationParts.push(
+                `Lease variation: no SDLT had previously been payable on rent NPV. ${isResidential ? 'Residential' : 'Non-residential'} rent NPV rules apply (threshold £${rentThresh.toLocaleString('en-GB')}).`
+            );
         } else {
-            explanation = `Lease Variation: Net Present Value of £${npv.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} remains below the SDLT threshold of £${threshold.toLocaleString('en-GB')}. No SDLT due at this time.`;
+            explanationParts.push(
+                `Lease variation: rent NPV £${fmt(npv)} is below the ${isResidential ? '£125,000' : '£150,000'} threshold. No SDLT on rent.`
+            );
         }
     } else {
-        // New lease calculation (not a variation)
-        if (npv > threshold) {
-            sdltDue = (npv - threshold) * 0.01;
-            explanation = `Net Present Value of £${npv.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} exceeds the SDLT threshold of £${threshold.toLocaleString('en-GB')}. SDLT payable at 1% on amount above threshold.`;
+        rentTax = sdltRentNpvTax(npv, isResidential);
+        if (isResidential) {
+            if (rentTax > 0) {
+                explanationParts.push(`Residential lease: SDLT on rent — 1% on the portion of NPV above £125,000.`);
+            } else {
+                explanationParts.push(`Residential lease: rent NPV does not exceed £125,000. No SDLT on rent.`);
+            }
         } else {
-            explanation = `Net Present Value of £${npv.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is below the SDLT threshold of £${threshold.toLocaleString('en-GB')}. No SDLT due at this time.`;
+            if (rentTax > 0) {
+                explanationParts.push(`Non-residential lease: SDLT on rent NPV — 1% from £150,001 to £5,000,000 and 2% above £5,000,000 (on the respective portions).`);
+            } else {
+                explanationParts.push(`Non-residential lease: rent NPV does not exceed £150,000. No SDLT on rent.`);
+            }
         }
     }
-    
+
+    if (premTax > 0) {
+        if (isResidential && isCompany) {
+            let premDesc = 'company residential rules (higher rates from £40,000; 17% above £500,000 if no relief)';
+            if (premium > SDLT_COMPANY_17PC_THRESHOLD && !reliefFrom17Percent) premDesc = '17% corporate rate on residential premium over £500,000';
+            else if (premium > SDLT_COMPANY_17PC_THRESHOLD && reliefFrom17Percent) premDesc = 'higher rates (relief from 17% corporate rate)';
+            else if (premium >= SDLT_COMPANY_HIGHER_RATES_MIN) premDesc = 'higher rates for company residential purchases (£40,000+)';
+            else premDesc = 'standard residential slices (premium under £40,000)';
+            explanationParts.push(`SDLT on lease premium (company lessee): £${premTax.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} — ${premDesc}.`);
+        } else {
+            explanationParts.push(`SDLT on lease premium: £${premTax.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${isResidential ? 'residential' : 'non-residential'} slab rates).`);
+        }
+    } else if (premium > 0 && premTax === 0) {
+        explanationParts.push(`Lease premium £${fmt(premium)} is within the nil-rate band for ${isResidential ? 'residential' : 'non-residential'} property.`);
+    }
+
+    const sdltDue = Math.round((rentTax + premTax) * 100) / 100;
+
     return {
-        sdltDue: Math.round(sdltDue * 100) / 100, // Round to 2 decimal places
-        explanation: explanation,
-        threshold: threshold
+        sdltOnRent: rentTax,
+        sdltOnPremium: premTax,
+        sdltDue,
+        threshold: rentThresh,
+        explanation: explanationParts.join(' '),
+        isResidential,
+        isCompany: !!isCompany,
+        companyReliefFrom17: !!reliefFrom17Percent
     };
+}
+
+/**
+ * Generate lease extension notes for first-year leases (rent NPV only).
+ * @param {number} leaseTerm - Lease term in years
+ * @param {number} annualRent - Annual rent (0 if stepped rent only)
+ * @param {boolean} isResidential - Property class for rent NPV bands
+ * @param {number} rentTaxTotal - SDLT on rent already due for current term
+ * @param {number} [rentFreePeriod] - Rent-free period in months
+ * @param {Array|null} [steppedRent] - Stepped rent steps
+ * @returns {string} HTML formatted notes
+ */
+function calculateExtensionNote(leaseTerm, annualRent, isResidential, rentTaxTotal, rentFreePeriod = 0, steppedRent = null) {
+    let notes = [];
+
+    if (leaseTerm === 1) {
+        if (rentTaxTotal > 0) {
+            notes.push("Note: This is a first-year lease. Any extensions to the lease term will likely trigger additional SDLT payable on rent.");
+        } else {
+            const discountRate = SDLT_NPV_DISCOUNT_RATE;
+            let extendedTerm = leaseTerm;
+            while (extendedTerm < 100) {
+                const projNpv = calculateNPV(annualRent, extendedTerm, discountRate, rentFreePeriod, steppedRent);
+                if (sdltRentNpvTax(projNpv, isResidential) > 0) break;
+                extendedTerm += 1;
+            }
+
+            const hasRentPattern = annualRent > 0 || (steppedRent && steppedRent.length > 0);
+            if (extendedTerm > leaseTerm && hasRentPattern) {
+                const yearsNeeded = extendedTerm - leaseTerm;
+                notes.push(`Note: This is a first-year lease with no SDLT on rent currently due. An extension of approximately ${yearsNeeded} year(s) would be required before SDLT on rent becomes payable, assuming the same rent pattern and a ${(discountRate * 100).toFixed(1)}% NPV discount rate.`);
+            } else if (hasRentPattern) {
+                notes.push("Note: This is a first-year lease with no SDLT on rent currently due. Extensions may trigger SDLT depending on future rent and term.");
+            }
+        }
+    }
+
+    return notes.map(note => `<p style="margin-top: 10px; font-style: italic; color: #555;">${note}</p>`).join('');
+}
+
+/** Show “relief from 17%” only for residential + company + premium over £500k. */
+function updateCompanyReliefRowVisibility() {
+    const row = document.getElementById('calcCompanyReliefRow');
+    const cb = document.getElementById('calcCompanyReliefFrom17');
+    if (!row) return;
+    const pc = document.getElementById('calcPropertyClass')?.value || 'residential';
+    const lt = document.getElementById('calcLesseeType')?.value || 'individual';
+    const prem = parseFloat(document.getElementById('calcPremium')?.value) || 0;
+    const show = pc === 'residential' && lt === 'company' && prem > SDLT_COMPANY_17PC_THRESHOLD;
+    if (show) {
+        row.classList.remove('hidden');
+    } else {
+        row.classList.add('hidden');
+        if (cb) cb.checked = false;
+    }
 }
 
 /**
  * Perform calculation and update results display
  */
 function performCalculation() {
-    // Get form values
+    updateCompanyReliefRowVisibility();
+
     const leaseTerm = parseFloat(document.getElementById('calcLeaseTerm')?.value) || 0;
     const annualRent = parseFloat(document.getElementById('calcAnnualRent')?.value) || 0;
     const rentFreePeriod = parseFloat(document.getElementById('calcRentFreePeriod')?.value) || 0;
     const isVariation = document.getElementById('calcIsVariation')?.checked || false;
     const previousNPV = parseFloat(document.getElementById('calcPreviousNPV')?.value) || 0;
-    
-    // Get stepped rent if enabled
+    const premium = parseFloat(document.getElementById('calcPremium')?.value) || 0;
+    const propertyClass = document.getElementById('calcPropertyClass')?.value || 'residential';
+    const isResidential = propertyClass !== 'non-residential';
+    const isCompany = (document.getElementById('calcLesseeType')?.value || 'individual') === 'company';
+    const reliefFrom17 = document.getElementById('calcCompanyReliefFrom17')?.checked || false;
+
     let steppedRent = null;
     const useSteppedRent = document.getElementById('calcUseSteppedRent')?.checked || false;
     if (useSteppedRent) {
@@ -1668,50 +1890,78 @@ function performCalculation() {
         });
         if (steppedRent.length === 0) steppedRent = null;
     }
-    
-    // Validate inputs
-    if (leaseTerm <= 0 || annualRent <= 0) {
+
+    const hasSteppedData = steppedRent && steppedRent.length > 0;
+    if (leaseTerm <= 0 || (!hasSteppedData && annualRent <= 0)) {
         const resultsDiv = document.getElementById('calculatorResults');
         if (resultsDiv) {
             resultsDiv.innerHTML = '<p class="results-placeholder">Enter lease details above to see calculation results.</p>';
         }
         return;
     }
-    
-    // Calculate NPV
-    const npv = calculateNPV(annualRent, leaseTerm, 0.035, rentFreePeriod, steppedRent);
-    
-    // Calculate SDLT
-    const sdltResult = calculateSDLT(npv, 125000, isVariation, previousNPV);
-    
-    // Display results
-    displayCalculationResults(npv, sdltResult);
+
+    const npv = calculateNPV(annualRent, leaseTerm, SDLT_NPV_DISCOUNT_RATE, rentFreePeriod, steppedRent);
+    const highestRent = highestRentFirstFiveYears(annualRent, leaseTerm, rentFreePeriod, steppedRent);
+    const breakdown = computeLeaseSdltBreakdown(npv, premium, isResidential, isVariation, previousNPV, isCompany, reliefFrom17);
+
+    displayCalculationResults(npv, highestRent, breakdown, isResidential);
 }
 
 /**
  * Display calculation results in the calculator
  */
-function displayCalculationResults(npv, sdltResult) {
+function displayCalculationResults(npv, highestTwelveMonthRent, breakdown, isResidential) {
     const resultsDiv = document.getElementById('calculatorResults');
     if (!resultsDiv) return;
-    
+
     const formattedNPV = npv.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const formattedSDLT = sdltResult.sdltDue.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    
+    const formattedTotal = breakdown.sdltDue.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtRent = breakdown.sdltOnRent.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtPrem = breakdown.sdltOnPremium.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const propLabel = isResidential ? 'Residential' : 'Non-residential';
+    const hiRentRow = Math.ceil(parseFloat(document.getElementById('calcLeaseTerm')?.value) || 0) > 5
+        ? `<div class="result-item">
+            <div class="result-label">Highest rent (first 5 years, used for years 6+)</div>
+            <div class="result-value">£${highestTwelveMonthRent.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+           </div>`
+        : `<div class="result-item">
+            <div class="result-label">Highest 12-month rent (years 1–5)</div>
+            <div class="result-value">£${highestTwelveMonthRent.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+           </div>`;
+
+    const lesseeLabel = breakdown.isCompany ? 'Company (non-natural person)' : 'Individual';
+
     resultsDiv.innerHTML = `
         <div class="result-item">
-            <div class="result-label">Net Present Value (NPV)</div>
+            <div class="result-label">Property class</div>
+            <div class="result-value">${propLabel}</div>
+        </div>
+        <div class="result-item">
+            <div class="result-label">Lessee on lease</div>
+            <div class="result-value">${lesseeLabel}</div>
+        </div>
+        <div class="result-item">
+            <div class="result-label">Net Present Value (NPV) of rent</div>
             <div class="result-value">£${formattedNPV}</div>
         </div>
+        ${hiRentRow}
         <div class="result-item">
-            <div class="result-label">SDLT Threshold</div>
-            <div class="result-value">£${sdltResult.threshold.toLocaleString('en-GB')}</div>
+            <div class="result-label">Rent NPV threshold (nil-rate)</div>
+            <div class="result-value">£${breakdown.threshold.toLocaleString('en-GB')}</div>
         </div>
         <div class="result-item">
-            <div class="result-label">SDLT Due</div>
-            <div class="result-value">£${formattedSDLT}</div>
+            <div class="result-label">SDLT on rent</div>
+            <div class="result-value">£${fmtRent}</div>
         </div>
-        <div class="result-explanation">${sdltResult.explanation}</div>
+        <div class="result-item">
+            <div class="result-label">SDLT on premium</div>
+            <div class="result-value">£${fmtPrem}</div>
+        </div>
+        <div class="result-item">
+            <div class="result-label">Total SDLT due</div>
+            <div class="result-value">£${formattedTotal}</div>
+        </div>
+        <div class="result-explanation">${breakdown.explanation}</div>
     `;
 }
 
@@ -1724,12 +1974,21 @@ async function closeSdltCalculator(generatePDF) {
     if (!overlay) return;
     
     if (generatePDF) {
-        // Validate required fields
         const leaseTerm = parseFloat(document.getElementById('calcLeaseTerm')?.value) || 0;
         const annualRent = parseFloat(document.getElementById('calcAnnualRent')?.value) || 0;
-        
-        if (leaseTerm <= 0 || annualRent <= 0) {
-            alert('Please enter valid lease term and annual rent before generating PDF.');
+        const useSteppedRentPdf = document.getElementById('calcUseSteppedRent')?.checked || false;
+        let validSteppedPdf = false;
+        if (useSteppedRentPdf) {
+            document.querySelectorAll('.stepped-rent-row').forEach(row => {
+                const startYear = parseFloat(row.querySelector('.stepped-rent-start')?.value) || 0;
+                const endYear = parseFloat(row.querySelector('.stepped-rent-end')?.value) || 0;
+                const rent = parseFloat(row.querySelector('.stepped-rent-amount')?.value) || 0;
+                if (startYear > 0 && endYear > 0 && rent > 0) validSteppedPdf = true;
+            });
+        }
+
+        if (leaseTerm <= 0 || (annualRent <= 0 && !validSteppedPdf)) {
+            alert('Please enter a valid lease term and annual rent (or at least one valid stepped rent row) before generating PDF.');
             return;
         }
         
@@ -1742,6 +2001,11 @@ async function closeSdltCalculator(generatePDF) {
         const rentFreePeriod = parseFloat(document.getElementById('calcRentFreePeriod')?.value) || 0;
         const isVariation = document.getElementById('calcIsVariation')?.checked || false;
         const previousNPV = parseFloat(document.getElementById('calcPreviousNPV')?.value) || 0;
+        const premium = parseFloat(document.getElementById('calcPremium')?.value) || 0;
+        const propertyClass = document.getElementById('calcPropertyClass')?.value || 'residential';
+        const isResidential = propertyClass !== 'non-residential';
+        const isCompany = (document.getElementById('calcLesseeType')?.value || 'individual') === 'company';
+        const reliefFrom17 = document.getElementById('calcCompanyReliefFrom17')?.checked || false;
         const propertyAddress = document.getElementById('calcPropertyAddress')?.value || '';
         
         // Case reference: use form value if provided, otherwise build from entry data (fe/clientNumber/matterNumber or dwellworksRef)
@@ -1808,25 +2072,27 @@ async function closeSdltCalculator(generatePDF) {
             if (steppedRent.length === 0) steppedRent = null;
         }
         
-        // Calculate NPV and SDLT
-        const npv = calculateNPV(annualRentFinal, leaseTermFinal, 0.035, rentFreePeriod, steppedRent);
-        const sdltResult = calculateSDLT(npv, 125000, isVariation, previousNPV);
-        
-        // Calculate extension note (for first year leases)
+        const npv = calculateNPV(annualRentFinal, leaseTermFinal, SDLT_NPV_DISCOUNT_RATE, rentFreePeriod, steppedRent);
+        const highestRentPdf = highestRentFirstFiveYears(annualRentFinal, leaseTermFinal, rentFreePeriod, steppedRent);
+        const sdltResult = computeLeaseSdltBreakdown(npv, premium, isResidential, isVariation, previousNPV, isCompany, reliefFrom17);
+
         const extensionNote = calculateExtensionNote(
             leaseTermFinal,
             annualRentFinal,
-            npv,
-            125000,
-            sdltResult.sdltDue
+            isResidential,
+            sdltResult.sdltOnRent,
+            rentFreePeriod,
+            steppedRent
         );
-        
-        // Generate PDF
+
         try {
             const pdfBlob = await generateSdltCalculationPDF({
                 caseReference,
                 propertyAddress,
                 tenantType,
+                propertyClassLabel: isResidential ? 'Residential' : 'Non-residential',
+                lesseeLabel: isCompany ? 'Company (non-natural person)' : 'Individual',
+                premium,
                 effectiveDate: effectiveDateFormatted || effectiveDate,
                 leaseStartDate,
                 leaseTerm: leaseTermFinal,
@@ -1836,6 +2102,7 @@ async function closeSdltCalculator(generatePDF) {
                 previousNPV,
                 steppedRent,
                 npv,
+                highestRentFirstFive: highestRentPdf,
                 sdltResult,
                 extensionNote
             });
@@ -1884,7 +2151,8 @@ async function closeSdltCalculator(generatePDF) {
             }
             // If SDLT is due, status remains "Calculating SDLT" (no change needed)
             
-            // Store PDF blob for upload
+            // Store PDF blob for upload (clear any user-selected file UI first)
+            clearOwnCalculationUploadUI();
             pendingPdfBlob = pdfBlob;
             
             // If no SDLT due, silently send archive-id message to parent (after PDF is generated and stored)
@@ -1939,7 +2207,21 @@ function buildSdltCalculationPDFHTML(calculationData) {
     const formattedNPV = calculationData.npv.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const formattedSDLT = calculationData.sdltResult.sdltDue.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const formattedAnnualRent = calculationData.annualRent.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    
+    const premiumVal = calculationData.premium || 0;
+    const formattedPremium = premiumVal.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtSdltRent = calculationData.sdltResult.sdltOnRent.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtSdltPrem = calculationData.sdltResult.sdltOnPremium.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const hiRent = calculationData.highestRentFirstFive != null
+        ? calculationData.highestRentFirstFive
+        : highestRentFirstFiveYears(calculationData.annualRent, calculationData.leaseTerm, calculationData.rentFreePeriod || 0, calculationData.steppedRent || null);
+    const formattedHiRent = hiRent.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const propClassPdf = calculationData.propertyClassLabel || (calculationData.sdltResult.isResidential ? 'Residential' : 'Non-residential');
+    const lesseePdf = calculationData.lesseeLabel
+        || (calculationData.sdltResult.isCompany ? 'Company (non-natural person)' : 'Individual');
+    const showReliefRowPdf = calculationData.sdltResult.isResidential
+        && calculationData.sdltResult.isCompany
+        && premiumVal > SDLT_COMPANY_17PC_THRESHOLD;
+
     // Escape HTML to prevent XSS
     const escapeHtml = (text) => {
         if (!text) return '';
@@ -2006,6 +2288,24 @@ function buildSdltCalculationPDFHTML(calculationData) {
                     <span style="color: #333;">${calculationData.tenantType.charAt(0).toUpperCase() + calculationData.tenantType.slice(1)}</span>
                 </div>
                 <div style="display: flex; gap: 10px;">
+                    <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Residential / Non-residential:</span>
+                    <span style="color: #333;">${escapeHtml(propClassPdf)}</span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Lessee on lease:</span>
+                    <span style="color: #333;">${escapeHtml(lesseePdf)}</span>
+                </div>
+                ${showReliefRowPdf ? `
+                <div style="display: flex; gap: 10px;">
+                    <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Relief from 17% corporate rate:</span>
+                    <span style="color: #333;">${calculationData.sdltResult.companyReliefFrom17 ? 'Yes' : 'No'}</span>
+                </div>
+                ` : ''}
+                <div style="display: flex; gap: 10px;">
+                    <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Premium:</span>
+                    <span style="color: #333;">£${formattedPremium}</span>
+                </div>
+                <div style="display: flex; gap: 10px;">
                     <span style="font-weight: bold; color: #6c757d; min-width: 140px;">Effective Date:</span>
                     <span style="color: #333;">${calculationData.effectiveDate ? escapeHtml(calculationData.effectiveDate) : (calculationData.leaseStartDate ? escapeHtml(calculationData.leaseStartDate) : 'Not specified')}</span>
                 </div>
@@ -2069,19 +2369,25 @@ function buildSdltCalculationPDFHTML(calculationData) {
             <!-- Calculation Results -->
             <div class="section-title">Calculation Results</div>
             <div class="info-grid">
-                <div class="info-label">Net Present Value (NPV):</div>
+                <div class="info-label">Net Present Value (NPV) of rent:</div>
                 <div class="info-value">£${formattedNPV}</div>
-                <div class="info-label">SDLT Threshold:</div>
+                <div class="info-label">Highest rent (years 1–5, HMRC):</div>
+                <div class="info-value">£${formattedHiRent}</div>
+                <div class="info-label">Rent NPV nil-rate band:</div>
                 <div class="info-value">£${calculationData.sdltResult.threshold.toLocaleString('en-GB')}</div>
+                <div class="info-label">SDLT on rent:</div>
+                <div class="info-value">£${fmtSdltRent}</div>
+                <div class="info-label">SDLT on premium:</div>
+                <div class="info-value">£${fmtSdltPrem}</div>
             </div>
             
             <div class="result-box">
-                <div style="font-size: 16px; font-weight: bold; color: #003c71;">SDLT Due</div>
+                <div style="font-size: 16px; font-weight: bold; color: #003c71;">Total SDLT due</div>
                 <div class="result-value">£${formattedSDLT}</div>
             </div>
             
             <div style="background: #e8f4f8; border-left: 4px solid #003c71; border-radius: 4px; padding: 16px; margin-top: 20px; font-size: 13px; line-height: 1.6;">
-                ${escapeHtml(calculationData.sdltResult.explanation)}
+                ${escapeHtml(calculationData.sdltResult.explanation || '')}
             </div>
             
             ${calculationData.isVariation ? `
@@ -2108,10 +2414,11 @@ function buildSdltCalculationPDFHTML(calculationData) {
             
             <!-- PDF Footer -->
             <div class="pdf-footer">
-                <p>This calculation is based on current UK SDLT legislation for residential leases.</p>
-                <p>NPV calculated using a 3.5% discount rate. SDLT rate: 1% on amount above £125,000 threshold.</p>
+                <p>Aligned with HMRC lease rules (SDLTM13075 NPV of rent; gov.uk residential and non-residential rates for premium and rent NPV).</p>
+                <p>Rent NPV uses a 3.5% statutory discount rate. Residential rent NPV: 1% above £125,000. Non-residential rent NPV: 1% from £150,001 to £5,000,000 and 2% above £5,000,000.</p>
+                <p>Premium uses the same slab rates as freehold purchases for non-residential property; for residential property, individual lessees use standard slices, and company lessees use higher rates from £40,000 and 17% above £500,000 unless relief applies (see HMRC corporate bodies guidance).</p>
                 <p>Generated on: ${calculationDate}</p>
-                <p style="margin-top: 8px; font-style: italic;">This report is for informational purposes only. Verify all calculations with official HMRC guidance.</p>
+                <p style="margin-top: 8px; font-style: italic;">This report is for informational purposes only. Use the official HMRC SDLT calculator and guidance for returns and edge cases.</p>
             </div>
         </body>
         </html>
@@ -2217,6 +2524,7 @@ function updateCalculationResultDisplay() {
     const sdltRequired = pendingUpdates?.sdltRequired ?? entryData?.sdltRequired ?? false;
     // Check if calculation document exists (uploaded PDF from previous session)
     const hasSdltCalculation = !!(pendingUpdates?.sdltCalculation?.s3Key || entryData?.sdltCalculation?.s3Key);
+    const hasPendingCalculationPdf = !!pendingPdfBlob;
     
     // Check current status to determine if we should show hint for "No SDLT Due" statuses
     // Use pendingUpdates.status if available (latest), otherwise entryData.status
@@ -2230,9 +2538,9 @@ function updateCalculationResultDisplay() {
     // Check if matter details are complete
     const matterDetailsComplete = hasMatterDetails();
     
-    // Show hint and result if calculation has been done (either sdltCalculated flag OR document exists)
+    // Show hint and result if calculation has been done (either sdltCalculated flag OR document exists OR PDF pending upload)
     // Also show hint for "No SDLT Due" status even if calculation flags aren't set
-    if (sdltCalculated || hasSdltCalculation || isNoSdltDue) {
+    if (sdltCalculated || hasSdltCalculation || isNoSdltDue || hasPendingCalculationPdf) {
         // Keep button visible (users can edit/recalculate)
         openBtn.classList.remove('hidden');
         
@@ -2243,7 +2551,9 @@ function updateCalculationResultDisplay() {
         resultDiv.classList.remove('hidden');
         
         // Format result text
-        if (sdltDue === 0) {
+        if (hasPendingCalculationPdf && pendingPdfBlob instanceof File && !hasSdltCalculation) {
+            resultDiv.textContent = 'External calculation PDF selected — save the entry to upload';
+        } else if (sdltDue === 0) {
             resultDiv.textContent = 'SDLT Calculated - none due';
         } else {
             const formattedAmount = sdltDue.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -3654,6 +3964,112 @@ function setupSdlt5CertificateUpload() {
 /**
  * Setup file upload handlers for accounting card
  */
+function clearOwnCalculationUploadUI() {
+    const input = document.getElementById('sdltOwnCalculationFileInput');
+    const area = document.getElementById('sdltOwnCalculationUpload');
+    if (!input || !area) return;
+    input.value = '';
+    const placeholder = area.querySelector('.file-upload-placeholder');
+    const selected = area.querySelector('.file-upload-selected');
+    const fileNameSpan = selected ? selected.querySelector('.file-name') : null;
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (selected) selected.classList.add('hidden');
+    if (fileNameSpan) fileNameSpan.textContent = '';
+    area.classList.remove('has-file');
+}
+
+function handleToggleOwnCalculationUpload() {
+    const section = document.getElementById('sdltOwnCalculationUploadSection');
+    const btn = document.getElementById('toggleOwnCalculationUploadBtn');
+    if (!section || !btn) return;
+    const wasHidden = section.classList.contains('hidden');
+    section.classList.toggle('hidden', !wasHidden);
+    const nowVisible = !section.classList.contains('hidden');
+    btn.setAttribute('aria-expanded', nowVisible ? 'true' : 'false');
+    btn.textContent = nowVisible ? 'Hide uploader' : 'Upload own calculation (PDF)';
+}
+
+function applyOwnCalculationPdfPendingUpdates() {
+    if (!entryData) return;
+    if (!pendingUpdates) {
+        pendingUpdates = {};
+    }
+    pendingUpdates.sdltCalculated = true;
+    if (pendingUpdates.sdltRequired === undefined) {
+        pendingUpdates.sdltRequired = entryData.sdltRequired !== undefined ? entryData.sdltRequired : true;
+    }
+    if (pendingUpdates.sdltDue === undefined) {
+        pendingUpdates.sdltDue = entryData.sdltDue !== undefined ? entryData.sdltDue : 0;
+    }
+}
+
+function setupOwnCalculationPdfUpload() {
+    const input = document.getElementById('sdltOwnCalculationFileInput');
+    const area = document.getElementById('sdltOwnCalculationUpload');
+    if (!input || !area) return;
+
+    const placeholder = area.querySelector('.file-upload-placeholder');
+    const selected = area.querySelector('.file-upload-selected');
+    const fileNameSpan = selected ? selected.querySelector('.file-name') : null;
+    const removeBtn = selected ? selected.querySelector('.remove-file-btn') : null;
+
+    function processOwnCalculationFile(file) {
+        if (!file || file.type !== 'application/pdf') {
+            alert('Please select a PDF file');
+            return;
+        }
+        pendingPdfBlob = file;
+        applyOwnCalculationPdfPendingUpdates();
+        if (placeholder) placeholder.classList.add('hidden');
+        if (selected) selected.classList.remove('hidden');
+        if (fileNameSpan) fileNameSpan.textContent = file.name;
+        area.classList.add('has-file');
+        updateCalculationResultDisplay();
+        notifyFormChanged();
+    }
+
+    area.addEventListener('click', () => {
+        if (!pendingPdfBlob || !(pendingPdfBlob instanceof File)) {
+            input.click();
+        }
+    });
+
+    input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) processOwnCalculationFile(file);
+    });
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((evt) => {
+        area.addEventListener(evt, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    });
+    area.addEventListener('drop', (e) => {
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) processOwnCalculationFile(file);
+    });
+
+    if (removeBtn) {
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const wasOwnFile = pendingPdfBlob && typeof File !== 'undefined' && pendingPdfBlob instanceof File;
+            pendingPdfBlob = null;
+            input.value = '';
+            if (placeholder) placeholder.classList.remove('hidden');
+            if (selected) selected.classList.add('hidden');
+            area.classList.remove('has-file');
+            if (wasOwnFile && pendingUpdates && !entryData.sdltCalculated && !(entryData.sdltCalculation && entryData.sdltCalculation.s3Key)) {
+                delete pendingUpdates.sdltCalculated;
+                delete pendingUpdates.sdltRequired;
+                delete pendingUpdates.sdltDue;
+            }
+            updateCalculationResultDisplay();
+            notifyFormChanged();
+        });
+    }
+}
+
 function setupAccountingFileUploads() {
     // THS Invoice upload
     setupFileUpload('thsInvoiceFileInput', 'thsInvoiceUpload', 'thsInvoice');

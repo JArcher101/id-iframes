@@ -93,11 +93,35 @@
 
         <!-- Calculating SDLT Workflow Card -->
         <div id="calculatingSdltCard" class="stage-card calculating-sdlt-card hidden">
-            <div class="stage-header">
+            <div class="stage-header calculating-sdlt-card-header">
                 <span class="stage-badge">Workflow Task</span>
-                <button id="openSdltCalculatorBtn" class="stage-action-btn">
-                    Open SDLT Calculator
-                </button>
+                <div class="calculating-sdlt-actions">
+                    <button type="button" id="openSdltCalculatorBtn" class="stage-action-btn">
+                        Open SDLT Calculator
+                    </button>
+                    <button type="button" id="toggleOwnCalculationUploadBtn" class="stage-action-btn" aria-expanded="false">
+                        Upload own calculation (PDF)
+                    </button>
+                </div>
+            </div>
+            <div id="sdltOwnCalculationUploadSection" class="sdlt-own-calculation-upload hidden">
+                <div class="file-upload-section">
+                    <label class="file-upload-label" for="sdltOwnCalculationFileInput">SDLT calculation document (PDF)</label>
+                    <div class="file-upload-area" id="sdltOwnCalculationUpload">
+                        <input type="file" id="sdltOwnCalculationFileInput" accept="application/pdf" style="display: none;" />
+                        <div class="file-upload-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span>Select PDF or drag &amp; drop</span>
+                        </div>
+                        <div class="file-upload-selected hidden">
+                            <span class="file-name"></span>
+                            <button type="button" class="remove-file-btn">Remove</button>
+                        </div>
+                    </div>
+                    <p class="sdlt-own-upload-hint">Uses the same upload as the in-app calculator: save the entry in the parent page to request upload links and store the file.</p>
+                </div>
             </div>
             <div id="sdltCalculationResult" class="sdlt-calculation-result hidden">
                 <!-- Calculation result will be displayed here -->
@@ -352,6 +376,22 @@
                     <div class="calculator-form-grid">
                         <div class="calculator-form-row">
                             <div>
+                                <label for="calcPropertyClass" class="required">Residential or non-residential</label>
+                                <select id="calcPropertyClass" class="calculator-input" required>
+                                    <option value="residential">Residential</option>
+                                    <option value="non-residential">Non-residential</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="calcLesseeType" class="required">Lessee named on the lease</label>
+                                <select id="calcLesseeType" class="calculator-input" required>
+                                    <option value="individual">Individual</option>
+                                    <option value="company">Company (or other non-natural person)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="calculator-form-row">
+                            <div>
                                 <label for="calcLeaseStartDate" class="required">Lease Start Date</label>
                                 <input type="date" id="calcLeaseStartDate" class="calculator-input" required />
                             </div>
@@ -364,6 +404,23 @@
                             <div>
                                 <label for="calcAnnualRent" class="required">Annual Rent (£)</label>
                                 <input type="number" id="calcAnnualRent" class="calculator-input" min="0" step="0.01" required />
+                            </div>
+                        </div>
+                        <div class="calculator-form-row">
+                            <div>
+                                <label for="calcPremium">Premium (£)</label>
+                                <input type="number" id="calcPremium" class="calculator-input" min="0" step="0.01" value="0" />
+                            </div>
+                            <div style="align-self: end;">
+                                <p style="margin: 0; font-size: 0.8rem; color: #555; line-height: 1.4;">Match HMRC’s calculator. Rent NPV thresholds: £125,000 (residential) or £150,000 (non-residential). For a <strong>company</strong> lessee on <strong>residential</strong> property, premium SDLT follows company rules (higher rates from £40,000; 17% above £500,000 unless relief applies).</p>
+                            </div>
+                        </div>
+                        <div id="calcCompanyReliefRow" class="calculator-form-row hidden">
+                            <div>
+                                <label>
+                                    <input type="checkbox" id="calcCompanyReliefFrom17" />
+                                    Relief from 17% corporate rate (e.g. occupied by employees of the purchaser — see HMRC “SDLT: corporate bodies”)
+                                </label>
                             </div>
                         </div>
                     </div>
