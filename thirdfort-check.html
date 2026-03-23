@@ -922,6 +922,12 @@
     </div>
   </div>
 
+  <script>
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'health-ping') window.parent.postMessage({ type: 'health-ping' }, '*');
+    });
+  </script>
+
   <!-- Core JavaScript -->
   <!-- Jurisdiction Autocomplete (must load before core) -->
   <script src="js/jurisdiction-autocomplete.js?v=7435be3"></script>

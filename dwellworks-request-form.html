@@ -824,6 +824,12 @@
     </div>
   </div>
 
+  <script>
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'health-ping') window.parent.postMessage({ type: 'health-ping' }, '*');
+    });
+  </script>
+
   <!-- Jurisdiction/Country Autocomplete (must load before initialization) -->
   <script src="js/jurisdiction-autocomplete.js?v=7435be3"></script>
   

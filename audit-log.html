@@ -556,6 +556,10 @@
     </div>
     
     <script>
+        window.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'health-ping') window.parent.postMessage({ type: 'health-ping' }, '*');
+        });
+
         // Flatten v2 nested messages { type, data: {...} } back to v1 flat format
         function normalizeMessage(raw) {
             if (!raw || typeof raw !== 'object') return raw;

@@ -704,6 +704,12 @@
   </div>
           </div>
 
+  <script>
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'health-ping') window.parent.postMessage({ type: 'health-ping' }, '*');
+    });
+  </script>
+
   <!-- html2canvas and jsPDF libraries (required for PDF generation) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

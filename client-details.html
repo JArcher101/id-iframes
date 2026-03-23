@@ -1054,6 +1054,10 @@
   </div>
 
   <script>
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'health-ping') window.parent.postMessage({ type: 'health-ping' }, '*');
+    });
+
     /*
     =====================================================================
     CLIENT DETAILS FORM - JAVASCRIPT

@@ -97,6 +97,12 @@
         </div>
     </div>
 
+    <script>
+        window.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'health-ping') window.parent.postMessage({ type: 'health-ping' }, '*');
+        });
+    </script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <!-- Print.js library for print dialog -->
