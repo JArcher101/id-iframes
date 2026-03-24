@@ -2980,6 +2980,20 @@
         var s = String(v).trim();
         return s !== '' && s !== '-';
       }
+      /** Prefer dateOfBirth; else short key b (dd-mm-yyyy or 8 digits) so slip matches the form when parent omits dateOfBirth */
+      function dobForSlip(cd) {
+        if (hasVal(cd.dateOfBirth)) return String(cd.dateOfBirth).trim();
+        var b = cd.b;
+        if (b == null || typeof b !== 'string') return null;
+        var t = b.trim();
+        if (!t || t === '-') return null;
+        if (/^\d{2}-\d{2}-\d{4}$/.test(t)) return t;
+        var digits = t.replace(/\D/g, '');
+        if (digits.length === 8) {
+          return digits.substring(0, 2) + '-' + digits.substring(2, 4) + '-' + digits.substring(4, 8);
+        }
+        return t;
+      }
       var detailRows = [
         { label: 'Name', value: name },
         { label: 'Client number', value: clientData.clientNumber },
@@ -2988,7 +3002,7 @@
         { label: 'Relation', value: clientData.relation },
         { label: 'Matter description', value: clientData.matterDescription },
         { label: 'Work type', value: clientData.workType },
-        { label: 'Date of birth', value: clientData.dateOfBirth },
+        { label: 'Date of birth', value: dobForSlip(clientData) },
         { label: 'Business name', value: clientData.businessName },
         { label: 'Entity number', value: clientData.entityNumber }
       ].filter(function(r) { return hasVal(r.value); });
