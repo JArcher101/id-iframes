@@ -1492,13 +1492,13 @@ function prePopulateCalculatorFields() {
     const calcTenantType = document.getElementById('calcTenantType');
     if (calcTenantType && entryData.lessee) {
         // Set value directly since dropdown options now match lessee values
-        if (entryData.lessee === "The Tenant" || 
-            entryData.lessee === "The Tenant's Employer" || 
-            entryData.lessee === "Dwellworks" || 
+        if (entryData.lessee === "The Tenant" ||
+            entryData.lessee === "The Tenant's Employer" ||
+            entryData.lessee === "Dwellworks" ||
             entryData.lessee === "Other") {
             calcTenantType.value = entryData.lessee;
         }
-        
+
         // If case reference is empty and lessee is "The Tenant's Employer", try using tenantsEmployer name
         if (calcCaseReference && !calcCaseReference.value) {
             if (entryData.lessee === "The Tenant's Employer" && entryData.tenantsEmployer) {
@@ -1507,6 +1507,30 @@ function prePopulateCalculatorFields() {
                 calcCaseReference.value = entryData.lesseeOther;
             }
         }
+    }
+
+    // Lessee on lease (individual vs company) - inferred from lessee (who is named on the lease)
+    // User can change; this is pre-set only
+    const calcLesseeType = document.getElementById('calcLesseeType');
+    if (calcLesseeType && entryData.lessee) {
+        if (entryData.lessee === "The Tenant") {
+            calcLesseeType.value = 'individual';
+        } else if (entryData.lessee === "The Tenant's Employer" || entryData.lessee === "Dwellworks") {
+            calcLesseeType.value = 'company';
+        }
+        // "Other" left as default (individual) - user confirms
+    }
+
+    // Residential vs non-residential - inferred from lessee; user can change
+    // Individual (The Tenant) = residential; company (Employer/Dwellworks) = non-residential
+    const calcPropertyClass = document.getElementById('calcPropertyClass');
+    if (calcPropertyClass && entryData.lessee) {
+        if (entryData.lessee === "The Tenant") {
+            calcPropertyClass.value = 'residential';
+        } else if (entryData.lessee === "The Tenant's Employer" || entryData.lessee === "Dwellworks") {
+            calcPropertyClass.value = 'non-residential';
+        }
+        // "Other" left as default; user confirms
     }
 }
 
