@@ -3458,43 +3458,11 @@
         /*
         =====================================================================
         S3 UPLOAD MESSAGE HANDLING
-        - Handles responses from parent after requesting PUT links
-        - PUT-LINKS: Stores S3 keys and initiates upload
-        - PUT-ERROR: Shows error and returns to uploader
+        - put-links / put-error are handled only by the main window 'message'
+          listener → handlePutLinks / handlePutError (no second listener).
+        - Avoids duplicate handling and double PUT on one-shot presigned URLs.
         =====================================================================
         */
-        function handlePutResponse(event) {
-            // Normalize message data (handle both top-level and data object formats)
-            const messageData = normalizeMessageData(event.data);
-            
-            if (messageData.type === 'put-links') {
-                // Store the item ID from PUT links response (may be undefined for SDLT mode)
-                itemId = messageData._id;
-                const links = messageData.links;
-                s3Keys = messageData.s3Keys; // Store S3 keys globally
-                uploadedImages = messageData.images; // Store images data with s3Keys
-                
-                console.log('Received put-links:');
-                console.log('itemId:', itemId);
-                console.log('s3Keys:', s3Keys);
-                console.log('uploadedImages:', uploadedImages);
-                console.log('links length:', links ? links.length : 0);
-                console.log('localFilesForUpload length:', localFilesForUpload ? localFilesForUpload.length : 0);
-                
-                uploadFiles(links);
-            } else if (messageData.type === 'put-error') {
-                // Show specific error message and go back to uploader
-                const errorMessage = messageData.message || 'Failed to generate upload links';
-                showError(`There is an issue with the files: ${errorMessage}. Please go back to edit your selected files and try uploading again.`);
-                
-                // Hide uploading state and return to uploader
-                hideUploadingState();
-                
-                setTimeout(() => {
-                    showUploader();
-                }, 2000);
-            }
-        }
 
         /*
         =====================================================================
@@ -3656,7 +3624,7 @@
             
             if (documentSystemMode === 'sdlt') {
                 // For SDLT mode, use uploadedImages which contains the full document objects with s3Keys
-                // uploadedImages is set from messageData.images in handlePutResponse
+                // uploadedImages is set from messageData.images in handlePutLinks
                 // In SDLT mode: s3Keys is array of key strings, links is array of PUT URLs, images is array of full document objects
                 documentsWithS3Keys = uploadedImages || [];
                 
@@ -4510,10 +4478,6 @@
                 files: files,
                 _id: itemId
             }, '*');
-            
-            // Listen for PUT links or PUT error response (remove existing listener first)
-            window.removeEventListener('message', handlePutResponse);
-            window.addEventListener('message', handlePutResponse);
         }
 
         function validateAllUploadCards() {
@@ -4644,9 +4608,6 @@
             // Clear dynamic hint
             hideDynamicHint();
             
-            // Remove any PUT response listeners
-            window.removeEventListener('message', handlePutResponse);
-            
             // Reset upload-related data
             s3Keys = null;
             uploadedImages = null;
@@ -4680,10 +4641,10 @@
            - Shows error popup if URL not provided
            
         5. 'put-links' - S3 upload URLs received
-           - Handled by handlePutResponse()
+           - Handled by handlePutLinks() (main listener only)
            
         6. 'put-error' - Upload preparation failed
-           - Handled by handlePutError()
+           - Handled by handlePutError() (main listener only)
         
         7. 'button-enable' - Enable upload more button
            - Enables the "Upload more documents" button
@@ -4981,29 +4942,35 @@
 
         // Handle PUT links for uploading files to S3
         function handlePutLinks(data) {
-            // console.log('Received PUT links:', data); // Commented out to avoid logging client data
-            // Store the item ID from PUT links response
+            // Store the item ID from PUT links response (may be undefined for SDLT mode)
             itemId = data._id;
-            // Extract links and s3Keys from the data
             const links = data.links;
-            s3Keys = data.s3Keys; // Store S3 keys globally
-            uploadedImages = data.images; // Store images data with s3Keys
+            s3Keys = data.s3Keys;
+            uploadedImages = data.images;
+
+            console.log('Received put-links:', {
+                itemId: itemId,
+                linksCount: links ? links.length : 0,
+                localFilesCount: localFilesForUpload ? localFilesForUpload.length : 0
+            });
+
             uploadFiles(links);
         }
 
-        // Handle PUT error from backend
+        // Handle PUT error from backend (presign / link generation failed)
         function handlePutError(data) {
             console.error('PUT error from backend:', data);
-            // Store the item ID if present
             if (data._id) {
                 itemId = data._id;
             }
-            showError(data.message || 'Upload failed. Please try again.');
-            
-            // Reset upload state
-            if (!idUploaderSection.classList.contains('hidden')) {
-                hideUploader();
-            }
+            const errorMessage = data.message || 'Failed to generate upload links';
+            showError(`There is an issue with the files: ${errorMessage}. Please go back to edit your selected files and try uploading again.`);
+
+            // During file-data → put-links wait, showUploadingState() hides the uploader; restore it
+            hideUploadingState();
+            setTimeout(() => {
+                showUploader();
+            }, 2000);
         }
 
         // Initialize
