@@ -250,6 +250,40 @@ body {
     padding: 0 16px 12px;
 }
 
+.sdlt-own-amount-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.sdlt-own-amount-input {
+    width: 120px;
+}
+
+.sdlt-due-badge {
+    font-family: 'RotisRegular', 'Quicksand', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.sdlt-due-badge.due {
+    color: #27ae60;
+    background: rgba(39, 174, 96, 0.15);
+}
+
+.sdlt-due-badge.not-due {
+    color: #666;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.sdlt-due-badge.empty {
+    color: #999;
+}
+
 .sdlt-own-upload-hint {
     margin: 8px 0 0;
     font-family: 'RotisRegular', 'Quicksand', sans-serif;

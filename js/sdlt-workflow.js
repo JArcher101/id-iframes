@@ -403,7 +403,14 @@ function handleEntryData(message) {
     
     // Update inputs
     updateInfoInputs();
-    
+
+    // Pre-fill SDLT amount from entry data (for own-calculation upload section)
+    const amountInput = document.getElementById('sdltOwnCalculationAmount');
+    if (amountInput && amountInput.value === '' && entryData.sdltDue !== undefined && entryData.sdltDue !== null) {
+        amountInput.value = Number(entryData.sdltDue).toFixed(2);
+        updateSdltDueBadge();
+    }
+
     // Determine current stage based on entry status/completion flags
     const currentStage = determineCurrentStage(entryData);
     console.log('[sdlt-workflow] determined stage (section)', { currentStage, statusArray: entryData.status });
@@ -3991,8 +3998,11 @@ function setupSdlt5CertificateUpload() {
 function clearOwnCalculationUploadUI() {
     const input = document.getElementById('sdltOwnCalculationFileInput');
     const area = document.getElementById('sdltOwnCalculationUpload');
+    const amountInput = document.getElementById('sdltOwnCalculationAmount');
     if (!input || !area) return;
     input.value = '';
+    if (amountInput) amountInput.value = '';
+    updateSdltDueBadge();
     const placeholder = area.querySelector('.file-upload-placeholder');
     const selected = area.querySelector('.file-upload-selected');
     const fileNameSpan = selected ? selected.querySelector('.file-name') : null;
@@ -4000,6 +4010,26 @@ function clearOwnCalculationUploadUI() {
     if (selected) selected.classList.add('hidden');
     if (fileNameSpan) fileNameSpan.textContent = '';
     area.classList.remove('has-file');
+}
+
+function updateSdltDueBadge() {
+    const amountInput = document.getElementById('sdltOwnCalculationAmount');
+    const badge = document.getElementById('sdltDueBadge');
+    if (!badge) return;
+    const val = amountInput?.value?.trim();
+    if (!val || val === '') {
+        badge.textContent = '';
+        badge.className = 'sdlt-due-badge empty';
+        return;
+    }
+    const amount = parseFloat(val);
+    if (isNaN(amount) || amount < 0) {
+        badge.textContent = 'Enter valid amount';
+        badge.className = 'sdlt-due-badge empty';
+        return;
+    }
+    badge.className = amount > 0 ? 'sdlt-due-badge due' : 'sdlt-due-badge not-due';
+    badge.textContent = amount > 0 ? 'SDLT due' : 'No SDLT due';
 }
 
 function handleToggleOwnCalculationUpload() {
@@ -4019,18 +4049,44 @@ function applyOwnCalculationPdfPendingUpdates() {
         pendingUpdates = {};
     }
     pendingUpdates.sdltCalculated = true;
-    if (pendingUpdates.sdltRequired === undefined) {
-        pendingUpdates.sdltRequired = entryData.sdltRequired !== undefined ? entryData.sdltRequired : true;
-    }
-    if (pendingUpdates.sdltDue === undefined) {
-        pendingUpdates.sdltDue = entryData.sdltDue !== undefined ? entryData.sdltDue : 0;
+    const amountInput = document.getElementById('sdltOwnCalculationAmount');
+    const amount = amountInput ? parseFloat(amountInput.value) : NaN;
+    const sdltDue = !isNaN(amount) && amount >= 0 ? amount : (entryData.sdltDue !== undefined ? entryData.sdltDue : 0);
+    pendingUpdates.sdltDue = sdltDue;
+    pendingUpdates.sdltRequired = sdltDue > 0;
+    const formattedAmount = sdltDue.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (sdltDue > 0) {
+        pendingChatMessage = `I have calculated the SDLT due on this matter to be £${formattedAmount}. We will now proceed to opening a matter and completing the relevant checks.`;
+    } else {
+        pendingChatMessage = `I have reviewed the provided details and calculated that no SDLT is due on this submission. Please Log into your account to view the calculation. No further action is required. Please let me know if you need any further support.`;
+        pendingUpdates.status = [STATUS.NO_SDLT_DUE];
     }
 }
 
 function setupOwnCalculationPdfUpload() {
     const input = document.getElementById('sdltOwnCalculationFileInput');
     const area = document.getElementById('sdltOwnCalculationUpload');
+    const amountInput = document.getElementById('sdltOwnCalculationAmount');
     if (!input || !area) return;
+
+    if (amountInput) {
+        amountInput.addEventListener('input', () => {
+            updateSdltDueBadge();
+            if (pendingPdfBlob) {
+                applyOwnCalculationPdfPendingUpdates();
+                updateCalculationResultDisplay();
+                notifyFormChanged();
+            }
+        });
+        amountInput.addEventListener('change', () => {
+            updateSdltDueBadge();
+            if (pendingPdfBlob) {
+                applyOwnCalculationPdfPendingUpdates();
+                updateCalculationResultDisplay();
+                notifyFormChanged();
+            }
+        });
+    }
 
     const placeholder = area.querySelector('.file-upload-placeholder');
     const selected = area.querySelector('.file-upload-selected');
@@ -4044,6 +4100,7 @@ function setupOwnCalculationPdfUpload() {
         }
         pendingPdfBlob = file;
         applyOwnCalculationPdfPendingUpdates();
+        updateSdltDueBadge();
         if (placeholder) placeholder.classList.add('hidden');
         if (selected) selected.classList.remove('hidden');
         if (fileNameSpan) fileNameSpan.textContent = file.name;
@@ -4080,6 +4137,8 @@ function setupOwnCalculationPdfUpload() {
             const wasOwnFile = pendingPdfBlob && typeof File !== 'undefined' && pendingPdfBlob instanceof File;
             pendingPdfBlob = null;
             input.value = '';
+            if (amountInput) amountInput.value = '';
+            updateSdltDueBadge();
             if (placeholder) placeholder.classList.remove('hidden');
             if (selected) selected.classList.add('hidden');
             area.classList.remove('has-file');
