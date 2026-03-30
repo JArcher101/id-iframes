@@ -122,7 +122,7 @@
                         </div>
                     </div>
                     <div class="sdlt-own-amount-row">
-                        <label class="file-upload-label" for="sdltOwnCalculationAmount">SDLT amount (£)</label>
+                        <label class="file-upload-label" for="sdltOwnCalculationAmount">SDLT amount (£) — required; use 0 if none due</label>
                         <input type="number" id="sdltOwnCalculationAmount" class="calculator-input sdlt-own-amount-input" min="0" step="0.01" placeholder="0.00" />
                         <span class="sdlt-due-badge" id="sdltDueBadge" aria-hidden="true"></span>
                     </div>
@@ -167,9 +167,14 @@
 
         <!-- Accounting Information Task Card -->
         <div id="accountingInfoCard" class="stage-card hidden">
-            <div class="stage-header">
+            <div class="stage-header accounting-card-header">
                 <span class="stage-badge">Workflow Task</span>
                 <h3 class="stage-title">Accounting Information</h3>
+                <div id="accountingReplaceActions" class="calculating-sdlt-actions hidden" aria-label="Replace uploaded documents">
+                    <button type="button" id="replaceThsInvoiceBtn" class="stage-action-btn hidden">Replace THS invoice</button>
+                    <button type="button" id="replaceSdltInvoiceBtn" class="stage-action-btn hidden">Replace SDLT invoice</button>
+                    <button type="button" id="replaceCompletionStatementBtn" class="stage-action-btn hidden">Replace completion statement</button>
+                </div>
             </div>
             
             <div class="stage-content">
@@ -284,9 +289,12 @@
 
         <!-- SDLT Payment Task Card -->
         <div id="sdltPaymentCard" class="stage-card hidden">
-            <div class="stage-header">
+            <div class="stage-header sdlt-payment-card-header">
                 <span class="stage-badge">Workflow Task</span>
                 <h3 class="stage-title">SDLT Payment</h3>
+                <div id="sdlt5ReplaceActions" class="calculating-sdlt-actions hidden" aria-label="Replace SDLT5 certificate">
+                    <button type="button" id="replaceSdlt5CertificateBtn" class="stage-action-btn hidden">Replace SDLT5 certificate</button>
+                </div>
             </div>
             <div class="stage-content">
                 <!-- SDLT5 Certificate Document Card -->

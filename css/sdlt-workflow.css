@@ -231,7 +231,9 @@ body {
     border-left: 4px solid #D4A574;
 }
 
-.calculating-sdlt-card-header {
+.calculating-sdlt-card-header,
+.accounting-card-header,
+.sdlt-payment-card-header {
     display: flex;
     flex-direction: column;
     align-items: flex-start;

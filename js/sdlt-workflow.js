@@ -63,12 +63,18 @@ let currentUser = null;
 let originalEntryData = null; // Store original state to track changes
 let pendingUpdates = null; // Unified object storing all pending field updates { status, thsNotification, sdltCalculated, etc. }
 let pendingChatMessage = null; // Store pending chat message to be saved with calculation
+/** Set when starting SDLT calculation PDF upload; merged into file-data + save-data-response for parent (archive prior doc, etc.) */
+let pendingSdltCalculationSaveMeta = null;
+/** Set when uploading THS/SDLT invoice, completion statement, or SDLT5 — parent can archive prior S3 docs */
+let pendingAccountingDocumentReplacementMeta = null;
 let accountingFiles = {
     thsInvoice: null,
     sdltInvoice: null,
     completionStatement: null,
     sdlt5Certificate: null
 }; // Track which accounting files are selected (File objects)
+
+const ACCOUNTING_UPLOAD_FIELD_KEYS = ['thsInvoice', 'sdltInvoice', 'completionStatement', 'sdlt5Certificate'];
 
 /**
  * Status constants - matches backend STATUS enum
@@ -93,6 +99,115 @@ const STATUS = {
     NO_SDLT_DUE_ALT: "No SDLT due", // Alternative casing
     SDLT_PAID: "SDLT Paid"
 };
+
+function formatSdltDueGbp(n) {
+    const x = Number(n);
+    const safe = Number.isFinite(x) ? x : 0;
+    return safe.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** True if entry already had a saved or in-session calculation before replacing */
+function entryHadPriorSdltCalculation(entry) {
+    if (!entry) return false;
+    return !!(entry.sdltCalculation && entry.sdltCalculation.s3Key) || !!entry.sdltCalculated;
+}
+
+/**
+ * Strict parse for manual upload amount: empty field is invalid (do not treat as £0 / no SDLT due).
+ * @returns {{ valid: boolean, value: number }}
+ */
+function parseOwnUploadSdltAmountInput() {
+    const el = document.getElementById('sdltOwnCalculationAmount');
+    if (!el) return { valid: false, value: 0 };
+    const raw = String(el.value || '').trim();
+    if (raw === '') return { valid: false, value: 0 };
+    const n = parseFloat(raw.replace(/,/g, ''));
+    if (!Number.isFinite(n) || n < 0) return { valid: false, value: 0 };
+    return { valid: true, value: n };
+}
+
+function isPendingSdltPdfUserUpload() {
+    return !!(pendingPdfBlob && typeof File !== 'undefined' && pendingPdfBlob instanceof File);
+}
+
+/**
+ * Chat text for first-time or recalculation; includes previous and new amounts when recalculating.
+ */
+function buildSdltCalculationChatMessage(previousDue, newDue, options) {
+    const prev = Number(previousDue) || 0;
+    const next = Number(newDue) || 0;
+    const isRecalculation = !!(options && options.isRecalculation);
+
+    if (!isRecalculation) {
+        if (next > 0) {
+            return `I have calculated the SDLT due on this matter to be £${formatSdltDueGbp(next)}. We will now proceed to opening a matter and completing the relevant checks.`;
+        }
+        return 'I have reviewed the provided details and calculated that no SDLT is due on this submission. Please Log into your account to view the calculation. No further action is required. Please let me know if you need any further support.';
+    }
+
+    if (next > 0 && prev > 0) {
+        return `Following a recalculation of SDLT on this matter, the amount due has been updated from £${formatSdltDueGbp(prev)} to £${formatSdltDueGbp(next)}. Please save the new calculation document; we will continue the matter using the revised figures.`;
+    }
+    if (next > 0 && prev === 0) {
+        return `Following a recalculation of SDLT on this matter, SDLT is now due: £${formatSdltDueGbp(next)} (previously none due). Please save the new calculation document; we will proceed to opening the matter and completing the relevant checks.`;
+    }
+    if (next === 0 && prev > 0) {
+        return `Following a recalculation of SDLT on this matter, no SDLT is now due (previously £${formatSdltDueGbp(prev)} was due). Please Log into your account to view the updated calculation. We will adjust the matter accordingly.`;
+    }
+    return 'Following a recalculation of SDLT on this matter, there remains no SDLT due. Please Log into your account to view the updated calculation.';
+}
+
+/** Shallow snapshot of a stored document for parent to move into a history array before replace. */
+function snapshotEntryDocument(doc) {
+    if (!doc || !doc.s3Key) return null;
+    return {
+        s3Key: doc.s3Key,
+        description: doc.description,
+        fieldKey: doc.fieldKey,
+        url: doc.url,
+        liveUrl: doc.liveUrl
+    };
+}
+
+/**
+ * Per-field rows for accounting uploads in this save batch (re-upload / overwrite).
+ * @returns {Array<{fieldKey: string, replacesExisting: boolean, previousDocument: object|null}>|null}
+ */
+function buildAccountingDocumentReplacementMeta() {
+    if (!entryData) return null;
+    const list = [];
+    for (const key of ACCOUNTING_UPLOAD_FIELD_KEYS) {
+        if (!accountingFiles[key]) continue;
+        const prev = snapshotEntryDocument(entryData[key]);
+        list.push({
+            fieldKey: key,
+            replacesExisting: !!prev,
+            previousDocument: prev
+        });
+    }
+    return list.length ? list : null;
+}
+
+/**
+ * Snapshot for parent: archive previous sdltCalculation document, reconcile amounts, optional workflow reset.
+ */
+function captureSdltCalculationSaveMeta(newSdltDue, newSdltRequired) {
+    const prevRaw = Number(entryData.sdltDue);
+    const previousSdltDue = Number.isFinite(prevRaw) ? prevRaw : 0;
+    const previousSdltRequired = entryData.sdltRequired === true;
+    const priorDoc = snapshotEntryDocument(entryData.sdltCalculation);
+    const sdltRecalculation = !!(priorDoc || entryData.sdltCalculated);
+    const nextRaw = Number(newSdltDue);
+    const newDueSafe = Number.isFinite(nextRaw) ? nextRaw : 0;
+    return {
+        sdltRecalculation,
+        previousSdltDue,
+        previousSdltRequired,
+        newSdltDue: newDueSafe,
+        newSdltRequired: !!newSdltRequired,
+        previousSdltCalculationDocument: priorDoc
+    };
+}
 
 /**
  * Determine current workflow stage based on entry data
@@ -256,6 +371,23 @@ function setupEventListeners() {
     }
 
     setupOwnCalculationPdfUpload();
+
+    const replaceThsInvoiceBtn = document.getElementById('replaceThsInvoiceBtn');
+    if (replaceThsInvoiceBtn) {
+        replaceThsInvoiceBtn.addEventListener('click', () => beginReplaceAccountingDocument('thsInvoice'));
+    }
+    const replaceSdltInvoiceBtn = document.getElementById('replaceSdltInvoiceBtn');
+    if (replaceSdltInvoiceBtn) {
+        replaceSdltInvoiceBtn.addEventListener('click', () => beginReplaceAccountingDocument('sdltInvoice'));
+    }
+    const replaceCompletionStatementBtn = document.getElementById('replaceCompletionStatementBtn');
+    if (replaceCompletionStatementBtn) {
+        replaceCompletionStatementBtn.addEventListener('click', () => beginReplaceAccountingDocument('completionStatement'));
+    }
+    const replaceSdlt5CertificateBtn = document.getElementById('replaceSdlt5CertificateBtn');
+    if (replaceSdlt5CertificateBtn) {
+        replaceSdlt5CertificateBtn.addEventListener('click', () => beginReplaceAccountingDocument('sdlt5Certificate'));
+    }
     
     // Request ID Checks button
     const requestIdChecksBtn = document.getElementById('requestIdChecksBtn');
@@ -461,6 +593,27 @@ function handleSaveData(message) {
     const hasPendingFiles = pendingPdfBlob || (pendingFiles && pendingFiles.length > 0) || hasAccountingFiles;
     
     if (hasPendingFiles) {
+        if (!pendingPdfBlob) {
+            pendingSdltCalculationSaveMeta = null;
+        }
+        pendingAccountingDocumentReplacementMeta = hasAccountingFiles ? buildAccountingDocumentReplacementMeta() : null;
+
+        // User-uploaded calculation PDF requires an explicit SDLT amount (empty must not default to £0 / no SDLT due)
+        if (isPendingSdltPdfUserUpload()) {
+            const parsedAmount = parseOwnUploadSdltAmountInput();
+            if (!parsedAmount.valid) {
+                window.parent.postMessage({
+                    type: 'validation-error',
+                    message: 'Enter a valid SDLT amount (£) for your uploaded calculation before saving — use 0 only if no SDLT is due.'
+                }, '*');
+                return;
+            }
+            if (!pendingUpdates) {
+                pendingUpdates = {};
+            }
+            applyOwnCalculationPdfPendingUpdates();
+        }
+
         // Create file metadata array for file-data message
         const fileMetadata = [];
         
@@ -626,16 +779,33 @@ function handleSaveData(message) {
         
         // Store blob/file references for upload (we'll use them when we get put-links)
         uploadInProgress = true;
+
+        if (pendingPdfBlob) {
+            if (!pendingUpdates) {
+                pendingUpdates = {};
+            }
+            pendingSdltCalculationSaveMeta = captureSdltCalculationSaveMeta(
+                pendingUpdates.sdltDue !== undefined ? pendingUpdates.sdltDue : entryData.sdltDue,
+                pendingUpdates.sdltRequired !== undefined ? pendingUpdates.sdltRequired : entryData.sdltRequired
+            );
+        }
         
         // Show upload progress overlay
         showUploadProgress(fileMetadata);
         
         // Send file-data message to parent
-        window.parent.postMessage({
+        const fileDataPayload = {
             type: 'file-data',
             files: fileMetadata,
             _id: entryData._id
-        }, '*');
+        };
+        if (pendingSdltCalculationSaveMeta) {
+            fileDataPayload.sdltCalculationSaveMeta = pendingSdltCalculationSaveMeta;
+        }
+        if (pendingAccountingDocumentReplacementMeta && pendingAccountingDocumentReplacementMeta.length) {
+            fileDataPayload.accountingDocumentReplacements = pendingAccountingDocumentReplacementMeta;
+        }
+        window.parent.postMessage(fileDataPayload, '*');
         
         // Don't return yet - wait for put-links response
         // The file upload will be handled in handlePutLinks
@@ -888,6 +1058,8 @@ function handlePutLinks(message) {
             uploadInProgress = false;
             pendingFiles = [];
             pendingPdfBlob = null; // Clear pending PDF blob on error
+            pendingSdltCalculationSaveMeta = null;
+            pendingAccountingDocumentReplacementMeta = null;
             clearOwnCalculationUploadUI();
             
             // Clear accounting files on error
@@ -917,6 +1089,8 @@ function handlePutError(message) {
     uploadInProgress = false;
     pendingFiles = [];
     pendingPdfBlob = null; // Clear pending PDF blob on error
+    pendingSdltCalculationSaveMeta = null;
+    pendingAccountingDocumentReplacementMeta = null;
     clearOwnCalculationUploadUI();
 }
 
@@ -951,7 +1125,19 @@ function sendSaveDataResponse() {
         status: pendingUpdates.status || undefined,
         newMessage: pendingChatMessage || undefined
     };
-    
+
+    if (pendingSdltCalculationSaveMeta) {
+        response.sdltRecalculation = pendingSdltCalculationSaveMeta.sdltRecalculation;
+        response.previousSdltDue = pendingSdltCalculationSaveMeta.previousSdltDue;
+        response.previousSdltRequired = pendingSdltCalculationSaveMeta.previousSdltRequired;
+        response.newSdltDue = pendingSdltCalculationSaveMeta.newSdltDue;
+        response.newSdltRequired = pendingSdltCalculationSaveMeta.newSdltRequired;
+        response.previousSdltCalculationDocument = pendingSdltCalculationSaveMeta.previousSdltCalculationDocument;
+    }
+    if (pendingAccountingDocumentReplacementMeta && pendingAccountingDocumentReplacementMeta.length) {
+        response.accountingDocumentReplacements = pendingAccountingDocumentReplacementMeta;
+    }
+
     // Remove undefined fields
     if (!response.updatedFields) delete response.updatedFields;
     if (!response.updates) delete response.updates;
@@ -960,7 +1146,10 @@ function sendSaveDataResponse() {
     
     console.log('📤 Sending save-data-response:', response);
     window.parent.postMessage(response, '*');
-    
+
+    pendingSdltCalculationSaveMeta = null;
+    pendingAccountingDocumentReplacementMeta = null;
+
     // Update entryData with pending updates for local state
     Object.assign(entryData, pendingUpdates);
     
@@ -2107,6 +2296,9 @@ async function closeSdltCalculator(generatePDF) {
         const highestRentPdf = highestRentFirstFiveYears(annualRentFinal, leaseTermFinal, rentFreePeriod, steppedRent);
         const sdltResult = computeLeaseSdltBreakdown(npv, premium, isResidential, isVariation, previousNPV, isCompany, reliefFrom17);
 
+        const priorSdltDueForMessage = Number(entryData?.sdltDue) || 0;
+        const isSdltRecalculation = entryHadPriorSdltCalculation(entryData);
+
         const extensionNote = calculateExtensionNote(
             leaseTermFinal,
             annualRentFinal,
@@ -2147,20 +2339,17 @@ async function closeSdltCalculator(generatePDF) {
             pendingUpdates.sdltCalculated = true;
             pendingUpdates.sdltRequired = sdltResult.sdltDue > 0;
             pendingUpdates.sdltDue = sdltResult.sdltDue;
-            
-            // Create pending chat message based on whether SDLT is due (just the message string - Velo will create the message object)
-            const formattedAmount = sdltResult.sdltDue.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            if (sdltResult.sdltDue > 0) {
-                // SDLT is due
-                pendingChatMessage = `I have calculated the SDLT due on this matter to be £${formattedAmount}. We will now proceed to opening a matter and completing the relevant checks.`;
-            } else {
-                // No SDLT due
-                pendingChatMessage = `I have reviewed the provided details and calculated that no SDLT is due on this submission. Please Log into your account to view the calculation. No further action is required. Please let me know if you need any further support.`;
-            }
+
+            pendingChatMessage = buildSdltCalculationChatMessage(priorSdltDueForMessage, sdltResult.sdltDue, {
+                isRecalculation: isSdltRecalculation
+            });
             
             // Update status based on whether SDLT is due
             // Check sdltDue directly (sdltResult doesn't have sdltRequired property, only sdltDue, explanation, threshold)
-            if (sdltResult.sdltDue === 0) {
+            if (sdltResult.sdltDue > 0) {
+                pendingUpdates.status = [STATUS.CALCULATING_SDLT];
+                entryData.status = [STATUS.CALCULATING_SDLT];
+            } else if (sdltResult.sdltDue === 0) {
                 // No SDLT due - change status to "No SDLT Due"
                 pendingUpdates.status = [STATUS.NO_SDLT_DUE];
                 
@@ -2209,6 +2398,9 @@ async function closeSdltCalculator(generatePDF) {
             
             // Update workflow card display
             updateCalculationResultDisplay();
+
+            const currentStageAfterCalc = determineCurrentStage(entryData);
+            renderWorkflowStage(currentStageAfterCalc);
             
             // Notify form changed
             notifyFormChanged();
@@ -2583,7 +2775,10 @@ function updateCalculationResultDisplay() {
         
         // Format result text
         if (hasPendingCalculationPdf && pendingPdfBlob instanceof File && !hasSdltCalculation) {
-            resultDiv.textContent = 'External calculation PDF selected — save the entry to upload';
+            const ownAmountOk = parseOwnUploadSdltAmountInput().valid;
+            resultDiv.textContent = ownAmountOk
+                ? 'External calculation PDF selected — save the entry to upload'
+                : 'External calculation PDF selected — enter SDLT amount (£), then save to upload';
         } else if (sdltDue === 0) {
             resultDiv.textContent = 'SDLT Calculated - none due';
         } else {
@@ -3477,6 +3672,109 @@ function renderAccountingInfoCard() {
  * Check if all expected accounting documents are present (in entryData or pendingFiles)
  * Returns: { hasAll: boolean, expectsThsInvoice: boolean, expectsSdltInvoice: boolean, expectsCompletionStatement: boolean }
  */
+/**
+ * Same flow as document-card "Overwrite": show uploader and open file picker.
+ */
+function beginReplaceAccountingDocument(fieldKey) {
+    if (fieldKey === 'thsInvoice') {
+        const card = document.getElementById('thsInvoiceDocumentCard');
+        const wrapper = document.getElementById('thsInvoiceUploadWrapper');
+        const section = wrapper ? wrapper.querySelector('.file-upload-section') : null;
+        const input = document.getElementById('thsInvoiceFileInput');
+        if (card) card.classList.add('hidden');
+        if (section) section.style.display = 'block';
+        if (input) input.click();
+        notifyFormChanged();
+        return;
+    }
+    if (fieldKey === 'sdltInvoice') {
+        const card = document.getElementById('sdltInvoiceDocumentCard');
+        const wrapper = document.getElementById('sdltInvoiceUploadWrapper');
+        const section = wrapper ? wrapper.querySelector('.file-upload-section') : null;
+        const input = document.getElementById('sdltInvoiceFileInput');
+        if (card) card.classList.add('hidden');
+        if (section) section.style.display = 'block';
+        if (input) input.click();
+        notifyFormChanged();
+        return;
+    }
+    if (fieldKey === 'completionStatement') {
+        const card = document.getElementById('completionStatementDocumentCard');
+        const wrapper = document.getElementById('completionStatementUploadWrapper');
+        const section = wrapper ? wrapper.querySelector('.file-upload-section') : null;
+        const input = document.getElementById('completionStatementFileInput');
+        if (card) card.classList.add('hidden');
+        if (section) section.style.display = 'block';
+        if (input) input.click();
+        notifyFormChanged();
+        return;
+    }
+    if (fieldKey === 'sdlt5Certificate') {
+        const card = document.getElementById('sdlt5CertificateDocumentCard');
+        const area = document.getElementById('sdlt5CertificateUpload');
+        const section = area ? area.closest('.file-upload-section') : null;
+        const input = document.getElementById('sdlt5CertificateFileInput');
+        if (card) card.classList.add('hidden');
+        if (section) section.style.display = 'block';
+        if (input) input.click();
+        notifyFormChanged();
+    }
+}
+
+/** Header buttons: mirror calculator-style "replace" actions when a doc is already on the entry */
+function updateAccountingReplaceHeaderButtons() {
+    if (!entryData) return;
+    const actions = document.getElementById('accountingReplaceActions');
+    const btnThs = document.getElementById('replaceThsInvoiceBtn');
+    const btnSdlt = document.getElementById('replaceSdltInvoiceBtn');
+    const btnComp = document.getElementById('replaceCompletionStatementBtn');
+    if (!actions || !btnThs || !btnSdlt || !btnComp) return;
+
+    const thsPayer = entryData.thsFeePayer;
+    const sdltPayer = entryData.sdltFeePayer;
+    const samePayer = thsPayer === sdltPayer;
+    const expectsThsInvoice = !!thsPayer;
+    const expectsSdltInvoice = !!sdltPayer && !samePayer;
+    const expectsCompletionStatement = !!sdltPayer;
+    const hasThsInvoice = !!(entryData.thsInvoice && entryData.thsInvoice.s3Key);
+    const hasSdltInvoice = !!(entryData.sdltInvoice && entryData.sdltInvoice.s3Key);
+    const hasCompletionStatement = !!(entryData.completionStatement && entryData.completionStatement.s3Key);
+
+    const showThs = expectsThsInvoice && hasThsInvoice && !accountingFiles.thsInvoice;
+    const showSdlt = expectsSdltInvoice && hasSdltInvoice && !accountingFiles.sdltInvoice;
+    const showComp = expectsCompletionStatement && hasCompletionStatement && !accountingFiles.completionStatement;
+
+    btnThs.classList.toggle('hidden', !showThs);
+    btnSdlt.classList.toggle('hidden', !showSdlt);
+    btnComp.classList.toggle('hidden', !showComp);
+
+    const showRow = showThs || showSdlt || showComp;
+    actions.classList.toggle('hidden', !showRow);
+}
+
+function updateSdlt5ReplaceHeaderButton() {
+    const actions = document.getElementById('sdlt5ReplaceActions');
+    const btn = document.getElementById('replaceSdlt5CertificateBtn');
+    if (!actions || !btn) return;
+
+    const statusArray = entryData?.status || [];
+    const pendingStatusArray = pendingUpdates?.status || [];
+    const effectiveStatusArray = pendingStatusArray.length > 0 ? pendingStatusArray : statusArray;
+    const isSdltPaid = effectiveStatusArray.includes(STATUS.SDLT_PAID);
+
+    if (!isSdltPaid || !entryData) {
+        actions.classList.add('hidden');
+        btn.classList.add('hidden');
+        return;
+    }
+
+    const hasCert = !!(entryData.sdlt5Certificate && entryData.sdlt5Certificate.s3Key);
+    const pending = !!accountingFiles.sdlt5Certificate;
+    const show = hasCert && !pending;
+    btn.classList.toggle('hidden', !show);
+    actions.classList.toggle('hidden', !show);
+}
+
 function checkAllExpectedAccountingDocs() {
     if (!entryData) return { hasAll: false, expectsThsInvoice: false, expectsSdltInvoice: false, expectsCompletionStatement: false };
     
@@ -3688,6 +3986,7 @@ function renderAccountingDocumentCards() {
     
     // Don't auto-advance here - that's handled in renderWorkflowStage
     // This function just renders the document cards and uploaders
+    updateAccountingReplaceHeaderButtons();
 }
 
 /**
@@ -3859,6 +4158,7 @@ function setupSdlt5CertificateUpload() {
         // Hide SDLT5 cert section if status is not SDLT_PAID
         if (documentCard) documentCard.classList.add('hidden');
         if (uploadSection) uploadSection.style.display = 'none';
+        updateSdlt5ReplaceHeaderButton();
         return;
     }
     
@@ -3965,6 +4265,7 @@ function setupSdlt5CertificateUpload() {
             
             // Notify form changed
             notifyFormChanged();
+            updateSdlt5ReplaceHeaderButton();
         }
     });
     
@@ -3988,8 +4289,11 @@ function setupSdlt5CertificateUpload() {
             
             // Notify form changed
             notifyFormChanged();
+            updateSdlt5ReplaceHeaderButton();
         });
     }
+
+    updateSdlt5ReplaceHeaderButton();
 }
 
 /**
@@ -4044,23 +4348,46 @@ function handleToggleOwnCalculationUpload() {
 }
 
 function applyOwnCalculationPdfPendingUpdates() {
-    if (!entryData) return;
+    if (!entryData) return false;
+    const parsed = parseOwnUploadSdltAmountInput();
+    if (!parsed.valid) {
+        if (pendingUpdates) {
+            delete pendingUpdates.sdltCalculated;
+            delete pendingUpdates.sdltDue;
+            delete pendingUpdates.sdltRequired;
+            delete pendingUpdates.status;
+        }
+        pendingChatMessage = null;
+        return false;
+    }
+
     if (!pendingUpdates) {
         pendingUpdates = {};
     }
+
+    const priorSdltDue = Number(entryData.sdltDue) || 0;
+    const isSdltRecalculation = entryHadPriorSdltCalculation(entryData);
+
     pendingUpdates.sdltCalculated = true;
-    const amountInput = document.getElementById('sdltOwnCalculationAmount');
-    const amount = amountInput ? parseFloat(amountInput.value) : NaN;
-    const sdltDue = !isNaN(amount) && amount >= 0 ? amount : (entryData.sdltDue !== undefined ? entryData.sdltDue : 0);
-    pendingUpdates.sdltDue = sdltDue;
-    pendingUpdates.sdltRequired = sdltDue > 0;
-    const formattedAmount = sdltDue.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if (sdltDue > 0) {
-        pendingChatMessage = `I have calculated the SDLT due on this matter to be £${formattedAmount}. We will now proceed to opening a matter and completing the relevant checks.`;
+    pendingUpdates.sdltDue = parsed.value;
+    pendingUpdates.sdltRequired = parsed.value > 0;
+
+    pendingChatMessage = buildSdltCalculationChatMessage(priorSdltDue, parsed.value, {
+        isRecalculation: isSdltRecalculation
+    });
+
+    if (parsed.value > 0) {
+        pendingUpdates.status = [STATUS.CALCULATING_SDLT];
+        entryData.status = [STATUS.CALCULATING_SDLT];
     } else {
-        pendingChatMessage = `I have reviewed the provided details and calculated that no SDLT is due on this submission. Please Log into your account to view the calculation. No further action is required. Please let me know if you need any further support.`;
         pendingUpdates.status = [STATUS.NO_SDLT_DUE];
+        entryData.status = [STATUS.NO_SDLT_DUE];
+        const currentStageTitle = document.getElementById('currentStageTitle');
+        const currentStageDescription = document.getElementById('currentStageDescription');
+        if (currentStageTitle) currentStageTitle.textContent = 'No SDLT Due';
+        if (currentStageDescription) currentStageDescription.textContent = 'SDLT calculation complete - no tax due';
     }
+    return true;
 }
 
 function setupOwnCalculationPdfUpload() {
@@ -4073,7 +4400,9 @@ function setupOwnCalculationPdfUpload() {
         amountInput.addEventListener('input', () => {
             updateSdltDueBadge();
             if (pendingPdfBlob) {
-                applyOwnCalculationPdfPendingUpdates();
+                if (applyOwnCalculationPdfPendingUpdates()) {
+                    renderWorkflowStage(determineCurrentStage(entryData));
+                }
                 updateCalculationResultDisplay();
                 notifyFormChanged();
             }
@@ -4081,7 +4410,9 @@ function setupOwnCalculationPdfUpload() {
         amountInput.addEventListener('change', () => {
             updateSdltDueBadge();
             if (pendingPdfBlob) {
-                applyOwnCalculationPdfPendingUpdates();
+                if (applyOwnCalculationPdfPendingUpdates()) {
+                    renderWorkflowStage(determineCurrentStage(entryData));
+                }
                 updateCalculationResultDisplay();
                 notifyFormChanged();
             }
@@ -4099,7 +4430,9 @@ function setupOwnCalculationPdfUpload() {
             return;
         }
         pendingPdfBlob = file;
-        applyOwnCalculationPdfPendingUpdates();
+        if (applyOwnCalculationPdfPendingUpdates()) {
+            renderWorkflowStage(determineCurrentStage(entryData));
+        }
         updateSdltDueBadge();
         if (placeholder) placeholder.classList.add('hidden');
         if (selected) selected.classList.remove('hidden');
@@ -4222,6 +4555,7 @@ function setupFileUpload(inputId, areaId, fileKey) {
             
             // Notify form changed
             notifyFormChanged();
+            updateAccountingReplaceHeaderButtons();
         }
     });
     
@@ -4242,6 +4576,7 @@ function setupFileUpload(inputId, areaId, fileKey) {
             
             // Notify form changed
             notifyFormChanged();
+            updateAccountingReplaceHeaderButtons();
         });
     }
 }
