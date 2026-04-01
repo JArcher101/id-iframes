@@ -86,11 +86,18 @@ class ThirdfortChecksManager {
     
     handleMessage(event) {
         const raw = event.data;
-        const type = raw.type;
+        if (!raw || typeof raw !== 'object') return;
+
         // Support both v1 flat { type, checks, mode } and v2 nested { type, data: { checks, mode } }
         const data = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data))
             ? raw.data
             : (function() { var d = {}; for (var k in raw) { if (k !== 'type' && Object.prototype.hasOwnProperty.call(raw, k)) d[k] = raw[k]; } return d; })();
+
+        // Some parents only set type on the inner payload: { data: { type: 'save-success', ... } }
+        let type = raw.type;
+        if (type === undefined && data && typeof data.type === 'string') {
+            type = data.type;
+        }
         
         // console.log('📨 Message received:', type, data); // Commented out to avoid logging client data
         
@@ -183,89 +190,91 @@ class ThirdfortChecksManager {
     
     handleSaveSuccess(data) {
         // Handle successful save based on what was saved
-        if (this.pendingSave) {
-            const saveType = this.pendingSave.type;
-            const savedAnnotations = this.pendingSave.annotations; // Store annotations that were just saved
+        if (!this.pendingSave) {
+            console.warn('⚠️ save-success received but nothing pending; PDF flow skipped (parent may still be waiting — check message shape and save order)');
+            return;
+        }
+        const saveType = this.pendingSave.type;
+        const savedAnnotations = this.pendingSave.annotations; // Store annotations that were just saved
+        
+        if (saveType === 'consider') {
+            // Update local check object with new annotations before generating PDF
+            if (savedAnnotations && this.currentCheck) {
+                if (!this.currentCheck.considerAnnotations) {
+                    this.currentCheck.considerAnnotations = [];
+                }
+                // Add user info and _id to annotations (matching backend format)
+                const userEmail = data.userEmail || 'unknown';
+                const userName = userEmail.split('@')[0];
+                
+                savedAnnotations.forEach(ann => {
+                    this.currentCheck.considerAnnotations.unshift({
+                        _id: 'temp_' + Date.now() + Math.random().toString(36).substr(2, 9),
+                        taskType: ann.taskType,
+                        objectivePath: ann.objectivePath,
+                        originalStatus: ann.originalStatus,
+                        newStatus: ann.newStatus,
+                        reason: ann.reason,
+                        timestamp: ann.timestamp,
+                        user: userEmail,
+                        userName: userName
+                    });
+                });
+                console.log(`✅ Added ${savedAnnotations.length} annotations to local check object`);
+                console.log('📊 Total annotations now:', this.currentCheck.considerAnnotations.length);
+            }
             
-            if (saveType === 'consider') {
-                // Update local check object with new annotations before generating PDF
-                if (savedAnnotations && this.currentCheck) {
-                    if (!this.currentCheck.considerAnnotations) {
-                        this.currentCheck.considerAnnotations = [];
-                    }
-                    // Add user info and _id to annotations (matching backend format)
-                    const userEmail = data.userEmail || 'unknown';
-                    const userName = userEmail.split('@')[0];
-                    
-                    savedAnnotations.forEach(ann => {
-                        this.currentCheck.considerAnnotations.unshift({
+            // Generate PDF and open in popup (auto-save = true)
+            console.log('📄 Generating consider annotations PDF...');
+            this.generateConsiderPDF(true); // Pass true for auto-save
+            // Close overlay after PDF generation starts
+            setTimeout(() => this.closeConsiderOverlay(), 500);
+        } else if (saveType === 'pep-dismissal') {
+            // Update local check object with new dismissals before generating PDF
+            if (this.pendingSave.dismissals && this.currentCheck) {
+                if (!this.currentCheck.pepDismissals) {
+                    this.currentCheck.pepDismissals = [];
+                }
+                
+                // Add user info and _id to dismissals (matching backend format)
+                const userEmail = data.userEmail || 'unknown';
+                const userName = userEmail.split('@')[0];
+                const timestamp = new Date().toISOString();
+                
+                // Flatten all hits from all dismissal batches
+                this.pendingSave.dismissals.forEach(batch => {
+                    batch.hits.forEach(hit => {
+                        this.currentCheck.pepDismissals.unshift({
                             _id: 'temp_' + Date.now() + Math.random().toString(36).substr(2, 9),
-                            taskType: ann.taskType,
-                            objectivePath: ann.objectivePath,
-                            originalStatus: ann.originalStatus,
-                            newStatus: ann.newStatus,
-                            reason: ann.reason,
-                            timestamp: ann.timestamp,
+                            hitId: hit.id,
+                            hitName: hit.name,
+                            reportId: batch.reportId,
+                            reportType: hit.type,
+                            reason: batch.reason,
+                            timestamp: timestamp,
                             user: userEmail,
                             userName: userName
                         });
                     });
-                    console.log(`✅ Added ${savedAnnotations.length} annotations to local check object`);
-                    console.log('📊 Total annotations now:', this.currentCheck.considerAnnotations.length);
-                }
-                
-                // Generate PDF and open in popup (auto-save = true)
-                console.log('📄 Generating consider annotations PDF...');
-                this.generateConsiderPDF(true); // Pass true for auto-save
-                // Close overlay after PDF generation starts
-                setTimeout(() => this.closeConsiderOverlay(), 500);
-            } else if (saveType === 'pep-dismissal') {
-                // Update local check object with new dismissals before generating PDF
-                if (this.pendingSave.dismissals && this.currentCheck) {
-                    if (!this.currentCheck.pepDismissals) {
-                        this.currentCheck.pepDismissals = [];
-                    }
-                    
-                    // Add user info and _id to dismissals (matching backend format)
-                    const userEmail = data.userEmail || 'unknown';
-                    const userName = userEmail.split('@')[0];
-                    const timestamp = new Date().toISOString();
-                    
-                    // Flatten all hits from all dismissal batches
-                    this.pendingSave.dismissals.forEach(batch => {
-                        batch.hits.forEach(hit => {
-                            this.currentCheck.pepDismissals.unshift({
-                                _id: 'temp_' + Date.now() + Math.random().toString(36).substr(2, 9),
-                                hitId: hit.id,
-                                hitName: hit.name,
-                                reportId: batch.reportId,
-                                reportType: hit.type,
-                                reason: batch.reason,
-                                timestamp: timestamp,
-                                user: userEmail,
-                                userName: userName
-                            });
-                        });
-                    });
-                    console.log(`✅ Added ${this.pendingSave.dismissals.reduce((sum, b) => sum + b.hits.length, 0)} dismissals to local check object`);
-                    console.log('📊 Total dismissals now:', this.currentCheck.pepDismissals.length);
-                }
-                
-                // Generate PDF and open in popup (auto-save = true)
-                console.log('📄 Generating PEP dismissals PDF...');
-                this.generatePepDismissalsPDF(true); // Pass true for auto-save
-                // Close overlay after PDF generation starts
-                setTimeout(() => this.closePepOverlay(), 500);
-            } else if (saveType === 'sof') {
-                // Generate PDF and open in popup (auto-save = true)
-                console.log('📄 Generating SoF investigation PDF...');
-                this.generateSofPDF(true); // Pass true for auto-save
-                // Close overlay after PDF generation starts
-                setTimeout(() => this.closeSofOverlay(), 500);
+                });
+                console.log(`✅ Added ${this.pendingSave.dismissals.reduce((sum, b) => sum + b.hits.length, 0)} dismissals to local check object`);
+                console.log('📊 Total dismissals now:', this.currentCheck.pepDismissals.length);
             }
             
-            this.pendingSave = null;
+            // Generate PDF and open in popup (auto-save = true)
+            console.log('📄 Generating PEP dismissals PDF...');
+            this.generatePepDismissalsPDF(true); // Pass true for auto-save
+            // Close overlay after PDF generation starts
+            setTimeout(() => this.closePepOverlay(), 500);
+        } else if (saveType === 'sof') {
+            // Generate PDF and open in popup (auto-save = true)
+            console.log('📄 Generating SoF investigation PDF...');
+            this.generateSofPDF(true); // Pass true for auto-save
+            // Close overlay after PDF generation starts
+            setTimeout(() => this.closeSofOverlay(), 500);
         }
+        
+        this.pendingSave = null;
     }
     
     showError(message) {
@@ -320,6 +329,22 @@ class ThirdfortChecksManager {
     
     sendMessage(type, data) {
         window.parent.postMessage({ type, data }, '*');
+    }
+
+    /**
+     * Parent uses this after save-success: hide loading / refresh data.
+     * Only for auto-save (post-save) flow — not manual Export PDF.
+     * On success: call after download + printUI have been kicked off so a parent refresh
+     * does not cancel the save/print flow. On failure: call after html2pdf errors or when
+     * there is nothing to generate, so the parent can still refresh.
+     */
+    notifyParentPdfGenerated(autoSave, pdfKind, { success, checkId, error } = {}) {
+        if (!autoSave) return;
+        const data = { success: !!success, type: pdfKind };
+        if (checkId != null && checkId !== '') data.checkId = checkId;
+        if (error) data.error = error;
+        console.log('📤 pdf-generated → parent:', data.success ? 'success' : 'failure', pdfKind);
+        this.sendMessage('pdf-generated', data);
     }
     
     // ===================================================================
@@ -13695,6 +13720,7 @@ class ThirdfortChecksManager {
         const check = this.currentCheck;
         if (!check) {
             console.error('❌ No current check for PDF generation');
+            this.notifyParentPdfGenerated(autoSave, 'consider', { success: false, error: 'no current check' });
             return;
         }
         
@@ -13706,7 +13732,12 @@ class ThirdfortChecksManager {
         // If no annotations exist, there's nothing to generate
         if (annotations.length === 0) {
             console.error('❌ No annotations to generate PDF for');
-            alert('No annotations found to generate PDF');
+            this.notifyParentPdfGenerated(autoSave, 'consider', {
+                success: false,
+                checkId: check.checkId || check.transactionId,
+                error: 'no annotations'
+            });
+            if (!autoSave) alert('No annotations found to generate PDF');
             return;
         }
         
@@ -14020,47 +14051,48 @@ class ThirdfortChecksManager {
             // Generate PDF as blob and open in print dialog
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ PDF blob generated:', pdfBlob.size, 'bytes');
-                
-                // If auto-save, force direct download with friendly filename
                 if (autoSave) {
-                    console.log('📥 Auto-saving consider annotations PDF - forcing direct download...');
-                    const safeCheckName = checkName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_');
-                    const safeCheckRef = (checkRef || 'unknown').replace(/[^a-zA-Z0-9-]/g, '_');
-                    const filename = `Consider_Annotations_${safeCheckName}_${safeCheckRef}.pdf`;
-                    
-                    // Create download link and trigger download (use separate blob URL)
-                    const downloadUrl = URL.createObjectURL(pdfBlob);
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    // Clean up download blob URL after a short delay
-                    setTimeout(() => {
-                        URL.revokeObjectURL(downloadUrl);
-                    }, 100);
-                    
-                    // Also open with printJS for viewing (use separate blob URL)
-                    if (typeof printJS !== 'undefined') {
-                        console.log('📄 Opening consider annotations PDF with Print.js for viewing...');
-                        const printUrl = URL.createObjectURL(pdfBlob);
-                        printJS({
-                            printable: printUrl,
-                            type: 'pdf',
-                            onPrintDialogClose: () => {
-                                // Clean up print blob URL after print dialog closes
-                                URL.revokeObjectURL(printUrl);
-                            }
-                        });
+                    let presentationError = null;
+                    try {
+                        console.log('📥 Auto-saving consider annotations PDF - forcing direct download...');
+                        const safeCheckName = checkName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_');
+                        const safeCheckRef = (checkRef || 'unknown').replace(/[^a-zA-Z0-9-]/g, '_');
+                        const filename = `Consider_Annotations_${safeCheckName}_${safeCheckRef}.pdf`;
+                        
+                        const downloadUrl = URL.createObjectURL(pdfBlob);
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        setTimeout(() => {
+                            URL.revokeObjectURL(downloadUrl);
+                        }, 100);
+
+                        if (typeof printJS !== 'undefined') {
+                            console.log('📄 Opening consider annotations PDF with Print.js for viewing...');
+                            const printUrl = URL.createObjectURL(pdfBlob);
+                            printJS({
+                                printable: printUrl,
+                                type: 'pdf',
+                                onPrintDialogClose: () => {
+                                    URL.revokeObjectURL(printUrl);
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        presentationError = e;
+                        console.error('❌ Download/print failed after PDF generated (user can use Export):', e);
                     }
-                    
-                    // Notify parent that PDF is generated and downloaded
-                    console.log('📤 Sending pdf-generated message to parent');
-                    this.sendMessage('pdf-generated', { 
-                        type: 'consider',
-                        checkId: check.checkId || check.transactionId 
+                    // After download/print kick-off so parent refresh does not cancel UX
+                    this.notifyParentPdfGenerated(autoSave, 'consider', {
+                        success: !presentationError,
+                        checkId: check.checkId || check.transactionId,
+                        ...(presentationError
+                            ? { error: presentationError.message ? presentationError.message : String(presentationError) }
+                            : {})
                     });
                 } else {
                     // Manual export - use printJS as before
@@ -14098,25 +14130,21 @@ class ThirdfortChecksManager {
                 }
             }).catch(err => {
                 console.error('❌ Error generating PDF:', err);
-                alert('Error generating PDF: ' + err.message);
-                // Still notify parent even on error so data can refresh (only if auto-save)
-                if (autoSave) {
-                    this.sendMessage('pdf-generated', { 
-                        type: 'consider',
-                        error: err.message 
-                    });
-                }
+                this.notifyParentPdfGenerated(autoSave, 'consider', {
+                    success: false,
+                    checkId: check.checkId || check.transactionId,
+                    error: err && err.message ? err.message : String(err)
+                });
+                alert('Error generating PDF: ' + (err && err.message ? err.message : err));
             });
         } else {
             console.error('❌ html2pdf library not loaded');
+            this.notifyParentPdfGenerated(autoSave, 'consider', {
+                success: false,
+                checkId: check.checkId || check.transactionId,
+                error: 'html2pdf not loaded'
+            });
             alert('PDF library not loaded. Please refresh the page.');
-            // Notify parent so data can refresh (only if auto-save)
-            if (autoSave) {
-                this.sendMessage('pdf-generated', { 
-                    type: 'consider',
-                    error: 'html2pdf not loaded' 
-                });
-            }
         }
     }
     
@@ -15722,6 +15750,7 @@ class ThirdfortChecksManager {
         const check = this.currentCheck;
         if (!check) {
             console.error('❌ No current check for SoF PDF generation');
+            this.notifyParentPdfGenerated(autoSave, 'sof', { success: false, error: 'no current check' });
             return;
         }
         
@@ -16263,47 +16292,47 @@ class ThirdfortChecksManager {
             console.log('📄 Generating SoF PDF with html2pdf...');
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ SoF PDF generated:', pdfBlob.size, 'bytes');
-                
-                // If auto-save, force direct download with friendly filename
                 if (autoSave) {
-                    console.log('📥 Auto-saving SoF PDF - forcing direct download...');
-                    const safeCheckName = checkName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_');
-                    const safeCheckRef = (checkRef || 'unknown').replace(/[^a-zA-Z0-9-]/g, '_');
-                    const filename = `Source_of_Funds_Investigation_${safeCheckName}_${safeCheckRef}.pdf`;
-                    
-                    // Create download link and trigger download (use separate blob URL)
-                    const downloadUrl = URL.createObjectURL(pdfBlob);
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    // Clean up download blob URL after a short delay
-                    setTimeout(() => {
-                        URL.revokeObjectURL(downloadUrl);
-                    }, 100);
-                    
-                    // Also open with printJS for viewing (use separate blob URL)
-                    if (typeof printJS !== 'undefined') {
-                        console.log('📄 Opening SoF PDF with Print.js for viewing...');
-                        const printUrl = URL.createObjectURL(pdfBlob);
-                        printJS({
-                            printable: printUrl,
-                            type: 'pdf',
-                            onPrintDialogClose: () => {
-                                // Clean up print blob URL after print dialog closes
-                                URL.revokeObjectURL(printUrl);
-                            }
-                        });
+                    let presentationError = null;
+                    try {
+                        console.log('📥 Auto-saving SoF PDF - forcing direct download...');
+                        const safeCheckName = checkName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_');
+                        const safeCheckRef = (checkRef || 'unknown').replace(/[^a-zA-Z0-9-]/g, '_');
+                        const filename = `Source_of_Funds_Investigation_${safeCheckName}_${safeCheckRef}.pdf`;
+                        
+                        const downloadUrl = URL.createObjectURL(pdfBlob);
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        setTimeout(() => {
+                            URL.revokeObjectURL(downloadUrl);
+                        }, 100);
+                        
+                        if (typeof printJS !== 'undefined') {
+                            console.log('📄 Opening SoF PDF with Print.js for viewing...');
+                            const printUrl = URL.createObjectURL(pdfBlob);
+                            printJS({
+                                printable: printUrl,
+                                type: 'pdf',
+                                onPrintDialogClose: () => {
+                                    URL.revokeObjectURL(printUrl);
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        presentationError = e;
+                        console.error('❌ Download/print failed after PDF generated (user can use Export):', e);
                     }
-                    
-                    // Notify parent that PDF is generated and downloaded
-                    console.log('📤 Sending pdf-generated message to parent');
-                    this.sendMessage('pdf-generated', { 
-                        type: 'sof', 
-                        checkId: check.checkId || check.transactionId 
+                    this.notifyParentPdfGenerated(autoSave, 'sof', {
+                        success: !presentationError,
+                        checkId: check.checkId || check.transactionId,
+                        ...(presentationError
+                            ? { error: presentationError.message ? presentationError.message : String(presentationError) }
+                            : {})
                     });
                 } else {
                     // Manual export - use printJS as before
@@ -16341,31 +16370,30 @@ class ThirdfortChecksManager {
                 }
             }).catch(err => {
                 console.error('❌ Error generating SoF PDF:', err);
-                alert('Error generating SoF PDF: ' + err.message);
-                // Still notify parent even on error so data can refresh (only if auto-save)
-                if (autoSave) {
-                    this.sendMessage('pdf-generated', { 
-                        type: 'sof',
-                        error: err.message 
-                    });
-                }
+                this.notifyParentPdfGenerated(autoSave, 'sof', {
+                    success: false,
+                    checkId: check.checkId || check.transactionId,
+                    error: err && err.message ? err.message : String(err)
+                });
+                alert('Error generating SoF PDF: ' + (err && err.message ? err.message : err));
             });
         } else {
             console.error('❌ html2pdf library not loaded');
+            this.notifyParentPdfGenerated(autoSave, 'sof', {
+                success: false,
+                checkId: check.checkId || check.transactionId,
+                error: 'html2pdf not loaded'
+            });
             alert('PDF library not loaded. Please refresh the page.');
-            // Notify parent so data can refresh (only if auto-save)
-            if (autoSave) {
-                this.sendMessage('pdf-generated', { 
-                    type: 'sof',
-                    error: 'html2pdf not loaded' 
-                });
-            }
         }
     }
     
     generatePepDismissalsPDF(autoSave = false) {
         const check = this.currentCheck;
-        if (!check) return;
+        if (!check) {
+            this.notifyParentPdfGenerated(autoSave, 'pep-dismissal', { success: false, error: 'no current check' });
+            return;
+        }
         
         const outcomes = check.taskOutcomes || {};
         const checkDismissals = check.pepDismissals || [];
@@ -16673,46 +16701,47 @@ class ThirdfortChecksManager {
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 console.log('✅ PEP dismissals PDF generated:', pdfBlob.size, 'bytes');
                 
-                // If auto-save, force direct download with friendly filename
                 if (autoSave) {
-                    console.log('📥 Auto-saving PEP dismissals PDF - forcing direct download...');
-                    const safeCheckName = checkName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_');
-                    const safeCheckRef = (checkRef || 'unknown').replace(/[^a-zA-Z0-9-]/g, '_');
-                    const filename = `PEP_Sanctions_Dismissals_${safeCheckName}_${safeCheckRef}.pdf`;
-                    
-                    // Create download link and trigger download (use separate blob URL)
-                    const downloadUrl = URL.createObjectURL(pdfBlob);
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    // Clean up download blob URL after a short delay
-                    setTimeout(() => {
-                        URL.revokeObjectURL(downloadUrl);
-                    }, 100);
-                    
-                    // Also open with printJS for viewing (use separate blob URL)
-                    if (typeof printJS !== 'undefined') {
-                        console.log('📄 Opening PEP dismissals PDF with Print.js for viewing...');
-                        const printUrl = URL.createObjectURL(pdfBlob);
-                        printJS({
-                            printable: printUrl,
-                            type: 'pdf',
-                            onPrintDialogClose: () => {
-                                // Clean up print blob URL after print dialog closes
-                                URL.revokeObjectURL(printUrl);
-                            }
-                        });
+                    let presentationError = null;
+                    try {
+                        console.log('📥 Auto-saving PEP dismissals PDF - forcing direct download...');
+                        const safeCheckName = checkName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_');
+                        const safeCheckRef = (checkRef || 'unknown').replace(/[^a-zA-Z0-9-]/g, '_');
+                        const filename = `PEP_Sanctions_Dismissals_${safeCheckName}_${safeCheckRef}.pdf`;
+                        
+                        const downloadUrl = URL.createObjectURL(pdfBlob);
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        setTimeout(() => {
+                            URL.revokeObjectURL(downloadUrl);
+                        }, 100);
+                        
+                        if (typeof printJS !== 'undefined') {
+                            console.log('📄 Opening PEP dismissals PDF with Print.js for viewing...');
+                            const printUrl = URL.createObjectURL(pdfBlob);
+                            printJS({
+                                printable: printUrl,
+                                type: 'pdf',
+                                onPrintDialogClose: () => {
+                                    URL.revokeObjectURL(printUrl);
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        presentationError = e;
+                        console.error('❌ Download/print failed after PDF generated (user can use Export):', e);
                     }
-                    
-                    // Notify parent that PDF is generated and downloaded
-                    console.log('📤 Sending pdf-generated message to parent');
-                    this.sendMessage('pdf-generated', { 
-                        type: 'pep-dismissal',
-                        checkId: check.checkId || check.transactionId 
+                    this.notifyParentPdfGenerated(autoSave, 'pep-dismissal', {
+                        success: !presentationError,
+                        checkId: check.checkId || check.transactionId,
+                        ...(presentationError
+                            ? { error: presentationError.message ? presentationError.message : String(presentationError) }
+                            : {})
                     });
                 } else {
                     // Manual export - use printJS as before
@@ -16750,25 +16779,21 @@ class ThirdfortChecksManager {
                 }
             }).catch(err => {
                 console.error('❌ Error generating PEP dismissals PDF:', err);
-                alert('Error generating PDF: ' + err.message);
-                // Still notify parent even on error so data can refresh (only if auto-save)
-                if (autoSave) {
-                    this.sendMessage('pdf-generated', { 
-                        type: 'pep-dismissal',
-                        error: err.message 
-                    });
-                }
+                this.notifyParentPdfGenerated(autoSave, 'pep-dismissal', {
+                    success: false,
+                    checkId: check.checkId || check.transactionId,
+                    error: err && err.message ? err.message : String(err)
+                });
+                alert('Error generating PDF: ' + (err && err.message ? err.message : err));
             });
         } else {
             console.error('❌ html2pdf library not loaded');
+            this.notifyParentPdfGenerated(autoSave, 'pep-dismissal', {
+                success: false,
+                checkId: check.checkId || check.transactionId,
+                error: 'html2pdf not loaded'
+            });
             alert('PDF library not loaded. Please refresh the page.');
-            // Notify parent so data can refresh (only if auto-save)
-            if (autoSave) {
-                this.sendMessage('pdf-generated', { 
-                    type: 'pep-dismissal',
-                    error: 'html2pdf not loaded' 
-                });
-            }
         }
     }
 }
