@@ -563,14 +563,8 @@
            }
         
         2. 'analytics-data' - Detailed analytics for specific fee earner
-           Structure: {
-               type: 'analytics-data',
-               fe: 'SJM',
-               analyticsData: {
-                   // Detailed breakdown data for individual fee earner
-                   // Structure TBD based on backend implementation
-               }
-           }
+           Nested: { type, fe, analyticsData: { ... } } or { type, data: { ... } }
+           Flat (also accepted): { type, fe?, totalAwaiting, pass90, ... } metrics on the same object as type
         
         3. 'analytics-error' - Error fetching analytics for fee earner
            Structure: {
@@ -699,6 +693,26 @@
             return rows;
         }
 
+        /**
+         * Parent may send analytics as { type, analyticsData } or { type, data } or flat { type, totalAwaiting, pass90, ... }.
+         */
+        function extractAnalyticsPayload(msg) {
+            if (!msg || typeof msg !== 'object') return null;
+            if (msg.analyticsData && typeof msg.analyticsData === 'object' && !Array.isArray(msg.analyticsData)) {
+                return msg.analyticsData;
+            }
+            if (msg.data !== undefined && msg.data !== null && typeof msg.data === 'object' && !Array.isArray(msg.data)) {
+                return msg.data;
+            }
+            var payload = {};
+            for (var k in msg) {
+                if (!Object.prototype.hasOwnProperty.call(msg, k)) continue;
+                if (k === 'type') continue;
+                payload[k] = msg[k];
+            }
+            return Object.keys(payload).length ? payload : null;
+        }
+
         // Global state
         let wallboardData = null;
         let feeEarnerOptions = [];
@@ -785,8 +799,7 @@
                 // Received detailed analytics for specific fee earner
                 const data = msg;
                 
-                // Store data (handle both 'data' and 'analyticsData' keys for compatibility)
-                feeEarnerAnalyticsData = data.analyticsData || data.data || null;
+                feeEarnerAnalyticsData = extractAnalyticsPayload(data);
                 
                 // Generate charts with detailed data
                 if (feeEarnerAnalyticsData) {
