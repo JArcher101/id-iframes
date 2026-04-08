@@ -8,7 +8,7 @@ Form J request requires:
 - ID Documents Section visible
 - ejHint visible if formJConditionsMet flag is true
 - Optional message input
-- Optional file attachment
+- Optional message / CDF / OFSI file uploads (shared file-data → put-links → S3 before request-data)
 
 Validation:
 - formJSufficientPhotos must be true (2x Address ID + valid Photo IDs)
@@ -16,9 +16,10 @@ Validation:
 - All standard 3 fields must be filled
 
 Sends request-data message to parent with:
-- request: 'formJ'
+- requestType: 'formJ'
 - data: updated client-data object
-- message: optional message object (only if message entered)
+- message: staff message object (optional attachment via shared upload)
+- newFiles: CDF/OFSI uploads when new files selected (after S3)
 =====================================================================
 */
 
@@ -26,11 +27,6 @@ Sends request-data message to parent with:
   'use strict';
   
   const FormJ = {
-    // File upload state (for optional file attachments)
-    pendingFile: null,
-    pendingMessage: null,
-    uploadingFile: false,
-    
     init: function(requestData) {
       console.log('📝 Initializing Form J request');
       
@@ -72,9 +68,6 @@ Sends request-data message to parent with:
       
       // Enable submit button (requirements are met and message is pre-populated)
       this.enableSubmitButton();
-      
-      // Setup file upload listener
-      this.setupFileUploadListener();
       
       console.log('✅ Form J request initialized');
     },
@@ -234,104 +227,6 @@ Sends request-data message to parent with:
       console.log('✅ Form J validation configured (validates on submit only)');
     },
     
-    setupFileUploadListener: function() {
-      window.addEventListener('message', (event) => {
-        if (event.data.type === 'put-links' && this.uploadingFile) {
-          this.handlePutLinks(event.data);
-        } else if (event.data.type === 'put-error' && this.uploadingFile) {
-          this.handlePutError(event.data);
-        }
-      });
-    },
-    
-    handlePutLinks: function(data) {
-      const links = data.links;
-      const s3Keys = data.s3Keys;
-      
-      if (links && links.length > 0 && s3Keys && s3Keys.length > 0) {
-        this.uploadFileToS3(links[0], s3Keys[0].s3Key);
-      }
-    },
-    
-    handlePutError: function(data) {
-      console.error('PUT link generation failed:', data.message);
-      alert('File upload failed. Please try again.');
-      this.uploadingFile = false;
-      this.pendingFile = null;
-      this.pendingMessage = null;
-      document.getElementById('submitBtn').disabled = false;
-    },
-    
-    uploadFileToS3: function(putLink, s3Key) {
-      if (!this.pendingFile || !this.pendingMessage) {
-        console.error('No file or message to upload');
-        this.uploadingFile = false;
-        return;
-      }
-      
-      fetch(putLink, {
-        method: 'PUT',
-        body: this.pendingFile,
-        headers: {
-          'Content-Type': this.pendingFile.type
-        }
-      })
-      .then(response => {
-        if (response.ok) {
-          console.log('File uploaded successfully to S3');
-          this.sendRequestData(s3Key);
-        } else {
-          throw new Error(`Upload failed: ${response.status}`);
-        }
-      })
-      .catch(error => {
-        console.error('File upload failed:', error);
-        alert('File upload failed. Please try again.');
-        this.uploadingFile = false;
-        this.pendingFile = null;
-        this.pendingMessage = null;
-        document.getElementById('submitBtn').disabled = false;
-      });
-    },
-    
-    sendRequestData: function(s3Key = null) {
-      const updatedData = window.RequestFormCore.buildUpdatedClientData();
-      const messageInput = document.getElementById('messageInput');
-      const hasMessage = messageInput && messageInput.value.trim();
-      
-      const payload = {
-        type: 'request-data',
-        requestType: 'formJ',
-        user: window.RequestFormCore.requestData().user || '',
-        _id: window.RequestFormCore.requestData()._id || '',
-        data: updatedData
-      };
-      
-      // Only include message if there's text content or a file
-      if (hasMessage || s3Key) {
-        const messageObj = this.pendingMessage || (hasMessage ? this.createMessageObject() : null);
-        
-        if (messageObj) {
-          if (s3Key && this.pendingFile) {
-            messageObj.file = {
-              name: this.pendingFile.name,
-              size: this.pendingFile.size,
-              type: this.pendingFile.type,
-              s3Key: s3Key
-            };
-          }
-          
-          payload.messageObj = messageObj;
-        }
-      }
-      
-      window.parent.postMessage(payload, '*');
-      
-      this.uploadingFile = false;
-      this.pendingFile = null;
-      this.pendingMessage = null;
-    },
-    
     createMessageObject: function() {
       const messageInput = document.getElementById('messageInput');
       const userEmail = window.RequestFormCore.requestData().user || '';
@@ -353,42 +248,10 @@ Sends request-data message to parent with:
     },
     
     getData: function() {
-      const fileInput = document.getElementById('fileInput');
-      const file = fileInput?.files[0];
-      
-      if (file) {
-        this.uploadingFile = true;
-        this.pendingFile = file;
-        
-        const messageInput = document.getElementById('messageInput');
-        if (messageInput && messageInput.value.trim()) {
-          this.pendingMessage = this.createMessageObject();
-        }
-        
-        const fileName = `formj-attachment-${Date.now()}-${file.name}`;
-        const fileData = {
-          type: 'Document',
-          document: 'Form J Attachment',
-          uploader: window.RequestFormCore.requestData().user || '',
-          data: {
-            type: file.type,
-            size: file.size,
-            name: fileName,
-            lastModified: file.lastModified
-          },
-          file: file
-        };
-        
-        window.parent.postMessage({
-          type: 'file-data',
-          files: [fileData],
-          _id: window.RequestFormCore.requestData()._id || ''
-        }, '*');
-        
-        return null;
+      const messageObj = this.createMessageObject();
+      if (window.RequestFormCore && window.RequestFormCore.prepareAndSubmitRequest) {
+        window.RequestFormCore.prepareAndSubmitRequest('formJ', messageObj);
       }
-      
-      this.sendRequestData();
       return null;
     },
     
