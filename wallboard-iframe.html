@@ -545,18 +545,21 @@
         
         INCOMING MESSAGES (from parent):
         1. 'wallboard-data' - Complete metrics data and dropdown options
-           Structure: {
+           Legacy row array: {
                type: 'wallboard-data',
                wallboard: [
                    { title: 'Outstanding total', sjm: 5, mb: 3, ... },
-                   { title: 'Outstanding With Photo ID', sjm: 2, mb: 1, ... },
                    ...
                ],
-               feeEarnerOptions: [
-                   { label: 'ALL', value: 'ALL' },
-                   { label: 'Stephen Morrison', value: 'SJM' },
-                   ...
-               ]
+               feeEarnerOptions: [ { label: '...', value: 'SJM' }, ... ]
+           }
+           API aggregate shape (normalized to rows in iframe): {
+               type: 'wallboard-data',
+               wallboard: {
+                   totalOutstanding, countsByTitle: { outstanding: { SJM: 1 }, passes7: {}, ... },
+                   countsByPasses: { ... }
+               },
+               feeEarnerOptions: [ ... ]
            }
         
         2. 'analytics-data' - Detailed analytics for specific fee earner
@@ -625,6 +628,77 @@
             return raw;
         }
 
+        /**
+         * Backend home-page payload uses an object with countsByTitle { outstanding: { FE: n }, ... }.
+         * Legacy iframe format is an array of rows: { title: 'Outstanding total', sjm: 1, mb: 2, ... }.
+         */
+        var COUNTS_TITLE_KEY_TO_ROW_TITLE = {
+            outstanding: 'Outstanding total',
+            awaiting: 'Awaiting',
+            addedLast7: 'Added in last 7 days',
+            addedOver30: 'Outstanding over 30 days',
+            pending: 'Pending',
+            issues: 'Issues',
+            requests: 'Requests',
+            unassigned: 'Unassigned',
+            passes7: 'Passes in last 7 days',
+            passes30: 'Passes in last 30 days',
+            passes90: 'Passes in last 90 days',
+            eid: 'E-ID in progress',
+            eidInProgress: 'E-ID in progress'
+        };
+
+        var COUNTS_TITLE_ROW_ORDER = [
+            'outstanding', 'awaiting', 'addedLast7', 'addedOver30', 'pending', 'issues', 'requests', 'unassigned',
+            'passes7', 'passes30', 'passes90', 'eid', 'eidInProgress'
+        ];
+
+        function countsObjectToMetricRow(displayTitle, countsByFe) {
+            var row = { title: displayTitle };
+            if (!countsByFe || typeof countsByFe !== 'object' || Array.isArray(countsByFe)) return row;
+            Object.keys(countsByFe).forEach(function(k) {
+                row[String(k).toLowerCase()] = countsByFe[k];
+            });
+            return row;
+        }
+
+        function hasAnyFeCounts(countsByFe) {
+            return countsByFe && typeof countsByFe === 'object' && !Array.isArray(countsByFe) && Object.keys(countsByFe).length > 0;
+        }
+
+        function normalizeWallboardRows(rawWallboard) {
+            if (!rawWallboard) return [];
+            if (Array.isArray(rawWallboard)) return rawWallboard;
+            if (typeof rawWallboard !== 'object') return [];
+
+            var cbt = rawWallboard.countsByTitle;
+            if (!cbt || typeof cbt !== 'object') return [];
+
+            var rows = [];
+            var seen = Object.create(null);
+
+            COUNTS_TITLE_ROW_ORDER.forEach(function(key) {
+                if (!Object.prototype.hasOwnProperty.call(cbt, key)) return;
+                if (!hasAnyFeCounts(cbt[key])) return;
+                var disp = COUNTS_TITLE_KEY_TO_ROW_TITLE[key];
+                if (!disp) return;
+                rows.push(countsObjectToMetricRow(disp, cbt[key]));
+                seen[key] = true;
+            });
+
+            Object.keys(cbt).forEach(function(key) {
+                if (seen[key]) return;
+                if (!hasAnyFeCounts(cbt[key])) return;
+                var disp = COUNTS_TITLE_KEY_TO_ROW_TITLE[key];
+                if (!disp) {
+                    disp = key.replace(/([A-Z])/g, ' $1').replace(/^./, function(s) { return s.toUpperCase(); }).trim();
+                }
+                rows.push(countsObjectToMetricRow(disp, cbt[key]));
+            });
+
+            return rows;
+        }
+
         // Global state
         let wallboardData = null;
         let feeEarnerOptions = [];
@@ -686,8 +760,8 @@
             if (msg.type === 'wallboard-data') {
                 const data = msg;
                 
-                // Store data
-                wallboardData = data.wallboard || [];
+                // Store data (array rows or API object with countsByTitle)
+                wallboardData = normalizeWallboardRows(data.wallboard);
                 feeEarnerOptions = data.feeEarnerOptions || [];
                 
                 // Populate table
