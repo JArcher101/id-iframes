@@ -30,6 +30,18 @@
   var uploadResolve = null;
   var uploadReject = null;
 
+  /** From parent put-links; included on matter-document-upload then cleared. */
+  var pendingPageAuthHash = '';
+
+  /** Submit stays disabled until parent sends captcha-verified; clears on error/timeout/success. */
+  var captchaVerified = false;
+
+  function updateSubmitEnabled() {
+    var btn = document.getElementById('mdSubmit');
+    if (!btn) return;
+    btn.disabled = !captchaVerified || uploadInProgress;
+  }
+
   function normalizeParentMessageFallback(raw) {
     if (!raw || typeof raw !== 'object') return { type: '', data: {} };
     var type = String(raw.type || '');
@@ -42,6 +54,20 @@
       if (Object.prototype.hasOwnProperty.call(payload, k)) out[k] = payload[k];
     }
     return { type: type, data: out };
+  }
+
+  function extractPageAuthHashFromPutLinks(message, parsed) {
+    var h;
+    if (message && message.pageAuthHash != null && message.pageAuthHash !== '') {
+      h = message.pageAuthHash;
+    } else if (parsed && parsed.data && parsed.data.pageAuthHash != null && parsed.data.pageAuthHash !== '') {
+      h = parsed.data.pageAuthHash;
+    } else if (parsed && parsed.pageAuthHash != null && parsed.pageAuthHash !== '') {
+      h = parsed.pageAuthHash;
+    } else {
+      return '';
+    }
+    return String(h);
   }
 
   function sendToParent(payload) {
@@ -57,6 +83,17 @@
   function notifyParentReady() {
     sendToParent({
       type: 'iframe-ready',
+      iframeType: 'matter-document-upload',
+    });
+  }
+
+  /** Ask parent to reset the captcha widget after upload pipeline failure (put-error, bad links, S3 PUT failure). */
+  function notifyParentResetCaptcha() {
+    captchaVerified = false;
+    pendingPageAuthHash = '';
+    updateSubmitEnabled();
+    sendToParent({
+      type: 'reset-captcha',
       iframeType: 'matter-document-upload',
     });
   }
@@ -481,6 +518,7 @@
         resolve([]);
         return;
       }
+      pendingPageAuthHash = '';
       pendingUpload = descriptors.map(function (d) {
         return d.payload;
       });
@@ -495,6 +533,7 @@
       uploadReject = function (err) {
         uploadInProgress = false;
         pendingUpload = [];
+        pendingPageAuthHash = '';
         uploadResolve = null;
         uploadReject = null;
         reject(err);
@@ -513,9 +552,12 @@
           file: {},
         };
       });
+      var submissionEmailEl = document.getElementById('mdEmail');
+      var submissionEmail = submissionEmailEl ? submissionEmailEl.value.trim() : '';
       sendToParent({
         type: 'file-data',
         files: meta,
+        submissionEmail: submissionEmail,
         _id: contextId || undefined,
       });
     });
@@ -554,6 +596,8 @@
       return;
     }
 
+    pendingPageAuthHash = extractPageAuthHashFromPutLinks(message, parsed);
+
     uploadFilesToS3(pendingUpload, links, s3Keys)
       .then(function (keys) {
         if (uploadResolve) uploadResolve(keys);
@@ -561,6 +605,30 @@
       .catch(function (e) {
         if (uploadReject) uploadReject(e);
       });
+  }
+
+  /** Full form + files payload (nested under matter-document-upload `data`). */
+  function buildMatterSubmissionData(details, mergedFiles) {
+    return {
+      firstName: details.firstName,
+      lastName: details.lastName,
+      phone: details.phone,
+      email: details.email,
+      matterReference: details.matterReferenceUnknown ? '' : details.matterReference,
+      matterDescription: details.matterReferenceUnknown ? details.matterDescription : '',
+      matterReferenceUnknown: details.matterReferenceUnknown,
+      dealingWith: details.dealingWith,
+      dealingWithLabel: details.dealingWithLabel,
+      generalNote: details.generalNote,
+      privacyPolicy: details.privacyPolicy,
+      gdprIndividualsAgreement: details.gdprIndividualsAgreement,
+      limits: {
+        maxFiles: MAX_FILES,
+        maxBytesPerFile: MAX_BYTES_PER_FILE,
+        maxTotalBytes: MAX_TOTAL_BYTES,
+      },
+      files: mergedFiles,
+    };
   }
 
   function mergeSubmission(descriptors, s3Keys) {
@@ -586,28 +654,12 @@
   function submitFinal(details, mergedFiles) {
     sendToParent({
       type: 'matter-document-upload',
+      iframeType: 'matter-document-upload',
       _id: contextId || undefined,
-      data: {
-        firstName: details.firstName,
-        lastName: details.lastName,
-        phone: details.phone,
-        email: details.email,
-        matterReference: details.matterReferenceUnknown ? '' : details.matterReference,
-        matterDescription: details.matterReferenceUnknown ? details.matterDescription : '',
-        matterReferenceUnknown: details.matterReferenceUnknown,
-        dealingWith: details.dealingWith,
-        dealingWithLabel: details.dealingWithLabel,
-        generalNote: details.generalNote,
-        privacyPolicy: details.privacyPolicy,
-        gdprIndividualsAgreement: details.gdprIndividualsAgreement,
-        limits: {
-          maxFiles: MAX_FILES,
-          maxBytesPerFile: MAX_BYTES_PER_FILE,
-          maxTotalBytes: MAX_TOTAL_BYTES,
-        },
-        files: mergedFiles,
-      },
+      pageAuthHash: pendingPageAuthHash,
+      data: buildMatterSubmissionData(details, mergedFiles),
     });
+    pendingPageAuthHash = '';
   }
 
   function populateStaff(options) {
@@ -638,6 +690,18 @@
       }
 
       var norm = normalizeParentMessageFallback(parsed);
+      var captchaType = String(norm.type || parsed.type || '');
+      if (captchaType === 'captcha-verified') {
+        captchaVerified = true;
+        updateSubmitEnabled();
+        return;
+      }
+      if (captchaType === 'captcha-error' || captchaType === 'captcha-timeout') {
+        captchaVerified = false;
+        updateSubmitEnabled();
+        return;
+      }
+
       if (norm.type === 'init-data') {
         var d = norm.data || {};
         if (d._id) contextId = d._id;
@@ -674,6 +738,14 @@
       ev.preventDefault();
       showError('');
 
+      if (!captchaVerified) {
+        showError(
+          'Complete the security verification in the page around this form first.',
+          'Verification required'
+        );
+        return;
+      }
+
       var err = validateForm();
       if (err) {
         showError(err);
@@ -708,7 +780,7 @@
       };
 
       setLoading(true, 'Preparing upload…');
-      document.getElementById('mdSubmit').disabled = true;
+      updateSubmitEnabled();
 
       runUploadPipeline(descriptors)
         .then(function (keys) {
@@ -722,14 +794,15 @@
           if (slotsRoot) slotsRoot.innerHTML = '';
           ensureSlotsInitialized();
           updateLimitsSummary();
-          document.getElementById('mdSubmit').disabled = false;
+          captchaVerified = false;
+          updateSubmitEnabled();
           showError('');
           showSuccess('Thank you — your documents were sent.');
         })
         .catch(function (e2) {
           console.error(e2);
           setLoading(false);
-          document.getElementById('mdSubmit').disabled = false;
+          notifyParentResetCaptcha();
           showError(e2.message || 'Upload failed. Please try again.', 'Upload failed');
         });
     });
@@ -738,6 +811,7 @@
 
     initMessages();
     notifyParentReady();
+    updateSubmitEnabled();
 
     console.log(
       '[matter-document-upload] ready · limits %s files · %s / file · %s total',

@@ -36,21 +36,34 @@
         }
       }
 
+      captcha (parent-controlled Turnstile/reCAPTCHA UX around the iframe):
+        { type: 'captcha-verified' }   → enables Submit
+        { type: 'captcha-error' }      → disables Submit
+        { type: 'captcha-timeout' }    → disables Submit
+
+      After a successful matter-document-upload, Submit is disabled again until the next captcha-verified.
+      On upload pipeline failure (put-error, link mismatch, or S3 PUT failure), iframe posts reset-captcha so the parent can reset the widget and send captcha-verified again after the user completes it.
+
     Outgoing:
       0) iframe-ready — sent once when the bundle has finished setup (no prior parent message required):
          { type: 'iframe-ready', iframeType: 'matter-document-upload' }
-      1) file-data — standard batch presign request (same shape as other ID iframes):
-         { type: 'file-data', files: [...metadata without File bodies], _id?: string }
-      2) matter-document-upload — final submission after all PUTs succeed:
+      reset-captcha — after a failed upload pipeline; parent should reset its captcha and eventually send captcha-verified again:
+         { type: 'reset-captcha', iframeType: 'matter-document-upload' }
+      1) file-data — standard batch presign request (same shape as other ID iframes), plus submission identity:
+         { type: 'file-data', files: [...], submissionEmail: string, _id?: string }
+      2) matter-document-upload — final submission after all PUTs succeed (includes pageAuthHash from put-links):
          {
            type: 'matter-document-upload',
+           iframeType: 'matter-document-upload',
            _id?: string,
+           pageAuthHash: string,
            data: {
              firstName, lastName, phone, email,
              matterReference: string,
              matterReferenceUnknown: boolean,
              matterDescription: string,
              dealingWith: string | null,
+             dealingWithLabel: string,
              generalNote: string,
              privacyPolicy: boolean,
              gdprIndividualsAgreement: boolean,
@@ -71,17 +84,19 @@
          }
 
       put-links / put-error handling matches request-form / docs/S3_POSTMESSAGE_IFRAMES.md
-      (v2 envelope { type, data } supported via normalizer below).
+      (v2 envelope { type, data } supported via normalizer below). Parent put-links may include
+      pageAuthHash on the payload (or nested under data); iframe echoes it on matter-document-upload.
 
     health-ping: iframe echoes { type: 'health-ping' } like other bundles.
 
     SUBMIT FLOW
+    - Submit is disabled until parent sends { type: 'captcha-verified' }; captcha-error / captcha-timeout disable it.
     - Submit runs validateForm(); failures show the red error panel (same styling idea as
       single-image-viewer.html) and do not post file-data.
-    - On success: postMessage file-data → parent responds with put-links or put-error.
-      put-error shows the error panel and re-enables Submit so the user can retry.
-    - put-links: iframe PUTs each file to S3; any failure shows the error panel and
-      re-enables Submit (full retry). On full success: postMessage matter-document-upload.
+    - On success: postMessage file-data → parent responds with put-links or put-error (put-links may carry pageAuthHash).
+      After PUTs: single matter-document-upload with full data plus pageAuthHash from put-links.
+      put-error shows the error panel; iframe posts reset-captcha (Submit stays off until parent verifies again).
+      S3 PUT failure: same — reset-captcha and error panel.
 
     =====================================================================
   -->
@@ -192,12 +207,12 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="submit-btn" id="mdSubmit">Submit</button>
+          <button type="submit" class="submit-btn" id="mdSubmit" disabled>Submit</button>
         </div>
       </form>
     </div>
   </div>
 
-  <script src="js/matter-document-upload.js?v=13"></script>
+  <script src="js/matter-document-upload.js?v=18"></script>
 </body>
 </html>
