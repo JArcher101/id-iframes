@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matter document upload</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css?v=7435be3" />
+  <link rel="stylesheet" href="css/request-form.css?v=7435be3" />
+  <link rel="stylesheet" href="css/matter-document-upload.css?v=6" />
+  <!--
+    =====================================================================
+    MATTER DOCUMENT UPLOAD — client supporting-files form
+    =====================================================================
+
+    PURPOSE
+    Collect contact details, matter reference, optional fee-earner selection,
+    and up to 25 supporting files (images, videos, PDFs, Office docs). Each
+    file may have a friendly title and note.
+
+    LIMITS (enforced in iframe)
+    - Max 25 files per submission
+    - Max 25 MB per file
+    - Max 500 MB total size across all selected files
+
+    PARENT COMMUNICATION (postMessage, targetOrigin '*')
+
+    Incoming (optional):
+      init-data — {
+        type: 'init-data',
+        data?: {
+          _id?: string,
+          staffOptions?: [{ label: string, value: string }],
+          instructions?: string   // replaces intro paragraph if set
+        }
+      }
+
+    Outgoing:
+      0) iframe-ready — sent once when the bundle has finished setup (no prior parent message required):
+         { type: 'iframe-ready', iframeType: 'matter-document-upload' }
+      1) file-data — standard batch presign request (same shape as other ID iframes):
+         { type: 'file-data', files: [...metadata without File bodies], _id?: string }
+      2) matter-document-upload — final submission after all PUTs succeed:
+         {
+           type: 'matter-document-upload',
+           _id?: string,
+           data: {
+             firstName, lastName, phone, email,
+             matterReference: string,
+             matterReferenceUnknown: boolean,
+             matterDescription: string,
+             dealingWith: string | null,
+             generalNote: string,
+             privacyPolicy: boolean,
+             gdprIndividualsAgreement: boolean,
+             limits: { maxFiles: 25, maxBytesPerFile: 26214400, maxTotalBytes: 524288000 },
+             files: [
+               {
+                 friendlyName: string,
+                 note: string,
+                 originalName: string,
+                 size: number,
+                 mimeType: string,
+                 s3Key: string,
+                 ...echo fields from parent s3Keys[i] if any
+               },
+               ...
+             ]
+           }
+         }
+
+      put-links / put-error handling matches request-form / docs/S3_POSTMESSAGE_IFRAMES.md
+      (v2 envelope { type, data } supported via normalizer below).
+
+    health-ping: iframe echoes { type: 'health-ping' } like other bundles.
+
+    SUBMIT FLOW
+    - Submit runs validateForm(); failures show the red error panel (same styling idea as
+      single-image-viewer.html) and do not post file-data.
+    - On success: postMessage file-data → parent responds with put-links or put-error.
+      put-error shows the error panel and re-enables Submit so the user can retry.
+    - put-links: iframe PUTs each file to S3; any failure shows the error panel and
+      re-enables Submit (full retry). On full success: postMessage matter-document-upload.
+
+    =====================================================================
+  -->
+</head>
+<body class="matter-document-upload-page">
+  <div id="mdLoading" class="loading-container hidden" aria-live="polite">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="mdLoadingText">Uploading…</div>
+  </div>
+
+  <div class="container">
+    <div class="section">
+      <h3>File upload</h3>
+      <p id="mdIntro" class="upload-info">
+        Here you can provide up to 25 supporting documents or documents requested by us (images, videos, PDFs, Word/Excel/PowerPoint, etc.).
+      </p>
+
+      <div id="mdError" class="matter-error-panel hidden" role="alert">
+        <div class="matter-error-popup-content">
+          <div class="matter-error-message" id="mdErrorTitle"></div>
+          <div class="matter-error-details" id="mdErrorDetail"></div>
+        </div>
+      </div>
+      <div id="mdSuccess" class="request-hint entity-linked-hint hidden" role="status"></div>
+
+      <form id="mdForm" novalidate>
+        <div class="matter-grid">
+          <div class="matter-grid-item">
+            <label for="mdFirstName" class="required">First name</label>
+            <input id="mdFirstName" name="firstName" type="text" autocomplete="given-name" required />
+          </div>
+          <div class="matter-grid-item">
+            <label for="mdLastName" class="required">Last name</label>
+            <input id="mdLastName" name="lastName" type="text" autocomplete="family-name" required />
+          </div>
+          <div class="matter-grid-item matter-span-full">
+            <label for="mdPhone" class="required">Phone</label>
+            <input id="mdPhone" name="phone" type="tel" autocomplete="tel" required />
+          </div>
+          <div class="matter-grid-item matter-span-full">
+            <label for="mdEmail" class="required">Email</label>
+            <input id="mdEmail" name="email" type="email" autocomplete="email" required />
+          </div>
+
+          <div class="matter-grid-item matter-span-full">
+            <div class="checkbox-row matter-unknown-row">
+              <label class="checkbox-label" for="mdUnknownMatter">
+                <input type="checkbox" id="mdUnknownMatter" name="matterUnknown" />
+                <span class="checkbox-text">I don't know my client matter number</span>
+              </label>
+            </div>
+          </div>
+
+          <div id="mdMatterRefWrap" class="matter-grid-item matter-span-full">
+            <label for="mdMatterRef" class="required">Client matter reference</label>
+            <input id="mdMatterRef" name="matterReference" type="text" placeholder="e.g. 12345/6 or ABC/7890/54 or DE/GHI/234/56" />
+            <p class="upload-info matter-ref-hint">Found on most paperwork containing our logo</p>
+          </div>
+
+          <div id="mdMatterDescWrap" class="matter-grid-item matter-span-full hidden">
+            <label for="mdMatterDescription" class="required">Matter description</label>
+            <textarea class="text-input" id="mdMatterDescription" name="matterDescription" rows="4" placeholder="Describe your matter (property address, names on the matter, or other details) so we can identify it…"></textarea>
+            <p class="upload-info matter-desc-hint">Use this when you do not have your client matter reference.</p>
+          </div>
+
+          <div class="matter-grid-item matter-span-full">
+            <label for="mdDealing" class="required">Who is dealing with your matter</label>
+            <select class="form-select" id="mdDealing" name="dealingWith" required>
+              <option value="">Choose one</option>
+            </select>
+          </div>
+        </div>
+
+        <h4 class="matter-files-heading">Supporting files</h4>
+        <p class="upload-info matter-files-blurb">
+          Add a friendly name and optional note for each file. Max 25 files; 25 MB each; 500 MB total.
+        </p>
+
+        <div id="mdFileSlots" class="matter-file-slots"></div>
+
+        <div class="matter-add-row">
+          <button type="button" class="matter-add-file-btn" id="mdAddFile">+ Add another file</button>
+        </div>
+
+        <div class="matter-grid matter-general-note-grid">
+          <div class="matter-grid-item matter-span-full">
+            <label for="mdGeneralNote">Any other note</label>
+            <textarea class="text-input" id="mdGeneralNote" name="generalNote" placeholder="Additional context for our team…"></textarea>
+          </div>
+        </div>
+
+        <p class="upload-info" id="mdLimitsSummary"></p>
+
+        <!-- Confirmation checkboxes (same pattern as dwellworks-request-form.html) -->
+        <div class="confirmation-checkboxes-container">
+          <div class="monitoring-card">
+            <label class="monitoring-label" for="mdPrivacyCheckbox">
+              <input type="checkbox" id="mdPrivacyCheckbox" name="privacyCheckbox" />
+              <span class="confirmation-text">I understand information submitted will be handled in line with your <a href="https://www.thurstanhoskin.co.uk/privacy" target="_blank" rel="noopener noreferrer" class="matter-confirmation-link">Privacy Policy</a></span>
+            </label>
+          </div>
+          <div class="monitoring-card">
+            <label class="monitoring-label" for="mdConsentCheckbox">
+              <input type="checkbox" id="mdConsentCheckbox" name="consentCheckbox" />
+              <span class="confirmation-text">I have the authority from all named parties to submit their information via this form and they understand and agree to the processing of their data as described in our <a href="https://www.thurstanhoskin.co.uk/privacy" target="_blank" rel="noopener noreferrer" class="matter-confirmation-link">Privacy Policy</a></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="submit-btn" id="mdSubmit">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/matter-document-upload.js?v=13"></script>
+</body>
+</html>

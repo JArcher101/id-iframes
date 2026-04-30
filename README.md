@@ -99,6 +99,12 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Entity mode for business/charity clients
   - Blue code badge styling for country/jurisdiction codes
 
+- **`matter-document-upload.html`** - External client supporting-document upload
+  - Collects name, phone, email, matter reference (or “unknown”), who is dealing with the matter, optional notes
+  - Up to **25** attachments per submission with friendly name + note per file (images, video, PDF, Office docs)
+  - Enforced limits: **25 MB per file**, **500 MB total**
+  - Parent messaging: `init-data` (optional staff list / instructions / `_id`), `file-data` → `put-links` → **`matter-document-upload`** payload with metadata + `s3Key`s
+
 - **`request-form.html`** - Comprehensive Request Management Form
   - Dynamic multi-request type form system (7 request types)
   - Modular architecture with separate request type handlers
@@ -109,7 +115,7 @@ A collection of standalone HTML iframe utilities for image viewing, document man
   - Searchable autocomplete for phone codes, countries, jurisdictions with blue code badges
   - Comprehensive validation with detailed error messages
   - CDF and OFSI document upload and management
-- Individual CDF override automatically detects when all client details (title, names, DOB, contact, addresses, toggled previous data) are complete so uploads stay optional
+  - Individual CDF override automatically detects when all client details (title, names, DOB, contact, addresses, toggled previous data) are complete so uploads stay optional
   - ID Images carousel display with side tags
   - Business/Charity people cards with 10px spacing (directors, officers, trustees, PSCs)
   - Companies House and Charity Register integration

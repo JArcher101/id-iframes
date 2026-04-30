@@ -1,0 +1,211 @@
+/**
+ * Matter document upload — scoped tweaks only.
+ * Global typography, grids, upload dashed areas, and buttons come from
+ * styles.css + css/request-form.css.
+ */
+
+.matter-document-upload-page .matter-span-full {
+  grid-column: 1 / -1;
+}
+
+.matter-files-heading {
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  color: rgb(0, 60, 113);
+  margin: 20px 0 8px;
+}
+
+.matter-files-blurb {
+  margin: 0 0 12px;
+}
+
+.matter-unknown-row {
+  margin-top: 12px;
+}
+
+.matter-file-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.matter-file-slot {
+  padding: 12px 0;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.matter-file-slot:last-child {
+  border-bottom: none;
+}
+
+.matter-slot-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.matter-slot-title {
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgb(0, 60, 113);
+  margin: 0;
+}
+
+.matter-remove-slot {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 0.85rem;
+  color: #666;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.matter-remove-slot:hover {
+  color: var(--error, #c62828);
+}
+
+.matter-file-chosen {
+  margin: 0 0 8px;
+  word-break: break-all;
+}
+
+.matter-slot-meta-grid {
+  margin-top: 10px;
+}
+
+.matter-general-note-grid {
+  margin-top: 8px;
+}
+
+.matter-add-row {
+  margin: 8px 0 16px;
+}
+
+.matter-add-file-btn {
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgb(0, 60, 113);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.matter-add-file-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.matter-ref-hint,
+.matter-desc-hint {
+  margin-top: 6px;
+}
+
+/* Validation / upload errors — same visual language as single-image-viewer.html */
+.matter-error-panel {
+  margin: 0 0 18px;
+}
+
+.matter-error-popup-content {
+  background: #dc3545;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.matter-error-message {
+  font-family: 'Transport', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 10px;
+  color: #fff;
+}
+
+.matter-error-details {
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  color: #fff;
+  line-height: 1.4;
+}
+
+/* Confirmation cards — aligned with dwellworks-request-form.html */
+.confirmation-checkboxes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.monitoring-card {
+  background: rgba(212, 165, 116, 0.15);
+  border: 2px dotted #d4a574;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.monitoring-card:hover {
+  background: rgba(212, 165, 116, 0.25);
+  border-color: #c49464;
+}
+
+.monitoring-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.monitoring-label input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  margin: 2px 0 0;
+  cursor: pointer;
+  accent-color: rgb(0, 60, 113);
+  flex-shrink: 0;
+}
+
+.monitoring-label input[type='checkbox']:checked {
+  accent-color: #10a37f;
+}
+
+.monitoring-card:has(input:checked) {
+  background: rgba(16, 163, 127, 0.15);
+  border-color: #10a37f;
+}
+
+.monitoring-card:has(input:checked):hover {
+  background: rgba(16, 163, 127, 0.25);
+}
+
+.confirmation-text {
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #333;
+  margin: 0;
+  flex: 1;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.matter-confirmation-link {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.matter-confirmation-link:hover {
+  color: rgb(0, 45, 85);
+}
