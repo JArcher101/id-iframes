@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matter document upload — viewer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css?v=7435be3" />
+  <link rel="stylesheet" href="css/request-form.css?v=7435be3" />
+  <link rel="stylesheet" href="css/matter-document-upload-viewer.css?v=1" />
+  <!--
+    =====================================================================
+    MATTER DOCUMENT UPLOAD — staff viewer (supporting-files submission)
+
+    PARENT → IFRAME
+      file-upload-submission — show submission + files with signed GET URLs
+        v1 (flat):
+          {
+            type: 'file-upload-submission',
+            iframeType: 'matter-document-upload-viewer',
+            _id: string,
+            received?: boolean,       // staff marked received (also accepts typo recieved)
+            submission?: {            // same shape as matter-document-upload final payload `data`
+              firstName, lastName, phone, email,
+              matterReference, matterReferenceUnknown, matterDescription,
+              dealingWith, dealingWithLabel, generalNote,
+              files: [{ friendlyName, note, originalName, size, mimeType, s3Key, url?, signedUrl?, liveUrl?, ... }]
+            },
+            signedUrls?: [{ s3Key?: string, url?: string, signedUrl?: string }] | { [s3Key: string]: string }
+          }
+        v2 envelope: { type, data: { ...same fields... } }
+
+      Optional: init-data / reset messages are ignored unless you extend the script.
+
+    IFRAME → PARENT
+      iframe-ready — once on load:
+        { type: 'iframe-ready', iframeType: 'matter-document-upload-viewer' }
+
+      files-received — user confirms documents reviewed/stored (only when received !== true).
+      Same payload is also sent as files-recieved (legacy typo) so parents can handle either:
+        {
+          type: 'files-received',   // canonical
+          iframeType: 'matter-document-upload-viewer',
+          _id: string,
+          relatedMessageType: 'file-upload-submission'
+        }
+
+    health-ping: echoed like other bundles.
+
+    Open behaviour: each file opens its resolved URL in a new browser tab (target _blank).
+    =====================================================================
+  -->
+</head>
+<body class="matter-document-upload-viewer-page">
+  <div id="mduvLoading" class="loading-container" aria-live="polite">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Waiting for submission…</div>
+  </div>
+
+  <div id="mduvMain" class="container hidden">
+    <div class="section">
+      <h3>Supporting files submission</h3>
+
+      <div id="mduvSubmissionCard" class="mduv-submission-card">
+        <div class="mduv-submission-header">
+          <div class="mduv-submission-title-row">
+            <span id="mduvSubmitBadge" class="mduv-received-badge hidden" aria-hidden="true">Received</span>
+          </div>
+          <div id="mduvReceivedActions" class="mduv-received-actions hidden">
+            <button type="button" id="mduvMarkReceivedBtn" class="submit-btn mduv-mark-received-btn">
+              Mark as received
+            </button>
+          </div>
+        </div>
+
+        <div class="mduv-detail-grid">
+          <div class="mduv-detail-row mduv-span-2">
+            <span class="mduv-detail-label">Name</span>
+            <span class="mduv-detail-value" id="mduvFullName">—</span>
+          </div>
+          <div class="mduv-detail-row">
+            <span class="mduv-detail-label">Phone</span>
+            <span class="mduv-detail-value" id="mduvPhone">—</span>
+          </div>
+          <div class="mduv-detail-row">
+            <span class="mduv-detail-label">Email</span>
+            <span class="mduv-detail-value" id="mduvEmail">—</span>
+          </div>
+          <div class="mduv-detail-row mduv-span-2">
+            <span class="mduv-detail-label">Matter</span>
+            <span class="mduv-detail-value" id="mduvMatterLine">—</span>
+          </div>
+          <div class="mduv-detail-row mduv-span-2">
+            <span class="mduv-detail-label">Dealing with</span>
+            <span class="mduv-detail-value" id="mduvDealing">—</span>
+          </div>
+          <div id="mduvGeneralNoteWrap" class="mduv-detail-row mduv-span-2 hidden">
+            <span class="mduv-detail-label">Note</span>
+            <span class="mduv-detail-value mduv-multiline" id="mduvGeneralNote"></span>
+          </div>
+        </div>
+      </div>
+
+      <h4 class="mduv-files-heading">Documents &amp; images</h4>
+      <div id="mduvFilesGrid" class="mduv-files-grid" role="list"></div>
+      <p id="mduvEmpty" class="upload-info hidden">No files in this submission.</p>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('message', function (e) {
+      if (e.data && e.data.type === 'health-ping') {
+        window.parent.postMessage({ type: 'health-ping' }, '*');
+      }
+    });
+  </script>
+  <script src="js/matter-document-upload-viewer.js?v=2"></script>
+</body>
+</html>

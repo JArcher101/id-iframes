@@ -1,0 +1,211 @@
+/**
+ * Matter document upload viewer — submission summary + file cards.
+ */
+
+.matter-document-upload-viewer-page .mduv-submission-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.mduv-submission-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.mduv-submission-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mduv-received-badge {
+  display: inline-block;
+  background: #2e7d32;
+  color: #fff;
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.mduv-received-actions {
+  flex-shrink: 0;
+}
+
+.mduv-mark-received-btn {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+}
+
+.mduv-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+}
+
+@media (max-width: 520px) {
+  .mduv-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mduv-span-2 {
+    grid-column: 1 / -1;
+  }
+}
+
+.mduv-detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mduv-span-2 {
+  grid-column: 1 / -1;
+}
+
+.mduv-detail-label {
+  font-family: 'RotisBold', 'Quicksand', sans-serif;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgb(0, 60, 113);
+}
+
+.mduv-detail-value {
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 0.95rem;
+  color: #222;
+  word-break: break-word;
+}
+
+.mduv-detail-value.mduv-multiline {
+  white-space: pre-wrap;
+}
+
+.mduv-files-heading {
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  color: rgb(0, 60, 113);
+  margin: 20px 0 10px;
+}
+
+.mduv-files-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.mduv-file-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.mduv-file-card:hover {
+  background: #e9ecef;
+}
+
+.mduv-file-icon-wrap {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgb(0, 60, 113);
+  border: 1px solid #e0e0e0;
+}
+
+.mduv-file-icon-wrap svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+}
+
+.mduv-file-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mduv-file-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mduv-file-title {
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  color: #333;
+  margin: 0;
+  word-break: break-word;
+}
+
+.mduv-open-tab-btn {
+  flex-shrink: 0;
+  background: transparent;
+  color: rgb(0, 60, 113);
+  border: 1px solid rgb(0, 60, 113);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mduv-open-tab-btn:hover:not(:disabled) {
+  background: rgba(0, 60, 113, 0.06);
+}
+
+.mduv-open-tab-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mduv-open-tab-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+}
+
+.mduv-file-desc {
+  font-family: 'RotisRegular', 'Quicksand', sans-serif;
+  font-size: 13px;
+  color: #555;
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+
+.mduv-file-meta {
+  font-family: 'RotisItalic', 'Quicksand', sans-serif;
+  font-size: 12px;
+  font-style: italic;
+  color: #666;
+  margin: 8px 0 0;
+  line-height: 1.45;
+  word-break: break-word;
+}
