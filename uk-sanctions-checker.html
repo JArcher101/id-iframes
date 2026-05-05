@@ -1982,7 +1982,8 @@
             size: pdfBlob.size,
             name: filename,
             lastModified: Date.now()
-          }
+          },
+          ...(clientEntryId ? { ukSanctionsHits: currentSearchResults.length } : {})
         };
         
         console.log('📤 Sending file-data to parent:', fileMetadata);
