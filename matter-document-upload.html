@@ -8,7 +8,7 @@
 
   <link rel="stylesheet" href="styles.css?v=7435be3" />
   <link rel="stylesheet" href="css/request-form.css?v=7435be3" />
-  <link rel="stylesheet" href="css/matter-document-upload.css?v=6" />
+  <link rel="stylesheet" href="css/matter-document-upload.css?v=8" />
   <!--
     =====================================================================
     MATTER DOCUMENT UPLOAD — client supporting-files form
@@ -76,6 +76,7 @@
                  size: number,
                  mimeType: string,
                  s3Key: string,
+                 ukSanctionsHits?: number,   // when row was marked PEP/sanctions report
                  ...echo fields from parent s3Keys[i] if any
                },
                ...
@@ -213,6 +214,6 @@
     </div>
   </div>
 
-  <script src="js/matter-document-upload.js?v=18"></script>
+  <script src="js/matter-document-upload.js?v=19"></script>
 </body>
 </html>

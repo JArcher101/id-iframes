@@ -26,6 +26,18 @@ let liteCurrentAddressObject = null;
 let litePreviousAddressObject = null;
 let liteActiveAddressType = 'current'; // 'current' or 'previous'
 
+/** Full-page boot overlay hidden after first client-data is applied */
+let thirdfortBootLoadingDismissed = false;
+
+function revealThirdfortMainAfterClientData() {
+  if (thirdfortBootLoadingDismissed) return;
+  thirdfortBootLoadingDismissed = true;
+  const loadEl = document.getElementById('thirdfortLoading');
+  const mainEl = document.getElementById('thirdfortMain');
+  if (loadEl) loadEl.classList.add('hidden');
+  if (mainEl) mainEl.classList.remove('hidden');
+}
+
 // DOM Ready
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Thirdfort Check Manager Initialized');
@@ -403,10 +415,18 @@ function handlePostMessage(event) {
   if (type === 'client-data') {
     const clientPayload = data.data != null ? data.data : data;
     checkState.clientData = clientPayload;
-    populateClientData(clientPayload);
-    if (clientPayload && clientPayload.address) {
-      populateLiteScreenAddress(clientPayload.address);
+    try {
+      populateClientData(clientPayload || {});
+      if (clientPayload && clientPayload.address) {
+        populateLiteScreenAddress(clientPayload.address);
+      }
+    } catch (e) {
+      console.error('[thirdfort-check] Failed to apply client-data', e);
+      revealThirdfortMainAfterClientData();
+      showError('Could not load client data. Please reload or try again.');
+      return;
     }
+    revealThirdfortMainAfterClientData();
   }
   
   if (type === 'general-error') {

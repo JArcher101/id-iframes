@@ -272,6 +272,16 @@
       '<label>Note</label>' +
       '<input type="text" class="matter-note" placeholder="Optional description for this file" />' +
       '</div>' +
+      '</div>' +
+      '<div class="matter-sanctions-block">' +
+      '<label class="matter-sanctions-cb-label">' +
+      '<input type="checkbox" class="matter-sanctions-report-cb" />' +
+      '<span>This file is a UK sanctions list / PEP &amp; sanctions report</span>' +
+      '</label>' +
+      '<div class="matter-sanctions-hits-wrap hidden">' +
+      '<label class="required">Number of list matches</label>' +
+      '<input type="number" class="matter-sanctions-hits" min="0" step="1" inputmode="numeric" placeholder="0" title="Matches shown on the report (0 if clear)" />' +
+      '</div>' +
       '</div>';
 
     var input = wrap.querySelector('.matter-slot-file');
@@ -279,6 +289,20 @@
     input.setAttribute('accept', ACCEPT_ATTR);
 
     bindUploadArea(wrap, input, chosen);
+
+    var sanctionsCb = wrap.querySelector('.matter-sanctions-report-cb');
+    var sanctionsWrap = wrap.querySelector('.matter-sanctions-hits-wrap');
+    if (sanctionsCb && sanctionsWrap) {
+      sanctionsCb.addEventListener('change', function () {
+        if (sanctionsCb.checked) {
+          sanctionsWrap.classList.remove('hidden');
+        } else {
+          sanctionsWrap.classList.add('hidden');
+          var hi = wrap.querySelector('.matter-sanctions-hits');
+          if (hi) hi.value = '';
+        }
+      });
+    }
 
     wrap.querySelector('.matter-remove-slot').addEventListener('click', function () {
       wrap.remove();
@@ -351,11 +375,17 @@
       var input = slot.querySelector('.matter-slot-file');
       var friendly = slot.querySelector('.matter-friendly');
       var note = slot.querySelector('.matter-note');
+      var sanctionsCb = slot.querySelector('.matter-sanctions-report-cb');
+      var hitsInp = slot.querySelector('.matter-sanctions-hits');
       var f = input && input.files && input.files[0];
+      var isSanctions = sanctionsCb && sanctionsCb.checked;
+      var hitsRaw = hitsInp && hitsInp.value.trim() !== '' ? parseInt(hitsInp.value, 10) : NaN;
       out.push({
         file: f || null,
         friendlyName: friendly ? friendly.value.trim() : '',
         note: note ? note.value.trim() : '',
+        isSanctionsReport: !!isSanctions,
+        ukSanctionsHits: isSanctions ? hitsRaw : undefined,
       });
     });
     return out;
@@ -441,6 +471,12 @@
       total += file.size;
       var friendlyOk = files[i].friendlyName || file.name;
       if (!String(friendlyOk).trim()) return 'Each uploaded file needs a friendly name.';
+      if (files[i].isSanctionsReport) {
+        var hv = files[i].ukSanctionsHits;
+        if (!Number.isInteger(hv) || hv < 0) {
+          return 'For each file marked as a UK sanctions / PEP sanctions report, enter the number of list matches (0 if none).';
+        }
+      }
     }
     if (total > MAX_TOTAL_BYTES)
       return 'Total upload size exceeds ' + formatBytes(MAX_TOTAL_BYTES) + '. Remove or compress some files.';
@@ -469,25 +505,30 @@
         idx +
         '-' +
         String(file.name || 'file').replace(/[^a-zA-Z0-9._-]+/g, '_');
+      var isPep = slot.isSanctionsReport === true;
+      var payload = {
+        type: isPep ? 'PEP & Sanctions Check' : 'Matter supporting document',
+        document: friendly,
+        note: slot.note || '',
+        uploader: email,
+        date: stamp,
+        data: {
+          type: file.type || 'application/octet-stream',
+          size: file.size,
+          name: safeName,
+          lastModified: file.lastModified,
+        },
+        file: file,
+        isMatterUpload: true,
+      };
+      if (isPep && Number.isInteger(slot.ukSanctionsHits) && slot.ukSanctionsHits >= 0) {
+        payload.ukSanctionsHits = slot.ukSanctionsHits;
+      }
       return {
         slotIndex: idx,
         friendlyLabel: friendly,
         userNote: slot.note,
-        payload: {
-          type: 'Matter supporting document',
-          document: friendly,
-          note: slot.note || '',
-          uploader: email,
-          date: stamp,
-          data: {
-            type: file.type || 'application/octet-stream',
-            size: file.size,
-            name: safeName,
-            lastModified: file.lastModified,
-          },
-          file: file,
-          isMatterUpload: true,
-        },
+        payload: payload,
       };
     });
   }
@@ -541,7 +582,7 @@
 
       var meta = descriptors.map(function (d) {
         var p = d.payload;
-        return {
+        var o = {
           type: p.type,
           document: p.document,
           note: p.note,
@@ -551,6 +592,10 @@
           isMatterUpload: true,
           file: {},
         };
+        if (p.ukSanctionsHits !== undefined && p.ukSanctionsHits !== null) {
+          o.ukSanctionsHits = p.ukSanctionsHits;
+        }
+        return o;
       });
       var submissionEmailEl = document.getElementById('mdEmail');
       var submissionEmail = submissionEmailEl ? submissionEmailEl.value.trim() : '';
@@ -647,6 +692,9 @@
       row.originalName = d.payload.file.name;
       row.size = d.payload.file.size;
       row.mimeType = d.payload.file.type || 'application/octet-stream';
+      if (d.payload.ukSanctionsHits !== undefined && d.payload.ukSanctionsHits !== null) {
+        row.ukSanctionsHits = d.payload.ukSanctionsHits;
+      }
       return row;
     });
   }

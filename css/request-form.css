@@ -1358,6 +1358,31 @@ input:checked + .slider:before {
   height: 16px;
 }
 
+.ofsi-hits-field {
+  margin-top: 12px;
+}
+.ofsi-hits-field label {
+  display: block;
+  font-family: 'Transport', 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgb(0, 60, 113);
+  margin-bottom: 6px;
+}
+.ofsi-hits-field input[type="number"] {
+  width: 100%;
+  max-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+.ofsi-hits-hint {
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
 /* Confirmation Card */
 .confirmation-card {
   background: #f5f5f5;

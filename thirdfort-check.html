@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="styles.css?v=7435be3" />
   
   <!-- Thirdfort Check Specific CSS -->
-  <link rel="stylesheet" href="css/thirdfort-check.css?v=7435be3" />
+  <link rel="stylesheet" href="css/thirdfort-check.css?v=7435be3a" />
   
   <style>
     /*
@@ -63,7 +63,12 @@
   </style>
 </head>
 <body>
-  <div class="container">
+  <div id="thirdfortLoading" class="loading-container" aria-live="polite">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading client data…</div>
+  </div>
+
+  <div class="container hidden" id="thirdfortMain">
     <!-- Header Section -->
     <div id="headerSection" class="section">
       <div id="headerInfo">
@@ -936,7 +941,7 @@
   <script src="https://cdn.jsdelivr.net/npm/google-libphonenumber@3.2.33/dist/libphonenumber.min.js"></script>
   
   <!-- All logic is now in thirdfort-check-core.js (old check-type modules removed) -->
-  <script src="js/thirdfort-check-core.js?v=7435be3"></script>
+  <script src="js/thirdfort-check-core.js?v=7435be3a"></script>
 <!-- IFRAME_VERSION START -->
 <script>
   (function() {

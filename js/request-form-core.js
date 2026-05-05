@@ -34,6 +34,55 @@ let companyNumberDebounceTimer = null;
 let idDocuments = [];
 let idImages = [];
 
+/** OFSI manual upload: parse UK sanctions list match count; null = empty, NaN = invalid */
+function parseOFSIUkSanctionsHitsInput() {
+  const el = document.getElementById('ofsiUkSanctionsHits');
+  if (!el) return null;
+  const raw = String(el.value ?? '').trim();
+  if (raw === '') return null;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0) return NaN;
+  return n;
+}
+
+function validateOFSISanctionsHitsForManualUpload() {
+  const errors = [];
+  const ofsiFileInput = document.getElementById('ofsiFileInput');
+  if (ofsiFileInput?.files?.[0]) {
+    const n = parseOFSIUkSanctionsHitsInput();
+    if (n === null) {
+      errors.push('Enter the number of UK sanctions list matches for your uploaded OFSI report (0 if none).');
+    } else if (Number.isNaN(n)) {
+      errors.push('UK sanctions list matches must be a whole number of 0 or more.');
+    }
+  }
+  return errors;
+}
+
+function addManualOFSIDocumentFromFile(file) {
+  idDocuments = idDocuments.filter(d => d.type !== 'PEP & Sanctions Check');
+  const n = parseOFSIUkSanctionsHitsInput();
+  const docObject = {
+    document: 'OFSI Sanctions Search',
+    data: {
+      type: file.type,
+      size: file.size,
+      name: file.name,
+      lastModified: file.lastModified
+    },
+    date: new Date().toLocaleString('en-GB'),
+    uploader: requestData.user || 'Unknown',
+    file: file,
+    type: 'PEP & Sanctions Check',
+    s3Key: null,
+    liveUrl: null
+  };
+  if (Number.isInteger(n) && n >= 0) {
+    docObject.ukSanctionsHits = n;
+  }
+  idDocuments.push(docObject);
+}
+
 // Individual profile completeness tracking
 let lastProfileCompleteState = null;
 
@@ -894,6 +943,8 @@ function validateCurrentForm() {
   
   // Add address validation errors
   errors.push(...validateAddressFields());
+
+  errors.push(...validateOFSISanctionsHitsForManualUpload());
   
   if (!currentRequestType || !requestTypeModules[currentRequestType]) {
     errors.push('No request type selected');
@@ -1798,33 +1849,15 @@ function setupFileHandlers() {
       return;
     }
     
-    // Create OFSI document object
-    const docObject = {
-      document: 'OFSI Sanctions Search',
-      data: {
-        type: file.type,
-        size: file.size,
-        name: file.name,
-        lastModified: file.lastModified
-      },
-      date: new Date().toLocaleString('en-GB'),
-      uploader: requestData.user || 'Unknown',
-      file: file,
-      type: 'PEP & Sanctions Check',
-      s3Key: null, // Will be set after upload to S3
-      liveUrl: null // Will be set after upload to S3
-    };
-    
-    // Add to idDocuments array
-    idDocuments.push(docObject);
-    
+    addManualOFSIDocumentFromFile(file);
+
     // Update UI to show success
     updateOFSIUploadAreaWithFile(file);
-    
+
     // Re-evaluate ID Documents UI
     updateIDDocumentsUI(requestData);
-    
-    console.log('✅ OFSI document added:', docObject);
+
+    console.log('✅ OFSI document added from file picker');
   };
 
   window.handleOFSIDragOver = function(event) {
@@ -1859,9 +1892,25 @@ function setupFileHandlers() {
       const dataTransfer = new DataTransfer();
       dataTransfer.items.add(file);
       fileInput.files = dataTransfer.files;
+      addManualOFSIDocumentFromFile(file);
       updateOFSIUploadAreaWithFile(file);
+      updateIDDocumentsUI(requestData);
     }
   };
+
+  const ofsiHitsEl = document.getElementById('ofsiUkSanctionsHits');
+  if (ofsiHitsEl) {
+    ofsiHitsEl.addEventListener('input', function () {
+      const doc = idDocuments.find(d => d.type === 'PEP & Sanctions Check');
+      if (!doc) return;
+      const n = parseOFSIUkSanctionsHitsInput();
+      if (n !== null && !Number.isNaN(n)) {
+        doc.ukSanctionsHits = n;
+      } else {
+        delete doc.ukSanctionsHits;
+      }
+    });
+  }
 }
 
 function isValidDocumentType(file) {
@@ -2038,6 +2087,9 @@ function resetOFSIUploadArea() {
   
   // Clear file input
   fileInput.value = '';
+
+  const hitsEl = document.getElementById('ofsiUkSanctionsHits');
+  if (hitsEl) hitsEl.value = '';
 }
 
 // Client details handlers
@@ -3934,9 +3986,24 @@ function handleSanctionsFileUploaded(message) {
     uploader: message.uploader,
     file: null // Already uploaded
   };
-  
+
+  if (message.ukSanctionsHits !== undefined && message.ukSanctionsHits !== null && message.ukSanctionsHits !== '') {
+    const hn = Number(message.ukSanctionsHits);
+    if (Number.isFinite(hn) && hn >= 0) {
+      ofsiFile.ukSanctionsHits = Math.floor(hn);
+    }
+  }
+
+  // Replace any existing PEP/sanctions doc with this one
+  idDocuments = idDocuments.filter(d => d.type !== 'PEP & Sanctions Check');
+
   // Add to idDocuments array
   idDocuments.push(ofsiFile);
+
+  const hitsInput = document.getElementById('ofsiUkSanctionsHits');
+  if (hitsInput && ofsiFile.ukSanctionsHits !== undefined) {
+    hitsInput.value = String(ofsiFile.ukSanctionsHits);
+  }
   
   // Update OFSI UI to show document card
   const ofsiDocumentCard = document.getElementById('ofsiDocumentCard');
@@ -5780,15 +5847,24 @@ function uploadFormFiles(files) {
     showUploadProgress(files);
     
     // Send file-data request to parent
-    const fileMetadata = files.map(f => ({
-      type: f.type,
-      document: f.document,
-      uploader: f.uploader,
-      date: f.date,
-      data: f.data,
-      isMessageFile: f.isMessageFile || false,
-      file: {} // File object can't be serialized
-    }));
+    const fileMetadata = files.map(f => {
+      const base = {
+        type: f.type,
+        document: f.document,
+        uploader: f.uploader,
+        date: f.date,
+        data: f.data,
+        isMessageFile: f.isMessageFile || false,
+        file: {} // File object can't be serialized
+      };
+      if (f.ukSanctionsHits !== undefined && f.ukSanctionsHits !== null && f.ukSanctionsHits !== '') {
+        const h = Number(f.ukSanctionsHits);
+        if (Number.isFinite(h) && h >= 0) {
+          base.ukSanctionsHits = Math.floor(h);
+        }
+      }
+      return base;
+    });
     
     // console.log('📤 Requesting PUT links for files:', fileMetadata); // Commented out to avoid logging client data
     
@@ -6111,6 +6187,12 @@ window.addEventListener('message', handleFileUploadResponse);
 async function prepareAndSubmitRequest(requestType, messageObj = null) {
   try {
     console.log(`📤 Preparing ${requestType} submission`);
+
+    const pepDoc = idDocuments.find(d => d.type === 'PEP & Sanctions Check');
+    const hitsParsed = parseOFSIUkSanctionsHitsInput();
+    if (pepDoc && hitsParsed !== null && !Number.isNaN(hitsParsed)) {
+      pepDoc.ukSanctionsHits = hitsParsed;
+    }
     
     // Check all 3 file upload inputs
     const messageFileInput = document.getElementById('fileInput');
@@ -6183,8 +6265,8 @@ async function prepareAndSubmitRequest(requestType, messageObj = null) {
     if (ofsiFileInput?.files[0]) {
       const file = ofsiFileInput.files[0];
       const userEmail = requestData.user || '';
-      
-      filesToUpload.push({
+      const hitsParsedUpload = parseOFSIUkSanctionsHitsInput();
+      const uploadEntry = {
         type: 'PEP & Sanctions Check',
         document: 'OFSI Sanctions Search',
         uploader: userEmail,
@@ -6205,7 +6287,11 @@ async function prepareAndSubmitRequest(requestType, messageObj = null) {
         },
         file: file,
         isMessageFile: false  // ← Document file
-      });
+      };
+      if (hitsParsedUpload !== null && !Number.isNaN(hitsParsedUpload)) {
+        uploadEntry.ukSanctionsHits = hitsParsedUpload;
+      }
+      filesToUpload.push(uploadEntry);
     }
     
     // Decide whether to upload files or go straight to request-data
