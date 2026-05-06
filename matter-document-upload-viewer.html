@@ -15,21 +15,18 @@
 
     PARENT → IFRAME
       file-upload-submission — show submission + files with signed GET URLs
-        v1 (flat):
-          {
-            type: 'file-upload-submission',
-            iframeType: 'matter-document-upload-viewer',
-            _id: string,
-            received?: boolean,       // staff marked received (also accepts typo recieved)
-            submission?: {            // same shape as matter-document-upload final payload `data`
-              firstName, lastName, phone, email,
-              matterReference, matterReferenceUnknown, matterDescription,
-              dealingWith, dealingWithLabel, generalNote,
-              files: [{ friendlyName, note, originalName, size, mimeType, s3Key, url?, signedUrl?, liveUrl?, ... }]
-            },
-            signedUrls?: [{ s3Key?: string, url?: string, signedUrl?: string }] | { [s3Key: string]: string }
-          }
-        v2 envelope: { type, data: { ...same fields... } }
+
+        A) Nested (upload-form style): submission.{ firstName, lastName, phone, email,
+           matterReference, matterReferenceUnknown, matterDescription,
+           dealingWith, dealingWithLabel, generalNote, files[] }
+
+        B) Flat (CMS/Wix row): same fields on the message root, e.g. phoneNumber → phone,
+           clientMatterNumber → matter line, title (fee-earner code) shown if no dealingWith*,
+           files[] with url or liveUrl per item.
+
+        v2 envelope: { type, data: { ... } } merged into payload.
+
+        Optional: signedUrls map/array if URLs are not on each file.
 
       Optional: init-data / reset messages are ignored unless you extend the script.
 
@@ -115,6 +112,6 @@
       }
     });
   </script>
-  <script src="js/matter-document-upload-viewer.js?v=2"></script>
+  <script src="js/matter-document-upload-viewer.js?v=3"></script>
 </body>
 </html>

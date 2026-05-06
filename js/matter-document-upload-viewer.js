@@ -145,6 +145,73 @@
     return false;
   }
 
+  /**
+   * Parent may send nested { submission: {...} } (upload iframe shape) or a flat row
+   * (e.g. Wix/CMS) with firstName, files, clientMatterNumber, phoneNumber, etc.
+   */
+  function extractSubmissionFromPayload(payload) {
+    if (payload.submission && typeof payload.submission === 'object') {
+      return payload.submission;
+    }
+    var files = payload.files;
+    return {
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      phone: payload.phoneNumber != null && payload.phoneNumber !== '' ? payload.phoneNumber : payload.phone,
+      email: payload.email,
+      matterReference: payload.matterReference || payload.clientMatterNumber,
+      clientMatterNumber: payload.clientMatterNumber,
+      matterReferenceUnknown: !!payload.matterReferenceUnknown,
+      matterDescription: payload.matterDescription,
+      dealingWith: payload.dealingWith,
+      dealingWithLabel: payload.dealingWithLabel,
+      generalNote: payload.generalNote,
+      staffTitle: payload.title,
+      files: Array.isArray(files) ? files : [],
+    };
+  }
+
+  /** Effective MIME / display type for a file row (flat + nested data.*). */
+  function effectiveFileMime(file) {
+    var m = file.mimeType || file.mime || '';
+    if (m && m.indexOf('/') !== -1) return String(m);
+    var d = file.data && typeof file.data === 'object' ? file.data : null;
+    if (d && d.mimeType) return String(d.mimeType);
+    return '';
+  }
+
+  /** Icon: prefer MIME; fall back to matter image bucket vs document. */
+  function fileKindIconForFile(file) {
+    var mime = effectiveFileMime(file);
+    if (mime) return fileKindIcon(mime);
+    if (file.matterUploadBucket === 'images') return iconImageSvg();
+    if (file.matterUploadBucket === 'videos') return iconVideoSvg();
+    return iconDocumentSvg();
+  }
+
+  /** Friendly label + note + original name from flat or nested shapes. */
+  function effectiveFileFields(file) {
+    var d = file.data && typeof file.data === 'object' ? file.data : null;
+    var friendly =
+      (file.friendlyName && String(file.friendlyName).trim()) ||
+      (file.document && String(file.document).trim()) ||
+      (d && d.friendlyName && String(d.friendlyName).trim()) ||
+      (d && d.document && String(d.document).trim()) ||
+      '';
+    var original =
+      file.originalName ||
+      (d && (d.name || d.originalName)) ||
+      '';
+    var note =
+      (file.note != null && String(file.note).trim()) ||
+      (d && d.note != null && String(d.note).trim()) ||
+      '';
+    if (!friendly && original) friendly = String(original);
+    if (!friendly && file.type) friendly = String(file.type);
+    if (!friendly) friendly = 'Untitled file';
+    return { friendly: friendly, originalName: original, note: note };
+  }
+
   function showLoading(show) {
     var loadEl = document.getElementById('mduvLoading');
     var mainEl = document.getElementById('mduvMain');
@@ -157,18 +224,25 @@
     var ln = (sub.lastName || '').trim();
     document.getElementById('mduvFullName').textContent = (fn + ' ' + ln).trim() || '—';
 
-    document.getElementById('mduvPhone').textContent = sub.phone || '—';
+    document.getElementById('mduvPhone').textContent =
+      sub.phone || sub.phoneNumber || '—';
     document.getElementById('mduvEmail').textContent = sub.email || '—';
 
     var matterLine = '—';
     if (sub.matterReferenceUnknown) {
       matterLine = sub.matterDescription ? String(sub.matterDescription) : 'Matter reference not known';
-    } else if (sub.matterReference) {
-      matterLine = String(sub.matterReference);
+    } else if (sub.matterReference || sub.clientMatterNumber) {
+      matterLine = String(sub.matterReference || sub.clientMatterNumber);
+    } else if (sub.matterDescription) {
+      matterLine = String(sub.matterDescription);
     }
     document.getElementById('mduvMatterLine').textContent = matterLine;
 
-    var dealing = sub.dealingWithLabel || sub.dealingWith || '—';
+    var dealing =
+      sub.dealingWithLabel ||
+      sub.dealingWith ||
+      (sub.staffTitle ? String(sub.staffTitle) : '') ||
+      '—';
     document.getElementById('mduvDealing').textContent =
       dealing != null && dealing !== '' ? String(dealing) : '—';
 
@@ -229,13 +303,15 @@
       card.className = 'mduv-file-card';
       card.setAttribute('role', 'listitem');
 
-      var mime = f.mimeType || f.type || '';
-      var friendly = (f.friendlyName || '').trim() || f.originalName || 'Untitled file';
-      var note = (f.note || '').trim();
+      var eff = effectiveFileFields(f);
+      var friendly = eff.friendly;
+      var note = eff.note;
+      var mime = effectiveFileMime(f);
       var metaParts = [];
-      if (f.originalName) metaParts.push(f.originalName);
+      if (eff.originalName) metaParts.push(eff.originalName);
       metaParts.push(formatFileSize(f.size));
       if (mime) metaParts.push(mime);
+      else if (f.matterUploadBucket) metaParts.push(String(f.matterUploadBucket));
 
       var btnDisabled = !item.openUrl ? ' disabled' : '';
       var btnTitle = item.openUrl ? 'Open in new tab' : 'Signed URL not available';
@@ -243,7 +319,7 @@
 
       card.innerHTML =
         '<div class="mduv-file-icon-wrap" aria-hidden="true">' +
-        fileKindIcon(mime) +
+        fileKindIconForFile(f) +
         '</div>' +
         '<div class="mduv-file-body">' +
         '<div class="mduv-file-title-row">' +
@@ -290,13 +366,18 @@
   }
 
   function handleFileUploadSubmission(payload) {
-    var sub = payload.submission;
+    var sub = extractSubmissionFromPayload(payload);
     if (!sub || typeof sub !== 'object') {
-      console.warn('[matter-document-upload-viewer] file-upload-submission missing submission');
+      console.warn('[matter-document-upload-viewer] file-upload-submission could not be parsed');
       return;
     }
 
-    state.submissionId = payload._id != null ? String(payload._id) : '';
+    state.submissionId =
+      payload._id != null
+        ? String(payload._id)
+        : sub._id != null
+          ? String(sub._id)
+          : '';
     state.received = parseReceivedFlag(payload, sub);
 
     showLoading(false);
