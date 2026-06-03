@@ -1087,7 +1087,10 @@
             Note: s3Keys is NOT just strings - it's the full file objects we sent,
             with s3Key property added by parent.
             
-            Triggers uploadFileToS3() to perform actual upload to S3.
+            Triggers uploadFileToS3() only when this iframe has a pending chat
+            attachment (currentFile + currentMessage). Parents often broadcast
+            put-links to every HtmlComponent; sibling iframes (e.g. document-viewer)
+            must ignore those responses and upload with their own state.
             */
             else if (msg.type === 'put-links') {
                 const links = msg.links;
@@ -1099,6 +1102,9 @@
                 // Extract s3Key from the full file object returned by parent
                 // Parent returns our fileData with s3Key property added
                 if (links && links.length > 0 && s3Keys && s3Keys.length > 0) {
+                    if (!currentFile || !currentMessage) {
+                        return;
+                    }
                     uploadFileToS3(links[0], s3Keys[0].s3Key);
                 }
             } 
@@ -1109,6 +1115,9 @@
             Error handling when S3 link generation fails
             */
             else if (msg.type === 'put-error') {
+                if (!currentFile || !currentMessage) {
+                    return;
+                }
                 console.error('PUT link generation failed:', msg.message);
                 hideUploadingPopup();
                 showError('Please try again.', 'Upload Failed');

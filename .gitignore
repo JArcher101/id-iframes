@@ -1,68 +1,61 @@
-fonts/
-plan.md
-
-# AWS Setup Files (contains sensitive infrastructure details)
-aws-setup/
-AWS-CLOUDFRONT-SIGNED-URLS-SUMMARY.md
-AWS-SETUP-SUMMARY.md
-
-# Velo Backend Updates (contains backend code with AWS credentials usage)
-velo-backend-updates/
-
-# Documentation and planning files (internal use only)
-*-SUMMARY.md
-*-PLAN.md
-*-TODO.md
-*-NOTES.md
-sdlt-calculator.md
-
-# IDE and editor files
+# IDE and editor (local only — do not commit)
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
+.cursor/
+*.code-workspace
 
 # OS files
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Temporary files
+# Editor swap files
+*.swp
+*.swo
+*~
+
+# Temporary / logs
 *.tmp
 *.temp
 *.log
-iframe-version-log-viewer.html
 
-# Backup directories created by scripts
-backup-before-bump-*/
-
-# Test files
-test-*.html
-test-*.ps1
-
-# Local utility tools
+# Local assets and tools (not deployed)
+fonts/
+backend/
 spreadsheet-merger.html
+iframe-version-log-viewer.html
+plan.md
+sdlt-calculator.md
 
-# PDF mockups
-*-mockup*.html
-
-# Utility scripts (non-essential)
-scripts/backup-html.ps1
-
-# Documentation files (non-standard, keep only README/CHANGELOG/API.md)
-QUICK-START.md
-WIX-CODE-*.md
-.gitignore-updates-needed.md
-
-# Infrastructure documentation (contains bucket names, domains, AWS setup details)
+# AWS / infrastructure (sensitive)
+aws-setup/
+AWS-CLOUDFRONT-SIGNED-URLS-SUMMARY.md
+AWS-SETUP-SUMMARY.md
 CLOUDFRONT-DNS-TROUBLESHOOTING.md
-DWELLWORKS-*.md
 error-pages/CLOUDFRONT-ERROR-PAGES-SETUP.md
 
-# Backend/Integration code
-backend/
+# Backend / integration snippets (local reference)
+velo-backend-updates/
 *-integration*.js
 *-example*.js
 *-integration*.web.js
 *-example*.web.js
+
+# Internal docs (keep README, CHANGELOG, API.md, and flow docs in repo)
+*-SUMMARY.md
+*-PLAN.md
+*-TODO.md
+*-NOTES.md
+QUICK-START.md
+WIX-CODE-*.md
+DWELLWORKS-*.md
+.gitignore-updates-needed.md
+
+# Scripts / backups / tests (local only)
+backup-before-bump-*/
+scripts/backup-html.ps1
+test-*.html
+test-*.ps1
+
+# Mockups and non-production HTML
+*-mockup*.html
