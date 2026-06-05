@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDLT on residential tenancies</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/sdlt-policy-tracker.css?v=5">
+</head>
+<body>
+  <div class="tracker-app">
+    <header class="tracker-header">
+      <h1 id="page-title">SDLT on residential tenancies</h1>
+      <p class="subtitle" id="page-subtitle"></p>
+      <p class="meta-line" id="last-verified"></p>
+    </header>
+
+    <main id="page-content" class="page-content" aria-live="polite"></main>
+  </div>
+
+  <script src="js/sdlt-policy-tracker-data.js?v=5"></script>
+  <script src="js/sdlt-policy-tracker.js?v=5"></script>
+  <!-- IFRAME_VERSION START -->
+  <script>
+    (function() {
+      window.__IFRAME_VERSION__ = '0000005';
+      console.log('[sdlt-policy-tracker] version ' + window.__IFRAME_VERSION__);
+    })();
+  </script>
+  <!-- IFRAME_VERSION END -->
+</body>
+</html>
