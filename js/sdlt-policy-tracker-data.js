@@ -10,14 +10,14 @@ window.SDLT_POLICY_TRACKER_DATA = {
   meta: {
     lastVerified: '2026-06-03',
     title: 'SDLT on residential tenancies',
-    subtitle: 'An update for relocation professionals — what the Renters\' Rights Act and April 2026 Treasury announcement mean for your clients\' leases'
+    subtitle: 'An update for relocation professionals — what the Renters\' Rights Act and April 2026 Treasury announcement mean for the leases you arrange'
   },
 
   disclaimer:
     'This briefing is for general information only and does not constitute tax or legal advice. Legislation confirming the assured-tenancy exemption is expected in Finance Bill 2026–27. Please contact us for advice on a specific lease.',
 
   intro:
-    'SDLT on residential leases has not gone away — it has simply changed shape. Whether stamp duty applies, and how much, turns entirely on who is named as tenant. The position differs significantly depending on whether the lease is in an individual\'s name or a company\'s name. Below we set out each scenario and what it means in practice.',
+    'SDLT on residential leases has not gone away — it has simply changed shape. Throughout this briefing we use precise terms to avoid confusion: the "relocating employee" is the individual moving to the UK; the "employer" is the company funding or organising the relocation; and the "tenant" is whoever is named on the lease. That last distinction is what SDLT turns on. The position is entirely different depending on whether the lease is granted to the relocating employee personally or to the employer (or any other company).',
 
   /**
    * scenarios[] is the primary content.
@@ -34,19 +34,19 @@ window.SDLT_POLICY_TRACKER_DATA = {
       id: 'individual-assured',
       status: 'safe',
       statusLabel: 'No SDLT on rent',
-      heading: 'Lease in the individual\'s name — rent at or below £100,000 per year',
+      heading: 'Lease granted to the relocating employee personally — rent at or below £100,000 per year',
       advice: [
-        'Where the lease is in your client\'s own name and the annual rent is £100,000 or below, the tenancy will generally qualify as an assured periodic tenancy under the Housing Act 1988 as amended by the Renters\' Rights Act 2025. From 1 May 2026 the rent element of such tenancies is exempt from SDLT.',
+        'Where the lease is in the relocating employee\'s own name and the annual rent is £100,000 or below, the tenancy will generally qualify as an assured periodic tenancy under the Housing Act 1988 as amended by the Renters\' Rights Act 2025. From 1 May 2026 the rent element of such tenancies is exempt from SDLT.',
         'This means no stamp duty return is required for the rent, and no SDLT is due — even if cumulative rent would otherwise have exceeded the £125,000 NPV threshold over time (which can happen around year three at £5,000 per month).',
-        'No action is required on SDLT for the rent. If a premium was paid on the lease, or if you are unsure whether the arrangement qualifies, please contact us.'
+        'No action is required on SDLT for the rent. If a premium was paid on the lease, or if you are unsure whether the tenancy qualifies, please contact us.'
       ],
       detail: [
         'The exemption was announced in a Written Ministerial Statement on 22 April 2026 (HCWS1535) and will be enacted in Finance Bill 2026–27 applying retrospectively from 1 May 2026. [cite:0][cite:1] HMRC will not collect SDLT on the rent element of qualifying assured tenancies in the interim.',
-        'A tenancy qualifies as "assured" only if it falls within section 1 of the Housing Act 1988. [cite:0] The critical exclusions are: annual rent exceeding £100,000, company lets, certain student lets, lodger arrangements, and other statutory excluded categories listed in Schedule 1 to the Act.',
+        'A tenancy qualifies as "assured" only if it falls within section 1 of the Housing Act 1988. [cite:0] The critical exclusions are: annual rent exceeding £100,000, company lets, certain student lets, lodger arrangements, and other statutory excluded categories listed in Schedule 1 to the Act. The tenant — the person named on the lease — must be an individual occupying the property as their only or principal home.',
         'The two monetary thresholds serve entirely different purposes. £100,000 is the Housing Act cap that determines who qualifies for an assured tenancy and therefore who benefits from the exemption. £125,000 is the SDLT net present value threshold above which SDLT on rent is charged at 1% — relevant only for leases that remain chargeable. [cite:0] For an assured tenancy the NPV calculation is academic: the exemption means no SDLT is due regardless of NPV.'
       ],
       example: {
-        label: 'Example — individual assured tenant at £5,000/month',
+        label: 'Example — relocating employee as tenant, £5,000/month',
         rows: [
           { year: '1', npv: '~£60,000',   sdlt: '£0 — exempt' },
           { year: '2', npv: '~£117,971',  sdlt: '£0 — exempt' },
@@ -64,20 +64,20 @@ window.SDLT_POLICY_TRACKER_DATA = {
       id: 'individual-high-rent',
       status: 'caution',
       statusLabel: 'SDLT applies',
-      heading: 'Lease in the individual\'s name — rent over £100,000 per year',
+      heading: 'Lease granted to the relocating employee personally — rent over £100,000 per year',
       advice: [
-        'Annual rent above £100,000 means the tenancy cannot be an assured tenancy under the Housing Act 1988. The April 2026 exemption does not apply. SDLT on rent accrues under the growing-lease rules.',
-        'Under those rules, the cumulative net present value of rent is recalculated at each anniversary. SDLT at 1% on NPV above £125,000 becomes payable — often from year two at higher rents. A return must be filed and payment made within 14 days of the anniversary trigger. Penalties for missing a return can exceed the SDLT itself.',
+        'Annual rent above £100,000 means the tenancy cannot be an assured tenancy under the Housing Act 1988 cap. Even though the tenant is the relocating employee personally, the April 2026 exemption does not apply at this rent level. SDLT on rent accrues under the growing-lease rules.',
+        'Under those rules, the cumulative net present value of rent is recalculated at each anniversary. SDLT at 1% on NPV above £125,000 becomes payable — often from year two at higher rents. The tenant (the relocating employee) must file a return and make payment within 14 days of the anniversary trigger. Penalties for missing a return can exceed the SDLT itself.',
         'Please provide the lease and rent details as early as possible so we can calculate the NPV and ensure the filing deadline is met.'
       ],
       detail: [
         'The Renters\' Rights Act converts residential tenancies into rolling periodic tenancies rather than fixed terms. For leases outside the assured-tenancy regime this matters for SDLT: a periodic lease is treated as an indefinite-term lease initially deemed one year, growing by one year at each anniversary. [cite:0][cite:3] There is only one SDLT transaction and the NPV of rent accumulates over the deemed term.',
-        'SDLT is charged at 1% on cumulative NPV above £125,000, calculated at a 3.5% discount rate set by HMRC. [cite:3] The tenant is required to recalculate at each anniversary and file a supplementary SDLT return within 14 days, paying any additional tax due at the same time.',
+        'SDLT is charged at 1% on cumulative NPV above £125,000, calculated at a 3.5% discount rate set by HMRC. [cite:3] The tenant — the relocating employee named on the lease — is required to recalculate at each anniversary and file a supplementary SDLT return within 14 days, paying any additional tax due at the same time.',
         'Rent increases after year 5 are ignored — the highest rent from years 1 to 5 is used for all subsequent years. [cite:3][cite:4] This can actually limit liability at very high rents if the increase occurs after year 5.',
-        'A further 2% non-resident surcharge applies if the tenant fails the SDLT residence test at the effective date of the lease. This is a 183-day physical presence test — not the income-tax Statutory Residence Test — and citizenship or visa status does not determine it. [cite:1] If the tenant subsequently meets the forward-looking test (183 days in the year after the effective date), the surcharge can be reclaimed within two years.'
+        'A further 2% non-resident surcharge applies if the relocating employee fails the SDLT residence test at the effective date of the lease. This is a 183-day physical presence test — not the income-tax Statutory Residence Test — and citizenship or visa status does not determine it. [cite:1] If the employee subsequently meets the forward-looking test (183 days in the year after the effective date), the surcharge can be reclaimed within two years.'
       ],
       example: {
-        label: 'Example — individual, rent over £100,000 p.a.',
+        label: 'Example — relocating employee as tenant, rent over £100,000 p.a.',
         rows: [
           { year: '1', npv: '~£115,942 (£120k rent)',  sdlt: 'Nil (under £125k NPV)' },
           { year: '2', npv: '~£227,963',               sdlt: '~£1,030 due' },
@@ -99,22 +99,22 @@ window.SDLT_POLICY_TRACKER_DATA = {
       id: 'company-tenant',
       status: 'action',
       statusLabel: 'SDLT applies — contact us',
-      heading: 'Lease in a company or employer\'s name',
+      heading: 'Lease granted to the employer or any other company',
       advice: [
-        'Only individuals can hold assured tenancies. A lease in a company\'s name — regardless of whether it is a UK-registered company, an overseas employer, or an SPV — can never be an assured tenancy. The April 2026 exemption does not apply.',
-        'This is the most important point for employer-funded relocations: even a modest rent can generate SDLT liability over time. At £5,000 per month (£60,000 per year), the growing-lease rules typically produce an SDLT charge from around year three, with returns and payment due within 14 days.',
-        'A UK-incorporated company is not automatically safe from the 2% non-resident surcharge. Where a UK Ltd is a close company controlled by non-UK resident participators (shareholders, trustees, or partners), the surcharge applies in addition to standard growing-lease SDLT — even though the company is UK-registered.',
-        'Please send us the lease, the company structure (shareholders, any parent entities, trustees), and the effective dates so we can assess the full position.'
+        'Only individuals can hold assured tenancies. Where the employer — or any other company such as an SPV or overseas parent — is named as the tenant on the lease, the tenancy can never be an assured tenancy. This applies regardless of whether the company is UK-registered, and regardless of how modest the rent is. The April 2026 exemption does not apply.',
+        'This is the scenario that most commonly arises in employer-funded relocations where the company takes the lease on behalf of the relocating employee. Even at moderate rents, SDLT liability builds over time: at £5,000 per month (£60,000 per year), the growing-lease rules typically produce an SDLT charge from around year three, with returns and payment due within 14 days.',
+        'A UK-incorporated employer is not automatically safe from the additional 2% non-resident surcharge. Where a UK Ltd is a close company controlled by non-UK resident participators (shareholders, trustees, or partners), the surcharge applies on top of standard growing-lease SDLT — even though the company is UK-registered.',
+        'Please send us the lease, the employer\'s company structure (shareholders, any parent entities, trustees), and the effective dates so we can assess the full position.'
       ],
       detail: [
-        'Section 1 of the Housing Act 1988 [cite:0] requires each tenant to be an individual who occupies the dwelling as their only or principal home. A body corporate cannot satisfy this condition. The assured status — and the SDLT exemption that flows from it — is not available to company tenants at any rent level.',
-        'For a company let, SDLT on rent is calculated under the growing-lease regime. [cite:1] The deemed term grows by one year at each anniversary; SDLT at 1% applies to cumulative NPV above £125,000. At £60,000 per year this threshold is typically crossed around year three, at which point a return must be filed within 14 days.',
-        'The 2% non-resident surcharge is assessed separately from the assured-tenancy exemption. [cite:2][cite:3] A corporate tenant is non-UK resident if it is not UK resident for Corporation Tax at the effective date. Additionally, a UK-resident company can still be caught if it is a close company whose control rests with non-UK resident participators under Schedule 9A FA 2003.',
-        'The non-UK control test looks through to who ultimately controls the close company — following participator and attribution rules, not simply where the company is incorporated. [cite:3] A UK Ltd whose shares are held by a non-UK individual may therefore carry the 2% surcharge even though it is UK-registered and the lease is in England.',
-        'Where the company is the tenant, SDLT on any lease premium also follows company residential rules (higher rates from £40,000; up to 17% above £500,000 unless relief applies). [cite:1] This is a separate analysis from the rent NPV position.'
+        'Section 1 of the Housing Act 1988 [cite:0] requires each tenant to be an individual who occupies the dwelling as their only or principal home. A body corporate — the employer or any other company — cannot satisfy this condition. The assured status, and the SDLT exemption that flows from it, is not available to any company tenant at any rent level.',
+        'For a lease in the employer\'s name, SDLT on rent is calculated under the growing-lease regime. [cite:1] The deemed term grows by one year at each anniversary; SDLT at 1% applies to cumulative NPV above £125,000. At £60,000 per year this threshold is typically crossed around year three, at which point a return must be filed within 14 days. The fact that the relocating employee lives in the property is irrelevant — SDLT looks at who is the tenant on the lease.',
+        'The 2% non-resident surcharge is assessed separately from the assured-tenancy exemption. [cite:2][cite:3] An employer company is non-UK resident for SDLT purposes if it is not UK resident for Corporation Tax at the effective date. Additionally, a UK-resident employer can still be caught if it is a close company whose control rests with non-UK resident participators under Schedule 9A FA 2003.',
+        'The non-UK control test looks through to who ultimately controls the close company — following participator and attribution rules, not simply where the company is incorporated. [cite:3] An employer that is a UK Ltd but whose shares are held by a non-UK individual or overseas parent may therefore carry the 2% surcharge even though it is UK-registered and the lease is in England.',
+        'Where the employer is the tenant, SDLT on any lease premium also follows company residential rules (higher rates from £40,000; up to 17% above £500,000 unless relief applies). [cite:1] This is a separate analysis from the rent NPV position.'
       ],
       example: {
-        label: 'Example — company tenant at £5,000/month (£60,000 p.a.)',
+        label: 'Example — employer as tenant, £5,000/month (£60,000 p.a.)',
         rows: [
           { year: '1', npv: '~£60,000',   sdlt: 'Nil (under £125k NPV)' },
           { year: '2', npv: '~£117,971',  sdlt: 'Nil (still under £125k NPV)' },
