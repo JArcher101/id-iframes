@@ -489,9 +489,13 @@ function setupAddressAutocomplete() {
       if (this.checked) {
         manualFields.classList.remove('hidden');
         sdltAddressInput.value = '';
+        sdltAddressInput.removeAttribute('required');
         sdltAddressDropdown.classList.add('hidden');
+        // Autocomplete value is cleared, so a previous lookup must not override the typed address
+        sdltAddressObject = null;
       } else {
         manualFields.classList.add('hidden');
+        sdltAddressInput.setAttribute('required', '');
       }
     });
   }
@@ -1006,6 +1010,53 @@ function handleAdditionalFileUpload(file, docId) {
 
 // ===== SDLT ADDRESS VALIDATION =====
 
+function isSdltManualEntry() {
+  return !!document.getElementById('sdltAddressNotListed')?.checked;
+}
+
+/**
+ * Thirdfort minimum for a UK SDLT address:
+ * one of flat number, building number, or building name, plus town and postcode.
+ * Same rule that turns the manual box green.
+ */
+function isSdltManualAddressComplete() {
+  const flatNumber = document.getElementById('sdltFlatNumber')?.value.trim() || '';
+  const buildingNumber = document.getElementById('sdltBuildingNumber')?.value.trim() || '';
+  const buildingName = document.getElementById('sdltBuildingName')?.value.trim() || '';
+  const town = document.getElementById('sdltTown')?.value.trim() || '';
+  const postcode = document.getElementById('sdltPostcode')?.value.trim() || '';
+  const hasOneOf = flatNumber !== '' || buildingNumber !== '' || buildingName !== '';
+  return hasOneOf && town !== '' && postcode !== '';
+}
+
+function addressHasContent(addr) {
+  if (!addr) return false;
+  return !!(
+    addr.flat_number ||
+    addr.building_number ||
+    addr.building_name ||
+    addr.street ||
+    addr.sub_street ||
+    addr.town ||
+    addr.postcode ||
+    addr.address_1
+  );
+}
+
+/**
+ * SDLT address for submit and ID entries.
+ * Manual entry wins while "address not listed" is checked, even if a lookup was stored earlier.
+ */
+function resolveSdltAddress() {
+  if (isSdltManualEntry()) {
+    const manual = getManualAddress('sdlt');
+    return addressHasContent(manual) ? manual : undefined;
+  }
+  if (sdltAddressObject) return sdltAddressObject;
+  const manual = getManualAddress('sdlt');
+  return addressHasContent(manual) ? manual : undefined;
+}
+
 function setupSDLTAddressValidation() {
   const manualFields = document.getElementById('sdltManualAddressFields');
   if (!manualFields) return;
@@ -1021,30 +1072,13 @@ function setupSDLTAddressValidation() {
   const town = document.getElementById('sdltTown');
   const postcode = document.getElementById('sdltPostcode');
   
-  // Function to validate address according to Thirdfort minimum requirements
   function validateSDLTAddress() {
-    // Thirdfort minimum requirements:
-    // 1. Must have ONE OF: flat_number, building_number, or building_name
-    // 2. Must have: town (required)
-    // 3. Must have: postcode (required)
-    
-    const hasFlatNumber = flatNumber && flatNumber.value.trim() !== '';
-    const hasBuildingNumber = buildingNumber && buildingNumber.value.trim() !== '';
-    const hasBuildingName = buildingName && buildingName.value.trim() !== '';
-    const hasOneOf = hasFlatNumber || hasBuildingNumber || hasBuildingName;
-    
-    const hasTown = town && town.value.trim() !== '';
-    const hasPostcode = postcode && postcode.value.trim() !== '';
-    
-    const isValid = hasOneOf && hasTown && hasPostcode;
-    
-    // Update container class
+    const isValid = isSdltManualAddressComplete();
     if (isValid) {
       container.classList.add('validated');
     } else {
       container.classList.remove('validated');
     }
-    
     return isValid;
   }
   
@@ -1074,10 +1108,16 @@ function validateForm() {
   // Check required fields
   const requiredInputs = document.querySelectorAll('input[required], select[required], textarea[required]');
   requiredInputs.forEach(input => {
+    // Manual SDLT entry clears the autocomplete box; completeness is the green-box rule
+    if (input.id === 'sdltAddress' && isSdltManualEntry()) return;
     if (!input.value.trim() && !input.closest('.hidden')) {
       isValid = false;
     }
   });
+
+  if (isSdltManualEntry() && !isSdltManualAddressComplete()) {
+    isValid = false;
+  }
   
   // Validate tenant mobile numbers with libphonenumber
   // Tenant 1 mobile (always required)
@@ -2356,7 +2396,15 @@ function handleAddressData(address, field) {
     sdltAddressObject = formattedAddress;
     // Update sdltAddress input with full formatted address (including full postcode)
     const input = document.getElementById('sdltAddress');
-    if (input) input.value = formatAddressForDisplay(formattedAddress);
+    if (input) {
+      input.value = formatAddressForDisplay(formattedAddress);
+      input.setAttribute('required', '');
+    }
+    // A successful lookup replaces manual entry
+    const notListed = document.getElementById('sdltAddressNotListed');
+    if (notListed) notListed.checked = false;
+    const manualFields = document.getElementById('sdltManualAddressFields');
+    if (manualFields) manualFields.classList.add('hidden');
   } else {
     previousAddressObject = formattedAddress;
     // Update previousAddress input with full formatted address (including full postcode)
@@ -2569,13 +2617,21 @@ function collectValidationErrors() {
   // Check required fields
   const requiredInputs = document.querySelectorAll('input[required], select[required], textarea[required]');
   requiredInputs.forEach(input => {
+    // "Address not listed" clears this box on purpose. The manual fields are the address.
+    if (input.id === 'sdltAddress' && isSdltManualEntry()) return;
     if (!input.value.trim() && !input.closest('.hidden')) {
-      const label = input.closest('.row, .form-grid')?.querySelector('label[for="' + input.id + '"]') || 
-                    input.previousElementSibling?.tagName === 'LABEL' ? input.previousElementSibling : null;
+      let label = input.closest('.row, .form-grid, .section')?.querySelector('label[for="' + input.id + '"]');
+      if (!label && input.previousElementSibling && input.previousElementSibling.tagName === 'LABEL') {
+        label = input.previousElementSibling;
+      }
       const fieldName = label?.textContent?.replace('*', '').trim() || input.name || 'Field';
       errors.push(`${fieldName} is required`);
     }
   });
+
+  if (isSdltManualEntry() && !isSdltManualAddressComplete()) {
+    errors.push('SDLT address needs a flat number, building number, or building name, plus town and postcode');
+  }
   
   // Validate tenant mobile numbers with libphonenumber
   const tenant1MobileCountryCode = document.getElementById('tenant1MobileCountryCode');
@@ -2863,7 +2919,7 @@ function collectFormData(isEditMode = false) {
     tenantsEmail: document.getElementById('tenant1Email').value || undefined,
     
     // SDLT Address and Move-in Date
-    sdltAddress: getAddressObject(sdltAddressObject, () => getManualAddress('sdlt')),
+    sdltAddress: resolveSdltAddress(),
     ukMoveInDate: document.getElementById('moveInDate').value || undefined,
     tenantsPreviousAddress: getAddressObject(previousAddressObject, () => getManualAddress('previous')),
     
@@ -4076,7 +4132,7 @@ function buildIdEntries() {
     document.getElementById('tenant1Mobile')
   );
   const tenant1Email = document.getElementById('tenant1Email').value || undefined;
-  const tenant1CurrentAddress = getAddressObject(sdltAddressObject, () => getManualAddress('sdlt'));
+  const tenant1CurrentAddress = resolveSdltAddress();
   const tenant1PreviousAddress = getAddressObject(previousAddressObject, () => getManualAddress('previous'));
   
   if (tenant1FirstName && tenant1LastName) {
