@@ -1929,6 +1929,9 @@
         if (clientEntryId) {
           // Upload to S3 (still needed for document storage)
           await uploadPDFBlobToS3(pdfBlob);
+        } else {
+          // No client entry — remind user to keep PDF until Osprey matter is available
+          showSuccess('PDF downloaded. Keep it until a matter is open on Osprey, then add it to matter history.');
         }
         
         // Open osprey-tab immediately after download starts
@@ -2051,8 +2054,8 @@
           openLinkInTab(linkUrl);
         }
         
-        // Show success message
-        showSuccess('PDF uploaded successfully!');
+        // Show success message — clarify S3 save vs Osprey matter history
+        showSuccess('PDF saved to the client record. Don\'t forget to add it into matter history on Osprey.');
         
         // Clean up
         delete window.pendingUploadFile;
@@ -2225,7 +2228,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
-    function showSuccess(message) {
+    function showSuccess(message, durationMs) {
       // Create temporary success popup
       const popup = document.createElement('div');
       popup.style.cssText = `
@@ -2239,6 +2242,9 @@
         border-radius: 8px;
         font-family: 'Transport', sans-serif;
         font-size: 16px;
+        line-height: 1.4;
+        text-align: center;
+        max-width: min(520px, calc(100vw - 40px));
         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         z-index: 10001;
         animation: slideDown 0.3s ease;
@@ -2249,7 +2255,7 @@
       setTimeout(() => {
         popup.style.animation = 'slideUp 0.3s ease';
         setTimeout(() => popup.remove(), 300);
-      }, 3000);
+      }, durationMs || 6000);
     }
     
     function escapeHtml(text) {
